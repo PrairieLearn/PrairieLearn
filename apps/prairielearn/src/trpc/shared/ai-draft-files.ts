@@ -12,11 +12,9 @@ import {
   EditJobFailedError,
   deleteDraftQuestionFile,
   editJobFailedAppError,
-  getDraftQuestionFileHash,
   renameDraftQuestionFile,
   saveDraftQuestionFile,
   saveDraftQuestionFiles,
-  uploadDraftQuestionFile,
 } from '../../lib/draft-question-files/mutations.js';
 import {
   ModifiableQuestionFilePathSchema,
@@ -25,6 +23,7 @@ import {
 } from '../../lib/draft-question-files/paths.js';
 import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
 import { ROOT_SELECTION } from '../../lib/draft-question-files/selection.js';
+import { FileModifyConflictError } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { appErrorFormatter, throwAppError } from '../app-errors.js';
 
@@ -62,70 +61,12 @@ export interface AiDraftFilesError {
 }
 
 /**
- * Server-side validation for the URL `selection` state. Falls back to the
- * root for any malformed input so a stale client-side selection cannot break
- * the load.
- */
-const DraftEditorSelectionSchema = z
-  .discriminatedUnion('kind', [
-    z.object({ kind: z.literal('file'), path: QuestionRelativeFilePathSchema }),
-    z.object({ kind: z.literal('dir'), path: QuestionRelativeDirectorySchema }),
-  ])
-  .catch(ROOT_SELECTION);
-
-const ListInputSchema = z.object({
-  questionId: IdSchema,
-  selection: DraftEditorSelectionSchema,
-});
-
-const SaveInputSchema = z.object({
-  questionId: IdSchema,
-  filePath: ModifiableQuestionFilePathSchema,
-  encodedContents: z.string(),
-  /** Hash of the contents the editor was opened with, for the stale-edit guard. */
-  origHash: z.string(),
-  /**
-   * When true, save even if the file on disk no longer matches `origHash` —
-   * the user chose to overwrite a concurrent change after a `STALE_EDIT`.
-   */
-  force: z.boolean().optional(),
-});
-
-const SaveFilesInputSchema = z.object({
-  questionId: IdSchema,
-  /**
-   * The files to write, each as a question-relative path and its base64-encoded
-   * contents — or `null` contents to delete the file. Applied as one atomic job.
-   */
-  files: z
-    .array(
-      z.object({
-        path: ModifiableQuestionFilePathSchema,
-        encodedContents: z.string().nullable(),
-      }),
-    )
-    .min(1),
-});
-
-const RenameInputSchema = z.object({
-  questionId: IdSchema,
-  oldFilePath: ModifiableQuestionFilePathSchema,
-  newFilePath: ModifiableQuestionFilePathSchema,
-});
-
-const DeleteInputSchema = z.object({
-  questionId: IdSchema,
-  filePath: ModifiableQuestionFilePathSchema,
-});
-
-/**
- * The `aiDraftFiles` router is mounted in both the `course` and `courseInstance`
- * tRPC trees. It only needs course-level context, so it defines its own tRPC
- * instance with this minimal context that both trees satisfy. Nesting this
- * single router into both trees guarantees the two mounts can never drift apart
- * and share one accurate client-side router type.
+ * The `aiDraftFiles` router is mounted only on the `course` tRPC tree. It needs
+ * just course-level context, so it defines its own tRPC instance with this
+ * minimal context that the course tree satisfies, keeping its client-side router
+ * type accurate and self-contained.
  *
- * tRPC's router nesting does not check that the host trees actually provide this
+ * tRPC's router nesting does not check that the host tree actually provides this
  * context, so `ai-draft-files.test.ts` asserts that compatibility at build time.
  */
 export interface AiDraftFilesContext {
@@ -215,76 +156,123 @@ function mutationContext(ctx: {
 }
 
 export const aiDraftFilesRouter = t.router({
-  list: aiDraftFilesProcedure.input(ListInputSchema).query(async ({ ctx, input }) => {
-    return await getQuestionFilesData({
-      resLocals: { ...ctx.locals, question: ctx.question },
-      editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${ctx.question.id}`,
-      selection: input.selection,
-    });
-  }),
-  save: aiDraftFilesProcedure.input(SaveInputSchema).mutation(async ({ ctx, input }) => {
-    // Pre-flight stale-edit check: if the file on disk no longer matches the
-    // hash the editor was opened with — including when it was deleted — surface
-    // a typed `STALE_EDIT` rather than letting the edit run and fail as a
-    // generic sync error.
-    const diskHash = await getDraftQuestionFileHash({
-      course: ctx.locals.course,
-      question: ctx.question,
-      filePath: input.filePath,
-    });
-    if (!input.force && diskHash !== input.origHash) {
-      throwAppError<AiDraftFilesError['Save']>({
-        code: 'STALE_EDIT',
-        message:
-          diskHash == null
-            ? 'This file was deleted since you opened it.'
-            : 'This file changed since you opened it.',
+  list: aiDraftFilesProcedure
+    .input(
+      z.object({
+        questionId: IdSchema,
+        /**
+         * Server-side validation for the URL `selection` state. Falls back to
+         * the root for any malformed input so a stale client-side selection
+         * cannot break the load.
+         */
+        selection: z
+          .discriminatedUnion('kind', [
+            z.object({ kind: z.literal('file'), path: QuestionRelativeFilePathSchema }),
+            z.object({ kind: z.literal('dir'), path: QuestionRelativeDirectorySchema }),
+          ])
+          .catch(ROOT_SELECTION),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return await getQuestionFilesData({
+        resLocals: { ...ctx.locals, question: ctx.question },
+        editorUrl: `${ctx.locals.urlPrefix}/ai_generate_editor/${ctx.question.id}`,
+        selection: input.selection,
       });
-    }
-
-    if (diskHash == null) {
-      // The file was deleted since the editor opened it and the user chose to
-      // overwrite anyway. `FileModifyEditor` can't recreate it — it reads the
-      // now-missing file to re-check the disk hash — so re-create the file from
-      // the editor's contents instead.
-      await uploadDraftQuestionFile({
+    }),
+  save: aiDraftFilesProcedure
+    .input(
+      z.object({
+        questionId: IdSchema,
+        filePath: ModifiableQuestionFilePathSchema,
+        encodedContents: z.string(),
+        /** Hash of the contents the editor was opened with, for the stale-edit guard. */
+        origHash: z.string(),
+        /**
+         * When true, save even if the file on disk no longer matches `origHash` —
+         * the user chose to overwrite a concurrent change after a `STALE_EDIT`.
+         */
+        force: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await saveDraftQuestionFile({
+          ...mutationContext(ctx),
+          filePath: input.filePath,
+          encodedContents: input.encodedContents,
+          origHash: input.origHash,
+          force: input.force,
+        });
+      } catch (err) {
+        if (err instanceof FileModifyConflictError) {
+          throwAppError<AiDraftFilesError['Save']>({
+            code: 'STALE_EDIT',
+            message:
+              err.reason === 'deleted'
+                ? 'This file was deleted since you opened it.'
+                : 'This file changed since you opened it.',
+          });
+        }
+        throw err;
+      }
+      return null;
+    }),
+  saveFiles: aiDraftFilesProcedure
+    .input(
+      z.object({
+        questionId: IdSchema,
+        /**
+         * The files to write, each as a question-relative path and its base64-encoded
+         * contents — or `null` contents to delete the file. Applied as one atomic job.
+         */
+        files: z
+          .array(
+            z.object({
+              path: ModifiableQuestionFilePathSchema,
+              encodedContents: z.string().nullable(),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await saveDraftQuestionFiles({
         ...mutationContext(ctx),
-        filePath: input.filePath,
-        fileContents: Buffer.from(input.encodedContents, 'base64'),
+        files: Object.fromEntries(input.files.map((file) => [file.path, file.encodedContents])),
       });
       return null;
-    }
-
-    await saveDraftQuestionFile({
-      ...mutationContext(ctx),
-      filePath: input.filePath,
-      encodedContents: input.encodedContents,
-      origHash: input.force ? diskHash : input.origHash,
-    });
-    return null;
-  }),
-  saveFiles: aiDraftFilesProcedure.input(SaveFilesInputSchema).mutation(async ({ ctx, input }) => {
-    await saveDraftQuestionFiles({
-      ...mutationContext(ctx),
-      files: Object.fromEntries(input.files.map((file) => [file.path, file.encodedContents])),
-    });
-    return null;
-  }),
-  rename: aiDraftFilesProcedure.input(RenameInputSchema).mutation(async ({ ctx, input }) => {
-    await renameDraftQuestionFile({
-      ...mutationContext(ctx),
-      oldFilePath: input.oldFilePath,
-      newFilePath: input.newFilePath,
-    });
-    return null;
-  }),
-  delete: aiDraftFilesProcedure.input(DeleteInputSchema).mutation(async ({ ctx, input }) => {
-    await deleteDraftQuestionFile({
-      ...mutationContext(ctx),
-      filePath: input.filePath,
-    });
-    return null;
-  }),
+    }),
+  rename: aiDraftFilesProcedure
+    .input(
+      z.object({
+        questionId: IdSchema,
+        oldFilePath: ModifiableQuestionFilePathSchema,
+        newFilePath: ModifiableQuestionFilePathSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await renameDraftQuestionFile({
+        ...mutationContext(ctx),
+        oldFilePath: input.oldFilePath,
+        newFilePath: input.newFilePath,
+      });
+      return null;
+    }),
+  delete: aiDraftFilesProcedure
+    .input(
+      z.object({
+        questionId: IdSchema,
+        filePath: ModifiableQuestionFilePathSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await deleteDraftQuestionFile({
+        ...mutationContext(ctx),
+        filePath: input.filePath,
+      });
+      return null;
+    }),
 });
 
 const _aiDraftFilesTrpcRouter = t.router({

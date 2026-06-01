@@ -9,11 +9,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import {
-  getAiQuestionGenerationDraftsUrl,
-  getCourseInstanceTrpcUrl,
-  getCourseTrpcUrl,
-} from '../../../lib/client/url.js';
+import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { QuestionFilesData } from '../../../lib/draft-question-files/browser.js';
@@ -58,10 +54,7 @@ export function InstructorAiGenerateDraftEditor({
     url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/files`,
     authnUserId: resLocals.authn_user.id,
   });
-  const trpcUrl =
-    resLocals.course_instance == null
-      ? getCourseTrpcUrl(resLocals.course.id)
-      : getCourseInstanceTrpcUrl(resLocals.course_instance.id);
+  const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
   const trpcCsrfToken = generatePrefixCsrfToken(
     {
       url: trpcUrl,

@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { Page } from '@playwright/test';
-
 import { selectQuestionByQid } from '../../models/question.js';
 
 import { getAceEditorContent, setAceEditorContent } from './aceUtils.js';
@@ -21,23 +19,13 @@ function questionFilePath(testCoursePath: string, fileName: string) {
   return path.join(testCoursePath, 'questions', 'addNumbers', fileName);
 }
 
-async function syncCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.getByText('Success', { exact: true })).toBeVisible();
-}
-
 // These tests edit shared question files, so they must run serially.
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Instructor file editor', () => {
   let questionId: string;
 
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncCourses(page);
-    await page.close();
-
+  test.beforeAll(async ({ courseInstance: _courseInstance }) => {
     questionId = (await selectQuestionByQid({ qid: 'addNumbers', course_id: '1' })).id;
   });
 
