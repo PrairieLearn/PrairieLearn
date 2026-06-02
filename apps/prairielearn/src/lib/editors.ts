@@ -2473,6 +2473,16 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
+    const editHash = this.getHash(this.editContents);
+
+    // When the buffer still matches what the editor was opened with, there is
+    // nothing to save: writing nothing cannot clobber a concurrent change, so
+    // this is a clean no-op rather than a conflict. This also lets an unrelated
+    // editor in the same `MultiEditor` (e.g. a rename) be the sole writer of the
+    // file. `force` skips this so an explicit overwrite still recreates a
+    // deleted file even when the buffer was never edited.
+    if (!this.force && editHash === this.origHash) return null;
+
     debug('read current disk contents');
     let diskHash: string | null = null;
     try {
@@ -2483,11 +2493,11 @@ export class FileModifyEditor extends Editor {
       // The file was deleted on disk since the editor opened it.
     }
 
+    // The buffer differs from `origHash`, so the user is saving an actual edit.
     // The under-lock disk check is the single source of truth for stale edits:
-    // it runs regardless of whether the buffer was modified, so a save against a
-    // file that changed or was deleted on disk surfaces a conflict even when the
-    // buffer is unchanged. `force` overwrites the conflict, recreating the file
-    // if it was deleted.
+    // if the file changed or was deleted on disk since it was opened, this save
+    // would clobber that change, so surface a conflict. `force` overwrites it,
+    // recreating the file if it was deleted.
     if (!this.force) {
       if (diskHash === null) throw new FileModifyConflictError('deleted');
       if (diskHash !== this.origHash) throw new FileModifyConflictError('changed');
@@ -2496,7 +2506,7 @@ export class FileModifyEditor extends Editor {
     // Skip a no-op write when the buffer already matches what is on disk; this
     // avoids an empty commit. A deleted file (`diskHash === null`) never matches,
     // so a forced save always recreates it.
-    if (this.getHash(this.editContents) === diskHash) return null;
+    if (editHash === diskHash) return null;
 
     debug('write file');
     await fs.ensureDir(path.dirname(this.filePath));
