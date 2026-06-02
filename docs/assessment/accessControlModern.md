@@ -436,6 +436,22 @@ For example, a legacy setup that opens for 100% credit from Jan 15 to Feb 15, cl
 
 Assessments with non-contiguous credit ranges are flagged as incompatible during migration. You can clear those rules and reconfigure access manually, or keep the legacy format.
 
+## Limits
+
+Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of individual students.
+
+| Setting                                   | Limit                                 |
+| ----------------------------------------- | ------------------------------------- |
+| File-backed `accessControl` rules         | 20 rules, including the defaults rule |
+| Student-label overrides                   | 19 overrides in `infoAssessment.json` |
+| Specific-student overrides                | 15 overrides per assessment           |
+| Students in one specific-student override | 10 students                           |
+| Student labels in one student-label rule  | 10 labels                             |
+| Early and late deadlines                  | 5 early and 5 late deadlines per rule |
+| Linked PrairieTest exams                  | 10 exams per assessment               |
+| Time limits                               | 2880 minutes                          |
+| Passwords                                 | 128 characters                        |
+
 ## Staff access
 
 Course staff with a course role of Previewer or above, or a course instance role of Student Data Viewer or above, always receive full access to all assessments regardless of access control rules. They see 100% credit with a "(Staff override)" indicator.

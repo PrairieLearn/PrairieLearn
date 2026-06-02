@@ -16,10 +16,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import {
-  MAX_ACCESS_CONTROL_EARLY_DEADLINES_PER_RULE,
-  MAX_ACCESS_CONTROL_LATE_DEADLINES_PER_RULE,
-} from '../../../../schemas/accessControl.js';
+import { MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -119,16 +116,9 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
   return undefined;
 }
 
-function getDeadlineLimit(type: 'early' | 'late'): number {
-  return type === 'early'
-    ? MAX_ACCESS_CONTROL_EARLY_DEADLINES_PER_RULE
-    : MAX_ACCESS_CONTROL_LATE_DEADLINES_PER_RULE;
-}
-
 function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): string | undefined {
-  const limit = getDeadlineLimit(type);
-  if (count < limit) return undefined;
-  return `A rule can have at most ${limit} ${type} deadlines.`;
+  if (count < MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) return undefined;
+  return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
 }
 
 function DeadlineArrayInput({

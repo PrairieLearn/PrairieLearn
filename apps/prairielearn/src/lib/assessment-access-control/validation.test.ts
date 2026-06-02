@@ -3,7 +3,6 @@ import { assert, describe, it } from 'vitest';
 import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
-  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT,
 } from '../../schemas/accessControl.js';
 
 import {
@@ -427,29 +426,6 @@ describe('Exam UUID validation', () => {
     });
 
     assert.isTrue(result.success);
-  });
-});
-
-describe('Access control enrollment target limits', () => {
-  it('validates total enrollment rule target counts', () => {
-    const defaultRule = AccessControlJsonSchema.parse({
-      dateControl: { release: { date: '2024-03-01T00:00:00' } },
-    });
-    const enrollmentRule = AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 60 } });
-
-    const tooManyTargetsTotal = validateAccessControlRules({
-      rules: [defaultRule],
-      enrollmentRules: [50, 50, 50, 50, 50, 1].map((targetCount) => ({
-        rule: enrollmentRule,
-        targetCount,
-      })),
-    });
-    assert.include(
-      tooManyTargetsTotal.errors,
-      `Too many student targets across enrollment overrides: ${
-        MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT + 1
-      }. Maximum allowed is ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT}.`,
-    );
   });
 });
 
@@ -892,14 +868,11 @@ describe('Empty accessControl array', () => {
     const result = validateAccessControlRules({
       rules: [],
       enrollmentRules: [
-        {
-          rule: AccessControlJsonSchema.parse({
-            dateControl: {
-              durationMinutes: 90,
-            },
-          }),
-          targetCount: 1,
-        },
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            durationMinutes: 90,
+          },
+        }),
       ],
     });
 

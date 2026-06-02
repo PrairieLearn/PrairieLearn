@@ -1,7 +1,4 @@
-import {
-  type AccessControlJson,
-  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT,
-} from '../../schemas/accessControl.js';
+import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
@@ -11,11 +8,6 @@ export interface AccessControlValidationRule {
   rule: AccessControlJson;
   targetType: AccessControlRuleTargetType;
   ruleIndex: number;
-}
-
-interface EnrollmentAccessControlValidationRule {
-  rule: AccessControlJson;
-  targetCount: number;
 }
 
 type AccessControlIssuePath =
@@ -1051,7 +1043,7 @@ function formatValues(values: Set<string> | string[]) {
  * @param params.rules The full ordered list of access control rules: index 0 is the
  * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules with target counts.
+ * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
@@ -1061,7 +1053,7 @@ export function validateAccessControlRules({
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
-  enrollmentRules?: EnrollmentAccessControlValidationRule[];
+  enrollmentRules?: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
@@ -1072,18 +1064,6 @@ export function validateAccessControlRules({
   // If the feature is completely unused, we can skip all validation and we don't need a default rule.
   if (rules.length === 0 && enrollmentRulesCount === 0) {
     return { errors, warnings };
-  }
-
-  if (enrollmentRules !== undefined) {
-    const totalEnrollmentTargets = enrollmentRules.reduce(
-      (sum, { targetCount }) => sum + targetCount,
-      0,
-    );
-    if (totalEnrollmentTargets > MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT) {
-      errors.push(
-        `Too many student targets across enrollment overrides: ${totalEnrollmentTargets}. Maximum allowed is ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT}.`,
-      );
-    }
   }
 
   // A default rule is identified by the absence of a `labels` key.
@@ -1143,7 +1123,7 @@ export function validateAccessControlRules({
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
 
-  for (const { rule } of enrollmentRules ?? []) {
+  for (const rule of enrollmentRules ?? []) {
     validationRules.push({
       rule,
       targetType: 'enrollment',

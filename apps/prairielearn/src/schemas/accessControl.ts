@@ -5,13 +5,11 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 import { MAX_STUDENT_LABEL_NAME_LENGTH } from './infoCourseInstance.js';
 
 export const MAX_ACCESS_CONTROL_RULES = 20;
-export const MAX_ENROLLMENT_ACCESS_CONTROL_RULES = 25;
+export const MAX_ENROLLMENT_ACCESS_CONTROL_RULES = 15;
 export const MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE = 10;
-export const MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE = 50;
-export const MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT = 250;
-export const MAX_ACCESS_CONTROL_EARLY_DEADLINES_PER_RULE = 3;
-export const MAX_ACCESS_CONTROL_LATE_DEADLINES_PER_RULE = 3;
-export const MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS = 50;
+export const MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE = 10;
+export const MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE = 5;
+export const MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS = 10;
 export const MAX_ACCESS_CONTROL_DURATION_MINUTES = 2880;
 export const MAX_ACCESS_CONTROL_PASSWORD_LENGTH = 128;
 
@@ -62,13 +60,13 @@ const DateControlJsonSchema = z
     ),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
-      .max(MAX_ACCESS_CONTROL_EARLY_DEADLINES_PER_RULE)
+      .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()
       .describe('Array of early deadlines with credit as percentages'),
     lateDeadlines: z
       .array(DeadlineEntryJsonSchema)
-      .max(MAX_ACCESS_CONTROL_LATE_DEADLINES_PER_RULE)
+      .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
