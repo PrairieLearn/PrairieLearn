@@ -19,7 +19,7 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import {
   MAX_ACCESS_CONTROL_EARLY_DEADLINES_PER_RULE,
   MAX_ACCESS_CONTROL_LATE_DEADLINES_PER_RULE,
-} from '../../../../schemas/limits.js';
+} from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';

@@ -1,5 +1,7 @@
-import type { AccessControlJson } from '../../schemas/accessControl.js';
-import { MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT } from '../../schemas/limits.js';
+import {
+  type AccessControlJson,
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT,
+} from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 

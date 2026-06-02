@@ -9,7 +9,7 @@ import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import {
   MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
   MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
-} from '../../../../schemas/limits.js';
+} from '../../../../schemas/accessControl.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';

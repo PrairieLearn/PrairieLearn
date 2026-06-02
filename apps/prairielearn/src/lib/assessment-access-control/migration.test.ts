@@ -4,9 +4,11 @@ import * as path from 'path';
 import tmp from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
 
-import { AccessControlJsonSchema } from '../../schemas/accessControl.js';
+import {
+  AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
+} from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
-import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../schemas/limits.js';
 
 import {
   type Migration,

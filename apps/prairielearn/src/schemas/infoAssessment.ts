@@ -1,8 +1,7 @@
 import { type ZodSchema, z } from 'zod';
 
-import { AccessControlJsonSchema } from './accessControl.js';
+import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
-import { MAX_ACCESS_CONTROL_RULES } from './limits.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
 export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;

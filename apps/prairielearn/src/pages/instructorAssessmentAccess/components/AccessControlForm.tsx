@@ -12,7 +12,7 @@ import type {
 import {
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
-} from '../../../schemas/limits.js';
+} from '../../../schemas/accessControl.js';
 
 import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
 import { AccessControlSummary } from './AccessControlSummary.js';

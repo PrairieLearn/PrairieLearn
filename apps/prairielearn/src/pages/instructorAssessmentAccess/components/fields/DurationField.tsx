@@ -1,7 +1,7 @@
 import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
-import { MAX_ACCESS_CONTROL_DURATION_MINUTES } from '../../../../schemas/limits.js';
+import { MAX_ACCESS_CONTROL_DURATION_MINUTES } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';

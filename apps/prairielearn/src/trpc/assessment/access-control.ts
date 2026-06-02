@@ -19,15 +19,16 @@ import {
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
-import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
   MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
   MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
   MAX_ACCESS_CONTROL_RULES,
   MAX_ACCESS_CONTROL_UID_VALIDATION_BATCH_SIZE,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
-} from '../../schemas/limits.js';
+} from '../../schemas/accessControl.js';
+import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
 import {

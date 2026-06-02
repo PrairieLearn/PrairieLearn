@@ -11,7 +11,8 @@ import {
 
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
-import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../../schemas/limits.js';
+import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../../schemas/accessControl.js';
+
 import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import type { AccessControlFormData } from './types.js';
 

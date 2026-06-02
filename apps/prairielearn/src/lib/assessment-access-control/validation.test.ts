@@ -3,8 +3,8 @@ import { assert, describe, it } from 'vitest';
 import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT,
 } from '../../schemas/accessControl.js';
-import { MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT } from '../../schemas/limits.js';
 
 import {
   type AccessControlValidationRule,
