@@ -45,9 +45,9 @@
     "brotli": 2612
   },
   "scripts/externalImageCaptureClient.ts": {
-    "raw": 45593,
-    "gzip": 14135,
-    "brotli": 12751
+    "raw": 45598,
+    "gzip": 14132,
+    "brotli": 12747
   },
   "scripts/institutionAdminAdminsClient.ts": {
     "raw": 1201,
@@ -115,9 +115,9 @@
     "brotli": 2091
   },
   "scripts/jobSequenceClient.ts": {
-    "raw": 45243,
-    "gzip": 14474,
-    "brotli": 13010
+    "raw": 45248,
+    "gzip": 14472,
+    "brotli": 13009
   },
   "scripts/mathjaxSetup.ts": {
     "raw": 1282,
@@ -135,9 +135,9 @@
     "brotli": 757
   },
   "scripts/question.ts": {
-    "raw": 64684,
-    "gzip": 20943,
-    "brotli": 18777
+    "raw": 64689,
+    "gzip": 20939,
+    "brotli": 18736
   },
   "scripts/studentAssessmentClient.ts": {
     "raw": 578,
@@ -150,9 +150,9 @@
     "brotli": 214
   },
   "scripts/workspaceClient.ts": {
-    "raw": 44368,
-    "gzip": 13851,
-    "brotli": 12499
+    "raw": 44373,
+    "gzip": 13847,
+    "brotli": 12488
   },
   "stylesheets/calculator.css": {
     "raw": 6647,
@@ -305,9 +305,9 @@
     "brotli": 217199
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionAiGrade.ts": {
-    "raw": 974542,
-    "gzip": 297112,
-    "brotli": 257266
+    "raw": 974547,
+    "gzip": 297106,
+    "brotli": 257273
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
     "raw": 364396,
@@ -415,8 +415,8 @@
     "brotli": 334688
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1349645,
-    "gzip": 401012,
-    "brotli": 329902
+    "raw": 1349650,
+    "gzip": 401006,
+    "brotli": 329908
   }
 }
