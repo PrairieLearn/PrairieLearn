@@ -23,6 +23,7 @@ import {
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
 
+import { insertAuditEvent } from './audit-event.js';
 import { insertAuditLog } from './audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -409,6 +410,53 @@ export async function updateCourseShowGettingStarted({
   await execute(sql.update_course_show_getting_started, {
     course_id,
     show_getting_started,
+  });
+}
+
+/**
+ * Update the `questions_receive_user_data` column for a course, and record an
+ * audit event in the same transaction.
+ */
+export async function updateCourseQuestionsReceiveUserData({
+  course_id,
+  questions_receive_user_data,
+  authn_user_id,
+  user_id,
+  old_questions_receive_user_data,
+}: {
+  course_id: string;
+  questions_receive_user_data: boolean;
+  authn_user_id: string;
+  user_id: string;
+  /**
+   * The value observed before this save began. A sync triggered by saving
+   * `infoCourse.json` may have already written the column in dev mode, so we
+   * compare against this rather than a fresh read to detect the real change.
+   */
+  old_questions_receive_user_data: boolean;
+}): Promise<Course> {
+  if (old_questions_receive_user_data === questions_receive_user_data) {
+    return await selectCourseById(course_id);
+  }
+  return await runInTransactionAsync(async () => {
+    const newCourse = await queryRow(
+      sql.update_course_questions_receive_user_data,
+      { course_id, questions_receive_user_data },
+      CourseSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'courses',
+      action: 'update',
+      actionDetail: 'questions_receive_user_data',
+      rowId: course_id,
+      agentAuthnUserId: authn_user_id,
+      agentUserId: user_id,
+      courseId: course_id,
+      institutionId: newCourse.institution_id,
+      oldRow: { questions_receive_user_data: old_questions_receive_user_data },
+      newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
+    });
+    return newCourse;
   });
 }
 
