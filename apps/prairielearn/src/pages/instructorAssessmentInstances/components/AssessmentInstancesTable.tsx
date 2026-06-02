@@ -611,7 +611,7 @@ export function AssessmentInstancesTable({
     },
   });
 
-  const selectedRows = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+  const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const selectionToolbar = canEdit ? (
     <InstanceSelectionToolbar
