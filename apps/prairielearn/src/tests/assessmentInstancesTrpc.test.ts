@@ -178,10 +178,6 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.lengthOf(after, 0);
   });
 
-  // The instances data was previously loaded via a `raw_data.json` endpoint
-  // whose authorization was covered by `permissions/studentData.test.ts`. Those
-  // tests moved here when the data moved to the `list` query, which is guarded
-  // by `requireCourseInstancePermissionView`.
   describe('list authorization', () => {
     beforeAll(async () => {
       await sqldb.callRow(
