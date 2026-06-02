@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type ServerJobLogger } from '../lib/server-jobs.js';
+import { selectQuestionsUsedInOtherCourses } from '../models/question.js';
 
 import { type CourseData } from './course-db.js';
 
@@ -39,11 +40,10 @@ export async function getInvalidRenames(
 
   if (renamedQuestions.length === 0) return false;
 
-  const blockedQuestions = await sqldb.queryRows(
-    sql.select_renames_used_in_other_courses,
-    { course_id: courseId, question_ids: renamedQuestions.map((q) => q.id) },
-    z.object({ qid: z.string() }),
-  );
+  const blockedQuestions = await selectQuestionsUsedInOtherCourses({
+    course_id: courseId,
+    question_ids: renamedQuestions.map((q) => q.id),
+  });
 
   if (blockedQuestions.length === 0) return false;
 

@@ -53,8 +53,6 @@ router.get(
     const courseStaff = z.array(StaffUserSchema).parse(
       await selectCourseInstanceGraderStaff({
         courseInstance: res.locals.course_instance,
-        authzData: res.locals.authz_data,
-        requiredRole: ['Student Data Viewer'],
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);

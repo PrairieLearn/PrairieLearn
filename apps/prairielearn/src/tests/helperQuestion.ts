@@ -18,7 +18,11 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
+import { startTestQuestion } from '../lib/question-testing.js';
+import { selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -192,6 +196,9 @@ export function getInstanceQuestion(
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
+        const href = elemList.attr('href');
+        assert.isString(href);
+        assert.match(href, /\/preview\/$/);
       } else {
         assert.lengthOf(elemList, 0);
       }
@@ -603,126 +610,41 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(locals: Record<string, any>, qid: string) {
-  describe('auto-testing question ' + qid, function () {
-    describe('the setup', function () {
-      it('should find the question in the database', async function () {
-        locals.question = await selectQuestionByQid({ qid, course_id: '1' });
-      });
-      it('should be a Freeform question', function () {
-        assert.equal(locals.question?.type, 'Freeform');
-      });
-      it('should have submission data', function () {
-        if (locals.question?.grading_method === 'Manual') {
-          locals.shouldHaveButtons = ['save', 'newVariant'];
-          locals.postAction = 'save';
-        } else {
-          locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
-          locals.postAction = 'grade';
-        }
-      });
-    });
-    getInstanceQuestion(locals);
-    describe('the question variant', function () {
-      it('should produce no issues', async function () {
-        const result = await sqldb.queryRows(
-          sql.select_issues_for_last_variant,
-          z.object({
-            ...IssueSchema.shape,
-            ...VariantSchema.shape,
-          }),
-        );
-        assert.equal(
-          result.length,
-          0,
-          `found ${result.length} issues (expected zero issues):\n` +
-            JSON.stringify(result, null, '    '),
-        );
-      });
-    });
-    describe('GET to instructor question settings URL', function () {
-      it('should load successfully', async function () {
-        assert(locals.question);
-        const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
-        const response = await fetch(questionUrl);
-        assert.equal(response.status, 200);
-        const page = await response.text();
-        locals.$ = cheerio.load(page);
-      });
-      it('should have a CSRF token', function () {
-        assert(locals.$);
-        const elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
-      });
-    });
-    // Manually graded questions don't support the test_once action because
-    // their elements typically don't implement a test() function.
-    describe('the test job sequence', function () {
-      it('should start with POST to instructor question settings URL for test_once', async function () {
-        if (locals.question?.grading_method === 'Manual') return;
-        assert(locals.question);
-        assert(locals.__csrf_token);
-        const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
-        const response = await fetch(questionUrl, {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'test_once',
-            __csrf_token: locals.__csrf_token,
-          }),
-        });
-        assert.equal(response.status, 200);
-      });
-      it('should have an id', async function () {
-        if (locals.question?.grading_method === 'Manual') return;
-        const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
-        locals.job_sequence_id = jobSequence.id;
-      });
-      it('should complete', async function () {
-        if (locals.question?.grading_method === 'Manual') return;
-        do {
-          await sleep(10);
-          locals.job_sequence = await sqldb.queryRow(
-            sql.select_job_sequence,
-            { job_sequence_id: locals.job_sequence_id },
-            JobSequenceSchema,
-          );
-        } while (locals.job_sequence.status === 'Running');
-      });
-      it('should be successful and produce no issues', async function () {
-        if (locals.question?.grading_method === 'Manual') return;
-        assert(locals.job_sequence);
-        const issues = await sqldb.queryRows(
-          sql.select_issues_for_last_variant,
-          z.object({
-            ...IssueSchema.shape,
-            ...VariantSchema.shape,
-          }),
-        );
+export async function autoTestQuestion({ qid }: { qid: string }): Promise<void> {
+  const question = await selectQuestionByQid({ qid, course_id: '1' });
+  assert.equal(question.type, 'Freeform');
 
-        // To aid in debugging, if the job failed, we'll fetch the logs from
-        // all child jobs and print them out. We'll also log any issues. We
-        // do this before making assertions to ensure that they're printed.
-        if (locals.job_sequence.status !== 'Success') {
-          console.log(locals.job_sequence);
-          const result = await sqldb.queryRows(
-            sql.select_jobs,
-            { job_sequence_id: locals.job_sequence_id },
-            JobSchema,
-          );
-          console.log(result);
-        }
-        if (issues.length > 0) {
-          console.log(issues);
-        }
-
-        assert.equal(locals.job_sequence.status, 'Success');
-        assert.lengthOf(issues, 0);
-      });
-    });
+  const course = await selectCourseById('1');
+  const jobSequenceId = await startTestQuestion({
+    count: 1,
+    showDetails: true,
+    question,
+    course_instance: null,
+    course,
+    user_id: '1',
+    authn_user_id: '1',
   });
+  const jobSequence = await helperServer.waitForJobSequence(jobSequenceId);
+
+  const testIssues = await sqldb.queryRows(
+    sql.select_issues_for_question,
+    { question_id: question.id },
+    IssueSchema,
+  );
+
+  if (jobSequence.status !== 'Success') {
+    console.log(jobSequence);
+    const jobs = await sqldb.queryRows(
+      sql.select_jobs,
+      { job_sequence_id: jobSequenceId },
+      JobSchema,
+    );
+    console.log(jobs);
+  }
+  if (testIssues.length > 0) console.log(testIssues);
+
+  assert.equal(jobSequence.status, 'Success', `[${qid}] job sequence did not succeed`);
+  assert.lengthOf(testIssues, 0, `[${qid}] test_once produced ${testIssues.length} issues`);
 }
 
 export async function checkNoIssuesForLastVariantAsync() {

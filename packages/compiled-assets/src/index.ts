@@ -323,9 +323,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     metafile: true, // Write metadata about the build
   });
 
-  // For now, we only build ESM bundles for scripts that are split into chunks (i.e. React components)
-  // Using 'type=module' in the script tag for ESM means that it is loaded after all 'classic' scripts,
-  // which causes issues with bootstrap-table. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
+  // We only build ESM bundles for scripts that are split into chunks (i.e. React components). The classic
+  // (IIFE) bundles can't yet be switched to `type=module` due to load-ordering constraints; see the blockers
+  // tracked in https://github.com/PrairieLearn/PrairieLearn/issues/15151.
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );

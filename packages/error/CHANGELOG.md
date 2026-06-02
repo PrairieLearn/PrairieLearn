@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.9
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.0.8
 
 ### Patch Changes

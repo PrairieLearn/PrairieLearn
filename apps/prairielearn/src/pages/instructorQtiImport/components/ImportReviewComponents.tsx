@@ -1,3 +1,4 @@
+import { filesize } from 'filesize';
 import { type SubmitEvent, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
@@ -7,6 +8,7 @@ import {
   type CollisionStrategy,
   type CourseInstanceOption,
   type ParseWarning,
+  QTI_IMPORT_MAX_UPLOAD_BYTES,
   type QuestionOverrides,
   type SerializedConversionResult,
   type SerializedQuestionOutput,
@@ -19,6 +21,26 @@ import { QuestionReviewPanel } from './QuestionReviewPanel.js';
 
 function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
+}
+
+export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
+const REMOTE_IMAGE_URL_SUMMARY =
+  'One or more questions contain an image reference to a remote URL.';
+const QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
+  round: 0,
+  standard: 'jedec',
+});
+
+export function fileSizeWarning(file: File | undefined): string | null {
+  if (!file || file.size <= QTI_IMPORT_MAX_UPLOAD_BYTES) return null;
+  const fileSizeLabel = filesize(file.size, { round: 0, standard: 'jedec' });
+  return `This file is ${fileSizeLabel}. The maximum upload size is ${QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.`;
+}
+
+function selectedFile(eventTarget: EventTarget): File | undefined {
+  return eventTarget instanceof HTMLInputElement
+    ? (eventTarget.files?.[0] ?? undefined)
+    : undefined;
 }
 
 function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
@@ -89,6 +111,29 @@ export function UnresolvedBankWarnings({ results }: { results: SerializedConvers
   );
 }
 
+export function QuestionBankDeduplicationWarning({
+  deduplicatedQuestionCount,
+}: {
+  deduplicatedQuestionCount: number;
+}) {
+  if (deduplicatedQuestionCount === 0) return null;
+
+  return (
+    <Alert variant="warning" className="mb-3">
+      <div className="d-flex align-items-start gap-2">
+        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+        <div>
+          <strong>Duplicate question bank questions were deduplicated</strong>
+          <p className="mb-0 mt-1">
+            {deduplicatedQuestionCount} question{deduplicatedQuestionCount !== 1 ? 's' : ''}{' '}
+            appeared in multiple question banks and will only be imported once.
+          </p>
+        </div>
+      </div>
+    </Alert>
+  );
+}
+
 export function NonRubricWarnings({
   warnings,
   questions,
@@ -98,19 +143,30 @@ export function NonRubricWarnings({
 }) {
   const filtered = warnings.filter((w) => !isRubricWarning(w.message));
   if (filtered.length === 0) return null;
-
-  const questionBySourceId = new Map(
-    questions.map((q, i) => [q.sourceId, { title: q.infoJson.title, number: i + 1 }]),
+  const hasRemoteImageUrlWarning = filtered.some((w) => w.message === REMOTE_IMAGE_URL_WARNING);
+  const individualWarnings = uniqueWarnings(
+    filtered.filter((w) => w.message !== REMOTE_IMAGE_URL_WARNING),
   );
+
+  const questionById = new Map<string, { title: string; number: number }>();
+  for (const [index, question] of questions.entries()) {
+    const questionInfo = { title: question.infoJson.title, number: index + 1 };
+    questionById.set(question.sourceId, questionInfo);
+    questionById.set(question.directoryName, questionInfo);
+    questionById.set(question.originalDirectoryName, questionInfo);
+  }
 
   return (
     <Alert variant="warning" className="mb-3">
       <strong>Warnings:</strong>
       <ul className="mb-0 mt-1">
-        {filtered.map((w) => {
-          const q = questionBySourceId.get(w.questionId);
+        {hasRemoteImageUrlWarning && (
+          <li key="remote-image-url-warning">{REMOTE_IMAGE_URL_SUMMARY}</li>
+        )}
+        {individualWarnings.map((w) => {
+          const q = questionById.get(w.questionId);
           return (
-            <li key={`${w.questionId}-${w.message}`}>
+            <li key={warningKey(w)}>
               {q ? `For question "${q.title}" (#${q.number}): ${w.message}` : w.message}
             </li>
           );
@@ -118,6 +174,22 @@ export function NonRubricWarnings({
       </ul>
     </Alert>
   );
+}
+
+function warningKey(warning: SerializedConversionResult['warnings'][number]): string {
+  return [warning.questionId, warning.message, warning.level, warning.externalCourseId].join('\0');
+}
+
+function uniqueWarnings(
+  warnings: SerializedConversionResult['warnings'],
+): SerializedConversionResult['warnings'] {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = warningKey(warning);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function ImportSummary({
@@ -242,8 +314,20 @@ export function UploadStep({
   selectedCourseInstanceId: string;
   onCourseInstanceChange: (id: string) => void;
 }) {
+  const [uploadFileSizeWarning, setUploadFileSizeWarning] = useState<string | null>(null);
+  const fileInputDescriptionId = uploadFileSizeWarning ? 'qti-file-size-warning' : 'qti-file-help';
+
   return (
-    <form encType="multipart/form-data" onSubmit={onSubmit}>
+    <form
+      encType="multipart/form-data"
+      onSubmit={(e) => {
+        if (uploadFileSizeWarning != null) {
+          e.preventDefault();
+          return;
+        }
+        onSubmit(e);
+      }}
+    >
       <p>
         Import quiz and question content from Canvas or another LMS. Upload a quiz export (
         <code>.zip</code>) or a full course export (<code>.imscc</code>) in the QTI 1.2 format.{' '}
@@ -277,11 +361,23 @@ export function UploadStep({
           name="file"
           accept=".zip,.imscc"
           disabled={uploading}
+          isInvalid={uploadFileSizeWarning != null}
+          aria-describedby={fileInputDescriptionId}
           required
+          onChange={(e) => setUploadFileSizeWarning(fileSizeWarning(selectedFile(e.target)))}
         />
-        <Form.Text>Supported formats: .zip (quiz export), .imscc (course export)</Form.Text>
+        {uploadFileSizeWarning ? (
+          <Form.Text id="qti-file-size-warning" className="text-danger">
+            {uploadFileSizeWarning}
+          </Form.Text>
+        ) : (
+          <Form.Text id="qti-file-help">
+            Supported formats: .zip (quiz export), .imscc (course export). Maximum size:{' '}
+            {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
+          </Form.Text>
+        )}
       </div>
-      <Button type="submit" variant="primary" disabled={uploading}>
+      <Button type="submit" variant="primary" disabled={uploading || uploadFileSizeWarning != null}>
         {uploading ? (
           <>
             <Spinner size="sm" className="me-2" />
@@ -324,6 +420,18 @@ export function MissingBanksStep({
   const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
   const countPrefix = hasUnknownCounts ? 'At least ' : '';
   const isCanvasExport = hasCanvasUnresolvedSourceBankRefs(refs);
+  const [fileSizeWarningsByRefKey, setFileSizeWarningsByRefKey] = useState<
+    Map<string, string | null>
+  >(new Map());
+
+  const updateFileSizeWarning = (refKey: string, file: File | undefined) => {
+    const warning = fileSizeWarning(file);
+    setFileSizeWarningsByRefKey((warnings) => {
+      const next = new Map(warnings);
+      next.set(refKey, warning);
+      return next;
+    });
+  };
 
   return (
     <>
@@ -373,6 +481,10 @@ export function MissingBanksStep({
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
           const hasCanvasRef = ref.sourceBankExportId != null || ref.externalCourseId != null;
+          const uploadFileSizeWarning = fileSizeWarningsByRefKey.get(refKey) ?? null;
+          const fileInputDescriptionId = uploadFileSizeWarning
+            ? `${inputId}-size-warning`
+            : `${inputId}-help`;
 
           return (
             <form
@@ -380,7 +492,13 @@ export function MissingBanksStep({
               data-source-bank-key={refKey}
               encType="multipart/form-data"
               className="border rounded p-3"
-              onSubmit={onSubmit}
+              onSubmit={(e) => {
+                if (uploadFileSizeWarning != null) {
+                  e.preventDefault();
+                  return;
+                }
+                onSubmit(e);
+              }}
             >
               <div className="fw-semibold">{ref.title}</div>
               <div className="text-muted small mb-2">
@@ -407,18 +525,27 @@ export function MissingBanksStep({
                     name="file"
                     accept=".zip,.imscc"
                     disabled={uploading}
+                    isInvalid={uploadFileSizeWarning != null}
+                    aria-describedby={fileInputDescriptionId}
                     required
+                    onChange={(e) => updateFileSizeWarning(refKey, selectedFile(e.target))}
                   />
-                  <Form.Text>
-                    Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
-                    this bank.
-                  </Form.Text>
+                  {uploadFileSizeWarning ? (
+                    <Form.Text id={`${inputId}-size-warning`} className="text-danger">
+                      {uploadFileSizeWarning}
+                    </Form.Text>
+                  ) : (
+                    <Form.Text id={`${inputId}-help`}>
+                      Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
+                      this bank. Maximum size: {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
+                    </Form.Text>
+                  )}
                 </div>
                 <Button
                   type="submit"
                   className="flex-shrink-0"
                   variant="primary"
-                  disabled={uploading}
+                  disabled={uploading || uploadFileSizeWarning != null}
                   aria-label={`Upload export for ${ref.title}`}
                 >
                   {isUploadingThisBank ? (
@@ -459,11 +586,13 @@ export function MissingBanksStep({
 
 export function AssessmentQuestionsSection({
   questions,
+  warnings,
   questionOverrides,
   existingDirs,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
+  warnings: SerializedConversionResult['warnings'];
   questionOverrides: Map<string, QuestionOverrides>;
   existingDirs: Set<string>;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
@@ -475,6 +604,10 @@ export function AssessmentQuestionsSection({
   const conflictingQuestions = useMemo(
     () => questions.filter((q) => questionOverrides.get(q.directoryName)?.collides),
     [questions, questionOverrides],
+  );
+  const questionWarningsByDirectoryName = useMemo(
+    () => buildQuestionWarningsByDirectoryName(questions, warnings),
+    [questions, warnings],
   );
   const conflictCount = conflictingQuestions.length;
 
@@ -540,6 +673,7 @@ export function AssessmentQuestionsSection({
               key={q.directoryName}
               question={q}
               questionNumber={qi + 1}
+              warnings={questionWarningsByDirectoryName.get(q.directoryName) ?? []}
               overrides={questionOverrides.get(q.directoryName)}
               existingDirs={existingDirs}
               expansionCommand={expansionCommand}
@@ -550,4 +684,38 @@ export function AssessmentQuestionsSection({
       </details>
     </>
   );
+}
+
+export function buildQuestionWarningsByDirectoryName(
+  questions: SerializedQuestionOutput[],
+  warnings: SerializedConversionResult['warnings'],
+): Map<string, SerializedConversionResult['warnings']> {
+  const warningsByQuestionId = new Map<string, SerializedConversionResult['warnings']>();
+  for (const warning of warnings) {
+    if (isRubricWarning(warning.message)) continue;
+    const questionWarnings = warningsByQuestionId.get(warning.questionId) ?? [];
+    questionWarnings.push(warning);
+    warningsByQuestionId.set(warning.questionId, questionWarnings);
+  }
+
+  const questionWarningsByDirectoryName = new Map<string, SerializedConversionResult['warnings']>();
+  for (const question of questions) {
+    const matchingWarnings: SerializedConversionResult['warnings'] = [];
+    const seenWarningKeys = new Set<string>();
+    for (const questionId of [
+      question.directoryName,
+      question.originalDirectoryName,
+      question.sourceId,
+    ]) {
+      for (const warning of warningsByQuestionId.get(questionId) ?? []) {
+        const key = warning.message;
+        if (seenWarningKeys.has(key)) continue;
+        seenWarningKeys.add(key);
+        matchingWarnings.push(warning);
+      }
+    }
+    questionWarningsByDirectoryName.set(question.directoryName, matchingWarnings);
+  }
+
+  return questionWarningsByDirectoryName;
 }

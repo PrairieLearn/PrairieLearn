@@ -173,6 +173,58 @@ FROM
 WHERE
   z.assessment_id = $assessment_id;
 
+-- BLOCK select_assessment_in_course
+SELECT
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  a.id = $assessment_id
+  AND ci.course_id = $course_id
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessments_referencing_questions
+SELECT DISTINCT
+  a.id AS assessment_id,
+  aset.abbreviation || a.number AS assessment_label,
+  aset.color AS assessment_color,
+  aset.abbreviation AS assessment_set_abbreviation,
+  aset.name AS assessment_set_name,
+  a.number AS assessment_number,
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  a.tid AS assessment_directory
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  aq.question_id = ANY ($question_ids::bigint[])
+  AND ci.course_id = $course_id
+  AND a.tid IS NOT NULL
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessment_referenced_question_counts
+SELECT
+  aq.assessment_id,
+  count(DISTINCT aq.question_id)::bigint AS referenced_count
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND aq.question_id = ANY ($question_ids::bigint[])
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+GROUP BY
+  aq.assessment_id;
+
 -- BLOCK select_assessment_zone_points_range
 WITH
   -- For each alternative group, rank questions by max_points (best and worst).

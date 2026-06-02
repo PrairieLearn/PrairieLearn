@@ -151,12 +151,6 @@ export function getNavPageTabs() {
         tabLabel: 'Questions',
       },
       {
-        activeSubPage: 'question_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/question_statistics`,
-        iconClasses: 'fas fa-table',
-        tabLabel: 'Question stats',
-      },
-      {
         activeSubPage: 'manual_grading',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',
@@ -177,8 +171,8 @@ export function getNavPageTabs() {
         tabLabel: 'Settings',
       },
       {
-        activeSubPage: 'assessment_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/assessment_statistics`,
+        activeSubPage: 'statistics',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
       },

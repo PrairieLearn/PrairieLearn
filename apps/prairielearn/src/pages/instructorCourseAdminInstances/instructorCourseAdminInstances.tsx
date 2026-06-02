@@ -55,7 +55,6 @@ router.get(
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer', 'Student Data Viewer'],
     });
 
     const enrollmentCounts = await sqldb.queryRows(
