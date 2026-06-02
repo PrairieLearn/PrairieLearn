@@ -6353,13 +6353,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie@npm:^0.4.1":
-  version: 0.4.1
-  resolution: "@types/cookie@npm:0.4.1"
-  checksum: 10c0/f96afe12bd51be1ec61410b0641243d93fa3a494702407c787a4c872b5c8bcd39b224471452055e44a9ce42af1a636e87d161994226eaf4c2be9c30f60418409
-  languageName: node
-  linkType: hard
-
 "@types/cookie@npm:^0.6.0 <1":
   version: 0.6.0
   resolution: "@types/cookie@npm:0.6.0"
@@ -7302,6 +7295,15 @@ __metadata:
   version: 3.0.3
   resolution: "@types/warning@npm:3.0.3"
   checksum: 10c0/82c1235bd05d7f6940f80012404844e225d589ad338aa4585b231a2c8deacc695b683f4168757c82c10047b81854cbeaaeefd60536dd67bb48f8a65e20410652
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:^8.5.12":
+  version: 8.18.1
+  resolution: "@types/ws@npm:8.18.1"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/61aff1129143fcc4312f083bc9e9e168aa3026b7dd6e70796276dcfb2c8211c4292603f9c4864fae702f2ed86e4abd4d38aa421831c2fd7f856c931a481afbab
   languageName: node
   linkType: hard
 
@@ -10382,15 +10384,15 @@ __metadata:
   linkType: hard
 
 "engine.io-client@npm:~6.6.1":
-  version: 6.6.2
-  resolution: "engine.io-client@npm:6.6.2"
+  version: 6.6.5
+  resolution: "engine.io-client@npm:6.6.5"
   dependencies:
     "@socket.io/component-emitter": "npm:~3.1.0"
-    debug: "npm:~4.3.1"
+    debug: "npm:~4.4.1"
     engine.io-parser: "npm:~5.2.1"
-    ws: "npm:~8.17.1"
+    ws: "npm:~8.20.1"
     xmlhttprequest-ssl: "npm:~2.1.1"
-  checksum: 10c0/a1a0995df1ce2425b43c7dd396cf4ef12d3ca85973b63e1b7bd3933d0292459e922d6be25d14013c9608dc7159ae1e10cd7005754b02bc42d40450381f691859
+  checksum: 10c0/fb3e6d0f2409ac6b39df69b1eb93cd6440fd536506eee949b437bbc5ee5cc8ab009074b1f0ec10ba3dbb633cf386700fda194159a5a0320a554120c0d28a7493
   languageName: node
   linkType: hard
 
@@ -10402,20 +10404,20 @@ __metadata:
   linkType: hard
 
 "engine.io@npm:~6.6.0":
-  version: 6.6.2
-  resolution: "engine.io@npm:6.6.2"
+  version: 6.6.8
+  resolution: "engine.io@npm:6.6.8"
   dependencies:
-    "@types/cookie": "npm:^0.4.1"
     "@types/cors": "npm:^2.8.12"
     "@types/node": "npm:>=10.0.0"
+    "@types/ws": "npm:^8.5.12"
     accepts: "npm:~1.3.4"
     base64id: "npm:2.0.0"
     cookie: "npm:~0.7.2"
     cors: "npm:~2.8.5"
-    debug: "npm:~4.3.1"
+    debug: "npm:~4.4.1"
     engine.io-parser: "npm:~5.2.1"
-    ws: "npm:~8.17.1"
-  checksum: 10c0/e9ac3cba49badb6905259df3b019fbcbe53e2a389c930fb9fbc10eebc8839554b189706206bba2509a4a3a7d78a32f7e027f73230f31662c7efd215276432dad
+    ws: "npm:~8.20.1"
+  checksum: 10c0/3cf705d4be8683322b3ff3c09e680ca72e03f2a475b2c76e5945c920aa85b6edc4ef442df18b0a1a7eaa205797802b993ed9f194bff27ed09f46b43711e88af2
   languageName: node
   linkType: hard
 
@@ -19439,21 +19441,6 @@ __metadata:
   version: 1.0.2
   resolution: "wrappy@npm:1.0.2"
   checksum: 10c0/56fece1a4018c6a6c8e28fbc88c87e0fbf4ea8fd64fc6c63b18f4acc4bd13e0ad2515189786dd2c30d3eec9663d70f4ecf699330002f8ccb547e4a18231fc9f0
-  languageName: node
-  linkType: hard
-
-"ws@npm:~8.17.1":
-  version: 8.17.1
-  resolution: "ws@npm:8.17.1"
-  peerDependencies:
-    bufferutil: ^4.0.1
-    utf-8-validate: ">=5.0.2"
-  peerDependenciesMeta:
-    bufferutil:
-      optional: true
-    utf-8-validate:
-      optional: true
-  checksum: 10c0/f4a49064afae4500be772abdc2211c8518f39e1c959640457dcee15d4488628620625c783902a52af2dd02f68558da2868fd06e6fd0e67ebcd09e6881b1b5bfe
   languageName: node
   linkType: hard
 
