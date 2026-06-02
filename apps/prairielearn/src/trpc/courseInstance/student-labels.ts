@@ -31,7 +31,10 @@ import {
 } from '../../pages/instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
+import {
+  type CourseInstanceJsonInput,
+  MAX_STUDENT_LABEL_NAME_LENGTH,
+} from '../../schemas/infoCourseInstance.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -136,7 +139,7 @@ const upsert = t.procedure
   .input(
     z.object({
       labelId: IdSchema.optional(),
-      name: z.string().trim().min(1, 'Label name is required').max(255),
+      name: z.string().trim().min(1, 'Label name is required').max(MAX_STUDENT_LABEL_NAME_LENGTH),
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).optional(),
       origHash: z.string().nullable(),
