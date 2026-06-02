@@ -86,7 +86,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('numeric value')));
+    assert.isTrue(messages.some((message) => message.includes('must be a number in the range')));
   });
 
   it('requires dropdown display for size and placeholder', async () => {
@@ -96,9 +96,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(
-      messages.some((m) => m.includes('should only be set when display is "dropdown"')),
-    );
+    assert.isTrue(messages.some((m) => m.includes('is only allowed when "display" is "dropdown"')));
   });
 
   it('requires matching all/none of the above attributes for feedback', async () => {
@@ -110,7 +108,9 @@ describe('pl-multiple-choice schema', () => {
 
     assert.isTrue(
       messages.some((m) =>
-        m.includes('if using all-of-the-above-feedback, you must also use all-of-the-above'),
+        m.includes(
+          'Attribute "all-of-the-above-feedback" on <pl-multiple-choice> is only allowed when "all-of-the-above" is enabled.',
+        ),
       ),
     );
   });
@@ -123,7 +123,11 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(
-      messages.some((m) => m.includes('"weight" should not be set when builtin-grading is false.')),
+      messages.some((m) =>
+        m.includes(
+          'Attribute "weight" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
+        ),
+      ),
     );
   });
 
@@ -137,7 +141,7 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(
       messages.some((m) =>
         m.includes(
-          '"all-of-the-above" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.',
+          'Attribute "all-of-the-above" on <pl-multiple-choice> cannot use the grading values "correct", "incorrect", or "random" when "builtin-grading" is false.',
         ),
       ),
     );
@@ -151,7 +155,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('duplicate child inner HTML')));
+    assert.isTrue(messages.some((message) => message.includes('has a duplicate answer choice')));
   });
 
   it('flags answers with identical Mustache as duplicate inner HTML', async () => {
@@ -163,7 +167,9 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.isTrue(
-      messages.some((message) => message.includes('duplicate child inner HTML "{{ params.A }}"')),
+      messages.some((message) =>
+        message.includes('has a duplicate answer choice: "{{ params.A }}"'),
+      ),
     );
   });
 
@@ -175,7 +181,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isFalse(messages.some((message) => message.includes('duplicate child inner HTML')));
+    assert.isFalse(messages.some((message) => message.includes('has a duplicate answer choice')));
   });
 
   it('allows external-json without inline answers', async () => {
@@ -205,6 +211,6 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isFalse(messages.some((message) => message.includes('duplicate child inner HTML')));
+    assert.isFalse(messages.some((message) => message.includes('has a duplicate answer choice')));
   });
 });

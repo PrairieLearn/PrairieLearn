@@ -29,13 +29,13 @@ const plBoolean: SchemaFormat = (value) => typeof value === 'string' && booleanV
 
 const plInteger: SchemaFormat = (value) => typeof value === 'string' && /^-?\d+$/.test(value);
 
-const plFloat: SchemaFormat = (value) =>
+const plNumber: SchemaFormat = (value) =>
   typeof value === 'string' && /^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(value);
 
 export const formats = {
-  'boolean-attrib': plBoolean,
-  'integer-attrib': plInteger,
-  'float-attrib': plFloat,
+  boolean: plBoolean,
+  integer: plInteger,
+  number: plNumber,
 };
 
 export function isBooleanValue(value: string | true): boolean {

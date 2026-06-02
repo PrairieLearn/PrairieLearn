@@ -1,4 +1,10 @@
-"""JSON Schema validation helpers for PrairieLearn elements."""
+"""JSON Schema validation helpers for PrairieLearn elements.
+
+The rendered messages intentionally mirror the wording produced by the
+`@prairielearn/tree-sitter-htmlmustache` linter so that an instructor sees the
+same text whether a problem is caught at lint time (in the editor) or at render
+time (in Python). Keep the two in sync when changing either.
+"""
 
 import functools
 import json
@@ -33,15 +39,9 @@ def _check_float_attrib(value: object) -> bool:
     return isinstance(value, str) and is_float_attrib(value)
 
 
-pl_format_checker.checks("boolean-attrib")(_check_boolean_attrib)
-pl_format_checker.checks("integer-attrib")(_check_integer_attrib)
-pl_format_checker.checks("float-attrib")(_check_float_attrib)
-
-_FORMAT_DESCRIPTIONS = {
-    "boolean-attrib": "a boolean value",
-    "integer-attrib": "an integer",
-    "float-attrib": "a number",
-}
+pl_format_checker.checks("boolean")(_check_boolean_attrib)
+pl_format_checker.checks("integer")(_check_integer_attrib)
+pl_format_checker.checks("number")(_check_float_attrib)
 
 
 @functools.cache
@@ -52,19 +52,41 @@ def _load_validator(path: pathlib.Path) -> Any:
     return validator_cls(schema, format_checker=pl_format_checker)
 
 
-def validate_element(element: lxml.html.HtmlElement, schema_path: pathlib.Path) -> None:
-    """Validate an element's attributes against a PrairieLearn element schema."""
+def validate_element(
+    element: lxml.html.HtmlElement,
+    schema_path: pathlib.Path,
+    *,
+    parent_tag: str | None = None,
+) -> None:
+    """Validate an element's attributes against a PrairieLearn element schema.
+
+    `parent_tag`, when provided, is woven into the message the same way the
+    linter does for nested elements (e.g. `<pl-answer> inside <pl-multiple-choice>`).
+
+    Raises:
+        ValueError: If the element's attributes do not satisfy the schema.
+    """
     validator = _load_validator(schema_path)
     first = next(validator.iter_errors(_normalize_attrs(dict(element.attrib))), None)
     if first is not None:
-        raise ValueError(_render_error(first))
+        tag = _tag_name(element)
+        raise ValueError(_render_error(first, tag, parent_tag))
+
+
+def _tag_name(element: lxml.html.HtmlElement) -> str:
+    tag = element.tag
+    return tag.lower() if isinstance(tag, str) else "element"
 
 
 def _normalize_attrs(attribs: Mapping[str, Any]) -> dict[str, Any]:
     return {key.replace("_", "-"): value for key, value in attribs.items()}
 
 
-def _render_error(error: ValidationError) -> str:
+def _tag_context(tag: str, parent_tag: str | None) -> str:
+    return f"<{tag}> inside <{parent_tag}>" if parent_tag else f"<{tag}>"
+
+
+def _render_error(error: ValidationError, tag: str, parent_tag: str | None) -> str:
     error_message = (
         error.schema.get("errorMessage") if isinstance(error.schema, dict) else None
     )
@@ -76,25 +98,33 @@ def _render_error(error: ValidationError) -> str:
             or error_message.get("_")
             or error.message
         )
+
+    context = _tag_context(tag, parent_tag)
+
     if error.validator == "required":
-        return _render_required_error(error)
+        missing = _missing_required_attribute(error)
+        if missing is not None:
+            return f'{context} is missing required attribute "{missing}".'
+        return error.message
     if error.validator == "additionalProperties":
-        return _render_additional_properties_error(error)
-    if error.validator == "format":
-        return _render_format_error(error)
-    if error.validator == "enum":
-        return _render_enum_error(error)
-    if error.validator == "type":
-        return _render_type_error(error)
+        unexpected = _first_unexpected_attribute(error)
+        if unexpected is not None:
+            return f'Unknown attribute "{unexpected}" on {context}.'
+        return error.message
     if error.validator in {"anyOf", "oneOf"}:
-        return _render_disjunctive_error(error)
+        return _render_disjunctive_error(error, context)
+
+    attribute = _attribute_name(error)
+    phrase = _constraint_phrase(error)
+    if attribute is not None and phrase is not None:
+        return f'Attribute "{attribute}" on {context} must {phrase}.'
     return error.message
 
 
-def _render_required_error(error: ValidationError) -> str:
+def _missing_required_attribute(error: ValidationError) -> str | None:
     required = error.validator_value
     if isinstance(required, list) and isinstance(error.instance, Mapping):
-        missing = next(
+        return next(
             (
                 name
                 for name in required
@@ -102,12 +132,10 @@ def _render_required_error(error: ValidationError) -> str:
             ),
             None,
         )
-        if missing is not None:
-            return f'Attribute "{missing}" is required.'
-    return error.message
+    return None
 
 
-def _render_additional_properties_error(error: ValidationError) -> str:
+def _first_unexpected_attribute(error: ValidationError) -> str | None:
     if isinstance(error.instance, Mapping) and isinstance(error.schema, dict):
         properties = error.schema.get("properties", {})
         if isinstance(properties, dict):
@@ -115,107 +143,46 @@ def _render_additional_properties_error(error: ValidationError) -> str:
                 str(key) for key in error.instance if key not in properties
             )
             if unexpected:
-                return _render_not_allowed_attributes(unexpected)
-    return error.message
-
-
-def _render_not_allowed_attributes(attributes: list[str]) -> str:
-    if len(attributes) == 1:
-        return f'Attribute "{attributes[0]}" is not allowed.'
-    if len(attributes) == 2:
-        return f'Attributes "{attributes[0]}" and "{attributes[1]}" are not allowed.'
-    quoted = ", ".join(f'"{attribute}"' for attribute in attributes[:-1])
-    return f'Attributes {quoted}, and "{attributes[-1]}" are not allowed.'
-
-
-def _render_format_error(error: ValidationError) -> str:
-    attribute = _attribute_name(error)
-    format_name = error.validator_value
-    if isinstance(format_name, str):
-        description = _format_description(format_name)
-        return f'Attribute "{attribute}" must be {description}.'
-    return error.message
-
-
-def _render_enum_error(error: ValidationError) -> str:
-    attribute = _attribute_name(error)
-    enum_values = error.validator_value
-    if isinstance(enum_values, list):
-        return f'Attribute "{attribute}" must be one of: {_format_values(enum_values)}.'
-    return error.message
-
-
-def _render_type_error(error: ValidationError) -> str:
-    attribute = _attribute_name(error)
-    expected_type = error.validator_value
-    if isinstance(expected_type, str):
-        return f'Attribute "{attribute}" must be {_type_description(expected_type)}.'
-    if isinstance(expected_type, list):
-        return (
-            f'Attribute "{attribute}" must be '
-            f"{' or '.join(_type_description(value) for value in expected_type)}."
-        )
-    return error.message
-
-
-def _render_disjunctive_error(error: ValidationError) -> str:
-    attribute = _attribute_name(error)
-    constraints = [_constraint_description(context) for context in error.context]
-    constraints = [constraint for constraint in constraints if constraint is not None]
-    if constraints:
-        return f'Attribute "{attribute}" must be {_join_constraints(constraints)}.'
-    return error.message
-
-
-def _constraint_description(error: ValidationError) -> str | None:
-    if error.validator == "format" and isinstance(error.validator_value, str):
-        return _format_description(error.validator_value)
-    if error.validator == "enum" and isinstance(error.validator_value, list):
-        return f"one of: {_format_values(error.validator_value)}"
-    if error.validator == "type":
-        expected_type = error.validator_value
-        if isinstance(expected_type, str):
-            return _type_description(expected_type)
-        if isinstance(expected_type, list):
-            return " or ".join(_type_description(value) for value in expected_type)
+                return unexpected[0]
     return None
 
 
-def _attribute_name(error: ValidationError) -> str:
-    if error.path:
-        return ".".join(str(part) for part in error.path)
-    return "attribute"
+def _render_disjunctive_error(error: ValidationError, context: str) -> str:
+    attribute = _attribute_name(error)
+    phrases: list[str] = []
+    for branch in error.context:
+        phrase = _constraint_phrase(branch)
+        if phrase is not None and phrase not in phrases:
+            phrases.append(phrase)
+    if attribute is not None and phrases:
+        return f'Attribute "{attribute}" on {context} must {" or ".join(phrases)}.'
+    return error.message
 
 
-def _format_description(format_name: str) -> str:
-    return _FORMAT_DESCRIPTIONS.get(format_name, f'a valid "{format_name}" value')
+def _constraint_phrase(error: ValidationError) -> str | None:
+    validator = error.validator
+    value = error.validator_value
+    if validator == "type":
+        formatted = " or ".join(value) if isinstance(value, list) else str(value)
+        return f"be {formatted}"
+    if validator == "enum" and isinstance(value, list):
+        return f"be one of: {_format_values(value)}"
+    if validator == "const":
+        return f"be {json.dumps(value)}"
+    if validator == "minimum":
+        return f"be >= {value}"
+    if validator == "maximum":
+        return f"be <= {value}"
+    if validator == "format" and isinstance(value, str):
+        return f"match format {json.dumps(value)}"
+    if validator == "pattern" and isinstance(value, str):
+        return f"match pattern {json.dumps(value)}"
+    return None
+
+
+def _attribute_name(error: ValidationError) -> str | None:
+    return str(error.path[0]) if error.path else None
 
 
 def _format_values(values: list[Any]) -> str:
-    return ", ".join(str(value) for value in values)
-
-
-def _join_constraints(constraints: list[str]) -> str:
-    if len(constraints) == 1:
-        return constraints[0]
-    if len(constraints) == 2:
-        return f"{constraints[0]} or {constraints[1]}"
-    return f"{', '.join(constraints[:-1])}, or {constraints[-1]}"
-
-
-def _type_description(value: str) -> str:
-    if value == "string":
-        return "a string"
-    if value == "number":
-        return "a number"
-    if value == "integer":
-        return "an integer"
-    if value == "boolean":
-        return "a boolean"
-    if value == "object":
-        return "an object"
-    if value == "array":
-        return "an array"
-    if value == "null":
-        return "null"
-    return value
+    return ", ".join(json.dumps(value) for value in values)

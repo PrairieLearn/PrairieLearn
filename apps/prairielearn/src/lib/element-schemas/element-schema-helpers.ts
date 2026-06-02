@@ -1,15 +1,15 @@
 import * as z from 'zod/v4';
 
 export function plBoolean() {
-  return z.string().meta({ format: 'boolean-attrib' });
+  return z.string().meta({ format: 'boolean' });
 }
 
 export function plInteger() {
-  return z.string().meta({ format: 'integer-attrib' });
+  return z.string().meta({ format: 'integer' });
 }
 
-export function plFloat() {
-  return z.string().meta({ format: 'float-attrib' });
+export function plNumber() {
+  return z.string().meta({ format: 'number' });
 }
 
 /**

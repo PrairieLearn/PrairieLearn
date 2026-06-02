@@ -7,10 +7,7 @@ import pytest
 from jsonschema import ValidationError
 from prairielearn.element_schemas import (
     _attribute_name,
-    _format_description,
-    _join_constraints,
     _normalize_attrs,
-    _type_description,
     validate_element,
 )
 
@@ -19,44 +16,8 @@ def test_normalize_attrs_replaces_underscores() -> None:
     assert _normalize_attrs({"answers_name": "x"}) == {"answers-name": "x"}
 
 
-def test_attribute_name_empty_path_fallback() -> None:
-    assert _attribute_name(ValidationError("boom")) == "attribute"
-
-
-def test_format_description_unknown_format_default() -> None:
-    assert _format_description("mystery") == 'a valid "mystery" value'
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        ("string", "a string"),
-        ("number", "a number"),
-        ("integer", "an integer"),
-        ("boolean", "a boolean"),
-        ("object", "an object"),
-        ("array", "an array"),
-        ("null", "null"),
-        ("custom", "custom"),
-    ],
-)
-def test_type_description(value: str, expected: str) -> None:
-    assert _type_description(value) == expected
-
-
-@pytest.mark.parametrize(
-    ("constraints", "expected"),
-    [
-        (["a number"], "a number"),
-        (["a number", "an integer"], "a number or an integer"),
-        (
-            ["a number", "an integer", "null"],
-            "a number, an integer, or null",
-        ),
-    ],
-)
-def test_join_constraints(constraints: list[str], expected: str) -> None:
-    assert _join_constraints(constraints) == expected
+def test_attribute_name_empty_path_returns_none() -> None:
+    assert _attribute_name(ValidationError("boom")) is None
 
 
 @pytest.mark.parametrize(
@@ -65,7 +26,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
         (
             {"type": "object", "required": ["answers-name"]},
             "<pl-widget></pl-widget>",
-            r'Attribute "answers-name" is required\.',
+            r'<pl-widget> is missing required attribute "answers-name"\.',
         ),
         (
             {
@@ -74,17 +35,15 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "additionalProperties": False,
             },
             '<pl-widget answers-name="x" bogus="true"></pl-widget>',
-            r'Attribute "bogus" is not allowed\.',
+            r'Unknown attribute "bogus" on <pl-widget>\.',
         ),
         (
             {
                 "type": "object",
-                "properties": {
-                    "weight": {"type": "string", "format": "integer-attrib"}
-                },
+                "properties": {"weight": {"type": "string", "format": "integer"}},
             },
             '<pl-widget weight="1.5"></pl-widget>',
-            r'Attribute "weight" must be an integer\.',
+            r'Attribute "weight" on <pl-widget> must match format "integer"\.',
         ),
         (
             {
@@ -94,7 +53,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 },
             },
             '<pl-widget display="grid"></pl-widget>',
-            r'Attribute "display" must be one of: block, inline\.',
+            r'Attribute "display" on <pl-widget> must be one of: "block", "inline"\.',
         ),
         (
             {
@@ -102,7 +61,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {
                     "all-of-the-above": {
                         "anyOf": [
-                            {"type": "string", "format": "boolean-attrib"},
+                            {"type": "string", "format": "boolean"},
                             {"type": "string", "enum": ["false", "random", "correct"]},
                         ]
                     }
@@ -110,8 +69,8 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
             },
             '<pl-widget all-of-the-above="maybe"></pl-widget>',
             (
-                r'Attribute "all-of-the-above" must be a boolean value '
-                r"or one of: false, random, correct\."
+                r'Attribute "all-of-the-above" on <pl-widget> must match format '
+                r'"boolean" or be one of: "false", "random", "correct"\.'
             ),
         ),
         (
@@ -120,7 +79,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {
                     "weight": {
                         "type": "string",
-                        "format": "integer-attrib",
+                        "format": "integer",
                         "errorMessage": "Use a real weight.",
                     }
                 },
@@ -134,7 +93,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {
                     "weight": {
                         "type": "string",
-                        "format": "integer-attrib",
+                        "format": "integer",
                         "errorMessage": {"format": "Weight must be a whole number."},
                     }
                 },
@@ -148,7 +107,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {
                     "weight": {
                         "type": "string",
-                        "format": "integer-attrib",
+                        "format": "integer",
                         "errorMessage": {"_": "Bad weight."},
                     }
                 },
@@ -163,21 +122,12 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "additionalProperties": False,
             },
             '<pl-widget answers-name="x" foo="1" bar="2"></pl-widget>',
-            r'Attributes "bar" and "foo" are not allowed\.',
-        ),
-        (
-            {
-                "type": "object",
-                "properties": {"answers-name": {"type": "string"}},
-                "additionalProperties": False,
-            },
-            '<pl-widget answers-name="x" foo="1" bar="2" baz="3"></pl-widget>',
-            r'Attributes "bar", "baz", and "foo" are not allowed\.',
+            r'Unknown attribute "bar" on <pl-widget>\.',
         ),
         (
             {"type": "object", "properties": {"weight": {"type": "integer"}}},
             '<pl-widget weight="1"></pl-widget>',
-            r'Attribute "weight" must be an integer\.',
+            r'Attribute "weight" on <pl-widget> must be integer\.',
         ),
         (
             {
@@ -185,7 +135,7 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {"weight": {"type": ["integer", "null"]}},
             },
             '<pl-widget weight="1"></pl-widget>',
-            r'Attribute "weight" must be an integer or null\.',
+            r'Attribute "weight" on <pl-widget> must be integer or null\.',
         ),
         (
             {
@@ -193,14 +143,17 @@ def test_join_constraints(constraints: list[str], expected: str) -> None:
                 "properties": {
                     "value": {
                         "oneOf": [
-                            {"type": "string", "format": "integer-attrib"},
+                            {"type": "string", "format": "integer"},
                             {"type": "string", "enum": ["auto"]},
                         ]
                     }
                 },
             },
             '<pl-widget value="bogus"></pl-widget>',
-            r'Attribute "value" must be an integer or one of: auto\.',
+            (
+                r'Attribute "value" on <pl-widget> must match format "integer" '
+                r'or be one of: "auto"\.'
+            ),
         ),
     ],
 )
@@ -214,6 +167,26 @@ def test_validate_element(
         validate_element(lxml.html.fragment_fromstring(html), schema_path)
 
 
+def test_validate_element_includes_parent_context(tmp_path: Path) -> None:
+    schema = {
+        "type": "object",
+        "properties": {"answers-name": {"type": "string"}},
+        "additionalProperties": False,
+    }
+    schema_path = tmp_path / "schema.json"
+    schema_path.write_text(json.dumps(schema))
+
+    with pytest.raises(
+        ValueError,
+        match=r'Unknown attribute "bogus" on <pl-answer> inside <pl-multiple-choice>\.',
+    ):
+        validate_element(
+            lxml.html.fragment_fromstring('<pl-answer bogus="1"></pl-answer>'),
+            schema_path,
+            parent_tag="pl-multiple-choice",
+        )
+
+
 @pytest.mark.parametrize(
     ("schema", "html"),
     [
@@ -222,7 +195,7 @@ def test_validate_element(
                 "type": "object",
                 "properties": {
                     "answers-name": {"type": "string"},
-                    "weight": {"type": "string", "format": "integer-attrib"},
+                    "weight": {"type": "string", "format": "integer"},
                 },
                 "required": ["answers-name"],
                 "additionalProperties": False,
@@ -235,7 +208,7 @@ def test_validate_element(
                 "properties": {
                     "value": {
                         "oneOf": [
-                            {"type": "string", "format": "integer-attrib"},
+                            {"type": "string", "format": "integer"},
                             {"type": "string", "enum": ["auto"]},
                         ]
                     }

@@ -15,7 +15,7 @@ function requireDropdownDisplay(element: TagElement, context: ValidatorContext, 
     context.reportAttribute(
       element,
       attribute,
-      `"${attribute}" should only be set when display is "dropdown".`,
+      `Attribute "${attribute}" on <pl-multiple-choice> is only allowed when "display" is "dropdown".`,
     );
   }
 }
@@ -35,7 +35,7 @@ function requireEnabledAotaNota(
     context.reportAttribute(
       element,
       feedbackAttribute,
-      `pl-multiple-choice: if using ${feedbackAttribute}, you must also use ${matchingAttribute}.`,
+      `Attribute "${feedbackAttribute}" on <pl-multiple-choice> is only allowed when "${matchingAttribute}" is enabled.`,
     );
   }
 }
@@ -46,10 +46,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
       !attr(element, 'external-json').present() &&
       element.childrenWithTag('pl-answer').length === 0
     ) {
-      context.reportElement(
-        element,
-        'pl-multiple-choice element must have at least 1 answer choice.',
-      );
+      context.reportElement(element, '<pl-multiple-choice> must have at least 1 answer choice.');
     }
   },
 
@@ -58,7 +55,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
       context.reportAttribute(
         element,
         'fixed-order',
-        'Setting answer choice order should be done with the "order" attribute.',
+        'Attributes "order" and "fixed-order" on <pl-multiple-choice> cannot be set together. Use "order".',
       );
     }
   },
@@ -68,7 +65,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
       context.reportAttribute(
         element,
         'inline',
-        "Cannot set both 'display' and 'inline' attributes. Use only 'display'; the 'inline' attribute is deprecated.",
+        'Attributes "display" and "inline" on <pl-multiple-choice> cannot be set together. Use "display"; "inline" is deprecated.',
       );
     }
 
@@ -89,14 +86,14 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
       context.reportAttribute(
         element,
         'weight',
-        '"weight" should not be set when builtin-grading is false.',
+        'Attribute "weight" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
       );
     }
     if (attr(element, 'hide-score-badge').present()) {
       context.reportAttribute(
         element,
         'hide-score-badge',
-        '"hide-score-badge" should not be set when builtin-grading is false.',
+        'Attribute "hide-score-badge" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
       );
     }
     for (const attribute of ['all-of-the-above', 'none-of-the-above']) {
@@ -105,7 +102,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
         context.reportAttribute(
           element,
           attribute,
-          `"${attribute}" cannot use grading-specific values ("correct", "incorrect", or "random") when builtin-grading is false.`,
+          `Attribute "${attribute}" on <pl-multiple-choice> cannot use the grading values "correct", "incorrect", or "random" when "builtin-grading" is false.`,
         );
       }
     }
@@ -115,14 +112,14 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
         context.reportAttribute(
           child,
           'score',
-          '"score" on pl-answer should not be set when builtin-grading is false.',
+          'Attribute "score" on <pl-answer> inside <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
         );
       }
       if (attr(child, 'feedback').present()) {
         context.reportAttribute(
           child,
           'feedback',
-          '"feedback" on pl-answer should not be set when builtin-grading is false.',
+          'Attribute "feedback" on <pl-answer> inside <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
         );
       }
     }
@@ -138,7 +135,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
         context.reportAttribute(
           child,
           'score',
-          'Score must be a numeric value in the range [0.0, 1.0].',
+          'Attribute "score" on <pl-answer> inside <pl-multiple-choice> must be a number in the range [0.0, 1.0].',
         );
       }
     }
@@ -151,7 +148,10 @@ export const validators: TagValidator[] = defineTagValidators('pl-multiple-choic
       for (const child of element.childrenWithTag('pl-answer')) {
         const normalized = (child.innerHtml ?? '').trim();
         if (seen.has(normalized)) {
-          context.reportElement(child, `duplicate child inner HTML "${normalized}"`);
+          context.reportElement(
+            child,
+            `<pl-multiple-choice> has a duplicate answer choice: "${normalized}".`,
+          );
           continue;
         }
         seen.add(normalized);

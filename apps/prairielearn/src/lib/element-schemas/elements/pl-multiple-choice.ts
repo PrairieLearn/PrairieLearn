@@ -1,6 +1,6 @@
 import * as z from 'zod/v4';
 
-import { plBoolean, plFloat, plInteger, toDraft04JsonSchema } from '../element-schema-helpers.ts';
+import { plBoolean, plInteger, plNumber, toDraft04JsonSchema } from '../element-schema-helpers.ts';
 import type { ElementSchemaModule } from '../types.js';
 
 import { validators } from './pl-multiple-choice.validator.ts';
@@ -12,7 +12,7 @@ const plMultipleChoiceAnswerAttributesSchema = z
   .object({
     correct: plBoolean().optional(),
     feedback: z.string().optional(),
-    score: plFloat().optional(),
+    score: plNumber().optional(),
   })
   .strict();
 
