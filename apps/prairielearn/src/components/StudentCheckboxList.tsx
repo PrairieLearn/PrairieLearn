@@ -21,14 +21,12 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg,
   description,
   renderItemExtra,
-  isItemDisabled,
   getItemDisabledReason,
-  selectAllDisabledReason,
 }: {
   items: T[];
   selectedUids: Set<string>;
   onToggle: (uid: string) => void;
-  onSelectAll: () => void;
+  onSelectAll?: () => void;
   onDeselectAll: () => void;
   label: string;
   checkboxIdPrefix: string;
@@ -38,9 +36,7 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg?: string;
   description?: string;
   renderItemExtra?: (item: T) => ReactNode;
-  isItemDisabled?: (item: T) => boolean;
   getItemDisabledReason?: (item: T) => string | undefined;
-  selectAllDisabledReason?: string;
 }) {
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
 
@@ -74,17 +70,17 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
             {selectedCount} of {items.length} selected
           </span>
           <div className="d-flex gap-1 ms-auto">
-            <Button
-              variant="link"
-              size="sm"
-              className="text-decoration-none"
-              aria-label={`Select all ${label.toLowerCase()}`}
-              disabled={selectAllDisabledReason !== undefined}
-              title={selectAllDisabledReason}
-              onClick={onSelectAll}
-            >
-              Select all
-            </Button>
+            {onSelectAll && (
+              <Button
+                variant="link"
+                size="sm"
+                className="text-decoration-none"
+                aria-label={`Select all ${label.toLowerCase()}`}
+                onClick={onSelectAll}
+              >
+                Select all
+              </Button>
+            )}
             <Button
               variant="link"
               size="sm"
@@ -98,8 +94,8 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
         </div>
         <div style={{ maxHeight, overflowY: 'auto' }}>
           {items.map((item, index) => {
-            const disabled = isItemDisabled?.(item) ?? false;
             const disabledReason = getItemDisabledReason?.(item);
+            const disabled = disabledReason !== undefined;
 
             return (
               <div

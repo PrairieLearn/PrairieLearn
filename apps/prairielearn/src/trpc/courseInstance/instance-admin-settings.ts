@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import { TRPCError } from '@trpc/server';
 
 import { analyzeCourseInstanceAssessments } from '../../lib/assessment-access-control/migration.js';
@@ -8,6 +9,11 @@ import { requireCoursePermissionEdit, requireEnhancedAccessControl, t } from './
 
 export interface InstanceAdminSettingsError {
   AnalyzeAccessControl: never;
+}
+
+function todayAsDatetimeLocal(timezone: string): string {
+  const today = Temporal.Now.plainDateISO(timezone);
+  return `${today.toString()}T00:00:00`;
 }
 
 const analyzeAccessControl = t.procedure
@@ -23,7 +29,10 @@ const analyzeAccessControl = t.procedure
       });
     }
     const courseInstancePath = path.join(opts.ctx.course.path, 'courseInstances', shortName);
-    return analyzeCourseInstanceAssessments(courseInstancePath);
+    return analyzeCourseInstanceAssessments(
+      courseInstancePath,
+      todayAsDatetimeLocal(opts.ctx.course_instance.display_timezone),
+    );
   });
 
 export const instanceAdminSettingsRouter = t.router({

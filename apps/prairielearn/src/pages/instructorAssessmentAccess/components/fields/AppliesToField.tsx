@@ -164,9 +164,6 @@ export function AppliesToField({
                 labels={allLabels ?? []}
                 selectedIds={excludedStudentLabelIds}
                 buttonLabel="Select labels"
-                isOptionDisabled={(label) =>
-                  !excludedStudentLabelIds.has(label.id) && studentLabelLimitReached
-                }
                 getOptionDisabledReason={(label) =>
                   !excludedStudentLabelIds.has(label.id) && studentLabelLimitReached
                     ? studentLabelOptionLimitReason

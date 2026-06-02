@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
+import { Button, Modal, Spinner } from 'react-bootstrap';
 
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { EnrollmentTarget } from '../types.js';
@@ -58,11 +58,6 @@ export function AddStudentsModal({
           <Modal.Title>Select students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedUids.size >= maxStudents && (
-            <Alert variant="secondary" className="py-2">
-              A rule can target at most {maxStudents} students.
-            </Alert>
-          )}
           {isLoading ? (
             <div className="text-center py-3">
               <Spinner animation="border" size="sm" />

@@ -41,15 +41,6 @@ export function StudentSearchInput({
     onSelectedUidsChange(newSet);
   };
 
-  const handleSelectAll = () => {
-    const newSet = new Set(selectedUids);
-    for (const student of filteredStudents) {
-      if (newSet.size >= maxSelected) break;
-      newSet.add(student.uid);
-    }
-    onSelectedUidsChange(newSet);
-  };
-
   const handleClearAll = () => {
     onSelectedUidsChange(new Set());
   };
@@ -73,13 +64,10 @@ export function StudentSearchInput({
           label="Student selection"
           checkboxIdPrefix="student-select"
           maxHeight="300px"
-          selectAllDisabledReason={limitReached ? limitReason : undefined}
-          isItemDisabled={(student) => !selectedUids.has(student.uid) && limitReached}
           getItemDisabledReason={(student) =>
             !selectedUids.has(student.uid) && limitReached ? limitReason : undefined
           }
           onToggle={handleToggleStudent}
-          onSelectAll={handleSelectAll}
           onDeselectAll={handleClearAll}
         />
       )}

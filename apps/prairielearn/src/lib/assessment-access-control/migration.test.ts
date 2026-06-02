@@ -1590,7 +1590,7 @@ describe('analyzeAssessmentFile', () => {
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
         await fs.writeFile(filePath, JSON.stringify({ type: 'Exam', title: 'Test' }));
-        const result = await analyzeAssessmentFile(filePath, 'test');
+        const result = await analyzeAssessmentFile(filePath, 'test', FALLBACK_RELEASE);
         assert.isNull(result);
       },
       { unsafeCleanup: true },
@@ -1609,7 +1609,7 @@ describe('analyzeAssessmentFile', () => {
             accessControl: [{ dateControl: { release: { date: '2024-01-01T00:00:00' } } }],
           }),
         );
-        const result = await analyzeAssessmentFile(filePath, 'test');
+        const result = await analyzeAssessmentFile(filePath, 'test', FALLBACK_RELEASE);
         assert.isNull(result);
       },
       { unsafeCleanup: true },
@@ -1630,7 +1630,7 @@ describe('analyzeAssessmentFile', () => {
             ],
           }),
         );
-        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        const result = await analyzeAssessmentFile(filePath, 'hw01', FALLBACK_RELEASE);
         assert.isNotNull(result);
         assert.equal(result.tid, 'hw01');
         assert.equal(result.errors.length, 0);
@@ -1667,7 +1667,7 @@ describe('analyzeAssessmentFile', () => {
             ],
           }),
         );
-        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        const result = await analyzeAssessmentFile(filePath, 'hw01', FALLBACK_RELEASE);
         assert.isNotNull(result);
         assert.deepEqual(result.errors, []);
         assert.deepEqual(result.notes, [
@@ -1690,7 +1690,7 @@ describe('analyzeAssessmentFile', () => {
             allowAccess: [],
           }),
         );
-        const result = await analyzeAssessmentFile(filePath, 'e01');
+        const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
         assert.isNull(result);
       },
       { unsafeCleanup: true },
@@ -1702,8 +1702,39 @@ describe('analyzeAssessmentFile', () => {
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
         await fs.writeFile(filePath, 'not valid json {{{');
-        const result = await analyzeAssessmentFile(filePath, 'e01');
+        const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
         assert.isNull(result);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('surfaces final validation errors during analysis', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Exam',
+            title: 'E1',
+            allowAccess: Array.from(
+              { length: MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS + 1 },
+              (_, i) => ({
+                examUuid: `${i.toString().padStart(8, '0')}-0000-0000-0000-${i
+                  .toString()
+                  .padStart(12, '0')}`,
+                credit: 100,
+              }),
+            ),
+          }),
+        );
+
+        const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
+        assert.isNotNull(result);
+        assert.isNotEmpty(result.errors);
+        assert.match(result.errors[0], /integrations\.prairieTest\.exams/);
+        assert.match(result.errors[0], new RegExp(String(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)));
       },
       { unsafeCleanup: true },
     );
@@ -1721,7 +1752,7 @@ describe('analyzeAssessmentFile', () => {
             allowAccess: [{}],
           }),
         );
-        const result = await analyzeAssessmentFile(filePath, 'hw01');
+        const result = await analyzeAssessmentFile(filePath, 'hw01', FALLBACK_RELEASE);
         assert.isNotNull(result);
         assert.deepEqual(result.errors, []);
         assert.deepEqual(result.notes, [
@@ -1737,7 +1768,7 @@ describe('analyzeCourseInstanceAssessments', () => {
   it('returns empty analysis when no assessments directory exists', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
-        const result = await analyzeCourseInstanceAssessments(tmpDir);
+        const result = await analyzeCourseInstanceAssessments(tmpDir, FALLBACK_RELEASE);
         assert.equal(result.hasLegacyRules, false);
         assert.lengthOf(result.assessments, 0);
       },
@@ -1770,7 +1801,7 @@ describe('analyzeCourseInstanceAssessments', () => {
           }),
         );
 
-        const result = await analyzeCourseInstanceAssessments(tmpDir);
+        const result = await analyzeCourseInstanceAssessments(tmpDir, FALLBACK_RELEASE);
         assert.equal(result.hasLegacyRules, true);
         assert.lengthOf(result.assessments, 1);
         assert.equal(result.assessments[0].tid, 'hw01');
