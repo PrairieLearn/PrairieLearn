@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import path from 'node:path';
 
 import { type RequestHandler, Router } from 'express';
+import { filesize } from 'filesize';
 import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
@@ -86,6 +87,11 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
         logger.warn(`Failed to remove temporary QTI import upload directory: ${err.message}`);
       });
     });
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      const maxSizeLabel = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, { round: 0, standard: 'jedec' });
+      res.status(413).json({ error: `The maximum upload size is ${maxSizeLabel}.` });
+      return;
+    }
     next(err);
   });
 };

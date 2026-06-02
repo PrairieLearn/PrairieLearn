@@ -23,7 +23,7 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
-const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
+export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
 const REMOTE_IMAGE_URL_SUMMARY =
   'One or more questions contain an image reference to a remote URL.';
 const QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {

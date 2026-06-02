@@ -6,11 +6,10 @@ import type { SerializedQuestionOutput } from '../instructorQtiImport.types.js';
 import {
   NonRubricWarnings,
   QuestionBankDeduplicationWarning,
+  REMOTE_IMAGE_URL_WARNING,
   buildQuestionWarningsByDirectoryName,
   fileSizeWarning,
 } from './ImportReviewComponents.js';
-
-const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
 
 function makeQuestion({
   directoryName,
