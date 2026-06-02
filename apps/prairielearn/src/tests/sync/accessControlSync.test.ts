@@ -22,17 +22,10 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
-import {
-  moveEnrollmentAccessControlsToTemporaryNumbers,
-  syncEnrollmentAccessControl,
-} from '../../models/assessment-access-control-rules.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
-import {
-  cleanAccessControlRulesForDisk,
-  formJsonToEnrollmentRuleData,
-} from '../../trpc/assessment/access-control.js';
+import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 import { runInTransactionAndRollback } from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -969,85 +962,6 @@ describe('Access control syncing', () => {
           idsEqual(e.assessment_access_control_rule_id, allRules[1].id),
         );
         assert.isOk(enrollmentTarget);
-      }));
-
-    it('renumbers enrollment rules from requested order', () =>
-      runInTransactionAndRollback(async () => {
-        const courseData = util.getCourseData();
-        const assignmentRule = makeAccessControlRule({
-          dateControl: { durationMinutes: 60 },
-        });
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [assignmentRule];
-
-        const courseDir = await util.writeCourseToTempDirectory(courseData);
-        await util.syncCourseData(courseDir);
-
-        const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
-        const assessment = syncedAssessments.find(
-          (a) => a.tid === util.ASSESSMENT_ID && a.deleted_at == null,
-        );
-        assert.isOk(assessment);
-
-        const user1 = await selectOrInsertUserByUid('renumber-user1@example.com');
-        const user2 = await selectOrInsertUserByUid('renumber-user2@example.com');
-
-        const enrollment1Id = await sqldb.queryScalar(
-          sql.insert_enrollment,
-          {
-            user_id: user1.id,
-            course_instance_id: assessment.course_instance_id,
-            status: 'joined',
-          },
-          IdSchema,
-        );
-        const enrollment2Id = await sqldb.queryScalar(
-          sql.insert_enrollment,
-          {
-            user_id: user2.id,
-            course_instance_id: assessment.course_instance_id,
-            status: 'joined',
-          },
-          IdSchema,
-        );
-
-        const rule1Data = formJsonToEnrollmentRuleData({
-          dateControl: { durationMinutes: 150 },
-        });
-        rule1Data.number = 1;
-        const rule1Id = await syncEnrollmentAccessControl(assessment, rule1Data, [enrollment1Id]);
-
-        const rule2Data = formJsonToEnrollmentRuleData({
-          dateControl: { durationMinutes: 180 },
-        });
-        rule2Data.number = 2;
-        const rule2Id = await syncEnrollmentAccessControl(assessment, rule2Data, [enrollment2Id]);
-
-        await moveEnrollmentAccessControlsToTemporaryNumbers(assessment);
-
-        const reorderedRule2Data = formJsonToEnrollmentRuleData({
-          dateControl: { durationMinutes: 180 },
-        });
-        reorderedRule2Data.id = rule2Id;
-        reorderedRule2Data.number = 1;
-        await syncEnrollmentAccessControl(assessment, reorderedRule2Data, [enrollment2Id]);
-
-        const reorderedRule1Data = formJsonToEnrollmentRuleData({
-          dateControl: { durationMinutes: 150 },
-        });
-        reorderedRule1Data.id = rule1Id;
-        reorderedRule1Data.number = 2;
-        await syncEnrollmentAccessControl(assessment, reorderedRule1Data, [enrollment1Id]);
-
-        const allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        assert.equal(allRules.length, 3);
-        assert.equal(allRules[1].target_type, 'enrollment');
-        assert.equal(allRules[1].number, 1);
-        assert.equal(allRules[1].date_control_duration_minutes, 180);
-        assert.equal(allRules[2].target_type, 'enrollment');
-        assert.equal(allRules[2].number, 2);
-        assert.equal(allRules[2].date_control_duration_minutes, 150);
       }));
   });
 

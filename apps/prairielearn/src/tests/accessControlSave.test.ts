@@ -13,8 +13,8 @@ import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
+  replaceEnrollmentAccessControlRules,
   selectAccessControlRules,
-  syncEnrollmentAccessControl,
 } from '../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -100,13 +100,14 @@ describe('Access control save via tRPC', () => {
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
     });
-    await syncEnrollmentAccessControl(
-      assessment,
-      formJsonToEnrollmentRuleData({
-        dateControl: { due: { date: '2024-04-18T23:59:00' } },
-      }),
-      [enrollment.id],
-    );
+    await replaceEnrollmentAccessControlRules(assessment, [
+      {
+        ruleData: formJsonToEnrollmentRuleData({
+          dateControl: { due: { date: '2024-04-18T23:59:00' } },
+        }),
+        enrollmentIds: [enrollment.id],
+      },
+    ]);
   });
 
   afterAll(helperServer.after);

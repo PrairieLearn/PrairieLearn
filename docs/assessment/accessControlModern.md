@@ -74,11 +74,11 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 
 #### Time limits
 
-Enable **Time limit** to give each student a fixed amount of working time after they start the assessment. The timer spans deadlines that still allow submissions, so the credit a student earns can shift as each deadline passes during the attempt.
+Enable **Time limit** to give each student a fixed amount of working time after they start the assessment.
 
-Consider an assessment with a due date and a late deadline. If it has a 60-minute time limit and a student starts 1 minute before the due date, the student works for the full 60 minutes: the first minute earns the on-time credit, and the remainder earns the next late-deadline credit.
+Timed attempts can span early deadlines, the due date, and late deadlines that still allow submissions, so the credit a student earns can shift as those deadlines pass during the attempt. If an assessment has a due date, a late deadline, and a 60-minute time limit, a student who starts 1 minute before the due date works for the full 60 minutes: the first minute earns the on-time credit, and the remainder earns the late-deadline credit.
 
-However, the timer is capped by the last submittable deadline. If submissions stop entirely at some point (for example, **After due date** is set to **No submissions allowed** with no late deadlines), a student who starts shortly before that deadline receives only the remaining time until then, not the full configured time limit. To guarantee every student the full time limit regardless of start time, configure **Allow practice submissions** or **Allow submissions for partial credit** after the last deadline, or remove the final submission cutoff entirely.
+However, the timer is capped by the last submittable deadline. If submissions stop entirely at some point (for example, **After due date** is set to **No submissions allowed** with no late deadlines), a student who starts shortly before that deadline receives only the remaining time until then, not the full configured time limit.
 
 #### Passwords
 
@@ -92,7 +92,7 @@ Enable **Password** to require a password to start or continue working on the as
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-While a matching reservation is active and the student is in PrairieTest **Exam mode**, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
+PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, the PrairieTest-controlled state for a checked-in reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
 
 For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
 
@@ -111,7 +111,6 @@ When PrairieTest is configured, PrairieLearn resolves access in this order:
 - **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling and time limit, and there is no password prompt. The per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
 - **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
 - **Outside Exam mode**, the top-level date control rules apply normally when a date-control release exists. Top-level **After completion** visibility also takes over for completed instances once the reservation ends.
-- **Outside Exam mode without a date-control release**, a PrairieTest-gated assessment has no ordinary submission path. Students can open it only if top-level **Question visibility** has unlocked review access; even then, they cannot submit.
 
 To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review the assessment outside the reservation, keep top-level **Question visibility** hidden.
 
