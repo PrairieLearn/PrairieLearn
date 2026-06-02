@@ -11,10 +11,12 @@ import {
 } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   updateAssessmentQuestionStatsForAssessment,
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
@@ -82,13 +84,34 @@ router.get(
     const filenames = getFilenames(res.locals);
 
     res.send(
-      InstructorAssessmentStatistics({
+      PageLayout({
         resLocals: res.locals,
-        assessment,
-        assessmentScoreHistogramByDate,
-        userScores,
-        rows,
-        filenames,
+        pageTitle: 'Assessment Statistics',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'statistics',
+        },
+        options: {
+          fullWidth: true,
+        },
+        headContent: compiledScriptTag('instructorAssessmentStatisticsClient.ts'),
+        content: (
+          <InstructorAssessmentStatistics
+            assessment={assessment}
+            courseInstance={res.locals.course_instance}
+            assessmentSet={res.locals.assessment_set}
+            hasCoursePermissionEdit={res.locals.authz_data.has_course_permission_edit}
+            hasCourseInstancePermissionEdit={
+              res.locals.authz_data.has_course_instance_permission_edit
+            }
+            csrfToken={res.locals.__csrf_token}
+            assessmentScoreHistogramByDate={assessmentScoreHistogramByDate}
+            userScores={userScores}
+            rows={rows}
+            filenames={filenames}
+          />
+        ),
       }),
     );
   }),

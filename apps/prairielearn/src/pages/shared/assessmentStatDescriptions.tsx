@@ -3,7 +3,6 @@ import { type ReactNode } from 'react';
 import { type AssessmentQuestion } from '../../lib/db-types.js';
 
 interface StatDescription {
-  /** The column on the assessment question stats row that this statistic is computed from. */
   field: keyof AssessmentQuestion;
   title: ReactNode;
   non_html_title: string;
