@@ -29,6 +29,7 @@ const createBaseContext = (overrides: Record<string, any> = {}) => ({
   authn_is_administrator: false,
   is_administrator: false,
   is_institution_administrator: false,
+  lockdown_browser: false,
   navPage: 'home' as const,
   access_as_administrator: false,
   authn_user: TEST_USER,

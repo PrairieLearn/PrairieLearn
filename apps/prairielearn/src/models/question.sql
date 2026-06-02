@@ -13,7 +13,10 @@ FROM
   questions
 WHERE
   id = ANY ($question_ids::bigint[])
-  AND course_id = $course_id;
+  AND course_id = $course_id
+ORDER BY
+  qid,
+  id;
 
 -- BLOCK select_live_questions_by_ids_and_course_id
 SELECT
@@ -24,7 +27,10 @@ WHERE
   id = ANY ($question_ids::bigint[])
   AND course_id = $course_id
   AND deleted_at IS NULL
-  AND draft IS FALSE;
+  AND draft IS FALSE
+ORDER BY
+  qid,
+  id;
 
 -- BLOCK select_question_by_qid
 SELECT

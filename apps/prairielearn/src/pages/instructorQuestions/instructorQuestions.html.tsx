@@ -83,6 +83,8 @@ function InstructorQuestionsTableInner({
                 <QuestionSelectionToolbar
                   selectedQuestions={selectedQuestions}
                   clearSelection={clearSelection}
+                  courseInstances={courseInstances}
+                  currentCourseInstanceId={currentCourseInstanceId}
                   trimSelection={trimSelection}
                   urlPrefix={urlPrefix}
                   onActionSuccess={setSuccessMessage}

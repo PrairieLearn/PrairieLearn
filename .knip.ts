@@ -85,7 +85,7 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@reteps/tree-sitter-htmlmustache',
+  '@prairielearn/tree-sitter-htmlmustache',
   '@typescript/native-preview',
 ];
 

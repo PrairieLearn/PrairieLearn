@@ -1,26 +1,34 @@
 import { useState } from 'react';
-import { Badge, Button } from 'react-bootstrap';
+import { Badge, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 
 import {
   MAX_BULK_QUESTION_SELECTION,
   type SafeQuestionsPageData,
 } from '../../../components/QuestionsTable.shared.js';
+import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js';
 
+import { AssessmentMembershipModal } from './AssessmentMembershipModal.js';
 import { DeleteQuestionsModal } from './DeleteQuestionsModal.js';
 
 export function QuestionSelectionToolbar({
   selectedQuestions,
   clearSelection,
+  courseInstances,
+  currentCourseInstanceId,
   trimSelection,
   urlPrefix,
   onActionSuccess,
 }: {
   selectedQuestions: SafeQuestionsPageData[];
   clearSelection: () => void;
+  courseInstances: PublicCourseInstance[];
+  currentCourseInstanceId?: string;
   trimSelection: (count: number) => void;
   urlPrefix: string;
   onActionSuccess: (message: string) => void;
 }) {
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const questionIds = selectedQuestions.map((question) => question.id);
   const selectionLimitExceeded = selectedQuestions.length > MAX_BULK_QUESTION_SELECTION;
@@ -43,18 +51,53 @@ export function QuestionSelectionToolbar({
             </Button>
           </>
         )}
-        <Button
+        <DropdownButton
+          as={ButtonGroup}
+          title="Manage questions"
           size="sm"
           variant="light"
-          className="text-danger"
           disabled={selectionLimitExceeded}
-          onClick={() => setShowDeleteModal(true)}
         >
-          <i className="bi bi-trash3 me-2" aria-hidden="true" />
-          Delete
-        </Button>
+          <Dropdown.Item onClick={() => setShowAddModal(true)}>
+            <i className="bi bi-plus-square me-2" aria-hidden="true" />
+            Add to assessments
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => setShowRemoveModal(true)}>
+            <i className="bi bi-dash-square me-2" aria-hidden="true" />
+            Remove from assessments
+          </Dropdown.Item>
+          <Dropdown.Divider />
+          <Dropdown.Item className="text-danger" onClick={() => setShowDeleteModal(true)}>
+            <i className="bi bi-trash3 me-2" aria-hidden="true" />
+            Delete
+          </Dropdown.Item>
+        </DropdownButton>
       </div>
 
+      <AssessmentMembershipModal
+        mode="add"
+        show={showAddModal}
+        selectedQuestions={selectedQuestions}
+        questionIds={questionIds}
+        courseInstances={courseInstances}
+        currentCourseInstanceId={currentCourseInstanceId}
+        urlPrefix={urlPrefix}
+        clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
+        onHide={() => setShowAddModal(false)}
+      />
+      <AssessmentMembershipModal
+        mode="remove"
+        show={showRemoveModal}
+        selectedQuestions={selectedQuestions}
+        questionIds={questionIds}
+        courseInstances={courseInstances}
+        currentCourseInstanceId={currentCourseInstanceId}
+        urlPrefix={urlPrefix}
+        clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
+        onHide={() => setShowRemoveModal(false)}
+      />
       <DeleteQuestionsModal
         show={showDeleteModal}
         selectedQuestions={selectedQuestions}

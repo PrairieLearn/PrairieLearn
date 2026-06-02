@@ -10,22 +10,23 @@ type QidMapper = (qid: string) => string | null;
 /**
  * Maps every QID reference in a block. An alternative group's block is dropped
  * only once all its alternatives are dropped. Does not mutate the input.
+ * `changedQids` lists the original QIDs that `mapQid` rewrote or dropped.
  */
 function mapQidsInBlock(
   block: ZoneQuestionBlockJsonInput,
   mapQid: QidMapper,
-): { block: ZoneQuestionBlockJsonInput | null; changedCount: number } {
+): { block: ZoneQuestionBlockJsonInput | null; changedQids: string[] } {
   if (block.alternatives) {
-    let changedCount = 0;
+    const changedQids: string[] = [];
     const alternatives: typeof block.alternatives = [];
     for (const alternative of block.alternatives) {
       const newId = mapQid(alternative.id);
       if (newId === null) {
-        changedCount += 1;
+        changedQids.push(alternative.id);
         continue;
       }
       if (newId !== alternative.id) {
-        changedCount += 1;
+        changedQids.push(alternative.id);
         alternatives.push({ ...alternative, id: newId });
       } else {
         alternatives.push(alternative);
@@ -33,34 +34,34 @@ function mapQidsInBlock(
     }
     return {
       block: alternatives.length > 0 ? { ...block, alternatives } : null,
-      changedCount,
+      changedQids,
     };
   }
 
   if (block.id) {
     const newId = mapQid(block.id);
     if (newId === null) {
-      return { block: null, changedCount: 1 };
+      return { block: null, changedQids: [block.id] };
     }
     if (newId !== block.id) {
-      return { block: { ...block, id: newId }, changedCount: 1 };
+      return { block: { ...block, id: newId }, changedQids: [block.id] };
     }
   }
-  return { block, changedCount: 0 };
+  return { block, changedQids: [] };
 }
 
 function mapQidsInZone(
   zone: ZoneAssessmentJsonInput,
   mapQid: QidMapper,
-): { questions: ZoneQuestionBlockJsonInput[]; changedCount: number } {
-  let changedCount = 0;
+): { questions: ZoneQuestionBlockJsonInput[]; changedQids: string[] } {
+  const changedQids: string[] = [];
   const questions: ZoneQuestionBlockJsonInput[] = [];
   for (const block of zone.questions) {
     const result = mapQidsInBlock(block, mapQid);
-    changedCount += result.changedCount;
+    changedQids.push(...result.changedQids);
     if (result.block) questions.push(result.block);
   }
-  return { questions, changedCount };
+  return { questions, changedQids };
 }
 
 interface EmptiedZone {
@@ -69,31 +70,14 @@ interface EmptiedZone {
   zoneTitle: string | null;
 }
 
-/**
- * A reason the deletion cannot proceed because the resulting assessment would
- * fail sync validation. Detected only when the deletion *introduces* the
- * problem (i.e. the pre-deletion file was syncable in this respect).
- */
-type DeletionBlocker = { code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' } | { code: 'NO_ZONES_REMAINING' };
-
-export function blockerDescription(blocker: DeletionBlocker): string {
-  switch (blocker.code) {
-    case 'NO_ZONES_REMAINING':
-      return 'all zones would be empty';
-    case 'NEW_FIRST_ZONE_HAS_LOCKPOINT':
-      return 'the new first zone would be a lockpoint';
-  }
-}
-
-export interface BlockedAssessment {
-  assessmentId: string;
-  assessmentLabel: string;
-  assessmentColor: string;
-  courseInstanceId: string;
-  courseInstanceShortName: string;
-  blockers: DeletionBlocker[];
-  /** The QIDs being deleted that this assessment references; the questions to skip to unblock it. */
+interface AffectedZone {
+  /** Zero-based index of the zone in the original `assessment.zones`. */
+  zoneIndex: number;
+  zoneTitle: string | null;
+  /** The original QIDs in this zone that `mapQid` rewrote or dropped. */
   affectedQids: string[];
+  /** Whether the zone was non-empty before but had all its references dropped. */
+  wouldBeEmpty: boolean;
 }
 
 interface MapAssessmentQidsResult {
@@ -102,6 +86,8 @@ interface MapAssessmentQidsResult {
   changedCount: number;
   /** Zones that were non-empty before but had all their references dropped; removed from `assessment`. */
   emptiedZones: EmptiedZone[];
+  /** Per-zone breakdown of changed references; only includes zones with at least one change. */
+  affectedZones: AffectedZone[];
 }
 
 /**
@@ -116,17 +102,41 @@ function mapAssessmentQids(
 ): MapAssessmentQidsResult {
   let changedCount = 0;
   const emptiedZones: EmptiedZone[] = [];
+  const affectedZones: AffectedZone[] = [];
   const zones: ZoneAssessmentJsonInput[] = [];
   for (const [zoneIndex, zone] of (assessment.zones ?? []).entries()) {
-    const { questions, changedCount: zoneChangedCount } = mapQidsInZone(zone, mapQid);
-    changedCount += zoneChangedCount;
-    if (zone.questions.length > 0 && questions.length === 0) {
+    const { questions, changedQids } = mapQidsInZone(zone, mapQid);
+    changedCount += changedQids.length;
+    const wouldBeEmpty = zone.questions.length > 0 && questions.length === 0;
+    if (changedQids.length > 0) {
+      affectedZones.push({
+        zoneIndex,
+        zoneTitle: zone.title ?? null,
+        affectedQids: changedQids,
+        wouldBeEmpty,
+      });
+    }
+    if (wouldBeEmpty) {
       emptiedZones.push({ zoneIndex, zoneTitle: zone.title ?? null });
       continue;
     }
     zones.push({ ...zone, questions });
   }
-  return { assessment: { ...assessment, zones }, changedCount, emptiedZones };
+  return { assessment: { ...assessment, zones }, changedCount, emptiedZones, affectedZones };
+}
+
+/**
+ * Collects every QID referenced by `assessment` across its zones, blocks, and
+ * alternative groups, reusing the canonical traversal so callers never re-walk
+ * the structure themselves.
+ */
+export function collectAssessmentQids(assessment: AssessmentJsonInput): Set<string> {
+  const qids = new Set<string>();
+  mapAssessmentQids(assessment, (qid) => {
+    qids.add(qid);
+    return qid;
+  });
+  return qids;
 }
 
 interface RemoveQidsFromAssessmentResult {
@@ -134,24 +144,77 @@ interface RemoveQidsFromAssessmentResult {
   removedCount: number;
   /**
    * Zones that were non-empty before the removal and would be empty after.
-   * These zones are dropped from `assessment`; callers that want to refuse
-   * the operation rather than silently discard zone metadata should inspect
-   * this list before persisting.
+   * These zones are dropped from `assessment`. An assessment with no zones is
+   * valid, so callers can persist this result without further checks.
    */
   emptiedZones: EmptiedZone[];
   /**
-   * Sync-validation problems newly introduced by the deletion. Callers should
-   * refuse to persist when this is non-empty.
+   * How many zone lockpoints the removal relocated to a later zone or dropped.
+   * A lockpoint on a dropped zone shifts to the next surviving zone (or is
+   * removed if there is no later selectable zone), and a lockpoint that would
+   * land on the new first zone is removed (the first zone cannot be a lockpoint).
    */
-  blockers: DeletionBlocker[];
+  lockpointsMovedOrRemoved: number;
   /** The subset of `qidsToRemove` actually referenced by this assessment. */
   matchedQids: string[];
+  /** Per-zone breakdown of which references were removed; only zones that lost a reference. */
+  affectedZones: AffectedZone[];
+}
+
+/**
+ * Keeps the surviving zones' lockpoints valid after empty zones are dropped:
+ * a lockpoint on a dropped zone shifts to the next surviving selectable zone
+ * (or is removed if there is none), and a lockpoint that ends up on the first
+ * zone is removed (the first zone cannot be a lockpoint). Returns the adjusted
+ * zones and how many lockpoints were moved or removed as a result.
+ */
+function reconcileLockpoints({
+  originalZones,
+  survivingZones,
+  emptiedZones,
+}: {
+  originalZones: ZoneAssessmentJsonInput[];
+  survivingZones: ZoneAssessmentJsonInput[];
+  emptiedZones: EmptiedZone[];
+}): { zones: ZoneAssessmentJsonInput[]; lockpointsMovedOrRemoved: number } {
+  const emptiedIndices = new Set(emptiedZones.map((zone) => zone.zoneIndex));
+  const survivingOriginalIndices = originalZones
+    .map((_, index) => index)
+    .filter((index) => !emptiedIndices.has(index));
+
+  const zones = survivingZones.map((zone) => ({ ...zone }));
+  let lockpointsMovedOrRemoved = 0;
+
+  for (const { zoneIndex } of emptiedZones) {
+    if (!originalZones[zoneIndex]?.lockpoint) continue;
+    lockpointsMovedOrRemoved += 1;
+    const targetIndex = survivingOriginalIndices.findIndex(
+      (index, survivingIndex) => index > zoneIndex && zones[survivingIndex].numberChoose !== 0,
+    );
+    if (targetIndex !== -1) {
+      zones[targetIndex] = { ...zones[targetIndex], lockpoint: true };
+    }
+  }
+
+  if (zones[0]?.lockpoint) {
+    // A surviving zone promoted to first while carrying its own lockpoint has
+    // that lockpoint removed here; a lockpoint that merely shifted onto it was
+    // already counted above, and a pre-existing first-zone lockpoint isn't
+    // something this deletion introduced.
+    const firstOriginalIndex = survivingOriginalIndices[0];
+    if (firstOriginalIndex !== 0 && originalZones[firstOriginalIndex]?.lockpoint) {
+      lockpointsMovedOrRemoved += 1;
+    }
+    zones[0] = { ...zones[0], lockpoint: false };
+  }
+
+  return { zones, lockpointsMovedOrRemoved };
 }
 
 /**
  * Returns a copy of `assessment` with any references to `qidsToRemove`
- * filtered out, alongside the list of zones that became empty as a result.
- * Empty zones are dropped from the returned assessment.
+ * filtered out. Zones emptied by the removal are dropped, and the lockpoints of
+ * surviving zones are kept valid (see {@link reconcileLockpoints}).
  */
 export function removeQidsFromAssessment(
   assessment: AssessmentJsonInput,
@@ -162,6 +225,7 @@ export function removeQidsFromAssessment(
     assessment: updated,
     changedCount,
     emptiedZones,
+    affectedZones,
   } = mapAssessmentQids(assessment, (qid) => {
     if (qidsToRemove.has(qid)) {
       matchedQids.add(qid);
@@ -170,22 +234,19 @@ export function removeQidsFromAssessment(
     return qid;
   });
 
-  const originalZones = assessment.zones ?? [];
-  const newZones = updated.zones ?? [];
-  const blockers: DeletionBlocker[] = [];
-  if (newZones.length === 0 && originalZones.length > 0) {
-    blockers.push({ code: 'NO_ZONES_REMAINING' });
-  }
-  if (newZones[0]?.lockpoint && !originalZones[0]?.lockpoint) {
-    blockers.push({ code: 'NEW_FIRST_ZONE_HAS_LOCKPOINT' });
-  }
+  const { zones, lockpointsMovedOrRemoved } = reconcileLockpoints({
+    originalZones: assessment.zones ?? [],
+    survivingZones: updated.zones ?? [],
+    emptiedZones,
+  });
 
   return {
-    assessment: updated,
+    assessment: { ...updated, zones },
     removedCount: changedCount,
     emptiedZones,
-    blockers,
+    lockpointsMovedOrRemoved,
     matchedQids: [...matchedQids],
+    affectedZones,
   };
 }
 

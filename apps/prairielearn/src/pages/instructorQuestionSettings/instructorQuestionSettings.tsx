@@ -43,10 +43,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import {
-  formatBlockedAssessments,
-  getQuestionDeletionBlockers,
-} from '../../lib/question-deletion-validation.js';
+import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -564,7 +561,7 @@ router.post(
         });
       }
     } else if (req.body.__action === 'delete_question') {
-      const { usedInOtherCourses, blockedAssessments } = await getQuestionDeletionBlockers({
+      const usedInOtherCourses = await selectQuestionsBlockingDeletion({
         course: res.locals.course,
         questions: [res.locals.question],
       });
@@ -573,14 +570,6 @@ router.post(
         flash(
           'error',
           'This question is used by another course and cannot be deleted. Unshare it or remove it from those assessments first.',
-        );
-        return res.redirect(req.originalUrl);
-      }
-
-      if (blockedAssessments.length > 0) {
-        flash(
-          'error',
-          `Deleting this question would leave the following assessments in an invalid state: ${formatBlockedAssessments(blockedAssessments)}. Remove the question from these assessments first.`,
         );
         return res.redirect(req.originalUrl);
       }
