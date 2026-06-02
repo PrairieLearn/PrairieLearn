@@ -62,12 +62,6 @@ export function CopyCourseInstanceModal({
   const [step, setStep] = useState<Step>('settings');
 
   const trpc = useTRPC();
-  const analysisQuery = useQuery(
-    trpc.instanceAdminSettings.analyzeAccessControl.queryOptions(undefined, {
-      enabled: enhancedAccessControlEnabled,
-    }),
-  );
-
   const methods = useForm<CopyFormValues>({
     defaultValues: {
       short_name: '',
@@ -93,6 +87,15 @@ export function CopyCourseInstanceModal({
   } = methods;
 
   const accessControlStrategy = useWatch({ control, name: 'access_control_strategy' });
+  const publishingStartDate = useWatch({ control, name: 'start_date' });
+  const analysisQuery = useQuery(
+    trpc.instanceAdminSettings.analyzeAccessControl.queryOptions(
+      { publishingStartDate: publishingStartDate || null },
+      {
+        enabled: enhancedAccessControlEnabled,
+      },
+    ),
+  );
 
   const analysisAppError = analysisQuery.isError
     ? getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(analysisQuery.error)

@@ -140,9 +140,12 @@ router.get(
     } | null = null;
 
     if (enhancedAccessControlEnabled) {
-      migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
-
       const fallbackReleaseDate = todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+      migrationAnalysis = await analyzeAssessmentFile(
+        assessmentPath,
+        res.locals.assessment.tid!,
+        fallbackReleaseDate,
+      );
 
       if (migrationAnalysis?.errors.length === 0) {
         const content = await fs.readFile(assessmentPath, 'utf-8');
