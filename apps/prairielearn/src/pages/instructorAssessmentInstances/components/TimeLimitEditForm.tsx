@@ -277,6 +277,7 @@ export function TimeLimitEditForm({
             name="date"
             aria-label="Closing date and time"
             value={form.date}
+            required
             onChange={(e) => updateFormState('date', e.currentTarget.value)}
           />
           <span className="input-group-text date-picker">{timezone}</span>

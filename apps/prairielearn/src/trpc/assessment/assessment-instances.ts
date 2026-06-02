@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { formatDate, formatInterval } from '@prairielearn/formatter';
@@ -57,7 +58,9 @@ export async function selectAssessmentInstancesForTable({
   );
   return assessmentInstances.map((instance) => ({
     ...instance,
-    date_formatted: formatDate(instance.assessment_instance.date!, timezone),
+    date_formatted: instance.assessment_instance.date
+      ? formatDate(instance.assessment_instance.date, timezone)
+      : '',
     duration_formatted: formatInterval(instance.assessment_instance.duration ?? 0),
   }));
 }
@@ -116,10 +119,16 @@ const setTimeLimit = t.procedure
         base_time = 'current_date';
         break;
       case 'set_exact':
+        if (!input.date) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A date is required when setting an exact closing time.',
+          });
+        }
         base_time = 'exact_date';
         time_add = 0;
         exact_date = new Date(
-          Temporal.PlainDateTime.from(input.date ?? '').toZonedDateTime(
+          Temporal.PlainDateTime.from(input.date).toZonedDateTime(
             ctx.course_instance.display_timezone,
           ).epochMilliseconds,
         );

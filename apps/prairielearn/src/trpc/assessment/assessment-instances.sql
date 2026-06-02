@@ -89,7 +89,7 @@ SELECT
       PARTITION BY
         u.id
       ORDER BY
-        ai.score_perc DESC,
+        ai.score_perc DESC NULLS LAST,
         ai.number DESC,
         ai.id DESC
     )
@@ -130,10 +130,21 @@ SELECT
   count(DISTINCT iq.assessment_instance_id) AS instance_count
 FROM
   instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN questions AS q ON (q.id = aq.question_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
 WHERE
   aq.assessment_id = $assessment_id
+  -- Exclude group instances whose group has been soft-deleted, matching the
+  -- scope of the regrade job in regrading.sql.
+  AND (
+    ai.team_id IS NULL
+    OR g.id IS NOT NULL
+  )
   AND (
     $assessment_instance_ids::bigint[] IS NULL
     OR iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
