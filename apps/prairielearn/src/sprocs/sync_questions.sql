@@ -211,17 +211,27 @@ BEGIN
             number IS NULL
             AND course_id = syncing_course_id
     ),
-    new_numbers AS (
-        SELECT
-          row_number() OVER (ORDER BY random()) AS index,
-          gs.number
+    course_question_count AS (
+        SELECT COUNT(*) AS total
+        FROM questions
+        WHERE course_id = syncing_course_id
+    ),
+    available_numbers AS (
+        SELECT gs.number
         FROM
           -- 3-digit numbers are used if the number of questions allows for
           -- enough unique 3-digit numbers with reasonable gaps.
-          generate_series(100, GREATEST(999, 101 + 2 * (SELECT COUNT(*) FROM questions AS q WHERE q.course_id = syncing_course_id))) AS gs (number)
+          generate_series(100, GREATEST(999, 101 + 2 * (SELECT total FROM course_question_count))) AS gs (number)
           -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
           LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
         WHERE q.number IS NULL
+    ),
+    new_numbers AS (
+        SELECT
+          row_number() OVER (ORDER BY random()) AS index,
+          number
+        FROM available_numbers
+        LIMIT (SELECT COUNT(*) FROM questions_needing_numbers)
     ),
     questions_with_new_numbers AS (
         -- use row_number() as the matching key for the join
