@@ -224,8 +224,10 @@ const saveAllRules = t.procedure
 
     const { errors: validationErrors } = validateAccessControlRules({
       rules: rulesToSync,
-      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
-      enrollmentRuleTargetCounts: enrollmentRules?.map((r) => r.enrollmentIds.length),
+      enrollmentRules: enrollmentRules?.map((r) => ({
+        rule: r.ruleJson,
+        targetCount: r.enrollmentIds.length,
+      })),
     });
     if (validationErrors.length > 0) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });

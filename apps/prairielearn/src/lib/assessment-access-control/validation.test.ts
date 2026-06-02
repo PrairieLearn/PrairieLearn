@@ -439,8 +439,10 @@ describe('Access control enrollment target limits', () => {
 
     const tooManyTargetsTotal = validateAccessControlRules({
       rules: [defaultRule],
-      enrollmentRules: Array.from({ length: 6 }, () => enrollmentRule),
-      enrollmentRuleTargetCounts: [50, 50, 50, 50, 50, 1],
+      enrollmentRules: [50, 50, 50, 50, 50, 1].map((targetCount) => ({
+        rule: enrollmentRule,
+        targetCount,
+      })),
     });
     assert.include(
       tooManyTargetsTotal.errors,
@@ -890,11 +892,14 @@ describe('Empty accessControl array', () => {
     const result = validateAccessControlRules({
       rules: [],
       enrollmentRules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            durationMinutes: 90,
-          },
-        }),
+        {
+          rule: AccessControlJsonSchema.parse({
+            dateControl: {
+              durationMinutes: 90,
+            },
+          }),
+          targetCount: 1,
+        },
       ],
     });
 

@@ -13,6 +13,11 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
+interface EnrollmentAccessControlValidationRule {
+  rule: AccessControlJson;
+  targetCount: number;
+}
+
 type AccessControlIssuePath =
   | ['dateControl', 'release', 'date']
   | ['dateControl', 'due', 'date']
@@ -1046,21 +1051,17 @@ function formatValues(values: Set<string> | string[]) {
  * @param params.rules The full ordered list of access control rules: index 0 is the
  * default rule that applies to everyone (no labels), and all
  * subsequent entries are student-label rules that target specific labels.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules.
- * @param params.enrollmentRuleTargetCounts Optional enrollment target counts,
- * one per enrollment rule, for per-rule and per-assessment target limits.
+ * @param params.enrollmentRules Optional separate list of enrollment-based rules with target counts.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
   enrollmentRules,
-  enrollmentRuleTargetCounts,
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
-  enrollmentRules?: AccessControlJson[];
-  enrollmentRuleTargetCounts?: number[];
+  enrollmentRules?: EnrollmentAccessControlValidationRule[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
@@ -1073,9 +1074,9 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  if (enrollmentRuleTargetCounts !== undefined) {
-    const totalEnrollmentTargets = enrollmentRuleTargetCounts.reduce(
-      (sum, count) => sum + count,
+  if (enrollmentRules !== undefined) {
+    const totalEnrollmentTargets = enrollmentRules.reduce(
+      (sum, { targetCount }) => sum + targetCount,
       0,
     );
     if (totalEnrollmentTargets > MAX_ACCESS_CONTROL_ENROLLMENTS_PER_ASSESSMENT) {
@@ -1142,7 +1143,7 @@ export function validateAccessControlRules({
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
 
-  for (const rule of enrollmentRules ?? []) {
+  for (const { rule } of enrollmentRules ?? []) {
     validationRules.push({
       rule,
       targetType: 'enrollment',
