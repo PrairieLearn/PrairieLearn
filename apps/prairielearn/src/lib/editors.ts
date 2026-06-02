@@ -78,9 +78,6 @@ async function syncCourseFromDisk(
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  assert(syncResult.status === 'complete');
-
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
@@ -102,6 +99,35 @@ async function syncCourseFromDisk(
     job.data.hadJsonErrors = true;
     throw new Error('One or more JSON files contained errors and were unable to be synced.');
   }
+}
+
+/**
+ * The outcome of a "save and sync" edit, derived from the flags that
+ * {@link Editor.executeWithServerJob} records on `job.data`.
+ *
+ * A save-and-sync writes the file to disk (and pushes to git in production),
+ * then syncs the entire course from disk to the database:
+ *
+ * - `save_failed`: the write/push failed; nothing reached the database.
+ * - `sync_failed`: the save succeeded but the sync hard-failed.
+ * - `sync_json_errors`: the save succeeded and the sync ran to completion, but
+ *   one or more entities had invalid JSON. {@link syncCourseFromDisk} sets
+ *   `hadJsonErrors` and throws, so `syncSucceeded` is never set in this case.
+ * - `success`: the save and sync both completed cleanly.
+ */
+export type EditOutcome = 'save_failed' | 'sync_failed' | 'sync_json_errors' | 'success';
+
+/**
+ * Interpret the flags an edit job records on `job.data` into a single outcome.
+ * This is the canonical reading of that (otherwise untyped) blob; pages that
+ * render edit results should dispatch on the returned value rather than
+ * re-deriving the meaning of the individual flags.
+ */
+export function classifyEditOutcome(data: Record<string, unknown>): EditOutcome {
+  if (!data.saveSucceeded) return 'save_failed';
+  if (data.hadJsonErrors) return 'sync_json_errors';
+  if (!data.syncSucceeded) return 'sync_failed';
+  return 'success';
 }
 
 async function cleanAndResetRepository(

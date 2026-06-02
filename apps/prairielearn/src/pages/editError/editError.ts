@@ -4,6 +4,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
 import { pullAndUpdateCourse } from '../../lib/course.js';
+import { type EditOutcome, classifyEditOutcome } from '../../lib/editors.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 
@@ -30,29 +31,19 @@ router.get(
       throw new Error('Edit did not fail');
     }
 
-    let failedSync = false;
-    let hadJsonErrors = false;
+    // Legacy job sequences (which should no longer exist) carry no usable edit
+    // flags, so we fall back to the generic failure message for them.
+    let outcome: EditOutcome = 'save_failed';
 
     if (jobSequence.legacy) {
-      // Legacy job sequences should no longer exist.
       logger.warn(
         `Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`,
       );
     } else {
-      const job = jobSequence.jobs[0];
-
-      if (job.data.saveSucceeded && !job.data.syncSucceeded && !job.data.hadJsonErrors) {
-        // The save succeeded but the sync itself failed. Show the "failed
-        // sync" message with a "Pull from remote" button.
-        failedSync = true;
-      } else if (job.data.saveSucceeded && job.data.hadJsonErrors) {
-        // The sync ran to completion, but individual entities had invalid
-        // JSON. The save and push succeeded.
-        hadJsonErrors = true;
-      }
+      outcome = classifyEditOutcome(jobSequence.jobs[0].data);
     }
 
-    res.send(EditError({ resLocals: res.locals, jobSequence, failedSync, hadJsonErrors }));
+    res.send(EditError({ resLocals: res.locals, jobSequence, outcome }));
   }),
 );
 
