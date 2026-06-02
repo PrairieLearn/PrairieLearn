@@ -31,7 +31,10 @@ import {
 } from '../../pages/instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
+import {
+  type CourseInstanceJsonInput,
+  MAX_STUDENT_LABELS,
+} from '../../schemas/infoCourseInstance.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -184,6 +187,12 @@ const upsert = t.procedure
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'A label with this name already exists',
+            });
+          }
+          if (studentLabels.length >= MAX_STUDENT_LABELS) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `A course instance can have at most ${MAX_STUDENT_LABELS} student labels. Edit or delete an existing label before adding another.`,
             });
           }
           studentLabels.push({ uuid: labelUuid, name, color });

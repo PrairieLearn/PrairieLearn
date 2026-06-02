@@ -5,6 +5,7 @@ import { Alert } from 'react-bootstrap';
 import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { MAX_STUDENT_LABELS } from '../../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';
 
@@ -48,6 +49,7 @@ function StudentLabelsCard({
   });
 
   const labels = data.labels;
+  const atStudentLabelLimit = labels.length >= MAX_STUDENT_LABELS;
   const [origHashOverride, setOrigHashOverride] = useState<string | null>(null);
   const origHash = origHashOverride ?? data.origHash ?? initialOrigHash;
 
@@ -92,14 +94,19 @@ function StudentLabelsCard({
         <div className="d-flex align-items-center justify-content-between mb-2">
           <h2 className="h5 mb-0">Student labels</h2>
           {canEdit && (
-            <button
-              type="button"
-              className="btn btn-outline-primary btn-sm text-nowrap"
-              disabled={origHash === null}
-              onClick={() => editModal.showWithData({ type: 'add', origHash })}
-            >
-              Add label
-            </button>
+            <div className="d-flex align-items-center gap-2">
+              <small className="text-muted text-nowrap">
+                {labels.length} of {MAX_STUDENT_LABELS} labels
+              </small>
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm text-nowrap"
+                disabled={origHash === null || atStudentLabelLimit}
+                onClick={() => editModal.showWithData({ type: 'add', origHash })}
+              >
+                Add label
+              </button>
+            </div>
           )}
         </div>
         <small className="text-muted">
@@ -127,6 +134,13 @@ function StudentLabelsCard({
           You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
           not exist.
         </div>
+      )}
+
+      {canEdit && atStudentLabelLimit && (
+        <Alert variant="info">
+          This course instance has reached the limit of {MAX_STUDENT_LABELS} student labels.
+          Existing labels can still be edited or deleted.
+        </Alert>
       )}
 
       {labels.length === 0 ? (
