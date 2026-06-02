@@ -196,7 +196,7 @@ describe('migrateAllowAccess', () => {
       name: 'always-open with non-standard credit',
       rules: [{ credit: 120 }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
         notes: [],
         hasUidRules: false,
@@ -276,7 +276,7 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended reduced credit (startDate, no endDate)',
       rules: [{ credit: 50, startDate: '2024-01-01T00:00:00' }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
         notes: [],
         hasUidRules: false,
@@ -362,7 +362,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-04-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Credit must be non-increasing over time.'],
         notes: [],
         hasUidRules: false,
@@ -375,7 +375,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Credit must be non-increasing over time.'],
         notes: [],
         hasUidRules: false,
@@ -1289,7 +1289,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-02-01T00:00:00', endDate: '2024-06-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: [
           'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
         ],
@@ -1322,7 +1322,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00', endDate: '2024-04-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1335,7 +1335,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1348,7 +1348,7 @@ describe('migrateAllowAccess', () => {
         { credit: 0, startDate: '2024-04-01T00:00:00', endDate: '2024-04-30T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1375,7 +1375,7 @@ describe('migrateAllowAccess', () => {
       name: 'mode-gated only',
       rules: [{ mode: 'Exam' }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Mode-only access rules are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1528,9 +1528,12 @@ describe('migrateAllowAccess', () => {
     const result = migrateAllowAccess(rules, FALLBACK_RELEASE);
     assert.deepEqual(result, expected);
 
-    // Skip validation for migrations that errored out — the result is `{}` and
-    // the migration is rejecting the input, so there's nothing to validate.
+    // Skip validation for migrations that errored out; there is no migrated
+    // accessControl to validate.
     if (result.errors.length > 0) return;
+    if (result.accessControl == null) {
+      assert.fail('Expected migrated access control');
+    }
 
     const zodResult = AccessControlJsonSchema.safeParse(result.accessControl);
     assert.isTrue(

@@ -32,7 +32,11 @@ import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './v
 // ---------------------------------------------------------------------------
 
 export interface Migration {
-  accessControl: AccessControlJsonInput;
+  /**
+   * Fully assembled migrated access control. `null` when the migration failed
+   * (errors is non-empty).
+   */
+  accessControl: AccessControlJsonInput | null;
   errors: string[];
   notes: string[];
   hasUidRules: boolean;
@@ -820,13 +824,6 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
 // Main migration pipeline
 // ---------------------------------------------------------------------------
 
-interface Analysis {
-  errors: string[];
-  notes: string[];
-  hasUidRules: boolean;
-  accessControl: AccessControlJsonInput | null;
-}
-
 function assembleAccessControl({
   schedulingRules,
   ptExtract,
@@ -891,15 +888,14 @@ function validateMigratedAccessControl(accessControl: AccessControlJsonInput): s
 }
 
 /**
- * Runs the diagnostic phase of the migration: normalization, orthogonal-concern
- * extraction, precondition checks, credit-timeline construction, and final
- * accessControl validation. Use this when the caller wants to know whether the
- * migration would succeed and what notes/UID-rule warnings to surface.
+ * Runs the allowAccess migration pipeline: normalization, orthogonal-concern
+ * extraction, precondition checks, credit-timeline construction, final
+ * accessControl assembly, and final accessControl validation.
  */
-function analyzeAllowAccess(
+export function migrateAllowAccess(
   rules: AssessmentAccessRuleJson[],
   fallbackReleaseDate: string,
-): Analysis {
+): Migration {
   const hasUidRules = rules.some((r) => r.uids);
   rules = normalizeRules(rules);
 
@@ -1011,27 +1007,13 @@ function analyzeAllowAccess(
     fallbackReleaseDate,
   });
   const validationErrors = validateMigratedAccessControl(accessControl);
-  if (validationErrors.length > 0) {
-    return { errors: validationErrors, notes, hasUidRules, accessControl: null };
-  }
 
   return {
-    errors: [],
+    errors: validationErrors,
     notes,
     hasUidRules,
-    accessControl,
+    accessControl: validationErrors.length > 0 ? null : accessControl,
   };
-}
-
-export function migrateAllowAccess(
-  rules: AssessmentAccessRuleJson[],
-  fallbackReleaseDate: string,
-): Migration {
-  const { accessControl, errors, notes, hasUidRules } = analyzeAllowAccess(
-    rules,
-    fallbackReleaseDate,
-  );
-  return { accessControl: accessControl ?? {}, errors, notes, hasUidRules };
 }
 
 // ---------------------------------------------------------------------------
@@ -1049,7 +1031,7 @@ export function migrateAssessmentJson(
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
-  if (errors.length > 0) return null;
+  if (errors.length > 0 || accessControl == null) return null;
 
   data.accessControl = [accessControl];
   delete data.allowAccess;
@@ -1078,7 +1060,7 @@ export async function analyzeAssessmentFile(
     return null;
   }
 
-  const { errors, notes, hasUidRules } = analyzeAllowAccess(allowAccess, fallbackReleaseDate);
+  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,
@@ -1144,7 +1126,7 @@ export async function applyMigrationToAssessmentFile(
       break;
     case 'migrate': {
       const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-      if (errors.length === 0) {
+      if (errors.length === 0 && accessControl != null) {
         data.accessControl = [accessControl];
         delete data.allowAccess;
       } else if (clearIncompatible) {
