@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 import { ColorJsonSchema } from './infoCourse.js';
 
-export const MAX_STUDENT_LABELS = 25;
+export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 25;
 
 const AccessRuleJsonSchema = z
   .object({
@@ -135,7 +135,7 @@ export const CourseInstanceJsonSchema = z
       .default(false),
     studentLabels: z
       .array(StudentLabelJsonSchema)
-      .max(MAX_STUDENT_LABELS)
+      .max(MAX_STUDENT_LABELS_PER_COURSE_INSTANCE)
       .describe('Student labels.')
       .optional(),
   })
