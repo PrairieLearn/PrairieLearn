@@ -53,7 +53,7 @@ To award some or all students maximum points for a question during a regrade, ed
 
 In the example above, the questions `anEasyQ` and `SecondAltQ` will award maximum points to any student who has these questions and is regraded.
 
-After updating the `infoAssessment.json` file, go to the instructor page for the assessment and click the "Regrade all assessment instances" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance for just one student.
+After updating the `infoAssessment.json` file, go to the instructor page for the assessment and open the Students tab. With no instances selected, choose **Grade → Regrade** to regrade every assessment instance. To regrade a single assessment instance for just one student, select that student's instance first, then choose **Grade → Regrade**.
 
 **The `forceMaxPoints` setting only affects assessment instances that are explicitly regraded.** Students who take the exam later are not affected by `forceMaxPoints` while submitting answers. Also, while regrading an assessment instance as the student is still working on it is possible, it may be confusing to the student if they see their points suddenly change during an exam, for example. As such, it is generally recommended to wait until the exam is over before regrading with `forceMaxPoints` to avoid confusion for students.
 
