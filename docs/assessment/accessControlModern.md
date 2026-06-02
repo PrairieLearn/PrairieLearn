@@ -92,7 +92,7 @@ Enable **Password** to require a password to start or continue working on the as
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, the PrairieTest-controlled state for a checked-in reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
+PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, which means the student has a checked-in PrairieTest reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
 
 For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
 
@@ -106,7 +106,7 @@ You can also enable **Read-only mode**. During a read-only reservation, students
 
 #### PrairieTest precedence
 
-When PrairieTest is configured, PrairieLearn resolves access in this order:
+When a PrairieTest exam is associated with the assessment, PrairieLearn resolves access in this order:
 
 - **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling, time limit, and access controls. For non-read-only reservations, the per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
 - **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
@@ -178,7 +178,7 @@ When an override field is active, the detail panel shows **Remove override** for
 
 ## Override priority
 
-Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over overrides higher in the list; use the drag handle to reorder overrides when priority matters.
+Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over those higher in the list; use the drag handle to reorder overrides when priority matters.
 
 For example, suppose a student has both the "Section A" and "Extended time" labels:
 
@@ -587,7 +587,7 @@ The visibility fields follow a toggle pattern. For example, if `questions.hidden
 
 ### JSON override inheritance
 
-JSON overrides only target student labels. They store the fields they change; unset fields inherit through the same priority order used by the UI:
+JSON overrides only target student labels. They store the fields they change; omitted fields inherit through the same priority order used by the UI:
 
 1. Start with the defaults rule.
 2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
@@ -597,7 +597,7 @@ Later matching label overrides replace fields from earlier matching label overri
 
 | Field                        | Defaults to override merge                                        | Override to override cascade                            |
 | ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit | Later override replaces; unset fields kept from earlier |
+| `dateControl.*` sub-fields   | Override replaces individual sub-fields; omitted sub-fields inherit | Later override replaces; omitted fields kept from earlier |
 | `afterComplete.questions`    | Replaced as a whole object when set                               | Replaced as a whole object; otherwise inherited         |
 | `afterComplete.score`        | Replaced as a whole object when set                               | Replaced as a whole object; otherwise inherited         |
 | `beforeRelease`              | Cannot be overridden                                              | Not applicable                                          |
