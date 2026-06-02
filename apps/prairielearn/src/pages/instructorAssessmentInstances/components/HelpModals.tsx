@@ -4,9 +4,9 @@ export type HelpModalId = 'roles' | 'fingerprint' | 'duration' | 'timeRemaining'
 
 const TITLES: Record<HelpModalId, string> = {
   roles: 'Roles',
-  fingerprint: 'Client Fingerprints',
+  fingerprint: 'Client fingerprints',
   duration: 'Duration',
-  timeRemaining: 'Time Remaining',
+  timeRemaining: 'Time remaining',
 };
 
 function RolesBody() {

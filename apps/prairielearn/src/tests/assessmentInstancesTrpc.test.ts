@@ -1,11 +1,17 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
+import { SprocUsersSelectOrInsertSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -170,5 +176,58 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     });
     const after = await trpcClient.assessmentInstances.list.query();
     assert.lengthOf(after, 0);
+  });
+
+  // The instances data was previously loaded via a `raw_data.json` endpoint
+  // whose authorization was covered by `permissions/studentData.test.ts`. Those
+  // tests moved here when the data moved to the `list` query, which is guarded
+  // by `requireCourseInstancePermissionView`.
+  describe('list authorization', () => {
+    beforeAll(async () => {
+      await sqldb.callRow(
+        'users_select_or_insert',
+        ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
+        SprocUsersSelectOrInsertSchema,
+      );
+      const user = await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: 'instructor@example.com',
+        course_role: 'Owner',
+        authn_user_id: '1',
+      });
+      await insertCourseInstancePermissions({
+        course_id: '1',
+        course_instance_id: courseInstanceId,
+        user_id: user.id,
+        course_instance_role: 'Student Data Editor',
+        authn_user_id: '1',
+      });
+    });
+
+    async function fetchInstancesList(cookie: string) {
+      return await helperClient.fetchCheerio(
+        `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId, assessmentId })}/assessmentInstances.list`,
+        { headers: { 'X-TRPC': 'true', cookie } },
+      );
+    }
+
+    test('instructor (student data editor) can list instances', async () => {
+      const response = await fetchInstancesList('pl_test_user=test_instructor');
+      assert.isTrue(response.ok);
+    });
+
+    test('instructor (student data viewer) can list instances', async () => {
+      const response = await fetchInstancesList(
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
+      );
+      assert.isTrue(response.ok);
+    });
+
+    test('instructor (no role) cannot list instances', async () => {
+      const response = await fetchInstancesList(
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
+      );
+      assert.equal(response.status, 403);
+    });
   });
 });

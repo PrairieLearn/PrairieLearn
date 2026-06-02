@@ -243,7 +243,6 @@ const SKIP_ROUTES = [
   // Static assets.
   '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/client.js',
 
   // File downloads.
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file/:unsafe_file_id/:unsafe_display_filename',

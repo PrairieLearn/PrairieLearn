@@ -13,12 +13,7 @@ export function PendingRegradeQuestionList({ questions }: { questions: PendingRe
           {question.title ? (
             <>
               <div className="text-truncate">{question.title}</div>
-              <div
-                className="text-muted font-monospace text-truncate"
-                style={{ fontSize: '0.75rem' }}
-              >
-                {question.qid}
-              </div>
+              <div className="text-muted font-monospace text-truncate small">{question.qid}</div>
             </>
           ) : (
             <div className="font-monospace text-truncate">{question.qid}</div>
