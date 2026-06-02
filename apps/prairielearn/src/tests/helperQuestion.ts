@@ -1,14 +1,17 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import * as cheerio from 'cheerio';
-import fetch, { FormData } from 'node-fetch';
+import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import {
   AssessmentInstanceSchema,
   InstanceQuestionSchema,
@@ -21,6 +24,7 @@ import {
 import { startTestQuestion } from '../lib/question-testing.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -530,81 +534,48 @@ export function regradeAssessment(locals: Record<string, any>) {
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#upload-instance-question-scores-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
+// Uploads run through the assessment tRPC scope, which uses prefix CSRF tokens.
+// The exam tests act as the default authenticated user (id 1) on course
+/** instance 1, mirroring `instructorStudentsLabels.test.ts`. */
+function createAssessmentUploadClient(locals: Record<string, any>) {
+  const courseInstanceId = '1';
+  const assessmentId = String(locals.assessment_id);
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId }), authn_user_id: '1' },
+    config.secretKey,
+  );
+  return createAssessmentTrpcClient({
+    csrfToken,
+    courseInstanceId,
+    assessmentId,
+    urlBase: `http://localhost:${config.serverPort}`,
   });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
+}
+
+function csvUploadFormData(locals: Record<string, any>) {
+  const formData = new FormData();
+  formData.append(
+    'file',
+    new File([Buffer.from(locals.csvData)], 'data.csv', { type: 'text/csv' }),
+  );
+  return formData;
+}
+
+export function uploadInstanceQuestionScores(locals: Record<string, any>) {
+  describe('upload question scores via tRPC', function () {
     it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_instance_question_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.instanceQuestionScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);
 }
 
 export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
+  describe('upload total scores via tRPC', function () {
     it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$(
-        '#upload-assessment-instance-scores-form input[name="__csrf_token"]',
-      );
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
-    it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_assessment_instance_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.assessmentInstanceScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);

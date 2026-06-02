@@ -183,13 +183,6 @@ export function getNavPageTabs() {
         tabLabel: 'Students',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
-      {
-        activeSubPage: 'uploads',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/uploads`,
-        iconClasses: 'fas fa-upload',
-        tabLabel: 'Uploads',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
     ],
     question: [
       {

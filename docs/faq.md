@@ -333,7 +333,7 @@ To fix student scores without requiring them to answer another question you can:
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
 2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
 3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
-4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
+4. Upload the new scores by selecting "Upload total scores" from the "Upload" menu on the "Students" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
 

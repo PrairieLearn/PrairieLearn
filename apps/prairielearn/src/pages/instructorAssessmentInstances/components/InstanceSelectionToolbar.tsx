@@ -10,6 +10,7 @@ import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.typ
 
 import { PendingRegradeQuestionList } from './PendingRegradeQuestionList.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
+import { UploadDropdown } from './UploadDropdown.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type JobAction = 'grade' | 'gradeAndClose';
@@ -33,6 +34,8 @@ export function InstanceSelectionToolbar({
   clearSelection,
   courseInstanceId,
   timezone,
+  groupWork,
+  isDevMode,
   onActionSuccess,
 }: {
   selectedRows: AssessmentInstanceRow[];
@@ -40,6 +43,8 @@ export function InstanceSelectionToolbar({
   clearSelection: () => void;
   courseInstanceId: string;
   timezone: string;
+  groupWork: boolean;
+  isDevMode: boolean;
   onActionSuccess: (message: string) => void;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
@@ -83,6 +88,11 @@ export function InstanceSelectionToolbar({
           <i className="bi bi-clock me-2" aria-hidden="true" />
           Change time limit
         </Button>
+        <UploadDropdown
+          courseInstanceId={courseInstanceId}
+          groupWork={groupWork}
+          isDevMode={isDevMode}
+        />
         <Button
           size="sm"
           variant="light"
