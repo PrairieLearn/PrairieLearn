@@ -74,7 +74,7 @@ export function AppliesToField({
   const excludedUids = new Set(enrollments.map((i) => i.uid));
   const studentLabelLimitReached =
     studentLabels.length >= MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE;
-  const studentLabelOptionLimitReason = `A rule can target at most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels.`;
+  const studentLabelLimitReason = `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`;
   const targetTypeLimitReason =
     targetTypeDisabledReasons?.student_label ?? targetTypeDisabledReasons?.enrollment ?? null;
   const enrollmentDisabledReason = targetTypeDisabledReasons?.enrollment ?? undefined;
@@ -195,11 +195,7 @@ export function AppliesToField({
                   labels={allLabels ?? []}
                   selectedIds={excludedStudentLabelIds}
                   buttonLabel="Select labels"
-                  getOptionDisabledReason={(label) =>
-                    !excludedStudentLabelIds.has(label.id) && studentLabelLimitReached
-                      ? studentLabelOptionLimitReason
-                      : undefined
-                  }
+                  maxSelected={MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE}
                   onToggle={(label) => {
                     if (excludedStudentLabelIds.has(label.id)) {
                       handleRemoveStudentLabelById(label.id);
@@ -237,7 +233,7 @@ export function AppliesToField({
             </div>
             <div className="form-text mt-2">
               {studentLabelLimitReached
-                ? studentLabelOptionLimitReason
+                ? studentLabelLimitReason
                 : 'Applies to students with any of the selected labels.'}
             </div>
           </div>

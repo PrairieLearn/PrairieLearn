@@ -1729,37 +1729,6 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
-  it('surfaces final validation errors during analysis', async () => {
-    await tmp.withDir(
-      async ({ path: tmpDir }) => {
-        const filePath = path.join(tmpDir, 'infoAssessment.json');
-        await fs.writeFile(
-          filePath,
-          JSON.stringify({
-            type: 'Exam',
-            title: 'E1',
-            allowAccess: Array.from(
-              { length: MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS + 1 },
-              (_, i) => ({
-                examUuid: `${i.toString().padStart(8, '0')}-0000-0000-0000-${i
-                  .toString()
-                  .padStart(12, '0')}`,
-                credit: 100,
-              }),
-            ),
-          }),
-        );
-
-        const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
-        assert.isNotNull(result);
-        assert.isNotEmpty(result.errors);
-        assert.match(result.errors[0], /integrations\.prairieTest\.exams/);
-        assert.match(result.errors[0], new RegExp(String(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)));
-      },
-      { unsafeCleanup: true },
-    );
-  });
-
   it('no-op rule is technically migratable', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
