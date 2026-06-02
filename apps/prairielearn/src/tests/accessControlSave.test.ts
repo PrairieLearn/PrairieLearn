@@ -376,10 +376,11 @@ describe('Access control save via tRPC', () => {
     const staleHash = await getOrigHash();
 
     // First save succeeds and changes the hash.
-    await client.accessControl.saveAllRules.mutate({
-      rules: [makeRule()],
+    const firstSave = await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule({ beforeRelease: { listed: true } })],
       origHash: staleHash,
     });
+    assert.notEqual(firstSave.newHash, staleHash);
 
     // Second save with the same (now stale) hash must fail.
     await expect(
