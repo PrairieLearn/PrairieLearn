@@ -13,7 +13,7 @@ function toCustomTag(module: ElementSchemaModule): CustomTag {
 
 export const elementCustomTags: CustomTag[] = elementModules.map(toCustomTag);
 
-export function serializeElementSchemas(): {
+function serializeElementSchemas(): {
   schemas: Record<string, Record<string, unknown>>;
   childSchemas: Record<string, Record<string, Record<string, unknown>>>;
 } {
