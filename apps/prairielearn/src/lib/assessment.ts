@@ -609,10 +609,6 @@ export async function selectAssessmentInstanceLogCursor(
   );
 }
 
-async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
-}
-
 export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
@@ -622,7 +618,9 @@ export async function updateAssessmentQuestionStatsForAssessment(
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await async.eachSeries(assessment_questions, async (assessment_question_id) => {
+      await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+    });
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
