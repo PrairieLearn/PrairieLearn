@@ -606,8 +606,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
     correct_answer_converted = 0
     correct_answer = None
+    has_correct_answer = name in data["correct_answers"]
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if not has_correct_answer:
             # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
                 correct_answer = pl.get_float_attrib(element, "correct-answer")
@@ -629,19 +630,21 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 correct_answer_converted = np.float64(correct_answer)
     if result == "correct":
         data["raw_submitted_answers"][name] = str(correct_answer)
-        data["partial_scores"][name] = {
-            "score": 1,
-            "weight": weight,
-        }
-        if show_correct:
-            data["partial_scores"][name]["feedback"] = (
-                f"The correct answer used for grading was {correct_answer_converted}."
-            )
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": 1,
+                "weight": weight,
+            }
+            if show_correct:
+                data["partial_scores"][name]["feedback"] = (
+                    f"The correct answer used for grading was {correct_answer_converted}."
+                )
     elif result == "incorrect":
-        data["partial_scores"][name] = {
-            "score": 0,
-            "weight": weight,
-        }
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": 0,
+                "weight": weight,
+            }
         # Get method of comparison, with relabs as default
         comparison = pl.get_enum_attrib(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
@@ -711,7 +714,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             assert_never(comparison)
 
-        if feedback:
+        if feedback and has_correct_answer:
             data["partial_scores"][name]["feedback"] = feedback
 
         data["raw_submitted_answers"][name] = str(answer)

@@ -462,9 +462,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     result = data["test_type"]
 
+    has_correct_answer = name in data["correct_answers"]
     a_tru = None
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if not has_correct_answer:
             # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
                 a_tru = pl.get_string_attrib(element, "correct-answer")
@@ -489,7 +490,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             data["raw_submitted_answers"][name] = a_tru
 
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         if isinstance(a_tru, str) and a_tru.strip() == "":
             a_tru = "1 meter"
@@ -513,11 +515,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             assert_never(grading_mode)
 
-        data["partial_scores"][name] = {
-            "score": partial_score,
-            "weight": weight,
-            "feedback": feedback,
-        }
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": partial_score,
+                "weight": weight,
+                "feedback": feedback,
+            }
 
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":

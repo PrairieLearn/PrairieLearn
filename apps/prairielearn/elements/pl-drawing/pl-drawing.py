@@ -415,8 +415,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_submitted_answer = data["submitted_answers"].get(name)
 
-    # A blank submission could be `None`
-    if allow_blank and raw_submitted_answer is None:
+    # A blank submission could be `None` or an empty string
+    if allow_blank and raw_submitted_answer in (None, ""):
         data["submitted_answers"][name] = None
         return
 
@@ -588,9 +588,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
+    missing_correct_answer = name not in data["correct_answers"]
     a_tru = []
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if missing_correct_answer:
             # No correct answer defined. Submit a point in the center of the
             # canvas so parse() sees a non-empty list instead of rejecting a
             # blank submission.
@@ -686,13 +687,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = json.dumps(
             data["raw_submitted_answers"][name]
         )
+        score = 1 if missing_correct_answer else 0
+        score_type, _ = pl.determine_score_params(score)
         data["partial_scores"][name] = {
-            "score": 0,
+            "score": score,
             "weight": weight,
             "feedback": {
-                "correct": False,
-                "partial": False,
-                "incorrect": True,
+                "correct": score_type == "correct",
+                "partial": score_type == "partial",
+                "incorrect": score_type == "incorrect",
                 "missing": {},
                 "matches": {
                     element["id"]: False

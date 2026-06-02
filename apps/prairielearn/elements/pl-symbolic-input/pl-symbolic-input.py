@@ -971,9 +971,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
     result = data["test_type"]
     a_tru_str = ""
+    has_correct_answer = name in data["correct_answers"]
 
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if not has_correct_answer:
             # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
                 a_tru_str = pl.get_string_attrib(element, "correct-answer")
@@ -1024,7 +1025,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
             data["raw_submitted_answers"][name] = random.choice(correct_answers)
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
         if a_tru_str == "" or allow_sets:
@@ -1033,7 +1035,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             data["raw_submitted_answers"][name] = (
                 f"{a_tru_str} + {random.randint(1, 100):d}"
             )
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
         invalid_answers = [

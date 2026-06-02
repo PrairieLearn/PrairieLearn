@@ -494,7 +494,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
     )
 
-    if name not in data["correct_answers"]:
+    has_correct_answer = name in data["correct_answers"]
+    if not has_correct_answer:
         # No correct answer defined. Generate a dummy matrix so the submission is still gradable.
         m = pl.get_integer_attrib(element, "rows", 2)
         n = pl.get_integer_attrib(element, "columns", 2)
@@ -546,17 +547,19 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         )
 
     if number_of_correct == m * n:
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
     else:
         if not allow_partial_credit:
             score_value = 0
         else:
             score_value = number_of_correct / (m * n)
-        data["partial_scores"][name] = {
-            "score": score_value,
-            "weight": weight,
-            "feedback": feedback,
-        }
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": score_value,
+                "weight": weight,
+                "feedback": feedback,
+            }
 
 
 def create_table_for_html_display(

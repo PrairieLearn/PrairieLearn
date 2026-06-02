@@ -333,9 +333,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
     result = data["test_type"]
 
+    has_correct_answer = name in data["correct_answers"]
     a_tru_parsed = 0
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if not has_correct_answer:
             # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
                 a_tru_parsed = pl.get_integer_attrib(element, "correct-answer")
@@ -365,7 +366,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             # Use 0x format
             data["raw_submitted_answers"][name] = f"{a_tru_parsed:#x}"
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         correct_answer = 0 if isinstance(a_tru_parsed, str) else a_tru_parsed
 
@@ -373,7 +375,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             correct_answer + (random.randint(1, 11) * random.choice([-1, 1])),
             base if base > 0 else 10,
         )
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         invalid_chr = chr(ord("a") + (base - BASE_DEFAULT) + 1)
         incorrect_answers = ["1 + 2", "3.4", invalid_chr, "pi"]

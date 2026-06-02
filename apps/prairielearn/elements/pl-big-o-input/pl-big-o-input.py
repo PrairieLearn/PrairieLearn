@@ -348,8 +348,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     result = data["test_type"]
     a_tru = None
+    has_correct_answer = name in data["correct_answers"]
 
-    if result in ["correct", "incorrect"] and name not in data["correct_answers"]:
+    if result in ["correct", "incorrect"] and not has_correct_answer:
         # No correct answer defined. Generate a dummy answer so the submission is still gradable.
         variables = psu.get_items_list(
             pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
@@ -362,35 +363,38 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result == "correct":
         data["raw_submitted_answers"][name] = a_tru
-        data["partial_scores"][name] = {
-            "score": 1,
-            "weight": weight,
-            "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
-        }
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": 1,
+                "weight": weight,
+                "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
+            }
 
     elif result == "incorrect" and a_tru == "":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
-        data["partial_scores"][name] = {
-            "score": 0,
-            "weight": weight,
-            "feedback": bou.INCORRECT_FEEDBACK,
-        }
+        if has_correct_answer:
+            data["partial_scores"][name] = {
+                "score": 0,
+                "weight": weight,
+                "feedback": bou.INCORRECT_FEEDBACK,
+            }
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
         bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
-        if bigo_type is BigOType.THETA:
-            data["partial_scores"][name] = {
-                "score": 0.25,
-                "weight": weight,
-                "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
-            }
-        else:
-            data["partial_scores"][name] = {
-                "score": 0.5,
-                "weight": weight,
-                "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
-            }
+        if has_correct_answer:
+            if bigo_type is BigOType.THETA:
+                data["partial_scores"][name] = {
+                    "score": 0.25,
+                    "weight": weight,
+                    "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
+                }
+            else:
+                data["partial_scores"][name] = {
+                    "score": 0.5,
+                    "weight": weight,
+                    "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
+                }
 
     elif result == "invalid":
         invalid_answer = random.choice([

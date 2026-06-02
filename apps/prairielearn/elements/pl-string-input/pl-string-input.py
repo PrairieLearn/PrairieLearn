@@ -330,9 +330,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     result = data["test_type"]
 
+    has_correct_answer = name in data["correct_answers"]
     a_tru = ""
     if result in ["correct", "incorrect"]:
-        if name not in data["correct_answers"]:
+        if not has_correct_answer:
             # No correct answer defined (e.g., free-response questions).
             # Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
@@ -358,12 +359,14 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result == "correct":
         data["raw_submitted_answers"][name] = a_tru
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = a_tru + str(
             random.randint(1, 11) * random.choice([-1, 1])
         )
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         data["raw_submitted_answers"][name] = ""
         data["format_errors"][name] = "invalid"

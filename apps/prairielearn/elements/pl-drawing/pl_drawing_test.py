@@ -32,14 +32,20 @@ def make_question_data(
     correct_answers: dict | None = None,
     format_errors: dict | None = None,
     partial_scores: dict | None = None,
+    raw_submitted_answers: dict | None = None,
+    test_type: str | None = None,
 ) -> dict:
-    return {
+    data = {
         "submitted_answers": submitted_answers or {},
         "correct_answers": correct_answers or {},
         "format_errors": format_errors or {},
         "partial_scores": partial_scores or {},
+        "raw_submitted_answers": raw_submitted_answers or {},
         "extensions": {},
     }
+    if test_type is not None:
+        data["test_type"] = test_type
+    return data
 
 
 def test_parse_blank_submission_without_allow_blank_sets_error() -> None:
@@ -69,6 +75,16 @@ def test_parse_blank_submission_with_allow_blank_no_error() -> None:
     pl_drawing.parse(element_html, data)
 
     assert "test" not in data["format_errors"]
+
+
+def test_parse_empty_string_submission_with_allow_blank_no_error() -> None:
+    element_html = build_element_html(allow_blank=True)
+    data = make_question_data(submitted_answers={"test": ""})
+
+    pl_drawing.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
 
 
 def test_parse_none_submission_with_allow_blank_no_error() -> None:
@@ -295,3 +311,16 @@ def test_grade_only_initial_objects_with_allow_blank_scores_zero() -> None:
     assert "test" not in data["format_errors"]
     assert "test" in data["partial_scores"]
     assert math.isclose(data["partial_scores"]["test"]["score"], 0.0)
+
+
+def test_incorrect_test_without_correct_answer_matches_empty_reference_score() -> None:
+    element_html = """<pl-drawing answers-name="test" gradable="true">
+        <pl-drawing-answer></pl-drawing-answer>
+    </pl-drawing>"""
+    data = make_question_data(test_type="incorrect")
+
+    pl_drawing.test(element_html, data)
+
+    assert "test" in data["raw_submitted_answers"]
+    assert data["partial_scores"]["test"]["score"] == 1
+    assert data["partial_scores"]["test"]["feedback"]["correct"] is True
