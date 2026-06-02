@@ -32,7 +32,6 @@ import {
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
-import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/limits.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -185,12 +184,6 @@ const upsert = t.procedure
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'A label with this name already exists',
-            });
-          }
-          if (studentLabels.length >= MAX_STUDENT_LABELS_PER_COURSE_INSTANCE) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Cannot create more than ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels in a course instance.`,
             });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
