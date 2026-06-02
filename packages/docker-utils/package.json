@@ -20,7 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-ecr": "^3.1057.0",
     "@prairielearn/logger": "workspace:^",
-    "date-fns": "^4.3.0"
+    "date-fns": "^4.4.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
