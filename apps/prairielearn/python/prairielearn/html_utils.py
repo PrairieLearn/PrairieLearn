@@ -83,7 +83,15 @@ def is_boolean_attrib(value: str) -> bool:
 
 
 def is_integer_attrib(value: str) -> bool:
-    """Return whether a string is a PrairieLearn integer value."""
+    """Return whether a string is a PrairieLearn integer value.
+
+    This is the authoritative `integer-attrib` check (it matches how
+    `get_integer_attrib` parses values at runtime). The linter-side regex in
+    `element-schemas/htmlmustache-plugin-utils.ts` is intentionally stricter:
+    `int()` also accepts forms like ``1_000``, ``+5``, and surrounding
+    whitespace that the linter flags. Keep the two notions aligned when changing
+    either side.
+    """
     try:
         int(value)
     except ValueError:
@@ -92,7 +100,13 @@ def is_integer_attrib(value: str) -> bool:
 
 
 def is_float_attrib(value: str) -> bool:
-    """Return whether a string is a PrairieLearn floating-point value."""
+    """Return whether a string is a PrairieLearn floating-point value.
+
+    Authoritative `float-attrib` check, mirroring `get_float_attrib`. The
+    linter-side regex is stricter: ``float()`` also accepts ``inf``/``nan``,
+    ``1_000.0``, ``+5``, and surrounding whitespace. See the note in
+    `is_integer_attrib`.
+    """
     try:
         float(value)
     except ValueError:

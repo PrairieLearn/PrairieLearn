@@ -417,12 +417,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if get_display_type(element) is not DisplayType.DROPDOWN:
         if pl.has_attrib(element, "size"):
-            raise ValueError(
-                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-            )
+            raise ValueError('"size" should only be set when display is "dropdown".')
         if pl.has_attrib(element, "placeholder"):
             raise ValueError(
-                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
+                '"placeholder" should only be set when display is "dropdown".'
             )
 
     if name in data["params"]:

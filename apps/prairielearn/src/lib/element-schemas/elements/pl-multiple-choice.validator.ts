@@ -15,7 +15,7 @@ function requireDropdownDisplay(element: TagElement, context: ValidatorContext, 
     context.reportAttribute(
       element,
       attribute,
-      `pl-multiple-choice: if using ${attribute}, you must also set display to "dropdown".`,
+      `"${attribute}" should only be set when display is "dropdown".`,
     );
   }
 }

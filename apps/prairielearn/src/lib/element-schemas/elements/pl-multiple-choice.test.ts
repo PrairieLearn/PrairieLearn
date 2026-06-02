@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { lintQuestionHtml } from '../../htmlMustacheLinterNode.js';
+import { lintQuestionHtml } from '../../question-html-linter.js';
 
 async function lintMessages(html: string): Promise<string[]> {
   const diagnostics = await lintQuestionHtml(html);
@@ -96,7 +96,9 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((m) => m.includes('display to "dropdown"')));
+    assert.isTrue(
+      messages.some((m) => m.includes('should only be set when display is "dropdown"')),
+    );
   });
 
   it('requires matching all/none of the above attributes for feedback', async () => {

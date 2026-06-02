@@ -5,7 +5,7 @@ import {
   BOOLEAN_TRUE_VALUES,
   BOOLEAN_VALUES,
 } from '../../lib/element-schemas/htmlmustache-plugin-utils.js';
-import { lintQuestionHtml } from '../../lib/htmlMustacheLinterNode.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
