@@ -12,18 +12,3 @@ function toCustomTag(module: ElementSchemaModule): CustomTag {
 }
 
 export const elementCustomTags: CustomTag[] = elementModules.map(toCustomTag);
-
-function serializeElementSchemas(): {
-  schemas: Record<string, Record<string, unknown>>;
-  childSchemas: Record<string, Record<string, Record<string, unknown>>>;
-} {
-  const schemas: Record<string, Record<string, unknown>> = {};
-  const childSchemas: Record<string, Record<string, Record<string, unknown>>> = {};
-  for (const module of elementModules) {
-    schemas[module.tag] = module.schema;
-    if (module.children) {
-      childSchemas[module.tag] = module.children;
-    }
-  }
-  return { schemas, childSchemas };
-}
