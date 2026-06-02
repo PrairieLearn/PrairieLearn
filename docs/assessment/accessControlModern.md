@@ -78,7 +78,7 @@ Enable **Time limit** to give each student a fixed amount of working time after 
 
 Timed attempts can span early deadlines, the due date, and late deadlines that still allow submissions, so the credit a student earns can shift as those deadlines pass during the attempt. If an assessment has a due date, a late deadline, and a 60-minute time limit, a student who starts 1 minute before the due date works for the full 60 minutes: the first minute earns the on-time credit, and the remainder earns the late-deadline credit.
 
-However, the timer is capped by the last submittable deadline. If submissions stop entirely at some point (for example, **After due date** is set to **No submissions allowed** with no late deadlines), a student who starts shortly before that deadline receives only the remaining time until then, not the full configured time limit.
+However, a timed attempt cannot continue past the point where submissions stop entirely. For example, if **After due date** is set to **No submissions allowed** with no late deadlines, a student who starts shortly before the due date receives only the remaining time until then, not the full configured time limit.
 
 #### Passwords
 
@@ -86,7 +86,7 @@ Enable **Password** to require a password to start or continue working on the as
 
 !!! info
 
-    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit, and PrairieTest exams do not support a separate password.
+    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit and access controls, including any PrairieTest session password.
 
 ### PrairieTest
 
@@ -108,15 +108,15 @@ You can also enable **Read-only mode**. During a read-only reservation, students
 
 When PrairieTest is configured, PrairieLearn resolves access in this order:
 
-- **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling and time limit, and there is no password prompt. The per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
+- **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling, time limit, and access controls. For non-read-only reservations, the per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
 - **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
 - **Outside Exam mode**, the top-level date control rules apply normally when a date-control release exists. Top-level **After completion** visibility also takes over for completed instances once the reservation ends.
 
-To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review the assessment outside the reservation, keep top-level **Question visibility** hidden.
+To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review questions or scores outside the reservation, keep top-level **Question visibility** and **Score visibility** hidden.
 
 ### Before release
 
-Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), the assessment can be listed outside Exam mode when students cannot open it yet. In Exam mode, only an active matching reservation can list or open it. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
+Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), this controls whether students can see the assessment title outside Exam mode even though they cannot open it. In Exam mode, only assessments with an active matching reservation are listed or accessible. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
 
 Disable it when the assessment should be completely hidden until release.
 
@@ -178,7 +178,7 @@ When an override field is active, the detail panel shows **Remove override** for
 
 ## Override priority
 
-Specific-student overrides take priority over student-label overrides. Within each section, lower overrides take priority over higher overrides; use the drag handle to reorder overrides when priority matters.
+Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over overrides higher in the list; use the drag handle to reorder overrides when priority matters.
 
 For example, suppose a student has both the "Section A" and "Extended time" labels:
 
@@ -587,14 +587,13 @@ The visibility fields follow a toggle pattern. For example, if `questions.hidden
 
 ### JSON override inheritance
 
-JSON overrides only target student labels. They store the fields they change; unset fields inherit from the defaults and from earlier matching label overrides.
-
-The file-backed cascade is:
+JSON overrides only target student labels. They store the fields they change; unset fields inherit through the same priority order used by the UI:
 
 1. Start with the defaults rule.
-2. Apply matching `student_label` overrides in the order they appear in the array.
+2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
+3. Apply any individual-student overrides configured through the UI.
 
-Later matching label overrides replace fields from earlier matching label overrides. Individual-student overrides are managed through the UI and take priority over the resolved file-backed rule.
+Later matching label overrides replace fields from earlier matching label overrides. Individual-student overrides are managed through the UI and take priority over label overrides.
 
 | Field                        | Defaults to override merge                                        | Override to override cascade                            |
 | ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
