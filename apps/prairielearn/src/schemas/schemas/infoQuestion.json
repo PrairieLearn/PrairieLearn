@@ -353,8 +353,12 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["default", "type"],
+        "required": ["type", "default"],
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean"]
+          },
           "default": {
             "type": ["string", "number", "boolean"]
           },
@@ -363,10 +367,6 @@
             "items": {
               "type": ["string", "number"]
             }
-          },
-          "type": {
-            "type": "string",
-            "enum": ["boolean", "number", "string"]
           }
         }
       },

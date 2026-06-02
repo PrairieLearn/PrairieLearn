@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../schemas/questionPreferences.js';
+import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
 
@@ -30,9 +30,6 @@ export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
 export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
-
-export const EnumAssessmentToolSchema = z.enum(['calculator']);
-export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;

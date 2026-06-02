@@ -1,4 +1,4 @@
-import type { QuestionPreferencesSchemaJson } from '../../schemas/questionPreferences.js';
+import type { QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 /**
  * Validates a typed preferences schema object. Returns an array of error

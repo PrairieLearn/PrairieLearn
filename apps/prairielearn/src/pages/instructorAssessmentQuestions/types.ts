@@ -4,13 +4,13 @@ import type { EditorQuestionMetadata } from '../../lib/assessment-question.share
 import type {
   Assessment,
   AssessmentSet,
-  EnumAssessmentTool,
   EnumAssessmentType,
   Question,
   Tag,
   Topic,
 } from '../../lib/db-types.js';
 import type {
+  EnumAssessmentTool,
   QuestionAlternativeJsonInput,
   ZoneAssessmentJsonInput,
   ZoneQuestionBlockJsonInput,

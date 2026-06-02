@@ -21,8 +21,8 @@ import {
   AssessmentToolSchema,
   type CourseInstance,
   CourseInstanceSchema,
-  EnumAssessmentToolSchema,
 } from '../lib/db-types.js';
+import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
