@@ -592,22 +592,29 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru = []
     if result in ["correct", "incorrect"]:
         if missing_correct_answer:
-            # No correct answer defined. Submit a point in the center of the
-            # canvas so parse() sees a non-empty list instead of rejecting a
-            # blank submission.
+            # No correct answer defined. Submit a point on the canvas so parse()
+            # sees a non-empty list instead of rejecting a blank submission. With
+            # no reference answer, grade() awards full credit to any submission,
+            # so the point is left ungraded.
             width = pl.get_integer_attrib(
                 element, "width", defaults.element_defaults["width"]
             )
             height = pl.get_integer_attrib(
                 element, "height", defaults.element_defaults["height"]
             )
+            if result == "correct":
+                # Center of the top-right quadrant.
+                left, top = 3 * width / 4, height / 4
+            else:
+                # Center of the bottom-left quadrant.
+                left, top = width / 4, 3 * height / 4
             a_tru = [
                 {
                     "id": "dummy",
                     "gradingName": "pl-point",
                     "graded": False,
-                    "left": width / 2,
-                    "top": height / 2,
+                    "left": left,
+                    "top": top,
                 }
             ]
         else:

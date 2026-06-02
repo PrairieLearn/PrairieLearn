@@ -346,7 +346,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     result = data["test_type"]
 
-    if name not in data["correct_answers"]:
+    has_correct_answer = name in data["correct_answers"]
+    if not has_correct_answer:
         # No correct answer defined. Generate a dummy matrix so the submission is still gradable.
         a_tru = np.ones((2, 2)) if result == "correct" else -np.ones((2, 2))
     else:
@@ -363,14 +364,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             data["raw_submitted_answers"][name] = pl.numpy_to_matlab(
                 a_tru, ndigits=12, wtype="g"
             )
-            data["partial_scores"][name] = {"score": 1, "weight": weight}
+            if has_correct_answer:
+                data["partial_scores"][name] = {"score": 1, "weight": weight}
         elif result == "incorrect":
             data["raw_submitted_answers"][name] = pl.numpy_to_matlab(
                 a_tru + (random.uniform(1, 10) * random.choice([-1, 1])),
                 ndigits=12,
                 wtype="g",
             )
-            data["partial_scores"][name] = {"score": 0, "weight": weight}
+            if has_correct_answer:
+                data["partial_scores"][name] = {"score": 0, "weight": weight}
         elif result == "invalid":
             invalid_cases = {
                 "invalid commas": [
@@ -421,12 +424,14 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # python
     elif result == "correct":
         data["raw_submitted_answers"][name] = str(np.array(a_tru).tolist())
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = str(
             (a_tru + (random.uniform(1, 10) * random.choice([-1, 1]))).tolist()
         )
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        if has_correct_answer:
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         # FIXME: add more invalid expressions, make text of format_errors
         # correct, and randomize

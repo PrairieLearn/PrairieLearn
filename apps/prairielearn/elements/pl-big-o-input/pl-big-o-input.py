@@ -352,10 +352,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result in ["correct", "incorrect"] and not has_correct_answer:
         # No correct answer defined. Generate a dummy answer so the submission is still gradable.
-        variables = psu.get_items_list(
+        single_variable = psu.get_items_list(
             pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
         )
-        variable = variables[0] if variables else "n"
+        variables = psu.get_items_list(
+            pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        )
+        if not pl.has_attrib(element, "variables"):
+            variables = single_variable
+        variable = variables[0] if variables and variables[0] else "n"
         a_tru = f"999 * {variable}" if result == "correct" else f"-999 * {variable}"
     elif result in ["correct", "incorrect"]:
         # Get raw correct answer
