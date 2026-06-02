@@ -21,7 +21,7 @@ import { validateAccessControlRules } from './validation.js';
 // file-level helpers are exercised the same way production calls them.
 // Cases whose legacy rules don't supply a startDate (always-open, password-only)
 // get this fallback as their release date in `expected`.
-const FALLBACK_RELEASE = '1900-01-01T00:00:00';
+const FALLBACK_RELEASE = '2000-01-01T00:00:00';
 
 describe('migrateAllowAccess', () => {
   const cases: {
@@ -198,6 +198,23 @@ describe('migrateAllowAccess', () => {
       expected: {
         accessControl: null,
         errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'fallback release date after due date fails final validation',
+      rules: [
+        // This end date is before FALLBACK_RELEASE, forcing the fallback
+        // release date through final date-ordering validation.
+        { credit: 0, endDate: '1999-12-31T00:00:00' },
+      ],
+      expected: {
+        accessControl: null,
+        errors: [
+          'Release date must be before due date.',
+          'Due date must be after the earliest possible release date.',
+        ],
         notes: [],
         hasUidRules: false,
       },
@@ -1689,33 +1706,6 @@ describe('analyzeAssessmentFile', () => {
         assert.deepEqual(result.notes, [
           'An empty accessControl list signifies that no access is granted.',
         ]);
-      },
-      { unsafeCleanup: true },
-    );
-  });
-
-  it('uses the fallback release date for final validation', async () => {
-    await tmp.withDir(
-      async ({ path: tmpDir }) => {
-        const filePath = path.join(tmpDir, 'infoAssessment.json');
-        const allowAccess: AssessmentAccessRuleJson[] = [
-          { credit: 0, endDate: '2024-06-01T00:00:00' },
-        ];
-        await fs.writeFile(
-          filePath,
-          JSON.stringify({
-            type: 'Homework',
-            title: 'HW1',
-            allowAccess,
-          }),
-        );
-
-        const fallbackReleaseDate = '2025-01-01T00:00:00';
-        const migration = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-        const result = await analyzeAssessmentFile(filePath, 'hw01', fallbackReleaseDate);
-        assert.isNotNull(result);
-        assert.isAbove(migration.errors.length, 0);
-        assert.deepEqual(result.errors, migration.errors);
       },
       { unsafeCleanup: true },
     );
