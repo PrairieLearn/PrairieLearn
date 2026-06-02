@@ -122,7 +122,7 @@ export class ConfigLoader<Schema extends z.ZodType> {
     // Get the default values from the schema. This ensures that all values
     // have defaults, and also allows us to override nested defaults with
     // `_.merge()` in `loadAndValidate()`.
-    this.resolvedConfig = schema.parse({}) as z.infer<Schema>;
+    this.resolvedConfig = schema.parse({});
   }
 
   async loadAndValidate(sources: ConfigSource<any>[] = []) {
@@ -139,7 +139,7 @@ export class ConfigLoader<Schema extends z.ZodType> {
   }
 
   reset() {
-    this.resolvedConfig = this.schema.parse({}) as z.infer<Schema>;
+    this.resolvedConfig = this.schema.parse({});
   }
 
   get config() {

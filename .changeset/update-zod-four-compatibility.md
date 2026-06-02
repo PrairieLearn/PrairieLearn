@@ -1,9 +1,6 @@
 ---
 '@prairielearn/aws-imds': patch
-'@prairielearn/config': patch
 '@prairielearn/migrations': patch
-'@prairielearn/postgres': patch
-'@prairielearn/zod': patch
 ---
 
-Update package metadata for Zod 4 compatibility.
+Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.

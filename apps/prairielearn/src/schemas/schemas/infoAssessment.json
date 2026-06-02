@@ -599,7 +599,8 @@
     "PointsJsonSchema": {
       "anyOf": [
         {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "$ref": "#/definitions/PointsSingleJsonSchema",
+          "default": 0
         },
         {
           "$ref": "#/definitions/PointsListJsonSchema"

@@ -1432,12 +1432,8 @@ export const QuestionSchema = z.object({
   grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
-  json_external_grading_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
-    .nullable(),
-  json_workspace_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
-    .nullable(),
+  json_external_grading_comment: JsonCommentSchema.nullable(),
+  json_workspace_comment: JsonCommentSchema.nullable(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
