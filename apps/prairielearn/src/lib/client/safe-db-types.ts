@@ -288,7 +288,6 @@ export const RawStudentCourseSchema = RawStaffCourseSchema.pick({
   example_course: true,
   id: true,
   institution_id: true,
-  options: true,
   short_name: true,
   template_course: true,
   title: true,
