@@ -20,7 +20,11 @@ import {
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
-import { type AccessControlSyncInput, syncAllAccessControl } from './fromDisk/accessControl.js';
+import {
+  type AccessControlSyncInput,
+  preValidateAccessControl,
+  syncAllAccessControl,
+} from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
@@ -168,6 +172,10 @@ export async function syncDiskToSqlWithLock(
     );
 
     await timed('Synced authors', () => syncAuthors.sync(courseData.questions, questionIds));
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
     // We need to perform sharing validation at exactly this moment. We can only
     // do this once we have a dictionary of question IDs, as this process will also
     // populate any shared questions in that dictionary. We also need to do it before
@@ -189,6 +197,17 @@ export async function syncDiskToSqlWithLock(
         );
       });
     });
+    if (enhancedAccessControlEnabled) {
+      await timed('Pre-validated access control', async () => {
+        await async.eachLimit(
+          Object.entries(courseData.courseInstances),
+          3,
+          async ([ciid, { assessments }]) => {
+            await preValidateAccessControl(courseInstanceIds[ciid], assessments);
+          },
+        );
+      });
+    }
 
     await timed('Synced sharing sets', () =>
       syncSharingSets.sync(course.id, courseData, questionIds),
@@ -198,10 +217,6 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(course.id, courseData),
     );
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: course.institution_id,
-      course_id: course.id,
-    });
     await timed('Synced all assessments', async () => {
       // Ensure that a single course with a ton of course instances can't
       // monopolize the database connection pool.
@@ -228,27 +243,14 @@ export async function syncDiskToSqlWithLock(
                 const assessmentId = idMap[tid];
                 if (!assessmentId) continue;
 
-                const accessControlRules = assessment.data?.accessControl;
                 if (infofile.hasErrors(assessment)) {
                   continue;
                 }
-                if (!accessControlRules) {
-                  inputs.push({ assessmentId, rules: [] });
-                } else {
-                  inputs.push({ assessmentId, rules: accessControlRules });
-                }
+                inputs.push({ assessmentId, rules: assessment.data?.accessControl ?? [] });
               }
 
               await runInTransactionAsync(async () => {
-                const validationErrors = await syncAllAccessControl(courseInstanceId, inputs);
-                for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
-                  const assessmentId = idMap[tid];
-                  if (!assessmentId) continue;
-                  const error = validationErrors.get(assessmentId);
-                  if (error) {
-                    infofile.addError(assessment, error);
-                  }
-                }
+                await syncAllAccessControl(courseInstanceId, inputs);
               });
             });
           }

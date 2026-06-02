@@ -1199,6 +1199,10 @@ describe('Access control syncing', () => {
           );
         }
 
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        assert.isNotNull(assessment.sync_errors);
+        assert.match(assessment.sync_errors, /Invalid student label\(s\): foobar/);
+
         const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(syncedRules.length, 0);
       }));
@@ -1367,6 +1371,10 @@ describe('Access control syncing', () => {
           ]);
           assert.equal(syncedRules.length, 0);
           assert.isTrue(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
+
+          const assessment = await getAssessment(util.ASSESSMENT_ID);
+          assert.isNotNull(assessment.sync_errors);
+          assert.match(assessment.sync_errors, /Invalid PrairieTest exam UUID\(s\)/);
         }),
       ));
 
