@@ -233,7 +233,7 @@ export async function preValidateAccessControl(
  * Syncs access control rules for multiple assessments in a single sproc call.
  * Inputs must already have been checked with `preValidateAccessControl()`.
  */
-export async function syncAllAccessControl(
+export async function syncAccessControl(
   courseInstanceId: string,
   assessments: AccessControlSyncInput[],
 ): Promise<void> {
