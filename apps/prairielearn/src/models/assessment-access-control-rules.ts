@@ -371,12 +371,21 @@ export async function replaceEnrollmentAccessControlRules(
   assessment: Assessment,
   rules: EnrollmentAccessControlRuleInput[],
 ): Promise<void> {
+  const submittedIds = new Set<string>();
+  for (const rule of rules) {
+    const id = rule.ruleData.id;
+    if (id == null) continue;
+    if (submittedIds.has(id)) {
+      throw new Error(`Duplicate enrollment access control rule ID: ${id}`);
+    }
+    submittedIds.add(id);
+  }
+
   await runInTransactionAsync(async () => {
     await lockAssessment(assessment);
 
     const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
     const existingIds = new Set(currentRules.map((rule) => rule.id));
-    const submittedIds = new Set(rules.map((rule) => rule.ruleData.id).filter((id) => id != null));
     const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
     if (idsToDelete.length > 0) {
       await execute(sql.delete_enrollment_rules_by_ids, {

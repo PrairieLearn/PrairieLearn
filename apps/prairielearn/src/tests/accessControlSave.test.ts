@@ -371,6 +371,46 @@ describe('Access control save via tRPC', () => {
     assert.equal(reorderedRuleA.number, 2);
   });
 
+  test.sequential('rejects duplicate student-specific override ids', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const existingRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const existingRule = existingRules[0];
+    assert.isOk(existingRule);
+    const enrollmentIds = existingRule.enrollments!.map((enrollment) => enrollment.enrollmentId);
+
+    await expect(
+      replaceEnrollmentAccessControlRules(assessment, [
+        {
+          ruleData: {
+            ...formJsonToEnrollmentRuleData({
+              dateControl: { due: { date: '2024-04-01T23:59:00' } },
+            }),
+            id: existingRule.id,
+          },
+          enrollmentIds,
+        },
+        {
+          ruleData: {
+            ...formJsonToEnrollmentRuleData({
+              dateControl: { due: { date: '2024-04-08T23:59:00' } },
+            }),
+            id: existingRule.id,
+          },
+          enrollmentIds,
+        },
+      ]),
+    ).rejects.toThrow(`Duplicate enrollment access control rule ID: ${existingRule.id}`);
+
+    const rulesAfterRejection = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.deepEqual(
+      rulesAfterRejection.map((rule) => rule.id),
+      existingRules.map((rule) => rule.id),
+    );
+  });
+
   test.sequential('rejects save with stale origHash', async () => {
     const client = await createClient();
     const staleHash = await getOrigHash();
