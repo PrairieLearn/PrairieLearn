@@ -367,14 +367,6 @@ async function syncEnrollmentAccessControlRule(
   );
 }
 
-async function moveEnrollmentAccessControlsToTemporaryNumbers(
-  assessment: Assessment,
-): Promise<void> {
-  await execute(sql.move_enrollment_rules_to_temporary_numbers, {
-    assessment_id: assessment.id,
-  });
-}
-
 export async function replaceEnrollmentAccessControlRules(
   assessment: Assessment,
   rules: EnrollmentAccessControlRuleInput[],
@@ -386,14 +378,21 @@ export async function replaceEnrollmentAccessControlRules(
     const existingIds = new Set(currentRules.map((rule) => rule.id));
     const submittedIds = new Set(rules.map((rule) => rule.ruleData.id).filter((id) => id != null));
     const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
-    await deleteEnrollmentAccessControlsByIds(idsToDelete, assessment);
+    if (idsToDelete.length > 0) {
+      await execute(sql.delete_enrollment_rules_by_ids, {
+        ids: idsToDelete,
+        assessment_id: assessment.id,
+      });
+    }
 
     if (rules.length === 0) return;
 
     // Reordering can swap existing rule numbers, which would otherwise violate
     // the unique constraint before the batch finishes. These temporary values
     // stay inside this transaction and are replaced by the loop below.
-    await moveEnrollmentAccessControlsToTemporaryNumbers(assessment);
+    await execute(sql.move_enrollment_rules_to_temporary_numbers, {
+      assessment_id: assessment.id,
+    });
     for (const [index, rule] of rules.entries()) {
       await syncEnrollmentAccessControlRule(
         assessment,
@@ -402,16 +401,5 @@ export async function replaceEnrollmentAccessControlRules(
         rule.enrollmentIds,
       );
     }
-  });
-}
-
-async function deleteEnrollmentAccessControlsByIds(
-  ids: string[],
-  assessment: Assessment,
-): Promise<void> {
-  if (ids.length === 0) return;
-  await execute(sql.delete_enrollment_rules_by_ids, {
-    ids,
-    assessment_id: assessment.id,
   });
 }
