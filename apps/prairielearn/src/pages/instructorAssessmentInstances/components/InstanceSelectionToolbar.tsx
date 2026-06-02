@@ -33,6 +33,7 @@ export function InstanceSelectionToolbar({
   allRows,
   clearSelection,
   courseInstanceId,
+  assessmentId,
   timezone,
   groupWork,
   isDevMode,
@@ -42,6 +43,7 @@ export function InstanceSelectionToolbar({
   allRows: AssessmentInstanceRow[];
   clearSelection: () => void;
   courseInstanceId: string;
+  assessmentId: string;
   timezone: string;
   groupWork: boolean;
   isDevMode: boolean;
@@ -90,6 +92,7 @@ export function InstanceSelectionToolbar({
         </Button>
         <UploadDropdown
           courseInstanceId={courseInstanceId}
+          assessmentId={assessmentId}
           groupWork={groupWork}
           isDevMode={isDevMode}
         />

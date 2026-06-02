@@ -621,6 +621,7 @@ export function AssessmentInstancesTable({
       allRows={data}
       clearSelection={() => setRowSelection({})}
       courseInstanceId={courseInstance.id}
+      assessmentId={assessment.id}
       timezone={courseInstance.display_timezone}
       groupWork={assessment.team_work}
       isDevMode={isDevMode}

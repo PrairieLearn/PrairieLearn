@@ -3,7 +3,10 @@ import { type ReactNode, useState } from 'react';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
 
 import { type AppError, AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
-import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
+import {
+  getAssessmentDownloadsUrl,
+  getCourseInstanceJobSequenceUrl,
+} from '../../../lib/client/url.js';
 import type { AssessmentUploadsError } from '../../../trpc/assessment/assessment-uploads.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
@@ -11,15 +14,18 @@ type OpenUploadModal = 'instanceQuestionScores' | 'assessmentInstanceScores' | '
 
 export function UploadDropdown({
   courseInstanceId,
+  assessmentId,
   groupWork,
   isDevMode,
 }: {
   courseInstanceId: string;
+  assessmentId: string;
   groupWork: boolean;
   isDevMode: boolean;
 }) {
   const trpc = useTRPC();
   const [openModal, setOpenModal] = useState<OpenUploadModal>(null);
+  const downloadsUrl = getAssessmentDownloadsUrl({ courseInstanceId, assessmentId });
 
   const redirectToJob = ({ jobSequenceId }: { jobSequenceId: string }) => {
     window.location.assign(getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId));
@@ -69,8 +75,10 @@ export function UploadDropdown({
       <UploadCsvModal
         show={openModal === 'instanceQuestionScores'}
         title="Upload new question scores"
+        description="Set per-question scores and feedback for individual students."
         inputId="upload-instance-question-scores-file"
-        help={<InstanceQuestionScoresHelp groupWork={groupWork} />}
+        helpTitle="Accepted formats"
+        help={<InstanceQuestionScoresHelp groupWork={groupWork} downloadsUrl={downloadsUrl} />}
         isPending={instanceQuestionScores.isPending}
         appError={getAppError<AssessmentUploadsError['instanceQuestionScores']>(
           instanceQuestionScores.error,
@@ -83,7 +91,9 @@ export function UploadDropdown({
       <UploadCsvModal
         show={openModal === 'assessmentInstanceScores'}
         title="Upload new total scores"
+        description="Set the total assessment score for individual students."
         inputId="upload-assessment-instance-scores-file"
+        helpTitle="Accepted formats"
         help={<AssessmentInstanceScoresHelp groupWork={groupWork} />}
         isPending={assessmentInstanceScores.isPending}
         appError={getAppError<AssessmentUploadsError['assessmentInstanceScores']>(
@@ -98,8 +108,17 @@ export function UploadDropdown({
         <UploadCsvModal
           show={openModal === 'submissions'}
           title="Upload submissions CSV"
+          description="Recreate users, assessment instances, questions, variants, and submissions from a downloaded submissions CSV. Available in development mode only."
           inputId="upload-submissions-file"
-          help={<SubmissionsHelp />}
+          warning={
+            <div className="alert alert-danger">
+              This will <strong>delete all existing assessment instances and submissions</strong>{' '}
+              for this assessment and replace them with the contents of the CSV file. This action
+              cannot be undone.
+            </div>
+          }
+          helpTitle="Before you upload"
+          help={<SubmissionsHelp downloadsUrl={downloadsUrl} />}
           isPending={submissions.isPending}
           appError={getAppError<AssessmentUploadsError['submissions']>(submissions.error)}
           onHide={() => setOpenModal(null)}
@@ -115,7 +134,10 @@ function UploadCsvModal({
   show,
   onHide,
   title,
+  description,
   inputId,
+  warning,
+  helpTitle,
   help,
   isPending,
   appError,
@@ -125,7 +147,10 @@ function UploadCsvModal({
   show: boolean;
   onHide: () => void;
   title: string;
+  description: ReactNode;
   inputId: string;
+  warning?: ReactNode;
+  helpTitle: string;
   help: ReactNode;
   isPending: boolean;
   appError: AppError<never> | null;
@@ -136,6 +161,7 @@ function UploadCsvModal({
 
   return (
     <Modal
+      size="lg"
       show={show}
       onHide={onHide}
       onExited={() => {
@@ -147,9 +173,10 @@ function UploadCsvModal({
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {help}
-        <div className="mb-3">
-          <label className="form-label" htmlFor={inputId}>
+        <p>{description}</p>
+        {warning}
+        <div className="mb-4">
+          <label className="form-label fw-semibold" htmlFor={inputId}>
             Choose CSV file
           </label>
           <input
@@ -160,6 +187,10 @@ function UploadCsvModal({
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
         </div>
+        <section className="border-top pt-3">
+          <h2 className="h6 fw-semibold">{helpTitle}</h2>
+          {help}
+        </section>
         <AppErrorAlert
           error={appError}
           render={{ UNKNOWN: ({ message }) => message }}
@@ -182,28 +213,41 @@ function UploadCsvModal({
   );
 }
 
-function InstanceQuestionScoresHelp({ groupWork }: { groupWork: boolean }) {
+function InstanceQuestionScoresHelp({
+  groupWork,
+  downloadsUrl,
+}: {
+  groupWork: boolean;
+  downloadsUrl: string;
+}) {
   const idColumn = groupWork ? 'group_name' : 'uid';
   const id1 = groupWork ? 'group1' : 'student1@example.com';
   const id2 = groupWork ? 'group2' : 'student2@example.com';
   return (
     <>
-      <p>
-        Upload a CSV file in the format of the{' '}
-        <code>
-          <i>&lt;assessment&gt;</i>_submissions_for_manual_grading.csv
-        </code>{' '}
-        file from the Downloads page. Alternatively, the CSV file can be in the format:
-      </p>
+      <p className="mb-2">Upload a CSV file in either of these formats:</p>
+      <ul>
+        <li>
+          The{' '}
+          <code>
+            <i>&lt;assessment&gt;</i>_submissions_for_manual_grading.csv
+          </code>{' '}
+          file from the <a href={downloadsUrl}>Downloads tab</a>.
+        </li>
+        <li>
+          A CSV with <code>{idColumn}</code>, <code>instance</code>, <code>qid</code>,{' '}
+          <code>score_perc</code>, and <code>feedback</code> columns:
+        </li>
+      </ul>
       <pre className="ms-4">
         {`${idColumn},instance,qid,score_perc,feedback
 ${id1},1,addTwoNumbers,34.5,The second step was wrong
 ${id2},1,addTwoNumbers,78.92,
 ${id2},1,matrixMultiply,100,Great job!`}
       </pre>
-      <p>
-        Additional information, including instructions on how to update points instead of percentage
-        or to update the auto/manual portions of the score, can be found in the{' '}
+      <p className="mb-0">
+        To update points instead of a percentage, or to update only the auto or manual portion of a
+        score, see the{' '}
         <a
           href="https://docs.prairielearn.com/manualGrading/#manual-grading-using-file-uploads"
           target="_blank"
@@ -224,14 +268,16 @@ function AssessmentInstanceScoresHelp({ groupWork }: { groupWork: boolean }) {
   const subject = groupWork ? 'group' : 'student';
   return (
     <>
-      <p>Upload a CSV file like this:</p>
+      <p className="mb-2">
+        To set percentage scores, upload a CSV file with a <code>score_perc</code> column:
+      </p>
       <pre className="ms-4">
         {`${idColumn},instance,score_perc
 ${id1},1,63.5
 ${id2},1,100`}
       </pre>
       <p>
-        The example above will change the total assessment percentage scores for{' '}
+        This sets the total assessment percentage score for{' '}
         {groupWork ? (
           <>
             group <code>group1</code>
@@ -247,14 +293,13 @@ ${id2},1,100`}
         ) : (
           <code>student2@example.com</code>
         )}{' '}
-        to 100%. The <code>instance</code> column indicates which assessment instance to modify, and
-        should be <code>1</code> if there is only a single instance per {subject}.
+        to 100%. The <code>instance</code> column selects which assessment instance to modify, and
+        should be <code>1</code> when there is only one instance per {subject}.
       </p>
-      <p>
-        Alternatively, the total assessment points can be changed with a CSV containing a{' '}
-        <code>points</code> column, like:
+      <p className="mb-2">
+        To set total points instead, upload a CSV file with a <code>points</code> column:
       </p>
-      <pre className="ms-4">
+      <pre className="ms-4 mb-0">
         {`${idColumn},instance,points
 ${id1},1,120
 ${id2},1,130.27`}
@@ -263,32 +308,24 @@ ${id2},1,130.27`}
   );
 }
 
-function SubmissionsHelp() {
+function SubmissionsHelp({ downloadsUrl }: { downloadsUrl: string }) {
   return (
-    <>
-      <p>
-        Upload a CSV file to recreate users, assessment instances, questions, variants, and
-        submissions.
-      </p>
-      <p>
-        You should upload one of the submissions CSV files (<code>*_all_submissions.csv</code>,{' '}
-        <code>*_final_submissions.csv</code>, or <code>*_best_submissions.csv</code>) from the
-        Downloads page.
-      </p>
-      <p>
+    <ul className="mb-0">
+      <li>
+        Upload one of the submissions CSV files (<code>*_all_submissions.csv</code>,{' '}
+        <code>*_final_submissions.csv</code>, or <code>*_best_submissions.csv</code>) from the{' '}
+        <a href={downloadsUrl}>Downloads tab</a>.
+      </li>
+      <li>
         The download/upload process is lossy. Some information, such as <code>format_errors</code>,{' '}
         <code>raw_submitted_answers</code>, whether or not a submission was considered gradable, and
         scores (including manual grading and rubrics) will not be preserved.
-      </p>
-      <p>
+      </li>
+      <li>
         If the assessment has questions that use <b>manual rubric grading</b>, upload their rubrics
         before uploading the CSV. The rubrics must be identical to those used when the submissions
         were downloaded.
-      </p>
-      <div className="alert alert-danger">
-        This will delete all existing assessment instances and submissions for this assessment and
-        replace them with the submissions from the CSV file. This action cannot be undone.
-      </div>
-    </>
+      </li>
+    </ul>
   );
 }
