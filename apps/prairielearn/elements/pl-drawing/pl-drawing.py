@@ -415,9 +415,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_submitted_answer = data["submitted_answers"].get(name)
 
-    # A blank submission could be `None` or an empty string
-    # Empty strings must be filtered here because json.loads('') raises an error
-    if allow_blank and (raw_submitted_answer is None or len(raw_submitted_answer) == 0):
+    # A blank submission could be `None`
+    if allow_blank and raw_submitted_answer is None:
         data["submitted_answers"][name] = None
         return
 
@@ -592,9 +591,26 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru = []
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
-            # This element cannot test itself. Defer the generation of test inputs to server.py
-            return
-        a_tru = data["correct_answers"][name]
+            # No correct answer defined. Submit a point in the center of the
+            # canvas so parse() sees a non-empty list instead of rejecting a
+            # blank submission.
+            width = pl.get_integer_attrib(
+                element, "width", defaults.element_defaults["width"]
+            )
+            height = pl.get_integer_attrib(
+                element, "height", defaults.element_defaults["height"]
+            )
+            a_tru = [
+                {
+                    "id": "dummy",
+                    "gradingName": "pl-point",
+                    "graded": False,
+                    "left": width / 2,
+                    "top": height / 2,
+                }
+            ]
+        else:
+            a_tru = data["correct_answers"][name]
 
     if result == "correct":
         data["raw_submitted_answers"][name] = json.dumps(a_tru)
