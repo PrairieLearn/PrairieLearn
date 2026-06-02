@@ -243,7 +243,7 @@ export function InstructorCourseAdminSettings({
               >
                 documentation on exposing user identity
               </a>
-              .
+              . Disabling this may break questions that rely on user identity.
             </div>
           </div>
           {aiQuestionGenerationCourseToggleEnabled && (

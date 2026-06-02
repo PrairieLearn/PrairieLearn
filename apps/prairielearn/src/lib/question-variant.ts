@@ -62,7 +62,7 @@ export async function makeVariant({
 }: {
   question: Question;
   course: Course;
-  /** The course where the variant is being created. May differ from `course` (the question's course) for shared questions. */
+  /** The course where the variant is being created. May differ from the question's course (`course`) for shared questions. */
   variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;

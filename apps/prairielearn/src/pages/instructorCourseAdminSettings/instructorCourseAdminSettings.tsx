@@ -156,7 +156,9 @@ router.post(
           courseInfo.title = req.body.title;
           courseInfo.timezone = req.body.display_timezone;
 
-          // Only persist settings to JSON when in development mode.
+          // Always mirror the setting into infoCourse.json. In dev mode this JSON
+          // value is the source of truth for sync; in production the database
+          // column is authoritative and sync only warns if the two diverge.
           if (questions_receive_user_data) {
             courseInfo.options = { ...courseInfo.options, questionsReceiveUserData: true };
           } else {
