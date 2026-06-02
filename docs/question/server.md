@@ -433,7 +433,7 @@ User and group data are passed only when **all** of the following are true:
 1. The course has opted in by setting `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json` (in production, this setting is managed via the course settings page by a course owner).
 2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
 
-When the gate is closed, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.
+When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.
 
 ## Generating dynamic files with `file()`
 
