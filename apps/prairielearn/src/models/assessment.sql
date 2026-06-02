@@ -97,6 +97,7 @@ WITH
       AND a.deleted_at IS NULL
       AND aq.deleted_at IS NULL
       AND iq.requires_manual_grading
+      AND iq.status != 'unanswered'
     GROUP BY
       aq.assessment_id
   )
