@@ -59,28 +59,6 @@ export type InstanceLogEntry = Omit<
 >;
 
 /**
- * Check that an assessment_instance_id really belongs to the given assessment_id
- *
- * @param assessment_instance_id - The assessment instance to check.
- * @param assessment_id - The assessment it should belong to.
- * @returns Throws an error if the assessment instance doesn't belong to the assessment.
- */
-export async function checkBelongs(
-  assessment_instance_id: string,
-  assessment_id: string,
-): Promise<void> {
-  if (
-    (await sqldb.queryOptionalScalar(
-      sql.check_belongs,
-      { assessment_instance_id, assessment_id },
-      IdSchema,
-    )) == null
-  ) {
-    throw new error.HttpStatusError(403, 'access denied');
-  }
-}
-
-/**
  * Render the "text" property of an assessment.
  *
  * @param assessment - The assessment to render the text for.
@@ -393,6 +371,7 @@ const InstancesToGradeSchema = z.object({
  *
  * @param params
  * @param params.assessment_id - The assessment to grade.
+ * @param params.assessment_instance_ids - If provided, only grade these instances; otherwise grade all open instances.
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
@@ -402,6 +381,7 @@ const InstancesToGradeSchema = z.object({
  */
 export async function gradeAllAssessmentInstances({
   assessment_id,
+  assessment_instance_ids = null,
   user_id,
   authn_user_id,
   close,
@@ -409,6 +389,11 @@ export async function gradeAllAssessmentInstances({
   ignoreRealTimeGradingDisabled,
 }: {
   assessment_id: string;
+  /**
+   * If provided, restricts grading to these assessment instance ids; otherwise
+   * grades every open instance for the assessment.
+   */
+  assessment_instance_ids?: string[] | null;
   user_id: string;
   authn_user_id: string;
   close: boolean;
@@ -434,7 +419,7 @@ export async function gradeAllAssessmentInstances({
 
     const instances = await sqldb.queryRows(
       sql.select_instances_to_grade,
-      { assessment_id },
+      { assessment_id, assessment_instance_ids },
       InstancesToGradeSchema,
     );
     job.info(instances.length === 1 ? 'One instance found' : instances.length + ' instances found');
@@ -648,10 +633,12 @@ export async function deleteAssessmentInstance(
 export async function deleteAllAssessmentInstancesForAssessment(
   assessment_id: string,
   authn_user_id: string,
+  assessment_instance_ids: string[] | null = null,
 ): Promise<void> {
   await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
     assessment_id,
     authn_user_id,
+    assessment_instance_ids,
   });
 }
 

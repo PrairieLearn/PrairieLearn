@@ -474,7 +474,7 @@ function verifyEdit(
     const fileContents = b64DecodeUnicode(editor.data('contents'));
     assert.strictEqual(fileContents, expectedDraftContents);
   });
-  it(`should have results of save and sync - ${expectedToFindResults}`, function () {
+  it(`should have save results - ${expectedToFindResults}`, function () {
     elemList = locals.$('form[name="editor-form"] #job-sequence-results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);

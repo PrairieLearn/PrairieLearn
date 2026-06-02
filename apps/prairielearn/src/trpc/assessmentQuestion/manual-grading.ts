@@ -218,8 +218,6 @@ const setAssignedGraderMutation = t.procedure
     if (assigned_grader !== null) {
       const courseStaff = await selectCourseInstanceGraderStaff({
         courseInstance: opts.ctx.course_instance,
-        requiredRole: ['Student Data Editor'],
-        authzData: opts.ctx.authz_data,
       });
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
