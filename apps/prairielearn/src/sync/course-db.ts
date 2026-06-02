@@ -401,7 +401,7 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
  */
-export async function loadInfoFile<T extends { uuid: string }>({
+export async function loadInfoFile<T = { uuid: string }>({
   coursePath,
   filePath,
   schema,
@@ -701,12 +701,12 @@ async function loadAndValidateJson<T extends ZodType>({
   tolerateMissing?: boolean;
   validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
-  const loadedJson = (await loadInfoFile({
+  const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
     filePath,
     schema,
     tolerateMissing,
-  })) as InfoFile<z.infer<T>> | null;
+  });
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
     // as would happen if there was a .DS_Store file, or if we're
@@ -732,6 +732,9 @@ async function loadAndValidateJson<T extends ZodType>({
     return loadedJson;
   }
 
+  // `loadedJson.data` is the raw, not-yet-Zod-parsed value, so it has the
+  // schema's input shape. TypeScript can't prove `output<T>` is the input type
+  // for an arbitrary `T`, so we assert it here.
   const validationResult = validate(result.data, loadedJson.data as z.input<T>);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
