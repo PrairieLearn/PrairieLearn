@@ -14,7 +14,6 @@ import {
   selectPrairieTestExamMetadataByUuids,
 } from '../../models/assessment-access-control-rules.js';
 import {
-  selectUsersAndEnrollmentsByUidsInCourseInstance,
   selectUsersAndEnrollmentsForCourseInstance,
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
@@ -25,7 +24,6 @@ import {
   MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
   MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
   MAX_ACCESS_CONTROL_RULES,
-  MAX_ACCESS_CONTROL_UID_VALIDATION_BATCH_SIZE,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
@@ -55,35 +53,6 @@ const students = t.procedure
         uid: r.user!.uid,
         name: r.user!.name,
       }));
-  });
-
-const validateUids = t.procedure
-  .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
-  .input(z.object({ uids: z.array(z.string()).max(MAX_ACCESS_CONTROL_UID_VALIDATION_BATCH_SIZE) }))
-  .query(async (opts) => {
-    const results = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-      uids: opts.input.uids,
-      courseInstance: opts.ctx.course_instance,
-      requiredRole: ['Student Data Viewer'],
-      authzData: opts.ctx.authz_data,
-    });
-
-    const enrollmentMap = new Map(results.map((r) => [r.user.uid, r]));
-
-    return opts.input.uids.map((uid) => {
-      const match = enrollmentMap.get(uid);
-      if (!match) {
-        return { id: null, uid, name: null, enrolled: false, notFound: true };
-      }
-      return {
-        id: match.enrollment.id,
-        uid: match.user.uid,
-        name: match.user.name,
-        enrolled: match.enrollment.status === 'joined',
-        notFound: false,
-      };
-    });
   });
 
 const studentLabels = t.procedure
@@ -321,7 +290,6 @@ const saveAllRules = t.procedure
 
 export const accessControlRouter = t.router({
   students,
-  validateUids,
   studentLabels,
   prairieTestExamMetadata,
   saveAllRules,
