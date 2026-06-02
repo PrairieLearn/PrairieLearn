@@ -2,12 +2,12 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../tests/utils/config.js';
 
+import { parseGithubRepository } from './github-utils.js';
 import {
   addMachineAccessToRepo,
   checkGithubOrgAccess,
   courseRepoContentUrl,
   httpPrefixForCourseRepo,
-  parseGithubRepository,
 } from './github.js';
 
 const orgsGet = vi.fn();

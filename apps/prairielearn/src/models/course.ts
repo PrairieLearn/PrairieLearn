@@ -22,7 +22,7 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
-import { parseGithubRepository } from '../lib/github.js';
+import { parseGithubRepository } from '../lib/github-utils.js';
 
 import { insertAuditLog } from './audit-log.js';
 
