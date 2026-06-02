@@ -732,9 +732,6 @@ async function loadAndValidateJson<T extends ZodType>({
     return loadedJson;
   }
 
-  // `loadedJson.data` is the raw, not-yet-Zod-parsed value, so it has the
-  // schema's input shape. TypeScript can't prove `output<T>` is the input type
-  // for an arbitrary `T`, so we assert it here.
   const validationResult = validate(result.data, loadedJson.data as z.input<T>);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
