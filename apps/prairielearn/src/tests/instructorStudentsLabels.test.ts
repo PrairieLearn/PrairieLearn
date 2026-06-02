@@ -28,7 +28,10 @@ import {
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
-import { type CourseInstanceJsonInput, MAX_STUDENT_LABELS } from '../schemas/infoCourseInstance.js';
+import {
+  type CourseInstanceJsonInput,
+  MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
+} from '../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 import type { StudentLabelError } from '../trpc/courseInstance/student-labels.js';
 
@@ -513,11 +516,14 @@ describe('Instructor student labels page', () => {
       courseInstanceShortName,
     );
     const originJson = (await fs.readJson(originInfoPath)) as CourseInstanceJsonInput;
-    originJson.studentLabels = Array.from({ length: MAX_STUDENT_LABELS }, (_, index) => ({
-      uuid: crypto.randomUUID(),
-      name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
-      color: 'blue1' as const,
-    }));
+    originJson.studentLabels = Array.from(
+      { length: MAX_STUDENT_LABELS_PER_COURSE_INSTANCE },
+      (_, index) => ({
+        uuid: crypto.randomUUID(),
+        name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
+        color: 'blue1' as const,
+      }),
+    );
     await fs.writeJson(originInfoPath, originJson, { spaces: 2 });
 
     await commitOriginAndSync(courseRepo, 'Fill student labels to limit', [
@@ -525,7 +531,7 @@ describe('Instructor student labels page', () => {
     ]);
 
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
-    assert.lengthOf(labels, MAX_STUDENT_LABELS);
+    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
 
     const labelToEdit = labels.find((l) => l.name === 'Limit Label 02');
     assert.isDefined(labelToEdit);
@@ -544,7 +550,7 @@ describe('Instructor student labels page', () => {
     });
 
     labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
-    assert.lengthOf(labels, MAX_STUDENT_LABELS);
+    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
     assert.isDefined(labels.find((l) => l.name === 'Limit Label 02 Renamed'));
 
     origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
@@ -559,6 +565,6 @@ describe('Instructor student labels page', () => {
         uids: [],
         origHash,
       }),
-    ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS} student labels`);
+    ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels`);
   });
 });
