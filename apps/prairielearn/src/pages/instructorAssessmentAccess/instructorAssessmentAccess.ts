@@ -23,6 +23,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
+  countEnrollmentAccessControlRules,
   selectAccessControlRules,
   selectPrairieTestExamMetadataByUuids,
 } from '../../models/assessment-access-control-rules.js';
@@ -62,9 +63,25 @@ router.get(
       'enhanced-access-control',
       res.locals,
     );
+    const permissions = {
+      isExampleCourse: res.locals.course.example_course,
+      hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      hasCourseInstancePermissionView: res.locals.authz_data.has_course_instance_permission_view,
+      hasCourseInstancePermissionEdit: res.locals.authz_data.has_course_instance_permission_edit,
+    };
 
     if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
-      const jsonRules = await selectAccessControlRules(res.locals.assessment);
+      const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
+        selectAccessControlRules(
+          res.locals.assessment,
+          permissions.hasCourseInstancePermissionView
+            ? ['none', 'student_label', 'enrollment']
+            : ['none', 'student_label'],
+        ),
+        permissions.hasCourseInstancePermissionView
+          ? 0
+          : countEnrollmentAccessControlRules(res.locals.assessment),
+      ]);
       const initialExamUuids = Array.from(
         new Set(
           jsonRules.flatMap(
@@ -96,6 +113,8 @@ router.get(
           initialData: jsonRules,
           prairieTestExamMetadata,
           ptHost: config.ptHost,
+          permissions,
+          hiddenEnrollmentRuleCount,
         }),
       );
       return;
@@ -164,9 +183,7 @@ router.get(
     }
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-
+    const canEdit = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
     res.send(
       InstructorAssessmentAccess({
         resLocals: res.locals,

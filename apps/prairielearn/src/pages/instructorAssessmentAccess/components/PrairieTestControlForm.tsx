@@ -12,7 +12,7 @@ import {
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS } from '../../../schemas/limits.js';
-
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
@@ -51,6 +51,7 @@ function getAfterCompleteVisibilityMode(
 }
 
 function ExamAfterCompleteFields({ index }: { index: number }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const { field: questionsHiddenField } = useController<
     AccessControlFormData,
     `defaultRule.prairieTestExams.${number}.afterCompleteQuestionsHidden`
@@ -91,7 +92,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
         aria-label="After completion visibility during reservation"
         id={`defaultRule-exam-after-complete-${index}`}
         minWidth={300}
-        disabled={readOnly}
+        disabled={!ruleEditable || readOnly}
         onChange={handleModeChange}
       />
       {!readOnly && selectedDescription && (
@@ -107,6 +108,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
 }
 
 export function PrairieTestControlForm() {
+  const ruleEditable = useAccessControlRuleEditable();
   const { register, setValue, trigger } = useFormContext<AccessControlFormData>();
 
   const {
@@ -154,15 +156,17 @@ export function PrairieTestControlForm() {
           <Form.Group className="mb-3" controlId={`defaultRule-exam-uuid-${index}`}>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <Form.Label className="mb-0">Exam UUID</Form.Label>
-              <Button
-                size="sm"
-                variant="outline-danger"
-                aria-label={`Remove exam ${index + 1}`}
-                onClick={() => removeExam(index)}
-              >
-                <i className="bi bi-trash me-1" aria-hidden="true" />
-                Remove
-              </Button>
+              {ruleEditable && (
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  aria-label={`Remove exam ${index + 1}`}
+                  onClick={() => removeExam(index)}
+                >
+                  <i className="bi bi-trash me-1" aria-hidden="true" />
+                  Remove
+                </Button>
+              )}
             </div>
             <Form.Control
               type="text"
@@ -173,6 +177,7 @@ export function PrairieTestControlForm() {
               }
               aria-describedby={`defaultRule-exam-uuid-${index}-help`}
               defaultValue=""
+              disabled={!ruleEditable}
               placeholder="e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c"
               {...register(`defaultRule.prairieTestExams.${index}.examUuid`, {
                 required: 'Exam UUID is required',
@@ -210,6 +215,7 @@ export function PrairieTestControlForm() {
               id={`defaultRule-exam-readonly-${index}`}
               label="Read-only mode"
               defaultChecked={false}
+              disabled={!ruleEditable}
               {...register(`defaultRule.prairieTestExams.${index}.readOnly`, {
                 onChange: (e: ChangeEvent<HTMLInputElement>) => {
                   if (e.target.checked) {
@@ -239,27 +245,31 @@ export function PrairieTestControlForm() {
           <ExamAfterCompleteFields index={index} />
         </div>
       ))}
-      <Button
-        size="sm"
-        variant="outline-primary"
-        disabled={addExamDisabled}
-        title={addExamDisabledTitle}
-        onClick={() => {
-          appendExam({
-            examUuid: '',
-            readOnly: false,
-            afterCompleteQuestionsHidden: false,
-            afterCompleteScoreHidden: false,
-          });
-          // Trigger validation so the empty UUID error shows immediately.
-          void trigger('defaultRule.prairieTestExams');
-        }}
-      >
-        <i className="bi bi-plus-circle me-1" aria-hidden="true" />
-        Add exam
-      </Button>
-      {addExamDisabledTitle && (
-        <Form.Text className="text-muted d-block mt-2">{addExamDisabledTitle}</Form.Text>
+      {ruleEditable && (
+        <>
+          <Button
+            size="sm"
+            variant="outline-primary"
+            disabled={addExamDisabled}
+            title={addExamDisabledTitle}
+            onClick={() => {
+              appendExam({
+                examUuid: '',
+                readOnly: false,
+                afterCompleteQuestionsHidden: false,
+                afterCompleteScoreHidden: false,
+              });
+              // Trigger validation so the empty UUID error shows immediately.
+              void trigger('defaultRule.prairieTestExams');
+            }}
+          >
+            <i className="bi bi-plus-circle me-1" aria-hidden="true" />
+            Add exam
+          </Button>
+          {addExamDisabledTitle && (
+            <Form.Text className="text-muted d-block mt-2">{addExamDisabledTitle}</Form.Text>
+          )}
+        </>
       )}
     </div>
   );

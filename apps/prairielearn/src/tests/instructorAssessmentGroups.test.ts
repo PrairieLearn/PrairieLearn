@@ -106,13 +106,16 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential('can create a new group', async () => {
-    const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
+    await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroup',
       uids: users
         .slice(0, 2)
         .map((u) => u.uid)
         .join(','),
     });
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const group = membership.groups.find((group) => group.name === 'TestGroup');
+    assert.isDefined(group);
     assert.equal(group.name, 'TestGroup');
     assert.deepEqual(group.users.map((u) => u.uid).sort(), [users[0].uid, users[1].uid].sort());
     group1RowId = group.group_id;
@@ -227,46 +230,73 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential('can create a second group', async () => {
-    const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
+    await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroup2',
       uids: users
         .slice(2, 4)
         .map((u) => u.uid)
         .join(','),
     });
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const group = membership.groups.find((group) => group.name === 'TestGroup2');
+    assert.isDefined(group);
     assert.equal(group.name, 'TestGroup2');
     assert.deepEqual(group.users.map((u) => u.uid).sort(), [users[2].uid, users[3].uid].sort());
     group2RowId = group.group_id;
   });
 
   test.sequential('can create a group with an instructor', async () => {
-    const { group } = await trpcClient.assessmentGroups.addGroup.mutate({
+    await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroupWithInstructor',
       uids: 'dev@example.com',
     });
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const group = membership.groups.find((group) => group.name === 'TestGroupWithInstructor');
+    assert.isDefined(group);
     assert.equal(group.name, 'TestGroupWithInstructor');
     assert.ok(group.users.some((u) => u.uid === 'dev@example.com'));
   });
 
   test.sequential('can add a user to an existing group', async () => {
     assert.isDefined(group1RowId);
-    const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
+    const { failures } = await trpcClient.assessmentGroups.editGroup.mutate({
       groupId: group1RowId,
       uids: [users[0].uid, users[1].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 0);
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const group = membership.groups.find((group) => group.group_id === group1RowId);
+    assert.isDefined(group);
     assert.ok(group.users.some((u) => u.uid === users[4].uid));
   });
 
   test.sequential('cannot add a user to a group if they are already in another group', async () => {
     assert.isDefined(group2RowId);
-    const { group, failures } = await trpcClient.assessmentGroups.editGroup.mutate({
+    const { failures } = await trpcClient.assessmentGroups.editGroup.mutate({
       groupId: group2RowId,
       uids: [users[2].uid, users[3].uid, users[4].uid].join(','),
     });
     assert.lengthOf(failures, 1);
     assert.equal(failures[0].uid, users[4].uid);
     assert.match(failures[0].message, /in another group/);
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const group = membership.groups.find((group) => group.group_id === group2RowId);
+    assert.isDefined(group);
     assert.notOk(group.users.some((u) => u.uid === users[4].uid));
+  });
+
+  test.sequential('can fetch current group membership', async () => {
+    assert.isDefined(group1RowId);
+    assert.isDefined(group2RowId);
+
+    const membership = await trpcClient.assessmentGroups.membership.query();
+
+    assert.includeMembers(
+      membership.groups.map((group) => group.group_id),
+      [group1RowId, group2RowId],
+    );
+    for (const user of users) {
+      assert.notInclude(membership.notAssigned, user.uid);
+    }
   });
 });

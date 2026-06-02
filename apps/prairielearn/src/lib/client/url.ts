@@ -62,6 +62,30 @@ export function getAssessmentDownloadUrl({
   return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
 }
 
+export function getAssessmentStatisticsDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/statistics/${filename}`;
+}
+
+export function getManualGradingAssessmentQuestionUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/manual_grading/assessment_question/${assessmentQuestionId}`;
+}
+
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
 }
@@ -314,6 +338,19 @@ export function getQuestionSettingsUrl({
     ? `/pl/course_instance/${courseInstanceId}/instructor`
     : `/pl/course/${courseId}`;
   return `${urlPrefix}/question/${questionId}/settings`;
+}
+
+// LockDown Browser exit handshake URLs. The rldb* params are LDB magic stems
+// that must stay mirrored wherever the close flow is driven: rldbsm lowers the
+// session to medium security (hop 1), rldbxb tells LDB to exit (hop 2), rldbqn
+// marks each as quiz-sequence navigation.
+
+export function getEndExamCloseUrl(): string {
+  return '/pl/end-exam?rldbsm=1&rldbqn=1';
+}
+
+export function getEndExamExitUrl(): string {
+  return '/pl/end-exam?rldbxb=1&rldbqn=1';
 }
 
 // tRPC scope URLs

@@ -14,6 +14,7 @@ import {
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
 } from '../../../schemas/limits.js';
 
+import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { DefaultRuleForm } from './DefaultRuleForm.js';
 import { OverrideRuleContent } from './OverrideRuleContent.js';
@@ -24,6 +25,7 @@ import {
   type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
+  isOverrideEditable,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
@@ -39,7 +41,10 @@ const accessControlFormInitialRightWidth = 560;
 
 type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | null;
 
-function getOverrideLimitPolicy(overrides: OverrideData[]): {
+function getOverrideLimitPolicy(
+  overrides: OverrideData[],
+  canEditEnrollmentRules: boolean,
+): {
   nextTargetType: TargetType;
   addDisabledReason: string | null;
   getTargetTypeDisabledReasons: (
@@ -59,9 +64,13 @@ function getOverrideLimitPolicy(overrides: OverrideData[]): {
   const studentLabelLimitReason = `An assessment can have at most ${maxStudentLabelOverrideCount} student-label overrides.`;
 
   return {
-    nextTargetType: enrollmentLimitReached ? 'student_label' : 'enrollment',
-    addDisabledReason:
-      enrollmentLimitReached && studentLabelLimitReached
+    nextTargetType:
+      !canEditEnrollmentRules || enrollmentLimitReached ? 'student_label' : 'enrollment',
+    addDisabledReason: !canEditEnrollmentRules
+      ? studentLabelLimitReached
+        ? studentLabelLimitReason
+        : null
+      : enrollmentLimitReached && studentLabelLimitReached
         ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides and ${maxStudentLabelOverrideCount} student-label overrides.`
         : null,
     getTargetTypeDisabledReasons: (currentTargetType) => ({
@@ -84,6 +93,11 @@ export function AccessControlForm({
   isExam,
   isSaving = false,
   alert,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
+  canFetchPrairieTestMetadata,
+  readOnlyMessage,
+  hiddenEnrollmentRuleCount,
 }: {
   initialData?: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
@@ -93,6 +107,11 @@ export function AccessControlForm({
   isExam: boolean;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
+  canEditAccessSettings: boolean;
+  canEditEnrollmentRules: boolean;
+  canFetchPrairieTestMetadata: boolean;
+  readOnlyMessage: string | null;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const deleteModal = useModalState<{ index: number; name: string }>();
@@ -125,6 +144,7 @@ export function AccessControlForm({
 
   const {
     append: appendOverride,
+    insert: insertOverride,
     remove: removeOverride,
     move: moveOverride,
   } = useFieldArray({
@@ -134,9 +154,9 @@ export function AccessControlForm({
 
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
-  const overrideLimitPolicy = getOverrideLimitPolicy(watchedData.overrides);
+  const overrideLimitPolicy = getOverrideLimitPolicy(watchedData.overrides, canEditEnrollmentRules);
 
-  // Sync cross-field date validation errors into react-hook-form as manual errors,
+  // Sync cross-field validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
   // so we re-sync when child `trigger()` calls clear a manual error we set.
   useEffect(() => {
@@ -169,6 +189,8 @@ export function AccessControlForm({
   }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
+    if (!canEditAccessSettings) return;
+
     await onSubmit(formDataToJson(data));
     reset(data);
   };
@@ -176,8 +198,18 @@ export function AccessControlForm({
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
     newOverride.appliesTo.targetType = overrideLimitPolicy.nextTargetType;
-    appendOverride(newOverride);
-    setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    if (newOverride.appliesTo.targetType === 'student_label') {
+      const firstEnrollmentIndex = watchedData.overrides.findIndex(
+        (override) => override.appliesTo.targetType === 'enrollment',
+      );
+      const insertIndex =
+        firstEnrollmentIndex === -1 ? watchedData.overrides.length : firstEnrollmentIndex;
+      insertOverride(insertIndex, newOverride);
+      setSelectedRule({ type: 'override', index: insertIndex });
+    } else {
+      appendOverride(newOverride);
+      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+    }
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
@@ -224,6 +256,11 @@ export function AccessControlForm({
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
+    const permissions = { canEditAccessSettings, canEditEnrollmentRules };
+    const fromEditable = isOverrideEditable(watchedData.overrides[fromIndex], permissions);
+    const toEditable = isOverrideEditable(watchedData.overrides[toIndex], permissions);
+    if (!fromEditable || !toEditable) return;
+
     moveOverride(fromIndex, toIndex);
 
     if (selectedRule?.type !== 'override') return;
@@ -290,34 +327,48 @@ export function AccessControlForm({
     </button>
   ) : undefined;
 
+  const selectedRuleCanEdit =
+    selectedRule?.type === 'override'
+      ? isOverrideEditable(watchedData.overrides[selectedRule.index], {
+          canEditAccessSettings,
+          canEditEnrollmentRules,
+        })
+      : canEditAccessSettings;
+
   const rightPanel =
     selectedRule?.type === 'default' ? (
-      <div className="px-3 pb-3">
-        <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
-      </div>
+      <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
+        <div className="px-3 pb-3">
+          <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
+        </div>
+      </AccessControlEditabilityProvider>
     ) : selectedRule?.type === 'override' ? (
       (() => {
         if (selectedRule.index >= watchedData.overrides.length) {
           return null;
         }
         return (
-          <div className="px-3 pb-3">
-            <AppliesToField
-              namePrefix={`overrides.${selectedRule.index}`}
-              courseInstanceId={courseInstance.id}
-              targetTypeDisabledReasons={overrideLimitPolicy.getTargetTypeDisabledReasons(
-                watchedData.overrides[selectedRule.index].appliesTo.targetType,
-              )}
-              onTargetTypeChange={(targetType) =>
-                handleOverrideTargetTypeChange(selectedRule.index, targetType)
-              }
-            />
-            <OverrideRuleContent
-              index={selectedRule.index}
-              displayTimezone={displayTimezone}
-              isExam={isExam}
-            />
-          </div>
+          <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
+            <div className="px-3 pb-3">
+              <AppliesToField
+                namePrefix={`overrides.${selectedRule.index}`}
+                courseInstanceId={courseInstance.id}
+                canEditAccessSettings={canEditAccessSettings}
+                canEditEnrollmentRules={canEditEnrollmentRules}
+                targetTypeDisabledReasons={overrideLimitPolicy.getTargetTypeDisabledReasons(
+                  watchedData.overrides[selectedRule.index].appliesTo.targetType,
+                )}
+                onTargetTypeChange={(targetType) =>
+                  handleOverrideTargetTypeChange(selectedRule.index, targetType)
+                }
+              />
+              <OverrideRuleContent
+                index={selectedRule.index}
+                displayTimezone={displayTimezone}
+                isExam={isExam}
+              />
+            </div>
+          </AccessControlEditabilityProvider>
         );
       })()
     ) : null;
@@ -365,6 +416,11 @@ export function AccessControlForm({
                     }
                     prairieTestExamMetadata={prairieTestExamMetadata}
                     ptHost={ptHost}
+                    canEditAccessSettings={canEditAccessSettings}
+                    canEditEnrollmentRules={canEditEnrollmentRules}
+                    canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
+                    readOnlyMessage={readOnlyMessage}
+                    hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     addOverrideDisabledReason={overrideLimitPolicy.addDisabledReason}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteClick}
@@ -385,12 +441,14 @@ export function AccessControlForm({
                     onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
                   />
                 </div>
-                <StickySaveBar
-                  visible={isDirty}
-                  isSaving={isSaving}
-                  saveDisabledReason={saveDisabledReason}
-                  onCancel={() => reset()}
-                />
+                {canEditAccessSettings && (
+                  <StickySaveBar
+                    visible={isDirty}
+                    isSaving={isSaving}
+                    saveDisabledReason={saveDisabledReason}
+                    onCancel={() => reset()}
+                  />
+                )}
               </>
             ),
           }}

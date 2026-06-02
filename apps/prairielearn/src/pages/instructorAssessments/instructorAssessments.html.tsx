@@ -72,7 +72,7 @@ export function InstructorAssessments({
                     ? html`
                         <a
                           href="${urlPrefix}/instance_admin/qti_import"
-                          class="btn btn-sm btn-outline-light"
+                          class="btn btn-sm btn-light"
                           aria-label="Import content"
                         >
                           <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>

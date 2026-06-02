@@ -3,9 +3,11 @@ import { Button, Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
 import { MAX_ACCESS_CONTROL_PASSWORD_LENGTH } from '../../../../schemas/limits.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function PasswordToggle({
@@ -17,11 +19,13 @@ function PasswordToggle({
   onChange: (value: string | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <ToggleTitle
       id={`${idPrefix}-password-enabled`}
       label="Password"
       checked={value !== null}
+      disabled={!ruleEditable}
       onChange={(checked) => onChange(checked ? '' : null)}
     />
   );
@@ -38,6 +42,7 @@ function PasswordDetails({
   idPrefix: string;
   error?: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const [showPassword, setShowPassword] = useState(false);
   const isInvalid = error !== undefined;
   const errorId = `${idPrefix}-password-error`;
@@ -59,6 +64,7 @@ function PasswordDetails({
               value={value}
               maxLength={MAX_ACCESS_CONTROL_PASSWORD_LENGTH}
               isInvalid={isInvalid}
+              disabled={!ruleEditable}
               data-1p-ignore
               onChange={({ currentTarget }) => onChange(currentTarget.value)}
             />
@@ -126,7 +132,9 @@ export function OverridePasswordField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
-    rules: { validate: validatePassword },
+    rules: {
+      validate: validateActiveOverrideField(index, 'password', validatePassword),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');

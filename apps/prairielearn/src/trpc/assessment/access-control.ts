@@ -35,8 +35,9 @@ import {
 import { throwAppError } from '../app-errors.js';
 
 import {
-  requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireCoursePermissionEdit,
+  requireCoursePermissionEditOrCourseInstancePermissionView,
   requireEnhancedAccessControl,
   t,
 } from './init.js';
@@ -90,7 +91,7 @@ const validateUids = t.procedure
 
 const studentLabels = t.procedure
   .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
+  .use(requireCoursePermissionEditOrCourseInstancePermissionView)
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
     return labels.map((label) => StaffStudentLabelSchema.parse(label));
@@ -98,7 +99,7 @@ const studentLabels = t.procedure
 
 const prairieTestExamMetadata = t.procedure
   .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
+  .use(requireCoursePermissionEditOrCourseInstancePermissionView)
   .input(
     z.object({ examUuids: z.array(z.string().uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }),
   )
@@ -106,7 +107,7 @@ const prairieTestExamMetadata = t.procedure
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
 
-function formJsonToEnrollmentRuleData(
+export function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;
@@ -161,13 +162,13 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects/arrays and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
     const clean: Record<string, unknown> = {};
 
-    if (rule.labels && rule.labels.length > 0) {
+    if (index > 0 && rule.labels != null) {
       clean.labels = rule.labels;
     }
 
@@ -193,10 +194,12 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
 
 const saveAllRules = t.procedure
   .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionEdit)
+  .use(requireCoursePermissionEdit)
   .input(
     z.object({
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
+      // Omitted enrollmentRules leave student-specific overrides unchanged;
+      // an empty array explicitly removes them.
       enrollmentRules: z
         .array(EnrollmentRuleInputSchema)
         .max(MAX_ENROLLMENT_ACCESS_CONTROL_RULES)
@@ -206,6 +209,19 @@ const saveAllRules = t.procedure
   )
   .mutation(async (opts) => {
     const { rules, enrollmentRules, origHash } = opts.input;
+    if (opts.ctx.course.example_course) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Editing access settings is not permitted for the example course.',
+      });
+    }
+    if (enrollmentRules !== undefined && !opts.ctx.authz_data.has_course_instance_permission_edit) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a student data editor)',
+      });
+    }
+
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
 
@@ -288,10 +304,8 @@ const saveAllRules = t.procedure
         await lockAssessment(opts.ctx.assessment);
 
         // Determine which enrollment rules to delete
-        const currentRules = await selectAccessControlRules(opts.ctx.assessment);
-        const existingIds = new Set(
-          currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
-        );
+        const currentRules = await selectAccessControlRules(opts.ctx.assessment, ['enrollment']);
+        const existingIds = new Set(currentRules.map((r) => r.id));
         const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
         const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
         await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
