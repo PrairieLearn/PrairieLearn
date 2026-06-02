@@ -76,23 +76,25 @@
         </div>
     {{/incorrect}}
     {{#parse_error}}
-    <span class="small" style="white-space: nowrap">
-        <span class="badge text-bg-danger">
-            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </span>
-        <a
-            class="link-primary"
-            tabindex="0"
-            role="button"
-            data-bs-placement="auto"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="Format error"
-            data-bs-content="{{parse_error}}"
-        >
-            More info…
-        </a>
-    </span>
+        <div class="pl-drawing-sidebar">
+            <span class="small" style="white-space: nowrap">
+                <span class="badge text-bg-danger">
+                    Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                </span>
+                <a
+                    class="link-primary"
+                    tabindex="0"
+                    role="button"
+                    data-bs-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="Format error"
+                    data-bs-content="{{parse_error}}"
+                >
+                    More info…
+                </a>
+            </span>
+        </div>
     {{/parse_error}}
     {{/show_buttons}}
 </div>
