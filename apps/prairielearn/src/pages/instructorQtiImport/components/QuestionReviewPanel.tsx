@@ -14,6 +14,7 @@ hljs.registerLanguage('python', hljsPython);
 import {
   type CollisionStrategy,
   type QuestionOverrides,
+  type SerializedConversionResult,
   type SerializedQuestionOutput,
   resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
@@ -60,6 +61,7 @@ interface ExpansionCommand {
 function QuestionReviewPanelImpl({
   question: q,
   questionNumber,
+  warnings,
   overrides: qo,
   existingDirs,
   expansionCommand,
@@ -67,6 +69,7 @@ function QuestionReviewPanelImpl({
 }: {
   question: SerializedQuestionOutput;
   questionNumber: number;
+  warnings: SerializedConversionResult['warnings'];
   overrides: QuestionOverrides | undefined;
   existingDirs: Set<string>;
   expansionCommand: ExpansionCommand;
@@ -191,6 +194,13 @@ function QuestionReviewPanelImpl({
               title={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
             />
           )}
+          {warnings.length > 0 && (
+            <i
+              className="bi bi-exclamation-triangle-fill text-warning flex-grow-1"
+              aria-label={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
+              title={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
+            />
+          )}
         </div>
         <span className="badge color-blue3">{questionType}</span>
         {tags.map((tag) => (
@@ -228,6 +238,24 @@ function QuestionReviewPanelImpl({
       <Collapse in={isExpanded && included}>
         <div id={`q-panel-${q.directoryName}`}>
           <Card.Body className="p-0">
+            {warnings.length > 0 && (
+              <div className="px-3 py-2 border-bottom bg-light d-flex align-items-start gap-2 small">
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning mt-1"
+                  aria-hidden="true"
+                />
+                <div>
+                  <strong>Warnings:</strong>
+                  <ul className="mb-0 mt-1">
+                    {warnings.map((warning) => (
+                      <li key={warning.message} className="text-muted">
+                        {warning.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
             <div className="d-flex flex-wrap" style={{ minHeight: '280px' }}>
               {/* Column 1: Question info & editing */}
               <div

@@ -49,7 +49,7 @@ The import tool supports individual quiz exports (`.zip` files) and full course 
 | Ordering                      | [`pl-order-blocks`](elements/pl-order-blocks.md)                  |
 | Text-only (no response)       | Prompt-only question panel                                        |
 
-Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory.
+Referenced images and other non-video media files are imported into each question's `clientFilesQuestion` directory. If a question references a remote image URL instead of an exported file, PrairieLearn leaves that URL in the generated HTML and shows a warning so you can decide whether to keep or replace it after import.
 
 ## What isn't imported
 
@@ -72,6 +72,8 @@ Canvas exports can represent question banks in several ways:
 - If you continue without additional content, the unresolved bank questions are omitted from the imported assessment. PrairieLearn shows a warning on the review page for any bank references that remain unresolved.
 
 When multiple assessments use the same imported bank questions, PrairieLearn points them at the same imported question directories instead of creating duplicate copies.
+
+If the same generated question appears in more than one imported question bank, PrairieLearn imports one copy and shows a warning above the **Question banks** section with the number of deduplicated questions.
 
 ## Duplicate questions
 
@@ -98,13 +100,14 @@ Other LMS platforms may have similar export features. Look for "QTI export" or "
 4. Review the import summary. It may include:
    - The number of assessments, question banks, questions, and referenced assets that can be imported.
    - Access rules, rubrics, videos, unsupported content, or parse warnings that will not be imported.
-   - Warnings for unresolved question bank references.
+   - Warnings for unresolved question bank references, remote image URLs, or question bank questions that were deduplicated.
 5. In the **Assessments** section, choose which assessments to import. For each assessment, you can edit the **title**, **type** (Homework or Exam), **set**, and **number**.
 6. In the **Question banks** section, choose which question banks to import as standalone PrairieLearn questions.
 7. Expand the **Questions** section on any assessment or question bank to review individual questions. For each question, you can:
    - Edit the **title**, **topic**, and **tags**.
    - Browse the generated files, including `info.json`, `question.html`, `server.py`, and referenced assets.
    - View syntax-highlighted file contents.
+   - Review any warnings associated with that specific question.
    - Exclude the question from the import.
 8. If an imported question conflicts with an existing question directory, choose **Replace existing question** or **Keep both**. You can also apply overwrite/rename choices to all conflicts in a section.
 9. Click the final **Import** button to create the selected content.
