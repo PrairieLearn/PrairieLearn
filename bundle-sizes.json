@@ -110,9 +110,9 @@
     "brotli": 279656
   },
   "scripts/instructorFileEditorHtmlMustacheLinterClient.ts": {
-    "raw": 297721,
-    "gzip": 86314,
-    "brotli": 74896
+    "raw": 297964,
+    "gzip": 86385,
+    "brotli": 75059
   },
   "scripts/instructorQuestionStatisticsClient.ts": {
     "raw": 62446,
@@ -235,9 +235,9 @@
     "brotli": 266521
   },
   "scripts/esm-bundles/hydrated-components/QtiImportForm.ts": {
-    "raw": 857651,
-    "gzip": 266118,
-    "brotli": 229908
+    "raw": 861063,
+    "gzip": 267015,
+    "brotli": 230692
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
     "raw": 1514762,
