@@ -20,14 +20,9 @@
     "brotli": 1119
   },
   "scripts/application.ts": {
-    "raw": 28029,
-    "gzip": 8758,
-    "brotli": 7828
-  },
-  "scripts/bootstrap-table-sticky-header.js": {
-    "raw": 4271,
-    "gzip": 1352,
-    "brotli": 1189
+    "raw": 27963,
+    "gzip": 8739,
+    "brotli": 7823
   },
   "scripts/calculatorClient.ts": {
     "raw": 1943838,
@@ -173,11 +168,6 @@
     "raw": 2268,
     "gzip": 755,
     "brotli": 629
-  },
-  "stylesheets/instructorAssessmentManualGradingAssessmentQuestion.css": {
-    "raw": 9962,
-    "gzip": 2579,
-    "brotli": 2157
   },
   "stylesheets/instructorAssessmentQuestions.css": {
     "raw": 1691,
