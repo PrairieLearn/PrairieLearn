@@ -205,16 +205,23 @@ BEGIN
     -- Ensure that all questions have numbers
     WITH
     questions_needing_numbers AS (
-        SELECT id, row_number() OVER () AS index
+        SELECT id, row_number() OVER (ORDER BY id) AS index
         FROM questions
         WHERE
             number IS NULL
             AND course_id = syncing_course_id
-        ORDER BY id
     ),
     new_numbers AS (
-        SELECT *
-        FROM random_unique(100, 1000, (SELECT array_agg(number) FROM questions WHERE course_id = syncing_course_id))
+        SELECT
+          row_number() OVER (ORDER BY random()) AS index,
+          gs.number
+        FROM
+          -- 3-digit numbers are used if the number of questions allows for
+          -- enough unique 3-digit numbers with reasonable gaps.
+          generate_series(100, GREATEST(999, 101 + 2 * (SELECT COUNT(*) FROM questions AS q WHERE q.course_id = syncing_course_id))) AS gs (number)
+          -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
+          LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
+        WHERE q.number IS NULL
     ),
     questions_with_new_numbers AS (
         -- use row_number() as the matching key for the join
