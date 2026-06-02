@@ -977,6 +977,30 @@ describe('QTI12ItemContainerParser', async () => {
       assert.equal(result.parseWarnings![0].message, 'Unsupported question type "magic_question"');
     });
 
+    it('converts Canvas Error items to manually graded rich-text questions', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <item ident="q1" title="Broken Canvas item">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>Error</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Manual prompt [Blank1]&lt;/p&gt;</mattext></material>
+        </presentation>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      assert.equal(result.questions.length, 1);
+      assert.equal(result.questions[0].sourceId, 'q1');
+      assert.equal(result.questions[0].body.type, 'rich-text');
+      assert.equal(result.questions[0].gradingMethod, 'Manual');
+      assert.isUndefined(result.parseWarnings);
+    });
+
     it('still parses valid questions when some are unsupported', async () => {
       const xml = `<?xml version="1.0"?>
 <questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">

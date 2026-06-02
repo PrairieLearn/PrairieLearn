@@ -60,3 +60,4 @@ export {
 } from './utils/course-export.js';
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
+export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/html.js';

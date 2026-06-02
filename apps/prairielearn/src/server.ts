@@ -919,26 +919,14 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/statistics',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'assessment_statistics';
+        res.locals.navSubPage = 'statistics';
         next();
       },
       (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
         .default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/question_statistics',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'question_statistics';
-        next();
-      },
-      (
-        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
-      ).default,
     ],
   );
   app.use(
