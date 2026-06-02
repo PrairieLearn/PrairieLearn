@@ -27,7 +27,7 @@ import {
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
-import { EnumGradingMethodSchema, type QuestionPreferencesSchemaJson } from '../../lib/db-types.js';
+import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -44,6 +44,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
+import type { QuestionPreferencesSchemaJson } from '../../lib/question-settings/schema.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';

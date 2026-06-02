@@ -7,11 +7,7 @@
   "required": ["name", "title", "topics"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).",
@@ -38,11 +34,7 @@
       "default": {},
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "useNewQuestionRenderer": {
           "description": "[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.",
@@ -82,11 +74,7 @@
         "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
-            "allOf": [
-              {
-                "$ref": "#/definitions/CommentJsonSchema"
-              }
-            ]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "abbreviation": {
             "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
@@ -134,11 +122,7 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "allOf": [
-              {
-                "$ref": "#/definitions/CommentJsonSchema"
-              }
-            ]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
@@ -163,11 +147,7 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "allOf": [
-              {
-                "$ref": "#/definitions/CommentJsonSchema"
-              }
-            ]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "shortName": {
             "description": "Short name (preferably 2 to 7 characters).",

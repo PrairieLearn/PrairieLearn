@@ -24,15 +24,8 @@
       "default": true
     },
     "cacheImageRegistry": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "parallelInitPulls": {
       "type": "number",
@@ -95,30 +88,16 @@
       "default": "grading_jobs_dev"
     },
     "jobsQueueUrl": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "resultsQueueName": {
       "type": "string",
       "default": "grading_results_dev"
     },
     "resultsQueueUrl": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "timeoutOverhead": {
       "type": "number",
@@ -137,15 +116,8 @@
       "default": "postgres"
     },
     "postgresqlPassword": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "postgresqlPoolSize": {
       "type": "number",
@@ -156,30 +128,16 @@
       "default": 30000
     },
     "autoScalingGroupName": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "instanceId": {
       "type": "string",
       "default": "server"
     },
     "sentryDsn": {
-      "default": null,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": ["string", "null"],
+      "default": null
     },
     "sentryEnvironment": {
       "type": "string",

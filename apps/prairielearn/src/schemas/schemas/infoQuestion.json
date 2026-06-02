@@ -7,11 +7,7 @@
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -130,11 +126,7 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "enabled": {
           "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
@@ -200,11 +192,7 @@
       "default": {},
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
@@ -281,11 +269,7 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "image": {
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",

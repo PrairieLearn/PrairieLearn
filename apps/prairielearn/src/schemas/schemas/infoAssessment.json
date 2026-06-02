@@ -7,11 +7,7 @@
   "required": ["uuid", "type", "title", "set", "number"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -270,11 +266,7 @@
       }
     },
     "advanceScorePerc": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/AdvanceScorePercJsonSchema"
     },
     "gradeRateMinutes": {
       "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -316,11 +308,7 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "mode": {
           "description": "The server mode required for access.",
@@ -391,11 +379,7 @@
       "required": ["questions"],
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "title": {
           "description": "Zone title, displayed to the students at the top of the question list for the zone.",
@@ -403,11 +387,7 @@
         },
         "comments": {
           "description": "DEPRECATED -- do not use.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ],
+          "$ref": "#/definitions/CommentJsonSchema",
           "deprecated": true
         },
         "maxPoints": {
@@ -441,11 +421,7 @@
           }
         },
         "advanceScorePerc": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/AdvanceScorePercJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -498,60 +474,28 @@
       "type": "object",
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "autoPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "maxPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "maxAutoPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "manualPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "id": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/QuestionIdJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/QuestionIdJsonSchema"
         },
         "forceMaxPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/ForceMaxPointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
         },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
@@ -574,11 +518,7 @@
           "maximum": 9007199254740991
         },
         "advanceScorePerc": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/AdvanceScorePercJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -609,11 +549,7 @@
         },
         "preferences": {
           "description": "The preferences passed to the question to customize its behavior.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/QuestionPreferencesJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/QuestionPreferencesJsonSchema"
         }
       }
     },
@@ -622,56 +558,28 @@
       "required": ["id"],
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "autoPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "maxPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "maxAutoPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "manualPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "id": {
           "$ref": "#/definitions/QuestionIdJsonSchema"
         },
         "forceMaxPoints": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/ForceMaxPointsJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
@@ -680,11 +588,7 @@
           "maximum": 9007199254740991
         },
         "advanceScorePerc": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/AdvanceScorePercJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/AdvanceScorePercJsonSchema"
         },
         "gradeRateMinutes": {
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -697,11 +601,7 @@
         },
         "preferences": {
           "description": "The preferences passed to the question to customize its behavior.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/QuestionPreferencesJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/QuestionPreferencesJsonSchema"
         }
       }
     },
@@ -973,18 +873,10 @@
                   "type": "boolean"
                 },
                 "visibleFromDate": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    }
-                  ]
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 },
                 "visibleUntilDate": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    }
-                  ]
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 }
               }
             },
@@ -997,11 +889,7 @@
                   "type": "boolean"
                 },
                 "visibleFromDate": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/DatetimeLocalStringSchema"
-                    }
-                  ]
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
                 }
               }
             }

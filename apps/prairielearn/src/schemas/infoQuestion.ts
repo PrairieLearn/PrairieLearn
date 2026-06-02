@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../lib/db-types.js';
+import { QuestionPreferencesSchemaJsonSchema } from '../lib/question-settings/schema.js';
 
 import { CommentJsonSchema } from './comment.js';
 

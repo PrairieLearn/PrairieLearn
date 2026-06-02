@@ -13,7 +13,10 @@ import {
   ConfigSchema as EnvSpecificPrairieLearnConfigSchema,
   STANDARD_COURSE_DIRS,
 } from '../apps/prairielearn/src/lib/config.js';
-import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
+import {
+  ajvSchemas,
+  normalizeGeneratedJsonSchema,
+} from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 
 // Zod 4's `z.toJSONSchema` only emits `additionalProperties: false` for strict
@@ -41,6 +44,7 @@ const configToJsonSchema = (schema: z.ZodType) => {
     unrepresentable: 'any',
   });
   closeObjectsForDocs(jsonSchema);
+  normalizeGeneratedJsonSchema(jsonSchema);
   return jsonSchema;
 };
 

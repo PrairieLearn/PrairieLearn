@@ -7,11 +7,7 @@
   "required": ["text", "correctAnswers", "incorrectAnswers"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "text": {
       "description": "The question HTML text that comes before the options.",

@@ -7,11 +7,7 @@
   "required": ["trueStatements", "falseStatements"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "text": {
       "description": "Text to precede the set of statements being given.",

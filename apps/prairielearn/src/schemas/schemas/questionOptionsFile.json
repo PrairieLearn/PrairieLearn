@@ -6,11 +6,7 @@
   "additionalProperties": false,
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "fileName": {
       "description": "Filename of the file to download",

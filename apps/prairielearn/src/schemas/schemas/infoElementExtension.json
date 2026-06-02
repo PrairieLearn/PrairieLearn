@@ -88,11 +88,7 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",

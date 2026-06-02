@@ -6,11 +6,7 @@
   "additionalProperties": {},
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     }
   },
   "definitions": {

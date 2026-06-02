@@ -7,11 +7,7 @@
   "required": ["controller"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "controller": {
       "description": "The name of the element's controller file.",
@@ -23,11 +19,7 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
@@ -103,11 +95,7 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/CommentJsonSchema"
-            }
-          ]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",

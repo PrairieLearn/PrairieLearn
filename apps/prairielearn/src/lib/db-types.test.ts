@@ -20,7 +20,6 @@ const schemaNameOverrides: Record<string, string | null> = {
 const customSchemas = new Set([
   'IdSchema',
   'IntervalSchema',
-  'QuestionPreferencesSchemaJsonSchema',
   'QuestionPreferenceValuesSchema',
 ]);
 const unusedSchemas = new Set([

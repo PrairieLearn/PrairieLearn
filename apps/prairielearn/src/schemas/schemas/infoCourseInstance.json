@@ -7,11 +7,7 @@
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/CommentJsonSchema"
-        }
-      ]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -95,11 +91,7 @@
         "additionalProperties": false,
         "properties": {
           "comment": {
-            "allOf": [
-              {
-                "$ref": "#/definitions/CommentJsonSchema"
-              }
-            ]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "role": {
             "description": "DEPRECATED -- do not use.",
@@ -143,6 +135,7 @@
     "studentLabels": {
       "description": "Student labels.",
       "type": "array",
+      "maxItems": 25,
       "items": {
         "description": "A single student label, can represent a collection of students (e.g. \"Section A\").",
         "type": "object",
@@ -164,8 +157,7 @@
             "$ref": "#/definitions/ColorJsonSchema"
           }
         }
-      },
-      "maxItems": 25
+      }
     }
   },
   "definitions": {

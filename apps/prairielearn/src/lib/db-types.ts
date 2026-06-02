@@ -6,37 +6,13 @@ import { z } from 'zod';
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+import { QuestionPreferencesSchemaJsonSchema } from './question-settings/schema.js';
 
-// Defined here as the single source of truth: these schemas parse the
-// corresponding DB columns (`tool`, `preferences_schema`) and are also imported
-// by the file-format schemas in `apps/prairielearn/src/schemas/`.
+// Defined here as the single source of truth: this schema parses the `tool` DB
+// column and is also imported by the file-format schemas in
+// `apps/prairielearn/src/schemas/`.
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
 export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
-
-// This schema is intentionally a subset of JSON Schema. The `type`, `default`,
-// and `enum` keys map directly to their JSON Schema equivalents, which allows
-// the syncing code to pass preference field definitions directly to AJV for
-// validation of assessment-level overrides. If new keys are added here, they
-// must either be valid JSON Schema keywords or the AJV validation in
-// `assessments.ts` (`mergeAndValidatePreferences`) must be updated to construct
-// the JSON Schema explicitly.
-//
-// Not expressed as a union of more precise types because `ajv` doesn't present
-// errors in a sensible way if we do that. Instead, we perform validation
-// manually in the syncing code (e.g., checking that `default` matches `type`).
-const QuestionPreferencesFieldSchema = z
-  .object({
-    default: z.union([z.string(), z.number(), z.boolean()]),
-    enum: z.array(z.union([z.string(), z.number()])).optional(),
-    type: z.enum(['boolean', 'number', 'string']),
-  })
-  .strict();
-
-export const QuestionPreferencesSchemaJsonSchema = z.record(
-  z.string().min(1),
-  QuestionPreferencesFieldSchema,
-);
-export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.

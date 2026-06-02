@@ -1,11 +1,9 @@
 import { type JSONSchemaType } from 'ajv';
 import { z } from 'zod';
 
-import {
-  AccessControlJsonSchema,
-  DatetimeLocalStringSchema,
-  DeadlineEntryJsonSchema,
-} from './accessControl.js';
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+
+import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -133,6 +131,81 @@ function applyUniqueItemsOverride(ctx: {
 }
 
 /**
+ * Replace `oldKey` with `newKey: newValue` in place, preserving the key's
+ * original position so the rewritten object diffs minimally against the
+ * previous output (which prettier renders one key per line).
+ */
+function replaceKeyInPlace(
+  obj: Record<string, any>,
+  oldKey: string,
+  newKey: string,
+  newValue: unknown,
+) {
+  const entries = Object.entries(obj).map(([k, v]): [string, unknown] =>
+    k === oldKey ? [newKey, newValue] : [k, v],
+  );
+  for (const key of Object.keys(obj)) delete obj[key];
+  Object.assign(obj, Object.fromEntries(entries));
+}
+
+/**
+ * Walk a generated JSON Schema and undo two purely-syntactic expansions that
+ * Zod 4's `z.toJSONSchema` introduces relative to the previous
+ * `zod-to-json-schema` (Zod 3) output. Neither rewrite changes validation
+ * semantics.
+ *
+ * TODO: The sole purpose of this pass is to keep the committed schema files
+ * close to their pre-Zod-4 form so the migration diff stays small and
+ * reviewable. Once the raw Zod 4 output is accepted as the new baseline, this
+ * pass (and its callers) can be deleted.
+ *
+ * The two rewrites:
+ *
+ *   - `{ allOf: [{ $ref }] }` -> `{ $ref }`. Zod 4 wraps a referenced schema in
+ *     a single-element `allOf` whenever a modifier (`.optional()`,
+ *     `.default()`, ...) sits on it, because draft-07 forbids sibling keywords
+ *     next to `$ref`. The wrapper is inert here, so we hoist the `$ref` back up.
+ *   - `{ anyOf: [{ type: 'X' }, { type: 'null' }] }` -> `{ type: ['X', 'null'] }`.
+ *     Zod 3 expressed nullable scalars with the compact array form.
+ */
+export function normalizeGeneratedJsonSchema(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) normalizeGeneratedJsonSchema(item);
+    return;
+  }
+  if (node === null || typeof node !== 'object') return;
+
+  const obj = node as Record<string, any>;
+
+  // Collapse a nullable union: `anyOf: [{ type: X }, { type: 'null' }]`.
+  if (Array.isArray(obj.anyOf) && obj.anyOf.length === 2 && obj.type === undefined) {
+    const isBareType = (s: any): s is { type: string } =>
+      s !== null && typeof s === 'object' && typeof s.type === 'string' && Object.keys(s).length === 1;
+    const [first, second] = obj.anyOf;
+    if (isBareType(first) && isBareType(second) && (first.type === 'null' || second.type === 'null')) {
+      const nonNull = first.type === 'null' ? second : first;
+      replaceKeyInPlace(obj, 'anyOf', 'type', [nonNull.type, 'null']);
+    }
+  }
+
+  // Hoist a lone `allOf: [{ $ref }]` wrapper back to a sibling `$ref`.
+  const allOf = obj.allOf;
+  if (
+    Array.isArray(allOf) &&
+    allOf.length === 1 &&
+    allOf[0] !== null &&
+    typeof allOf[0] === 'object' &&
+    typeof allOf[0].$ref === 'string' &&
+    Object.keys(allOf[0]).length === 1 &&
+    obj.$ref === undefined
+  ) {
+    replaceKeyInPlace(obj, 'allOf', '$ref', allOf[0].$ref);
+  }
+
+  for (const value of Object.values(obj)) normalizeGeneratedJsonSchema(value);
+}
+
+/**
  * Walk the generated schema and add `deprecated: true` wherever a description
  * mentions "DEPRECATED". Matches the prior `prairielearnZodToJsonSchema`
  * behavior so existing IDE deprecation hints survive the v4 swap.
@@ -180,6 +253,7 @@ function prairielearnZodToJsonSchema(
   }
 
   annotateDeprecated(jsonSchema);
+  normalizeGeneratedJsonSchema(jsonSchema);
 
   return jsonSchema;
 }
