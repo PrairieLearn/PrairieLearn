@@ -18,8 +18,6 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  CourseInstanceSchema,
-  CourseSchema,
   GroupSchema,
   QuestionSchema,
   UserSchema,
@@ -29,15 +27,6 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const RegradeAssessmentInstanceInfoSchema = z.object({
-  assessment_instance: AssessmentInstanceSchema,
-  assessment: AssessmentSchema,
-  assessment_set: AssessmentSetSchema,
-  instance_user: UserSchema.nullable(),
-  instance_group: GroupSchema.nullable(),
-  course_instance: CourseInstanceSchema,
-  course: CourseSchema,
-});
 const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance: AssessmentInstanceSchema,
   assessment: AssessmentSchema,
@@ -45,62 +34,6 @@ const RegradeAssessmentInstancesSchema = z.object({
   instance_user: UserSchema.nullable(),
   instance_group: GroupSchema.nullable(),
 });
-
-/**
- * @returns The job sequence ID
- */
-export async function regradeAssessmentInstance(
-  assessment_instance_id: string,
-  user_id: string,
-  authn_user_id: string,
-): Promise<string> {
-  const row = await queryRow(
-    sql.select_regrade_assessment_instance_info,
-    { assessment_instance_id },
-    RegradeAssessmentInstanceInfoSchema,
-  );
-  const label = assessmentInstanceLabel(
-    row.assessment_instance,
-    row.assessment,
-    row.assessment_set,
-  );
-  const userOrGroup = row.instance_user?.uid || `group "${row.instance_group?.name}"`;
-  const serverJob = await createServerJob({
-    type: 'regrade_assessment_instance',
-    description: 'Regrade ' + label + ' for ' + userOrGroup,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    courseId: row.course.id,
-    courseInstanceId: row.course_instance.id,
-    assessmentId: row.assessment.id,
-  });
-
-  // We've now triggered the callback to our caller, but we
-  // continue executing below to launch the jobs themselves.
-
-  serverJob.executeInBackground(async (job) => {
-    job.info('Regrading ' + label + ' for ' + userOrGroup);
-    const regrade = await regradeSingleAssessmentInstance({
-      assessment_instance_id,
-      authn_user_id,
-    });
-    job.info('Regrading complete');
-    if (regrade.updated) {
-      job.info('Questions updated: ' + regrade.updatedQuestionQids.join(', '));
-      job.info(
-        'New score: ' +
-          Math.floor(regrade.newScorePerc) +
-          '% (was ' +
-          Math.floor(regrade.oldScorePerc ?? 0) +
-          '%)',
-      );
-    } else {
-      job.info('No changes made');
-    }
-    await ltiOutcomes.updateScore(assessment_instance_id);
-  });
-  return serverJob.jobSequenceId;
-}
 
 /**
  * @returns The job sequence ID

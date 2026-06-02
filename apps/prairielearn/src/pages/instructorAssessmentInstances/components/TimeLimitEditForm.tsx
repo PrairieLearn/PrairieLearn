@@ -54,7 +54,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
 }
 
 /** Data for the single instance targeted by the inline ✎ pencil. */
-export interface TimeLimitSingleRow {
+interface TimeLimitSingleRow {
   open: boolean;
   total_time: string;
   total_time_sec: number | null;

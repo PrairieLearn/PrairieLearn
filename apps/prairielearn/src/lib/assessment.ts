@@ -59,28 +59,6 @@ export type InstanceLogEntry = Omit<
 >;
 
 /**
- * Check that an assessment_instance_id really belongs to the given assessment_id
- *
- * @param assessment_instance_id - The assessment instance to check.
- * @param assessment_id - The assessment it should belong to.
- * @returns Throws an error if the assessment instance doesn't belong to the assessment.
- */
-export async function checkBelongs(
-  assessment_instance_id: string,
-  assessment_id: string,
-): Promise<void> {
-  if (
-    (await sqldb.queryOptionalScalar(
-      sql.check_belongs,
-      { assessment_instance_id, assessment_id },
-      IdSchema,
-    )) == null
-  ) {
-    throw new error.HttpStatusError(403, 'access denied');
-  }
-}
-
-/**
  * Render the "text" property of an assessment.
  *
  * @param assessment - The assessment to render the text for.

@@ -23,7 +23,7 @@ WITH
   )
 SELECT
   to_jsonb(ai.*) AS assessment_instance,
-  to_jsonb(u.*) AS "user",
+  to_jsonb(u.*) AS "user", -- noqa: RF06
   e.id AS enrollment_id,
   to_jsonb(g.*) AS "group",
   (aset.name || ' ' || a.number) AS assessment_label,
