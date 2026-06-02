@@ -62,6 +62,30 @@ export function getAssessmentDownloadUrl({
   return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
 }
 
+export function getAssessmentStatisticsDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/statistics/${filename}`;
+}
+
+export function getManualGradingAssessmentQuestionUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/manual_grading/assessment_question/${assessmentQuestionId}`;
+}
+
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
 }
