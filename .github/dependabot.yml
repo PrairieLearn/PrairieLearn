@@ -44,22 +44,31 @@ updates:
       # Recent versions of `bootstrap-table` broke behavior we rely on:
       # https://github.com/wenzhixin/bootstrap-table/issues/6745
       - dependency-name: 'bootstrap-table'
+
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
+
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
+
       # ua-parser-js 2.x changes its license to a less permissive license:
       # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
+
       # Express 5 made significant breaking changes, and we are not yet
       # ready to upgrade to it.
       - dependency-name: 'express'
         versions: ['>=5']
-      # body-parser 2.x and cookie 1.x are intended for Express 5, which
-      # we are not yet ready to upgrade to.
+      - dependency-name: '@types/express'
+        versions: ['>=5']
+      - dependency-name: '@types/express-serve-static-core'
+        versions: ['>=5']
+
+      # Keep Express-adjacent packages on versions compatible with our current
+      # Express 4 stack until we intentionally migrate to Express 5.
       - dependency-name: 'body-parser'
         versions: ['>=2']
       - dependency-name: '@types/body-parser'
@@ -68,13 +77,39 @@ updates:
         versions: ['>=1']
       - dependency-name: '@types/cookie'
         versions: ['>=1']
+      - dependency-name: 'cookie-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/cookie-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/serve-static'
+        versions: ['>=3']
       - dependency-name: 'express-static-gzip'
         versions: ['>=3']
+
+      # PrairieLearn itself no longer uses `dropzone`, but there are a variety
+      # of course elements that use it, so we leave it installed at a pinned
+      # version so as not to break them.
+      - dependency-name: 'dropzone'
+        versions: ['>=6']
+
       # JQuery 4 made significant breaking changes. We are migrating code to
       # vanilla JS where possible and only keeping it for backwards
       # compatibility, so we don't want to upgrade.
       - dependency-name: 'jquery'
         versions: ['>=4']
+      - dependency-name: '@types/jquery'
+        versions: ['>=4']
+
+      # We're not ready to upgrade to Zod 4 yet.
+      - dependency-name: 'zod'
+        versions: ['>=4']
+
+      # quill 2.0.3 regressed getSemanticHTML() by converting spaces to &nbsp;,
+      # which breaks wrapping and stored HTML from pl-rich-text-editor:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/11281
+      # https://github.com/slab/quill/issues/4509
+      - dependency-name: 'quill'
+        versions: ['>2.0.2']
     cooldown:
       # Dependabot does not understand the npmMinimalAgeGate setting in
       # .yarnrc.yml, so we set a cooldown here to obtain the same effect. Once
