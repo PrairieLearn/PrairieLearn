@@ -172,10 +172,6 @@ export async function syncDiskToSqlWithLock(
     );
 
     await timed('Synced authors', () => syncAuthors.sync(courseData.questions, questionIds));
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: course.institution_id,
-      course_id: course.id,
-    });
     // We need to perform sharing validation at exactly this moment. We can only
     // do this once we have a dictionary of question IDs, as this process will also
     // populate any shared questions in that dictionary. We also need to do it before
@@ -197,7 +193,15 @@ export async function syncDiskToSqlWithLock(
         );
       });
     });
+
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
     if (enhancedAccessControlEnabled) {
+      // We do this independently of the process of syncing the access control
+      // rules themselves so that this will add any relevant errors to the assessment's
+      // infofile so that they're present when we sync the assessments.
       await timed('Pre-validated access control', async () => {
         await async.eachLimit(
           Object.entries(courseData.courseInstances),
