@@ -1,6 +1,10 @@
 import { type ReactNode } from 'react';
 
+import { type AssessmentQuestion } from '../../lib/db-types.js';
+
 interface StatDescription {
+  /** The column on the assessment question stats row that this statistic is computed from. */
+  field: keyof AssessmentQuestion;
   title: ReactNode;
   non_html_title: string;
   description: string;
@@ -8,46 +12,54 @@ interface StatDescription {
 
 export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
   MEAN_SCORE: {
+    field: 'mean_question_score',
     title: 'Mean (μ)',
     non_html_title: 'Mean',
     description: 'Mean score of a question is the average score for all students on the question.',
   },
   MEDIAN_SCORE: {
+    field: 'median_question_score',
     title: 'Median',
     non_html_title: 'Median',
     description:
       'Median score of a question is the score which separates the lower half and the upper half of students scores.',
   },
   VARIANCE: {
+    field: 'question_score_variance',
     title: 'SD (σ)',
     non_html_title: 'SD',
     description: 'This is the standard deviation of student scores on this question.',
   },
   DISCRIMINATION: {
+    field: 'discrimination',
     title: 'Discrim.',
     non_html_title: 'Discrim.',
     description:
       'Discrimination of a question is the correlation coefficient between the scores on the question and the total assessment scores.',
   },
   SOME_SUBMISSION_PERCENTAGE: {
+    field: 'some_submission_perc',
     title: 'Some sub. (%)',
     non_html_title: 'Some sub. (%)',
     description:
       '(some submission percentage): The percentage of students that submitted a valid, auto-gradable answer.',
   },
   SOME_PERFECT_SUBMISSION_PERCENTAGE: {
+    field: 'some_perfect_submission_perc',
     title: 'Some perfect sub. (%)',
     non_html_title: 'Some perfect sub. (%)',
     description:
       '(some perfect submission percentage): The percentage of students that submitted an answer that got full auto-graded credit.',
   },
   SOME_NONZERO_SUBMISSION_PERCENTAGE: {
+    field: 'some_nonzero_submission_perc',
     title: 'Some nonzero sub. (%)',
     non_html_title: 'Some nonzero sub. (%)',
     description:
       '(some nonzero submission percentage): The percentage of students that submitted some answer that got some auto-graded credit.',
   },
   AVERAGE_FIRST_SUBMISSION_SCORE: {
+    field: 'average_first_submission_score',
     title: (
       <>
         μ<sub>First Sub. Score</sub>
@@ -58,6 +70,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(first submission score average): The average auto-graded score on the first submission over students that had at least one submission.',
   },
   FIRST_SUBMISSION_SCORE_VARIANCE: {
+    field: 'first_submission_score_variance',
     title: (
       <>
         σ<sub>First Sub. Score</sub>
@@ -68,12 +81,14 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(first submission score standard deviation): The standard deviation of first submission auto-graded scores.',
   },
   FIRST_SUBMISSION_SCORE_HIST: {
+    field: 'first_submission_score_hist',
     title: 'First Sub. Score Hist.',
     non_html_title: 'First Sub. Score Hist.',
     description:
       '(first submission score histogram): The histogram of first submission auto-graded scores.',
   },
   AVERAGE_LAST_SUBMISSION_SCORE: {
+    field: 'average_last_submission_score',
     title: (
       <>
         μ<sub>Last Sub. Score</sub>
@@ -84,6 +99,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(last submission score average): The average auto-graded score on last submission over students that had at least one submission.',
   },
   LAST_SUBMISSION_SCORE_VARIANCE: {
+    field: 'last_submission_score_variance',
     title: (
       <>
         σ<sub>Last Sub. Score</sub>
@@ -94,12 +110,14 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(last submission score standard deviation): The standard deviation of last submission auto-graded scores.',
   },
   LAST_SUBMISSION_SCORE_HIST: {
+    field: 'last_submission_score_hist',
     title: 'Last Sub. Score Hist.',
     non_html_title: 'Last Sub. Score Hist.',
     description:
       '(last submission score histogram): The histogram of last submission auto-graded scores.',
   },
   AVERAGE_MAX_SUBMISSION_SCORE: {
+    field: 'average_max_submission_score',
     title: (
       <>
         μ<sub>Max Sub. Score</sub>
@@ -110,6 +128,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(max submission score average): The average best-submission score over students that had at least one submission.',
   },
   MAX_SUBMISSION_SCORE_VARIANCE: {
+    field: 'max_submission_score_variance',
     title: (
       <>
         σ<sub>Max Sub. Score</sub>
@@ -120,12 +139,14 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(max submission score standard deviation): The standard deviation of best-submission auto-graded scores.',
   },
   MAX_SUBMISSIONS_SCORE_HIST: {
+    field: 'max_submission_score_hist',
     title: 'Max Sub. Score Hist.',
     non_html_title: 'Max Sub. Score Hist.',
     description:
       '(max submission score histogram): The histogram of best-submission auto-graded scores.',
   },
   AVERAGE_AVERAGE_SUBMISSION_SCORE: {
+    field: 'average_average_submission_score',
     title: (
       <>
         μ<sub>Avg. Sub. Score</sub>
@@ -136,6 +157,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(average of submission score averages): The average of average submission auto-graded scores over students that had at least one submission.',
   },
   AVERAGE_SUBMISSION_SCORE_VARIANCE: {
+    field: 'average_submission_score_variance',
     title: (
       <>
         σ<sub>Avg. Sub. Score</sub>
@@ -146,12 +168,14 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(variance of submission score averages): The variance of average submission auto-graded scores over students that had at least one submission.',
   },
   AVERAGE_SUBMISSION_SCORE_HIST: {
+    field: 'average_submission_score_hist',
     title: 'Avg. Sub. Score Hist.',
     non_html_title: 'Avg. Sub. Score Hist.',
     description:
       '(submission score averages histogram): The histogram of average submission auto-graded scores over students that had at least one submission.',
   },
   SUBMISSION_SCORE_ARRAY_AVERAGES: {
+    field: 'submission_score_array_averages',
     title: (
       <>
         μ<sub>Sub. Score Array</sub>
@@ -162,6 +186,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(submission score array): The average submission auto-graded scores (over students that had at least one submission) for the 1st submission, 2nd submission, etc. Submission score arrays are padded with zeros when some students have more submissions than others.',
   },
   INCREMENTAL_SUBMISSION_SCORE_ARRAY_AVERAGES: {
+    field: 'incremental_submission_score_array_averages',
     title: (
       <>
         μ<sub>Incr. Sub. Score Array</sub>
@@ -172,6 +197,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(incremental submission score array): The average incremental submission auto-graded score gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental score gain from submitting the nth submission.',
   },
   INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES: {
+    field: 'incremental_submission_points_array_averages',
     title: (
       <>
         μ<sub>Incr. Sub. Points Array</sub>
@@ -182,6 +208,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(incremental submission points array): The average incremental submission auto-graded points gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental points gained by submitting the nth submission. Only available for exams.',
   },
   AVERAGE_NUMBER_SUBMISSIONS: {
+    field: 'average_number_submissions',
     title: (
       <>
         μ<sub>Num. Sub.</sub>
@@ -191,6 +218,7 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
     description: '(average number of submissions): The average number of auto-graded submissions.',
   },
   NUMBER_SUBMISSIONS_VARIANCE: {
+    field: 'number_submissions_variance',
     title: (
       <>
         σ<sub>Num. Sub.</sub>
@@ -201,12 +229,14 @@ export const STAT_DESCRIPTIONS: Record<string, StatDescription> = {
       '(number of submissions standard deviation): The standard deviation of the number of auto-graded submissions.',
   },
   NUMBER_SUBMISSIONS_HIST: {
+    field: 'number_submissions_hist',
     title: 'Num. Sub. Hist.',
     non_html_title: 'Num. Sub. Hist.',
     description:
       '(number of submissions histogram): The histogram of the number of auto-graded submissions.',
   },
   QUINTILE_SCORES_AS_ARRAY: {
+    field: 'quintile_question_scores',
     title: 'Quintile Scores',
     non_html_title: 'Quintile Scores',
     description:

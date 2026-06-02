@@ -413,13 +413,15 @@ export function InstructorAssessmentStatistics({
                       <td className="text-center align-middle">
                         <Scorebar
                           score={
-                            row.mean_question_score ? Math.round(row.mean_question_score) : null
+                            row.mean_question_score == null
+                              ? null
+                              : Math.round(row.mean_question_score)
                           }
                         />
                       </td>
                       <td className="text-center align-middle">
                         <Scorebar
-                          score={row.discrimination ? Math.round(row.discrimination) : null}
+                          score={row.discrimination == null ? null : Math.round(row.discrimination)}
                         />
                       </td>
                       <td className="text-center">
@@ -429,7 +431,7 @@ export function InstructorAssessmentStatistics({
                           ? formatFloat(row.average_number_submissions)
                           : '—'}
                       </td>
-                      {(row.number ?? 0) > 0 ? (
+                      {row.quintile_question_scores !== null ? (
                         <td className="text-center">
                           <div
                             className="js-histmini"
