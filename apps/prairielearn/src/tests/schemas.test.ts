@@ -93,7 +93,7 @@ describe('infoAssessment Zod schema', () => {
     const root = ajvSchemas.infoAssessment;
     const resolveRef = (node: any) =>
       node && typeof node.$ref === 'string'
-        ? root.definitions[node.$ref.replace('#/definitions/', '')]
+        ? root.definitions?.[node.$ref.replace('#/definitions/', '')]
         : node;
 
     const zone = resolveRef(root.properties?.zones?.items);
