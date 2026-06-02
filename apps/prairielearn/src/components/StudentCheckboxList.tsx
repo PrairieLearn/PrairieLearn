@@ -21,7 +21,7 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg,
   description,
   renderItemExtra,
-  getItemDisabledReason,
+  maxSelected,
 }: {
   items: T[];
   selectedUids: Set<string>;
@@ -36,9 +36,16 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg?: string;
   description?: string;
   renderItemExtra?: (item: T) => ReactNode;
-  getItemDisabledReason?: (item: T) => string | undefined;
+  maxSelected?: number;
 }) {
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
+  const unselectedCount = items.length - selectedCount;
+  const maxSelectedReason =
+    maxSelected === undefined ? undefined : `At most ${maxSelected} students can be selected.`;
+  const maxSelectedReached = maxSelected !== undefined && selectedUids.size >= maxSelected;
+  const selectAllWouldExceedLimit =
+    maxSelected !== undefined && selectedUids.size + unselectedCount > maxSelected;
+  const selectAllDisabledReason = selectAllWouldExceedLimit ? maxSelectedReason : undefined;
 
   return (
     <div className="d-flex flex-column gap-2">
@@ -76,6 +83,8 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
                 size="sm"
                 className="text-decoration-none"
                 aria-label={`Select all ${label.toLowerCase()}`}
+                disabled={selectAllDisabledReason !== undefined}
+                title={selectAllDisabledReason}
                 onClick={onSelectAll}
               >
                 Select all
@@ -94,8 +103,9 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
         </div>
         <div style={{ maxHeight, overflowY: 'auto' }}>
           {items.map((item, index) => {
-            const disabledReason = getItemDisabledReason?.(item);
-            const disabled = disabledReason !== undefined;
+            const isSelected = selectedUids.has(item.uid);
+            const disabledReason =
+              !isSelected && maxSelectedReached ? maxSelectedReason : undefined;
 
             return (
               <div
@@ -111,8 +121,8 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
                   <Form.Check.Input
                     type="checkbox"
                     className="mt-0"
-                    checked={selectedUids.has(item.uid)}
-                    disabled={disabled}
+                    checked={isSelected}
+                    disabled={disabledReason !== undefined}
                     onChange={() => onToggle(item.uid)}
                   />
                   <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
@@ -128,6 +138,7 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
           })}
         </div>
       </div>
+      {maxSelectedReached && <Form.Text className="text-muted">{maxSelectedReason}</Form.Text>}
     </div>
   );
 }

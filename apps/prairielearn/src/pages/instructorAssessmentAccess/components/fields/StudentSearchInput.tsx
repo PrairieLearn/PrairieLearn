@@ -21,8 +21,6 @@ export function StudentSearchInput({
   onSelectedUidsChange: (uids: Set<string>) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const limitReached = selectedUids.size >= maxSelected;
-  const limitReason = `A rule can target at most ${maxSelected} students.`;
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return allStudents;
@@ -64,14 +62,11 @@ export function StudentSearchInput({
           label="Student selection"
           checkboxIdPrefix="student-select"
           maxHeight="300px"
-          getItemDisabledReason={(student) =>
-            !selectedUids.has(student.uid) && limitReached ? limitReason : undefined
-          }
+          maxSelected={maxSelected}
           onToggle={handleToggleStudent}
           onDeselectAll={handleClearAll}
         />
       )}
-      {limitReached && <Form.Text className="text-muted">{limitReason}</Form.Text>}
     </div>
   );
 }
