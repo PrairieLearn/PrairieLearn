@@ -12,6 +12,7 @@ export function PersonalNotesPanel({
   authz_result,
   variantId,
   allowNewUploads = true,
+  lockdownBrowser = false,
   csrfToken,
   context,
 }: {
@@ -21,6 +22,8 @@ export function PersonalNotesPanel({
   authz_result: Record<string, any>;
   variantId?: string;
   allowNewUploads?: boolean;
+  /** Hides the file-picker form; its OS file dialog would let students open desktop files. */
+  lockdownBrowser?: boolean;
   csrfToken: string;
   context: 'question' | 'assessment';
 }) {
@@ -77,7 +80,7 @@ export function PersonalNotesPanel({
                       </div>
                     `
                   : html`
-                      ${AttachFileForm({ variantId, csrfToken })}
+                      ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
                       ${UploadTextForm({ variantId, csrfToken })}
                     `}
             </div>

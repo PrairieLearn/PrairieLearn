@@ -1,18 +1,17 @@
 columns
-    after_complete_hide_questions: boolean
-    after_complete_hide_questions_again_date: timestamp with time zone
-    after_complete_hide_questions_again_date_overridden: boolean not null default false
-    after_complete_hide_score: boolean
-    after_complete_show_questions_again_date: timestamp with time zone
-    after_complete_show_questions_again_date_overridden: boolean not null default false
-    after_complete_show_score_again_date: timestamp with time zone
-    after_complete_show_score_again_date_overridden: boolean not null default false
+    after_complete_questions_hidden: boolean
+    after_complete_questions_visible_from_date: timestamp with time zone
+    after_complete_questions_visible_until_date: timestamp with time zone
+    after_complete_score_hidden: boolean
+    after_complete_score_visible_from_date: timestamp with time zone
     assessment_id: bigint not null
+    before_release_listed: boolean
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
-    date_control_after_last_deadline_credit_overridden: boolean not null default false
+    date_control_after_last_deadline_overridden: boolean not null default false
+    date_control_due_credit: integer
     date_control_due_date: timestamp with time zone
-    date_control_due_date_overridden: boolean not null default false
+    date_control_due_overridden: boolean not null default false
     date_control_duration_minutes: integer
     date_control_duration_minutes_overridden: boolean not null default false
     date_control_early_deadlines_overridden: boolean not null default false
@@ -20,9 +19,7 @@ columns
     date_control_password: text
     date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
-    date_control_release_date_overridden: boolean not null default false
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
-    list_before_release: boolean
     number: integer not null
     target_type: enum_assessment_access_control_target_type not null
 
@@ -34,6 +31,7 @@ indexes
 check constraints
     assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
     assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
+    assessment_access_control_rules_date_control_due_credit_check: CHECK (date_control_due_credit >= 0)
     check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))
 
 foreign-key constraints

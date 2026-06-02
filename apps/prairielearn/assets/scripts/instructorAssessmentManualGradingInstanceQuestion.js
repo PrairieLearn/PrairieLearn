@@ -38,8 +38,6 @@ $(() => {
       })
       .modal('show');
   }
-
-  addInstanceQuestionGroupSelectionDropdownListeners();
 });
 
 window.mathjaxTypeset = mathjaxTypeset;
@@ -89,8 +87,13 @@ window.resetInstructorGradingPanel = function () {
 
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
     button.addEventListener('click', function () {
-      const toggleBtn = document.querySelector('[data-bs-target="#rubric-setting"]');
-      toggleBtn?.click();
+      const panel = document.getElementById('rubric-setting');
+      if (panel && !panel.classList.contains('show')) {
+        const toggleBtn = document.querySelector('[data-bs-target="#rubric-setting"]');
+        toggleBtn?.click();
+      }
+      const target = document.getElementById('rubric-editor') ?? panel;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }),
   );
 
@@ -137,6 +140,7 @@ window.resetInstructorGradingPanel = function () {
   );
 
   computePointsFromRubric();
+  addInstanceQuestionGroupSelectionDropdownListeners();
 };
 
 /**

@@ -9,6 +9,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
   type AssessmentJson,
@@ -21,7 +22,7 @@ import {
   QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -164,12 +165,18 @@ function getParamsForAssessment(
   let alternativePoolNumber = 0;
   let assessmentQuestionNumber = 0;
 
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
-  const allRoleNames = groups.roles.map((role) => role.name);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
+  const allRoleNames = groups?.roles.map((role) => role.name) ?? [];
   const assessmentCanView =
-    groups.rolePermissions.canView.length > 0 ? groups.rolePermissions.canView : allRoleNames;
+    groups && groups.rolePermissions.canView.length > 0
+      ? groups.rolePermissions.canView
+      : allRoleNames;
   const assessmentCanSubmit =
-    groups.rolePermissions.canSubmit.length > 0 ? groups.rolePermissions.canSubmit : allRoleNames;
+    groups && groups.rolePermissions.canSubmit.length > 0
+      ? groups.rolePermissions.canSubmit
+      : allRoleNames;
   const alternativePools = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
@@ -387,12 +394,14 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = groups.roles.map((role) => ({
-    role_name: role.name,
-    minimum: role.minMembers,
-    maximum: role.maxMembers,
-    can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
-  }));
+  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles);
+  const groupRoles =
+    groups?.roles.map((role) => ({
+      role_name: role.name,
+      minimum: role.minMembers,
+      maximum: role.maxMembers,
+      can_assign_roles: canAssignRoles.has(role.name),
+    })) ?? [];
 
   // If any errors were added during zone/question processing treat as error.
   if (infofile.hasErrors(assessmentInfoFile)) return null;
@@ -424,19 +433,19 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    team_work: groups.enabled,
-    group_max_size: groups.maxMembers ?? null,
-    group_min_size: groups.minMembers ?? null,
-    student_group_create: groups.studentPermissions.canCreateGroup,
-    student_group_choose_name: groups.studentPermissions.canNameGroup,
-    student_group_join: groups.studentPermissions.canJoinGroup,
-    student_group_leave: groups.studentPermissions.canLeaveGroup,
+    team_work: groups != null,
+    group_max_size: groups?.maxMembers ?? null,
+    group_min_size: groups?.minMembers ?? null,
+    student_group_create: groups?.studentPermissions.canCreateGroup ?? false,
+    student_group_choose_name: groups?.studentPermissions.canNameGroup ?? true,
+    student_group_join: groups?.studentPermissions.canJoinGroup ?? false,
+    student_group_leave: groups?.studentPermissions.canLeaveGroup ?? false,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: groupRoles.length > 0,
-    json_can_view: groups.rolePermissions.canView,
-    json_can_submit: groups.rolePermissions.canSubmit,
+    json_can_view: groups?.rolePermissions.canView ?? [],
+    json_can_submit: groups?.rolePermissions.canSubmit ?? [],
     modern_access_control: enhancedAccessControlEnabled && assessment.allowAccess == null,
     allowAccess,
     zones,
@@ -446,6 +455,7 @@ function getParamsForAssessment(
     // Needed when deleting unused alternative pools
     lastAlternativePoolNumber: alternativePoolNumber,
     share_source_publicly: assessment.shareSourcePublicly,
+    show_question_titles: assessment.showQuestionTitles ?? assessment.type === 'Homework',
   };
 }
 

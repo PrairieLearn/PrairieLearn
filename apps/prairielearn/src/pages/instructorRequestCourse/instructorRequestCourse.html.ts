@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { assertNever } from '@prairielearn/utils';
 
 import { Modal } from '../../components/Modal.js';
@@ -7,16 +7,19 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
 export function RequestCourse({
   rows,
   lti13Info,
+  institutionMessageHtml,
   resLocals,
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
+  institutionMessageHtml: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -28,31 +31,60 @@ export function RequestCourse({
     },
     headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
-      <h1 class="visually-hidden">Request a Course</h1>
-      ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
-      ${Modal({
-        id: 'fill-course-request-lti13-modal',
-        title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
-        form: false,
-        body: html`
-          <p>
-            You appear to be coming from a course in another learning system. Should we partially
-            fill in this request form with information from that course?
-          </p>
-          <p>(You can edit it after it's auto-filled.)</p>
-        `,
-        footer: html`
-          <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
-            Fill from LMS data
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Don't fill
-          </button>
-        `,
-      })}
-      ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
+      <div class="mx-auto" style="max-width: 1000px;">
+        <h1 class="h2 mb-3">Request a course</h1>
+        ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
+        ${Modal({
+          id: 'fill-course-request-lti13-modal',
+          title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+          form: false,
+          body: html`
+            <p>
+              You appear to be coming from a course in another learning system. Should we partially
+              fill in this request form with information from that course?
+            </p>
+            <p>(You can edit it after it's auto-filled.)</p>
+          `,
+          footer: html`
+            <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
+              Fill from LMS data
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Don't fill
+            </button>
+          `,
+        })}
+        ${CourseNewRequestForm({
+          csrfToken: resLocals.__csrf_token,
+          isDefaultInstitution:
+            resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
+          institutionName: resLocals.authn_institution.long_name,
+          institutionMessageHtml,
+          userEmail: resLocals.authn_user.uid,
+        })}
+      </div>
     `,
   });
+}
+
+function InstitutionMessageCard({
+  institutionMessageHtml,
+  institutionName,
+}: {
+  institutionMessageHtml: string;
+  institutionName: string;
+}): HtmlValue {
+  if (!institutionMessageHtml) {
+    return '';
+  }
+  return html`
+    <div class="card mb-4" data-testid="institution-message-card">
+      <div class="card-header d-flex align-items-center">
+        <h2 class="h5 mb-0">Information from "${institutionName}"</h2>
+      </div>
+      <div class="card-body">${unsafeHtml(institutionMessageHtml)}</div>
+    </div>
+  `;
 }
 
 function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
@@ -83,6 +115,9 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                   if (approved_by_user) {
                     details = `Approved by ${approved_by_user.name}`;
                   } else {
+                    // PrairieLearn used to support auto-approval of course requests. A request
+                    // that was automaticalaly approved did not store a reviewer. This functionality
+                    // was since removed, but we retain the rendering of this for historical data.
                     details = 'Automatically approved';
                   }
                   break;
@@ -107,212 +142,307 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
   `;
 }
 
-function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
+function CourseNewRequestForm({
+  csrfToken,
+  isDefaultInstitution,
+  institutionName,
+  institutionMessageHtml,
+  userEmail,
+}: {
+  csrfToken: string;
+  isDefaultInstitution: boolean;
+  institutionName: string;
+  institutionMessageHtml: string;
+  userEmail: string;
+}): HtmlValue {
   return html`
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h2>Request a New Course</h2>
-      </div>
-      <form class="question-form" name="course-request" method="POST">
-        <div class="card-body">
-          <p>
-            This form is for instructors who want to create a new course on PrairieLearn. Students
-            should <strong>not</strong> submit this form and should instead enroll in a course using
-            an enrollment code or direct link provided by their instructor. Teaching assistants and
-            course staff are granted access by the owner of their course and should
-            <strong>not</strong> submit this form.
-          </p>
+    <form class="question-form" name="course-request" method="POST">
+      <p>
+        This form is for instructors who want to create a new course on PrairieLearn. Students
+        should <strong>not</strong> submit this form and should instead enroll in a course using an
+        enrollment code or direct link provided by their instructor. Teaching assistants and course
+        staff are granted access by the owner of their course and should <strong>not</strong> submit
+        this form.
+      </p>
 
-          <div class="row">
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-firstname">First name</label>
-              <input
-                type="text"
-                class="form-control"
-                name="cr-firstname"
-                id="cr-firstname"
-                minlength="1"
-                required
-              />
+      ${InstitutionMessageCard({ institutionMessageHtml, institutionName })}
+      ${institutionMessageHtml ? '' : html`<hr class="my-3" />`}
+      <h2 class="h5 mb-3">About you</h2>
+      <div class="row">
+        <div class="mb-3 col-md-6">
+          <label class="form-label" for="cr-firstname">First name</label>
+          <input
+            type="text"
+            class="form-control"
+            name="cr-firstname"
+            id="cr-firstname"
+            minlength="1"
+            required
+          />
+        </div>
+        <div class="mb-3 col-md-6">
+          <label class="form-label" for="cr-lastname">Last name</label>
+          <input
+            type="text"
+            class="form-control"
+            name="cr-lastname"
+            id="cr-lastname"
+            minlength="1"
+            required
+          />
+        </div>
+      </div>
+      ${isDefaultInstitution
+        ? html`
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="cr-institution">Institution</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="cr-institution"
+                  id="cr-institution"
+                  minlength="1"
+                  required
+                />
+                <small class="form-text text-muted">
+                  This is your academic institution (e.g., "University of Illinois").
+                </small>
+              </div>
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="cr-email">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  name="cr-email"
+                  id="cr-email"
+                  aria-invalid="false"
+                  aria-errormessage="cr-email-warning"
+                  placeholder="login@yourinstitution.edu"
+                  minlength="1"
+                  required
+                />
+                <small class="form-text text-muted">
+                  You are not signed in with an institutional account, please sign into PrairieLearn
+                  with your institutional account when requesting a course. Alternatively, you can
+                  enter your institutional email address here (your request may be processed more
+                  slowly).
+                </small>
+                <div
+                  class="d-none alert alert-warning mt-2 mb-0"
+                  id="cr-email-warning"
+                  role="alert"
+                >
+                  This doesn't look like an institutional email address. Course requests from
+                  non-institutional email addresses may be rejected. Please use your official
+                  institution email if you have one.
+                </div>
+              </div>
             </div>
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-lastname">Last name</label>
-              <input
-                type="text"
-                class="form-control"
-                name="cr-lastname"
-                id="cr-lastname"
-                minlength="1"
-                required
-              />
+          `
+        : html`
+            <div class="row">
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="cr-institution">Institution</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="cr-institution"
+                  id="cr-institution"
+                  disabled
+                  value="${institutionName}"
+                />
+                <small class="form-text text-muted">
+                  This is determined by your sign-in account. If you want to request a course for a
+                  different institution, please sign in with the appropriate account.
+                </small>
+              </div>
+              <div class="mb-3 col-md-6">
+                <label class="form-label" for="cr-email">Email</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="cr-email"
+                  id="cr-email"
+                  disabled
+                  value="${userEmail}"
+                />
+                <small class="form-text text-muted">
+                  This is determined by your sign-in account.
+                </small>
+              </div>
             </div>
-          </div>
-          <div class="row">
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-institution">Institution</label>
-              <input
-                type="text"
-                class="form-control"
-                name="cr-institution"
-                id="cr-institution"
-                minlength="1"
-                required
-              />
-              <small class="form-text text-muted">
-                This is your academic institution (e.g., "University of Illinois").
-              </small>
-            </div>
-            <div class="mb-3 col-md-6">
-              <label class="form-label" for="cr-email">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                name="cr-email"
-                id="cr-email"
-                placeholder="login@yourinstitution.edu"
-                minlength="1"
-                required
-              />
-              <small class="form-text text-muted"> Use your official work email address. </small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
-            <input
-              type="text"
-              class="form-control"
-              name="cr-shortname"
-              id="cr-shortname"
-              placeholder="MATH 101"
-              pattern="[a-zA-Z]+ [a-zA-Z0-9]+"
-              required
-            />
-            <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="cr-title">Course Title</label>
-            <input
-              type="text"
-              class="form-control"
-              name="cr-title"
-              id="cr-title"
-              placeholder="Elementary Mathematics"
-              minlength="1"
-              maxlength="75"
-              required
-            />
-            <small class="form-text text-muted">
-              This is the official title of the course, as given in the course catalog.
-            </small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
-            <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
-            <small class="form-text text-muted">
-              Providing your GitHub username will grant you access to your course's GitHub
-              repository. This access allows you to edit your code in a
-              <a
-                href="https://docs.prairielearn.com/installing/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >local installation of PrairieLearn</a
-              >, and to grant access to other instructors or TAs to do the same. You do not need to
-              provide this if you would like to exclusively use the online web editor. You are
-              encouraged to provide it if you are planning complex questions such as those using
-              <a
-                href="https://docs.prairielearn.com/externalGrading/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >code autograding</a
-              >
-              or
-              <a
-                href="https://docs.prairielearn.com/workspaces/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >workspaces</a
-              >, even if you don't yet have use for a local installation.
-            </small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
-              How did you hear about PrairieLearn?
+          `}
+      <hr class="my-3" />
+      <h2 class="h5 mb-3">About your course</h2>
+      <div class="mb-3">
+        <label class="form-label" for="cr-shortname">Course Rubric and Number</label>
+        <input
+          type="text"
+          class="form-control"
+          name="cr-shortname"
+          id="cr-shortname"
+          aria-invalid="false"
+          placeholder="MATH 101"
+          pattern="[a-zA-Z]+ [a-zA-Z0-9]+"
+          required
+        />
+        <small class="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
+        <div class="d-none alert alert-danger mt-2 mb-0" id="cr-shortname-owned" role="alert">
+          You already own a course with this short name. If you want to offer a new semester or
+          section,
+          <a
+            href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
+            target="_blank"
+            rel="noopener noreferrer"
+            >create a new course instance</a
+          >
+          from within your existing course instead of requesting a new one.
+        </div>
+        <div class="d-none alert alert-warning mt-2 mb-0" id="cr-shortname-exists" role="alert">
+          A course with this short name already exists in your institution. If you'd like to share
+          content with the existing instructor, consider reaching out to them. If you prefer a
+          separate course, you may continue and your request will be reviewed.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="cr-title">Course Title</label>
+        <input
+          type="text"
+          class="form-control"
+          name="cr-title"
+          id="cr-title"
+          aria-invalid="false"
+          placeholder="Elementary Mathematics"
+          minlength="1"
+          maxlength="75"
+          required
+        />
+        <small class="form-text text-muted">
+          This is the official title of the course, as given in the course catalog.
+        </small>
+        <div class="d-none alert alert-danger mt-2 mb-0" id="cr-title-owned" role="alert">
+          You already own a course with this title. If you want to offer a new semester or section,
+          <a
+            href="https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance"
+            target="_blank"
+            rel="noopener noreferrer"
+            >create a new course instance</a
+          >
+          from within your existing course instead of requesting a new one.
+        </div>
+        <div class="d-none alert alert-warning mt-2 mb-0" id="cr-title-exists" role="alert">
+          A course with this title already exists in your institution. If you'd like to share
+          content with the existing instructor, consider reaching out to them. If you prefer a
+          separate course, you may continue and your request will be reviewed.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
+        <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
+        <small class="form-text text-muted">
+          Providing your GitHub username will grant you access to your course's GitHub repository.
+          This access allows you to edit your code in a
+          <a
+            href="https://docs.prairielearn.com/installing/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >local installation of PrairieLearn</a
+          >, and to grant access to other instructors or TAs to do the same. You do not need to
+          provide this if you would like to exclusively use the online web editor. You are
+          encouraged to provide it if you are planning complex questions such as those using
+          <a
+            href="https://docs.prairielearn.com/externalGrading/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >code autograding</a
+          >
+          or
+          <a
+            href="https://docs.prairielearn.com/workspaces/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >workspaces</a
+          >, even if you don't yet have use for a local installation.
+        </small>
+      </div>
+      <hr class="my-3" />
+      <h2 class="h5 mb-3">About your request</h2>
+      <div class="mb-3">
+        <label class="form-label" id="cr-referral-source-label" for="cr-referral-source">
+          How did you hear about PrairieLearn?
+        </label>
+        <select
+          class="form-select"
+          name="cr-referral-source"
+          id="cr-referral-source"
+          aria-labelledby="cr-referral-source-label"
+          required
+        >
+          <option value="" disabled selected></option>
+          <option value="I've used PrairieLearn before">I've used PrairieLearn before</option>
+          <option value="Word of mouth">Word of mouth</option>
+          <option value="Web search">Web search</option>
+          <option value="Conference or workshop">Conference or workshop</option>
+          <option value="Publication">Publication</option>
+          <option value="other">Other...</option>
+        </select>
+        <input
+          type="text"
+          class="form-control mt-2 d-none"
+          name="cr-referral-source-other"
+          id="cr-referral-source-other"
+          aria-labelledby="cr-referral-source-label"
+        />
+        <small class="form-text text-muted">
+          This information helps us understand how people find out about PrairieLearn. Thank you for
+          sharing!
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="role-instructor">Your Role in the Course</label>
+        <ul class="list-group">
+          <li class="list-group-item">
+            <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
+            <label for="role-instructor" class="mb-0 form-check-label">
+              Official Course Instructor
             </label>
-            <select
-              class="form-select"
-              name="cr-referral-source"
-              id="cr-referral-source"
-              aria-labelledby="cr-referral-source-label"
-              required
-            >
-              <option value="" disabled selected></option>
-              <option value="I've used PrairieLearn before">I've used PrairieLearn before</option>
-              <option value="Word of mouth">Word of mouth</option>
-              <option value="Web search">Web search</option>
-              <option value="Conference or workshop">Conference or workshop</option>
-              <option value="Publication">Publication</option>
-              <option value="other">Other...</option>
-            </select>
-            <input
-              type="text"
-              class="form-control mt-2 d-none"
-              name="cr-referral-source-other"
-              id="cr-referral-source-other"
-              aria-labelledby="cr-referral-source-label"
-            />
-            <small class="form-text text-muted">
-              This information helps us understand how people find out about PrairieLearn. Thank you
-              for sharing!
-            </small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="role-instructor">Your Role in the Course</label>
-            <ul class="list-group">
-              <li class="list-group-item">
-                <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
-                <label for="role-instructor" class="mb-0 form-check-label">
-                  Official Course Instructor
-                </label>
-              </li>
-              <li class="list-group-item">
-                <input type="radio" id="role-ta" name="cr-role" value="ta" />
-                <label for="role-ta" class="mb-0 form-check-label">
-                  Teaching Assistant or other course staff
-                </label>
-              </li>
-              <li class="list-group-item">
-                <input type="radio" id="role-admin" name="cr-role" value="admin" />
-                <label for="role-admin" class="mb-0 form-check-label">
-                  Institution Administrative Staff
-                </label>
-              </li>
-              <li class="list-group-item">
-                <input type="radio" id="role-student" name="cr-role" value="student" />
-                <label for="role-student" class="mb-0 form-check-label">Student</label>
-              </li>
-            </ul>
-            <div
-              class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
-              role="alert"
-            >
-              <strong>A new course instance must be requested by the instructor.</strong> Please ask
-              the official course instructor to submit this form.
-            </div>
-            <div
-              class="d-none role-comment role-comment-student alert alert-warning mt-3 mb-0"
-              role="alert"
-            >
-              <strong>This is the wrong form for you.</strong> Contact your instructor for
-              instructions on how to access your assessments.
-            </div>
-          </div>
+          </li>
+          <li class="list-group-item">
+            <input type="radio" id="role-ta" name="cr-role" value="ta" />
+            <label for="role-ta" class="mb-0 form-check-label">
+              Teaching Assistant or other course staff
+            </label>
+          </li>
+          <li class="list-group-item">
+            <input type="radio" id="role-admin" name="cr-role" value="admin" />
+            <label for="role-admin" class="mb-0 form-check-label">
+              Institution Administrative Staff
+            </label>
+          </li>
+          <li class="list-group-item">
+            <input type="radio" id="role-student" name="cr-role" value="student" />
+            <label for="role-student" class="mb-0 form-check-label">Student</label>
+          </li>
+        </ul>
+        <div
+          class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
+          role="alert"
+        >
+          <strong>A new course instance must be requested by the instructor.</strong> Please ask the
+          official course instructor to submit this form.
         </div>
-        <div class="card-footer">
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button class="btn btn-primary" type="submit" disabled>Submit Request</button>
+        <div
+          class="d-none role-comment role-comment-student alert alert-warning mt-3 mb-0"
+          role="alert"
+        >
+          <strong>This is the wrong form for you.</strong> Contact your instructor for instructions
+          on how to access your assessments.
         </div>
-      </form>
-    </div>
+      </div>
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button class="btn btn-primary" type="submit" disabled>Submit request</button>
+    </form>
   `;
 }
 

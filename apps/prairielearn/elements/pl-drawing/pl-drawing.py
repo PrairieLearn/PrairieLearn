@@ -415,8 +415,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_submitted_answer = data["submitted_answers"].get(name)
 
-    # A blank submission could be `None`
-    if allow_blank and raw_submitted_answer is None:
+    # A blank submission could be `None` or an empty string
+    # Empty strings must be filtered here because json.loads('') raises an error
+    if allow_blank and (raw_submitted_answer is None or len(raw_submitted_answer) == 0):
         data["submitted_answers"][name] = None
         return
 

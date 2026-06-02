@@ -1,16 +1,16 @@
 -- Enum for access control target types
 CREATE TYPE enum_assessment_access_control_target_type AS ENUM('none', 'enrollment', 'student_label');
 
--- Main access control rules table
+-- Primary access control rules table
 CREATE TABLE assessment_access_control_rules (
   id BIGSERIAL PRIMARY KEY,
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE,
   list_before_release boolean,
   -- `number` is unique per (assessment_id, target_type), not per assessment.
-  -- number=0 is always the main rule (target_type='none'), while override rules
+  -- number=0 is always the default rule (target_type='none'), while non-default rules
   -- (target_type='enrollment' or 'student_label') start numbering from 1 independently.
   number INTEGER NOT NULL,
-  -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
+  -- Target type: 'none' for default rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
   target_type enum_assessment_access_control_target_type NOT NULL,
   date_control_release_date_overridden boolean NOT NULL DEFAULT false,
   date_control_release_date TIMESTAMP WITH TIME ZONE,

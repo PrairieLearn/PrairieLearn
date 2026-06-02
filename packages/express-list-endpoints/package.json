@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/express-list-endpoints",
-  "version": "2.0.2",
+  "version": "2.0.6",
   "type": "module",
   "repository": {
     "type": "git",
@@ -19,12 +19,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "express": "^4.22.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.2"
+    "@types/express": "^4.17.25 <5",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "express": "^4.22.1 <5",
+    "vitest": "^4.1.7"
   }
 }

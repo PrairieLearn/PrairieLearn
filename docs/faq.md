@@ -8,9 +8,9 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then click the pencil icon in the "Remaining" column to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam by selecting it on the "Students" tab and clicking the "Delete" button above the table. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
@@ -161,17 +161,15 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 
 ## How can I reference material in `clientFilesQuestion` from the `server.py`?
 
-To reference a question in the `clientFilesQuestion` folder from `server.py`,
-use the relative path from the base of the question.
+Functions in `server.py` are called with the question path as the current working directory, so you can access files in `clientFilesQuestion` using relative paths. For example, if you have a file named `data.csv` in `clientFilesQuestion`, you can access it from `server.py` using:
 
-```text
-./clientFilesQuestion/<your_file_here>
+```python
+def generate(data):
+    with open("clientFilesQuestion/data.csv") as f:
+        # do something with the file
 ```
 
-The same pattern holds for referencing material in any subdirectory of the question directory.
-
-To learn more about where files are stored, please see
-[clientFiles and serverFiles](clientServerFiles.md).
+See the [documentation about accessing files from `server.py` question code](./clientServerFiles.md#accessing-files-from-serverpy-question-code) for details.
 
 ## Why is my QID invalid?
 

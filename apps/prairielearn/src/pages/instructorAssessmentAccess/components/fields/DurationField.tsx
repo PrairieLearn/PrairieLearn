@@ -1,11 +1,78 @@
 import { Form, InputGroup } from 'react-bootstrap';
-import { type Path, useController, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
-function DurationInput({
+function DurationDetails({
+  value,
+  onChange,
+  idPrefix,
+  error,
+}: {
+  value: number | null;
+  onChange: (value: number | null) => void;
+  idPrefix: string;
+  error?: string;
+}) {
+  const ruleEditable = useAccessControlRuleEditable();
+  return (
+    <>
+      {value !== null && (
+        <>
+          <InputGroup className="mt-2">
+            <Form.Control
+              type="number"
+              aria-label="Duration in minutes"
+              aria-invalid={!!error}
+              placeholder="Duration in minutes"
+              value={value === 0 ? '' : value}
+              isInvalid={!!error}
+              aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
+              disabled={!ruleEditable}
+              onChange={({ currentTarget }) => {
+                if (currentTarget.value === '') {
+                  onChange(0);
+                } else {
+                  const num = Number(currentTarget.value);
+                  if (Number.isFinite(num) && num >= 0) {
+                    onChange(num);
+                  }
+                }
+              }}
+            />
+            <InputGroup.Text>minutes</InputGroup.Text>
+          </InputGroup>
+          {error && (
+            <Form.Text id={`${idPrefix}-duration-error`} className="text-danger" role="alert">
+              {error}
+            </Form.Text>
+          )}
+        </>
+      )}
+      {!error && (
+        <Form.Text className="text-muted">
+          {value !== null && value > 0
+            ? `Students will have ${value} minutes to complete the assessment.`
+            : value !== null
+              ? 'Enter a duration in minutes.'
+              : 'Add a time limit to the assessment.'}
+        </Form.Text>
+      )}
+    </>
+  );
+}
+
+function validateDuration(value: number | null): string | true {
+  if (value !== null && value < 1) return 'Duration must be at least 1 minute';
+  return true;
+}
+
+function DurationToggle({
   value,
   onChange,
   idPrefix,
@@ -14,57 +81,53 @@ function DurationInput({
   onChange: (value: number | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
+  return (
+    <ToggleTitle
+      id={`${idPrefix}-time-limit-enabled`}
+      label="Time limit"
+      checked={value !== null}
+      disabled={!ruleEditable}
+      onChange={(checked) => onChange(checked ? 60 : null)}
+    />
+  );
+}
+
+export function DefaultDurationField() {
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
+    rules: { validate: validateDuration },
+  });
+
   return (
     <Form.Group>
-      <Form.Check
-        type="checkbox"
-        id={`${idPrefix}-time-limit-enabled`}
-        label={<strong>Time limit</strong>}
-        checked={value !== null}
-        onChange={({ currentTarget }) => onChange(currentTarget.checked ? 60 : null)}
+      <DurationToggle value={field.value} idPrefix="defaultRule" onChange={field.onChange} />
+      <DurationDetails
+        value={field.value}
+        idPrefix="defaultRule"
+        error={error?.message}
+        onChange={field.onChange}
       />
-      {value !== null && (
-        <InputGroup className="mt-2">
-          <Form.Control
-            type="number"
-            aria-label="Duration in minutes"
-            placeholder="Duration in minutes"
-            min="1"
-            value={value}
-            onChange={({ currentTarget }) => {
-              const num = Number(currentTarget.value);
-              if (Number.isFinite(num) && num > 0) {
-                onChange(num);
-              }
-            }}
-          />
-          <InputGroup.Text>minutes</InputGroup.Text>
-        </InputGroup>
-      )}
-      <Form.Text className="text-muted">
-        {value !== null
-          ? `Students will have ${value} minutes to complete the assessment.`
-          : 'Add a time limit to the assessment.'}
-      </Form.Text>
     </Form.Group>
   );
 }
 
-export function MainDurationField() {
-  const { field } = useController<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
-  });
-
-  return <DurationInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
-}
-
 export function OverrideDurationField({ index }: { index: number }) {
-  const mainValue = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
-    name: 'mainRule.durationMinutes',
+  const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.durationMinutes'>({
+    name: 'defaultRule.durationMinutes',
   });
 
-  const { field } = useController({
-    name: `overrides.${index}.durationMinutes` as Path<AccessControlFormData>,
+  const {
+    field,
+    fieldState: { error },
+  } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
+    name: `overrides.${index}.durationMinutes`,
+    rules: {
+      validate: validateActiveOverrideField(index, 'durationMinutes', validateDuration),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');
@@ -73,15 +136,23 @@ export function OverrideDurationField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Time limit"
+      headerToggle={
+        <DurationToggle
+          value={field.value}
+          idPrefix={`overrides-${index}`}
+          onChange={field.onChange}
+        />
+      }
       onOverride={() => {
-        field.onChange(mainValue);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}
     >
-      <DurationInput
-        value={field.value as number | null}
+      <DurationDetails
+        value={field.value}
         idPrefix={`overrides-${index}`}
+        error={error?.message}
         onChange={field.onChange}
       />
     </FieldWrapper>

@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/eslint-plugin",
-  "version": "4.0.0",
+  "version": "4.3.2",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
@@ -19,17 +20,17 @@
     "eslint": "^10.0.0"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.58.0",
-    "typescript": "^5.9.3"
+    "@typescript-eslint/utils": "^8.60.0",
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
+    "@html-eslint/parser": "^0.61.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.2",
-    "@typescript-eslint/rule-tester": "^8.58.0",
-    "@typescript-eslint/types": "^8.58.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "tsx": "^4.21.0",
-    "vitest": "^4.1.2"
+    "@types/node": "^24.12.4",
+    "@typescript-eslint/rule-tester": "^8.60.0",
+    "@typescript-eslint/types": "^8.60.0",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }
