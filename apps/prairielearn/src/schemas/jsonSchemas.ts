@@ -48,7 +48,6 @@ import {
   type QuestionOptionsMultipleTrueFalseJson,
   QuestionOptionsMultipleTrueFalseJsonSchema,
 } from './questionOptionsMultipleTrueFalse.js';
-import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 // Schemas referenced as named `$defs` in the generated JSON Schema must be
 // registered with an `id` so `z.toJSONSchema` extracts them rather than
@@ -420,12 +419,6 @@ const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
   ['CommentJsonSchema'],
 ) as JSONSchemaType<QuestionOptionsMultipleTrueFalseJson>;
 
-const questionOptionsv3 = prairielearnZodToJsonSchema(
-  QuestionOptionsv3JsonSchema,
-  'v3 question options',
-  ['CommentJsonSchema'],
-) as JSONSchemaType<QuestionOptionsv3Json>;
-
 export const ajvSchemas = {
   infoAssessment,
   infoCourse,
@@ -439,5 +432,4 @@ export const ajvSchemas = {
   questionOptionsFile,
   questionOptionsMultipleChoice,
   questionOptionsMultipleTrueFalse,
-  questionOptionsv3,
 };

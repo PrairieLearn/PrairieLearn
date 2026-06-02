@@ -736,6 +736,7 @@ export const CourseSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   options: z.any(),
   path: z.string(),
+  questions_receive_user_data: z.boolean(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
