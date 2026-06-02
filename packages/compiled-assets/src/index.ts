@@ -323,9 +323,36 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     metafile: true, // Write metadata about the build
   });
 
-  // For now, we only build ESM bundles for scripts that are split into chunks (i.e. React components)
-  // Using 'type=module' in the script tag for ESM means that it is loaded after all 'classic' scripts,
-  // which can cause load-ordering issues with classic scripts. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
+  // TODO: we only build ESM bundles for scripts that are split into chunks (i.e. React components). This comment
+  // was written with Claude 4.8 Opus.
+  //
+  // We can't yet switch the classic (IIFE) bundles to `type=module`: module scripts are deferred and run
+  // after the document is parsed, whereas classic scripts run during parsing. Our behaviors register via
+  // `onDocumentReady`, which fires immediately once `readyState !== 'loading'`, so under `type=module` they
+  // would run after parse instead of deferring to `DOMContentLoaded` — reordering them relative to inline
+  // page scripts and to each other. PR #12180 attempted this switch and hit exactly these load-ordering
+  // regressions. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
+  //
+  // What stays the same (so the switch is bounded, not a free-for-all): `type=module` scripts still execute
+  // in document order, so bundle-to-bundle order is preserved. jQuery and Bootstrap stay classic `<script>`
+  // tags in `<head>` (see apps/prairielearn/src/components/HeadContents.tsx), so `window.$`/`window.bootstrap`
+  // are still guaranteed to exist before any bundle runs — this is not a "duplicate jQuery instance" problem.
+  //
+  // Concrete blockers to audit before flipping the format:
+  //   1. Make `onDocumentReady` (packages/browser-utils) defer-safe — always queue the callback instead of
+  //      running it synchronously when the document is already parsed — so classic and module timing match.
+  //      Then audit its ~28 call sites. Most only register `selector-observer` (MutationObserver) handlers
+  //      and are order-insensitive; the popover/tooltip/dropdown init in `application.ts` is the part that
+  //      actually broke before.
+  //   2. A bundle's top-level code will now run *after* inline `<body>` scripts (today it runs before them),
+  //      so an inline script that reads a global a bundle sets at top level would break. Only one bundle
+  //      exports globals today — instructorAssessmentManualGradingInstanceQuestion.js sets
+  //      `window.mathjaxTypeset` and `window.resetInstructorGradingPanel`, consumed by a React component
+  //      (not an inline script), so there is no current victim. Re-verify this before switching.
+  //   3. htmx is imported at the top of `navbarClient.ts`, so flipping that bundle defers htmx init from
+  //      parse-time to post-parse. Verify `hx-*` wiring still works (htmx was bundled into #12180 for this).
+  //   4. The converted bundles will share one deferred queue with the React esm-bundles (today the classic
+  //      bundles all run first). Verify behaviors still register before any component that assumes it.
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );
