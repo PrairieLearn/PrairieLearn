@@ -1,9 +1,9 @@
 import * as z from 'zod/v4';
 
-import { plBoolean, plFloat, plInteger, toDraft04JsonSchema } from '../element-schema-helpers.js';
+import { plBoolean, plFloat, plInteger, toDraft04JsonSchema } from '../element-schema-helpers.ts';
 import type { ElementSchemaModule } from '../types.js';
 
-import { validators } from './pl-multiple-choice.validator.js';
+import { validators } from './pl-multiple-choice.validator.ts';
 
 const aotaNotaAttribute = () =>
   z.union([plBoolean(), z.enum(['false', 'random', 'correct', 'incorrect'])]);

@@ -130,7 +130,7 @@ async function format(filePath: string, contents: string): Promise<string> {
 
 function buildRegistry(elements: DiscoveredElement[]): string {
   const imports = elements
-    .map((e) => `import { element as ${toCamelCase(e.tag)} } from './elements/${e.tag}.js';`)
+    .map((e) => `import { element as ${toCamelCase(e.tag)} } from './elements/${e.tag}.ts';`)
     .join('\n');
   const names = elements.map((e) => toCamelCase(e.tag)).join(', ');
   return [

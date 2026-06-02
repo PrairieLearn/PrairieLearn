@@ -1,4 +1,4 @@
-import { elementModules } from './registry.generated.js';
+import { elementModules } from './registry.generated.ts';
 
 export { formats } from './htmlmustache-plugin-utils.ts';
 
