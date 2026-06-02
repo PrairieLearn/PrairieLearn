@@ -1345,7 +1345,7 @@ describe('Access control syncing', () => {
       runInTransactionAndRollback(() =>
         withConfig({ checkAccessRulesExamUuid: true }, async () => {
           const fakeUuid = '00000000-0000-0000-0000-000000000000';
-          const { syncedRules } = await syncRulesAndRead([
+          const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
               dateControl: undefined,
               integrations: {
@@ -1356,6 +1356,7 @@ describe('Access control syncing', () => {
             }),
           ]);
           assert.equal(syncedRules.length, 0);
+          assert.isTrue(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
 
           const assessment = await getAssessment(util.ASSESSMENT_ID);
           assert.isNotNull(assessment.sync_errors);

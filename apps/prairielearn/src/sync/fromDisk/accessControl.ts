@@ -207,7 +207,13 @@ async function selectInvalidExamUuids(
   return invalidExamUuids;
 }
 
-export async function preValidateAccessControl(
+/**
+ * Validates access-control constraints that depend on synced database rows and
+ * records any resulting errors on assessment infofiles. This must run after
+ * course instances and student labels are synced, but before assessments are
+ * synced, so `assessments.sync_errors` includes these errors.
+ */
+export async function validateAccessControl(
   courseInstanceId: string,
   assessments: CourseInstanceData['assessments'],
 ): Promise<void> {
@@ -231,7 +237,7 @@ export async function preValidateAccessControl(
 
 /**
  * Syncs access control rules for multiple assessments in a single sproc call.
- * Inputs must already have been checked with `preValidateAccessControl()`.
+ * Inputs must already have been checked with `validateAccessControl()`.
  */
 export async function syncAccessControl(
   courseInstanceId: string,

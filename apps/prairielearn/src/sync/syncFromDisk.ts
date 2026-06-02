@@ -21,8 +21,8 @@ import { flushElementCache } from '../question-servers/freeform.js';
 import * as courseDB from './course-db.js';
 import {
   type AccessControlSyncInput,
-  preValidateAccessControl,
   syncAccessControl,
+  validateAccessControl,
 } from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
@@ -198,15 +198,12 @@ export async function syncDiskToSqlWithLock(
       course_id: course.id,
     });
     if (enhancedAccessControlEnabled) {
-      // We do this independently of the process of syncing the access control
-      // rules themselves so that this will add any relevant errors to the assessment's
-      // infofile so that they're present when we sync the assessments.
-      await timed('Pre-validated access control', async () => {
+      await timed('Validated access control', async () => {
         await async.eachLimit(
           Object.entries(courseData.courseInstances),
           3,
           async ([ciid, { assessments }]) => {
-            await preValidateAccessControl(courseInstanceIds[ciid], assessments);
+            await validateAccessControl(courseInstanceIds[ciid], assessments);
           },
         );
       });
