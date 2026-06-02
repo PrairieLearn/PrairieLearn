@@ -180,15 +180,18 @@ const PROPERTY_MAP_KEYWORDS = new Set([
  *   - `{ anyOf: [{ type: 'X' }, { type: 'Y' }, ...] }` -> `{ type: ['X', 'Y'] }`.
  *     Zod 3 expressed unions of bare scalar types (including nullables, where
  *     one branch is `{ type: 'null' }`) with the compact array form.
- *   - Drop tautological constraints Zod 4 newly emits: `propertyNames:
- *     { type: 'string' }` (JSON object keys are always strings) and `items: {}`
- *     (an empty schema allows anything, same as omitting `items`).
- *   - Key order: Zod 4 emits the `default` keyword *first*, whereas
- *     zod-to-json-schema emitted it *last* (e.g. `{ type, default, enum }` vs
- *     `{ type, enum, default }`). We move `default` back to the end so the
- *     keyword order — and therefore the line-by-line diff — matches. The
- *     `inPropertyMap` guard ensures we only reorder genuine `default` keywords,
- *     never a property whose name happens to be `default`.
+ *   - Drop tautological constraints Zod 4 newly emits: a `type: 'string'` inside
+ *     `propertyNames` (JSON object keys are always strings), `items: {}` (an
+ *     empty schema allows anything, same as omitting `items`), and the JS
+ *     safe-integer `minimum`/`maximum` bounds Zod 4 stamps onto every unbounded
+ *     integer.
+ *   - Key order: Zod 4 emits `minItems`, `maxItems`, and `default` *before* the
+ *     structural keywords (e.g. `items`), whereas zod-to-json-schema emitted
+ *     them *last* (e.g. `{ type, default, enum }` vs `{ type, enum, default }`).
+ *     We move them back to the end so the keyword order — and therefore the
+ *     line-by-line diff — matches. The `inPropertyMap` guard ensures we only
+ *     reorder genuine keywords, never a property whose name happens to collide
+ *     with one (e.g. a property literally named `default`).
  */
 export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = false): void {
   if (Array.isArray(node)) {
@@ -238,14 +241,17 @@ export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = fals
   }
 
   // Drop tautological constraints Zod 4 emits but the previous output did not.
-  if (
-    obj.propertyNames !== null &&
-    typeof obj.propertyNames === 'object' &&
-    obj.propertyNames.type === 'string' &&
-    Object.keys(obj.propertyNames).length === 1
-  ) {
-    delete obj.propertyNames;
+  // `propertyNames` always constrains object keys, which are strings by
+  // definition, so a `type: 'string'` there is redundant whether it stands
+  // alone or sits beside a real constraint (`enum`, `minLength`, ...).
+  if (obj.propertyNames !== null && typeof obj.propertyNames === 'object') {
+    if (Object.keys(obj.propertyNames).length === 1 && obj.propertyNames.type === 'string') {
+      delete obj.propertyNames;
+    } else if (obj.propertyNames.type === 'string') {
+      delete obj.propertyNames.type;
+    }
   }
+  // `items: {}` allows anything, same as omitting `items`.
   if (
     obj.items !== null &&
     typeof obj.items === 'object' &&
@@ -255,11 +261,21 @@ export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = fals
     delete obj.items;
   }
 
-  // Move the `default` keyword to the end (re-insertion appends it last).
-  if ('default' in obj) {
-    const value = obj.default;
-    delete obj.default;
-    obj.default = value;
+  // Zod 4 stamps every unbounded integer with the JS safe-integer range;
+  // zod-to-json-schema left such bounds off. Strip only these sentinel values —
+  // real `.min()` / `.max()` constraints use other numbers and are preserved.
+  if (obj.minimum === -Number.MAX_SAFE_INTEGER) delete obj.minimum;
+  if (obj.maximum === Number.MAX_SAFE_INTEGER) delete obj.maximum;
+
+  // Key order: Zod 4 emits these keywords before the structural ones (e.g.
+  // `items`), but zod-to-json-schema emitted them last. Re-insert each present
+  // keyword so it trails, in the order the previous output used.
+  for (const keyword of ['minItems', 'maxItems', 'default']) {
+    if (keyword in obj) {
+      const value = obj[keyword];
+      delete obj[keyword];
+      obj[keyword] = value;
+    }
   }
 
   for (const [key, value] of Object.entries(obj)) {
@@ -316,8 +332,11 @@ function prairielearnZodToJsonSchema(
     );
   }
 
-  annotateDeprecated(jsonSchema);
+  // Normalize first so `default` is moved to the end of each object, then
+  // append `deprecated` — the previous toolchain emitted `{ ..., default,
+  // deprecated }` in that order.
   normalizeGeneratedJsonSchema(jsonSchema);
+  annotateDeprecated(jsonSchema);
 
   return jsonSchema;
 }

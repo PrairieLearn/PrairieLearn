@@ -1108,14 +1108,10 @@
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             },
             "maxMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             }
           }
         },
@@ -1125,14 +1121,10 @@
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             },
             "maxMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             }
           }
         },
@@ -1142,14 +1134,10 @@
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             },
             "maxMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             }
           }
         },
@@ -1159,14 +1147,10 @@
           "required": ["minMilliDollars", "maxMilliDollars"],
           "properties": {
             "minMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             },
             "maxMilliDollars": {
-              "type": "integer",
-              "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "type": "integer"
             }
           }
         }

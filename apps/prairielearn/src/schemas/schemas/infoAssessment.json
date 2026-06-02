@@ -115,8 +115,8 @@
     "groupWork": {
       "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "deprecated": true,
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "groupMaxSize": {
       "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -134,8 +134,8 @@
       "items": {
         "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
       },
-      "deprecated": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canSubmit": {
       "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -144,8 +144,8 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "deprecated": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canView": {
       "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -154,32 +154,32 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "deprecated": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "studentGroupCreate": {
       "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "deprecated": true,
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupChooseName": {
       "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "deprecated": true,
-      "default": true
+      "default": true,
+      "deprecated": true
     },
     "studentGroupJoin": {
       "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "deprecated": true,
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupLeave": {
       "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "deprecated": true,
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "groups": {
       "description": "Configuration for group-based assessments.",
@@ -296,7 +296,6 @@
         }
       },
       "propertyNames": {
-        "type": "string",
         "enum": ["calculator"]
       }
     }
@@ -336,8 +335,7 @@
         "credit": {
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "minimum": 0
         },
         "startDate": {
           "description": "The earliest date on which access is permitted.",
@@ -350,8 +348,7 @@
         "timeLimitMin": {
           "description": "The time limit to complete the assessment, in minutes (only for Exams).",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "minimum": 0
         },
         "password": {
           "description": "Password to begin the assessment. Typically used for proctored exams.",
@@ -398,14 +395,12 @@
         "numberChoose": {
           "description": "Number of questions to choose from this zone.",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "minimum": 0
         },
         "bestQuestions": {
           "description": "Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "minimum": 0
         },
         "lockpoint": {
           "description": "If true, students must explicitly acknowledge advancing past this point. All questions in previous zones become read-only after crossing.",
@@ -415,10 +410,10 @@
         "questions": {
           "description": "Array of questions in the zone.",
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "#/definitions/ZoneQuestionBlockJsonSchema"
-          }
+          },
+          "minItems": 1
         },
         "advanceScorePerc": {
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -464,7 +459,6 @@
             }
           },
           "propertyNames": {
-            "type": "string",
             "enum": ["calculator"]
           }
         }
@@ -500,22 +494,20 @@
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "#/definitions/QuestionAlternativeJsonSchema"
-          }
+          },
+          "minItems": 1
         },
         "numberChoose": {
           "description": "Number of questions to choose from this pool.",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+          "minimum": 0
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
+          "minimum": 1
         },
         "advanceScorePerc": {
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -584,8 +576,7 @@
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
+          "minimum": 1
         },
         "advanceScorePerc": {
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -623,10 +614,10 @@
     "PointsListJsonSchema": {
       "description": "An array of point values.",
       "type": "array",
-      "minItems": 1,
       "items": {
         "$ref": "#/definitions/PointsSingleJsonSchema"
-      }
+      },
+      "minItems": 1
     },
     "QuestionIdJsonSchema": {
       "description": "Question ID (directory name of the question).",
@@ -648,7 +639,6 @@
         "type": ["string", "number", "boolean"]
       },
       "propertyNames": {
-        "type": "string",
         "minLength": 1
       }
     },
@@ -838,8 +828,7 @@
               "anyOf": [
                 {
                   "type": "integer",
-                  "exclusiveMinimum": 0,
-                  "maximum": 9007199254740991
+                  "exclusiveMinimum": 0
                 },
                 {
                   "type": "null"

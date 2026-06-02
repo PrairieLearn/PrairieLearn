@@ -135,7 +135,6 @@
     "studentLabels": {
       "description": "Student labels.",
       "type": "array",
-      "maxItems": 25,
       "items": {
         "description": "A single student label, can represent a collection of students (e.g. \"Section A\").",
         "type": "object",
@@ -157,7 +156,8 @@
             "$ref": "#/definitions/ColorJsonSchema"
           }
         }
-      }
+      },
+      "maxItems": 25
     }
   },
   "definitions": {

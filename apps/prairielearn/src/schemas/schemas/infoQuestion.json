@@ -38,7 +38,6 @@
     },
     "authors": {
       "type": "array",
-      "maxItems": 10,
       "items": {
         "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
         "type": "object",
@@ -66,6 +65,7 @@
           }
         }
       },
+      "maxItems": 10,
       "default": []
     },
     "clientFiles": {
@@ -75,8 +75,8 @@
         "description": "A single file accessible by the client.",
         "type": "string"
       },
-      "deprecated": true,
-      "default": ["client.js", "question.html", "answer.html"]
+      "default": ["client.js", "question.html", "answer.html"],
+      "deprecated": true
     },
     "clientTemplates": {
       "description": "[DEPRECATED] List of client-accessible templates to render server-side.",
@@ -131,8 +131,8 @@
         "enabled": {
           "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
           "type": "boolean",
-          "deprecated": true,
-          "default": true
+          "default": true,
+          "deprecated": true
         },
         "image": {
           "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
@@ -163,9 +163,7 @@
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
+          "type": "integer"
         },
         "enableNetworking": {
           "description": "Whether the grading containers should have network access. Access is disabled by default.",
@@ -274,9 +272,7 @@
         },
         "port": {
           "description": "The port number used in the Docker image.",
-          "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
+          "type": "integer"
         },
         "home": {
           "description": "The home directory of the workspace container.",
@@ -375,7 +371,6 @@
         }
       },
       "propertyNames": {
-        "type": "string",
         "minLength": 1
       }
     }
