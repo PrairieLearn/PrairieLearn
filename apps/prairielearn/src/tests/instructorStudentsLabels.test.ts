@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { queryOptionalRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -65,14 +65,6 @@ function createTrpcClient() {
     courseInstanceId: '1',
     urlBase: siteUrl,
   });
-}
-
-function makeStudentLabelsAtLimit(): NonNullable<CourseInstanceJsonInput['studentLabels']> {
-  return Array.from({ length: MAX_STUDENT_LABELS }, (_, index) => ({
-    uuid: crypto.randomUUID(),
-    name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
-    color: 'blue1' as const,
-  }));
 }
 
 describe('Instructor student labels page', () => {
@@ -521,7 +513,11 @@ describe('Instructor student labels page', () => {
       courseInstanceShortName,
     );
     const originJson = (await fs.readJson(originInfoPath)) as CourseInstanceJsonInput;
-    originJson.studentLabels = makeStudentLabelsAtLimit();
+    originJson.studentLabels = Array.from({ length: MAX_STUDENT_LABELS }, (_, index) => ({
+      uuid: crypto.randomUUID(),
+      name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
+      color: 'blue1' as const,
+    }));
     await fs.writeJson(originInfoPath, originJson, { spaces: 2 });
 
     await commitOriginAndSync(courseRepo, 'Fill student labels to limit', [
@@ -556,18 +552,13 @@ describe('Instructor student labels page', () => {
       (json) => json.studentLabels ?? [],
     );
 
-    try {
-      await trpcClient.studentLabels.upsert.mutate({
+    await expect(
+      trpcClient.studentLabels.upsert.mutate({
         name: 'Overflow Label',
         color: 'red1',
         uids: [],
         origHash,
-      });
-      assert.fail('Expected error for student label limit');
-    } catch (err) {
-      const appError = getAppError<StudentLabelError['Upsert']>(err);
-      assert.isNotNull(appError);
-      assert.include(appError.message, `at most ${MAX_STUDENT_LABELS} student labels`);
-    }
+      }),
+    ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS} student labels`);
   });
 });

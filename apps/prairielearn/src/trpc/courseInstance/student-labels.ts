@@ -192,7 +192,7 @@ const upsert = t.procedure
           if (studentLabels.length >= MAX_STUDENT_LABELS) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: `A course instance can have at most ${MAX_STUDENT_LABELS} student labels. Edit or delete an existing label before adding another.`,
+              message: `A course instance can have at most ${MAX_STUDENT_LABELS} student labels. Delete an existing label before adding another.`,
             });
           }
           studentLabels.push({ uuid: labelUuid, name, color });
