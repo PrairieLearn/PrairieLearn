@@ -161,7 +161,7 @@ const PROPERTY_MAP_KEYWORDS = new Set([
 ]);
 
 /**
- * Walk a generated JSON Schema and undo three purely-syntactic differences that
+ * Walk a generated JSON Schema and undo the purely-syntactic differences that
  * Zod 4's `z.toJSONSchema` introduces relative to the previous
  * `zod-to-json-schema` (Zod 3) output. None of these rewrites change validation
  * semantics.
@@ -177,8 +177,12 @@ const PROPERTY_MAP_KEYWORDS = new Set([
  *     a single-element `allOf` whenever a modifier (`.optional()`,
  *     `.default()`, ...) sits on it, because draft-07 forbids sibling keywords
  *     next to `$ref`. The wrapper is inert here, so we hoist the `$ref` back up.
- *   - `{ anyOf: [{ type: 'X' }, { type: 'null' }] }` -> `{ type: ['X', 'null'] }`.
- *     Zod 3 expressed nullable scalars with the compact array form.
+ *   - `{ anyOf: [{ type: 'X' }, { type: 'Y' }, ...] }` -> `{ type: ['X', 'Y'] }`.
+ *     Zod 3 expressed unions of bare scalar types (including nullables, where
+ *     one branch is `{ type: 'null' }`) with the compact array form.
+ *   - Drop tautological constraints Zod 4 newly emits: `propertyNames:
+ *     { type: 'string' }` (JSON object keys are always strings) and `items: {}`
+ *     (an empty schema allows anything, same as omitting `items`).
  *   - Key order: Zod 4 emits the `default` keyword *first*, whereas
  *     zod-to-json-schema emitted it *last* (e.g. `{ type, default, enum }` vs
  *     `{ type, enum, default }`). We move `default` back to the end so the
@@ -202,17 +206,20 @@ export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = fals
     return;
   }
 
-  // Collapse a nullable union: `anyOf: [{ type: X }, { type: 'null' }]`.
-  if (Array.isArray(obj.anyOf) && obj.anyOf.length === 2 && obj.type === undefined) {
+  // Collapse a union of bare scalar types into the compact `type: [...]` form.
+  if (Array.isArray(obj.anyOf) && obj.anyOf.length >= 2 && obj.type === undefined) {
     const isBareType = (s: any): s is { type: string } =>
       s !== null &&
       typeof s === 'object' &&
       typeof s.type === 'string' &&
       Object.keys(s).length === 1;
-    const [first, second] = obj.anyOf;
-    if (isBareType(first) && isBareType(second) && (first.type === 'null' || second.type === 'null')) {
-      const nonNull = first.type === 'null' ? second : first;
-      replaceKeyInPlace(obj, 'anyOf', 'type', [nonNull.type, 'null']);
+    if (obj.anyOf.every(isBareType)) {
+      replaceKeyInPlace(
+        obj,
+        'anyOf',
+        'type',
+        obj.anyOf.map((s: { type: string }) => s.type),
+      );
     }
   }
 
@@ -228,6 +235,24 @@ export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = fals
     obj.$ref === undefined
   ) {
     replaceKeyInPlace(obj, 'allOf', '$ref', allOf[0].$ref);
+  }
+
+  // Drop tautological constraints Zod 4 emits but the previous output did not.
+  if (
+    obj.propertyNames !== null &&
+    typeof obj.propertyNames === 'object' &&
+    obj.propertyNames.type === 'string' &&
+    Object.keys(obj.propertyNames).length === 1
+  ) {
+    delete obj.propertyNames;
+  }
+  if (
+    obj.items !== null &&
+    typeof obj.items === 'object' &&
+    !Array.isArray(obj.items) &&
+    Object.keys(obj.items).length === 0
+  ) {
+    delete obj.items;
   }
 
   // Move the `default` keyword to the end (re-insertion appends it last).

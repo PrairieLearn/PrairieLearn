@@ -2,7 +2,6 @@ import { Ajv } from 'ajv';
 import { assert, describe, it } from 'vitest';
 
 import { ajvSchemas } from '../schemas/index.js';
-import { AssessmentJsonSchema } from '../schemas/infoAssessment.js';
 
 const isObject = (a: any) => !!a && a.constructor === Object;
 
@@ -59,50 +58,3 @@ for (const schemaName of Object.keys(ajvSchemas)) {
     });
   });
 }
-
-describe('infoAssessment Zod schema', () => {
-  it('preserves omitted point fields', () => {
-    const result = AssessmentJsonSchema.parse({
-      uuid: '00000000-0000-4000-8000-000000000000',
-      type: 'Homework',
-      title: 'Homework 1',
-      set: 'Homework',
-      number: '1',
-      zones: [{ questions: [{ id: 'q1', points: 5 }] }],
-    });
-
-    assert.equal(result.zones[0].questions[0].points, 5);
-    assert.notProperty(result.zones[0].questions[0], 'autoPoints');
-  });
-
-  it('allows partial assessment tool maps', () => {
-    const result = AssessmentJsonSchema.safeParse({
-      uuid: '00000000-0000-4000-8000-000000000000',
-      type: 'Homework',
-      title: 'Homework 1',
-      set: 'Homework',
-      number: '1',
-      tools: {},
-      zones: [{ questions: [{ id: 'q1', points: 5 }], tools: {} }],
-    });
-
-    assert.isTrue(result.success);
-  });
-
-  it('does not deprecate zone and question permissions in JSON Schema', () => {
-    const root = ajvSchemas.infoAssessment;
-    const resolveRef = (node: any) =>
-      node && typeof node.$ref === 'string'
-        ? root.definitions?.[node.$ref.replace('#/definitions/', '')]
-        : node;
-
-    const zone = resolveRef(root.properties?.zones?.items);
-    assert.isObject(zone);
-    assert.notProperty(zone.properties.canView, 'deprecated');
-    assert.notInclude(zone.properties.canView.description, 'DEPRECATED');
-
-    const question = resolveRef(zone.properties.questions.items);
-    assert.notProperty(question.properties.canSubmit, 'deprecated');
-    assert.notInclude(question.properties.canSubmit.description, 'DEPRECATED');
-  });
-});

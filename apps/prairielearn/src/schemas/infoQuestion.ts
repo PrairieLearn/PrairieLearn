@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../lib/question-settings/schema.js';
-
 import { CommentJsonSchema } from './comment.js';
+import { QuestionPreferencesSchemaJsonSchema } from './questionPreferences.js';
 
 const QuestionDependencyJsonSchema = z
   .object({

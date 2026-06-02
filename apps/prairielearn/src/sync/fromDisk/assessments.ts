@@ -16,10 +16,6 @@ import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
-  type QuestionPreferencesSchemaJson,
-  QuestionPreferencesSchemaJsonSchema,
-} from '../../lib/question-settings/schema.js';
-import {
   type AssessmentJson,
   type QuestionAlternativeJson,
   type QuestionJson,
@@ -27,6 +23,10 @@ import {
   type QuestionPreferences,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
+import {
+  type QuestionPreferencesSchemaJson,
+  QuestionPreferencesSchemaJsonSchema,
+} from '../../schemas/questionPreferences.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';

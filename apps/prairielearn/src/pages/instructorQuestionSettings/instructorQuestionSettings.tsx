@@ -44,7 +44,6 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
-import type { QuestionPreferencesSchemaJson } from '../../lib/question-settings/schema.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -60,6 +59,7 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
+import type { QuestionPreferencesSchemaJson } from '../../schemas/questionPreferences.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {

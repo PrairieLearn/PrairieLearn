@@ -750,9 +750,6 @@
     "awsServiceGlobalOptions": {
       "type": "object",
       "additionalProperties": {},
-      "propertyNames": {
-        "type": "string"
-      },
       "default": {}
     },
     "hasShib": {
@@ -938,17 +935,7 @@
       "default": "/files"
     },
     "trustProxy": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        }
-      ],
+      "type": ["boolean", "number", "string"],
       "default": false
     },
     "workspaceLogsFlushIntervalSec": {
@@ -1231,9 +1218,6 @@
       "additionalProperties": {
         "type": "boolean"
       },
-      "propertyNames": {
-        "type": "string"
-      },
       "default": {}
     },
     "checkSharingOnSync": {
@@ -1255,9 +1239,6 @@
     "stripeProductIds": {
       "type": "object",
       "additionalProperties": {
-        "type": "string"
-      },
-      "propertyNames": {
         "type": "string"
       },
       "default": {}
@@ -1432,9 +1413,6 @@
     "pyroscopeTags": {
       "type": "object",
       "additionalProperties": {
-        "type": "string"
-      },
-      "propertyNames": {
         "type": "string"
       },
       "default": {}

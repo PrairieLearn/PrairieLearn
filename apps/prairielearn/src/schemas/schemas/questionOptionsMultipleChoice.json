@@ -43,8 +43,7 @@
           "type": "string"
         },
         {
-          "type": "array",
-          "items": {}
+          "type": "array"
         },
         {
           "type": "object",

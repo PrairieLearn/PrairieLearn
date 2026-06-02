@@ -645,17 +645,7 @@
     "QuestionPreferencesJsonSchema": {
       "type": "object",
       "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "number"
-          },
-          {
-            "type": "boolean"
-          }
-        ]
+        "type": ["string", "number", "boolean"]
       },
       "propertyNames": {
         "type": "string",
@@ -715,8 +705,7 @@
           "type": "string"
         },
         {
-          "type": "array",
-          "items": {}
+          "type": "array"
         },
         {
           "type": "object",

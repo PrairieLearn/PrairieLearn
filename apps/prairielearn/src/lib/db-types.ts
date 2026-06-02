@@ -5,8 +5,9 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { QuestionPreferencesSchemaJsonSchema } from '../schemas/questionPreferences.js';
+
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
-import { QuestionPreferencesSchemaJsonSchema } from './question-settings/schema.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
