@@ -8,12 +8,6 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
 import { QuestionPreferencesSchemaJsonSchema } from './question-settings/schema.js';
 
-// Defined here as the single source of truth: this schema parses the `tool` DB
-// column and is also imported by the file-format schemas in
-// `apps/prairielearn/src/schemas/`.
-export const EnumAssessmentToolSchema = z.enum(['calculator']);
-export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -35,6 +29,9 @@ export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
 export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
+
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;

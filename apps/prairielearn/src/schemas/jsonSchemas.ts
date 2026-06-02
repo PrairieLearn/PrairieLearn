@@ -148,10 +148,22 @@ function replaceKeyInPlace(
   Object.assign(obj, Object.fromEntries(entries));
 }
 
+// Keys whose *values* are maps from arbitrary names to subschemas. The keys of
+// those maps are user-controlled names (which can collide with JSON Schema
+// keywords, e.g. a property literally named `default`), so the keyword-level
+// rewrites below must not be applied to them.
+const PROPERTY_MAP_KEYWORDS = new Set([
+  'properties',
+  'patternProperties',
+  'definitions',
+  '$defs',
+  'dependentSchemas',
+]);
+
 /**
- * Walk a generated JSON Schema and undo two purely-syntactic expansions that
+ * Walk a generated JSON Schema and undo three purely-syntactic differences that
  * Zod 4's `z.toJSONSchema` introduces relative to the previous
- * `zod-to-json-schema` (Zod 3) output. Neither rewrite changes validation
+ * `zod-to-json-schema` (Zod 3) output. None of these rewrites change validation
  * semantics.
  *
  * TODO: The sole purpose of this pass is to keep the committed schema files
@@ -159,7 +171,7 @@ function replaceKeyInPlace(
  * reviewable. Once the raw Zod 4 output is accepted as the new baseline, this
  * pass (and its callers) can be deleted.
  *
- * The two rewrites:
+ * The rewrites:
  *
  *   - `{ allOf: [{ $ref }] }` -> `{ $ref }`. Zod 4 wraps a referenced schema in
  *     a single-element `allOf` whenever a modifier (`.optional()`,
@@ -167,8 +179,14 @@ function replaceKeyInPlace(
  *     next to `$ref`. The wrapper is inert here, so we hoist the `$ref` back up.
  *   - `{ anyOf: [{ type: 'X' }, { type: 'null' }] }` -> `{ type: ['X', 'null'] }`.
  *     Zod 3 expressed nullable scalars with the compact array form.
+ *   - Key order: Zod 4 emits the `default` keyword *first*, whereas
+ *     zod-to-json-schema emitted it *last* (e.g. `{ type, default, enum }` vs
+ *     `{ type, enum, default }`). We move `default` back to the end so the
+ *     keyword order — and therefore the line-by-line diff — matches. The
+ *     `inPropertyMap` guard ensures we only reorder genuine `default` keywords,
+ *     never a property whose name happens to be `default`.
  */
-export function normalizeGeneratedJsonSchema(node: unknown): void {
+export function normalizeGeneratedJsonSchema(node: unknown, inPropertyMap = false): void {
   if (Array.isArray(node)) {
     for (const item of node) normalizeGeneratedJsonSchema(item);
     return;
@@ -177,10 +195,20 @@ export function normalizeGeneratedJsonSchema(node: unknown): void {
 
   const obj = node as Record<string, any>;
 
+  // Inside a property map the keys are names, not keywords: skip the keyword
+  // rewrites and recurse into each subschema value as a fresh schema node.
+  if (inPropertyMap) {
+    for (const value of Object.values(obj)) normalizeGeneratedJsonSchema(value);
+    return;
+  }
+
   // Collapse a nullable union: `anyOf: [{ type: X }, { type: 'null' }]`.
   if (Array.isArray(obj.anyOf) && obj.anyOf.length === 2 && obj.type === undefined) {
     const isBareType = (s: any): s is { type: string } =>
-      s !== null && typeof s === 'object' && typeof s.type === 'string' && Object.keys(s).length === 1;
+      s !== null &&
+      typeof s === 'object' &&
+      typeof s.type === 'string' &&
+      Object.keys(s).length === 1;
     const [first, second] = obj.anyOf;
     if (isBareType(first) && isBareType(second) && (first.type === 'null' || second.type === 'null')) {
       const nonNull = first.type === 'null' ? second : first;
@@ -202,7 +230,16 @@ export function normalizeGeneratedJsonSchema(node: unknown): void {
     replaceKeyInPlace(obj, 'allOf', '$ref', allOf[0].$ref);
   }
 
-  for (const value of Object.values(obj)) normalizeGeneratedJsonSchema(value);
+  // Move the `default` keyword to the end (re-insertion appends it last).
+  if ('default' in obj) {
+    const value = obj.default;
+    delete obj.default;
+    obj.default = value;
+  }
+
+  for (const [key, value] of Object.entries(obj)) {
+    normalizeGeneratedJsonSchema(value, PROPERTY_MAP_KEYWORDS.has(key));
+  }
 }
 
 /**
@@ -242,14 +279,16 @@ function prairielearnZodToJsonSchema(
   jsonSchema.title = title;
 
   // `z.toJSONSchema` with `target: 'draft-07'` emits `definitions`, but it
-  // includes every registered schema reachable from the root. Restrict to the
-  // explicit allow-list so each output only carries the definitions it
-  // historically did.
+  // includes every registered schema reachable from the root, in encounter
+  // order. Rebuild the map from the explicit allow-list so each output carries
+  // only the definitions it historically did, in a stable order (the previous
+  // toolchain emitted definitions in the order they were listed) — this keeps
+  // the diff minimal.
   if (jsonSchema.definitions) {
-    const allowed = new Set<string>(definitionKeys as readonly string[]);
-    for (const key of Object.keys(jsonSchema.definitions)) {
-      if (!allowed.has(key)) delete jsonSchema.definitions[key];
-    }
+    const definitions = jsonSchema.definitions;
+    jsonSchema.definitions = Object.fromEntries(
+      definitionKeys.filter((key) => key in definitions).map((key) => [key, definitions[key]]),
+    );
   }
 
   annotateDeprecated(jsonSchema);

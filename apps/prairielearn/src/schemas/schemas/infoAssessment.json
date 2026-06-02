@@ -86,10 +86,10 @@
     "zones": {
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
-      "default": [],
       "items": {
         "$ref": "#/definitions/ZoneAssessmentJsonSchema"
-      }
+      },
+      "default": []
     },
     "constantQuestionValue": {
       "description": "Whether to keep the value of a question constant after a student solves it correctly.",
@@ -115,8 +115,8 @@
     "groupWork": {
       "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "deprecated": true,
+      "default": false
     },
     "groupMaxSize": {
       "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -131,11 +131,11 @@
     "groupRoles": {
       "description": "Array of custom user roles in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
-      "default": [],
       "items": {
         "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
       },
-      "deprecated": true
+      "deprecated": true,
+      "default": []
     },
     "canSubmit": {
       "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -144,8 +144,8 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "default": [],
-      "deprecated": true
+      "deprecated": true,
+      "default": []
     },
     "canView": {
       "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
@@ -154,32 +154,32 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "default": [],
-      "deprecated": true
+      "deprecated": true,
+      "default": []
     },
     "studentGroupCreate": {
       "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "deprecated": true,
+      "default": false
     },
     "studentGroupChooseName": {
       "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": true,
-      "deprecated": true
+      "deprecated": true,
+      "default": true
     },
     "studentGroupJoin": {
       "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "deprecated": true,
+      "default": false
     },
     "studentGroupLeave": {
       "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "deprecated": true,
+      "default": false
     },
     "groups": {
       "description": "Configuration for group-based assessments.",
@@ -197,17 +197,16 @@
         "roles": {
           "description": "Array of custom user roles in a group.",
           "type": "array",
-          "default": [],
           "items": {
             "$ref": "#/definitions/GroupsRoleJsonSchema"
           },
-          "uniqueItems": true
+          "uniqueItems": true,
+          "default": []
         },
         "studentPermissions": {
           "description": "Student permissions for group management.",
           "type": "object",
           "additionalProperties": false,
-          "default": {},
           "properties": {
             "canCreateGroup": {
               "description": "Whether students can create groups.",
@@ -229,39 +228,40 @@
               "type": "boolean",
               "default": true
             }
-          }
+          },
+          "default": {}
         },
         "rolePermissions": {
           "description": "Role-based permissions for group assessments.",
           "type": "object",
           "additionalProperties": false,
-          "default": {},
           "properties": {
             "canAssignRoles": {
               "description": "Role names that can assign other users to roles.",
               "type": "array",
-              "default": [],
               "items": {
                 "type": "string"
-              }
+              },
+              "default": []
             },
             "canView": {
               "description": "Role names that can view questions.",
               "type": "array",
-              "default": [],
               "items": {
                 "type": "string"
-              }
+              },
+              "default": []
             },
             "canSubmit": {
               "description": "Role names that can submit questions.",
               "type": "array",
-              "default": [],
               "items": {
                 "type": "string"
-              }
+              },
+              "default": []
             }
-          }
+          },
+          "default": {}
         }
       }
     },
@@ -642,6 +642,72 @@
       "minimum": 0,
       "maximum": 100
     },
+    "QuestionPreferencesJsonSchema": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "LegacyGroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "GroupsRoleJsonSchema": {
+      "description": "A custom role for use in group assessments.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (e.g., Manager, Recorder).",
+          "type": "string"
+        },
+        "minMembers": {
+          "description": "The minimum number of users that should be in this role.",
+          "type": "number",
+          "default": 0
+        },
+        "maxMembers": {
+          "description": "The maximum number of users that should be in this role.",
+          "type": "number"
+        }
+      }
+    },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
@@ -658,6 +724,10 @@
           "properties": {}
         }
       ]
+    },
+    "DatetimeLocalStringSchema": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
     },
     "AccessControlJsonSchema": {
       "type": "object",
@@ -897,10 +967,6 @@
         }
       }
     },
-    "DatetimeLocalStringSchema": {
-      "type": "string",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
-    },
     "DeadlineEntryJsonSchema": {
       "type": "object",
       "additionalProperties": false,
@@ -915,72 +981,6 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 200
-        }
-      }
-    },
-    "QuestionPreferencesJsonSchema": {
-      "type": "object",
-      "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "number"
-          },
-          {
-            "type": "boolean"
-          }
-        ]
-      },
-      "propertyNames": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "LegacyGroupRoleJsonSchema": {
-      "description": "A custom role for use in group assessments that allows control over certain permissions.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
-          "type": "string"
-        },
-        "minimum": {
-          "description": "The minimum number of users that should be in this role in a group.",
-          "type": "number",
-          "default": 0
-        },
-        "maximum": {
-          "description": "The maximum number of users that should be in this role in a group.",
-          "type": "number"
-        },
-        "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' group roles.",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
-    "GroupsRoleJsonSchema": {
-      "description": "A custom role for use in group assessments.",
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (e.g., Manager, Recorder).",
-          "type": "string"
-        },
-        "minMembers": {
-          "description": "The minimum number of users that should be in this role.",
-          "type": "number",
-          "default": 0
-        },
-        "maxMembers": {
-          "description": "The maximum number of users that should be in this role.",
-          "type": "number"
         }
       }
     }

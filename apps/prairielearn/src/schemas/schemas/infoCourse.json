@@ -31,7 +31,6 @@
       "description": "Options for this course.",
       "type": "object",
       "additionalProperties": false,
-      "default": {},
       "properties": {
         "comment": {
           "$ref": "#/definitions/CommentJsonSchema"
@@ -63,7 +62,8 @@
             }
           ]
         }
-      }
+      },
+      "default": {}
     },
     "assessmentSets": {
       "description": "Assessment sets.",
@@ -188,23 +188,6 @@
     }
   },
   "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
-    },
     "ColorJsonSchema": {
       "description": "A color name.",
       "type": "string",
@@ -239,6 +222,23 @@
         "gray1",
         "gray2",
         "gray3"
+      ]
+    },
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

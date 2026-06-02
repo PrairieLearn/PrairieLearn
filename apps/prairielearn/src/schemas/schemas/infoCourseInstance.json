@@ -34,7 +34,6 @@
     },
     "selfEnrollment": {
       "type": "object",
-      "default": {},
       "properties": {
         "enabled": {
           "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
@@ -55,7 +54,8 @@
           "type": "boolean",
           "default": false
         }
-      }
+      },
+      "default": {}
     },
     "hideInEnrollPage": {
       "description": "DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.",
@@ -124,8 +124,8 @@
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "type": "string",
-      "default": "Set",
-      "enum": ["Set", "Module"]
+      "enum": ["Set", "Module"],
+      "default": "Set"
     },
     "shareSourcePublicly": {
       "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
@@ -161,23 +161,6 @@
     }
   },
   "definitions": {
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {}
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
-    },
     "ColorJsonSchema": {
       "description": "A color name.",
       "type": "string",
@@ -212,6 +195,23 @@
         "gray1",
         "gray2",
         "gray3"
+      ]
+    },
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

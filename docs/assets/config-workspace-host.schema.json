@@ -29,8 +29,8 @@
     },
     "cacheType": {
       "type": "string",
-      "default": "none",
-      "enum": ["none", "redis", "memory"]
+      "enum": ["none", "redis", "memory"],
+      "default": "none"
     },
     "cacheKeyPrefix": {
       "type": "string",

@@ -30,15 +30,14 @@
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",
-      "default": [],
       "items": {
         "description": "A tag associated with a question.",
         "type": "string"
-      }
+      },
+      "default": []
     },
     "authors": {
       "type": "array",
-      "default": [],
       "maxItems": 10,
       "items": {
         "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
@@ -66,17 +65,18 @@
             "type": "string"
           }
         }
-      }
+      },
+      "default": []
     },
     "clientFiles": {
       "description": "[DEPRECATED] The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.",
       "type": "array",
-      "default": ["client.js", "question.html", "answer.html"],
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
       },
-      "deprecated": true
+      "deprecated": true,
+      "default": ["client.js", "question.html", "answer.html"]
     },
     "clientTemplates": {
       "description": "[DEPRECATED] List of client-accessible templates to render server-side.",
@@ -95,8 +95,8 @@
     "gradingMethod": {
       "description": "The grading method used for this question.",
       "type": "string",
-      "default": "Internal",
-      "enum": ["Internal", "External", "Manual"]
+      "enum": ["Internal", "External", "Manual"],
+      "default": "Internal"
     },
     "singleVariant": {
       "description": "Whether the question is not randomized and only generates a single variant.",
@@ -131,8 +131,8 @@
         "enabled": {
           "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
           "type": "boolean",
-          "default": true,
-          "deprecated": true
+          "deprecated": true,
+          "default": true
         },
         "image": {
           "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
@@ -155,11 +155,11 @@
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
           "type": "array",
-          "default": [],
           "items": {
             "description": "A single file or directory that will be copied to the external grader.",
             "type": "string"
-          }
+          },
+          "default": []
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
@@ -178,10 +178,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {},
           "propertyNames": {
             "type": "string"
-          }
+          },
+          "default": {}
         }
       }
     },
@@ -189,7 +189,6 @@
       "description": "The question's client-side dependencies.",
       "type": "object",
       "additionalProperties": false,
-      "default": {},
       "properties": {
         "comment": {
           "$ref": "#/definitions/CommentJsonSchema"
@@ -260,7 +259,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "default": {}
     },
     "workspaceOptions": {
       "description": "Options for workspace questions.",
@@ -307,11 +307,11 @@
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
           "type": "array",
-          "default": [],
           "items": {
             "description": "A single file or directory that will be copied out of the workspace container when saving a submission.",
             "type": "string"
-          }
+          },
+          "default": []
         },
         "enableNetworking": {
           "description": "Whether the workspace should have network access. Access is disabled by default.",
@@ -324,10 +324,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {},
           "propertyNames": {
             "type": "string"
-          }
+          },
+          "default": {}
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
