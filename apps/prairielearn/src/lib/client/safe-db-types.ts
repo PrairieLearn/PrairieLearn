@@ -43,6 +43,7 @@ import {
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
+  TeamSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
@@ -370,6 +371,18 @@ export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
 export const RawStaffGroupConfigSchema = RawGroupConfigSchema;
 export const StaffGroupConfigSchema = RawStaffGroupConfigSchema.brand<'StaffGroupConfig'>();
 export type StaffGroupConfig = z.infer<typeof StaffGroupConfigSchema>;
+
+/** Groups (the `teams` table; "group" is the UI-facing name) */
+export const RawStaffGroupSchema = RawTeamSchema.pick({
+  course_instance_id: true,
+  date: true,
+  deleted_at: true,
+  id: true,
+  name: true,
+  team_config_id: true,
+});
+export const StaffGroupSchema = RawStaffGroupSchema.brand<'StaffGroup'>();
+export type StaffGroup = z.infer<typeof StaffGroupSchema>;
 
 /** Instance Question Groups */
 export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;

@@ -22,7 +22,7 @@ import { validateAccessControlRules } from './validation.js';
 // file-level helpers are exercised the same way production calls them.
 // Cases whose legacy rules don't supply a startDate (always-open, password-only)
 // get this fallback as their release date in `expected`.
-const FALLBACK_RELEASE = '1900-01-01T00:00:00';
+const FALLBACK_RELEASE = '2000-01-01T00:00:00';
 
 describe('migrateAllowAccess', () => {
   const cases: {
@@ -197,8 +197,25 @@ describe('migrateAllowAccess', () => {
       name: 'always-open with non-standard credit',
       rules: [{ credit: 120 }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'fallback release date after due date fails final validation',
+      rules: [
+        // This end date is before FALLBACK_RELEASE, forcing the fallback
+        // release date through final date-ordering validation.
+        { credit: 0, endDate: '1999-12-31T00:00:00' },
+      ],
+      expected: {
+        accessControl: null,
+        errors: [
+          'Release date must be before due date.',
+          'Due date must be after the earliest possible release date.',
+        ],
         notes: [],
         hasUidRules: false,
       },
@@ -277,7 +294,7 @@ describe('migrateAllowAccess', () => {
       name: 'open-ended reduced credit (startDate, no endDate)',
       rules: [{ credit: 50, startDate: '2024-01-01T00:00:00' }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Open-ended credit windows without a 100% credit rule cannot be migrated.'],
         notes: [],
         hasUidRules: false,
@@ -363,7 +380,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-04-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Credit must be non-increasing over time.'],
         notes: [],
         hasUidRules: false,
@@ -376,7 +393,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Credit must be non-increasing over time.'],
         notes: [],
         hasUidRules: false,
@@ -1313,7 +1330,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-02-01T00:00:00', endDate: '2024-06-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: [
           'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
         ],
@@ -1346,7 +1363,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00', endDate: '2024-04-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1359,7 +1376,7 @@ describe('migrateAllowAccess', () => {
         { credit: 100, startDate: '2024-03-01T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1372,7 +1389,7 @@ describe('migrateAllowAccess', () => {
         { credit: 0, startDate: '2024-04-01T00:00:00', endDate: '2024-04-30T00:00:00' },
       ],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Non-contiguous access windows are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1399,7 +1416,7 @@ describe('migrateAllowAccess', () => {
       name: 'mode-gated only',
       rules: [{ mode: 'Exam' }],
       expected: {
-        accessControl: {},
+        accessControl: null,
         errors: ['Mode-only access rules are not supported.'],
         notes: [],
         hasUidRules: false,
@@ -1552,9 +1569,12 @@ describe('migrateAllowAccess', () => {
     const result = migrateAllowAccess(rules, FALLBACK_RELEASE);
     assert.deepEqual(result, expected);
 
-    // Skip validation for migrations that errored out — the result is `{}` and
-    // the migration is rejecting the input, so there's nothing to validate.
+    // Skip validation for migrations that errored out; there is no migrated
+    // accessControl to validate.
     if (result.errors.length > 0) return;
+    if (result.accessControl == null) {
+      assert.fail('Expected migrated access control');
+    }
 
     const zodResult = AccessControlJsonSchema.safeParse(result.accessControl);
     assert.isTrue(
@@ -1577,7 +1597,7 @@ describe('migrateAllowAccess', () => {
       FALLBACK_RELEASE,
     );
 
-    assert.deepEqual(result.accessControl, {});
+    assert.isNull(result.accessControl);
     assert.isNotEmpty(result.errors);
     assert.match(result.errors[0], /integrations\.prairieTest\.exams/);
     assert.match(result.errors[0], new RegExp(String(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)));
