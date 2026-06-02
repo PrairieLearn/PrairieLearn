@@ -1120,7 +1120,7 @@ function validateNodeModulesDependency({
           );
         } else {
           warnings.push(
-            `Not in dev Node module dependency "${packageName}" is only listed in devDependencies.`,
+            `Node module dependency "${packageName}" is only listed in devDependencies.`,
           );
         }
       } else {
