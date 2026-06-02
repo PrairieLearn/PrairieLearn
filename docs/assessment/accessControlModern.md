@@ -595,13 +595,13 @@ JSON overrides only target student labels. They store the fields they change; om
 
 Later matching label overrides replace fields from earlier matching label overrides. Individual-student overrides are managed through the UI and take priority over label overrides.
 
-| Field                        | Defaults to override merge                                        | Override to override cascade                            |
-| ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Field                        | Defaults to override merge                                          | Override to override cascade                              |
+| ---------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |
 | `dateControl.*` sub-fields   | Override replaces individual sub-fields; omitted sub-fields inherit | Later override replaces; omitted fields kept from earlier |
-| `afterComplete.questions`    | Replaced as a whole object when set                               | Replaced as a whole object; otherwise inherited         |
-| `afterComplete.score`        | Replaced as a whole object when set                               | Replaced as a whole object; otherwise inherited         |
-| `beforeRelease`              | Cannot be overridden                                              | Not applicable                                          |
-| `integrations.prairieTest.*` | Cannot be overridden                                              | Not applicable                                          |
+| `afterComplete.questions`    | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `afterComplete.score`        | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `beforeRelease`              | Cannot be overridden                                                | Not applicable                                            |
+| `integrations.prairieTest.*` | Cannot be overridden                                                | Not applicable                                            |
 
 There are a few important details:
 
