@@ -982,7 +982,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 var = variables[0]
                 a_tru_str = var if result == "correct" else f"-{var}"
             else:
-                a_tru_str = "x" if result == "correct" else "-x"
+                a_tru_str = "1" if result == "correct" else "-1"
         else:
             # Get raw correct answer
             a_tru = data["correct_answers"][name]

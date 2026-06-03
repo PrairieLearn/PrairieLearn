@@ -610,7 +610,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 left, top = width / 4, 3 * height / 4
             a_tru = [
                 {
-                    "id": "dummy",
+                    "id": 0,
+                    "type": "pl-point",
                     "gradingName": "pl-point",
                     "graded": False,
                     "left": left,
