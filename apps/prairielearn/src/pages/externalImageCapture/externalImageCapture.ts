@@ -20,8 +20,7 @@ export default function (options = { publicQuestionPreview: false }) {
     '/',
     asyncHandler(async (req, res, next) => {
       if (options.publicQuestionPreview) {
-        res.locals.course ??= await selectCourseById(req.params.course_id);
-        res.locals.question ??= await selectQuestionById(req.params.question_id);
+        res.locals.question = await selectQuestionById(req.params.question_id);
         res.locals.user = UserSchema.parse(res.locals.authn_user);
 
         if (
