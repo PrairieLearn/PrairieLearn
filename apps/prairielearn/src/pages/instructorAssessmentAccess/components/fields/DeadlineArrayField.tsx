@@ -403,7 +403,6 @@ function DeadlineArrayInput({
                   })}
                   step={1}
                   disabled={!ruleEditable}
-                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),
