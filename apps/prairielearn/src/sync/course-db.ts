@@ -17,6 +17,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
@@ -719,7 +720,11 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    context: { coursePath: string; filePath: string },
+  ) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -752,7 +757,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = validate(result.data, loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data, { coursePath, filePath });
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
 
@@ -781,7 +786,11 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
+  validate: (
+    info: z.infer<T>,
+    rawInfo: z.input<T>,
+    context: { coursePath: string; filePath: string },
+  ) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -1046,12 +1055,120 @@ function isValidORCID(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
+function nodeModuleDependencyExists(file: string): boolean {
+  return (
+    fs.pathExistsSync(path.resolve(APP_ROOT_PATH, 'node_modules', file)) ||
+    fs.pathExistsSync(path.resolve(REPOSITORY_ROOT_PATH, 'node_modules', file))
+  );
+}
+
+function getNodeModulePackage(file: string): string | null {
+  const parts = file.split('/');
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  if (parts[0].startsWith('@')) {
+    if (parts.length < 2) {
+      return null;
+    }
+
+    return `${parts[0]}/${parts[1]}`;
+  }
+
+  return parts[0];
+}
+
+let prairieLearnPackageDependencies:
+  | {
+      dependencies: Set<string>;
+      devDependencies: Set<string>;
+    }
+  | undefined;
+
+function getPrairieLearnPackageDependencies(): {
+  dependencies: Set<string>;
+  devDependencies: Set<string>;
+} {
+  if (prairieLearnPackageDependencies == null) {
+    const packageJsonPath = path.join(APP_ROOT_PATH, 'package.json');
+    const packageJson = fs.readJsonSync(packageJsonPath);
+
+    prairieLearnPackageDependencies = {
+      dependencies: new Set(Object.keys(packageJson.dependencies ?? {})),
+      devDependencies: new Set(Object.keys(packageJson.devDependencies ?? {})),
+    };
+  }
+  return prairieLearnPackageDependencies;
+}
+
+function validateNodeModulesDependency({
+  file,
+  warnings,
+  checkedPackages,
+}: {
+  file: string;
+  warnings: string[];
+  checkedPackages: Set<string>;
+}) {
+  const packageName = getNodeModulePackage(file);
+
+  if (!nodeModuleDependencyExists(file)) {
+    if (config.devMode) {
+      warnings.push(
+        `Missing dependency file: node_modules/${file}. ` +
+          'Check the filename or add the file to node_modules.',
+      );
+    } else {
+      warnings.push(`Missing dependency file: node_modules/${file}.`);
+    }
+    return;
+  }
+
+  if (packageName != null && !checkedPackages.has(packageName)) {
+    checkedPackages.add(packageName);
+
+    const { dependencies, devDependencies } = getPrairieLearnPackageDependencies();
+
+    if (!dependencies.has(packageName)) {
+      if (devDependencies.has(packageName)) {
+        if (config.devMode) {
+          warnings.push(
+            `Node module dependency "${packageName}" is only listed in devDependencies. ` +
+              'Runtime dependencies should be listed in dependencies.',
+          );
+        } else {
+          warnings.push(
+            `Node module dependency "${packageName}" is only listed in devDependencies.`,
+          );
+        }
+      } else {
+        if (config.devMode) {
+          warnings.push(
+            `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn. ` +
+              'Add it to apps/prairielearn/package.json if required at runtime.',
+          );
+        } else {
+          warnings.push(
+            `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn.`,
+          );
+        }
+      }
+    }
+  }
+}
+
 function validateQuestion({
   question,
   sharingEnabled,
+  coursePath,
+  questionPath,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
+  coursePath: string;
+  questionPath: string;
 }): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1127,6 +1244,85 @@ function validateQuestion({
       }
       // Origin courses are validated in bulk in loadQuestions(), and skipped here.
     }
+  }
+
+  //Sync warnings for missing dependencies
+  for (const file of question.dependencies.clientFilesCourseScripts ?? []) {
+    const fullPath = path.join(coursePath, 'clientFilesCourse', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      if (config.devMode) {
+        warnings.push(
+          `Missing dependency file: clientFilesCourse/${file}. ` +
+            'Check the filename or add the file to clientFilesCourse.',
+        );
+      } else {
+        warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
+      }
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesCourseStyles ?? []) {
+    const fullPath = path.join(coursePath, 'clientFilesCourse', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      if (config.devMode) {
+        warnings.push(
+          `Missing dependency file: clientFilesCourse/${file}. ` +
+            'Check the filename or add the file to clientFilesCourse.',
+        );
+      } else {
+        warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
+      }
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesQuestionScripts ?? []) {
+    const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      if (config.devMode) {
+        warnings.push(
+          `Missing dependency file: clientFilesQuestion/${file}. ` +
+            'Check the filename or add the file to clientFilesQuestion.',
+        );
+      } else {
+        warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
+      }
+    }
+  }
+
+  for (const file of question.dependencies.clientFilesQuestionStyles ?? []) {
+    const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
+
+    if (!fs.pathExistsSync(fullPath)) {
+      if (config.devMode) {
+        warnings.push(
+          `Missing dependency file: clientFilesQuestion/${file}. ` +
+            'Check the filename or add the file to clientFilesQuestion.',
+        );
+      } else {
+        warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
+      }
+    }
+  }
+
+  const checkedNodeModulePackages = new Set<string>();
+
+  for (const file of question.dependencies.nodeModulesStyles ?? []) {
+    validateNodeModulesDependency({
+      file,
+      warnings,
+      checkedPackages: checkedNodeModulePackages,
+    });
+  }
+
+  for (const file of question.dependencies.nodeModulesScripts ?? []) {
+    validateNodeModulesDependency({
+      file,
+      warnings,
+      checkedPackages: checkedNodeModulePackages,
+    });
   }
 
   return { warnings, errors };
@@ -1841,7 +2037,17 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (
+      question: QuestionJson,
+      _rawQuestion: z.input<typeof schemas.QuestionJsonSchema>,
+      context: { coursePath: string; filePath: string },
+    ) =>
+      validateQuestion({
+        question,
+        sharingEnabled,
+        coursePath: context.coursePath,
+        questionPath: path.join(context.coursePath, path.dirname(context.filePath)),
+      }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is

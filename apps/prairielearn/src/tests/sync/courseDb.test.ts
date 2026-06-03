@@ -194,5 +194,55 @@ describe('course database', () => {
         assert.isFalse(infofile.hasWarnings(result['question3']));
       });
     });
+
+    it('warnings if question dependencies are missing', async () => {
+      await withTempDirectory(async (dir) => {
+        const question = {
+          ...getQuestion(),
+          dependencies: {
+            clientFilesCourseStyles: ['missing.css'],
+            clientFilesCourseScripts: ['missing.js'],
+            clientFilesQuestionStyles: ['missing.css'],
+            clientFilesQuestionScripts: ['missing.js'],
+            nodeModulesStyles: ['missing.css'],
+            nodeModulesScripts: ['missing.js'],
+          },
+        };
+        await writeQuestion(dir, 'question', question);
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
+        assert.equal(Object.keys(result).length, 1);
+        assert.lengthOf(result['question'].warnings, 6);
+      });
+    });
+
+    it('warnings for question nodeModules devDependencies', async () => {
+      await withTempDirectory(async (dir) => {
+        const question = {
+          ...getQuestion(),
+          dependencies: {
+            nodeModulesStyles: ['@playwright/test'],
+          },
+        };
+        await writeQuestion(dir, 'question', question);
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
+        assert.equal(Object.keys(result).length, 1);
+        assert.lengthOf(result['question'].warnings, 1);
+      });
+    });
+
+    it('warnings for question nodeModules not a direct dependency', async () => {
+      await withTempDirectory(async (dir) => {
+        const question = {
+          ...getQuestion(),
+          dependencies: {
+            nodeModulesStyles: ['@changesets/cli'],
+          },
+        };
+        await writeQuestion(dir, 'question', question);
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
+        assert.equal(Object.keys(result).length, 1);
+        assert.lengthOf(result['question'].warnings, 1);
+      });
+    });
   });
 });
