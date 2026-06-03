@@ -405,6 +405,41 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
+### Accessing user and group identity
+
+Courses can opt in to exposing user and group identity to `server.py`. A course owner can enable this on the course settings page. When enabled, `data["options"]` contains two extra keys -- `data["options"]["user"]` and `data["options"]["group"]`.
+
+```python
+def generate(data):
+    user = data["options"]["user"]    # None on group assessments
+    # { "uid": "123", "uin": "123456", "name": "John Doe" }
+    group = data["options"]["group"]  # None on individual assessments
+    # { "name": "Group 1", "members": [ { "uid": "123", "uin": "123456", "name": "John Doe" } ] }
+
+    if user is not None:
+        data["params"]["greeting"] = f"Hello, {user['name']}!"
+
+    if group is not None:
+        # group["members"] entries have the same shape as `user`.
+        data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
+```
+
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
+
+??? info "Whose identity is provided"
+
+    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member that is seeing the variant. Group assessments receive `None` because the shared variant has no single owner.
+
+    A group's members can change over time: The members when a question was generated may be different than when a question is graded. Similarly, a user's name, uid, and uin may be different. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
+
+User and group data are passed only when **all** of the following are true:
+
+1. The course has opted in to exposing user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
+2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
+
+When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present.
+
 ## Generating dynamic files with `file()`
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:

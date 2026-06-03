@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.5.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.5.1
 
 ### Patch Changes

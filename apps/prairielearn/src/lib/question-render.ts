@@ -150,6 +150,11 @@ async function render({
     submissions,
     course: question_course,
     locals,
+    caller: {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   });
 
   const studentMessage = 'Error rendering question';

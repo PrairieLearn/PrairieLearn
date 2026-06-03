@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -24,24 +24,24 @@
     "@prairielearn/run": "workspace:^",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.24",
+    "@tanstack/react-virtual": "^3.13.26",
     "@tanstack/table-core": "^8.21.3",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
     "nuqs": "^2.8.9",
-    "react": "^19.2.5",
-    "react-aria": "^3.48.0",
-    "react-aria-components": "^1.17.0",
+    "react": "^19.2.6",
+    "react-aria": "^3.49.0",
+    "react-aria-components": "^1.18.0",
     "react-bootstrap": "3.0.0-beta.5",
-    "react-dom": "^19.2.5",
+    "react-dom": "^19.2.6",
     "use-debounce": "^10.1.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.7"
   }
 }
