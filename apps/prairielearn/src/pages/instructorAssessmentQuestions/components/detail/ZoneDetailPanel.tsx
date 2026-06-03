@@ -2,7 +2,10 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { type EnumAssessmentTool, EnumAssessmentToolSchema } from '../../../../lib/db-types.js';
+import {
+  type EnumAssessmentTool,
+  EnumAssessmentToolSchema,
+} from '../../../../schemas/infoAssessment.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToBoolean,

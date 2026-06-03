@@ -59,7 +59,7 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import type { QuestionPreferencesSchemaJson } from '../../schemas/questionPreferences.js';
+import type { QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {

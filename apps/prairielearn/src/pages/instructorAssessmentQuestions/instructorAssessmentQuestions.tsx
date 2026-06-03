@@ -17,7 +17,6 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { type EnumAssessmentTool } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -30,7 +29,7 @@ import {
   selectGroupRoleNamesForAssessment,
 } from '../../models/group.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
