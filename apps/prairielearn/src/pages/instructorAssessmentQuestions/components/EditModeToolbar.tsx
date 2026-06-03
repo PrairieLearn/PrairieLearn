@@ -112,11 +112,11 @@ export function EditModeToolbar({
       )}
       type="submit"
       disabled={saveButtonDisabled}
-      aria-label="Save and sync"
+      aria-label="Save"
       {...(saveButtonDisabledReason && { 'aria-describedby': saveTooltipId })}
     >
       <i className="bi bi-floppy" aria-hidden="true" />{' '}
-      <span className="toolbar-btn-label">Save and sync</span>
+      <span className="toolbar-btn-label">Save</span>
     </button>
   );
 

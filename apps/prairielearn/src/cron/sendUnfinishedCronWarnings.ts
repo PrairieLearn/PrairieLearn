@@ -1,5 +1,4 @@
-import { z } from 'zod';
-
+import { formatDateISO } from '@prairielearn/formatter';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -13,16 +12,13 @@ export async function run() {
 
   const result = await sqldb.queryRows(
     sql.select_unfinished_cron_jobs,
-    z.object({
-      name: CronJobSchema.shape.name,
-      formatted_started_at: z.string(),
-    }),
+    CronJobSchema.pick({ name: true, date: true }),
   );
   if (result.length === 0) return;
 
   let msg = '_Unfinished cron jobs:_\n';
   for (const row of result) {
-    msg += `    *${row.name}:* started at ${row.formatted_started_at} but not finished\n`;
+    msg += `    *${row.name}:* started at ${formatDateISO(row.date, 'UTC')} but not finished\n`;
     logger.error('cron:sendUnfinishedCronJobs job not finished', row);
   }
 

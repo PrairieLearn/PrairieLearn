@@ -2,7 +2,7 @@ import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -12,7 +12,7 @@ import {
   updateAssessmentInstance,
 } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
-import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
+import type { File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   getGroupConfig,
@@ -28,6 +28,7 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -47,12 +48,7 @@ async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
-    // @ts-expect-error This reload doesn't set 'formatted_date'
-    locals.assessment_instance = await queryRow(
-      sql.select_assessment_instance,
-      { assessment_instance_id: locals.assessment_instance.id },
-      AssessmentInstanceSchema,
-    );
+    locals.assessment_instance = await selectAssessmentInstanceById(locals.assessment_instance.id);
   }
 }
 

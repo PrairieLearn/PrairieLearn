@@ -27,32 +27,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get purge -y man-db
-        sudo apt-get install -y --no-install-recommends postgresql-common
-        # Configure Postgres repository, purge existing postgres version, and install v17
-        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
-        sudo apt-get install -y --no-install-recommends postgresql-17-pgvector git gcc libc6-dev graphviz libgraphviz-dev redis
-
-    # The two `sed` commands are here to handle the fact that the default
-    # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
-    # as the authentication mechanisms. However, our config defaults to not
-    # having any password at all, and we don't have an easy way to specify
-    # config overrides, which means we can't just create a new user with a
-    # password and have our code use that instead.
-    #
-    # We also update the configuration to try to speed up Postgres itself.
-    - name: Start Postgres
-      shell: bash
-      run: |
-        sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-        sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-
-        sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
-        fsync = off
-        full_page_writes = off
-        synchronous_commit = off
-        EOF
-
-        sudo systemctl restart postgresql.service
+        sudo apt-get install -y --no-install-recommends graphviz libgraphviz-dev
 
     - name: Set up Node
       uses: actions/setup-node@v6

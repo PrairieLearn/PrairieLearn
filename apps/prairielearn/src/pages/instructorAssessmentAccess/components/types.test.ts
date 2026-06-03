@@ -2,20 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import {
   type AccessControlFormData,
-  type MainRuleData,
+  type DefaultRuleData,
   type OverrideData,
   formDataToJson,
-  jsonToMainRuleFormData,
+  jsonToDefaultRuleFormData,
 } from './types.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
-const defaultMainRule: MainRuleData = {
-  trackingId: 'main-1',
+const defaultRuleFixture: DefaultRuleData = {
+  trackingId: 'default-1',
   beforeReleaseListed: true,
   dateControlEnabled: true,
-  releaseDate: '2025-03-01T00:00:00Z',
-  dueDate: '2025-04-01T00:00:00Z',
+  release: { date: '2025-03-01T00:00:00Z', released: true },
+  due: { date: '2025-04-01T00:00:00Z', credit: null, customCredit: false },
   earlyDeadlines: [{ date: '2025-03-15T00:00:00Z', credit: 110 }],
   lateDeadlines: [{ date: '2025-04-15T00:00:00Z', credit: 50 }],
   afterLastDeadline: { allowSubmissions: false },
@@ -34,8 +34,8 @@ const baseOverride: OverrideData = {
     studentLabels: [],
   },
   overriddenFields: [],
-  releaseDate: null,
-  dueDate: null,
+  release: { date: null, released: true },
+  due: { date: null, credit: null, customCredit: false },
   earlyDeadlines: [],
   lateDeadlines: [],
   afterLastDeadline: { allowSubmissions: false },
@@ -46,53 +46,86 @@ const baseOverride: OverrideData = {
 };
 
 function buildFormData(override: OverrideData): AccessControlFormData {
-  return { mainRule: defaultMainRule, overrides: [override] };
+  return { defaultRule: defaultRuleFixture, overrides: [override] };
 }
 
-describe('jsonToMainRuleFormData', () => {
-  it('defaults releaseDate to null when dateControl is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.releaseDate).toBeNull();
+describe('jsonToDefaultRuleFormData', () => {
+  it('defaults release.date to null when dateControl is not configured', () => {
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.release.date).toBeNull();
+  });
+
+  it('defaults release.released to true for unconfigured release', () => {
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.release.released).toBe(true);
+  });
+
+  it('initializes release.released = true when stored date is in the past', () => {
+    const defaultRule = jsonToDefaultRuleFormData(
+      { dateControl: { release: { date: '2000-01-01T00:00:00Z' }, due: { date: null } } },
+      TEST_TIMEZONE,
+    );
+    expect(defaultRule.release.released).toBe(true);
+  });
+
+  it('initializes release.released = false when stored date is far in the future', () => {
+    const defaultRule = jsonToDefaultRuleFormData(
+      { dateControl: { release: { date: '2099-01-01T00:00:00Z' }, due: { date: null } } },
+      TEST_TIMEZONE,
+    );
+    expect(defaultRule.release.released).toBe(false);
   });
 
   it('defaults hidden to true for questions when afterComplete is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.questionVisibility.hidden).toBe(true);
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.questionVisibility.hidden).toBe(true);
   });
 
   it('defaults hidden to false for score when afterComplete is not configured', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
-    expect(mainRule.scoreVisibility.hidden).toBe(false);
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
+    expect(defaultRule.scoreVisibility.hidden).toBe(false);
   });
 
   it('preserves hidden: false for questions when explicitly set in JSON', () => {
-    const mainRule = jsonToMainRuleFormData(
+    const defaultRule = jsonToDefaultRuleFormData(
       { afterComplete: { questions: { hidden: false } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hidden).toBe(false);
+    expect(defaultRule.questionVisibility.hidden).toBe(false);
   });
 
   it('preserves hidden: true for questions when explicitly set in JSON', () => {
-    const mainRule = jsonToMainRuleFormData(
+    const defaultRule = jsonToDefaultRuleFormData(
       { afterComplete: { questions: { hidden: true } } },
       TEST_TIMEZONE,
     );
-    expect(mainRule.questionVisibility.hidden).toBe(true);
+    expect(defaultRule.questionVisibility.hidden).toBe(true);
   });
 });
 
 describe('formDataToJson', () => {
-  it('defaults beforeReleaseListed to false when omitted from the main rule JSON', () => {
-    const mainRule = jsonToMainRuleFormData({}, TEST_TIMEZONE);
+  it('defaults beforeReleaseListed to false when omitted from the default rule JSON', () => {
+    const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
 
-    expect(mainRule.beforeReleaseListed).toBe(false);
+    expect(defaultRule.beforeReleaseListed).toBe(false);
   });
 
-  it('omits default score visibility when only main-rule question visibility is non-default', () => {
+  it('does not emit the UI-only release.released flag to JSON', () => {
     const result = formDataToJson({
-      mainRule: {
-        ...defaultMainRule,
+      defaultRule: {
+        ...defaultRuleFixture,
+        release: { date: '2099-01-01T00:00:00Z', released: true },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.release).toEqual({ date: '2099-01-01T00:00:00Z' });
+  });
+
+  it('omits default score visibility when only default-rule question visibility is non-default', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
         questionVisibility: { hidden: false },
         scoreVisibility: { hidden: false },
       },
@@ -102,6 +135,30 @@ describe('formDataToJson', () => {
     expect(result[0].afterComplete).toEqual({
       questions: { hidden: false },
     });
+  });
+
+  it('omits `due` on default rules when there is no due date and no custom credit', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        due: { date: null, credit: null, customCredit: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.due).toBeUndefined();
+  });
+
+  it('emits an explicit null due date on default rules with custom credit', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        due: { date: null, credit: 80, customCredit: true },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.due).toEqual({ date: null, credit: 80 });
   });
 
   it('omits dateControl when no date fields are overridden', () => {
@@ -118,16 +175,16 @@ describe('formDataToJson', () => {
     const override: OverrideData = {
       ...baseOverride,
       trackingId: 'o-2',
-      overriddenFields: ['dueDate', 'password'],
-      dueDate: '2025-05-01T00:00:00Z',
+      overriddenFields: ['due', 'password'],
+      due: { date: '2025-05-01T00:00:00Z', credit: null, customCredit: false },
       password: 'pw',
     };
 
     const result = formDataToJson(buildFormData(override));
     const dc = result[1].dateControl!;
-    expect(dc.dueDate).toBe('2025-05-01T00:00:00Z');
+    expect(dc.due?.date).toBe('2025-05-01T00:00:00Z');
     expect(dc.password).toBe('pw');
-    expect('releaseDate' in dc).toBe(false);
+    expect('release' in dc).toBe(false);
     expect('earlyDeadlines' in dc).toBe(false);
     expect('lateDeadlines' in dc).toBe(false);
     expect('afterLastDeadline' in dc).toBe(false);
@@ -190,6 +247,24 @@ describe('formDataToJson', () => {
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
+  it('omits default afterComplete when dateControl is on but no due date, late deadline, or duration is set', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        dateControlEnabled: true,
+        due: { date: null, credit: null, customCredit: false },
+        lateDeadlines: [],
+        durationMinutes: null,
+        prairieTestExams: [],
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: true },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].afterComplete).toBeUndefined();
+  });
+
   it('omits afterComplete when neither visibility is overridden', () => {
     const override: OverrideData = {
       ...baseOverride,
@@ -202,7 +277,7 @@ describe('formDataToJson', () => {
 
   it('preserves explicit null/empty override removals in dateControl', () => {
     const formData: AccessControlFormData = {
-      mainRule: defaultMainRule,
+      defaultRule: defaultRuleFixture,
       overrides: [
         {
           ...baseOverride,
@@ -213,7 +288,7 @@ describe('formDataToJson', () => {
             studentLabels: [],
           },
           overriddenFields: [
-            'dueDate',
+            'due',
             'earlyDeadlines',
             'lateDeadlines',
             'afterLastDeadline',
@@ -221,7 +296,7 @@ describe('formDataToJson', () => {
             'password',
           ],
           // Release date as null is not allowed, so this is false.
-          dueDate: null,
+          due: { date: null, credit: null, customCredit: false },
           earlyDeadlines: [],
           lateDeadlines: [],
           afterLastDeadline: { allowSubmissions: false },
@@ -236,8 +311,8 @@ describe('formDataToJson', () => {
 
     expect(overrideJson.dateControl).toBeDefined();
     const dc = overrideJson.dateControl!;
-    expect('dueDate' in dc).toBe(true);
-    expect(dc.dueDate).toBeNull();
+    expect('due' in dc).toBe(true);
+    expect(dc.due?.date).toBeNull();
     expect('earlyDeadlines' in dc).toBe(true);
     expect(dc.earlyDeadlines).toEqual([]);
     expect('lateDeadlines' in dc).toBe(true);
@@ -248,6 +323,91 @@ describe('formDataToJson', () => {
     expect(dc.durationMinutes).toBeNull();
     expect('password' in dc).toBe(true);
     expect(dc.password).toBeNull();
+  });
+
+  it('round-trips PrairieTest exams with default afterComplete flags omitted', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c', readOnly: false }],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        readOnly: false,
+        afterCompleteQuestionsHidden: false,
+        afterCompleteScoreHidden: false,
+      },
+    ]);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
+    ]);
+  });
+
+  it('round-trips PrairieTest exams with afterComplete questions hidden', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+                afterComplete: { questions: { hidden: true } },
+              },
+            ],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams[0].afterCompleteQuestionsHidden).toBe(true);
+    expect(formData.prairieTestExams[0].afterCompleteScoreHidden).toBe(false);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        afterComplete: { questions: { hidden: true } },
+      },
+    ]);
+  });
+
+  it('round-trips PrairieTest exams with both questions and score hidden', () => {
+    const formData = jsonToDefaultRuleFormData(
+      {
+        integrations: {
+          prairieTest: {
+            exams: [
+              {
+                examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+                afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+              },
+            ],
+          },
+        },
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.prairieTestExams[0].afterCompleteQuestionsHidden).toBe(true);
+    expect(formData.prairieTestExams[0].afterCompleteScoreHidden).toBe(true);
+
+    const json = formDataToJson({ defaultRule: formData, overrides: [] });
+    expect(json[0].integrations?.prairieTest?.exams).toEqual([
+      {
+        examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c',
+        afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+      },
+    ]);
   });
 
   it('serializes afterLastDeadline overrides', () => {

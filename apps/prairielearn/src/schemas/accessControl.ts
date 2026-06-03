@@ -5,21 +5,48 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z.number().min(0).max(200).describe('Amount of credit as a percent to allow'),
+    credit: z.number().int().min(0).max(200).describe('Integer credit percentage to allow'),
   })
   .strict();
 
 const AfterLastDeadlineJsonSchema = z
   .object({
     allowSubmissions: z.boolean(),
-    credit: z.number().min(0).optional(),
+    credit: z.number().int().min(0).max(99).optional(),
+  })
+  .strict();
+
+const ReleaseJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.describe('Release date as ISO String'),
+  })
+  .strict();
+
+const DueJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.nullable().describe(
+      'Due date as ISO String, or null for no due date',
+    ),
+    credit: z
+      .number()
+      .int()
+      .min(0)
+      .max(200)
+      .optional()
+      .describe(
+        'Custom credit percentage at the due date (0-200). Omitted means default 100% credit.',
+      ),
   })
   .strict();
 
 const DateControlJsonSchema = z
   .object({
-    releaseDate: DatetimeLocalStringSchema.optional().describe('Release date as ISO String'),
-    dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
+    release: ReleaseJsonSchema.optional().describe(
+      'Controls when the assessment becomes available to students',
+    ),
+    due: DueJsonSchema.optional().describe(
+      'Due date configuration. Overrides replace the entire due object atomically.',
+    ),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()
@@ -30,9 +57,11 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
-      'Controls for assessment behavior after last deadline',
-    ).optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
+      .describe(
+        'Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).',
+      )
+      .optional(),
     durationMinutes: z
       .number()
       .int()

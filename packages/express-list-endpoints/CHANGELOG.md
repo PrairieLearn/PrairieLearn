@@ -1,5 +1,30 @@
 # @prairielearn/express-list-endpoints
 
+## 2.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 2.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
 ## 2.0.2
 
 ### Patch Changes

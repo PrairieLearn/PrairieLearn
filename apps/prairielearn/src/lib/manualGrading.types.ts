@@ -3,12 +3,7 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffRubricItemSchema, StaffRubricSchema } from './client/safe-db-types.js';
-import {
-  RubricGradingItemSchema,
-  RubricGradingSchema,
-  type RubricItem,
-  RubricItemSchema,
-} from './db-types.js';
+import { RubricGradingItemSchema, RubricGradingSchema, type RubricItem } from './db-types.js';
 
 export const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */
@@ -18,14 +13,13 @@ export const AppliedRubricItemSchema = z.object({
 });
 export type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
-export const RenderedRubricItemSchema = z.object({
-  rubric_item: RubricItemSchema,
-  num_submissions: z.number(),
-  description_rendered: z.string().optional(),
-  explanation_rendered: z.string().optional(),
-  grader_note_rendered: z.string().optional(),
-});
-export type RenderedRubricItem = z.infer<typeof RenderedRubricItemSchema>;
+export interface RenderedRubricItem {
+  rubric_item: RubricItem;
+  num_submissions: number;
+  description_rendered?: string;
+  explanation_rendered?: string;
+  grader_note_rendered?: string;
+}
 
 export const RubricDataSchema = z.object({
   rubric: StaffRubricSchema,

@@ -8,7 +8,7 @@ div.pl-order-blocks-right {
 div.pl-order-blocks-bottom {
   /* This style applies to the DIV that holds each dropzone column */
   /* This particular style renders the dropzones in a single column vertically */
-  width: 100%;
+  width: calc(100% - 16px);
   margin: 8px;
   min-height: 8rem;
 }
@@ -16,18 +16,47 @@ div.pl-order-blocks-bottom {
 li.pl-order-blocks-code {
   list-style-type: none;
   padding: 0px !important;
+  /* The following color is hardcoded to match the default background of pl-code blocks.
+     If pl-code changes its default background color, this will need to be updated to stay
+     in sync. */
+  background-color: #f0f0f0;
 }
 
-.pl-order-blocks-code > .pl-code,
-.pl-order-blocks-code > .pl-code div {
+.pl-order-blocks-code .pl-code > div {
+  margin-bottom: 0px !important;
+  border: none !important;
+}
+
+li.pl-order-blocks-code .pl-order-block-handle {
+  flex: 0 0 16px;
+  width: 16px;
+  margin-left: 2px;
+  padding-left: 4px;
+}
+
+.pl-order-blocks-code .pl-code,
+.pl-order-blocks-code .pl-code div {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
 }
 
+.pl-order-blocks-code .pl-code td.code pre {
+  /* spacing for the code content within the code block */
+  padding-left: 0.25rem;
+}
+
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
-  cursor: move; /* For UX: The answer tiles shows a 'move' cursor on mouse over */
+  cursor: grab; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
+}
+
+/* Scrollable content is excluded from the sortable's drag region (see the
+   `cancel` selector in pl-order-blocks.js), so don't show a 'grab' cursor over it. */
+ul.pl-order-blocks-connected-sortable
+  .pl-order-block:not(.nodrag)
+  .pl-order-block-content.is-scrollable {
+  cursor: default;
 }
 
 ul.pl-order-blocks-connected-sortable li.nodrag {
@@ -72,10 +101,6 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-order-blocks-horizontal > .list-group {
-  overflow-x: scroll;
-}
-
 .pl-order-blocks-horizontal > ul {
   letter-spacing: -1em !important; /* a hacky way to remove the space between inline-block elements */
 }
@@ -85,7 +110,20 @@ li.ui-state-highlight {
   letter-spacing: normal;
   display: inline-block;
   vertical-align: middle;
+}
+
+.pl-order-blocks-scroll > .list-group {
+  overflow-x: scroll;
   white-space: nowrap;
+}
+
+.pl-order-blocks-scroll > ul > li {
+  white-space: nowrap;
+}
+
+.pl-order-blocks-horizontal .pl-order-block-content {
+  white-space: nowrap;
+  width: auto;
 }
 
 .pl-order-blocks-answer-container > ul {
@@ -142,7 +180,7 @@ div.pl-order-blocks-header {
   padding: 6px;
   margin-top: 5px;
   margin-bottom: 5px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pl-order-blocks-pairing-indicator li:last-child {
@@ -152,4 +190,37 @@ div.pl-order-blocks-header {
 [aria-selected='true']:not(.ui-sortable-placeholder) {
   outline: 2px solid orangered;
   outline-offset: -2px;
+}
+
+.pl-order-block-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.pl-order-block-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0;
+  color: var(--bs-secondary);
+  touch-action: none;
+}
+
+li.pl-order-block:not(.pl-order-blocks-code) .pl-order-block-handle {
+  margin-left: -10px;
+}
+
+.pl-order-block-content {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: normal;
+  min-width: 0;
+  width: 100%;
+  touch-action: pan-x;
+  /* Text selection is impossible in fully-draggable blocks,
+  so we disable selection in scrollable blocks for consistency. */
+  user-select: none;
+  -webkit-user-select: none;
 }

@@ -1,92 +1,145 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
-import clsx from 'clsx';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 
 import { getAppError } from '../../lib/client/errors.js';
-import type { PageContext } from '../../lib/client/page-context.js';
-import { type StaffGroupConfig } from '../../lib/client/safe-db-types.js';
+import type {
+  StaffAssessment,
+  StaffAssessmentSet,
+  StaffGroupConfig,
+} from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { type GroupSettingsFormValues } from '../../lib/group-config.js';
 import type { GroupUsersRow } from '../../models/group.js';
 import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 
-type SortKey = 'name' | 'size' | 'members';
-type SortDir = 'asc' | 'desc';
+import { GroupSettingsCard } from './components/GroupSettingsCard.js';
+import { GroupWorkInstancesWarning } from './components/GroupWorkInstancesWarning.js';
+import { GroupsCard } from './components/GroupsCard.js';
+import { ManageGroupWorkCard } from './components/ManageGroupWorkCard.js';
+import type { ActionAccess } from './types.js';
 
-function memberString(row: GroupUsersRow): string {
-  return row.users.map((u) => u.uid).join(', ');
-}
+const ALLOWED_ACCESS = { status: 'allowed' } satisfies ActionAccess;
 
-function compareGroups(a: GroupUsersRow, b: GroupUsersRow, key: SortKey): number {
-  if (key === 'size') return a.size - b.size;
-  if (key === 'members') return memberString(a).localeCompare(memberString(b));
-  return a.name.localeCompare(b.name);
-}
-
-function SortableHeader({
-  label,
-  sortKey,
-  sort,
-  onSort,
-  className,
+function NoGroupConfigCard({
+  origHash,
+  enableAccess,
+  hasAssessmentInstances,
+  courseInstanceId,
+  assessment,
+  onEnable,
 }: {
-  label: string;
-  sortKey: SortKey;
-  sort: { key: SortKey; dir: SortDir } | null;
-  onSort: (key: SortKey) => void;
-  className?: string;
+  origHash: string | null;
+  enableAccess: ActionAccess;
+  hasAssessmentInstances: boolean;
+  courseInstanceId: string;
+  assessment: StaffAssessment;
+  onEnable: (result: {
+    origHash: string;
+    groupConfig: StaffGroupConfig;
+    groupSettingsDefaults: GroupSettingsFormValues | null;
+  }) => void;
 }) {
-  const active = sort?.key === sortKey ? sort.dir : null;
-  const ariaSort = active === 'asc' ? 'ascending' : active === 'desc' ? 'descending' : 'none';
-  const icon =
-    active === 'asc'
-      ? 'bi-chevron-up'
-      : active === 'desc'
-        ? 'bi-chevron-down'
-        : 'bi-chevron-expand text-muted';
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.assessmentGroups.enableGroupWork.mutationOptions());
+  const appError = getAppError<AssessmentGroupsError['EnableGroupWork']>(mutation.error);
+
+  const canEdit = enableAccess.status === 'allowed';
+  const description = canEdit
+    ? 'Enable group work to allow students to collaborate and submit as groups.'
+    : 'Group work is not enabled for this assessment.';
+
   return (
-    <th className={className} aria-sort={ariaSort}>
-      <button
-        type="button"
-        className="btn btn-link btn-sm p-0 text-reset text-decoration-none fw-bold"
-        onClick={() => onSort(sortKey)}
-      >
-        {label} <i className={`bi ${icon}`} aria-hidden="true" />
-      </button>
-    </th>
+    <div className="container py-3">
+      <div className="card">
+        <div className="card-body text-center">
+          {appError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {appError.message}
+            </Alert>
+          )}
+          <i className="bi bi-people fs-1 mb-2" />
+          <h2 className="h5">This is not a group assessment.</h2>
+          <div className="text-muted">{description}</div>
+          {enableAccess.status === 'denied' && (
+            <Alert variant="info" className="mt-3 mb-0">
+              {enableAccess.reason}
+            </Alert>
+          )}
+          {canEdit && hasAssessmentInstances && (
+            <GroupWorkInstancesWarning
+              action="enabling"
+              courseInstanceId={courseInstanceId}
+              assessmentId={assessment.id}
+              className="mt-3 mb-0"
+            />
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              className="btn btn-outline-primary mt-3"
+              disabled={mutation.isPending || hasAssessmentInstances}
+              onClick={() => mutation.mutate({ origHash }, { onSuccess: onEnable })}
+            >
+              Enable group work
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
+interface InstructorAssessmentGroupsPermissions {
+  isExampleCourse: boolean;
+  hasCoursePermissionEdit: boolean;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+}
+
 interface InstructorAssessmentGroupsProps {
-  groupsCsvFilename?: string;
+  courseInstanceId: string;
+  assessment: StaffAssessment;
+  assessmentSet: StaffAssessmentSet;
+  permissions: InstructorAssessmentGroupsPermissions;
+  csrfToken: string;
+  groupsCsvFilename: string;
   groupConfigInfo?: StaffGroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  pageContext: PageContext<'assessment', 'instructor'>;
   trpcCsrfToken: string;
   isDevMode: boolean;
+  origHash: string | null;
+  groupSettingsDefaults: GroupSettingsFormValues | null;
+  hasAssessmentInstances: boolean;
 }
 
 export function InstructorAssessmentGroups({
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  permissions,
+  csrfToken,
   groupsCsvFilename,
   groupConfigInfo,
   groups,
   notAssigned,
-  pageContext,
   trpcCsrfToken,
   isDevMode,
+  origHash,
+  groupSettingsDefaults,
+  hasAssessmentInstances,
 }: InstructorAssessmentGroupsProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     createAssessmentTrpcClient({
       csrfToken: trpcCsrfToken,
-      courseInstanceId: pageContext.course_instance.id,
-      assessmentId: pageContext.assessment.id,
+      courseInstanceId,
+      assessmentId: assessment.id,
     }),
   );
 
@@ -94,11 +147,18 @@ export function InstructorAssessmentGroups({
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <InstructorAssessmentGroupsInner
+          courseInstanceId={courseInstanceId}
+          assessment={assessment}
+          assessmentSet={assessmentSet}
+          permissions={permissions}
+          csrfToken={csrfToken}
           groupsCsvFilename={groupsCsvFilename}
           groupConfigInfo={groupConfigInfo}
           groups={groups}
           notAssigned={notAssigned}
-          pageContext={pageContext}
+          origHash={origHash}
+          groupSettingsDefaults={groupSettingsDefaults}
+          hasAssessmentInstances={hasAssessmentInstances}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -108,778 +168,229 @@ export function InstructorAssessmentGroups({
 InstructorAssessmentGroups.displayName = 'InstructorAssessmentGroups';
 
 function InstructorAssessmentGroupsInner({
+  courseInstanceId,
+  assessment,
+  assessmentSet,
+  permissions,
+  csrfToken,
   groupsCsvFilename,
-  groupConfigInfo,
+  groupConfigInfo: initialGroupConfigInfo,
   groups: initialGroups,
   notAssigned: initialNotAssigned,
-  pageContext,
+  origHash: initialOrigHash,
+  groupSettingsDefaults: initialGroupSettingsDefaults,
+  hasAssessmentInstances,
 }: Omit<InstructorAssessmentGroupsProps, 'trpcCsrfToken' | 'isDevMode'>) {
-  const [showUploadAssessmentGroupsModal, setShowUploadAssessmentGroupsModal] = useState(false);
-  const [showRandomAssessmentGroupsModal, setShowRandomAssessmentGroupsModal] = useState(false);
-  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
-  const [showDeleteAllGroupsModal, setShowDeleteAllGroupsModal] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<GroupUsersRow | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<GroupUsersRow | null>(null);
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
-  const [groups, setGroups] = useState(initialGroups);
-  const [notAssigned, setNotAssigned] = useState(initialNotAssigned);
+  const [groupConfigInfo, setGroupConfigInfo] = useState(initialGroupConfigInfo);
+  const [groupSettingsDefaults, setGroupSettingsDefaults] = useState(initialGroupSettingsDefaults);
+  const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [minGroupSize, setMinGroupSize] = useState(
+    groupSettingsDefaults?.minMembers ?? groupConfigInfo?.minimum ?? 2,
+  );
+  const [maxGroupSize, setMaxGroupSize] = useState(
+    groupSettingsDefaults?.maxMembers ?? groupConfigInfo?.maximum ?? 4,
+  );
+  const [saveStatus, setSaveStatus] = useState<
+    { kind: 'success' } | { kind: 'error'; message: string } | null
+  >(null);
+  const canEditGroupSettings = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
+  const canViewStudentData = permissions.hasCourseInstancePermissionView;
+  const canEditStudentData =
+    permissions.hasCourseInstancePermissionEdit && !permissions.isExampleCourse;
+  const showDisableGroupWorkAction =
+    permissions.hasCoursePermissionEdit || permissions.hasCourseInstancePermissionEdit;
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const groupMembershipQueryKey = trpc.assessmentGroups.membership.queryKey();
+  const groupMembershipQuery = useQuery({
+    ...trpc.assessmentGroups.membership.queryOptions(),
+    enabled: groupConfigInfo != null && canViewStudentData,
+    initialData:
+      groupConfigInfo === initialGroupConfigInfo && initialGroups && initialNotAssigned
+        ? { groups: initialGroups, notAssigned: initialNotAssigned }
+        : undefined,
+    staleTime: Infinity,
+  });
 
-  const handleGroupAdded = (group: GroupUsersRow, newNotAssigned: string[]) => {
-    setGroups((prev) => [...(prev ?? []), group]);
-    setNotAssigned(newNotAssigned);
+  const refreshGroupMembership = () => {
+    void queryClient.invalidateQueries({ queryKey: groupMembershipQueryKey });
   };
-
-  const handleGroupUpdated = (group: GroupUsersRow, newNotAssigned: string[]) => {
-    setGroups((prev) => prev?.map((g) => (g.group_id === group.group_id ? group : g)));
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleGroupDeleted = (groupId: string, newNotAssigned: string[]) => {
-    setGroups((prev) => prev?.filter((g) => g.group_id !== groupId));
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleAllGroupsDeleted = (newNotAssigned: string[]) => {
-    setGroups([]);
-    setNotAssigned(newNotAssigned);
-  };
-
-  const handleSort = (key: SortKey) => {
-    setSort((prev) => {
-      if (prev?.key !== key) return { key, dir: 'asc' };
-      if (prev.dir === 'asc') return { key, dir: 'desc' };
-      return null;
-    });
-  };
-
-  const sortedGroups = run(() => {
-    if (!groups || !sort) return groups;
-    const sign = sort.dir === 'asc' ? 1 : -1;
-    return [...groups].sort((a, b) => sign * compareGroups(a, b, sort.key));
+  const assignmentSummary = run(() => {
+    if (!canViewStudentData || !groupMembershipQuery.data) return undefined;
+    const unassignedStudentCount = groupMembershipQuery.data.notAssigned.length;
+    const assignedStudentCount = groupMembershipQuery.data.groups.reduce(
+      (sum, group) => sum + group.size,
+      0,
+    );
+    return {
+      totalStudentCount: assignedStudentCount + unassignedStudentCount,
+      unassignedStudentCount,
+    };
   });
 
   if (!groupConfigInfo) {
     return (
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center">
-          <h1>
-            {pageContext.assessment_set.name} {pageContext.assessment.number}: Groups
-          </h1>
-        </div>
-        <div className="card-body">
-          This is not a group assessment. To enable this functionality, please set
-          <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
-        </div>
-      </div>
+      <NoGroupConfigCard
+        origHash={origHash}
+        enableAccess={run<ActionAccess>(() => {
+          if (canEditGroupSettings) return ALLOWED_ACCESS;
+          if (permissions.isExampleCourse) {
+            return {
+              status: 'denied',
+              reason: 'Enabling group work is not permitted for the example course.',
+            };
+          }
+          return {
+            status: 'denied',
+            reason: 'Enabling group work requires course editor permissions.',
+          };
+        })}
+        hasAssessmentInstances={hasAssessmentInstances}
+        courseInstanceId={courseInstanceId}
+        assessment={assessment}
+        onEnable={({ origHash: newHash, groupConfig, groupSettingsDefaults: newDefaults }) => {
+          setOrigHash(newHash);
+          // Setting `groupConfigInfo` flips the membership query's `enabled`
+          // from false to true, which triggers an auto-fetch on the next render.
+          setGroupConfigInfo(groupConfig);
+          setGroupSettingsDefaults(newDefaults);
+        }}
+      />
     );
   }
 
   return (
     <>
-      {pageContext.authz_data.has_course_instance_permission_edit && (
-        <>
-          <UploadAssessmentGroupsModal
-            csrfToken={pageContext.__csrf_token}
-            show={showUploadAssessmentGroupsModal}
-            onHide={() => setShowUploadAssessmentGroupsModal(false)}
+      <div className="container d-flex flex-column gap-3 py-3">
+        <ManageGroupWorkCard
+          origHash={origHash}
+          hasAssessmentInstances={hasAssessmentInstances}
+          courseInstanceId={courseInstanceId}
+          assessmentId={assessment.id}
+          assignmentSummary={assignmentSummary}
+          disableAccess={
+            showDisableGroupWorkAction
+              ? run<ActionAccess>(() => {
+                  if (canEditGroupSettings && canEditStudentData) return ALLOWED_ACCESS;
+                  if (permissions.isExampleCourse) {
+                    return {
+                      status: 'denied',
+                      reason: 'Disabling group work is not permitted for the example course.',
+                    };
+                  }
+                  if (!permissions.hasCoursePermissionEdit) {
+                    return {
+                      status: 'denied',
+                      reason:
+                        'Disabling group work requires course editor permissions because it changes group settings.',
+                    };
+                  }
+                  return {
+                    status: 'denied',
+                    reason:
+                      'Disabling group work requires student data editor permissions because it permanently removes group memberships.',
+                  };
+                })
+              : undefined
+          }
+          onDisable={({ origHash: newHash }) => {
+            setOrigHash(newHash);
+            setGroupSettingsDefaults(null);
+            setGroupConfigInfo(undefined);
+            queryClient.removeQueries({ queryKey: groupMembershipQueryKey });
+          }}
+        />
+        <GroupSettingsCard
+          groupConfigInfo={groupConfigInfo}
+          groupSettingsDefaults={groupSettingsDefaults}
+          origHash={origHash}
+          editAccess={run<ActionAccess>(() => {
+            if (canEditGroupSettings) return ALLOWED_ACCESS;
+            if (permissions.isExampleCourse) {
+              return {
+                status: 'denied',
+                reason: 'Editing group settings is not permitted for the example course.',
+              };
+            }
+            return {
+              status: 'denied',
+              reason: 'Editing group settings requires course editor permissions.',
+            };
+          })}
+          onOrigHashChange={setOrigHash}
+          onGroupSizeSaved={(min, max) => {
+            setMinGroupSize(min ?? 2);
+            setMaxGroupSize(max ?? 4);
+          }}
+          onSaved={() => setSaveStatus({ kind: 'success' })}
+          onSaveError={(message) => setSaveStatus({ kind: 'error', message })}
+          onClearSaveStatus={() => setSaveStatus(null)}
+        />
+
+        {canViewStudentData ? (
+          <GroupsCard
+            groupsCsvFilename={groupsCsvFilename}
+            membershipQuery={groupMembershipQuery}
+            assessment={assessment}
+            assessmentSet={assessmentSet}
+            courseInstanceId={courseInstanceId}
+            csrfToken={csrfToken}
+            editAccess={run<ActionAccess>(() => {
+              if (canEditStudentData) return ALLOWED_ACCESS;
+              if (permissions.isExampleCourse) {
+                return {
+                  status: 'denied',
+                  reason: 'Editing group memberships is not permitted for the example course.',
+                };
+              }
+              return {
+                status: 'denied',
+                reason: 'Editing group memberships requires student data editor permissions.',
+              };
+            })}
+            minGroupSize={minGroupSize}
+            maxGroupSize={maxGroupSize}
+            onRefresh={refreshGroupMembership}
           />
-          <RandomAssessmentGroupsModal
-            groupMin={groupConfigInfo.minimum ?? 2}
-            groupMax={groupConfigInfo.maximum ?? 5}
-            csrfToken={pageContext.__csrf_token}
-            show={showRandomAssessmentGroupsModal}
-            onHide={() => setShowRandomAssessmentGroupsModal(false)}
-          />
-          <AddGroupModal
-            show={showAddGroupModal}
-            onHide={() => setShowAddGroupModal(false)}
-            onGroupAdded={(group, notAssigned) => {
-              handleGroupAdded(group, notAssigned);
-              setShowAddGroupModal(false);
-            }}
-          />
-          <DeleteAllGroupsModal
-            assessmentSetName={pageContext.assessment_set.name}
-            assessmentNumber={pageContext.assessment.number}
-            show={showDeleteAllGroupsModal}
-            onHide={() => setShowDeleteAllGroupsModal(false)}
-            onAllGroupsDeleted={(notAssigned) => {
-              handleAllGroupsDeleted(notAssigned);
-              setShowDeleteAllGroupsModal(false);
-            }}
-          />
-          {editingGroup && (
-            <EditGroupModal
-              key={editingGroup.group_id}
-              row={editingGroup}
-              show
-              onHide={() => setEditingGroup(null)}
-              onGroupEdited={handleGroupUpdated}
-            />
-          )}
-          {deletingGroup && (
-            <DeleteGroupModal
-              key={deletingGroup.group_id}
-              row={deletingGroup}
-              show
-              onHide={() => setDeletingGroup(null)}
-              onGroupDeleted={(groupId, newNotAssigned) => {
-                handleGroupDeleted(groupId, newNotAssigned);
-                setDeletingGroup(null);
-              }}
-            />
-          )}
-        </>
-      )}
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center gap-2">
-          <h1>
-            {pageContext.assessment_set.name} {pageContext.assessment.number}: Groups
-          </h1>
-          {pageContext.authz_data.has_course_instance_permission_edit && (
-            <div className="ms-auto d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-sm btn-light"
-                onClick={() => setShowAddGroupModal(true)}
-              >
-                <i className="bi bi-plus-lg" aria-hidden="true" /> Add a group
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-danger"
-                onClick={() => setShowDeleteAllGroupsModal(true)}
-              >
-                <i className="bi bi-x-lg" aria-hidden="true" /> Delete all groups
-              </button>
-            </div>
-          )}
-        </div>
-        {pageContext.authz_data.has_course_instance_permission_edit && (
-          <div className="container-fluid">
-            <div className="row">
-              <div className="col-sm bg-light py-4 border text-center">
-                <button
-                  type="button"
-                  className="btn btn-primary text-nowrap"
-                  onClick={() => setShowUploadAssessmentGroupsModal(true)}
-                >
-                  <i className="bi bi-upload" aria-hidden="true" /> Upload
-                </button>
-                <div className="mt-2">Upload a CSV file with group assignments.</div>
+        ) : (
+          <div className="card">
+            <div className="card-body">
+              <h5 className="mb-1">Groups</h5>
+              <div className="text-muted small mb-3">
+                View and manage student group memberships for this assessment.
               </div>
-              <div className="col-sm bg-light py-4 border text-center">
-                <button
-                  type="button"
-                  className="btn btn-primary text-nowrap"
-                  onClick={() => setShowRandomAssessmentGroupsModal(true)}
-                >
-                  <i className="bi bi-shuffle" aria-hidden="true" /> Random
-                </button>
-                <div className="mt-2">Randomly assign students to groups.</div>
-              </div>
+              <Alert variant="info" className="mb-0">
+                You must have student data viewer permissions to view student group memberships.
+              </Alert>
             </div>
           </div>
         )}
-        <div className="table-responsive">
-          <table className="table table-sm table-hover" aria-label="Groups">
-            <thead>
-              <tr>
-                <SortableHeader label="Name" sortKey="name" sort={sort} onSort={handleSort} />
-                <SortableHeader label="Size" sortKey="size" sort={sort} onSort={handleSort} />
-                <SortableHeader
-                  label="Group Members (UIDs)"
-                  sortKey="members"
-                  sort={sort}
-                  className="text-center"
-                  onSort={handleSort}
-                />
-                {pageContext.authz_data.has_course_instance_permission_edit && <th />}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedGroups?.map((row) => (
-                <GroupRow
-                  key={row.group_id}
-                  row={row}
-                  canEdit={pageContext.authz_data.has_course_instance_permission_edit ?? false}
-                  onEdit={setEditingGroup}
-                  onDelete={setDeletingGroup}
-                />
-              ))}
-            </tbody>
-          </table>
-          <div className="card-footer">
-            <p>
-              Download{' '}
-              <a
-                href={`${pageContext.urlPrefix}/assessment/${pageContext.assessment.id}/downloads/${groupsCsvFilename}`}
-              >
-                {groupsCsvFilename}
-              </a>
-            </p>
-            {!notAssigned || notAssigned.length === 0 ? (
-              <small>
-                <strong>All students have been assigned groups.</strong>
-              </small>
-            ) : (
-              <>
-                <small>
-                  <strong>
-                    {notAssigned.length} student{notAssigned.length > 1 ? 's' : ''} not yet
-                    assigned:
-                  </strong>
-                </small>
-                <ul className="mb-0">
-                  {notAssigned.map((uid) => (
-                    <li key={uid}>
-                      <b>{uid}</b>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        </div>
       </div>
-    </>
-  );
-}
 
-function EditGroupModal({
-  row,
-  show,
-  onHide,
-  onGroupEdited,
-}: {
-  row: GroupUsersRow;
-  show: boolean;
-  onHide: () => void;
-  onGroupEdited: (group: GroupUsersRow, notAssigned: string[]) => void;
-}) {
-  const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.editGroup.mutationOptions());
-  const appError = getAppError<AssessmentGroupsError['EditGroup']>(mutation.error);
-  const failures = mutation.data?.failures ?? [];
-
-  const currentUids = row.users.map((u) => u.uid).join(', ');
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<{ uids: string }>({ values: { uids: currentUids } });
-
-  const onSubmit = (data: { uids: string }) => {
-    mutation.mutate(
-      { group_id: row.group_id, uids: data.uids },
-      {
-        onSuccess: ({ group, notAssigned, failures }) => {
-          onGroupEdited(group, notAssigned);
-          if (failures.length === 0) {
-            reset();
-            mutation.reset();
-            onHide();
-          }
-        },
-      },
-    );
-  };
-
-  const handleHide = () => {
-    reset();
-    mutation.reset();
-    onHide();
-  };
-
-  const uidsInputId = `editGroupUids-${row.group_id}`;
-  const uidsErrorId = `editGroupUidsError-${row.group_id}`;
-
-  return (
-    <Modal show={show} onHide={handleHide}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Modal.Header>
-          <Modal.Title>Edit group</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
+      {canEditGroupSettings && saveStatus && (
+        <div className="position-sticky bottom-0 z-3 bg-body border-top">
+          {saveStatus.kind === 'success' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="success"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              Group configuration saved.
             </Alert>
           )}
-          {failures.length > 0 && (
-            <Alert variant="warning" dismissible onClose={() => mutation.reset()}>
-              <strong>Some changes could not be applied:</strong>
-              <ul className="mb-0">
-                {failures.map((f) => (
-                  <li key={f.uid}>
-                    {f.uid}: {f.message}
-                  </li>
-                ))}
-              </ul>
+          {saveStatus.kind === 'error' && (
+            <Alert
+              className="mb-0 rounded-0 border-start-0 border-end-0 border-bottom"
+              variant="danger"
+              dismissible
+              onClose={() => setSaveStatus(null)}
+            >
+              {saveStatus.message}
             </Alert>
           )}
-          <div className="mb-3">
-            <label className="form-label" htmlFor={`editGroupName-${row.group_id}`}>
-              Group name
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id={`editGroupName-${row.group_id}`}
-              value={row.name}
-              disabled
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label" htmlFor={uidsInputId}>
-              UIDs
-            </label>
-            <textarea
-              className={clsx('form-control', errors.uids && 'is-invalid')}
-              id={uidsInputId}
-              rows={5}
-              placeholder="student1@example.com, student2@example.com"
-              aria-invalid={errors.uids ? 'true' : undefined}
-              {...(errors.uids ? { 'aria-errormessage': uidsErrorId } : {})}
-              defaultValue={currentUids}
-              {...register('uids')}
-            />
-            {errors.uids && (
-              <div id={uidsErrorId} className="invalid-feedback">
-                {errors.uids.message}
-              </div>
-            )}
-            <small className="form-text text-muted">
-              Separate multiple UIDs with commas. This list replaces the current members.
-            </small>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <button type="button" className="btn btn-secondary" onClick={handleHide}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending}
-          >
-            Save
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function DeleteGroupModal({
-  row,
-  show,
-  onHide,
-  onGroupDeleted,
-}: {
-  row: GroupUsersRow;
-  show: boolean;
-  onHide: () => void;
-  onGroupDeleted: (groupId: string, notAssigned: string[]) => void;
-}) {
-  const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.deleteGroup.mutationOptions());
-  const appError = getAppError<AssessmentGroupsError['DeleteGroup']>(mutation.error);
-
-  const handleHide = () => {
-    mutation.reset();
-    onHide();
-  };
-
-  return (
-    <Modal show={show} onHide={handleHide}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          mutation.mutate(
-            { group_id: row.group_id },
-            {
-              onSuccess: ({ notAssigned }) => {
-                onGroupDeleted(row.group_id, notAssigned);
-                mutation.reset();
-              },
-            },
-          );
-        }}
-      >
-        <Modal.Header>
-          <Modal.Title>Delete group</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
-          <p>
-            Are you sure you want to delete the group <strong>{row.name}</strong>?
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button type="button" className="btn btn-secondary" onClick={handleHide}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-danger" disabled={mutation.isPending}>
-            Delete
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function UploadAssessmentGroupsModal({
-  csrfToken,
-  show,
-  onHide,
-}: {
-  csrfToken: string;
-  show: boolean;
-  onHide: () => void;
-}) {
-  return (
-    <Modal show={show} onHide={onHide}>
-      <form method="POST" encType="multipart/form-data">
-        <Modal.Header>
-          <Modal.Title>Upload new group assignments</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Upload a CSV file in the format of:</p>
-          <code className="text-dark">
-            group_name,uid
-            <br />
-            groupA,one@example.com
-            <br />
-            groupA,two@example.com
-            <br />
-            groupB,three@example.com
-            <br />
-            groupB,four@example.com
-          </code>
-          <p className="mt-3">
-            The <code>group_name</code> column should be a unique identifier for each group. To
-            change the grouping, link uids to the group name.
-          </p>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="uploadAssessmentGroupsFileInput">
-              Choose CSV file
-            </label>
-            <input
-              type="file"
-              accept=".csv"
-              name="file"
-              className="form-control"
-              id="uploadAssessmentGroupsFileInput"
-            />
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <input type="hidden" name="__action" value="upload_assessment_groups" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" className="btn btn-secondary" onClick={onHide}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary">
-            Upload
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function RandomAssessmentGroupsModal({
-  groupMin,
-  groupMax,
-  csrfToken,
-  show,
-  onHide,
-}: {
-  groupMin: number;
-  groupMax: number;
-  csrfToken: string;
-  show: boolean;
-  onHide: () => void;
-}) {
-  return (
-    <Modal show={show} onHide={onHide}>
-      <form method="POST">
-        <Modal.Header>
-          <Modal.Title>Random group assignments</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="formMin">
-              Min number of members in a group
-            </label>
-            <input
-              type="number"
-              min="1"
-              defaultValue={groupMin}
-              className="form-control"
-              id="formMin"
-              name="min_group_size"
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="formMax">
-              Max number of members in a group
-            </label>
-            <input
-              type="number"
-              min="1"
-              defaultValue={groupMax}
-              className="form-control"
-              id="formMax"
-              name="max_group_size"
-              required
-            />
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <input type="hidden" name="__action" value="random_assessment_groups" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" className="btn btn-secondary" onClick={onHide}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary">
-            Group
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function AddGroupModal({
-  show,
-  onHide,
-  onGroupAdded,
-}: {
-  show: boolean;
-  onHide: () => void;
-  onGroupAdded: (group: GroupUsersRow, notAssigned: string[]) => void;
-}) {
-  const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.addGroup.mutationOptions());
-  const appError = getAppError<AssessmentGroupsError['AddGroup']>(mutation.error);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<{ group_name: string; uids: string }>({
-    defaultValues: { group_name: '', uids: '' },
-  });
-
-  const onSubmit = (data: { group_name: string; uids: string }) => {
-    mutation.mutate(data, {
-      onSuccess: ({ group, notAssigned }) => {
-        onGroupAdded(group, notAssigned);
-        reset();
-        mutation.reset();
-      },
-    });
-  };
-
-  const handleHide = () => {
-    reset();
-    mutation.reset();
-    onHide();
-  };
-
-  return (
-    <Modal show={show} onHide={handleHide}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Modal.Header>
-          <Modal.Title>Add a group</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
-          <div className="mb-3">
-            <label className="form-label" htmlFor="formName">
-              Group name
-            </label>
-            <input
-              type="text"
-              className={clsx('form-control', errors.group_name && 'is-invalid')}
-              id="formName"
-              aria-describedby="addGroupNameHelp"
-              aria-invalid={errors.group_name ? 'true' : undefined}
-              {...(errors.group_name ? { 'aria-errormessage': 'addGroupNameError' } : {})}
-              maxLength={30}
-              defaultValue=""
-              {...register('group_name', {
-                pattern: {
-                  value: /^[0-9a-zA-Z]*$/,
-                  message: 'Only letters and numbers are allowed.',
-                },
-                maxLength: { value: 30, message: 'Use at most 30 characters.' },
-              })}
-            />
-            {errors.group_name && (
-              <div id="addGroupNameError" className="invalid-feedback">
-                {errors.group_name.message}
-              </div>
-            )}
-            <small id="addGroupNameHelp" className="form-text text-muted">
-              Keep blank to use a default name. If provided, the name must be at most 30 characters
-              long and may only contain letters and numbers.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="addGroupUids">
-              UIDs
-            </label>
-            <textarea
-              className={clsx('form-control', errors.uids && 'is-invalid')}
-              id="addGroupUids"
-              rows={5}
-              placeholder="student1@example.com, student2@example.com"
-              aria-describedby="addGroupUidsHelp"
-              aria-invalid={errors.uids ? 'true' : undefined}
-              {...(errors.uids ? { 'aria-errormessage': 'addGroupUidsError' } : {})}
-              defaultValue=""
-              {...register('uids', { required: 'At least one UID is required.' })}
-            />
-            {errors.uids && (
-              <div id="addGroupUidsError" className="invalid-feedback">
-                {errors.uids.message}
-              </div>
-            )}
-            <small id="addGroupUidsHelp" className="form-text text-muted">
-              Separate multiple UIDs with commas.
-            </small>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <button type="button" className="btn btn-secondary" onClick={handleHide}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isSubmitting || mutation.isPending}
-          >
-            Add
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function DeleteAllGroupsModal({
-  assessmentSetName,
-  assessmentNumber,
-  show,
-  onHide,
-  onAllGroupsDeleted,
-}: {
-  assessmentSetName: string;
-  assessmentNumber: string;
-  show: boolean;
-  onHide: () => void;
-  onAllGroupsDeleted: (notAssigned: string[]) => void;
-}) {
-  const trpc = useTRPC();
-  const mutation = useMutation(trpc.assessmentGroups.deleteAll.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
-
-  const handleHide = () => {
-    mutation.reset();
-    onHide();
-  };
-
-  return (
-    <Modal show={show} onHide={handleHide}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          mutation.mutate(undefined, {
-            onSuccess: ({ notAssigned }) => {
-              onAllGroupsDeleted(notAssigned);
-              mutation.reset();
-            },
-          });
-        }}
-      >
-        <Modal.Header>
-          <Modal.Title>Delete all existing groups</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {appError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {appError.message}
-            </Alert>
-          )}
-          <p>
-            Are you sure you want to delete all existing groups for{' '}
-            <strong>
-              {assessmentSetName} {assessmentNumber}
-            </strong>
-            ? This cannot be undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button type="button" className="btn btn-secondary" onClick={handleHide}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-danger" disabled={mutation.isPending}>
-            Delete all
-          </button>
-        </Modal.Footer>
-      </form>
-    </Modal>
-  );
-}
-
-function GroupRow({
-  row,
-  canEdit,
-  onEdit,
-  onDelete,
-}: {
-  row: GroupUsersRow;
-  canEdit: boolean;
-  onEdit: (row: GroupUsersRow) => void;
-  onDelete: (row: GroupUsersRow) => void;
-}) {
-  return (
-    <tr>
-      <td>{row.name}</td>
-      <td className="text-center">{row.size}</td>
-      <td className="text-center">
-        <small>
-          {row.users.length > 0 ? row.users.map((user) => user.uid).join(', ') : '(empty)'}
-        </small>
-      </td>
-
-      {canEdit && (
-        <td className="text-center">
-          <div className="d-flex justify-content-center gap-2">
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => onEdit(row)}>
-              <i className="bi bi-pencil" aria-hidden="true" /> Edit
-            </button>
-            <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(row)}>
-              <i className="bi bi-trash" aria-hidden="true" /> Delete
-            </button>
-          </div>
-        </td>
+        </div>
       )}
-    </tr>
+    </>
   );
 }

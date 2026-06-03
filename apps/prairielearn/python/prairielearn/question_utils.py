@@ -7,9 +7,7 @@ from prairielearn import ...
 
 import base64
 import math
-from typing import Any, Literal, TypedDict
-
-from typing_extensions import NotRequired
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 class PartialScore(TypedDict):
@@ -42,6 +40,7 @@ class QuestionData(TypedDict):
 
     Attributes:
         params: Parameters that describe the question variant.
+        preferences: Preferences for the question variant. These can be set to different values in different assessments.
         correct_answers: The true answer (if any) for the variant.
         submitted_answers: The answer submitted by the student (after parsing).
         format_errors: Any errors encountered while parsing the student input.
@@ -64,6 +63,9 @@ class QuestionData(TypedDict):
 
     params: dict[str, Any]
     """Parameters that describe the question variant."""
+
+    preferences: dict[str, Any]
+    """Preferences for the question variant. These can be set to different values in different assessments."""
 
     correct_answers: dict[str, Any]
     """The true answer (if any) for the variant."""

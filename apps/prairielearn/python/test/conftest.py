@@ -4,8 +4,10 @@ from prairielearn import QuestionData
 
 @pytest.fixture
 def question_data() -> QuestionData:
+    """Fixture for a question data dictionary."""
     return {
         "params": {},
+        "preferences": {},
         "correct_answers": {},
         "submitted_answers": {},
         "format_errors": {},

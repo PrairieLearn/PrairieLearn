@@ -179,12 +179,12 @@ export function InstructorCourseAdminSettings({
               />
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary btn-copy"
+                className="btn btn-sm btn-outline-secondary js-copy-button"
                 data-clipboard-text={course.repository}
                 aria-label="Copy repository"
                 disabled={!course.repository}
               >
-                <i className="far fa-clipboard" />
+                <i className="bi bi-clipboard" />
               </button>
             </span>
             <small className="form-text text-muted">
@@ -216,6 +216,35 @@ export function InstructorCourseAdminSettings({
             <label className="form-check-label" htmlFor="show_getting_started">
               Show the getting started checklist
             </label>
+          </div>
+          <div className="form-check mb-3">
+            {course.questions_receive_user_data &&
+              (!authzData.has_course_permission_own || course.example_course) && (
+                <input type="hidden" name="questions_receive_user_data" value="on" />
+              )}
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="questions_receive_user_data"
+              name="questions_receive_user_data"
+              defaultChecked={course.questions_receive_user_data}
+              disabled={!authzData.has_course_permission_own || course.example_course}
+            />
+            <label className="form-check-label" htmlFor="questions_receive_user_data">
+              Allow questions to access user identity
+            </label>
+            <div className="small text-muted">
+              When enabled, questions in this course can read the user's identity (and group
+              members). See the{' '}
+              <a
+                href="https://docs.prairielearn.com/question/server/#accessing-the-viewing-users-identity"
+                target="_blank"
+                rel="noreferrer"
+              >
+                documentation on exposing user identity
+              </a>
+              . Disabling this may break questions that rely on user identity.
+            </div>
           </div>
           {aiQuestionGenerationCourseToggleEnabled && (
             <div className="form-check mb-3">

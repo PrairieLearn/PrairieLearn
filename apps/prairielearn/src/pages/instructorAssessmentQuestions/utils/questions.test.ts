@@ -20,6 +20,7 @@ import {
   hasPointsMismatch,
   normalizeQuestionPoints,
   questionDisplayName,
+  resolveRolePermissionCascade,
 } from './questions.js';
 
 describe('compactPoints', () => {
@@ -735,5 +736,44 @@ describe('computeAltPoolChosenRange', () => {
     } as ZoneAssessmentForm;
 
     expect(computeAltPoolChosenRange(zone, pool)).toEqual({ min: 1, max: 1 });
+  });
+});
+
+describe('resolveRolePermissionCascade', () => {
+  it('returns undefined when no layer defines an override', () => {
+    expect(
+      resolveRolePermissionCascade([
+        { value: undefined, source: 'zone' },
+        { value: undefined, source: 'assessment' },
+      ]),
+    ).toEqual({ value: undefined, source: 'assessment' });
+  });
+
+  it('returns the first non-undefined layer', () => {
+    expect(
+      resolveRolePermissionCascade([
+        { value: ['Manager'], source: 'zone' },
+        { value: ['Recorder'], source: 'assessment' },
+      ]),
+    ).toEqual({ value: ['Manager'], source: 'zone' });
+  });
+
+  it('treats empty array as an explicit override', () => {
+    expect(
+      resolveRolePermissionCascade([
+        { value: [], source: 'zone' },
+        { value: ['Recorder'], source: 'assessment' },
+      ]),
+    ).toEqual({ value: [], source: 'zone' });
+  });
+
+  it('walks past undefined layers', () => {
+    expect(
+      resolveRolePermissionCascade([
+        { value: undefined, source: 'pool' },
+        { value: ['Recorder'], source: 'zone' },
+        { value: undefined, source: 'assessment' },
+      ]),
+    ).toEqual({ value: ['Recorder'], source: 'zone' });
   });
 });

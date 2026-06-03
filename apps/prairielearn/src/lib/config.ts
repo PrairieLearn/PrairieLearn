@@ -6,6 +6,7 @@ import {
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
@@ -176,7 +177,10 @@ export const ConfigSchema = z.object({
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
   fileUploadMaxParts: z.number().default(1000),
-  fileStoreS3Bucket: z.string().default('file-store'),
+  fileStoreS3Bucket: z
+    .string()
+    .nullable()
+    .default(DEV_MODE ? 'file-store' : null),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
   cronActive: z.boolean().default(true),
   /**
@@ -460,11 +464,11 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Used to sign JWTs that PrairieLearn provides to PrairieTest for authentication.
-   * PrairieTest should be configured with the same value for
-   * `prairieLearnAuthSecret`.
+   * Shared secret used to sign and verify auth JWTs exchanged between
+   * PrairieLearn and PrairieTest in both directions. PrairieTest must be
+   * configured with the same value under the same key.
    */
-  prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  prairieTestSharedAuthSecret: z.string().default('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -510,11 +514,6 @@ export const ConfigSchema = z.object({
    * the configured value for `serverJobHeartbeatIntervalSec`.
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
-  /**
-   * Controls whether or not the course request form will attempt to automatically
-   * create a course if the course request meets certain criteria.
-   */
-  courseRequestAutoApprovalEnabled: z.boolean().default(false),
   devMode: z.boolean().default(DEV_MODE),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
@@ -679,6 +678,7 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
       'gpt-5.4-2026-03-05': TokenPricingSchema,
+      'gemini-3.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
@@ -695,9 +695,10 @@ export const ConfigSchema = z.object({
       'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
       'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
 
-      // Prices current as of 2026-04-16. Values obtained from
+      // Prices current as of 2026-05-19. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
+      'gemini-3.5-flash': { input: 1.5, cachedInput: 0.15, cacheWrite: 0, output: 9 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
@@ -755,6 +756,7 @@ export async function loadConfig(paths: string[]) {
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
   ]);
 
   if (config.questionRenderCacheType !== null) {

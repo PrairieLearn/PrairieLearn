@@ -2,9 +2,9 @@ import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
 import { omit, sum, sumBy } from 'es-toolkit';
-import mustache from 'mustache';
 import { z } from 'zod';
 
+import { html } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -38,6 +38,7 @@ import {
   type RubricItemInput,
   SubmissionForScoreUpdateSchema,
 } from './manualGrading.types.js';
+import { safeMustacheRender } from './mustache.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
@@ -174,33 +175,54 @@ export async function selectRubricData({
     RubricDataSchema,
   );
 
-  if (submission) {
-    // Render rubric items: description, explanation and grader note
+  if (submission && rubric_data) {
     const mustacheParams = {
       correct_answers: submission.true_answer ?? {},
       params: submission.params ?? {},
       submitted_answers: submission.submitted_answer,
     };
 
-    for (const item of rubric_data?.rubric_items || []) {
-      item.description_rendered = item.rubric_item.description
-        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustacheParams), {
-            inline: true,
-          })
-        : '';
-      item.explanation_rendered = item.rubric_item.explanation
-        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustacheParams))
-        : '';
-      item.grader_note_rendered = item.rubric_item.grader_note
-        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustacheParams))
-        : '';
-
+    for (const item of rubric_data.rubric_items) {
+      renderRubricItemFields(item, mustacheParams);
       // Yield to the event loop to avoid blocking too long.
       await setImmediate();
     }
   }
 
   return rubric_data;
+}
+
+/**
+ * Render Mustache + Markdown for a single rubric item's `description`,
+ * `explanation`, and `grader_note` fields, mutating the item in place to set
+ * the corresponding `*_rendered` fields. On a Mustache syntax error, the raw
+ * template is rendered as Markdown and a small red `(template error: …)` note
+ * is appended so the instructor can see what went wrong without the page
+ * crashing.
+ */
+export function renderRubricItemFields(
+  item: RubricData['rubric_items'][number],
+  mustacheParams: Record<string, unknown>,
+): void {
+  const renderField = (template: string, options?: { inline?: boolean }) => {
+    const { rendered, error } = safeMustacheRender(template, mustacheParams);
+    const renderedHtml = markdownToHtml(rendered, options);
+    if (!error) return renderedHtml;
+    return (
+      renderedHtml +
+      html` <span class="text-danger small">(template error: ${error})</span>`.toString()
+    );
+  };
+
+  item.description_rendered = item.rubric_item.description
+    ? renderField(item.rubric_item.description, { inline: true })
+    : '';
+  item.explanation_rendered = item.rubric_item.explanation
+    ? renderField(item.rubric_item.explanation)
+    : '';
+  item.grader_note_rendered = item.rubric_item.grader_note
+    ? renderField(item.rubric_item.grader_note)
+    : '';
 }
 
 /**

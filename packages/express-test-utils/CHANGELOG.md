@@ -1,5 +1,11 @@
 # @prairielearn/express-test-utils
 
+## 2.0.10
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+
 ## 2.0.9
 
 ### Patch Changes

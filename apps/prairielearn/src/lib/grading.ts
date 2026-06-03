@@ -252,6 +252,11 @@ export async function saveSubmission(
     variant,
     question,
     question_course,
+    {
+      effectiveUserId: submission.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -427,6 +432,14 @@ export async function gradeVariant({
       variant,
       question,
       question_course,
+      {
+        // Grading can run from cron jobs or instructor close actions, in which
+        // cases the request actor would not be the assessed student. Use
+        // `variant.user_id` (NULL on group variants) rather than the actor.
+        effectiveUserId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 

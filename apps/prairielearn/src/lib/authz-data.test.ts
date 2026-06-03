@@ -32,13 +32,13 @@ const courses = [
 ];
 
 const courseInstances = [
-  { id: 11, course_id: 10, enrollment_code: 'KN5Y4HNHX1' },
-  { id: 12, course_id: 10, enrollment_code: 'KN5Y4HNHX2' },
-  { id: 13, course_id: 10, enrollment_code: 'KN5Y4HNHX3' },
-  { id: 14, course_id: 10, enrollment_code: 'KN5Y4HNHX4' },
-  { id: 15, course_id: 10, enrollment_code: 'KN5Y4HNHX5' },
-  { id: 16, course_id: 10, enrollment_code: 'KN5Y4HNHX6' },
-  { id: 17, course_id: 10, enrollment_code: 'KN5Y4HNHX7' },
+  { id: 11, course_id: 10, short_name: 'CI 11', enrollment_code: 'KN5Y4HNHX1' },
+  { id: 12, course_id: 10, short_name: 'CI 12', enrollment_code: 'KN5Y4HNHX2' },
+  { id: 13, course_id: 10, short_name: 'CI 13', enrollment_code: 'KN5Y4HNHX3' },
+  { id: 14, course_id: 10, short_name: 'CI 14', enrollment_code: 'KN5Y4HNHX4' },
+  { id: 15, course_id: 10, short_name: 'CI 15', enrollment_code: 'KN5Y4HNHX5' },
+  { id: 16, course_id: 10, short_name: 'CI 16', enrollment_code: 'KN5Y4HNHX6' },
+  { id: 17, course_id: 10, short_name: 'CI 17', enrollment_code: 'KN5Y4HNHX7' },
 ];
 
 const users = [

@@ -27,6 +27,7 @@ docker-compose.override.yml
 .tmux.conf
 
 ### Claude Code
+.claude/worktrees/
 .claude/commands/
 .claude/settings.local.json
 
@@ -48,6 +49,7 @@ docker-compose.override.yml
 ## Config
 /config.json
 /apps/*/config.json
+/ssl/
 
 ## Generated HTML
 

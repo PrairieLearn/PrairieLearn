@@ -11,8 +11,12 @@ export {
   TanstackTableDownloadButton,
   type TanstackTableCsvCell,
 } from './components/TanstackTableDownloadButton.js';
-export { CategoricalColumnFilter } from './components/CategoricalColumnFilter.js';
-export { MultiSelectColumnFilter } from './components/MultiSelectColumnFilter.js';
+export {
+  MultiSelectColumnFilter,
+  applyMultiSelectFilter,
+  type MultiSelectFilterMode,
+  type MultiSelectFilterValue,
+} from './components/MultiSelectColumnFilter.js';
 export {
   NumericInputColumnFilter,
   parseNumericFilter,
@@ -29,11 +33,19 @@ export {
   parseAsColumnVisibilityStateWithColumns,
   parseAsColumnPinningState,
   parseAsNumericFilter,
+  parseAsMultiSelectFilter,
 } from './components/nuqs.js';
 export { useColumnVisibilityQueryState } from './hooks/use-column-visibility-query-state.js';
+export { useColumnFilters, type ColumnFilterEntry } from './hooks/use-column-filters.js';
 
 export { SplitPane, type SplitPaneProps } from './components/SplitPane.js';
-export { StickyActionBar, type StickyActionBarProps } from './components/StickyActionBar.js';
+export {
+  StickySaveBar,
+  type StickySaveBarAlert,
+  type StickySaveBarProps,
+} from './components/StickySaveBar.js';
+
+export { extractLeafColumnIds } from './components/tanstack-table-utils.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
 export { useResizeHandle } from './hooks/use-resize-handle.js';

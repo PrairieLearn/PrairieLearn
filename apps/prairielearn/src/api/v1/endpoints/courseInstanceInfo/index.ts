@@ -17,7 +17,6 @@ const CourseInstanceInfoDataSchema = z.object({
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   course_instance_course_id: CourseInstanceSchema.shape.course_id,
   display_timezone: CourseInstanceSchema.shape.display_timezone,
-  deleted_at: z.string().nullable(),
   course_title: CourseSchema.shape.title,
   course_short_name: CourseSchema.shape.short_name,
 });
@@ -30,7 +29,11 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       CourseInstanceInfoDataSchema,
     );
-    res.status(200).send(data);
+    res.status(200).send({
+      ...data,
+      // Kept for backwards compatibility. Deleted instances are rejected by middleware anyway.
+      deleted_at: null,
+    });
   }),
 );
 

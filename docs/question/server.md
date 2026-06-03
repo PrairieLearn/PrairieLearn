@@ -332,7 +332,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                            |
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                        |
 | `preferences`           | `dict`  | Read-only [question preferences](preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](../clientServerFiles.md#accessing-files-from-serverpy-question-code)                           |
+| `options`               | `dict`  | System-provided options such as file paths and URLs (see [accessing files](#accessing-files-on-disk)).                                                              |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                             |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
 | `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                              |
@@ -404,6 +404,36 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 ## Accessing files on disk
 
 The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
+
+### Accessing the viewing user's identity
+
+Courses can opt in to exposing user and group identity to `server.py`. When enabled, `data["options"]` contains two extra keys, available in every phase (`generate`, `prepare`, `render`, `parse`, `grade`, `test`, `file`):
+
+```python
+def generate(data):
+    user = data["options"]["user"]    # None if not exposed
+    group = data["options"]["group"]  # None on individual assessments
+
+    if user is not None:
+        data["params"]["greeting"] = f"Hello, {user['name']}!"
+
+    if group is not None:
+        # group["members"] entries have the same shape as `user`.
+        data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
+```
+
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the assessed student, and group assessments receive `None` because no single user owns the shared variant.
+
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
+
+On group assessments, `data["options"]["user"]` is `None` during `generate()`, `prepare()`, and `grade()`. These phases run on data that is shared by the group or may run outside a student's request, so using a request-specific group member would give stale or incorrect per-user data. `data["options"]["group"]` is still available in these phases because the group is stable for the shared variant.
+
+User and group data are passed only when **all** of the following are true:
+
+1. The course has opted in by setting `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json` (in production, this setting is managed via the course settings page by a course owner).
+2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
+
+When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.
 
 ## Generating dynamic files with `file()`
 

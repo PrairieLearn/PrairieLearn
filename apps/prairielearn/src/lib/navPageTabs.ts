@@ -143,19 +143,12 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
         tabLabel: 'Groups',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
         activeSubPage: 'questions',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
         iconClasses: 'far fa-file-alt',
         tabLabel: 'Questions',
-      },
-      {
-        activeSubPage: 'question_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/question_statistics`,
-        iconClasses: 'fas fa-table',
-        tabLabel: 'Question stats',
       },
       {
         activeSubPage: 'manual_grading',
@@ -178,8 +171,8 @@ export function getNavPageTabs() {
         tabLabel: 'Settings',
       },
       {
-        activeSubPage: 'assessment_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/assessment_statistics`,
+        activeSubPage: 'statistics',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
       },
@@ -343,6 +336,12 @@ export function getNavPageTabs() {
       },
     ],
     institution_admin: [
+      {
+        activeSubPage: 'general',
+        urlSuffix: '',
+        iconClasses: 'fa fa-gear',
+        tabLabel: 'General',
+      },
       {
         activeSubPage: 'admins',
         urlSuffix: '/admins',

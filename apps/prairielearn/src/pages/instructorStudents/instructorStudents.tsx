@@ -20,7 +20,7 @@ import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import type { CourseInstance } from '../../lib/db-types.js';
-import { getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';

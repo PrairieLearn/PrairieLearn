@@ -70,7 +70,6 @@ export async function checkGithubRepositoryExists(repoName: string): Promise<boo
 async function createEmptyRepository(client: Octokit, repo: string) {
   await client.repos.createInOrg({
     org: config.githubCourseOwner,
-    owner: config.githubCourseOwner,
     name: repo,
     private: true,
   });
@@ -357,14 +356,6 @@ export async function createCourseRepoJob(
   });
 
   return serverJob.jobSequenceId;
-}
-
-/**
- * Slugs a course shortname into a GitHub repository name.
- * @param short_name Course shortname
- */
-export function reponameFromShortname(short_name: string) {
-  return 'pl-' + short_name.replaceAll(' ', '').toLowerCase();
 }
 
 /**

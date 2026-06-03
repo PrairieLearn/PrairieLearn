@@ -2,11 +2,18 @@ import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { resolveModernAssessmentAccessBatch } from '../../lib/assessment-access-control/authz.js';
+import {
+  resolveModernAssessmentAccessResultsBatch,
+  resolverResultToAuthzAssessmentForInstance,
+} from '../../lib/assessment-access-control/authz.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
+import {
+  StudentAssessments,
+  type StudentAssessmentsRow,
+  StudentAssessmentsRowSchema,
+} from './studentAssessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -28,8 +35,8 @@ router.get(
     );
 
     const hasModern = rows.some((r) => r.modern_access_control);
-    const modernResults = hasModern
-      ? await resolveModernAssessmentAccessBatch({
+    const modernAccessByAssessment = hasModern
+      ? await resolveModernAssessmentAccessResultsBatch({
           courseInstance: res.locals.course_instance,
           userId: res.locals.user.id,
           authzData: res.locals.authz_data,
@@ -38,19 +45,34 @@ router.get(
       : null;
 
     const resolvedRows = rows
-      .map((row) => {
+      .map((row): StudentAssessmentsRow | null => {
         if (!row.modern_access_control) return row;
 
-        const result = modernResults?.get(row.assessment_id);
-        if (!result) return null;
+        const assessmentAccess = modernAccessByAssessment?.get(row.assessment_id);
+        if (!assessmentAccess) return null;
+        const authzResult = resolverResultToAuthzAssessmentForInstance({
+          result: assessmentAccess,
+          authzMode: res.locals.authz_data.mode,
+          displayTimezone: res.locals.course_instance.display_timezone,
+          assessmentInstance:
+            row.assessment_instance_id == null
+              ? null
+              : {
+                  open: row.assessment_instance_open,
+                  date_limit: row.assessment_instance_date_limit,
+                },
+          reqDate: res.locals.req_date,
+        });
 
         return {
           ...row,
-          authorized: result.authorized,
-          credit_date_string: result.credit_date_string ?? 'None',
-          active: result.active,
-          show_closed_assessment_score: result.show_closed_assessment_score,
-          show_before_release: result.show_before_release,
+          authorized: authzResult.authorized,
+          credit_date_string: authzResult.credit_date_string ?? 'None',
+          active: authzResult.active,
+          show_closed_assessment_score: authzResult.show_closed_assessment_score,
+          show_before_release: authzResult.show_before_release,
+          will_release_at: authzResult.next_active_time,
+          access_timeline: authzResult.access_timeline,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {

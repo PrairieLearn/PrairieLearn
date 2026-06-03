@@ -97,9 +97,11 @@ test-prairielearn: start-support
 test-e2e: start-support
 	@yarn workspace @prairielearn/prairielearn run test:e2e
 
-check-dependencies:
-	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+fix-dependencies:
+	@yarn knip  -c .knip.ts --fix --fix-type exports --fix-type types --fix-type dependencies
+lint-dependencies:
 	@yarn knip -c .knip.ts
+	@yarn depcruise apps/*/src apps/*/assets packages/*/src
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
@@ -123,16 +125,17 @@ lint-js:
 # Separate target since the caches don't respect updates to plugins.
 # Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
 # pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
+# Keep the Prettier cache locations split too: each Prettier run reconciles all entries in its cache, even entries outside the current glob.
 lint-js-cached:
 	@yarn eslint "apps/prairielearn/**/*.{ts,tsx}"
-	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content
+	@yarn prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/apps-prairielearn-tsx
 	@yarn eslint --cache --cache-strategy content \
 		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier \
 		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
 		"!apps/prairielearn/**/*.{ts,tsx}" \
-		--check --cache --cache-strategy content
+		--check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/non-apps-prairielearn-tsx
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
@@ -167,12 +170,17 @@ format: format-js format-python
 format-sql:
 	@uv run sqlfluff fix
 
-format-js:
+fix-js:
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
-format-js-cached:
+fix-js-cached:
+	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+
+format-js:
+	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+format-js-cached:
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-mustache:
@@ -204,9 +212,9 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
@@ -221,4 +229,4 @@ dangerous-drop-all-dbs:
 		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
 	done
 
-ci: lint typecheck check-dependencies test
+ci: lint typecheck lint-dependencies test

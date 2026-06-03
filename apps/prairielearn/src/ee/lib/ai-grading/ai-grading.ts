@@ -3,15 +3,8 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import {
-  type GenerateObjectResult,
-  type JSONParseError,
-  type ModelMessage,
-  type TypeValidationError,
-  generateObject,
-} from 'ai';
+import { type GenerateObjectResult, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -40,9 +33,10 @@ import {
   type Question,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
-import { createServerJob } from '../../../lib/server-jobs.js';
+import { createServerJob, selectJobSequenceStatus } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import {
@@ -59,7 +53,6 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
-  correctGeminiMalformedRubricGradingJson,
   correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
@@ -283,11 +276,11 @@ async function finalizeAiGradingPersistence({
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 export const MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE = 5;
 
-export async function getRunningAiGradingJobCountForCourseInstance(
+export async function getActiveAiGradingJobCountForCourseInstance(
   course_instance_id: string,
 ): Promise<number> {
   return await queryScalar(
-    sql.count_running_ai_grading_jobs_for_course_instance,
+    sql.count_active_ai_grading_jobs_for_course_instance,
     { course_instance_id },
     z.number(),
   );
@@ -382,8 +375,8 @@ export async function aiGrade({
       course_instance_id: course_instance.id,
     });
 
-    const runningJobCount = await getRunningAiGradingJobCountForCourseInstance(course_instance.id);
-    if (runningJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
+    const activeJobCount = await getActiveAiGradingJobCountForCourseInstance(course_instance.id);
+    if (activeJobCount >= MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE) {
       throw new error.HttpStatusError(
         429,
         `You've reached the limit of ${MAX_CONCURRENT_AI_GRADING_JOBS_PER_COURSE_INSTANCE} concurrent AI grading jobs. Please wait for running jobs to finish.`,
@@ -450,6 +443,7 @@ export async function aiGrade({
       trackRateLimitAndCost &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
     let hasAiGradingCredits = true;
+    let firstFailureMessage: string | undefined;
 
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
@@ -575,10 +569,18 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-        questionRenderContext: 'ai_grading',
+        urlPrefix,
+        showCorrectAnswer: false,
+        allowAnswerEditing: false,
+        questionRenderContext: 'ai_grading' as const,
       };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
+      const aiCaller = {
+        effectiveUserId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: course,
+      };
       const render_question_results = await questionModule.render({
         renderSelection: { question: true, submissions: false, answer: true },
         variant,
@@ -587,6 +589,7 @@ export async function aiGrade({
         submissions: [],
         course: question_course,
         locals,
+        caller: aiCaller,
       });
       if (render_question_results.courseIssues.length > 0) {
         logger.error(render_question_results.courseIssues.toString());
@@ -604,6 +607,7 @@ export async function aiGrade({
         submissions: [submission],
         course: question_course,
         locals,
+        caller: aiCaller,
       });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
@@ -616,14 +620,40 @@ export async function aiGrade({
         params: submission.params ?? {},
         submitted_answers: submission.submitted_answer,
       };
-      for (const rubric_item of rubric_items) {
-        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
-        rubric_item.explanation = rubric_item.explanation
-          ? mustache.render(rubric_item.explanation, mustacheParams)
-          : null;
-        rubric_item.grader_note = rubric_item.grader_note
-          ? mustache.render(rubric_item.grader_note, mustacheParams)
-          : null;
+      const renderRubricField = (
+        template: string | null,
+        fieldName: string,
+        displayNumber: number,
+      ): string | null => {
+        if (!template) return template;
+        const { rendered, error } = safeMustacheRender(template, mustacheParams);
+        if (error) {
+          // Treat rubric-template errors as per-submission failures: the rubric
+          // the AI would see is degraded, so we don't trust any grade derived
+          // from it. The thrown message becomes the banner's job_failure_detail
+          // subtext, so keep it short and user-facing; the underlying Mustache
+          // error is logged separately to the server-job log for debugging.
+          // `displayNumber` is the 1-indexed position of the rubric item,
+          // matching the numbering shown to the instructor in the rubric editor.
+          logger.error(`Rubric item ${displayNumber} ${fieldName} mustache error: ${error}`);
+          throw new Error(`Could not parse rubric item ${displayNumber} ${fieldName}`);
+        }
+        return rendered;
+      };
+      for (const [index, rubric_item] of rubric_items.entries()) {
+        const displayNumber = index + 1;
+        rubric_item.description =
+          renderRubricField(rubric_item.description, 'description', displayNumber) ?? '';
+        rubric_item.explanation = renderRubricField(
+          rubric_item.explanation,
+          'explanation',
+          displayNumber,
+        );
+        rubric_item.grader_note = renderRubricField(
+          rubric_item.grader_note,
+          'grader_note',
+          displayNumber,
+        );
       }
 
       let input = await generatePrompt({
@@ -675,24 +705,32 @@ export async function aiGrade({
       };
 
       if (rubric_items.length > 0) {
-        // Dynamically generate the rubric schema based on the rubric items.
-        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
-        for (const item of rubric_items) {
-          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
-            z.object({
-              [item.description]: z.boolean(),
-            }),
-          );
-        }
+        // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
+        // item is identified by its 1-indexed position in the prompt; using numbers
+        // instead of descriptions avoids JSON-escaping issues with quotes/backslashes
+        // in user-authored rubric text. The schema is strict so any extra keys
+        // emitted by the model surface as a per-submission failure instead of being
+        // silently stripped.
+        const RubricGradingItemsSchema = z
+          .object(
+            Object.fromEntries(
+              rubric_items.map((item, index) => {
+                const number = index + 1;
+                return [
+                  String(number),
+                  z
+                    .boolean()
+                    .describe(
+                      `True if rubric item number ${number} applies to the student's response. Rubric item number ${number}: ${item.description}`,
+                    ),
+                ];
+              }),
+            ),
+          )
+          .strict();
 
-        // OpenAI will take the property descriptions into account. See the
-        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
-          // rubric_items must be the last property in the schema.
-          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
-          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
-          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -706,21 +744,6 @@ export async function aiGrade({
           finalGradingResponse,
           rotationCorrectionApplied,
         } = (await run(async () => {
-          const experimental_repairText: (options: {
-            text: string;
-            error: JSONParseError | TypeValidationError;
-          }) => Promise<string | null> = async (options) => {
-            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
-              return null;
-            }
-            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // unescaped backslashes in the rubric item keys of the response.
-
-            // TODO: Remove this temporary fix once Google fixes the underlying issue.
-            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
-            return correctGeminiMalformedRubricGradingJson(options.text);
-          };
-
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -733,7 +756,12 @@ export async function aiGrade({
                 model,
                 schema: RubricGradingResultSchema,
                 messages: input,
-                experimental_repairText,
+                // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
+                // intentionally interleave `role: 'system'` and `role: 'user'`
+                // messages. All system-role content is hard-coded authored strings;
+                // no user-supplied text is ever placed in a system message, so the
+                // SDK's prompt-injection warning does not apply here.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -746,7 +774,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -796,7 +825,8 @@ export async function aiGrade({
             model,
             schema: RubricImageGradingResultSchema,
             messages: input,
-            experimental_repairText,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -844,10 +874,16 @@ export async function aiGrade({
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
-        const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: finalGradingResponse.object.rubric_items,
-          rubric_items,
-        });
+        const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
+          parseAiRubricItems({
+            ai_rubric_items: finalGradingResponse.object.rubric_items,
+            rubric_items,
+          });
+        if (unrecognizedKeys.length > 0) {
+          logger.error(
+            `AI grading response contained unrecognized rubric_items keys: ${JSON.stringify(unrecognizedKeys)}. Expected stringified integers in [1, ${rubric_items.length}].`,
+          );
+        }
         const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
           ? {
               model_id,
@@ -970,6 +1006,8 @@ export async function aiGrade({
                 model,
                 schema: GradingResultSchema,
                 messages: input,
+                // System messages in `messages` are hard-coded authored strings; safe to allow.
+                allowSystemInMessages: true,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -982,6 +1020,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1020,6 +1060,8 @@ export async function aiGrade({
             model,
             schema: ImageGradingResultSchema,
             messages: input,
+            // System messages in `messages` are hard-coded authored strings; safe to allow.
+            allowSystemInMessages: true,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -1142,6 +1184,14 @@ export async function aiGrade({
     let num_failed = 0;
     let total_cost_milli_dollars = 0;
     let num_items_incurred_cost = 0;
+    // Polled before every per-item dispatch and finally emit so a Stop click
+    // can't get masked by a stale local flag.
+    let stopRequested = false as boolean;
+    const refreshStopRequested = async () => {
+      if (stopRequested) return;
+      const { status } = await selectJobSequenceStatus(serverJob.jobSequenceId);
+      if (status === 'Stopping' || status === 'Stopped') stopRequested = true;
+    };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -1175,6 +1225,14 @@ export async function aiGrade({
           return undefined;
         };
 
+        await refreshStopRequested();
+        if (stopRequested) {
+          // Skip queued items entirely so they don't appear graded by this
+          // job, leaving any concurrent job's status to win in the table UI.
+          delete item_statuses[instance_question.id];
+          return false;
+        }
+
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           await emitServerJobProgressUpdate({
@@ -1184,6 +1242,7 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
             ...costFields,
           });
 
@@ -1199,12 +1258,19 @@ export async function aiGrade({
 
           return gradingSuccessful;
         } catch (err: any) {
-          logger.error(err);
+          const message = err?.message ?? String(err);
+          logger.error(
+            `AI grading failed for instance question ${instance_question.id}: ${message}`,
+          );
           item_statuses[instance_question.id] = JobItemStatus.failed;
           num_failed += 1;
+          if (firstFailureMessage === undefined) {
+            firstFailureMessage = message;
+          }
           return false;
         } finally {
           num_complete += 1;
+          await refreshStopRequested();
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,
             num_complete,
@@ -1212,6 +1278,9 @@ export async function aiGrade({
             num_total: instance_questions.length,
             item_statuses,
             job_failure_message: getJobFailureMessage(),
+            job_failure_detail: firstFailureMessage,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            stop_state: stopRequested ? 'stopping' : undefined,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });
           for (const log of logs) {
@@ -1229,6 +1298,34 @@ export async function aiGrade({
         }
       },
     );
+
+    // Final poll: catches Stop clicks that arrived during the last batch. A
+    // Stop click that lands after this poll is still handled — the inner
+    // job's finisher in `update_job_on_finish` projects Stopping → Stopped.
+    await refreshStopRequested();
+
+    if (stopRequested) {
+      // num_complete counts every item the worker processed (incremented in
+      // the per-item finally), so the actually-graded count is num_complete
+      // minus the failures.
+      const num_graded = num_complete - num_failed;
+      const num_skipped = instance_questions.length - num_complete;
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete,
+        num_failed,
+        num_total: instance_questions.length,
+        item_statuses,
+        stop_state: 'stopped',
+        ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
+      });
+      // `job.stop` writes the message to the output and throws a control-flow
+      // signal that the ServerJob wrapper catches; the inner jobs row and the
+      // surrounding job_sequences row both land in 'Stopped' status.
+      job.stop(
+        `\nAI grading stopped by instructor. ${num_graded} graded, ${num_failed} failed, ${num_skipped} skipped.`,
+      );
+    }
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

@@ -39,9 +39,11 @@ import {
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
+  SharingSetSchema as RawSharingSetSchema,
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
+  TeamSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
@@ -370,6 +372,18 @@ export const RawStaffGroupConfigSchema = RawGroupConfigSchema;
 export const StaffGroupConfigSchema = RawStaffGroupConfigSchema.brand<'StaffGroupConfig'>();
 export type StaffGroupConfig = z.infer<typeof StaffGroupConfigSchema>;
 
+/** Groups (the `teams` table; "group" is the UI-facing name) */
+export const RawStaffGroupSchema = RawTeamSchema.pick({
+  course_instance_id: true,
+  date: true,
+  deleted_at: true,
+  id: true,
+  name: true,
+  team_config_id: true,
+});
+export const StaffGroupSchema = RawStaffGroupSchema.brand<'StaffGroup'>();
+export type StaffGroup = z.infer<typeof StaffGroupSchema>;
+
 /** Instance Question Groups */
 export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;
 export const StaffInstanceQuestionGroupSchema =
@@ -453,13 +467,34 @@ export const RawPublicQuestionSchema = RawStaffQuestionSchema.pick({
 export const PublicQuestionSchema = RawPublicQuestionSchema.brand<'PublicQuestion'>();
 export type PublicQuestion = z.infer<typeof PublicQuestionSchema>;
 
+/** Sharing Sets */
+export const RawPublicSharingSetSchema = RawSharingSetSchema.pick({
+  name: true,
+});
+export const PublicSharingSetSchema = RawPublicSharingSetSchema.brand<'PublicSharingSet'>();
+export type PublicSharingSet = z.infer<typeof PublicSharingSetSchema>;
+
 /** Topics */
 export const StaffTopicSchema = RawTopicSchema.brand<'StaffTopic'>();
 export type StaffTopic = z.infer<typeof StaffTopicSchema>;
 
+export const RawPublicTopicSchema = RawTopicSchema.pick({
+  color: true,
+  name: true,
+});
+export const PublicTopicSchema = RawPublicTopicSchema.brand<'PublicTopic'>();
+export type PublicTopic = z.infer<typeof PublicTopicSchema>;
+
 /** Tags */
 export const StaffTagSchema = RawTagSchema.brand<'StaffTag'>();
 export type StaffTag = z.infer<typeof StaffTagSchema>;
+
+export const RawPublicTagSchema = RawTagSchema.pick({
+  color: true,
+  name: true,
+});
+export const PublicTagSchema = RawPublicTagSchema.brand<'PublicTag'>();
+export type PublicTag = z.infer<typeof PublicTagSchema>;
 
 /** Users */
 export const RawStaffUserSchema = RawUserSchema.pick({

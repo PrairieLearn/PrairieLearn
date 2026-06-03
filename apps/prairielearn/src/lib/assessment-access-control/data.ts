@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
@@ -14,10 +15,9 @@ import type {
   AccessControlRuleInput,
   EnrollmentContext,
   PrairieTestReservation,
-  RuntimeAccessControl,
   RuntimeAfterComplete,
-  RuntimeDateControl,
 } from './resolver.js';
+import type { RuntimeDateControl } from './timeline.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -46,25 +46,23 @@ const AccessControlRuleRowSchema = z.object({
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
-function isOverride(rule: AssessmentAccessControlRule): boolean {
-  return rule.target_type !== 'none';
-}
-
 function buildDateControl(
   rule: AssessmentAccessControlRule,
   earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
   lateDeadlines: z.infer<typeof DeadlineJsonSchema>,
 ): RuntimeDateControl | undefined {
   // Only include fields that were explicitly configured (overridden flag is true).
-  // This applies uniformly to main rules and overrides.
   const dateControl: RuntimeDateControl = {};
 
   if (rule.date_control_release_date != null) {
-    dateControl.releaseDate = rule.date_control_release_date;
+    dateControl.release = { date: rule.date_control_release_date };
   }
 
-  if (rule.date_control_due_date_overridden) {
-    dateControl.dueDate = rule.date_control_due_date;
+  if (rule.date_control_due_overridden) {
+    dateControl.due = {
+      date: rule.date_control_due_date,
+      ...(rule.date_control_due_credit != null ? { credit: rule.date_control_due_credit } : {}),
+    };
   }
 
   if (rule.date_control_duration_minutes_overridden) {
@@ -91,7 +89,17 @@ function buildDateControl(
       })) ?? null;
   }
 
-  if (rule.date_control_after_last_deadline_allow_submissions != null) {
+  if (rule.date_control_after_last_deadline_overridden) {
+    if (rule.date_control_after_last_deadline_allow_submissions != null) {
+      dateControl.afterLastDeadline = {
+        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
+        credit: rule.date_control_after_last_deadline_credit,
+      };
+    } else {
+      dateControl.afterLastDeadline = null;
+    }
+  } else if (rule.date_control_after_last_deadline_allow_submissions != null) {
+    // Legacy rows written before the overridden flag was added.
     dateControl.afterLastDeadline = {
       allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
       credit: rule.date_control_after_last_deadline_credit,
@@ -99,17 +107,6 @@ function buildDateControl(
   }
 
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
-}
-
-function buildExamAfterComplete(
-  questionsHidden: boolean,
-  scoreHidden: boolean,
-): { questions?: { hidden: true }; score?: { hidden: true } } | undefined {
-  if (!questionsHidden && !scoreHidden) return undefined;
-  const result: { questions?: { hidden: true }; score?: { hidden: true } } = {};
-  if (questionsHidden) result.questions = { hidden: true };
-  if (scoreHidden) result.score = { hidden: true };
-  return result;
 }
 
 function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComplete | undefined {
@@ -134,50 +131,48 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
 }
 
 function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
-  const runtimeRule: RuntimeAccessControl = {};
   const rule = row.access_control_rule;
-
-  if (!isOverride(rule)) {
-    runtimeRule.beforeRelease = { listed: rule.before_release_listed ?? false };
-  }
-
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
-  if (dateControl !== undefined) runtimeRule.dateControl = dateControl;
-
   const afterComplete = buildAfterComplete(rule);
-  if (afterComplete !== undefined) runtimeRule.afterComplete = afterComplete;
 
-  // Integrations are only on main rules (number 0)
-  const prairietestExamsRaw = (!isOverride(rule) && row.prairietest_exams) || [];
-  const prairietestExams = prairietestExamsRaw.map((e) => ({
-    uuid: e.uuid,
-    readOnly: e.read_only,
-    questionsHidden: e.after_complete_questions_hidden,
-    scoreHidden: e.after_complete_score_hidden,
-  }));
-  if (prairietestExams.length > 0) {
-    runtimeRule.integrations = {
-      prairieTest: {
-        exams: prairietestExams.map((e) => {
-          const afterComplete = buildExamAfterComplete(e.questionsHidden, e.scoreHidden);
-          return {
-            examUuid: e.uuid,
-            readOnly: e.readOnly,
-            ...(afterComplete !== undefined ? { afterComplete } : {}),
-          };
-        }),
-      },
-    };
-  }
-
-  return {
-    rule: runtimeRule,
-    number: rule.number,
-    targetType: rule.target_type,
-    enrollmentIds: row.enrollment_ids,
-    studentLabelIds: row.student_label_ids,
-    prairietestExams,
+  const ruleBody = {
+    ...(dateControl && { dateControl }),
+    ...(afterComplete && { afterComplete }),
   };
+
+  switch (rule.target_type) {
+    case 'enrollment':
+      return {
+        targetType: 'enrollment',
+        number: rule.number,
+        rule: ruleBody,
+        enrollmentIds: row.enrollment_ids,
+      };
+    case 'student_label':
+      return {
+        targetType: 'student_label',
+        number: rule.number,
+        rule: ruleBody,
+        studentLabelIds: row.student_label_ids,
+      };
+    case 'none':
+      return {
+        targetType: 'none',
+        number: 0,
+        rule: {
+          ...ruleBody,
+          beforeRelease: { listed: rule.before_release_listed ?? false },
+          prairieTestExams: (row.prairietest_exams ?? []).map((e) => ({
+            uuid: e.uuid,
+            readOnly: e.read_only,
+            questionsHidden: e.after_complete_questions_hidden,
+            scoreHidden: e.after_complete_score_hidden,
+          })),
+        },
+      };
+    default:
+      assertNever(rule.target_type);
+  }
 }
 
 export async function selectAccessControlRulesForAssessment(
