@@ -80,7 +80,7 @@ LIMIT
 -- BLOCK update_instance_question_status
 UPDATE instance_questions
 SET
-  status = $status::enum_instance_question_status
+  status = $status
 WHERE
   id = $instance_question_id;
 

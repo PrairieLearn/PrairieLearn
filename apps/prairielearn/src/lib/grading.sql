@@ -1,7 +1,6 @@
 -- BLOCK select_assessment_for_submission
 SELECT
-  ai.id AS assessment_instance_id,
-  s.id AS submission_id
+  ai.id AS assessment_instance_id
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -194,7 +193,7 @@ WITH
   updated_instance_question AS (
     UPDATE instance_questions AS iq
     SET
-      status = $status::enum_instance_question_status,
+      status = $status,
       duration = duration + ($delta * interval '1 ms'),
       first_duration = coalesce(first_duration, $delta * interval '1 ms'),
       modified_at = now(),
