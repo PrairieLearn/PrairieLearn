@@ -2572,10 +2572,12 @@ if (shouldStartServer) {
 
     if (config.devMode) {
       await insertDevUser();
-      try {
-        await seedDevData();
-      } catch (err) {
-        logger.error('Failed to seed dev data', err);
+      if (process.env.NODE_ENV !== 'test') {
+        try {
+          await seedDevData();
+        } catch (err) {
+          logger.error('Failed to seed dev data', err);
+        }
       }
     }
 
