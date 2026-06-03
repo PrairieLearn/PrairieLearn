@@ -82,7 +82,7 @@ export async function makeVariant({
   }
 
   const caller = {
-    effectiveUserId: effective_user_id,
+    userId: effective_user_id,
     groupId: group_id,
     variantCourse: variant_course,
   };
@@ -169,7 +169,7 @@ export async function getDynamicFile(
     question,
     question_course,
     {
-      effectiveUserId: user_id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },

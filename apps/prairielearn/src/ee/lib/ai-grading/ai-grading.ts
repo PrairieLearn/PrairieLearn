@@ -577,7 +577,7 @@ export async function aiGrade({
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const aiCaller = {
-        effectiveUserId: variant.user_id,
+        userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: course,
       };

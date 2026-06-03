@@ -237,7 +237,7 @@ export function InstructorCourseAdminSettings({
               When enabled, questions in this course can read the user's identity (and group
               members). See the{' '}
               <a
-                href="https://docs.prairielearn.com/question/server/#accessing-the-viewing-users-identity"
+                href="https://docs.prairielearn.com/question/server/#accessing-user-and-group-identity"
                 target="_blank"
                 rel="noreferrer"
               >

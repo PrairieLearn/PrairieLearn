@@ -337,7 +337,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         ),
       };
       const caller = {
-        effectiveUserId: null,
+        userId: null,
         groupId: null,
         variantCourse: course,
       };

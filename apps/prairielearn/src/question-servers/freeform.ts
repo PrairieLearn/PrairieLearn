@@ -1870,11 +1870,14 @@ async function getCacheKey(
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
         //
-        // `data.options` is intentionally retained: `options.user` and
-        // `options.group` must influence the key so a render is never shared
-        // across users. On group variants, members share one cached render only
-        // because `user` is null there and `group.members` has a deterministic
-        // order (see the `select_group_members` query).
+        // `data.options` is kept because `options.user` / `options.group` can change
+        // without bumping `modified_at`, so they must stay in the key:
+        //   1. the course toggles `questions_receive_user_data`
+        //   2. a user is renamed (uid/uin/name)
+        //   3. group membership or a member's name changes
+        //
+        // `options.user` is the variant owner (not the viewer); on group variants
+        // it is null and `group.members` is ordered deterministically.
         omit(data, [
           'params',
           'correct_answers',

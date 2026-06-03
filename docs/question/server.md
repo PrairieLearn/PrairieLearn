@@ -405,7 +405,7 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
-### Accessing the viewing user's identity
+### Accessing user and group identity
 
 Courses can opt in to exposing user and group identity to `server.py`. A course owner can enable this on the course settings page. When enabled, `data["options"]` contains two extra keys -- `data["options"]["user"]` and `data["options"]["group"]`.
 
@@ -426,9 +426,9 @@ def generate(data):
 
 The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
 
-??? info "User identity can vary"
+??? info "Whose identity is exposed"
 
-    For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the student who generated the submission, and group assessments receive `None` because no single user owns the shared variant.
+    The `user` is the student the variant belongs to, not whoever is currently viewing or grading it. Group assessments receive `None` because the shared variant has no single owner.
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 

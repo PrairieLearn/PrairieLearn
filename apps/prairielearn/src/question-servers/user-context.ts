@@ -25,8 +25,10 @@ export interface QuestionUserContext {
  * `server.py` sees in `data['options']`.
  */
 export interface QuestionCaller {
-  /** The user making the request, or `null` when none applies (e.g. grading a group variant). */
-  effectiveUserId: string | null;
+  /**
+   * The user the variant belongs to (its owner), or `null` on group variants.
+   */
+  userId: string | null;
   /** The group owning the variant, or `null` for individual variants. */
   groupId: string | null;
   /** The course in which the variant lives. Differs from the question's course for shared questions. */
@@ -76,8 +78,8 @@ export async function buildQuestionUserContext({
   // every member, so we never expose a single member's identity. The group
   // roster (`group.members`, below) is still provided.
   const user =
-    caller.groupId == null && caller.effectiveUserId != null
-      ? await selectOptionalUserById(caller.effectiveUserId)
+    caller.groupId == null && caller.userId != null
+      ? await selectOptionalUserById(caller.userId)
       : null;
 
   const group = caller.groupId != null ? await selectActiveQuestionGroup(caller.groupId) : null;
