@@ -453,7 +453,7 @@ class OrderBlocksOptions:
 
         if (self.inline or self.display_blocks.is_inline()) and self.indentation:
             raise ValueError(
-                "The indentation attribute may not be used when inline is true."
+                'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".'
             )
 
         if (

@@ -483,7 +483,7 @@ def test_display_blocks_validation(options: dict) -> None:
                 "display-blocks": "inline-wrap",
                 "indentation": True,
             },
-            "The indentation attribute may not be used when inline is true.",
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
         ),
         (
             {
@@ -491,7 +491,7 @@ def test_display_blocks_validation(options: dict) -> None:
                 "display-blocks": "inline-nowrap",
                 "indentation": True,
             },
-            "The indentation attribute may not be used when inline is true.",
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
         ),
     ],
 )
