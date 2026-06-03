@@ -409,7 +409,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Exposing user data to `server.py`
 
-By default, questions cannot see who is viewing them. A course can opt in to passing the viewing user's identity (uid, uin, name) into `server.py` through `data["options"]["user"]`, and the group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-the-viewing-users-identity) for the exact shape and access patterns.
+By default, questions cannot see who is working on them. A course can opt in to passing the identity (uid, uin, name) of the student who owns the variant into `server.py` through `data["options"]["user"]`, and the group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-user-and-group-identity) for the exact shape and access patterns.
 
 To enable this for a course, on the course settings page, check "Allow questions to access user identity".
 

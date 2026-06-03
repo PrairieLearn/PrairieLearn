@@ -95,7 +95,7 @@ async function testDynamicFiles({
       question,
       question_course,
       {
-        effectiveUserId: user_id,
+        userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: course,
       },
@@ -164,7 +164,7 @@ export async function createTestSubmissionData(
     question_course,
     test_type,
     {
-      effectiveUserId: user_id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
