@@ -403,9 +403,6 @@ function DeadlineArrayInput({
                   })}
                   step={1}
                   disabled={!ruleEditable}
-                  // TODO: Remove this Chrome 147-148 workaround once Chrome 149+ has had
-                  // time to reach users. See https://issues.chromium.org/issues/508306805.
-                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),

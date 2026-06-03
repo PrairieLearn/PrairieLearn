@@ -240,9 +240,6 @@ function AfterLastDeadlineInput({
                 placeholder="0"
                 isInvalid={!!creditError}
                 disabled={!ruleEditable}
-                // TODO: Remove this Chrome 147-148 workaround once Chrome 149+ has had
-                // time to reach users. See https://issues.chromium.org/issues/508306805.
-                onWheel={({ currentTarget }) => currentTarget.blur()}
                 {...register(creditFieldPath, {
                   shouldUnregister: true,
                   valueAsNumber: true,
