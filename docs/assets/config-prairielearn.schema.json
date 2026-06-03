@@ -362,6 +362,10 @@
       "type": "string",
       "default": "machine"
     },
+    "githubMachineUser": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "gitSshCommand": {
       "type": ["string", "null"],
       "default": null

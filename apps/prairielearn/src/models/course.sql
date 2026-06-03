@@ -24,19 +24,14 @@ WHERE
   c.short_name = $short_name
   AND c.deleted_at IS NULL;
 
--- BLOCK select_course_by_repository_name
+-- BLOCK select_course_by_github_repository
 SELECT
   c.*
 FROM
   courses AS c
 WHERE
-  (
-    c.repository ILIKE '%/' || $repo_name || '.git' ESCAPE '\'
-    OR c.repository ILIKE '%:' || $repo_name || '.git' ESCAPE '\'
-  )
-  AND c.deleted_at IS NULL
-LIMIT
-  1;
+  c.repository ILIKE '%' || $owner || '/' || $repo_name || '%' ESCAPE '\'
+  AND c.deleted_at IS NULL;
 
 -- BLOCK select_course_by_path
 SELECT
