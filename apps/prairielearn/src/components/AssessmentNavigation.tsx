@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { html } from '@prairielearn/html';
 
 import type { Assessment, AssessmentSet } from '../lib/db-types.js';
@@ -22,14 +24,12 @@ export function AssessmentNavigation({
   assessmentSet: AssessmentSet;
   /**
    * When true, the switcher renders inline inside the shared navigation bar
-   * next to the assessment tabs. It drops its own background/padding (provided
-   * by the parent) and constrains its width with `min-width: 0` so the title
-   * and QID truncate instead of pushing the tabs out of view.
+   * next to the assessment tabs.
    */
   embedded?: boolean;
 }) {
   return html`
-    <div class="${embedded ? '' : 'bg-light pt-2 px-3'}" style="min-width: 0;">
+    <div class="${clsx(!embedded && 'bg-light pt-2 px-3')}" style="min-width: 0;">
       <button
         type="button"
         class="btn btn-ghost text-start assessment-switcher-button"
@@ -70,13 +70,6 @@ export function AssessmentNavigation({
   `;
 }
 
-/**
- * Renders text that truncates in the *middle* using a pure-CSS flex technique:
- * the head shrinks and shows an ellipsis only when the available width requires
- * it, while a fixed-length tail stays pinned to the end. Unlike a fixed
- * character limit, the full text is shown whenever it fits. The complete value
- * is exposed via the `title` attribute for hover and accessibility.
- */
 function MiddleTruncatedText({
   text,
   className = '',
@@ -86,15 +79,16 @@ function MiddleTruncatedText({
   className?: string;
   tailLength: number;
 }) {
-  // Split off a fixed-length tail that stays pinned while the head shrinks and
-  // ellipsizes. Keep any whitespace at the boundary on the tail (which
-  // preserves it via `white-space: pre`) rather than the head, where
-  // `text-truncate` collapses the trailing space and makes the two halves run
-  // together.
+  // Keep any whitespace at the boundary on the tail (which preserves it via `white-space: pre`)
+  // The head would collapse the trailing space because of `text-truncate`
   let splitAt = Math.max(0, text.length - tailLength);
   while (splitAt > 0 && text[splitAt - 1] === ' ') splitAt--;
   return html`
-    <span class="d-flex overflow-hidden ${className}" style="min-width: 0;" title="${text}">
+    <span
+      class="${clsx('d-flex overflow-hidden', className)}"
+      style="min-width: 0;"
+      title="${text}"
+    >
       <span class="text-truncate" style="min-width: 0;">${text.slice(0, splitAt)}</span>
       <span class="flex-shrink-0" style="white-space: pre;">${text.slice(splitAt)}</span>
     </span>

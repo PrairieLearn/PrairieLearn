@@ -431,10 +431,10 @@ export function PageLayout({
                 if (hasSwitcher && hasTabs) {
                   return html`
                     <div
-                      class="d-flex flex-column flex-lg-row align-items-lg-end column-gap-3 row-gap-2 bg-light pt-2 px-3 assessment-navigation-bar"
+                      class="d-flex flex-column flex-xxl-row align-items-xxl-end column-gap-3 row-gap-2 bg-light pt-2 px-3 assessment-navigation-bar"
                     >
                       ${switcher}
-                      <div class="vr d-none d-lg-block align-self-stretch my-1"></div>
+                      <div class="vr d-none d-xxl-block align-self-stretch my-1"></div>
                       ${contextNav}
                     </div>
                   `;

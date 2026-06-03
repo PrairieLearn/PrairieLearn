@@ -152,9 +152,7 @@ body:has(div.app-main-container) {
 
 /**
  * The assessment switcher button shares a bar with the assessment tabs. Trim
- * its vertical padding so its two text lines line up with the height of the
- * single-line tabs, and soften the default heavy `btn-ghost` gray so the
- * hover/active state reads as part of the bar rather than a floating button.
+ * its vertical padding and soften the default `btn-ghost` gray.
  */
 .assessment-switcher-button.btn.btn-ghost {
   --bs-btn-padding-y: 0.125rem;
@@ -164,13 +162,6 @@ body:has(div.app-main-container) {
   --bs-btn-active-border-color: transparent;
 }
 
-/**
- * Draw the combined toolbar's bottom border as an inset shadow at the inner
- * bottom edge so it lines up exactly with the assessment tabs' own `nav-tabs`
- * bottom border (which sits at that same position) instead of stacking 1px
- * below it. This produces a single continuous hairline spanning both the
- * switcher and the tabs.
- */
 .assessment-navigation-bar {
   box-shadow: inset 0 -1px 0 var(--bs-border-color);
 }
