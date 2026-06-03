@@ -4,7 +4,7 @@
 
     This feature is under active development and is not yet available for general use. The documentation here is for internal reference only.
 
-Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific exceptions from the assessment **Access** page.
+Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides from the assessment **Access** page.
 
 !!! note
 
@@ -15,7 +15,7 @@ Modern access control lets instructors configure assessment availability, deadli
 From an assessment, open the **Access** tab. The page has two sections:
 
 - **Defaults**: settings that apply to all students.
-- **Overrides**: settings that apply only to selected student labels or individual students.
+- **Overrides**: settings that apply only to selected student labels or specific students.
 
 ![Modern access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
 /// caption
@@ -151,8 +151,8 @@ Click **Add override** in the **Overrides** section.
 
 Choose who the override applies to:
 
-- **Specific students**: select individual enrolled students. Specific-student overrides are stored in the database, not in `infoAssessment.json`, which keeps one-off accommodations and makeup windows out of the course's git history.
-- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them). Label-targeted overrides are stored in `infoAssessment.json` alongside the rest of the assessment configuration.
+- **Specific students**: select enrolled students. Student-specific overrides are stored in the database, not in `infoAssessment.json`, which keeps one-off accommodations and makeup windows out of the course's git history.
+- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them). Student-label overrides are stored in `infoAssessment.json` alongside the rest of the assessment configuration.
 
 [Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
 
@@ -178,7 +178,7 @@ When an override field is active, the detail panel shows **Remove override** for
 
 ## Override priority
 
-Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over those higher in the list; use the drag handle to reorder overrides when priority matters.
+Student-specific overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over those higher in the list; use the drag handle to reorder overrides when priority matters.
 
 For example, suppose a student has both the "Section A" and "Extended time" labels:
 
@@ -189,7 +189,7 @@ The student inherits both overrides on top of the defaults: due date Feb 20, tim
 
 ## Save changes
 
-The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store individual-student overrides in the database, and sync the course.
+The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store student-specific overrides in the database, and sync the course.
 
 Click **Cancel** to discard unsaved UI changes.
 
@@ -206,7 +206,7 @@ Migration from legacy `allowAccess` can be done in two ways:
 
 !!! note
 
-    UID-based rules from the legacy system do not have a direct JSON equivalent in modern access control. After migration, use the Access page to configure overrides for student labels or individual enrolled students.
+    UID-based rules from the legacy system do not have a direct JSON equivalent in modern access control. After migration, use the Access page to configure overrides for student labels or specific enrolled students.
 
 For JSON-level before-and-after examples, see [Legacy migration examples](#legacy-migration-examples) in the advanced JSON reference.
 
@@ -416,9 +416,9 @@ In the UI:
     }
     ```
 
-### Extended access for individual students
+### Extended access for specific students
 
-Use individual-student overrides for one-off accommodations or makeup windows that should not become course content.
+Use student-specific overrides for one-off accommodations or makeup windows that should not become course content.
 
 In the UI:
 
@@ -438,18 +438,18 @@ Assessments with non-contiguous credit ranges are flagged as incompatible during
 
 ## Limits
 
-Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of individual students.
+Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of students individually.
 
-| Setting                                   | Limit                                   |
-| ----------------------------------------- | --------------------------------------- |
-| Student-label overrides                   | 100 overrides per assessment            |
-| Specific-student overrides                | 100 overrides per assessment            |
-| Students in one specific-student override | 100 students                            |
-| Student labels in one student-label rule  | 100 labels                              |
-| Early and late deadlines                  | 10 early and 10 late deadlines per rule |
-| Linked PrairieTest exams                  | 10 exams per assessment                 |
-| Time limits                               | 525,600 minutes (365 days)              |
-| Passwords                                 | 128 characters                          |
+| Setting                                      | Limit                                   |
+| -------------------------------------------- | --------------------------------------- |
+| Student-label overrides                      | 100 overrides per assessment            |
+| Student-specific overrides                   | 100 overrides per assessment            |
+| Students in one student-specific override    | 100 students                            |
+| Student labels in one student-label override | 100 labels                              |
+| Early and late deadlines                     | 10 early and 10 late deadlines per rule |
+| Linked PrairieTest exams                     | 10 exams per assessment                 |
+| Time limits                                  | 525,600 minutes (365 days)              |
+| Passwords                                    | 128 characters                          |
 
 ## Staff access
 
@@ -483,7 +483,7 @@ The `accessControl` field is an array in `infoAssessment.json`:
 }
 ```
 
-The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; overrides for individual enrolled students are configured through the UI.
+The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; student-specific overrides are configured through the UI.
 
 ### Full JSON skeleton
 
@@ -606,9 +606,9 @@ JSON overrides only target student labels. They store the fields they change; om
 
 1. Start with the defaults rule.
 2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
-3. Apply any individual-student overrides configured through the UI.
+3. Apply any student-specific overrides configured through the UI.
 
-Later matching label overrides replace fields from earlier matching label overrides. Individual-student overrides are managed through the UI and take priority over label overrides.
+Later matching student-label overrides replace fields from earlier matching student-label overrides. Student-specific overrides are managed through the UI and take priority over student-label overrides.
 
 | Field                        | Defaults to override merge                                          | Override to override cascade                              |
 | ---------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |

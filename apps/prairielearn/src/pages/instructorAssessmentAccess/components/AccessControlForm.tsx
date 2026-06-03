@@ -59,7 +59,7 @@ function getOverrideLimitPolicy(
   const studentLabelLimitReached =
     studentLabelOverrideCount >= MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES;
 
-  const enrollmentLimitReason = `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides.`;
+  const enrollmentLimitReason = `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides.`;
   const studentLabelLimitReason = `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`;
 
   return {
@@ -70,7 +70,7 @@ function getOverrideLimitPolicy(
         ? studentLabelLimitReason
         : null
       : enrollmentLimitReached && studentLabelLimitReached
-        ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides and ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`
+        ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides and ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`
         : null,
     getTargetTypeDisabledReasons: (currentTargetType) => ({
       enrollment:
