@@ -33,7 +33,10 @@ import {
   selectAssessmentToolDefaults,
   selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
-import { type AssessmentJsonInput, EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
+import {
+  type AssessmentJsonInput,
+  EnumAssessmentToolSchema,
+} from '../../schemas/infoAssessment.js';
 import { settingsScope } from '../../trpc/assessment/assessment-settings.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
