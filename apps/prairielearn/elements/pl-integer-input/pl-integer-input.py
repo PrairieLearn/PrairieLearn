@@ -337,12 +337,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru_parsed = 0
     if result in ["correct", "incorrect"]:
         if not has_correct_answer:
-            # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             if pl.has_attrib(element, "correct-answer"):
                 a_tru = pl.get_string_attrib(element, "correct-answer")
                 a_tru_parsed = pl.string_to_integer(a_tru, base)
                 if a_tru_parsed is None:
                     raise ValueError(f"Could not parse correct answer: {a_tru}")
+            # No correct answer defined. Generate a dummy answer so the submission is still gradable.
             elif result == "correct":
                 a_tru_parsed = 999
             else:
