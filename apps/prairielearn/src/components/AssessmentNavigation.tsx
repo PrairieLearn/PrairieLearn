@@ -65,7 +65,6 @@ export function AssessmentNavigation({
           </span>
         </span>
       </button>
-      ${AssessmentNavigationModal()}
     </div>
   `;
 }
@@ -95,7 +94,7 @@ function MiddleTruncatedText({
   `;
 }
 
-function AssessmentNavigationModal() {
+export function AssessmentNavigationModal() {
   return Modal({
     id: 'assessmentNavigationModal',
     title: 'Select assessment',

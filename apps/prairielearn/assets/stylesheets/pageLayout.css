@@ -162,8 +162,30 @@ body:has(div.app-main-container) {
   --bs-btn-active-border-color: transparent;
 }
 
+.assessment-navigation-container {
+  container-type: inline-size;
+  container-name: assessment-navigation;
+}
+
 .assessment-navigation-bar {
+  flex-direction: column;
   box-shadow: inset 0 -1px 0 var(--bs-border-color);
+}
+
+/* The vertical divider only makes sense in the side-by-side layout. */
+.assessment-navigation-divider {
+  display: none;
+}
+
+@container assessment-navigation (min-width: 1400px) {
+  .assessment-navigation-bar {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .assessment-navigation-divider {
+    display: block;
+  }
 }
 
 /* Side nav collapsed styles are applied on wider viewports (768px and above).
