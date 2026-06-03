@@ -1139,11 +1139,10 @@ export function validateAccessControlRules({
     // Run the "no completion mechanism" check before the cross-field check,
     // matching the form-side validator. The mechanism error is more
     // fundamental (cross-field consistency is moot when there's no completion
-    // mechanism at all), so surface it first. Errors here are concatenated
-    // rather than deduped by path, so this is purely presentational.
+    // mechanism at all), so surface it first.
     ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
     ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
-  return { errors, warnings };
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
