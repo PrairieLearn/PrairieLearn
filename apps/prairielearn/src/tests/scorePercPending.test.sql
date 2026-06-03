@@ -10,30 +10,48 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK mark_instance_questions_requires_manual_grading
+-- BLOCK select_manual_only_instance_question
+SELECT
+  iq.id,
+  COALESCE(aq.max_manual_points, 0) AS max_manual_points,
+  COALESCE(aq.max_auto_points, 0) AS max_auto_points
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND COALESCE(aq.max_manual_points, 0) > 0
+  AND COALESCE(aq.max_auto_points, 0) = 0
+ORDER BY
+  aq.max_manual_points DESC,
+  iq.id
+LIMIT
+  1;
+
+-- BLOCK select_mixed_instance_question
+SELECT
+  iq.id,
+  COALESCE(aq.max_manual_points, 0) AS max_manual_points,
+  COALESCE(aq.max_auto_points, 0) AS max_auto_points
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND COALESCE(aq.max_manual_points, 0) > 0
+  AND COALESCE(aq.max_auto_points, 0) > 0
+ORDER BY
+  aq.max_manual_points DESC,
+  iq.id
+LIMIT
+  1;
+
+-- BLOCK mark_single_instance_question_requires_manual_grading
 UPDATE instance_questions
 SET
   requires_manual_grading = TRUE
 WHERE
-  assessment_instance_id = $assessment_instance_id;
-
--- BLOCK clear_instance_questions_requires_manual_grading
-UPDATE instance_questions
-SET
-  requires_manual_grading = FALSE
-WHERE
-  assessment_instance_id = $assessment_instance_id;
-
--- BLOCK set_manual_requires_manual_grading_by_max_manual_points
-UPDATE instance_questions AS iq
-SET
-  requires_manual_grading = (aq.max_manual_points = $pending_max_manual_points)
-FROM
-  assessment_questions AS aq
-WHERE
-  iq.assessment_instance_id = $assessment_instance_id
-  AND iq.assessment_question_id = aq.id
-  AND aq.max_manual_points > 0;
+  id = $instance_question_id;
 
 -- BLOCK count_pending_instance_questions
 SELECT
@@ -66,32 +84,9 @@ SET
 WHERE
   id = $instance_question_id;
 
--- BLOCK clear_manual_requires_manual_grading_for_assessment_instance
-UPDATE instance_questions AS iq
+-- BLOCK set_assessment_instance_max_points
+UPDATE assessment_instances
 SET
-  requires_manual_grading = FALSE
-FROM
-  assessment_questions AS aq
+  max_points = $max_points
 WHERE
-  iq.assessment_instance_id = $assessment_instance_id
-  AND iq.assessment_question_id = aq.id
-  AND COALESCE(aq.max_manual_points, 0) > 0;
-
--- BLOCK select_instance_question
-SELECT
-  iq.*
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_instance_id = $assessment_instance_id
-ORDER BY
-  iq.id
-LIMIT
-  1;
-
--- BLOCK set_manual_points_for_assessment_instance
-UPDATE instance_questions AS iq
-SET
-  manual_points = $manual_points
-WHERE
-  iq.assessment_instance_id = $assessment_instance_id;
+  id = $assessment_instance_id;

@@ -40,7 +40,6 @@ export async function updateAssessmentInstanceGrade({
   onlyLogIfScoreUpdated = false,
   allowDecrease = false,
   precomputedPointsByZone,
-  recomputePending = true,
 }: {
   assessment_instance_id: string;
   authn_user_id: string | null;
@@ -48,7 +47,6 @@ export async function updateAssessmentInstanceGrade({
   onlyLogIfScoreUpdated?: boolean;
   allowDecrease?: boolean;
   precomputedPointsByZone?: AssessmentInstanceZonePoints[];
-  recomputePending?: boolean;
 }): Promise<{ updated: boolean; points: number; score_perc: number }> {
   return await runInTransactionAsync(async () => {
     const assessmentInstance = await queryRow(
@@ -96,9 +94,7 @@ export async function updateAssessmentInstanceGrade({
       score_perc = Math.max(score_perc, assessmentInstance.score_perc ?? 0);
     }
 
-    if (recomputePending) {
-      await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
-    }
+    await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
 
     const updated =
       points !== assessmentInstance.points || score_perc !== assessmentInstance.score_perc;
