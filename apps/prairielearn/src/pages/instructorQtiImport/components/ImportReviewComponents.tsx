@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { type SubmitEvent, useMemo, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
@@ -8,7 +7,6 @@ import {
   type CollisionStrategy,
   type CourseInstanceOption,
   type ParseWarning,
-  QTI_IMPORT_MAX_UPLOAD_BYTES,
   type QuestionOverrides,
   type SerializedConversionResult,
   type SerializedQuestionOutput,
@@ -26,22 +24,6 @@ function isRubricWarning(message: string): boolean {
 export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
 const REMOTE_IMAGE_URL_SUMMARY =
   'One or more questions contain an image reference to a remote URL.';
-const QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
-  round: 0,
-  standard: 'jedec',
-});
-
-export function fileSizeWarning(file: File | undefined): string | null {
-  if (!file || file.size <= QTI_IMPORT_MAX_UPLOAD_BYTES) return null;
-  const fileSizeLabel = filesize(file.size, { round: 0, standard: 'jedec' });
-  return `This file is ${fileSizeLabel}. The maximum upload size is ${QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.`;
-}
-
-function selectedFile(eventTarget: EventTarget): File | undefined {
-  return eventTarget instanceof HTMLInputElement
-    ? (eventTarget.files?.[0] ?? undefined)
-    : undefined;
-}
 
 function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
   return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
@@ -314,20 +296,8 @@ export function UploadStep({
   selectedCourseInstanceId: string;
   onCourseInstanceChange: (id: string) => void;
 }) {
-  const [uploadFileSizeWarning, setUploadFileSizeWarning] = useState<string | null>(null);
-  const fileInputDescriptionId = uploadFileSizeWarning ? 'qti-file-size-warning' : 'qti-file-help';
-
   return (
-    <form
-      encType="multipart/form-data"
-      onSubmit={(e) => {
-        if (uploadFileSizeWarning != null) {
-          e.preventDefault();
-          return;
-        }
-        onSubmit(e);
-      }}
-    >
+    <form encType="multipart/form-data" onSubmit={onSubmit}>
       <p>
         Import quiz and question content from Canvas or another LMS. Upload a quiz export (
         <code>.zip</code>) or a full course export (<code>.imscc</code>) in the QTI 1.2 format.{' '}
@@ -361,23 +331,14 @@ export function UploadStep({
           name="file"
           accept=".zip,.imscc"
           disabled={uploading}
-          isInvalid={uploadFileSizeWarning != null}
-          aria-describedby={fileInputDescriptionId}
+          aria-describedby="qti-file-help"
           required
-          onChange={(e) => setUploadFileSizeWarning(fileSizeWarning(selectedFile(e.target)))}
         />
-        {uploadFileSizeWarning ? (
-          <Form.Text id="qti-file-size-warning" className="text-danger">
-            {uploadFileSizeWarning}
-          </Form.Text>
-        ) : (
-          <Form.Text id="qti-file-help">
-            Supported formats: .zip (quiz export), .imscc (course export). Maximum size:{' '}
-            {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
-          </Form.Text>
-        )}
+        <Form.Text id="qti-file-help">
+          Supported formats: .zip (quiz export), .imscc (course export).
+        </Form.Text>
       </div>
-      <Button type="submit" variant="primary" disabled={uploading || uploadFileSizeWarning != null}>
+      <Button type="submit" variant="primary" disabled={uploading}>
         {uploading ? (
           <>
             <Spinner size="sm" className="me-2" />
@@ -420,18 +381,6 @@ export function MissingBanksStep({
   const hasUnknownCounts = refs.some((ref) => ref.numberChoose == null);
   const countPrefix = hasUnknownCounts ? 'At least ' : '';
   const isCanvasExport = hasCanvasUnresolvedSourceBankRefs(refs);
-  const [fileSizeWarningsByRefKey, setFileSizeWarningsByRefKey] = useState<
-    Map<string, string | null>
-  >(new Map());
-
-  const updateFileSizeWarning = (refKey: string, file: File | undefined) => {
-    const warning = fileSizeWarning(file);
-    setFileSizeWarningsByRefKey((warnings) => {
-      const next = new Map(warnings);
-      next.set(refKey, warning);
-      return next;
-    });
-  };
 
   return (
     <>
@@ -481,10 +430,6 @@ export function MissingBanksStep({
             ? `Supplemental export for "${ref.title}" from Canvas course ${ref.externalCourseId}`
             : `Supplemental export for "${ref.title}"`;
           const hasCanvasRef = ref.sourceBankExportId != null || ref.externalCourseId != null;
-          const uploadFileSizeWarning = fileSizeWarningsByRefKey.get(refKey) ?? null;
-          const fileInputDescriptionId = uploadFileSizeWarning
-            ? `${inputId}-size-warning`
-            : `${inputId}-help`;
 
           return (
             <form
@@ -492,13 +437,7 @@ export function MissingBanksStep({
               data-source-bank-key={refKey}
               encType="multipart/form-data"
               className="border rounded p-3"
-              onSubmit={(e) => {
-                if (uploadFileSizeWarning != null) {
-                  e.preventDefault();
-                  return;
-                }
-                onSubmit(e);
-              }}
+              onSubmit={onSubmit}
             >
               <div className="fw-semibold">{ref.title}</div>
               <div className="text-muted small mb-2">
@@ -525,27 +464,19 @@ export function MissingBanksStep({
                     name="file"
                     accept=".zip,.imscc"
                     disabled={uploading}
-                    isInvalid={uploadFileSizeWarning != null}
-                    aria-describedby={fileInputDescriptionId}
+                    aria-describedby={`${inputId}-help`}
                     required
-                    onChange={(e) => updateFileSizeWarning(refKey, selectedFile(e.target))}
                   />
-                  {uploadFileSizeWarning ? (
-                    <Form.Text id={`${inputId}-size-warning`} className="text-danger">
-                      {uploadFileSizeWarning}
-                    </Form.Text>
-                  ) : (
-                    <Form.Text id={`${inputId}-help`}>
-                      Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
-                      this bank. Maximum size: {QTI_IMPORT_MAX_UPLOAD_SIZE_LABEL}.
-                    </Form.Text>
-                  )}
+                  <Form.Text id={`${inputId}-help`}>
+                    Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
+                    this bank.
+                  </Form.Text>
                 </div>
                 <Button
                   type="submit"
                   className="flex-shrink-0"
                   variant="primary"
-                  disabled={uploading || uploadFileSizeWarning != null}
+                  disabled={uploading}
                   aria-label={`Upload export for ${ref.title}`}
                 >
                   {isUploadingThisBank ? (

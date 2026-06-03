@@ -1,7 +1,12 @@
+import { filesize } from 'filesize';
 import { type SubmitEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type { IRSourceBankRef, PLAssessmentQuestion } from '@prairielearn/question-conversion';
+import {
+  defaultTrimmedQtiArchiveName,
+  trimQtiArchive,
+} from '@prairielearn/question-conversion/trimmer';
 
 import { getAppError } from '../../../lib/client/errors.js';
 import {
@@ -13,6 +18,7 @@ import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js'
 import {
   type CourseInstanceOption,
   type ParseWarning,
+  QTI_IMPORT_MAX_UPLOAD_BYTES,
   type QuestionOverrides,
   type SerializedConversionResult,
   type StrippedAccessRules,
@@ -44,6 +50,10 @@ const FALLBACK_ASSESSMENT_SETS = [
   'Machine Problem',
   'Worksheet',
 ];
+const QTI_IMPORT_MAX_TRIMMED_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
+  round: 0,
+  standard: 'jedec',
+});
 
 function useBeforeUnload(enabled: boolean): () => void {
   const disabledRef = useRef(false);
@@ -293,6 +303,24 @@ export function QtiImportForm({
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
     const formData = new FormData(form);
+    const file = formData.get('file');
+    if (!(file instanceof File)) {
+      throw new Error('No file selected');
+    }
+
+    const trimmed = await trimQtiArchive(file, file.name);
+    if (trimmed.blob.size > QTI_IMPORT_MAX_UPLOAD_BYTES) {
+      const trimmedSizeLabel = filesize(trimmed.blob.size, { round: 0, standard: 'jedec' });
+      throw new Error(
+        `The importable QTI content is ${trimmedSizeLabel}. The maximum import size is ${QTI_IMPORT_MAX_TRIMMED_SIZE_LABEL}.`,
+      );
+    }
+    const trimmedFile = new File([trimmed.blob], defaultTrimmedQtiArchiveName(file.name), {
+      type: 'application/zip',
+      lastModified: Date.now(),
+    });
+    formData.set('file', trimmedFile);
+
     const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
     const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
       method: 'POST',
