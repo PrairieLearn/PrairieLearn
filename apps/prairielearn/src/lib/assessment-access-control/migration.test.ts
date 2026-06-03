@@ -702,6 +702,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'visibility-only inactive rule reports one completion mechanism error',
+      rules: [
+        {
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+          active: false,
+        },
+      ],
+      expected: {
+        accessControl: null,
+        errors: [
+          'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
+        ],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'separate reveal dates for questions and scores',
       rules: [
         {
