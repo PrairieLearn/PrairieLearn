@@ -105,7 +105,7 @@ const CourseOptionsJsonSchema = z
     questionsReceiveUserData: z
       .boolean()
       .describe(
-        'If true, server.py will receive information about the viewing user (uid, uin, name) and group (if applicable) via `data["options"]["user"]` and `data["options"]["group"]`. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. In production, this value is authoritative in the database and managed via course settings; this field emits a sync warning if it diverges.',
+        'If true, server.py receives the variant owner\'s identity (uid, uin, name) and group data (if applicable) via `data["options"]["user"]` and `data["options"]["group"]`. The user value is null for group variants. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. In production, course settings control the database value; if this JSON field differs from the database value, sync reports a warning.',
       )
       .optional(),
   })
