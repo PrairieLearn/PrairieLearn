@@ -26,28 +26,63 @@ import {
 } from '@prairielearn/ui';
 
 import { JobStatus } from '../../components/JobStatus.js';
-import { StaffJobSequenceSchema } from '../../lib/client/safe-db-types.js';
+import { RawStaffJobSequenceSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 
-export const AssessmentLogRowSchema = z.object({
-  job_sequence: StaffJobSequenceSchema,
-  user_uid: z.string(),
-  category: z.enum(['regrade', 'upload']),
-});
-export type AssessmentLogRow = z.infer<typeof AssessmentLogRowSchema>;
+const CATEGORY_VALUES = ['regrade', 'grade', 'ai_grading', 'upload', 'groups'] as const;
+type CategoryValue = (typeof CATEGORY_VALUES)[number];
 
-type CategoryValue = AssessmentLogRow['category'];
+// Maps each assessment-scoped job sequence type to the category shown in the
+// "Type" column. The keys are the complete set of job sequence types created
+// with an `assessment_id`; the query filters to exactly these keys. Add an
+// entry here to surface a new job sequence type in the logs.
+const LOG_JOB_TYPE_CATEGORIES = {
+  regrade_assessment: 'regrade',
+  regrade_assessment_instance: 'regrade',
+  grade_all_assessment_instances: 'grade',
+  ai_grading: 'ai_grading',
+  ai_instance_question_grouping: 'ai_grading',
+  upload_instance_question_scores: 'upload',
+  upload_assessment_instance_scores: 'upload',
+  upload_submissions: 'upload',
+  upload_groups: 'groups',
+  random_generate_groups: 'groups',
+} as const satisfies Record<string, CategoryValue>;
+
+type LogJobType = keyof typeof LOG_JOB_TYPE_CATEGORIES;
+export const LOG_JOB_TYPES = Object.keys(LOG_JOB_TYPE_CATEGORIES) as [LogJobType, ...LogJobType[]];
+
+/** Groups a job sequence type into the category shown in the "Type" column. */
+export function getLogCategory(jobType: LogJobType): CategoryValue {
+  return LOG_JOB_TYPE_CATEGORIES[jobType];
+}
+
+/** Shape of a single row returned by the `select_log_job_sequences` query. */
+export const AssessmentLogQueryRowSchema = z.object({
+  job_sequence: RawStaffJobSequenceSchema.extend({ type: z.enum(LOG_JOB_TYPES) }),
+  user_uid: z.string(),
+});
+type AssessmentLogQueryRow = z.infer<typeof AssessmentLogQueryRowSchema>;
+
+/** A log row enriched with its category, which is derived in TS from the job sequence type. */
+export type AssessmentLogRow = AssessmentLogQueryRow & { category: CategoryValue };
+
 type StatusValue = NonNullable<AssessmentLogRow['job_sequence']['status']>;
 
 const CATEGORY_LABELS: Record<CategoryValue, string> = {
   regrade: 'Regrade',
+  grade: 'Grade',
+  ai_grading: 'AI grading',
   upload: 'Upload',
+  groups: 'Groups',
 };
 const CATEGORY_COLORS: Record<CategoryValue, string> = {
   regrade: 'blue1',
+  grade: 'green1',
+  ai_grading: 'turquoise1',
   upload: 'gray2',
+  groups: 'purple1',
 };
-const CATEGORY_VALUES = ['regrade', 'upload'] as const satisfies readonly CategoryValue[];
 const STATUS_VALUES = [
   'Running',
   'Stopping',
@@ -280,7 +315,7 @@ function AssessmentLogsTableInner({
         filters,
         emptyState: (
           <TanstackTableEmptyState iconName="bi-clock-history">
-            No regrading or score-upload activity yet.
+            No activity has been logged for this assessment yet.
           </TanstackTableEmptyState>
         ),
         noResultsState: (

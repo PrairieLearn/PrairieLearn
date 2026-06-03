@@ -2,6 +2,8 @@ import { parseAsMultiSelectFilter } from '@prairielearn/ui';
 
 import { encodeSearchString } from '../uri-util.shared.js';
 
+const multiSelectFilterParser = parseAsMultiSelectFilter();
+
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
@@ -63,11 +65,24 @@ export function getAssessmentSettingsUrl({
 export function getAssessmentLogsUrl({
   courseInstanceId,
   assessmentId,
+  category,
 }: {
   courseInstanceId: string;
   assessmentId: string;
+  /**
+   * Pre-selects the "Type" column filter on the assessment logs table.
+   */
+  category?: 'regrade' | 'grade' | 'ai_grading' | 'upload' | 'groups';
 }): string {
-  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
+  const baseUrl = `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
+  if (!category) return baseUrl;
+
+  const searchParams = new URLSearchParams();
+  searchParams.set(
+    'category',
+    multiSelectFilterParser.serialize({ values: [category], mode: 'include' }),
+  );
+  return `${baseUrl}?${searchParams.toString()}`;
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -302,8 +317,6 @@ interface CourseAdminQuestionsFilter {
   type: 'topic' | 'tag' | 'external_grading_image' | 'workspace_image';
   value: string;
 }
-
-const multiSelectFilterParser = parseAsMultiSelectFilter();
 
 function getCourseAdminUrl({ courseInstanceId, courseId }: CourseAdminUrlParts): string {
   if (courseInstanceId) {

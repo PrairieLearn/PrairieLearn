@@ -8,7 +8,12 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { AssessmentLogRowSchema } from './AssessmentLogsTable.js';
+import {
+  AssessmentLogQueryRowSchema,
+  type AssessmentLogRow,
+  LOG_JOB_TYPES,
+  getLogCategory,
+} from './AssessmentLogsTable.js';
 import { InstructorAssessmentLogs } from './instructorAssessmentLogs.html.js';
 
 const router = Router();
@@ -26,11 +31,15 @@ router.get(
       accessType: 'instructor',
     });
 
-    const logs = await sqldb.queryRows(
+    const rows = await sqldb.queryRows(
       sql.select_log_job_sequences,
-      { assessment_id: assessment.id },
-      AssessmentLogRowSchema,
+      { assessment_id: assessment.id, job_types: LOG_JOB_TYPES },
+      AssessmentLogQueryRowSchema,
     );
+    const logs: AssessmentLogRow[] = rows.map((row) => ({
+      ...row,
+      category: getLogCategory(row.job_sequence.type),
+    }));
 
     res.send(
       PageLayout({
