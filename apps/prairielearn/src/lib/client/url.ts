@@ -253,6 +253,22 @@ export function getQuestionPreviewUrl({
   return `/pl/course/${courseId}/question/${questionId}/preview`;
 }
 
+export function getExternalImageCaptureUrl({
+  questionBasePath,
+  variantId,
+  fileName,
+}: {
+  questionBasePath: string;
+  variantId: string;
+  fileName?: string;
+}): string {
+  const url = `${questionBasePath.replace(/\/$/, '')}/externalImageCapture/variant/${variantId}`;
+  if (!fileName) return url;
+
+  const searchParams = new URLSearchParams({ file_name: fileName });
+  return `${url}?${searchParams.toString()}`;
+}
+
 export function getCourseIssuesUrl({
   qid,
   assessment,

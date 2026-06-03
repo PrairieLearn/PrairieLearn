@@ -3,6 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
+import { getExternalImageCaptureUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -132,9 +133,15 @@ async function assertVariantAccess({
   }
 
   // Test access to external image capture for the variant.
-  const externalImageCaptureUrl = `${siteUrl}${questionBasePath}/externalImageCapture/variant/${variantId}?file_name=capture.png`;
+  const externalImageCaptureUrl =
+    siteUrl +
+    getExternalImageCaptureUrl({
+      questionBasePath,
+      variantId,
+      fileName: 'capture.png',
+    });
   const externalImageCaptureRes = await fetch(externalImageCaptureUrl);
-  assert.include(expectedAccess ? [200] : [403, 404], externalImageCaptureRes.status);
+  assert.equal(externalImageCaptureRes.status, expectedAccess ? 200 : 403);
 
   // Test access to a submission file.
   const submissionFileUrl = `${siteUrl}${questionBasePath}/submission/${submissionId}/file/submission.txt`;
@@ -526,7 +533,12 @@ describe('Variant access', () => {
         assert.equal(workspaceRes.status, 403);
 
         const externalImageCaptureRes = await fetch(
-          `${siteUrl}/pl/public/course/1/question/${question.id}/externalImageCapture/variant/${publicVariantId}?file_name=capture.png`,
+          siteUrl +
+            getExternalImageCaptureUrl({
+              questionBasePath: `/pl/public/course/1/question/${question.id}`,
+              variantId: publicVariantId,
+              fileName: 'capture.png',
+            }),
         );
         assert.equal(externalImageCaptureRes.status, 404);
       });
