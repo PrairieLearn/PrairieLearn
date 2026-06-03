@@ -465,15 +465,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     a_tru = None
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
-            # No correct answer defined. Generate a dummy answer so the submission is still gradable.
-            if pl.has_attrib(element, "correct-answer"):
-                a_tru = pl.get_string_attrib(element, "correct-answer")
-            elif result == "correct":
-                a_tru = "1 meter"
-            else:
-                a_tru = "-1 meter"
-        else:
-            a_tru = data["correct_answers"][name]
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+
+        a_tru = data["correct_answers"][name]
 
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
