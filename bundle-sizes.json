@@ -20,9 +20,9 @@
     "brotli": 1119
   },
   "scripts/application.ts": {
-    "raw": 27963,
-    "gzip": 8739,
-    "brotli": 7823
+    "raw": 28347,
+    "gzip": 8858,
+    "brotli": 7917
   },
   "scripts/calculatorClient.ts": {
     "raw": 1943838,
@@ -285,9 +285,9 @@
     "brotli": 308036
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1257143,
-    "gzip": 374869,
-    "brotli": 306935
+    "raw": 1257075,
+    "gzip": 374846,
+    "brotli": 306910
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
     "raw": 1271826,
@@ -405,9 +405,9 @@
     "brotli": 643900
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1281534,
-    "gzip": 385965,
-    "brotli": 334515
+    "raw": 1281420,
+    "gzip": 385907,
+    "brotli": 334442
   },
   "scripts/esm-bundles/hydrated-components/AssessmentLogsTable.ts": {
     "raw": 1112700,
