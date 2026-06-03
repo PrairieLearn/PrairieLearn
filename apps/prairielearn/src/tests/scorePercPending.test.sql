@@ -24,7 +24,7 @@ WHERE
   AND COALESCE(aq.max_auto_points, 0) = 0
 ORDER BY
   aq.max_manual_points DESC,
-  iq.id
+  iq.id ASC
 LIMIT
   1;
 
@@ -42,7 +42,7 @@ WHERE
   AND COALESCE(aq.max_auto_points, 0) > 0
 ORDER BY
   aq.max_manual_points DESC,
-  iq.id
+  iq.id ASC
 LIMIT
   1;
 
