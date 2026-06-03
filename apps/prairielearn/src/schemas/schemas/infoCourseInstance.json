@@ -158,7 +158,8 @@
             "$ref": "#/definitions/ColorJsonSchema"
           }
         }
-      }
+      },
+      "maxItems": 100
     }
   },
   "definitions": {

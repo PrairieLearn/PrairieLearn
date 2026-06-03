@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 3.5.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.5.1
+
+### Patch Changes
+
+- 56efa59: Simplify the sticky save bar button label to "Save".
+
 ## 3.5.0
 
 ### Minor Changes

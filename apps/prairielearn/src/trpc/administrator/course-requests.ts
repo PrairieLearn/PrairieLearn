@@ -1,9 +1,9 @@
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
 import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
-import { config } from '../../lib/config.js';
 import {
   checkInstructorLegitimacy,
   suggestInstitutionPrefix,
@@ -15,10 +15,10 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { checkGithubRepositoryExists } from '../../lib/github.js';
+import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
 import {
+  selectOptionalCourseByGithubRepository,
   selectOptionalCourseByPath,
-  selectOptionalCourseByRepositoryName,
 } from '../../models/course.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -71,6 +71,7 @@ const createCourse = t.procedure
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
+      githubCourseOwner: z.string().min(1, 'GitHub organization is required'),
       githubUser: z.string(),
     }),
   )
@@ -78,9 +79,17 @@ const createCourse = t.procedure
   .mutation(async ({ input, ctx }) => {
     const normalizedPath = normalizeCoursePathInput(input.path);
 
+    const access = await validateGithubCourseOwner(input.githubCourseOwner);
+    if (!access.ok) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: access.message });
+    }
+
     const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
-      selectOptionalCourseByRepositoryName(input.repoShortName),
-      checkGithubRepositoryExists(input.repoShortName),
+      selectOptionalCourseByGithubRepository({
+        owner: input.githubCourseOwner,
+        repoName: input.repoShortName,
+      }),
+      checkGithubRepositoryExists(input.repoShortName, input.githubCourseOwner),
       selectOptionalCourseByPath(normalizedPath),
     ]);
 
@@ -91,7 +100,7 @@ const createCourse = t.procedure
           message: 'Conflicts detected with existing courses or repositories.',
           repoCourse: NullableStaffCourseSchema.parse(repoCourse),
           githubRepoUrl: githubRepoExists
-            ? `https://github.com/${config.githubCourseOwner}/${input.repoShortName}`
+            ? `https://github.com/${input.githubCourseOwner}/${input.repoShortName}`
             : null,
           pathCourse: NullableStaffCourseSchema.parse(pathCourse),
         },
@@ -107,6 +116,7 @@ const createCourse = t.procedure
       displayTimezone: input.displayTimezone,
       path: normalizedPath,
       repoShortName: input.repoShortName,
+      githubCourseOwner: input.githubCourseOwner,
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });

@@ -595,7 +595,7 @@ export function AiQuestionGenerationChat({
 
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback

@@ -24,7 +24,11 @@ import type {
   StaffCourseInstance,
 } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getAssessmentStudentsUrl, getQuestionSettingsUrl } from '../../lib/client/url.js';
+import {
+  getAssessmentLogsUrl,
+  getAssessmentStudentsUrl,
+  getQuestionSettingsUrl,
+} from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
 import { validateShortName } from '../../lib/short-name.js';
 import type {
@@ -140,6 +144,7 @@ interface InstructorAssessmentSettingsProps {
   trpcCsrfToken: string;
   urlPrefix: string;
   canEdit: boolean;
+  canViewLogs: boolean;
   origHash: string;
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
@@ -162,6 +167,7 @@ export function InstructorAssessmentSettings({
   trpcCsrfToken,
   urlPrefix,
   canEdit,
+  canViewLogs,
   origHash,
   assessment: initialAssessment,
   assessmentSet,
@@ -199,6 +205,7 @@ export function InstructorAssessmentSettings({
           key={assessment.type}
           urlPrefix={urlPrefix}
           canEdit={canEdit}
+          canViewLogs={canViewLogs}
           origHash={currentOrigHash}
           setCurrentOrigHash={setCurrentOrigHash}
           assessment={assessment}
@@ -249,8 +256,6 @@ function CopyAssessmentModal({
   const copyMutation = useMutation(trpc.assessmentSettings.copyAssessment.mutationOptions());
   const copyError = getAppError<AssessmentSettingsError['CopyAssessment']>(copyMutation.error);
 
-  const placeholderAid = assessment.tid ?? '';
-  const placeholderTitle = assessment.title ?? '';
   const placeholderNumber = assessment.number;
   const defaultSet = assessmentSet.name;
 
@@ -306,7 +311,6 @@ function CopyAssessmentModal({
               className={clsx('form-control', errors.title && 'is-invalid')}
               aria-invalid={errors.title ? 'true' : 'false'}
               {...(errors.title ? { 'aria-errormessage': 'copy-assessment-title-error' } : {})}
-              placeholder={placeholderTitle}
               defaultValue=""
               {...register('title', {
                 validate: (value) => (value.trim() === '' ? 'Title is required' : true),
@@ -329,7 +333,6 @@ function CopyAssessmentModal({
               aria-describedby="copy-assessment-aid-help"
               aria-invalid={errors.aid ? 'true' : 'false'}
               {...(errors.aid ? { 'aria-errormessage': 'copy-assessment-aid-error' } : {})}
-              placeholder={placeholderAid}
               defaultValue=""
               {...register('aid', {
                 validate: (value) => {
@@ -653,6 +656,7 @@ function ChangeTypeModal({
 function InstructorAssessmentSettingsInner({
   urlPrefix,
   canEdit,
+  canViewLogs,
   origHash,
   setCurrentOrigHash,
   assessment,
@@ -1524,7 +1528,7 @@ function InstructorAssessmentSettingsInner({
             />
           )}
 
-          {(currentGHLink || canEdit) && (
+          {(currentGHLink || canViewLogs || canEdit) && (
             <div className="card">
               <div className="card-body">
                 <h2 className="h5 card-title mb-3">Manage assessment</h2>
@@ -1540,12 +1544,38 @@ function InstructorAssessmentSettingsInner({
                       <GitHubButton gitHubLink={currentGHLink} variant="outline-secondary" />
                     </div>
                   )}
+                  {canViewLogs && (
+                    <div
+                      className={clsx(
+                        'd-flex flex-wrap align-items-center justify-content-between gap-3',
+                        currentGHLink && 'border-top pt-3',
+                      )}
+                    >
+                      <div>
+                        <div className="fw-semibold">View assessment logs</div>
+                        <div className="small text-muted">
+                          Review the history of batch operations performed on instances of this
+                          assessment.
+                        </div>
+                      </div>
+                      <a
+                        href={getAssessmentLogsUrl({
+                          courseInstanceId: assessment.course_instance_id,
+                          assessmentId: assessment.id,
+                        })}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
+                        <i className="bi bi-clock-history me-1" aria-hidden="true" />
+                        View logs
+                      </a>
+                    </div>
+                  )}
                   {canEdit && (
                     <>
                       <div
                         className={clsx(
                           'd-flex flex-wrap align-items-center justify-content-between gap-3',
-                          currentGHLink && 'border-top pt-3',
+                          (currentGHLink || canViewLogs) && 'border-top pt-3',
                         )}
                       >
                         <div>

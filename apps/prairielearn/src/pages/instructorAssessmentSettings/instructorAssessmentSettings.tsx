@@ -104,6 +104,7 @@ router.get(
     );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+    const canViewLogs = authz_data.has_course_instance_permission_view;
 
     const questionSharingEnabled = res.locals.question_sharing_enabled;
     const nonPublicQuestionsInAssessment =
@@ -142,6 +143,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               urlPrefix={urlPrefix}
               canEdit={canEdit}
+              canViewLogs={canViewLogs}
               origHash={origHash}
               assessment={assessment}
               assessmentSet={assessment_set}

@@ -13,7 +13,7 @@ $(function() {
 
 
     <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
-        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} " >
+        <div class="pl-order-blocks-container {{block_layout}} {{block_scroll}} {{dropzone_layout}} " >
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
                 <button type="button" class="btn btn-light btn-sm align-middle" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks Help Button" data-bs-content="{{help_text}}">
@@ -41,7 +41,7 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{dropzone_layout}}" {{#parse-error}}aria-invalid="true" aria-errormessage="pl-order-blocks-{{uuid}}-error"{{/parse-error}}>
+        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{block_scroll}} {{dropzone_layout}}" {{#parse-error}}aria-invalid="true" aria-errormessage="pl-order-blocks-{{uuid}}-error"{{/parse-error}}>
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">
                     {{solution-header}}
@@ -109,7 +109,7 @@ $(function() {
 
 {{#submission}}
     {{^parse-error}}
-    <div class="pl-order-blocks-answer-container {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header">
             Your answer:
         {{#correct}}
@@ -201,7 +201,7 @@ $(function() {
 {{/submission}}
 
 {{#true_answer}}
-    <div class="pl-order-blocks-answer-container {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-success-subtle">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
@@ -212,7 +212,7 @@ $(function() {
 
     {{#show_distractors}}
     <br><br>
-    <div class="pl-order-blocks-answer-container  {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container  {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-danger-subtle">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group list-unstyled">
         {{#distractors}}
