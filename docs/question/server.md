@@ -428,7 +428,7 @@ The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latt
 
 ??? info "Whose identity is exposed"
 
-    The `user` is the student the variant belongs to, not whoever is currently viewing or grading it. Group assessments receive `None` because the shared variant has no single owner.
+    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member that is seeing the variant. Group assessments receive `None` because the shared variant has no single owner.
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 
