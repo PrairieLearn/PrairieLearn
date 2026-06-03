@@ -401,21 +401,46 @@ export function PageLayout({
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}
-              ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
-                ? AssessmentNavigation({
-                    courseInstanceId: resLocals.course_instance.id,
-                    subPage: navContext.subPage,
-                    assessment: resLocals.assessment,
-                    assessmentSet: resLocals.assessment_set,
-                  })
-                : ''}
-              ${showContextNavigation
-                ? ContextNavigation({
-                    resLocals,
-                    navPage: navContext.page,
-                    navSubPage: navContext.subPage,
-                  })
-                : ''}
+              ${run(() => {
+                const hasSwitcher = Boolean(
+                  resLocals.assessment && resLocals.course_instance && sideNavEnabled,
+                );
+                const contextNav = showContextNavigation
+                  ? ContextNavigation({
+                      resLocals,
+                      navPage: navContext.page,
+                      navSubPage: navContext.subPage,
+                      embedded: hasSwitcher,
+                    })
+                  : '';
+                const hasTabs = contextNav !== '';
+                const switcher = hasSwitcher
+                  ? AssessmentNavigation({
+                      courseInstanceId: resLocals.course_instance.id,
+                      subPage: navContext.subPage,
+                      assessment: resLocals.assessment,
+                      assessmentSet: resLocals.assessment_set,
+                      embedded: hasTabs,
+                    })
+                  : '';
+
+                // When both the assessment switcher and the tabs are present,
+                // place them side by side in a single bar (switcher on the left,
+                // tabs on the right), collapsing back to a stack on narrow
+                // viewports. Otherwise, render whichever one applies on its own.
+                if (hasSwitcher && hasTabs) {
+                  return html`
+                    <div
+                      class="d-flex flex-column flex-lg-row align-items-lg-end column-gap-3 row-gap-2 bg-light pt-2 px-3 border-bottom"
+                    >
+                      ${switcher}
+                      <div class="vr d-none d-lg-block align-self-stretch my-1"></div>
+                      ${contextNav}
+                    </div>
+                  `;
+                }
+                return html`${switcher}${contextNav}`;
+              })}
               ${preContentString}
               <main
                 id="content"

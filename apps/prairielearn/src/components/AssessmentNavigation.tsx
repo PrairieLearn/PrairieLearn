@@ -14,17 +14,25 @@ export function AssessmentNavigation({
   subPage,
   assessment,
   assessmentSet,
+  embedded = false,
 }: {
   courseInstanceId: string;
   subPage: NavSubPage;
   assessment: Assessment;
   assessmentSet: AssessmentSet;
+  /**
+   * When true, the switcher renders inline inside the shared navigation bar
+   * next to the assessment tabs. It drops its own background/padding (provided
+   * by the parent) and constrains its width with `min-width: 0` so the title
+   * and QID truncate instead of pushing the tabs out of view.
+   */
+  embedded?: boolean;
 }) {
   return html`
-    <div class="bg-light pt-2 px-3">
+    <div class="${embedded ? '' : 'bg-light pt-2 px-3'}" style="min-width: 0;">
       <button
         type="button"
-        class="btn btn-ghost text-start"
+        class="btn btn-ghost text-start assessment-switcher-button"
         style="max-width: 100%;"
         aria-label="Change assessment"
         aria-haspopup="true"
@@ -42,15 +50,44 @@ export function AssessmentNavigation({
             ${assessmentSet.abbreviation}${assessment.number}
           </span>
           <span class="d-flex flex-column" style="min-width: 0;">
-            <span class="d-flex align-items-center gap-1 dropdown-toggle">
-              <span class="h6 mb-0 overflow-hidden text-truncate">${assessment.title}</span>
+            <span class="d-flex align-items-center gap-1 dropdown-toggle" style="min-width: 0;">
+              ${MiddleTruncatedText({ text: assessment.title ?? '', className: 'h6 mb-0' })}
             </span>
-            <span class="text-muted small overflow-hidden text-truncate">${assessment.tid}</span>
+            ${MiddleTruncatedText({
+              text: assessment.tid ?? '',
+              className: 'text-muted small',
+              tailLength: 8,
+            })}
           </span>
         </span>
       </button>
       ${AssessmentNavigationModal()}
     </div>
+  `;
+}
+
+/**
+ * Renders text that truncates in the *middle* using a pure-CSS flex technique:
+ * the head shrinks and shows an ellipsis only when the available width requires
+ * it, while a fixed-length tail stays pinned to the end. Unlike a fixed
+ * character limit, the full text is shown whenever it fits. The complete value
+ * is exposed via the `title` attribute for hover and accessibility.
+ */
+function MiddleTruncatedText({
+  text,
+  className = '',
+  tailLength = 10,
+}: {
+  text: string;
+  className?: string;
+  tailLength?: number;
+}) {
+  const splitAt = Math.max(0, text.length - tailLength);
+  return html`
+    <span class="d-flex overflow-hidden ${className}" style="min-width: 0;" title="${text}">
+      <span class="text-truncate" style="min-width: 0;">${text.slice(0, splitAt)}</span>
+      <span class="flex-shrink-0 text-nowrap">${text.slice(splitAt)}</span>
+    </span>
   `;
 }
 

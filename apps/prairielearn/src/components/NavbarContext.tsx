@@ -9,10 +9,17 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
+  embedded = false,
 }: {
   resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
+  /**
+   * When true, the tabs render inline inside the shared navigation bar next to
+   * the assessment switcher. The bar's background/padding come from the parent,
+   * and the tabs keep their natural width (the switcher absorbs any overflow).
+   */
+  embedded?: boolean;
 }) {
   if (!navPage) return '';
 
@@ -23,8 +30,8 @@ export function ContextNavigation({
   if (!navPageTabs) return '';
 
   return html`
-    <nav>
-      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
+    <nav class="${embedded ? 'flex-grow-1 flex-shrink-0' : ''}">
+      <ul class="nav nav-tabs pl-nav-tabs-bar ${embedded ? '' : 'pt-2 px-3 bg-light'}">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>

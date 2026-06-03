@@ -150,6 +150,20 @@ body:has(div.app-main-container) {
   background-color: rgba(var(--bs-secondary-rgb), 0.2);
 }
 
+/**
+ * The assessment switcher button shares a bar with the assessment tabs. Trim
+ * its vertical padding so its two text lines line up with the height of the
+ * single-line tabs, and soften the default heavy `btn-ghost` gray so the
+ * hover/active state reads as part of the bar rather than a floating button.
+ */
+.assessment-switcher-button.btn.btn-ghost {
+  --bs-btn-padding-y: 0.125rem;
+  --bs-btn-hover-bg: rgba(var(--bs-secondary-rgb), 0.15);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-bg: rgba(var(--bs-secondary-rgb), 0.25);
+  --bs-btn-active-border-color: transparent;
+}
+
 /* Side nav collapsed styles are applied on wider viewports (768px and above).
  * On narrower viewports (less than 768px), the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
