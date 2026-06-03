@@ -233,6 +233,7 @@ export const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
+  githubMachineUser: z.string().nullable().default(null),
   /**
    * Custom SSH command used for git operations (clone, fetch, push).
    * Set to `ssh -o StrictHostKeyChecking=accept-new` to automatically

@@ -1156,6 +1156,7 @@ export type Institution = z.infer<typeof InstitutionSchema>;
 
 export const InstitutionSettingsSchema = z.object({
   course_request_message: z.string().nullable(),
+  github_course_owner: z.string().nullable(),
   institution_id: IdSchema,
 });
 export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;
