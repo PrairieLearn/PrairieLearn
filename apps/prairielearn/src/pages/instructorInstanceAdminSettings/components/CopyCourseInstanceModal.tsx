@@ -49,7 +49,7 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseShortName,
   isAdministrator,
-  enhancedAccessControlEnabled,
+  accessControlMigrationNeeded,
 }: {
   show: boolean;
   onHide: () => void;
@@ -57,17 +57,11 @@ export function CopyCourseInstanceModal({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
   isAdministrator: boolean;
-  enhancedAccessControlEnabled: boolean;
+  accessControlMigrationNeeded: boolean;
 }) {
   const [step, setStep] = useState<Step>('settings');
 
   const trpc = useTRPC();
-  const analysisQuery = useQuery(
-    trpc.instanceAdminSettings.analyzeAccessControl.queryOptions(undefined, {
-      enabled: enhancedAccessControlEnabled,
-    }),
-  );
-
   const methods = useForm<CopyFormValues>({
     defaultValues: {
       short_name: '',
@@ -77,7 +71,7 @@ export function CopyCourseInstanceModal({
       self_enrollment_enabled: courseInstance.self_enrollment_enabled,
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
       course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
-      access_control_strategy: enhancedAccessControlEnabled ? 'migrate' : 'keep',
+      access_control_strategy: accessControlMigrationNeeded ? 'migrate' : 'keep',
       clear_incompatible: true,
     },
     mode: 'onSubmit',
@@ -93,6 +87,15 @@ export function CopyCourseInstanceModal({
   } = methods;
 
   const accessControlStrategy = useWatch({ control, name: 'access_control_strategy' });
+  const publishingStartDate = useWatch({ control, name: 'start_date' });
+  const analysisQuery = useQuery(
+    trpc.instanceAdminSettings.analyzeAccessControl.queryOptions(
+      { publishingStartDate: publishingStartDate || null },
+      {
+        enabled: show && step === 'access-control',
+      },
+    ),
+  );
 
   const analysisAppError = analysisQuery.isError
     ? getAppError<InstanceAdminSettingsError['AnalyzeAccessControl']>(analysisQuery.error)
@@ -150,10 +153,10 @@ export function CopyCourseInstanceModal({
   };
 
   const handleSettingsNext = async () => {
-    const valid = await trigger(['short_name', 'long_name']);
+    const valid = await trigger(['short_name', 'long_name', 'start_date', 'end_date']);
     if (!valid) return;
 
-    if (enhancedAccessControlEnabled && (analysisAppError || analysisQuery.data?.hasLegacyRules)) {
+    if (accessControlMigrationNeeded) {
       setStep('access-control');
     } else {
       void handleSubmit((data) => copyMutation.mutate(data))();
@@ -223,18 +226,15 @@ export function CopyCourseInstanceModal({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={
-                isPending ||
-                (enhancedAccessControlEnabled && step === 'settings' && analysisQuery.isLoading)
-              }
+              disabled={isPending || (step === 'access-control' && analysisQuery.isFetching)}
             >
               {isPending
                 ? 'Copying...'
-                : enhancedAccessControlEnabled &&
-                    step === 'settings' &&
-                    (analysisAppError || analysisQuery.data?.hasLegacyRules)
-                  ? 'Next'
-                  : 'Copy course instance'}
+                : step === 'access-control' && analysisQuery.isFetching
+                  ? 'Analyzing...'
+                  : step === 'settings' && accessControlMigrationNeeded
+                    ? 'Review access control'
+                    : 'Copy course instance'}
             </button>
           </Modal.Footer>
         </form>
@@ -367,7 +367,7 @@ function AccessControlStep({
 }) {
   const analysis = analysisQuery.data;
 
-  if (analysisQuery.isLoading) {
+  if (analysisQuery.isFetching) {
     return (
       <Modal.Body className="text-center py-5">
         <Spinner animation="border" role="status">
@@ -385,6 +385,16 @@ function AccessControlStep({
   );
   const blockedAssessments = assessments.filter((a) => a.errors.length > 0);
   const showPreserveOption = accessControlStrategy === 'migrate' && (appError || !allCanMigrate);
+
+  if (!appError && assessments.length === 0) {
+    return (
+      <Modal.Body>
+        <Alert variant="info" className="mb-0">
+          No legacy access control rules were found. You can continue copying this course instance.
+        </Alert>
+      </Modal.Body>
+    );
+  }
 
   return (
     <Modal.Body>

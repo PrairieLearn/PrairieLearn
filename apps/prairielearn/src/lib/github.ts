@@ -171,7 +171,6 @@ export async function checkGithubRepositoryExists(
 async function createEmptyRepository(client: Octokit, owner: string, repo: string) {
   await client.repos.createInOrg({
     org: owner,
-    owner,
     name: repo,
     private: true,
   });

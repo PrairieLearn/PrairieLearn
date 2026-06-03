@@ -55,7 +55,6 @@ import {
   type QuestionOptionsMultipleTrueFalseJson,
   QuestionOptionsMultipleTrueFalseJsonSchema,
 } from './questionOptionsMultipleTrueFalse.js';
-import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
  * Override certain fields in the JSON schema.
@@ -287,13 +286,6 @@ const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsMultipleTrueFalseJson>;
 
-const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
-  name: 'v3 question options',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<QuestionOptionsv3Json>;
-
 export const ajvSchemas = {
   infoAssessment,
   infoCourse,
@@ -307,5 +299,4 @@ export const ajvSchemas = {
   questionOptionsFile,
   questionOptionsMultipleChoice,
   questionOptionsMultipleTrueFalse,
-  questionOptionsv3,
 };

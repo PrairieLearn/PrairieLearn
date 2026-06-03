@@ -922,14 +922,24 @@ describe('resolveAccessControl', () => {
         rules: [ptDefaultRule],
         authzMode: 'Exam',
         reservations: [{ examUuid: 'wrong-uuid', accessEnd: new Date('2025-03-15T14:00:00Z') }],
-        expect: { authorized: false, submittable: false },
+        expect: {
+          authorized: false,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: false },
+          afterCompleteVisibility: { showQuestions: false, showScore: false },
+        },
       },
       {
         name: 'no reservation: denied',
         rules: [ptDefaultRule],
         authzMode: 'Exam',
         reservations: [],
-        expect: { authorized: false, submittable: false },
+        expect: {
+          authorized: false,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: false },
+          afterCompleteVisibility: { showQuestions: false, showScore: false },
+        },
       },
       {
         name: 'matching reservation among multiple: granted',
@@ -954,7 +964,12 @@ describe('resolveAccessControl', () => {
         name: 'non-PT rule in Exam mode: denied',
         rules: [makeDefaultRule()],
         authzMode: 'Exam',
-        expect: { authorized: false, submittable: false },
+        expect: {
+          authorized: false,
+          submittable: false,
+          visibility: { showQuestions: false, showScore: false },
+          afterCompleteVisibility: { showQuestions: false, showScore: false },
+        },
       },
       {
         name: 'readOnly flag from matched exam when multiple exams configured',
@@ -1279,15 +1294,17 @@ describe('resolveAccessControl', () => {
             },
           },
           {
-            // Regression test for
-            // https://github.com/PrairieLearn/PrairieLearn/issues/12579: after a
-            // student finishes and their PT reservation ends, PrairieLearn keeps
-            // them in Exam for a short grace period (~30 min). The rule-matching
-            // path denies access (no active reservation), but the gradebook still
-            // renders rows, so the deny path must propagate the configured
-            // top-level afterComplete visibility rather than falling back to
-            // defaults that would reveal scores while they should still be hidden.
-            name: 'grace-period Exam mode after reservation ended: afterComplete propagates on deny',
+            // Regression test for this issue:
+            // https://github.com/PrairieLearn/PrairieLearn/issues/12579
+            //
+            // After a student finishes a PT exam and the reservation is explicitly
+            // ended, PrairieLearn keeps them in Exam mode for a short grace period
+            // (~30 min). There is no active matching reservation, so access is
+            // denied, but the gradebook still renders the completed assessment row.
+            // The deny path must keep completed-work visibility hidden instead of
+            // falling back to defaults that would reveal the score for that
+            // just-finished assessment.
+            name: 'grace-period Exam mode after reservation ended: hides review visibility',
             rules: [ruleWithDeferredRelease],
             authzMode: 'Exam',
             date: new Date('2025-03-15T14:15:00Z'),
@@ -1296,6 +1313,7 @@ describe('resolveAccessControl', () => {
               authorized: false,
               submittable: false,
               visibility: { showQuestions: false, showScore: false },
+              afterCompleteVisibility: { showQuestions: false, showScore: false },
             },
           },
         ])('$name', (c) => {
@@ -1539,7 +1557,12 @@ describe('resolveAccessControl', () => {
             ),
           ],
           authzMode: 'Exam',
-          expect: { authorized: false, showBeforeRelease: false, submittable: false },
+          expect: {
+            authorized: false,
+            showBeforeRelease: false,
+            submittable: false,
+            visibility: { showQuestions: false, showScore: false },
+          },
         },
         {
           // Review-only access wins over `beforeRelease.listed`: a student
@@ -2361,7 +2384,7 @@ describe('resolveAccessControl', () => {
       });
     });
 
-    it('preserves accessTimeline on Exam-mode deny without matching reservation', () => {
+    it('suppresses accessTimeline on Exam-mode deny without matching reservation', () => {
       const result = runCase({
         name: 'Exam-mode deny',
         rules: [
@@ -2381,7 +2404,7 @@ describe('resolveAccessControl', () => {
         expect: { authorized: false, submittable: false },
       });
       expect(result.authorized).toBe(false);
-      expect(result.accessTimeline.length).toBeGreaterThan(0);
+      expect(result.accessTimeline).toEqual([]);
     });
   });
 

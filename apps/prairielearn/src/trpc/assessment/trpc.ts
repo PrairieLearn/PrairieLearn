@@ -4,6 +4,7 @@ import { handleTrpcError } from '../../lib/trpc.js';
 
 import { accessControlRouter } from './access-control.js';
 import { assessmentGroupsRouter } from './assessment-groups.js';
+import { assessmentInstancesRouter } from './assessment-instances.js';
 import { assessmentQuestionsRouter } from './assessment-questions.js';
 import { assessmentSettingsRouter } from './assessment-settings.js';
 import { createContext, t } from './init.js';
@@ -13,6 +14,7 @@ const assessmentRouter = t.router({
   assessmentQuestions: assessmentQuestionsRouter,
   assessmentSettings: assessmentSettingsRouter,
   assessmentGroups: assessmentGroupsRouter,
+  assessmentInstances: assessmentInstancesRouter,
 });
 
 export type AssessmentRouter = typeof assessmentRouter;
