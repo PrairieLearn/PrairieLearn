@@ -2,6 +2,8 @@ import { parseAsMultiSelectFilter } from '@prairielearn/ui';
 
 import { encodeSearchString } from '../uri-util.shared.js';
 
+const multiSelectFilterParser = parseAsMultiSelectFilter();
+
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
@@ -27,23 +29,60 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
-export function getAssessmentQuestionEditorUrl(
-  parts: { assessmentId: string; qid: string } & AssessmentUrlParts,
-): string {
-  const encodedQid = encodeURIComponent(parts.qid).replaceAll('%2F', '/');
-  return `${getAssessmentUrl(parts)}/questions?selected=q:${encodedQid}`;
+export function getAssessmentQuestionEditorUrl({
+  courseInstanceId,
+  assessmentId,
+  qid,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  qid: string;
+}): string {
+  const encodedQid = encodeURIComponent(qid).replaceAll('%2F', '/');
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/questions?selected=q:${encodedQid}`;
 }
 
-export function getAssessmentStudentsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/instances`;
+export function getAssessmentStudentsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/instances`;
 }
 
-export function getAssessmentSettingsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/settings`;
+export function getAssessmentSettingsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/settings`;
+}
+
+export function getAssessmentLogsUrl({
+  courseInstanceId,
+  assessmentId,
+  category,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  /**
+   * Pre-selects the "Type" column filter on the assessment logs table.
+   */
+  category?: 'regrade' | 'grade' | 'ai_grading' | 'upload' | 'groups';
+}): string {
+  const baseUrl = `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
+  if (!category) return baseUrl;
+
+  const searchParams = new URLSearchParams();
+  searchParams.set(
+    'category',
+    multiSelectFilterParser.serialize({ values: [category], mode: 'include' }),
+  );
+  return `${baseUrl}?${searchParams.toString()}`;
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -278,8 +317,6 @@ interface CourseAdminQuestionsFilter {
   type: 'topic' | 'tag' | 'external_grading_image' | 'workspace_image';
   value: string;
 }
-
-const multiSelectFilterParser = parseAsMultiSelectFilter();
 
 function getCourseAdminUrl({ courseInstanceId, courseId }: CourseAdminUrlParts): string {
   if (courseInstanceId) {
