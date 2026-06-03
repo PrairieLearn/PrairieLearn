@@ -85,6 +85,16 @@ export function getAssessmentLogsUrl({
   return `${baseUrl}?${searchParams.toString()}`;
 }
 
+export function getAssessmentDownloadsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads`;
+}
+
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
   return `${getStudentCourseInstanceUrl(courseInstanceId)}/assessment/${assessmentId}`;
 }
