@@ -7,7 +7,8 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorAssessmentLogs, LogJobSequenceSchema } from './instructorAssessmentLogs.html.js';
+import { AssessmentLogRowSchema } from './AssessmentLogsTable.js';
+import { InstructorAssessmentLogs } from './instructorAssessmentLogs.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -24,18 +25,11 @@ router.get(
       accessType: 'instructor',
     });
 
-    const [regradingJobSequences, uploadJobSequences] = await Promise.all([
-      sqldb.queryRows(
-        sql.select_regrading_job_sequences,
-        { assessment_id: assessment.id },
-        LogJobSequenceSchema,
-      ),
-      sqldb.queryRows(
-        sql.select_upload_job_sequences,
-        { assessment_id: assessment.id },
-        LogJobSequenceSchema,
-      ),
-    ]);
+    const logs = await sqldb.queryRows(
+      sql.select_log_job_sequences,
+      { assessment_id: assessment.id },
+      AssessmentLogRowSchema,
+    );
 
     res.send(
       PageLayout({
@@ -46,13 +40,16 @@ router.get(
           page: 'assessment',
           subPage: 'settings',
         },
+        options: {
+          fullWidth: true,
+          fullHeight: true,
+        },
         content: (
           <InstructorAssessmentLogs
             courseInstanceId={course_instance.id}
             assessmentId={assessment.id}
             timezone={course_instance.display_timezone}
-            regradingJobSequences={regradingJobSequences}
-            uploadJobSequences={uploadJobSequences}
+            logs={logs}
           />
         ),
       }),
