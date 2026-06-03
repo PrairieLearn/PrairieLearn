@@ -59,7 +59,7 @@
       "items": {
         "$ref": "#/definitions/AccessControlJsonSchema"
       },
-      "maxItems": 20
+      "maxItems": 101
     },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
@@ -746,7 +746,7 @@
             "minLength": 1,
             "maxLength": 255
           },
-          "maxItems": 10
+          "maxItems": 100
         },
         "beforeRelease": {
           "description": "Only valid on the first entry (defaults). Controls assessment visibility before the release date.",
@@ -809,7 +809,7 @@
                   "items": {
                     "$ref": "#/definitions/DeadlineEntryJsonSchema"
                   },
-                  "maxItems": 5
+                  "maxItems": 10
                 },
                 {
                   "type": "null"
@@ -824,7 +824,7 @@
                   "items": {
                     "$ref": "#/definitions/DeadlineEntryJsonSchema"
                   },
-                  "maxItems": 5
+                  "maxItems": 10
                 },
                 {
                   "type": "null"
@@ -860,7 +860,7 @@
                 {
                   "type": "integer",
                   "exclusiveMinimum": 0,
-                  "maximum": 2880
+                  "maximum": 525600
                 },
                 {
                   "type": "null"

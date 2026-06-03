@@ -10,8 +10,8 @@ import type {
   PrairieTestExamMetadata,
 } from '../../../models/assessment-access-control-rules.js';
 import {
-  MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../../schemas/accessControl.js';
 
 import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
@@ -55,13 +55,12 @@ function getOverrideLimitPolicy(
     (override) => override.appliesTo.targetType === 'enrollment',
   ).length;
   const studentLabelOverrideCount = overrides.length - enrollmentOverrideCount;
-  const maxStudentLabelOverrideCount = MAX_ACCESS_CONTROL_RULES - 1;
-
   const enrollmentLimitReached = enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES;
-  const studentLabelLimitReached = studentLabelOverrideCount >= maxStudentLabelOverrideCount;
+  const studentLabelLimitReached =
+    studentLabelOverrideCount >= MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES;
 
   const enrollmentLimitReason = `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides.`;
-  const studentLabelLimitReason = `An assessment can have at most ${maxStudentLabelOverrideCount} student-label overrides.`;
+  const studentLabelLimitReason = `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`;
 
   return {
     nextTargetType:
@@ -71,7 +70,7 @@ function getOverrideLimitPolicy(
         ? studentLabelLimitReason
         : null
       : enrollmentLimitReached && studentLabelLimitReached
-        ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides and ${maxStudentLabelOverrideCount} student-label overrides.`
+        ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} specific-student overrides and ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`
         : null,
     getTargetTypeDisabledReasons: (currentTargetType) => ({
       enrollment:

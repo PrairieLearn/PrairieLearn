@@ -440,17 +440,16 @@ Assessments with non-contiguous credit ranges are flagged as incompatible during
 
 Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of individual students.
 
-| Setting                                   | Limit                                 |
-| ----------------------------------------- | ------------------------------------- |
-| File-backed `accessControl` rules         | 20 rules, including the defaults rule |
-| Student-label overrides                   | 19 overrides in `infoAssessment.json` |
-| Specific-student overrides                | 15 overrides per assessment           |
-| Students in one specific-student override | 10 students                           |
-| Student labels in one student-label rule  | 10 labels                             |
-| Early and late deadlines                  | 5 early and 5 late deadlines per rule |
-| Linked PrairieTest exams                  | 10 exams per assessment               |
-| Time limits                               | 2880 minutes                          |
-| Passwords                                 | 128 characters                        |
+| Setting                                   | Limit                                   |
+| ----------------------------------------- | --------------------------------------- |
+| Student-label overrides                   | 100 overrides per assessment            |
+| Specific-student overrides                | 100 overrides per assessment            |
+| Students in one specific-student override | 100 students                            |
+| Student labels in one student-label rule  | 100 labels                              |
+| Early and late deadlines                  | 10 early and 10 late deadlines per rule |
+| Linked PrairieTest exams                  | 10 exams per assessment                 |
+| Time limits                               | 525,600 minutes (365 days)              |
+| Passwords                                 | 128 characters                          |
 
 ## Staff access
 
