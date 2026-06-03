@@ -17,17 +17,6 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export const COURSE_REQUEST_MESSAGE_MAX_LENGTH = 10000;
 
-/**
- * Parses a submitted course request message: trims whitespace, enforces the
- * maximum length on the trimmed value, and treats a blank message as "no
- * message" (`null`) so the column distinguishes "unset" from an empty string.
- */
-export const CourseRequestMessageSchema = z
-  .string()
-  .trim()
-  .max(COURSE_REQUEST_MESSAGE_MAX_LENGTH)
-  .transform((value) => (value.length > 0 ? value : null));
-
 type InstitutionSettingField = SupportedActionsForTable<'institution_settings'>;
 
 const UPSERT_SQL: Record<InstitutionSettingField, string> = {

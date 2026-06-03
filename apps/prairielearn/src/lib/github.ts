@@ -43,7 +43,8 @@ type GithubOrgAccessFailureReason =
   | 'no_machine_user'
   | 'org_unreachable'
   | 'not_a_member'
-  | 'pending_invitation';
+  | 'pending_invitation'
+  | 'cannot_create_private_repositories';
 
 type GithubOrgAccessResult = { ok: true } | { ok: false; reason: GithubOrgAccessFailureReason };
 
@@ -55,8 +56,36 @@ function isPlatformDefaultOrg(value: string): boolean {
   return value.toLowerCase() === config.githubCourseOwner.toLowerCase();
 }
 
+function membersCanCreatePrivateRepositories(org: {
+  members_can_create_private_repositories?: boolean;
+  members_allowed_repository_creation_type?: string;
+  members_can_create_repositories?: boolean | null;
+}): boolean {
+  if (org.members_can_create_private_repositories !== undefined) {
+    return org.members_can_create_private_repositories;
+  }
+
+  if (org.members_allowed_repository_creation_type !== undefined) {
+    return (
+      org.members_allowed_repository_creation_type === 'all' ||
+      org.members_allowed_repository_creation_type === 'private'
+    );
+  }
+
+  return org.members_can_create_repositories === true;
+}
+
+function membershipCanCreatePrivateRepositories(
+  role: 'admin' | 'member' | 'billing_manager',
+  org: Parameters<typeof membersCanCreatePrivateRepositories>[0],
+): boolean {
+  if (role === 'admin') return true;
+  if (role !== 'member') return false;
+  return membersCanCreatePrivateRepositories(org);
+}
+
 /**
- * Verifies that the PrairieLearn machine account has access to the given GitHub org.
+ * Verifies that the PrairieLearn machine account can create private repos in the given GitHub org.
  * Calls `GET /orgs/{org}` and `GET /orgs/{org}/memberships/{username}`. Membership in
  * `'pending'` state (i.e., an unaccepted invitation) is reported separately so callers
  * can surface a more actionable message.
@@ -71,8 +100,9 @@ export async function checkGithubOrgAccess(
   if (client === null) return { ok: false, reason: 'no_client' };
   if (config.githubMachineUser === null) return { ok: false, reason: 'no_machine_user' };
 
+  let orgData: Awaited<ReturnType<Octokit['orgs']['get']>>['data'];
   try {
-    await client.orgs.get({ org });
+    orgData = (await client.orgs.get({ org })).data;
   } catch (err: any) {
     if (err.status === 404 || err.status === 403) {
       return { ok: false, reason: 'org_unreachable' };
@@ -87,6 +117,9 @@ export async function checkGithubOrgAccess(
     });
     if (response.data.state === 'pending') {
       return { ok: false, reason: 'pending_invitation' };
+    }
+    if (!membershipCanCreatePrivateRepositories(response.data.role, orgData)) {
+      return { ok: false, reason: 'cannot_create_private_repositories' };
     }
   } catch (err: any) {
     // 403 from this endpoint means the machine user can't read its own
@@ -120,6 +153,8 @@ function githubOrgAccessErrorMessage(
       return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
     case 'not_a_member':
       return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
+    case 'cannot_create_private_repositories':
+      return `The PrairieLearn machine account cannot create private repositories in '${org}'. Make the account an org owner or allow members to create private repositories, then try again.`;
   }
 }
 

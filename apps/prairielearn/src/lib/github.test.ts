@@ -62,12 +62,30 @@ describe('checkGithubOrgAccess', () => {
     });
   });
 
-  it('returns ok for active membership', async () => {
-    orgsGet.mockResolvedValueOnce({ data: {} });
-    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active' } });
+  it('returns ok for an active member when members can create private repositories', async () => {
+    orgsGet.mockResolvedValueOnce({ data: { members_can_create_private_repositories: true } });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active', role: 'member' } });
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
       const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
       assert.deepEqual(result, { ok: true });
+    });
+  });
+
+  it('returns ok for an active admin when members cannot create private repositories', async () => {
+    orgsGet.mockResolvedValueOnce({ data: { members_can_create_private_repositories: false } });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active', role: 'admin' } });
+    await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
+      assert.deepEqual(result, { ok: true });
+    });
+  });
+
+  it('returns cannot_create_private_repositories for an active member when members cannot create private repositories', async () => {
+    orgsGet.mockResolvedValueOnce({ data: { members_can_create_private_repositories: false } });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active', role: 'member' } });
+    await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
+      assert.deepEqual(result, { ok: false, reason: 'cannot_create_private_repositories' });
     });
   });
 
