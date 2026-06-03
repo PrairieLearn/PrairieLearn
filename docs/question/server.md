@@ -407,12 +407,14 @@ The functions in `server.py` can also retrieve the content from various director
 
 ### Accessing the viewing user's identity
 
-Courses can opt in to exposing user and group identity to `server.py`. When enabled, `data["options"]` contains two extra keys, available in every phase (`generate`, `prepare`, `render`, `parse`, `grade`, `test`, `file`):
+Courses can opt in to exposing user and group identity to `server.py`. A course owner can enable this on the course settings page. When enabled, `data["options"]` contains two extra keys -- `data["options"]["user"]` and `data["options"]["group"]`.
 
 ```python
 def generate(data):
-    user = data["options"]["user"]    # None if not exposed
+    user = data["options"]["user"]    # None on group assessments
+    # { "uid": "123", "uin": "123456", "name": "John Doe" }
     group = data["options"]["group"]  # None on individual assessments
+    # { "name": "Group 1", "members": [ { "uid": "123", "uin": "123456", "name": "John Doe" } ] }
 
     if user is not None:
         data["params"]["greeting"] = f"Hello, {user['name']}!"
@@ -422,18 +424,20 @@ def generate(data):
         data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
 
-The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). On individual assessments it is the student who owns the variant — the viewing student during request-time phases (`render`, `parse`, `file`), and the assessed student during `grade` (which may run later from a cron job or instructor action).
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
 
-The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
+??? info "User identity can vary"
 
-On group assessments, `data["options"]["user"]` is always `None`, in every phase: the variant's state and rendered output are shared by the whole group, so there is no single owning user to expose. Use `data["options"]["group"]["members"]` instead, which is available in every phase because the group is stable for the shared variant.
+    For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the student who generated the submission, and group assessments receive `None` because no single user owns the shared variant.
+
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 
 User and group data are passed only when **all** of the following are true:
 
 1. The course has opted in to exposing user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
 2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
 
-When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.
+When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present.
 
 ## Generating dynamic files with `file()`
 
