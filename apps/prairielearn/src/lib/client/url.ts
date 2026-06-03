@@ -27,27 +27,47 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
-export function getAssessmentQuestionEditorUrl(
-  parts: { assessmentId: string; qid: string } & AssessmentUrlParts,
-): string {
-  const encodedQid = encodeURIComponent(parts.qid).replaceAll('%2F', '/');
-  return `${getAssessmentUrl(parts)}/questions?selected=q:${encodedQid}`;
+export function getAssessmentQuestionEditorUrl({
+  courseInstanceId,
+  assessmentId,
+  qid,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  qid: string;
+}): string {
+  const encodedQid = encodeURIComponent(qid).replaceAll('%2F', '/');
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/questions?selected=q:${encodedQid}`;
 }
 
-export function getAssessmentStudentsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/instances`;
+export function getAssessmentStudentsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/instances`;
 }
 
-export function getAssessmentSettingsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/settings`;
+export function getAssessmentSettingsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/settings`;
 }
 
-export function getAssessmentLogsUrl(parts: { assessmentId: string } & AssessmentUrlParts): string {
-  return `${getAssessmentUrl(parts)}/logs`;
+export function getAssessmentLogsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {

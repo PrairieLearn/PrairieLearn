@@ -1558,7 +1558,10 @@ function InstructorAssessmentSettingsInner({
                         </div>
                       </div>
                       <a
-                        href={getAssessmentLogsUrl({ urlPrefix, assessmentId: assessment.id })}
+                        href={getAssessmentLogsUrl({
+                          courseInstanceId: assessment.course_instance_id,
+                          assessmentId: assessment.id,
+                        })}
                         className="btn btn-sm btn-outline-secondary"
                       >
                         <i className="bi bi-clock-history me-1" aria-hidden="true" />

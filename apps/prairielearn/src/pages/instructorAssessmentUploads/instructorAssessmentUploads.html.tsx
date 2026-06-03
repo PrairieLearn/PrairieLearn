@@ -43,7 +43,7 @@ export function InstructorAssessmentUploads({
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-        urlPrefix: resLocals.urlPrefix,
+        courseInstanceId: resLocals.course_instance.id,
         assessmentId: resLocals.assessment.id,
       })}
     `,
@@ -55,14 +55,14 @@ function AssessmentUploadCard({
   assessmentSetName,
   assessmentNumber,
   authzHasPermissionEdit,
-  urlPrefix,
+  courseInstanceId,
   assessmentId,
 }: {
   groupWork: boolean;
   assessmentSetName: string;
   assessmentNumber: string;
   authzHasPermissionEdit: boolean;
-  urlPrefix: string;
+  courseInstanceId: string;
   assessmentId: string;
 }) {
   return html`
@@ -154,7 +154,7 @@ function AssessmentUploadCard({
       <div class="card-body">
         <p class="mb-0 text-muted small">
           Past uploads appear in the
-          <a href="${getAssessmentLogsUrl({ urlPrefix, assessmentId })}">assessment logs</a>.
+          <a href="${getAssessmentLogsUrl({ courseInstanceId, assessmentId })}">assessment logs</a>.
         </p>
       </div>
     </div>
