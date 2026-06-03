@@ -159,7 +159,7 @@
           }
         }
       },
-      "maxItems": 25
+      "maxItems": 100
     }
   },
   "definitions": {

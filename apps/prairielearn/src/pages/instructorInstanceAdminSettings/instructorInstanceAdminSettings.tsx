@@ -120,6 +120,14 @@ router.get(
       'enhanced-access-control',
       res.locals,
     );
+    const accessControlMigrationNeeded =
+      canEdit && enhancedAccessControlEnabled
+        ? await sqldb.queryScalar(
+            sql.select_access_control_migration_needed,
+            { course_instance_id: courseInstance.id },
+            z.boolean(),
+          )
+        : false;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -164,7 +172,7 @@ router.get(
                 isAdministrator={isAdministrator}
                 nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
                 questionSharingEnabled={questionSharingEnabled}
-                enhancedAccessControlEnabled={enhancedAccessControlEnabled}
+                accessControlMigrationNeeded={accessControlMigrationNeeded}
               />
             </Hydrate>
             <Hydrate>

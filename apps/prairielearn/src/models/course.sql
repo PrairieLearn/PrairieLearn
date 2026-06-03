@@ -261,6 +261,15 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK update_course_questions_receive_user_data
+UPDATE courses
+SET
+  questions_receive_user_data = $questions_receive_user_data
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
 -- BLOCK update_course_sharing_name
 UPDATE courses
 SET
