@@ -89,6 +89,18 @@ describe('checkGithubOrgAccess', () => {
     });
   });
 
+  it('returns ok for an active member when the org creation policy is not visible', async () => {
+    // GitHub only returns `members_can_create_*` fields to org owners, so a
+    // non-owner machine account sees an org object without them. We must not
+    // block in that case.
+    orgsGet.mockResolvedValueOnce({ data: {} });
+    orgsGetMembershipForUser.mockResolvedValueOnce({ data: { state: 'active', role: 'member' } });
+    await withConfig({ githubMachineUser: 'pl-bot' }, async () => {
+      const result = await checkGithubOrgAccess(orgAccessClient, 'SomeOrg');
+      assert.deepEqual(result, { ok: true });
+    });
+  });
+
   it('rethrows unexpected (non-404/403) errors', async () => {
     orgsGet.mockRejectedValueOnce(Object.assign(new Error('upstream broken'), { status: 500 }));
     await withConfig({ githubMachineUser: 'pl-bot' }, async () => {

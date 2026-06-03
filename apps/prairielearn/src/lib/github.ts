@@ -72,7 +72,11 @@ function membersCanCreatePrivateRepositories(org: {
     );
   }
 
-  return org.members_can_create_repositories === true;
+  if (org.members_can_create_repositories === false) {
+    return false;
+  }
+
+  return true;
 }
 
 function membershipCanCreatePrivateRepositories(
