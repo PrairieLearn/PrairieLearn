@@ -5,6 +5,8 @@ import type {
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
 
+export const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
 /** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
   draftId: string;
@@ -148,4 +150,6 @@ export interface UploadResponse {
   assessmentSetNames: string[];
   /** Existing (set, number) pairs in this course instance, for deduplication. */
   existingAssessmentLabels: { set: string; number: string }[];
+  /** Count of unique questions that appeared in more than one question bank and were deduplicated. */
+  deduplicatedQuestionBankQuestionCount: number;
 }

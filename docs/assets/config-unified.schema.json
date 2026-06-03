@@ -615,6 +615,10 @@
       "type": "string",
       "default": "machine"
     },
+    "githubMachineUser": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "gitSshCommand": {
       "type": ["string", "null"],
       "default": null
@@ -1159,10 +1163,6 @@
     "serverJobsAbandonedTimeoutSec": {
       "type": "number",
       "default": 30
-    },
-    "courseRequestAutoApprovalEnabled": {
-      "type": "boolean",
-      "default": false
     },
     "devMode": {
       "type": "boolean",

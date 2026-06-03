@@ -244,5 +244,11 @@ export default [
     'apps/*/dist/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
+
+    // Playwright
+    'test-results/*',
+    'apps/prairielearn/test-results/*',
+    'apps/prairielearn/playwright/.cache/*',
+    '.playwright-mcp/*',
   ]),
 ];

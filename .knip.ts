@@ -42,7 +42,6 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'qrcode-svg',
   'socket.io-client',
   'ace-builds',
-  'bootstrap-table',
   'bootstrap',
   'jquery',
   'mathlive',
@@ -86,7 +85,7 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@reteps/tree-sitter-htmlmustache',
+  '@prairielearn/tree-sitter-htmlmustache',
   '@typescript/native-preview',
 ];
 

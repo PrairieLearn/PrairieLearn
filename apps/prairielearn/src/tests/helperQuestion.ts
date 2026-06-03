@@ -1,14 +1,17 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import * as cheerio from 'cheerio';
-import fetch, { FormData } from 'node-fetch';
+import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import {
   AssessmentInstanceSchema,
   InstanceQuestionSchema,
@@ -21,6 +24,7 @@ import {
 import { startTestQuestion } from '../lib/question-testing.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -196,6 +200,9 @@ export function getInstanceQuestion(
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
+        const href = elemList.attr('href');
+        assert.isString(href);
+        assert.match(href, /\/preview\/$/);
       } else {
         assert.lengthOf(elemList, 0);
       }
@@ -490,185 +497,82 @@ export function checkQuestionFeedback(locals: Record<string, any>) {
 }
 
 export function regradeAssessment(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentRegrading URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentRegradingUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/regrading';
-      const response = await fetch(locals.instructorAssessmentRegradingUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#regrade-all-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentRegrading URL for regrading', function () {
-    it('should succeed', async function () {
-      assert(locals.instructorAssessmentRegradingUrl);
-      const response = await fetch(locals.instructorAssessmentRegradingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'regrade_all',
-          __csrf_token: locals.__csrf_token,
-        }),
+  describe('regrade all assessment instances', function () {
+    it('should start a regrade job', async function () {
+      const courseInstanceId = locals.courseInstanceBaseUrl.split('/course_instance/')[1];
+      const csrfToken = generatePrefixCsrfToken(
+        {
+          url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId: locals.assessment_id }),
+          authn_user_id: '1',
+        },
+        config.secretKey,
+      );
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken,
+        courseInstanceId,
+        assessmentId: locals.assessment_id,
+        urlBase: locals.siteUrl,
       });
-      assert.equal(response.status, 200);
+      const { jobSequenceId } = await trpcClient.assessmentInstances.regrade.mutate({
+        assessmentInstanceIds: null,
+      });
+      assert.isString(jobSequenceId);
     });
   });
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#upload-instance-question-scores-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
+/**
+ * The exam tests act as the default authenticated user (id 1) on course
+ * instance 1, mirroring `instructorStudentsLabels.test.ts`.
+ */
+function createAssessmentUploadClient(locals: Record<string, any>) {
+  const courseInstanceId = '1';
+  const assessmentId = String(locals.assessment_id);
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId }), authn_user_id: '1' },
+    config.secretKey,
+  );
+  return createAssessmentTrpcClient({
+    csrfToken,
+    courseInstanceId,
+    assessmentId,
+    urlBase: `http://localhost:${config.serverPort}`,
   });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
+}
+
+function csvUploadFormData(locals: Record<string, any>) {
+  const formData = new FormData();
+  formData.append(
+    'file',
+    new File([Buffer.from(locals.csvData)], 'data.csv', { type: 'text/csv' }),
+  );
+  return formData;
+}
+
+export function uploadInstanceQuestionScores(locals: Record<string, any>) {
+  describe('upload question scores via tRPC', function () {
     it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_instance_question_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.instanceQuestionScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);
 }
 
 export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
+  describe('upload total scores via tRPC', function () {
     it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$(
-        '#upload-assessment-instance-scores-form input[name="__csrf_token"]',
-      );
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
-    it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_assessment_instance_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.assessmentInstanceScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);
 }
 
-export async function autoTestQuestion({
-  questionBaseUrl,
-  questionPreviewTabUrl = '',
-  qid,
-}: {
-  questionBaseUrl: string;
-  questionPreviewTabUrl?: string;
-  qid: string;
-}): Promise<void> {
+export async function autoTestQuestion({ qid }: { qid: string }): Promise<void> {
   const question = await selectQuestionByQid({ qid, course_id: '1' });
   assert.equal(question.type, 'Freeform');
-
-  const shouldHaveButtons =
-    question.grading_method === 'Manual' ? ['save', 'newVariant'] : ['grade', 'save', 'newVariant'];
-  const hasGradeOrSave = shouldHaveButtons.includes('grade') || shouldHaveButtons.includes('save');
-
-  const previewUrl = questionBaseUrl + '/' + question.id + questionPreviewTabUrl;
-  const previewResponse = await fetch(previewUrl);
-  assert.equal(previewResponse.status, 200);
-  const preview$ = cheerio.load(await previewResponse.text());
-
-  if (hasGradeOrSave) {
-    const variantIdElems = preview$('.question-form input[name="__variant_id"]');
-    assert.lengthOf(variantIdElems, 1);
-    assert.nestedProperty(variantIdElems[0], 'attribs.value');
-    const variantId = variantIdElems[0].attribs.value;
-
-    const variant = await sqldb.queryRow(
-      sql.select_variant,
-      { variant_id: variantId },
-      VariantSchema,
-    );
-    assert.equal(variant.question_id, question.id);
-    assert.equal(variant.broken, false);
-    assert.isNull(variant.broken_at);
-
-    const previewCsrfElems = preview$('.question-form input[name="__csrf_token"]');
-    assert.lengthOf(previewCsrfElems, 1);
-    assert.nestedProperty(previewCsrfElems[0], 'attribs.value');
-    assert.isString(previewCsrfElems[0].attribs.value);
-  }
-
-  const gradeButtons = preview$('button[name="__action"][value="grade"]');
-  assert.lengthOf(gradeButtons, shouldHaveButtons.includes('grade') ? 1 : 0);
-  const saveButtons = preview$('button[name="__action"][value="save"]');
-  assert.lengthOf(saveButtons, shouldHaveButtons.includes('save') ? 1 : 0);
-  const newVariantButtons = preview$('a:contains(New variant)');
-  assert.lengthOf(newVariantButtons, shouldHaveButtons.includes('newVariant') ? 1 : 0);
-  const tryAgainButtons = preview$('a:contains(Try a new variant)');
-  assert.lengthOf(tryAgainButtons, shouldHaveButtons.includes('tryAgain') ? 1 : 0);
-
-  const previewIssues = await sqldb.queryRows(
-    sql.select_issues_for_question,
-    { question_id: question.id },
-    IssueSchema,
-  );
-  assert.lengthOf(
-    previewIssues,
-    0,
-    `[${qid}] preview generated ${previewIssues.length} issues:\n` +
-      JSON.stringify(previewIssues, null, '    '),
-  );
 
   const course = await selectCourseById('1');
   const jobSequenceId = await startTestQuestion({

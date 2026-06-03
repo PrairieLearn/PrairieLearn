@@ -3,6 +3,7 @@ packages:
   - 'packages/*'
 
 overrides:
+  '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
   '@typescript/native-preview': beta

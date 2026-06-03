@@ -1,13 +1,14 @@
-import { updateInstitutionCourseRequestMessage } from '../../models/institution-settings.js';
+import { updateInstitutionSetting } from '../../models/institution-settings.js';
 
 import { expect, test } from './fixtures.js';
 
 const DEFAULT_INSTITUTION_ID = '1';
 
 async function setCourseRequestMessage(message: string | null): Promise<void> {
-  await updateInstitutionCourseRequestMessage({
+  await updateInstitutionSetting({
     institution_id: DEFAULT_INSTITUTION_ID,
-    course_request_message: message,
+    field: 'course_request_message',
+    value: message,
     authn_user_id: '1',
   });
 }

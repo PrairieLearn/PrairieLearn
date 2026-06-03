@@ -49,6 +49,7 @@ docker-compose.override.yml
 ## Config
 /config.json
 /apps/*/config.json
+/ssl/
 
 ## Generated HTML
 
