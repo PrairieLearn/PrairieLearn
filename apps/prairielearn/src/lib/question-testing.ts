@@ -94,6 +94,11 @@ async function testDynamicFiles({
       variant,
       question,
       question_course,
+      {
+        effectiveUserId: user_id,
+        groupId: variant.team_id,
+        variantCourse: course,
+      },
     );
 
     const studentMessage = 'Error creating file: ' + decodedFilename;
@@ -158,6 +163,11 @@ export async function createTestSubmissionData(
     question,
     question_course,
     test_type,
+    {
+      effectiveUserId: user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
