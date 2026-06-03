@@ -187,7 +187,7 @@ export const PointsListJsonSchema = z
   .min(1)
   .describe('An array of point values.');
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema.default(0), PointsListJsonSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
