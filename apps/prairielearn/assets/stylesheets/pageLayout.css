@@ -172,6 +172,12 @@ body:has(div.app-main-container) {
   box-shadow: inset 0 -1px 0 var(--bs-border-color);
 }
 
+/* Tighten the tab padding in the combined bar so the assessment switcher (and
+ * its title) gets more horizontal room before truncating. */
+.assessment-navigation-bar .pl-nav-tabs-bar {
+  --bs-nav-link-padding-x: 0.75rem;
+}
+
 /* The vertical divider only makes sense in the side-by-side layout. */
 .assessment-navigation-divider {
   display: none;

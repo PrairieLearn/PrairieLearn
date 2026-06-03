@@ -437,7 +437,7 @@ export function PageLayout({
                   return html`
                     <div class="assessment-navigation-container">
                       <div
-                        class="d-flex column-gap-3 row-gap-2 bg-light pt-2 px-3 assessment-navigation-bar"
+                        class="d-flex column-gap-2 row-gap-2 bg-light pt-2 px-3 assessment-navigation-bar"
                       >
                         ${switcher}
                         <div class="vr assessment-navigation-divider align-self-stretch my-1"></div>
