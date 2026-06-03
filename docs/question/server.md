@@ -422,15 +422,15 @@ def generate(data):
         data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
 
-The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). For request-time phases such as `render`, `parse`, and `file`, it is the **viewing user**. During `grade`, grading may happen later from a cron job or instructor action; individual assessments receive the assessed student, and group assessments receive `None` because no single user owns the shared variant.
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). On individual assessments it is the student who owns the variant — the viewing student during request-time phases (`render`, `parse`, `file`), and the assessed student during `grade` (which may run later from a cron job or instructor action).
 
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` unless the assessment is group work.
 
-On group assessments, `data["options"]["user"]` is `None` during `generate()`, `prepare()`, and `grade()`. These phases run on data that is shared by the group or may run outside a student's request, so using a request-specific group member would give stale or incorrect per-user data. `data["options"]["group"]` is still available in these phases because the group is stable for the shared variant.
+On group assessments, `data["options"]["user"]` is always `None`, in every phase: the variant's state and rendered output are shared by the whole group, so there is no single owning user to expose. Use `data["options"]["group"]["members"]` instead, which is available in every phase because the group is stable for the shared variant.
 
 User and group data are passed only when **all** of the following are true:
 
-1. The course has opted in by setting `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json` (in production, this setting is managed via the course settings page by a course owner).
+1. The course has opted in to exposing user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
 2. The question is rendered in its owning course. Questions imported from another course via sharing (public or sharing set) never receive user data, regardless of either course's settings.
 
 When user data is not passed to questions, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present, so question authors can write `if data["options"]["user"]:` without first checking for the key.

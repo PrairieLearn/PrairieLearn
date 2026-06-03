@@ -24,14 +24,12 @@ function call({
   courseOptedIn,
   effectiveUserId,
   groupId,
-  persistsSharedState = false,
 }: {
   questionCourseId?: string;
   variantCourseId?: string;
   courseOptedIn: boolean;
   effectiveUserId: string | null;
   groupId: string | null;
-  persistsSharedState?: boolean;
 }) {
   return buildQuestionUserContext({
     question: makeQuestion(questionCourseId),
@@ -41,7 +39,6 @@ function call({
       groupId,
       variantCourse: makeVariantCourse(variantCourseId),
     },
-    persistsSharedState,
   });
 }
 
@@ -95,7 +92,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
-  it('returns user and group together when both are provided', async () => {
+  it('omits the individual user but exposes the group on group variants, even with an effective user', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
     const groupName = `testgroup${u1.id}`;
 
@@ -113,7 +110,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
       effectiveUserId: u1.id,
       groupId: group.id,
     });
-    assert.equal(ctx.user?.uid, u1.uid);
+    assert.isNull(ctx.user);
     assert.equal(ctx.group?.name, groupName);
     assert.lengthOf(ctx.group?.members ?? [], 2);
     const memberUids = ctx.group?.members.map((m) => m.uid).sort();
@@ -142,26 +139,5 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.equal(ctx.group?.name, groupName);
     const memberUids = ctx.group?.members.map((m) => m.uid).sort();
     assert.deepEqual(memberUids, [u1.uid, u2.uid].sort());
-  });
-
-  it('omits the user when persisting shared state on group variants', async () => {
-    const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
-    const group = await createGroup({
-      course_instance: groupCourseInstance,
-      assessment: groupAssessment,
-      group_name: `testgroup${u1.id}`,
-      uids: [u1.uid, u2.uid],
-      authn_user_id: '1',
-      authzData: dangerousFullSystemAuthz(),
-    });
-
-    const ctx = await call({
-      courseOptedIn: true,
-      effectiveUserId: u1.id,
-      groupId: group.id,
-      persistsSharedState: true,
-    });
-    assert.isNull(ctx.user);
-    assert.isNotNull(ctx.group);
   });
 });

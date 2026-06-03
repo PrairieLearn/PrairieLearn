@@ -835,7 +835,6 @@ export async function generate(
       question,
       course,
       caller,
-      persistsSharedState: true,
     });
 
     const data = {
@@ -883,7 +882,6 @@ export async function prepare(
       question,
       course,
       caller,
-      persistsSharedState: true,
     });
 
     const data = {
@@ -1150,7 +1148,6 @@ export async function render({
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
     const htmls = {
       extraHeadersHtml: '',
@@ -1571,7 +1568,6 @@ export async function file(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {
@@ -1635,7 +1631,6 @@ export async function parse(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {
@@ -1700,7 +1695,6 @@ export async function grade(
       question,
       course: question_course,
       caller,
-      persistsSharedState: false,
     });
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
@@ -1770,7 +1764,6 @@ export async function test(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {

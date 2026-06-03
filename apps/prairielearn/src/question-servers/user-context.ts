@@ -50,38 +50,33 @@ function toQuestionUser({
 /**
  * Build the user/group context to expose to `server.py` for a question phase.
  *
- * Gating rules (all must be true to expose data):
+ * Gating rules (all must be true to expose any data):
  *   1. The question's owning course has `questions_receive_user_data = true`.
  *   2. The question is rendered in its owning course (`question.course_id === caller.variantCourse.id`).
  *      This excludes public sharing, sharing-set imports, and instructor preview of foreign questions.
+ *
+ * On group variants the individual viewing user's identity is never exposed
+ * (`user` is `null`); only the stable group roster (`group.members`) is provided,
+ * since the variant's state and rendered output are shared across all members.
  */
 export async function buildQuestionUserContext({
   question,
   course,
   caller,
-  persistsSharedState,
 }: {
   question: Pick<Question, 'course_id'>;
   /** The question's owning course; `questions_receive_user_data` is the opt-in switch. */
   course: Pick<Course, 'questions_receive_user_data'>;
   caller: QuestionCaller;
-  /**
-   * Whether this call's output is persisted on the variant and reused for every
-   * later call. True for `generate`/`prepare`, which bake their result into the
-   * variant's stored state; false for `render`/`parse`/`grade`/`test`/`file`,
-   * which produce fresh per-call output. On group variants that stored state is
-   * shown to every member, so we withhold the caller's identity when it's true.
-   */
-  persistsSharedState: boolean;
 }): Promise<QuestionUserContext> {
   if (!course.questions_receive_user_data) return EMPTY_USER_CONTEXT;
   if (!idsEqual(question.course_id, caller.variantCourse.id)) return EMPTY_USER_CONTEXT;
 
-  // Don't bake a single member's identity into state that the whole group sees.
-  const includeUser = !(persistsSharedState && caller.groupId != null);
-
+  // On group variants the question's state and rendered output are shared across
+  // every member, so we never expose a single member's identity. The group
+  // roster (`group.members`, below) is still provided.
   const user =
-    includeUser && caller.effectiveUserId != null
+    caller.groupId == null && caller.effectiveUserId != null
       ? await selectOptionalUserById(caller.effectiveUserId)
       : null;
 
