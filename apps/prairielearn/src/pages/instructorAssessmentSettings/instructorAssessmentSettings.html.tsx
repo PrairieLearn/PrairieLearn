@@ -1554,7 +1554,8 @@ function InstructorAssessmentSettingsInner({
                       <div>
                         <div className="fw-semibold">View assessment logs</div>
                         <div className="small text-muted">
-                          Review the log history for this assessment.
+                          Review the history of batch operations performed on instances of this
+                          assessment.
                         </div>
                       </div>
                       <a
