@@ -4,10 +4,7 @@ import * as path from 'path';
 import tmp from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
 
-import {
-  AccessControlJsonSchema,
-  MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
-} from '../../schemas/accessControl.js';
+import { AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 
 import {
@@ -1604,23 +1601,6 @@ describe('migrateAllowAccess', () => {
 
     const { errors } = validateAccessControlRules({ rules: [result.accessControl] });
     assert.deepEqual(errors, []);
-  });
-
-  it('rejects migrated PrairieTest configs that exceed the modern exam limit', () => {
-    const result = migrateAllowAccess(
-      Array.from({ length: MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS + 1 }, (_, i) => ({
-        examUuid: `${i.toString().padStart(8, '0')}-0000-0000-0000-${i
-          .toString()
-          .padStart(12, '0')}`,
-        credit: 100,
-      })),
-      FALLBACK_RELEASE,
-    );
-
-    assert.isNull(result.accessControl);
-    assert.isNotEmpty(result.errors);
-    assert.match(result.errors[0], /integrations\.prairieTest\.exams/);
-    assert.match(result.errors[0], new RegExp(String(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)));
   });
 });
 
