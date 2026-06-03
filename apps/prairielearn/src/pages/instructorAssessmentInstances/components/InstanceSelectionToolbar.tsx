@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
-import { getAssessmentUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
+import { getAssessmentLogsUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
@@ -51,7 +51,7 @@ export function InstanceSelectionToolbar({
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
   // The assessment logs page is added in a separate PR; this route resolves once it merges.
-  const logsUrl = `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
+  const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
   const isAllInstancesTarget = selectedRows.length === 0;
   const targetRows = isAllInstancesTarget ? allRows : selectedRows;
   const assessmentInstanceIds = isAllInstancesTarget
