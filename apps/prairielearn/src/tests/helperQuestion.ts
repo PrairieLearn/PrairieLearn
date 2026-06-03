@@ -522,9 +522,10 @@ export function regradeAssessment(locals: Record<string, any>) {
   waitForJobSequence(locals);
 }
 
-// Uploads run through the assessment tRPC scope, which uses prefix CSRF tokens.
-// The exam tests act as the default authenticated user (id 1) on course
-/** instance 1, mirroring `instructorStudentsLabels.test.ts`. */
+/**
+ * The exam tests act as the default authenticated user (id 1) on course
+ * instance 1, mirroring `instructorStudentsLabels.test.ts`.
+ */
 function createAssessmentUploadClient(locals: Record<string, any>) {
   const courseInstanceId = '1';
   const assessmentId = String(locals.assessment_id);
