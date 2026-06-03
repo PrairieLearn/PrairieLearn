@@ -254,7 +254,9 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
       - name: Install Node dependencies
-        run: pnpm install
+        # We only install root dependencies to avoid installing workspaces that
+        # are not used by report merging.
+        run: pnpm --filter . install
       - name: Download Vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v8
         with:

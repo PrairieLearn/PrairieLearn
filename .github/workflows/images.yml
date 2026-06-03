@@ -84,9 +84,6 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Preinstall node-gyp headers
-        run: pnpm dlx node-gyp install
-
       - name: Install Node dependencies
         run: pnpm install
 

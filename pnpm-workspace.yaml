@@ -12,20 +12,17 @@ overrides:
   'notebookjs>jsdom': '*'
   'typescript-cp>tar': '*'
 
+# Delay newly published npm packages for 3 days.
+minimumReleaseAge: 4320
+
 allowBuilds:
-  '@datadog/pprof': true
   '@prairielearn/bind-mount': true
-  '@reteps/tree-sitter-htmlmustache': true
-  core-js: true
-  cpu-features: true
-  dtrace-provider: true
-  esbuild: true
-  protobufjs: true
-  sharp: true
-  ssh2: true
-  unrs-resolver: true
 
 supportedArchitectures:
+  # @postgres-language-server/cli currently tags its glibc Linux binaries with
+  # libc=gnu; include it so the CLI installs a binary on Debian/Ubuntu. See:
+  # https://github.com/supabase-community/postgres-language-server/issues/756
+  # https://github.com/supabase-community/postgres-language-server/pull/757
   libc:
     - current
     - gnu

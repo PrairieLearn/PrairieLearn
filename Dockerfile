@@ -34,17 +34,7 @@ RUN make python-deps-core
 COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ packages/*/bin/ /PrairieLearn/
 
 # Install Node dependencies.
-#
-# The `node-gyp` stuff is a workaround to a bug where multiple instances of `node-gyp`
-# end up running at the same time and corrupt the Node headers that are being written
-# to disk. This is somewhat of a known issue with `node-gyp` specifically:
-#
-# https://github.com/nodejs/node-gyp/issues/1054
-#
-# By running `node-gyp install` at the beginning, we ensure that the later invocations
-# of `node-gyp` will find the headers already installed and not try to install them
-# again, thus avoiding the corruption issue.
-RUN pnpm dlx node-gyp install && pnpm install --frozen-lockfile && pnpm store prune
+RUN pnpm install --frozen-lockfile && pnpm store prune
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . .

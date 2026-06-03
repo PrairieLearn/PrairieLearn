@@ -39,11 +39,8 @@ jobs:
       - name: Upgrade npm
         run: npm install -g npm@latest
 
-      - name: Preinstall node-gyp headers
-        run: pnpm dlx node-gyp install
-
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       # `changesets` will use Prettier to format our changelogs. Because our
       # config points to a custom plugin, we need to build that plugin first.
@@ -57,7 +54,7 @@ jobs:
         with:
           # This invokes the `version` script in `package.json`, which will run
           # `changeset version` and then `pnpm install`. We need to run `pnpm install`
-          # in order to update `pnpm-lock.yaml`:  https://github.com/changesets/action/issues/170
+          # in order to update `pnpm-lock.yaml`: https://pnpm.io/10.x/using-changesets
           version: pnpm run version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
