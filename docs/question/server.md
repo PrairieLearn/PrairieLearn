@@ -425,14 +425,13 @@ def generate(data):
 ```
 
 The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 
 ??? info "Whose identity is provided"
 
     When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member that is seeing the variant. Group assessments receive `None` because the shared variant has no single owner.
 
     A group's members can change over time: The members when a question was generated may be different than when a question is graded. Similarly, a user's name, uid, and uin may be different. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
-
-The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 
 User and group data are passed only when **all** of the following are true:
 
