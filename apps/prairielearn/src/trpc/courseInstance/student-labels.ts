@@ -33,8 +33,8 @@ import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabe
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import {
   type CourseInstanceJsonInput,
-  MAX_STUDENT_LABEL_NAME_LENGTH,
   MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
+  MAX_STUDENT_LABEL_NAME_LENGTH,
 } from '../../schemas/infoCourseInstance.js';
 import { throwAppError } from '../app-errors.js';
 
