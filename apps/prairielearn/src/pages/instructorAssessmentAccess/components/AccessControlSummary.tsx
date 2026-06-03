@@ -229,6 +229,7 @@ export function AccessControlSummary({
   const hiddenEnrollmentRuleNoun =
     hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
   const hiddenEnrollmentRuleVerb = hiddenEnrollmentRuleCount === 1 ? 'is' : 'are';
+  const addOverrideDisabledReasonId = `${dndId}-add-override-disabled-reason`;
 
   return (
     <div>
@@ -302,27 +303,29 @@ export function AccessControlSummary({
             )}
           </h5>
           {canEditAccessSettings && (
-            <div className="d-flex flex-column align-items-end">
-              <Button
-                variant="primary"
-                size="sm"
-                className="d-inline-flex align-items-center"
-                disabled={addOverrideDisabledReason != null}
-                title={addOverrideDisabledReason ?? undefined}
-                onClick={onAddOverride}
-              >
-                <i className="bi bi-plus-lg me-1" /> Add override
-              </Button>
-              {addOverrideDisabledReason && (
-                <small className="text-muted mt-1 text-end">{addOverrideDisabledReason}</small>
-              )}
-            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              className="d-inline-flex align-items-center"
+              disabled={addOverrideDisabledReason != null}
+              title={addOverrideDisabledReason ?? undefined}
+              aria-describedby={addOverrideDisabledReason ? addOverrideDisabledReasonId : undefined}
+              onClick={onAddOverride}
+            >
+              <i className="bi bi-plus-lg me-1" /> Add override
+            </Button>
           )}
         </div>
         <small className="text-body-secondary d-block mb-3">
           Customize settings for specific students or students with specific labels. Fields not
           overridden are inherited from the defaults and any earlier overrides.
         </small>
+
+        {addOverrideDisabledReason && (
+          <Alert variant="secondary" className="py-2 mb-3" id={addOverrideDisabledReasonId}>
+            {addOverrideDisabledReason}
+          </Alert>
+        )}
 
         {canEditAccessSettings && !canEditEnrollmentRules && (
           <Alert variant="info" className="mb-3">
