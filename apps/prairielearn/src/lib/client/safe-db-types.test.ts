@@ -18,6 +18,7 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
+  StaffJobSequenceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -481,6 +482,25 @@ const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSe
   },
 };
 
+const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
+  assessment_id: '2',
+  assessment_question_id: null,
+  authn_user_id: '4',
+  course_id: '1',
+  course_instance_id: '3',
+  course_request_id: null,
+  description: 'Regrade assessment',
+  finish_date: null,
+  id: '12',
+  legacy: false,
+  number: 1,
+  start_date: new Date(),
+  status: 'Success',
+  stop_requested_by_authn_user_id: null,
+  type: 'regrade_assessment',
+  user_id: '4',
+};
+
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
   course_id: '1',
@@ -764,6 +784,12 @@ describe('safe-db-types schemas', () => {
   it('parses valid AdminInstitutionWithSettings with GitHub course owner', () => {
     const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
     expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
+  });
+
+  it('parses valid StaffJobSequence and drops extra fields', () => {
+    const parsed = StaffJobSequenceSchema.parse({ ...minimalStaffJobSequence, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffJobSequence);
   });
 
   it('parses valid StaffQuestion and drops extra fields', () => {

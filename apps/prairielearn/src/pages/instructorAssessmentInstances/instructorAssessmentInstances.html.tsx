@@ -53,6 +53,7 @@ export function InstructorAssessmentInstances({
             assessmentSet={assessmentSet}
             courseInstance={courseInstance}
             canEdit={canEdit}
+            isDevMode={isDevMode}
           />
         </TRPCProvider>
       </QueryClientProviderDebug>
