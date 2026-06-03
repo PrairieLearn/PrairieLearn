@@ -36,6 +36,7 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
+  JobSequenceSchema as RawJobSequenceSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -438,6 +439,11 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 });
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
+
+/** Job Sequences */
+export const RawStaffJobSequenceSchema = RawJobSequenceSchema;
+export const StaffJobSequenceSchema = RawStaffJobSequenceSchema.brand<'StaffJobSequence'>();
+export type StaffJobSequence = z.infer<typeof StaffJobSequenceSchema>;
 
 /** Publishing Extensions */
 export const StaffCourseInstancePublishingExtensionSchema =

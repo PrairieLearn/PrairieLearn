@@ -27,6 +27,7 @@ import {
 } from './db-types.js';
 import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
+import type { UploadedCsvFile } from './score-upload.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -91,7 +92,7 @@ function makeDedupedInserter<T>() {
  */
 export async function uploadSubmissions(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
