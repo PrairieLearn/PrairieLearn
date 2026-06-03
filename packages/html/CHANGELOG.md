@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 5.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 5.0.5
 
 ### Patch Changes

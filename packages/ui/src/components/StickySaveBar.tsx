@@ -61,7 +61,7 @@ export function StickySaveBar({
       disabled={isSaveDisabled}
     >
       <i className="bi bi-floppy" aria-hidden="true" />
-      {isSaving ? 'Saving...' : 'Save and sync'}
+      {isSaving ? 'Saving...' : 'Save'}
     </button>
   );
 

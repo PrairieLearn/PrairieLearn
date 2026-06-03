@@ -74,6 +74,11 @@ async function aiEvaluateStudentResponse({
     submissions: [submission],
     course,
     locals,
+    caller: {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: course,
+    },
   });
 
   const answer_text = render_submission_results.data.answerHtml;

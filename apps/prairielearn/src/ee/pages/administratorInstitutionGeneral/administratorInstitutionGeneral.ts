@@ -5,14 +5,16 @@ import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { config } from '../../../lib/config.js';
 import { InstitutionSchema } from '../../../lib/db-types.js';
+import { validateGithubCourseOwner } from '../../../lib/github.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
-  updateInstitutionCourseRequestMessage,
+  updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
@@ -58,6 +60,8 @@ router.get(
         planGrants,
         courseRequestMessage,
         courseRequestMessageHtml,
+        githubCourseOwner: institutionSettings?.github_course_owner ?? null,
+        defaultGithubCourseOwner: config.githubCourseOwner,
         resLocals: res.locals,
       }),
     );
@@ -108,9 +112,10 @@ router.post(
           `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
         );
       }
-      await updateInstitutionCourseRequestMessage({
+      await updateInstitutionSetting({
         institution_id: req.params.institution_id,
-        course_request_message: newMessage,
+        field: 'course_request_message',
+        value: newMessage,
         authn_user_id: res.locals.authn_user.id,
       });
       flash('success', 'Successfully updated the course request message.');
@@ -128,6 +133,28 @@ router.post(
         res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_github_course_owner') {
+      const raw =
+        typeof req.body.github_course_owner === 'string' ? req.body.github_course_owner.trim() : '';
+      const newValue = raw.length > 0 ? raw : null;
+
+      if (newValue !== null) {
+        const access = await validateGithubCourseOwner(newValue);
+        if (!access.ok) {
+          flash('error', access.message);
+          res.redirect(req.originalUrl);
+          return;
+        }
+      }
+
+      await updateInstitutionSetting({
+        institution_id: req.params.institution_id,
+        field: 'github_course_owner',
+        value: newValue,
+        authn_user_id: res.locals.authn_user.id,
+      });
+      flash('success', 'Successfully updated default GitHub organization.');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

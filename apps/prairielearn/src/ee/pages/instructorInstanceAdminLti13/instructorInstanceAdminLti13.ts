@@ -316,7 +316,6 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
           courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

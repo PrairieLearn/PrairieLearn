@@ -64,7 +64,7 @@ The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded
 
 ### Uploading the scores and feedback
 
-After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
+After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Students" tab, and selecting "Upload question scores" from the "Upload" menu. If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
 The submission associated with each row in the CSV file is identified through one of the following methods (in order of precedence):
 

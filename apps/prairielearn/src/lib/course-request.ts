@@ -84,6 +84,7 @@ export async function createCourseFromRequest({
   displayTimezone,
   path,
   repoShortName,
+  githubCourseOwner,
   githubUser,
   authnUser,
 }: {
@@ -94,6 +95,7 @@ export async function createCourseFromRequest({
   displayTimezone: string;
   path: string;
   repoShortName: string;
+  githubCourseOwner: string;
   githubUser: string | null;
   authnUser: User;
 }): Promise<string> {
@@ -112,6 +114,7 @@ export async function createCourseFromRequest({
       display_timezone: displayTimezone,
       path,
       repo_short_name: repoShortName,
+      github_course_owner: githubCourseOwner,
       github_user: githubUser,
       course_request_id: courseRequestId,
     },

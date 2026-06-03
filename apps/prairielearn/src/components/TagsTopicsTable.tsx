@@ -106,7 +106,7 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                   <input type="hidden" name="data" value={JSON.stringify(entitiesState)} />
                   <span className="js-edit-mode-buttons">
                     <button className="btn btn-sm btn-light mx-1" type="submit">
-                      <i className="fa fa-save" aria-hidden="true" /> Save and sync
+                      <i className="fa fa-save" aria-hidden="true" /> Save
                     </button>
                     <button
                       className="btn btn-sm btn-light"

@@ -54,13 +54,22 @@ interface VariantCreationData {
 export async function makeVariant({
   question,
   course,
+  variant_course,
   variant_seed: variant_seed_option,
   preferences = {},
+  effective_user_id,
+  group_id,
 }: {
   question: Question;
   course: Course;
+  /** The course where the variant is being created. May differ from the question's course (`course`) for shared questions. */
+  variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
+  /** The user that owns the variant, or `null` for group variants. Used to expose user info to `server.py` if the course has opted in. */
+  effective_user_id: string | null;
+  /** The group the variant belongs to, if this is a group-work variant. */
+  group_id: string | null;
 }): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -72,12 +81,19 @@ export async function makeVariant({
     variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
+  const caller = {
+    userId: effective_user_id,
+    groupId: group_id,
+    variantCourse: variant_course,
+  };
+
   const questionModule = questionServers.getModule(question.type);
   const { courseIssues, data } = await questionModule.generate(
     question,
     course,
     variant_seed,
     preferences,
+    caller,
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
@@ -107,6 +123,7 @@ export async function makeVariant({
       question,
       course,
       variant,
+      caller,
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -151,6 +168,11 @@ export async function getDynamicFile(
     variant,
     question,
     question_course,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error creating file: ' + filename;
@@ -258,11 +280,29 @@ async function makeAndInsertVariant({
     preferences = result ? { ...preferences, ...result } : preferences;
   }
 
+  // Look up the variant's owner and group for instance-question-backed variants
+  // so we can build the user/group context for `generate`/`prepare`, which run
+  // before the variant is persisted (and so before `variant.user_id` exists).
+  let variant_user_id: string | null = user_id;
+  let group_id: string | null = null;
+  if (instance_question_id != null) {
+    const instance_question = await sqldb.queryOptionalRow(
+      sql.select_instance_question_data,
+      { instance_question_id },
+      InstanceQuestionDataSchema,
+    );
+    variant_user_id = instance_question?.user_id ?? null;
+    group_id = instance_question?.team_id ?? null;
+  }
+
   const { courseIssues, variant: variantData } = await makeVariant({
     question,
     course: question_course,
+    variant_course,
     variant_seed: options.variant_seed,
     preferences,
+    effective_user_id: variant_user_id,
+    group_id,
   });
 
   const variant = await sqldb.runInTransactionAsync(async () => {

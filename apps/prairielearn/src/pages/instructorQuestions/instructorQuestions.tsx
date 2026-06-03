@@ -6,12 +6,14 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { PublicCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
+import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
@@ -62,7 +64,6 @@ router.get(
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer'],
     });
 
     const rawQuestions = await selectQuestionsForCourse(
@@ -86,6 +87,10 @@ router.get(
       (await features.enabledFromLocals('ai-question-generation', res.locals));
 
     const mappedCourseInstances = z.array(PublicCourseInstanceSchema).parse(courseInstances);
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -111,8 +116,9 @@ router.get(
               showImportQuestionsButton={showImportQuestionsButton}
               showAiGenerateQuestionButton={showAiGenerateQuestionButton}
               showSharingSets={res.locals.question_sharing_enabled}
+              canEditQuestions={showAddQuestionButton}
               urlPrefix={res.locals.urlPrefix}
-              csrfToken={res.locals.__csrf_token}
+              trpcCsrfToken={trpcCsrfToken}
               search={search}
               isDevMode={config.devMode}
             />

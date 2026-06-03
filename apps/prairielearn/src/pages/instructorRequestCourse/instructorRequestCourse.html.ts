@@ -115,6 +115,9 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                   if (approved_by_user) {
                     details = `Approved by ${approved_by_user.name}`;
                   } else {
+                    // PrairieLearn used to support auto-approval of course requests. A request
+                    // that was automaticalaly approved did not store a reviewer. This functionality
+                    // was since removed, but we retain the rendering of this for historical data.
                     details = 'Automatically approved';
                   }
                   break;

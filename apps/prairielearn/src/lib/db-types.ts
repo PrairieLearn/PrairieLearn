@@ -729,6 +729,7 @@ export const CourseSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   options: z.any(),
   path: z.string(),
+  questions_receive_user_data: z.boolean(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
@@ -1157,6 +1158,7 @@ export type Institution = z.infer<typeof InstitutionSchema>;
 
 export const InstitutionSettingsSchema = z.object({
   course_request_message: z.string().nullable(),
+  github_course_owner: z.string().nullable(),
   institution_id: IdSchema,
 });
 export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;

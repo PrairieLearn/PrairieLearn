@@ -588,6 +588,11 @@ export async function aiGrade({
       };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
+      const aiCaller = {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: course,
+      };
       const render_question_results = await questionModule.render({
         renderSelection: { question: true, submissions: false, answer: true },
         variant,
@@ -596,6 +601,7 @@ export async function aiGrade({
         submissions: [],
         course: question_course,
         locals,
+        caller: aiCaller,
       });
       if (render_question_results.courseIssues.length > 0) {
         logger.error(render_question_results.courseIssues.toString());
@@ -613,6 +619,7 @@ export async function aiGrade({
         submissions: [submission],
         course: question_course,
         locals,
+        caller: aiCaller,
       });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 

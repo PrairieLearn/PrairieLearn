@@ -3,8 +3,6 @@ import * as path from 'path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { runInTransactionAsync } from '@prairielearn/postgres';
-
 import {
   MAX_ACCESS_CONTROL_RULES,
   MAX_ENROLLMENT_RULES,
@@ -14,12 +12,9 @@ import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
   type EnrollmentAccessControlRuleData,
-  deleteEnrollmentAccessControlsByIds,
-  selectAccessControlRules,
+  replaceEnrollmentAccessControlRules,
   selectPrairieTestExamMetadataByUuids,
-  syncEnrollmentAccessControl,
 } from '../../models/assessment-access-control-rules.js';
-import { lockAssessment } from '../../models/assessment.js';
 import {
   selectUsersAndEnrollmentsByUidsInCourseInstance,
   selectUsersAndEnrollmentsForCourseInstance,
@@ -290,32 +285,21 @@ const saveAllRules = t.procedure
     // Enrollment rules are written directly to DB (they are per-student
     // overrides, not stored in infoAssessment.json).
     if (enrollmentRules !== undefined) {
-      await runInTransactionAsync(async () => {
-        await lockAssessment(opts.ctx.assessment);
-
-        // Determine which enrollment rules to delete
-        const currentRules = await selectAccessControlRules(opts.ctx.assessment, ['enrollment']);
-        const existingIds = new Set(currentRules.map((r) => r.id));
-        const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
-        const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
-        await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
-
-        if (enrollmentRules.length > 0) {
-          // TODO: Add audit logging for enrollment rule changes. Label/default rules
-          // are tracked in git; only enrollment rules need separate audit logs.
-          for (const enrollmentRule of enrollmentRules) {
-            const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-            if (enrollmentRule.id) {
-              ruleData.id = enrollmentRule.id;
-            }
-            await syncEnrollmentAccessControl(
-              opts.ctx.assessment,
-              ruleData,
-              enrollmentRule.enrollmentIds,
-            );
+      // TODO: Add audit logging for enrollment rule changes. Label/default rules
+      // are tracked in git; only enrollment rules need separate audit logs.
+      await replaceEnrollmentAccessControlRules(
+        opts.ctx.assessment,
+        enrollmentRules.map((enrollmentRule) => {
+          const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+          if (enrollmentRule.id) {
+            ruleData.id = enrollmentRule.id;
           }
-        }
-      });
+          return {
+            ruleData,
+            enrollmentIds: enrollmentRule.enrollmentIds,
+          };
+        }),
+      );
     }
 
     return { newHash: saveResult.newHash };

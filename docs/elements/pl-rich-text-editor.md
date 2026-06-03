@@ -35,6 +35,14 @@ The algorithm identifies words by splitting on whitespace, a convention that wor
 
 The `pl-rich-text-editor` element creates a file submission corresponding to the HTML content of the student answer. If the file name is not provided, the name `answer.html` is used. If more than one `pl-rich-text-editor` is included in a question, they must each contain a different file name; in that case, the file name must be explicitly provided, as the default name would clash between elements.
 
+## A note on accessibility
+
+A common construct, typically inherited from questions imported from other tools, is to use a rich text editor with "structured" starting content, such as a table with empty cells or a set of headings for sub-problems. This is often done to encourage students to provide structured answers (e.g., filling out a table with specific information). However, this approach can lead to accessibility issues, as screen readers may have difficulty navigating and interpreting the structure of the content. It also allows students to ignore the structure altogether, which may confuse graders and lead to inconsistent answers.
+
+If you want to encourage structured answers, consider using separate input fields for each piece of information instead of relying on a rich text editor with complex formatting. This can help ensure that all students, including those using assistive technologies, can access and interact with the question effectively. For example, instead of including a table as the starting content of a rich text editor, you can create a table that contains separate elements for each cell, allowing students to fill in their answers without the need to navigate complex formatting. This also provides the additional benefit of allowing each cell to be based on the specific format (e.g., numeric, string, multi-line text) that best suits the expected answer, and allows for more precise grading and feedback. It also allows these values to be auto-graded when applicable, which is not possible when the answer is embedded in a rich text editor.
+
+Even if you expect students to provide rich-text answers, consider separating the question into multiple parts, each with its own input field, instead of asking students to provide a single answer with complex formatting. This can help students focus on each part of the question and provide more organized answers, while also simplifying the grading process and improving accessibility.
+
 ## Example implementations
 
 - [element/richTextEditor]
