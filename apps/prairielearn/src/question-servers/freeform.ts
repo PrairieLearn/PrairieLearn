@@ -1869,6 +1869,12 @@ async function getCacheKey(
         // We deliberately exclude large user-controlled objects from the cache key.
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
+        //
+        // `data.options` is intentionally retained: `options.user` and
+        // `options.group` must influence the key so a render is never shared
+        // across users. On group variants, members share one cached render only
+        // because `user` is null there and `group.members` has a deterministic
+        // order (see the `select_group_members` query).
         omit(data, [
           'params',
           'correct_answers',
