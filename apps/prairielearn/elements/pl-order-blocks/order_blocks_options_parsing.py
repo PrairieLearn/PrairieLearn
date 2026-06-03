@@ -12,13 +12,13 @@ class GroupInfo(TypedDict):
     depends: list[str] | None
 
 
-class DisplayBlockType(Enum):
+class DisplayBlocksType(Enum):
     VERTICAL = "vertical"
     INLINE_WRAP = "inline-wrap"
     INLINE_NOWRAP = "inline-nowrap"
 
     def is_inline(self) -> bool:
-        return self in {DisplayBlockType.INLINE_WRAP, DisplayBlockType.INLINE_NOWRAP}
+        return self in {DisplayBlocksType.INLINE_WRAP, DisplayBlocksType.INLINE_NOWRAP}
 
 
 class GradingMethodType(Enum):
@@ -79,7 +79,7 @@ ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
-DISPLAY_BLOCK_DEFAULT = DisplayBlockType.VERTICAL
+DISPLAY_BLOCKS_DEFAULT = DisplayBlocksType.VERTICAL
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -274,7 +274,7 @@ class OrderBlocksOptions:
     format: FormatType
     code_language: str | None
     inline: bool
-    display_block: DisplayBlockType
+    display_blocks: DisplayBlocksType
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -335,11 +335,11 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
-        self.display_block = pl.get_enum_attrib(
+        self.display_blocks = pl.get_enum_attrib(
             html_element,
-            "display-block",
-            DisplayBlockType,
-            DISPLAY_BLOCK_DEFAULT,
+            "display-blocks",
+            DisplayBlocksType,
+            DISPLAY_BLOCKS_DEFAULT,
         )
         self.has_optional_blocks = is_multigraph(html_element)
 
@@ -377,7 +377,7 @@ class OrderBlocksOptions:
             "min-incorrect",
             "weight",
             "inline",
-            "display-block",
+            "display-blocks",
             "max-indent",
             "feedback",
             "partial-credit",
@@ -451,7 +451,7 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if (self.inline or self.display_block.is_inline()) and self.indentation:
+        if (self.inline or self.display_blocks.is_inline()) and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
             )

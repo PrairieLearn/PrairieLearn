@@ -47,8 +47,8 @@ def assert_order_blocks_options(
         assert order_block_options.solution_header == options["solution-header"]
     if "partial-credit" in options:
         assert order_block_options.partial_credit.value == options["partial-credit"]
-    if "display-block" in options:
-        assert order_block_options.display_block.value == options["display-block"]
+    if "display-blocks" in options:
+        assert order_block_options.display_blocks.value == options["display-blocks"]
     if "solution-placement" in options:
         assert (
             order_block_options.solution_placement.value
@@ -455,14 +455,14 @@ def test_shuffle_distractor_groups() -> None:
 @pytest.mark.parametrize(
     ("options"),
     [
-        {"answers-name": "test", "display-block": "vertical"},
-        {"answers-name": "test", "display-block": "inline-wrap"},
-        {"answers-name": "test", "display-block": "inline-nowrap"},
-        {"answers-name": "test", "display-block": "vertical", "indentation": True},
+        {"answers-name": "test", "display-blocks": "vertical"},
+        {"answers-name": "test", "display-blocks": "inline-wrap"},
+        {"answers-name": "test", "display-blocks": "inline-nowrap"},
+        {"answers-name": "test", "display-blocks": "vertical", "indentation": True},
     ],
 )
-def test_display_block_validation(options: dict) -> None:
-    """Tests valid pl-order-blocks display-block option validation"""
+def test_display_blocks_validation(options: dict) -> None:
+    """Tests valid pl-order-blocks display-blocks option validation"""
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,
@@ -480,7 +480,7 @@ def test_display_block_validation(options: dict) -> None:
         (
             {
                 "answers-name": "test",
-                "display-block": "inline-wrap",
+                "display-blocks": "inline-wrap",
                 "indentation": True,
             },
             "The indentation attribute may not be used when inline is true.",
@@ -488,15 +488,15 @@ def test_display_block_validation(options: dict) -> None:
         (
             {
                 "answers-name": "test",
-                "display-block": "inline-nowrap",
+                "display-blocks": "inline-nowrap",
                 "indentation": True,
             },
             "The indentation attribute may not be used when inline is true.",
         ),
     ],
 )
-def test_display_block_validation_failure(options: dict, error: str) -> None:
-    """Tests pl-order-blocks display-block option failure with indentation"""
+def test_display_blocks_validation_failure(options: dict, error: str) -> None:
+    """Tests pl-order-blocks display-blocks option failure with indentation"""
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,

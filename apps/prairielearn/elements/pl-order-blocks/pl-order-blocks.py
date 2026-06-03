@@ -24,7 +24,7 @@ from dag_checker import (
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
-    DisplayBlockType,
+    DisplayBlocksType,
     DistractorOrderType,
     FeedbackType,
     FormatType,
@@ -330,7 +330,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     order_blocks_options = OrderBlocksOptions(element)
     answer_name = order_blocks_options.answers_name
     inline = order_blocks_options.inline
-    display_block = order_blocks_options.display_block
+    display_blocks = order_blocks_options.display_blocks
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
     has_optional_blocks = order_blocks_options.has_optional_blocks
@@ -403,7 +403,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if dropzone_layout is SolutionPlacementType.BOTTOM
                 else "pl-order-blocks-right"
             ),
-            "inline": "true" if inline or display_block.is_inline() else "false",
+            "inline": "true" if inline or display_blocks.is_inline() else "false",
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
             "max_indent": order_blocks_options.max_indent,
@@ -411,11 +411,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "editable": editable,
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline()
+            if inline or display_blocks.is_inline()
             else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP
-            or (inline and display_block == DisplayBlockType.VERTICAL)
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
             else "",
         }
 
@@ -462,11 +462,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 block.get("badge_type", "") == "" for block in student_submission
             ),
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline()
+            if inline or display_blocks.is_inline()
             else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP
-            or (inline and display_block == DisplayBlockType.VERTICAL)
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
             else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
@@ -547,11 +547,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-order-blocks-horizontal"
-            if inline or display_block.is_inline()
+            if inline or display_blocks.is_inline()
             else "",
             "block_scroll": "pl-order-blocks-scroll"
-            if display_block == DisplayBlockType.INLINE_NOWRAP
-            or (inline and display_block == DisplayBlockType.VERTICAL)
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
             else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
