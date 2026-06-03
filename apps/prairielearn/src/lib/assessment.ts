@@ -406,7 +406,7 @@ export async function gradeAllAssessmentInstances({
 
   const serverJob = await createServerJob({
     type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
+    description: `${close ? 'Grade and close' : 'Grade'} all assessment instances for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_id,
