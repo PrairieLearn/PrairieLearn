@@ -5,8 +5,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../lib/config.js';
+import { UserSchema } from '../../lib/db-types.js';
 import { emitExternalImageCapture } from '../../lib/externalImageCaptureSocket.js';
 import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { ExternalImageCapture } from './externalImageCapture.html.js';
@@ -17,6 +19,20 @@ export default function (options = { publicQuestionPreview: false }) {
   router.use(
     '/',
     asyncHandler(async (req, res, next) => {
+      if (options.publicQuestionPreview) {
+        res.locals.course ??= await selectCourseById(req.params.course_id);
+        res.locals.question ??= await selectQuestionById(req.params.question_id);
+        res.locals.user = UserSchema.parse(res.locals.authn_user);
+
+        if (
+          res.locals.question.deleted_at != null ||
+          !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
+          res.locals.course.id !== res.locals.question.course_id
+        ) {
+          throw new HttpStatusError(404, 'Not Found');
+        }
+      }
+
       const variant = await selectAndAuthzVariant({
         unsafe_variant_id: req.params.variant_id,
         variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
