@@ -75,14 +75,20 @@ export function AppliesToField({
   const studentLabelLimitReached =
     studentLabels.length >= MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE;
   const studentLabelLimitReason = `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`;
-  const targetTypeLimitReason =
-    targetTypeDisabledReasons?.student_label ?? targetTypeDisabledReasons?.enrollment ?? null;
   const enrollmentDisabledReason = targetTypeDisabledReasons?.enrollment ?? undefined;
   const studentLabelDisabledReason = targetTypeDisabledReasons?.student_label ?? undefined;
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
   const targetDescription = targetType === 'enrollment' ? 'student' : 'student label';
   const studentSpecificPermissionMessageId = `${namePrefix}-student-specific-permission-message`;
+  const enrollmentLimitMessageId = `${namePrefix}-target-enrollment-limit-message`;
+  const studentLabelLimitMessageId = `${namePrefix}-target-student-label-limit-message`;
+  const enrollmentDescribedBy = [
+    showStudentLabelOnlyHint ? studentSpecificPermissionMessageId : null,
+    enrollmentDisabledReason ? enrollmentLimitMessageId : null,
+  ]
+    .filter((id) => id != null)
+    .join(' ');
 
   return (
     <div className="mb-3">
@@ -105,11 +111,14 @@ export function AppliesToField({
           checked={targetType === 'enrollment'}
           disabled={!ruleEditable || !canEditEnrollmentRules || enrollmentDisabledReason != null}
           title={enrollmentDisabledReason}
-          aria-describedby={
-            showStudentLabelOnlyHint ? studentSpecificPermissionMessageId : undefined
-          }
+          aria-describedby={enrollmentDescribedBy || undefined}
           onChange={() => onTargetTypeChange('enrollment')}
         />
+        {enrollmentDisabledReason && (
+          <Form.Text id={enrollmentLimitMessageId} className="text-muted d-block ms-4 mt-1 mb-2">
+            {enrollmentDisabledReason}
+          </Form.Text>
+        )}
         <Form.Check
           type="radio"
           id={`${namePrefix}-target-student-label`}
@@ -118,10 +127,13 @@ export function AppliesToField({
           checked={targetType === 'student_label'}
           disabled={!ruleEditable || studentLabelDisabledReason != null}
           title={studentLabelDisabledReason}
+          aria-describedby={studentLabelDisabledReason ? studentLabelLimitMessageId : undefined}
           onChange={() => onTargetTypeChange('student_label')}
         />
-        {targetTypeLimitReason && (
-          <Form.Text className="text-muted d-block mt-2">{targetTypeLimitReason}</Form.Text>
+        {studentLabelDisabledReason && (
+          <Form.Text id={studentLabelLimitMessageId} className="text-muted d-block ms-4 mt-1 mb-2">
+            {studentLabelDisabledReason}
+          </Form.Text>
         )}
       </fieldset>
 

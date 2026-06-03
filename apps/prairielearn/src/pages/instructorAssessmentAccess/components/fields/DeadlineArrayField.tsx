@@ -354,7 +354,7 @@ function DeadlineArrayInput({
       )}
 
       {addDisabledTitle && (
-        <Alert variant="secondary" className="py-2 mt-2 mb-0">
+        <Alert variant="secondary" className="py-2 mt-2 mb-2">
           {addDisabledTitle}
         </Alert>
       )}

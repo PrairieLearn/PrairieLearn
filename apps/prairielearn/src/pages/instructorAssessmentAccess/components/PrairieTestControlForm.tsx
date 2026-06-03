@@ -1,5 +1,5 @@
 import { type ChangeEvent, useEffect, useRef } from 'react';
-import { Button, Form } from 'react-bootstrap';
+import { Alert, Button, Form } from 'react-bootstrap';
 import {
   get,
   useController,
@@ -248,6 +248,11 @@ export function PrairieTestControlForm() {
       ))}
       {ruleEditable && (
         <>
+          {addExamDisabledTitle && (
+            <Alert variant="secondary" className="py-2 mb-2">
+              {addExamDisabledTitle}
+            </Alert>
+          )}
           <Button
             size="sm"
             variant="outline-primary"
@@ -267,9 +272,6 @@ export function PrairieTestControlForm() {
             <i className="bi bi-plus-circle me-1" aria-hidden="true" />
             Add exam
           </Button>
-          {addExamDisabledTitle && (
-            <Form.Text className="text-muted d-block mt-2">{addExamDisabledTitle}</Form.Text>
-          )}
         </>
       )}
     </div>
