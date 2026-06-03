@@ -4845,6 +4845,7 @@ __metadata:
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
     "@vscode/vscode-languagedetection": "npm:^1.0.23"
+    "@zip.js/zip.js": "npm:^2.8.26"
     commander: "npm:^15.0.0"
     fast-xml-parser: "npm:^5.8.0"
     he: "npm:^1.2.0"
@@ -7876,6 +7877,13 @@ __metadata:
   version: 0.8.13
   resolution: "@xmldom/xmldom@npm:0.8.13"
   checksum: 10c0/06405ee6fffba631abf715a305ace338420ebcea8baf1317f19f2752f5c505952b7df45159908e7be8451a42faa54326b780616ab4d08242b20477b2973da24b
+  languageName: node
+  linkType: hard
+
+"@zip.js/zip.js@npm:^2.8.26":
+  version: 2.8.26
+  resolution: "@zip.js/zip.js@npm:2.8.26"
+  checksum: 10c0/246e446309f55c3cc7beecf5d69e53aebb149707804afccb0bbaf07b31efe129292b4cc5f4f974092a583be5cbf79277b2864e9f6902ce8bb6d0cbd244844ebe
   languageName: node
   linkType: hard
 
