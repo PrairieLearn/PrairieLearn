@@ -191,8 +191,7 @@ function AssessmentLogsTableInner({
         meta: {
           label: 'Status',
           autoSize: true,
-          autoSizeSample: (rows) =>
-            sampleWidest(rows, (r) => (r.job_sequence.status ?? '').length),
+          autoSizeSample: (rows) => sampleWidest(rows, (r) => (r.job_sequence.status ?? '').length),
         },
         filterFn: (row, _columnId, filter: MultiSelectFilterValue<StatusValue>) =>
           applyMultiSelectFilter(filter, (values) => {
