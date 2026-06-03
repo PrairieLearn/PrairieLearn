@@ -185,9 +185,9 @@
     "brotli": 356
   },
   "stylesheets/pageLayout.css": {
-    "raw": 5946,
-    "gzip": 1456,
-    "brotli": 1207
+    "raw": 6689,
+    "gzip": 1644,
+    "brotli": 1379
   },
   "stylesheets/prairielearn-ui.css": {
     "raw": 2962,
@@ -322,7 +322,7 @@
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstances.ts": {
     "raw": 1242021,
     "gzip": 378295,
-    "brotli": 309094
+    "brotli": 309091
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 1040206,
