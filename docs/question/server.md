@@ -412,9 +412,9 @@ Courses can opt in so that `server.py` receives user and group identity. A cours
 ```python
 def generate(data):
     user = data["options"]["user"]    # Variant owner; None on group assessments
-    # { "uid": "123", "uin": "123456", "name": "John Doe" }
+    # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
     group = data["options"]["group"]  # None on individual assessments
-    # { "name": "Group 1", "members": [ { "uid": "123", "uin": "123456", "name": "John Doe" } ] }
+    # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
 
     if user is not None:
         data["params"]["greeting"] = f"Hello, {user['name']}!"
@@ -431,7 +431,7 @@ The `group` dict has `name` and `members` (a list with the same shape as `user`)
 
     When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.
 
-    A group's members can change over time: The members when a question was generated may be different than when a question is graded. Similarly, a user's name, uid, and uin may be different. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
+    A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, and UIN may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
 
 User and group data are provided to `server.py` only when **all** of the following are true:
 
