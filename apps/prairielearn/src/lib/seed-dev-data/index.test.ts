@@ -17,7 +17,7 @@ import {
 
 import { seedDevData } from './index.js';
 
-describe('seedDevData', () => {
+describe('seedDevData', { timeout: 60_000 }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
@@ -25,10 +25,6 @@ describe('seedDevData', () => {
     const result = await seedDevData();
     assert.isFalse(result.skipped);
     assert.equal(result.studentsSeeded, SEED_STUDENT_COUNT);
-    // Grading is random (~50%); with 30 students an all-or-nothing split is
-    // astronomically unlikely, so a strict interior range is a safe assertion.
-    assert.isAbove(result.graded, 0);
-    assert.isBelow(result.graded, SEED_STUDENT_COUNT);
 
     const course = await selectOptionalCourseByPath(TEST_COURSE_PATH);
     assert.isNotNull(course);
@@ -44,15 +40,23 @@ describe('seedDevData', () => {
     assert.isTrue(await selectAssessmentHasInstances(assessment.id));
 
     const assessmentQuestions = await selectAssessmentQuestions({ assessment_id: assessment.id });
-    const manualQuestion = assessmentQuestions.find(
+    const manualQuestions = assessmentQuestions.filter(
       (aq) => (aq.assessment_question.max_manual_points ?? 0) > 0,
     );
-    assert.isDefined(manualQuestion);
-    const { rubric, rubric_items } = await selectCompleteRubric(
-      manualQuestion.assessment_question.id,
-    );
-    assert.isNotNull(rubric);
-    assert.isAbove(rubric_items.length, 0);
+    assert.isAbove(manualQuestions.length, 0);
+
+    // Every manual question gets a generated rubric.
+    for (const mq of manualQuestions) {
+      const { rubric, rubric_items } = await selectCompleteRubric(mq.assessment_question.id);
+      assert.isNotNull(rubric);
+      assert.isAbove(rubric_items.length, 0);
+    }
+
+    // Grading is random (~50%) over every manual submission; with 30 students
+    // per manual question an all-or-nothing split is astronomically unlikely,
+    // so a strict interior range is a safe assertion.
+    assert.isAbove(result.graded, 0);
+    assert.isBelow(result.graded, manualQuestions.length * SEED_STUDENT_COUNT);
 
     // Second run is a no-op because the assessment already has instances.
     const second = await seedDevData();

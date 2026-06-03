@@ -14,7 +14,7 @@ import { selectAssessmentQuestions } from '../assessment-question.js';
 import { makeAssessmentInstance } from '../assessment.js';
 import { dangerousFullSystemAuthz } from '../authz-data-lib.js';
 import { type Course, type CourseInstance, type Question } from '../db-types.js';
-import { saveSubmission } from '../grading.js';
+import { saveAndGradeSubmission, saveSubmission } from '../grading.js';
 import { updateAssessmentQuestionRubric, updateInstanceQuestionScore } from '../manualGrading.js';
 import { TEST_COURSE_PATH } from '../paths.js';
 import { createTestSubmissionData } from '../question-testing.js';
@@ -32,10 +32,30 @@ import { generateFakeRubric } from './rubric.js';
 export interface SeedResult {
   /** True when seeding was skipped (already seeded, or no manual question). */
   skipped: boolean;
-  /** Number of students for which a submission was created. */
+  /** Number of students for which submissions were created. */
   studentsSeeded: number;
-  /** Number of submissions that were graded with the rubric. */
+  /** Number of manual submissions that were graded with a rubric. */
   graded: number;
+}
+
+/**
+ * A question selected for seeding, classified by how its submissions are graded.
+ *
+ * - `isManual` questions (`max_manual_points > 0`) get a generated rubric and a
+ *   fraction of their submissions graded; the rest stay in the manual-grading
+ *   queue.
+ * - `isAuto` questions (internally graded with auto points) are auto-graded
+ *   inline when the submission is saved.
+ *
+ * Externally graded questions (which would dispatch a job to a Docker grader
+ * that isn't running in dev) and zero-point questions are excluded entirely.
+ */
+interface SeedQuestion {
+  assessmentQuestionId: string;
+  maxManualPoints: number;
+  question: Question;
+  isManual: boolean;
+  isAuto: boolean;
 }
 
 /**
@@ -78,118 +98,151 @@ export async function seedDevData(): Promise<SeedResult> {
   }
 
   const assessmentQuestions = await selectAssessmentQuestions({ assessment_id: assessment.id });
-  const manualQuestion = assessmentQuestions.find(
-    (aq) => (aq.assessment_question.max_manual_points ?? 0) > 0,
-  );
-  if (manualQuestion == null) {
+
+  const seedQuestions: SeedQuestion[] = [];
+  for (const aq of assessmentQuestions) {
+    const maxManualPoints = aq.assessment_question.max_manual_points ?? 0;
+    const maxAutoPoints = aq.assessment_question.max_auto_points ?? 0;
+    const question = await selectQuestionById(aq.assessment_question.question_id);
+    const isManual = maxManualPoints > 0;
+    const isAuto = !isManual && question.grading_method === 'Internal' && maxAutoPoints > 0;
+    if (!isManual && !isAuto) continue;
+    seedQuestions.push({
+      assessmentQuestionId: aq.assessment_question.id,
+      maxManualPoints,
+      question,
+      isManual,
+      isAuto,
+    });
+  }
+
+  const manualQuestions = seedQuestions.filter((sq) => sq.isManual);
+  if (manualQuestions.length === 0) {
     logger.warn(
       `[seed-dev-data] No manually-graded question found on ${TARGET_ASSESSMENT_TID}; skipping`,
     );
     return { skipped: true, studentsSeeded: 0, graded: 0 };
   }
 
-  const assessmentQuestionId = manualQuestion.assessment_question.id;
-  const maxManualPoints = manualQuestion.assessment_question.max_manual_points ?? 0;
-  const question = await selectQuestionById(manualQuestion.assessment_question.question_id);
+  logger.info(
+    `[seed-dev-data] Seeding ${SEED_STUDENT_COUNT} students on ${TARGET_ASSESSMENT_TID} across ${seedQuestions.length} questions`,
+  );
 
-  logger.info(`[seed-dev-data] Seeding ${SEED_STUDENT_COUNT} students on ${TARGET_ASSESSMENT_TID}`);
+  // Per manual question, track (instance question id -> submission id) so we can
+  // grade a fraction of them once the rubric is attached.
+  const manualSubmissionsByQuestion = new Map<string, Map<string, string>>();
+  for (const mq of manualQuestions) {
+    manualSubmissionsByQuestion.set(mq.assessmentQuestionId, new Map());
+  }
 
-  const submissionsByInstanceQuestion = new Map<string, string>();
   for (let i = 0; i < SEED_STUDENT_COUNT; i++) {
-    const submission = await seedStudentSubmission({
+    const { student, assessmentInstanceId } = await seedStudentInstance({
       assessment,
-      assessmentQuestionId,
-      course,
       courseInstance,
-      question,
     });
-    submissionsByInstanceQuestion.set(submission.instanceQuestionId, submission.submissionId);
+
+    for (const sq of seedQuestions) {
+      const { instanceQuestionId, submissionId } = await seedQuestionSubmission({
+        assessmentInstanceId,
+        assessmentQuestionId: sq.assessmentQuestionId,
+        course,
+        courseInstance,
+        question: sq.question,
+        student,
+        autoGrade: sq.isAuto,
+      });
+      if (sq.isManual) {
+        manualSubmissionsByQuestion
+          .get(sq.assessmentQuestionId)
+          ?.set(instanceQuestionId, submissionId);
+      }
+    }
   }
 
-  // Attach a generated rubric to the manual question. `tag_for_manual_grading`
-  // flags all existing instance questions as needing manual grading.
-  const rubricConfig = generateFakeRubric({
-    numItems: 5,
-    includeNegativeItem: true,
-    replaceAutoPoints: false,
-    maxPoints: maxManualPoints,
-  });
-  await updateAssessmentQuestionRubric({
-    assessment,
-    assessment_question_id: assessmentQuestionId,
-    use_rubric: true,
-    replace_auto_points: rubricConfig.replace_auto_points,
-    starting_points: rubricConfig.starting_points,
-    min_points: rubricConfig.min_points,
-    max_extra_points: rubricConfig.max_extra_points,
-    rubric_items: rubricConfig.rubric_items,
-    tag_for_manual_grading: true,
-    grader_guidelines: rubricConfig.grader_guidelines,
-    authn_user_id: devUser.id,
-  });
-
-  // Grade a fraction of submissions with a random subset of rubric items,
-  // leaving the rest pending in the manual-grading queue.
-  const { rubric, rubric_items: rubricItems } = await selectCompleteRubric(assessmentQuestionId);
-  if (rubric == null) {
-    logger.error('[seed-dev-data] Rubric was not created; skipping grading');
-    return { skipped: false, studentsSeeded: submissionsByInstanceQuestion.size, graded: 0 };
-  }
-
+  // Attach a generated rubric to each manual question and grade a fraction of
+  // its submissions, leaving the rest pending in the manual-grading queue.
+  // `tag_for_manual_grading` flags all existing instance questions as needing
+  // manual grading.
   let gradedCount = 0;
-  for (const [instanceQuestionId, submissionId] of submissionsByInstanceQuestion) {
-    if (Math.random() >= SEED_GRADED_FRACTION) continue;
-
-    const appliedRubricItems = rubricItems
-      .filter(() => Math.random() < 0.5)
-      .map((item) => ({ rubric_item_id: item.id }));
-
-    await updateInstanceQuestionScore({
+  for (const mq of manualQuestions) {
+    const rubricConfig = generateFakeRubric({
+      numItems: 5,
+      includeNegativeItem: true,
+      replaceAutoPoints: false,
+      maxPoints: mq.maxManualPoints,
+    });
+    await updateAssessmentQuestionRubric({
       assessment,
-      instance_question_id: instanceQuestionId,
-      submission_id: submissionId,
-      check_modified_at: null,
-      score: {
-        manual_rubric_data: {
-          rubric_id: rubric.id,
-          applied_rubric_items: appliedRubricItems,
-          adjust_points: 0,
-        },
-      },
+      assessment_question_id: mq.assessmentQuestionId,
+      use_rubric: true,
+      replace_auto_points: rubricConfig.replace_auto_points,
+      starting_points: rubricConfig.starting_points,
+      min_points: rubricConfig.min_points,
+      max_extra_points: rubricConfig.max_extra_points,
+      rubric_items: rubricConfig.rubric_items,
+      tag_for_manual_grading: true,
+      grader_guidelines: rubricConfig.grader_guidelines,
       authn_user_id: devUser.id,
     });
-    gradedCount++;
+
+    const { rubric, rubric_items: rubricItems } = await selectCompleteRubric(
+      mq.assessmentQuestionId,
+    );
+    if (rubric == null) {
+      logger.error(
+        `[seed-dev-data] Rubric was not created for ${mq.question.qid}; skipping grading`,
+      );
+      continue;
+    }
+
+    const submissions = manualSubmissionsByQuestion.get(mq.assessmentQuestionId) ?? new Map();
+    for (const [instanceQuestionId, submissionId] of submissions) {
+      if (Math.random() >= SEED_GRADED_FRACTION) continue;
+
+      const appliedRubricItems = rubricItems
+        .filter(() => Math.random() < 0.5)
+        .map((item) => ({ rubric_item_id: item.id }));
+
+      await updateInstanceQuestionScore({
+        assessment,
+        instance_question_id: instanceQuestionId,
+        submission_id: submissionId,
+        check_modified_at: null,
+        score: {
+          manual_rubric_data: {
+            rubric_id: rubric.id,
+            applied_rubric_items: appliedRubricItems,
+            adjust_points: 0,
+          },
+        },
+        authn_user_id: devUser.id,
+      });
+      gradedCount++;
+    }
   }
 
   logger.info(
-    `[seed-dev-data] Seeded ${submissionsByInstanceQuestion.size} submissions, graded ${gradedCount}`,
+    `[seed-dev-data] Seeded ${SEED_STUDENT_COUNT} students, graded ${gradedCount} manual submissions`,
   );
 
   return {
     skipped: false,
-    studentsSeeded: submissionsByInstanceQuestion.size,
+    studentsSeeded: SEED_STUDENT_COUNT,
     graded: gradedCount,
   };
 }
 
 /**
- * Generates one student with a realistic fake name/email, enrolls them, opens
- * an assessment instance, and saves a single (ungraded) submission on the
- * manual question. Returns the instance question and submission ids.
+ * Generates one student with a realistic fake name/email, enrolls them, and
+ * opens an assessment instance. Returns the student and the instance id.
  */
-async function seedStudentSubmission({
+async function seedStudentInstance({
   assessment,
-  assessmentQuestionId,
-  course,
   courseInstance,
-  question,
 }: {
   assessment: Awaited<ReturnType<typeof selectAssessmentByTid>>;
-  assessmentQuestionId: string;
-  course: Course;
   courseInstance: CourseInstance;
-  question: Question;
-}): Promise<{ instanceQuestionId: string; submissionId: string }> {
+}): Promise<{ student: Awaited<ReturnType<typeof generateUser>>; assessmentInstanceId: string }> {
   const student = await generateUser();
   await ensureUncheckedEnrollment({
     courseInstance,
@@ -209,6 +262,32 @@ async function seedStudentSubmission({
     client_fingerprint_id: null,
   });
 
+  return { student, assessmentInstanceId };
+}
+
+/**
+ * Saves a single submission on one question of a student's assessment instance.
+ * When `autoGrade` is set (internally graded questions), the submission is also
+ * graded inline; otherwise it is left ungraded for the manual-grading queue.
+ * Returns the instance question and submission ids.
+ */
+async function seedQuestionSubmission({
+  assessmentInstanceId,
+  assessmentQuestionId,
+  course,
+  courseInstance,
+  question,
+  student,
+  autoGrade,
+}: {
+  assessmentInstanceId: string;
+  assessmentQuestionId: string;
+  course: Course;
+  courseInstance: CourseInstance;
+  question: Question;
+  student: Awaited<ReturnType<typeof generateUser>>;
+  autoGrade: boolean;
+}): Promise<{ instanceQuestionId: string; submissionId: string }> {
   const instanceQuestion = await selectInstanceQuestionForAssessmentInstance({
     assessment_instance_id: assessmentInstanceId,
     assessment_question_id: assessmentQuestionId,
@@ -236,19 +315,27 @@ async function seedStudentSubmission({
     student.id,
   );
 
-  const { submission_id } = await saveSubmission(
-    {
-      ...data,
-      auth_user_id: student.id,
-      user_id: student.id,
-      variant_id: variant.id,
-      submitted_answer: data.raw_submitted_answer,
-      credit: 100,
-    },
-    variant,
-    question,
-    course,
-  );
+  const submissionData = {
+    ...data,
+    auth_user_id: student.id,
+    user_id: student.id,
+    variant_id: variant.id,
+    submitted_answer: data.raw_submitted_answer,
+    credit: 100,
+  };
 
+  if (autoGrade) {
+    const submissionId = await saveAndGradeSubmission(
+      submissionData,
+      variant,
+      question,
+      course,
+      true,
+      true,
+    );
+    return { instanceQuestionId: instanceQuestion.id, submissionId };
+  }
+
+  const { submission_id } = await saveSubmission(submissionData, variant, question, course);
   return { instanceQuestionId: instanceQuestion.id, submissionId: submission_id };
 }

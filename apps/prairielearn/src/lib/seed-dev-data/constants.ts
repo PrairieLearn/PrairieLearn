@@ -11,7 +11,7 @@ export const SEED_GRADED_FRACTION = 0.5;
 export const TARGET_COURSE_INSTANCE_SHORT_NAME = 'Sp15';
 
 /** Assessment (TID) in the test course to seed. */
-export const TARGET_ASSESSMENT_TID = 'hw10-aiGrading';
+export const TARGET_ASSESSMENT_TID = 'hw9-internalExternalManual';
 
 /**
  * uid of the dev administrator user (created by `insertDevUser`), used as the
