@@ -1,27 +1,15 @@
-import { z } from 'zod';
-
-import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { JobStatusHtml } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { getAssessmentLogsUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-export const UploadJobSequenceSchema = z.object({
-  job_sequence: JobSequenceSchema,
-  user_uid: UserSchema.shape.uid,
-});
-type UploadJobSequence = z.infer<typeof UploadJobSequenceSchema>;
 
 export function InstructorAssessmentUploads({
   resLocals,
-  uploadJobSequences,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({
     resLocals,
@@ -55,9 +43,8 @@ export function InstructorAssessmentUploads({
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-        uploadJobSequences,
         urlPrefix: resLocals.urlPrefix,
-        timezone: resLocals.course_instance.display_timezone,
+        assessmentId: resLocals.assessment.id,
       })}
     `,
   });
@@ -68,17 +55,15 @@ function AssessmentUploadCard({
   assessmentSetName,
   assessmentNumber,
   authzHasPermissionEdit,
-  uploadJobSequences,
   urlPrefix,
-  timezone,
+  assessmentId,
 }: {
   groupWork: boolean;
   assessmentSetName: string;
   assessmentNumber: string;
   authzHasPermissionEdit: boolean;
-  uploadJobSequences: UploadJobSequence[];
   urlPrefix: string;
-  timezone: string;
+  assessmentId: string;
 }) {
   return html`
     <div class="card mb-4">
@@ -166,45 +151,11 @@ function AssessmentUploadCard({
           `
         : ''}
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover" aria-label="Score upload job history">
-          <thead>
-            <tr>
-              <th>Number</th>
-              <th>Date</th>
-              <th>Description</th>
-              <th>User</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${uploadJobSequences.length > 0
-              ? uploadJobSequences.map((job_sequence) => {
-                  return html`
-                    <tr>
-                      <td>${job_sequence.job_sequence.number}</td>
-                      <td>${formatDate(job_sequence.job_sequence.start_date!, timezone)}</td>
-                      <td>${job_sequence.job_sequence.description}</td>
-                      <td>${job_sequence.user_uid}</td>
-                      <td>${JobStatusHtml({ status: job_sequence.job_sequence.status })}</td>
-                      <td>
-                        <a
-                          href="${urlPrefix}/jobSequence/${job_sequence.job_sequence.id}"
-                          class="btn btn-xs btn-info"
-                          >Details</a
-                        >
-                      </td>
-                    </tr>
-                  `;
-                })
-              : html`
-                  <tr>
-                    <td colspan="6">No previous uploads.</td>
-                  </tr>
-                `}
-          </tbody>
-        </table>
+      <div class="card-body">
+        <p class="mb-0 text-muted small">
+          Past uploads appear in the
+          <a href="${getAssessmentLogsUrl({ urlPrefix, assessmentId })}">assessment logs</a>.
+        </p>
       </div>
     </div>
   `;

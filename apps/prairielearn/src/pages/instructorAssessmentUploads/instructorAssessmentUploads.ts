@@ -1,7 +1,6 @@
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -12,13 +11,9 @@ import {
 import { uploadSubmissions } from '../../lib/submissions-upload.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import {
-  InstructorAssessmentUploads,
-  UploadJobSequenceSchema,
-} from './instructorAssessmentUploads.html.js';
+import { InstructorAssessmentUploads } from './instructorAssessmentUploads.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -27,12 +22,7 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const uploadJobSequences = await sqldb.queryRows(
-      sql.select_upload_job_sequences,
-      { assessment_id: res.locals.assessment.id },
-      UploadJobSequenceSchema,
-    );
-    res.send(InstructorAssessmentUploads({ resLocals: res.locals, uploadJobSequences }));
+    res.send(InstructorAssessmentUploads({ resLocals: res.locals }));
   }),
 );
 
