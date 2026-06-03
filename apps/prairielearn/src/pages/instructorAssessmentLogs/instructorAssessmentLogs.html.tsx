@@ -9,11 +9,13 @@ export function InstructorAssessmentLogs({
   assessmentId,
   timezone,
   logs,
+  search,
 }: {
   courseInstanceId: string;
   assessmentId: string;
   timezone: string;
   logs: AssessmentLogRow[];
+  search: string;
 }) {
   return (
     <div className="d-flex flex-column h-100">
@@ -33,6 +35,7 @@ export function InstructorAssessmentLogs({
             logs={logs}
             courseInstanceId={courseInstanceId}
             timezone={timezone}
+            search={search}
           />
         </Hydrate>
       </div>

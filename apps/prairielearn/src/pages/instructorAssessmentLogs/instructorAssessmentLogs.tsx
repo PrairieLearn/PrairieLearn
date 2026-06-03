@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { AssessmentLogRowSchema } from './AssessmentLogsTable.js';
@@ -50,6 +51,7 @@ router.get(
             assessmentId={assessment.id}
             timezone={course_instance.display_timezone}
             logs={logs}
+            search={getUrl(req).search}
           />
         ),
       }),
