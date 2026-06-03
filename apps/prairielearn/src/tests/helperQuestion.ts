@@ -497,38 +497,26 @@ export function checkQuestionFeedback(locals: Record<string, any>) {
 }
 
 export function regradeAssessment(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentRegrading URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentRegradingUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/regrading';
-      const response = await fetch(locals.instructorAssessmentRegradingUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#regrade-all-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentRegrading URL for regrading', function () {
-    it('should succeed', async function () {
-      assert(locals.instructorAssessmentRegradingUrl);
-      const response = await fetch(locals.instructorAssessmentRegradingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'regrade_all',
-          __csrf_token: locals.__csrf_token,
-        }),
+  describe('regrade all assessment instances', function () {
+    it('should start a regrade job', async function () {
+      const courseInstanceId = locals.courseInstanceBaseUrl.split('/course_instance/')[1];
+      const csrfToken = generatePrefixCsrfToken(
+        {
+          url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId: locals.assessment_id }),
+          authn_user_id: '1',
+        },
+        config.secretKey,
+      );
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken,
+        courseInstanceId,
+        assessmentId: locals.assessment_id,
+        urlBase: locals.siteUrl,
       });
-      assert.equal(response.status, 200);
+      const { jobSequenceId } = await trpcClient.assessmentInstances.regrade.mutate({
+        assessmentInstanceIds: null,
+      });
+      assert.isString(jobSequenceId);
     });
   });
   waitForJobSequence(locals);
