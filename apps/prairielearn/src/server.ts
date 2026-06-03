@@ -951,6 +951,17 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navSubPage = 'regrading';
+        next();
+      },
+      (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
+        .default,
+    ],
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/logs',
     [
       function (req: Request, res: Response, next: NextFunction) {

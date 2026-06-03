@@ -158,6 +158,13 @@ export function getNavPageTabs() {
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
+        activeSubPage: 'regrading',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/regrading`,
+        iconClasses: 'fa fa-sync',
+        tabLabel: 'Regrading',
+        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+      },
+      {
         activeSubPage: 'settings',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/settings`,
         iconClasses: 'fas fa-cog',

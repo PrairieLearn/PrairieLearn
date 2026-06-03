@@ -1,0 +1,54 @@
+import { Router } from 'express';
+
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+
+import {
+  InstructorAssessmentRegrading,
+  RegradingJobSequenceSchema,
+} from './instructorAssessmentRegrading.html.js';
+
+const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+router.get(
+  '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'assessment'>(async (req, res) => {
+    const regradingJobSequences = await sqldb.queryRows(
+      sql.select_regrading_job_sequences,
+      { assessment_id: res.locals.assessment.id },
+      RegradingJobSequenceSchema,
+    );
+    res.send(InstructorAssessmentRegrading({ resLocals: res.locals, regradingJobSequences }));
+  }),
+);
+
+router.post(
+  '/',
+  typedAsyncHandler<'assessment'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    if (req.body.__action === 'regrade_all') {
+      const job_sequence_id = await regradeAllAssessmentInstances(
+        res.locals.assessment.id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
+
+export default router;
