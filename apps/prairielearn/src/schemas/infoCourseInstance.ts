@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 import { ColorJsonSchema } from './infoCourse.js';
 
-export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 25;
+export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 100;
 
 const AccessRuleJsonSchema = z
   .object({

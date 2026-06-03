@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { SplitPane, StickySaveBar, type StickySaveBarAlert, useModalState } from '@prairielearn/ui';
+import { SplitPane, StickySaveBar, type StickySaveBarAlert } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -66,7 +66,6 @@ export function AccessControlForm({
   hiddenEnrollmentRuleCount: number;
 }) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
-  const deleteModal = useModalState<{ index: number; name: string }>();
 
   const displayTimezone = courseInstance.display_timezone;
   const defaultRule = initialData[0]
@@ -189,23 +188,15 @@ export function AccessControlForm({
     setSelectedRule({ type: 'override', index: newIndex });
   };
 
-  const handleDeleteClick = (index: number) => {
-    deleteModal.showWithData({ index, name: getOverrideName(index) });
-  };
-
-  const handleDeleteConfirm = () => {
-    if (deleteModal.data !== null) {
-      const deletedIndex = deleteModal.data.index;
-      if (selectedRule?.type === 'override') {
-        if (selectedRule.index === deletedIndex) {
-          setSelectedRule(null);
-        } else if (selectedRule.index > deletedIndex) {
-          setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
-        }
+  const handleDeleteOverride = (deletedIndex: number) => {
+    if (selectedRule?.type === 'override') {
+      if (selectedRule.index === deletedIndex) {
+        setSelectedRule(null);
+      } else if (selectedRule.index > deletedIndex) {
+        setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
       }
-      removeOverride(deletedIndex);
     }
-    deleteModal.hide();
+    removeOverride(deletedIndex);
   };
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
@@ -372,7 +363,7 @@ export function AccessControlForm({
                     readOnlyMessage={readOnlyMessage}
                     hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
                     onAddOverride={addOverride}
-                    onRemoveOverride={handleDeleteClick}
+                    onRemoveOverride={handleDeleteOverride}
                     onMoveOverride={handleMoveOverride}
                     onEditDefaultRule={() => setSelectedRule({ type: 'default' })}
                     onClearDefaultRule={() =>
@@ -411,24 +402,6 @@ export function AccessControlForm({
           onClose={() => setSelectedRule(null)}
         />
       </Form>
-
-      <Modal show={deleteModal.show} onHide={deleteModal.hide}>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete override</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete &quot;{deleteModal.data?.name ?? ''}&quot;? This action
-          cannot be undone.
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={deleteModal.hide}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteConfirm}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </FormProvider>
   );
 }

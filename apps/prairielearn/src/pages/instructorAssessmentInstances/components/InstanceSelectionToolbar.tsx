@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { Button, Dropdown, Modal, Spinner } from 'react-bootstrap';
 
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
-import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
+import { getAssessmentLogsUrl, getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import type { AssessmentInstancesError } from '../../../trpc/assessment/assessment-instances.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
 
 import { PendingRegradeQuestionList } from './PendingRegradeQuestionList.js';
 import { TimeLimitEditForm } from './TimeLimitEditForm.js';
+import { UploadDropdown } from './UploadDropdown.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type JobAction = 'grade' | 'gradeAndClose';
@@ -32,17 +33,24 @@ export function InstanceSelectionToolbar({
   allRows,
   clearSelection,
   courseInstanceId,
+  assessmentId,
   timezone,
+  groupWork,
+  isDevMode,
   onActionSuccess,
 }: {
   selectedRows: AssessmentInstanceRow[];
   allRows: AssessmentInstanceRow[];
   clearSelection: () => void;
   courseInstanceId: string;
+  assessmentId: string;
   timezone: string;
+  groupWork: boolean;
+  isDevMode: boolean;
   onActionSuccess: (message: string) => void;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
+  const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
   const isAllInstancesTarget = selectedRows.length === 0;
   const targetRows = isAllInstancesTarget ? allRows : selectedRows;
   const assessmentInstanceIds = isAllInstancesTarget
@@ -60,9 +68,9 @@ export function InstanceSelectionToolbar({
     <>
       <div className="d-flex align-items-center gap-2">
         <Dropdown>
-          <Dropdown.Toggle size="sm" variant="light" id="grade-actions">
-            <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
-            Grade
+          <Dropdown.Toggle size="sm" variant="light" id="instance-actions">
+            <i className="bi bi-three-dots me-2" aria-hidden="true" />
+            Actions
           </Dropdown.Toggle>
           <Dropdown.Menu>
             <Dropdown.Item onClick={() => setOpenModal('grade')}>
@@ -77,21 +85,28 @@ export function InstanceSelectionToolbar({
               <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
               Regrade
             </Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item onClick={() => setOpenModal('timeLimit')}>
+              <i className="bi bi-clock me-2" aria-hidden="true" />
+              Change time limit
+            </Dropdown.Item>
+            <Dropdown.Item className="text-danger" onClick={() => setOpenModal('delete')}>
+              <i className="bi bi-trash3 me-2" aria-hidden="true" />
+              Delete
+            </Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item as="a" href={logsUrl}>
+              <i className="bi bi-card-list me-2" aria-hidden="true" />
+              View logs
+            </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
-        <Button size="sm" variant="light" onClick={() => setOpenModal('timeLimit')}>
-          <i className="bi bi-clock me-2" aria-hidden="true" />
-          Change time limit
-        </Button>
-        <Button
-          size="sm"
-          variant="light"
-          className="text-danger"
-          onClick={() => setOpenModal('delete')}
-        >
-          <i className="bi bi-trash3 me-2" aria-hidden="true" />
-          Delete
-        </Button>
+        <UploadDropdown
+          courseInstanceId={courseInstanceId}
+          assessmentId={assessmentId}
+          groupWork={groupWork}
+          isDevMode={isDevMode}
+        />
       </div>
 
       <JobActionModalWithIds

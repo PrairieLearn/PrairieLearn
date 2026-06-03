@@ -12,7 +12,7 @@ import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
-import { AssessmentNavigation } from './AssessmentNavigation.js';
+import { AssessmentNavigation, AssessmentNavigationModal } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
@@ -401,21 +401,54 @@ export function PageLayout({
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}
-              ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
-                ? AssessmentNavigation({
-                    courseInstanceId: resLocals.course_instance.id,
-                    subPage: navContext.subPage,
-                    assessment: resLocals.assessment,
-                    assessmentSet: resLocals.assessment_set,
-                  })
-                : ''}
-              ${showContextNavigation
-                ? ContextNavigation({
-                    resLocals,
-                    navPage: navContext.page,
-                    navSubPage: navContext.subPage,
-                  })
-                : ''}
+              ${run(() => {
+                const hasSwitcher = Boolean(
+                  resLocals.assessment && resLocals.course_instance && sideNavEnabled,
+                );
+                const contextNav = showContextNavigation
+                  ? ContextNavigation({
+                      resLocals,
+                      navPage: navContext.page,
+                      navSubPage: navContext.subPage,
+                      embedded: hasSwitcher,
+                    })
+                  : '';
+                const hasTabs = contextNav !== '';
+                const switcher = hasSwitcher
+                  ? AssessmentNavigation({
+                      courseInstanceId: resLocals.course_instance.id,
+                      subPage: navContext.subPage,
+                      assessment: resLocals.assessment,
+                      assessmentSet: resLocals.assessment_set,
+                      embedded: hasTabs,
+                    })
+                  : '';
+                // Rendered outside the container-query wrapper
+                const switcherModal = hasSwitcher ? AssessmentNavigationModal() : '';
+
+                // When both the assessment switcher and the tabs are present,
+                // place them side by side in a single bar (switcher on the left,
+                // tabs on the right). The bar switches between this row layout
+                // and a stacked layout based on the *container's* width (a
+                // container query in pageLayout.css), so it accounts for the
+                // side nav width rather than just the viewport. Otherwise,
+                // render whichever one applies on its own.
+                if (hasSwitcher && hasTabs) {
+                  return html`
+                    <div class="assessment-navigation-container">
+                      <div
+                        class="d-flex column-gap-2 row-gap-2 bg-light pt-2 px-3 assessment-navigation-bar"
+                      >
+                        ${switcher}
+                        <div class="vr assessment-navigation-divider align-self-stretch my-1"></div>
+                        ${contextNav}
+                      </div>
+                    </div>
+                    ${switcherModal}
+                  `;
+                }
+                return html`${switcher}${contextNav}${switcherModal}`;
+              })}
               ${preContentString}
               <main
                 id="content"

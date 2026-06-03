@@ -75,7 +75,7 @@ async function aiEvaluateStudentResponse({
     course,
     locals,
     caller: {
-      effectiveUserId: variant.user_id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: course,
     },
