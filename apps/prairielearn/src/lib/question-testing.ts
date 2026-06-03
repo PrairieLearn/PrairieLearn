@@ -17,7 +17,7 @@ import {
   SubmissionSchema,
   type Variant,
 } from './db-types.js';
-import { gradeVariant, saveSubmission } from './grading.js';
+import { gradeVariant, saveAndGradeSubmission, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
@@ -184,6 +184,81 @@ export async function createTestSubmissionData(
 
   if (hasFatalIssue) data.gradable = false;
   return { data, hasFatalIssue };
+}
+
+/**
+ * Ensures an open variant for an instance question, generates a test submission
+ * for it via `test()`, and saves it. When `grade` is set the submission is also
+ * auto-graded inline; otherwise it is saved ungraded. If `test()` reports a
+ * fatal issue the submission is not saved and `submission_id` is `null`.
+ *
+ * Shared by the `generate_submissions` admin query and dev-data seeding.
+ */
+export async function generateAndSaveTestSubmission({
+  question,
+  questionCourse,
+  courseInstance,
+  variantCourse,
+  instanceQuestionId,
+  userId,
+  testType,
+  grade,
+}: {
+  question: Question;
+  questionCourse: Course;
+  courseInstance: CourseInstance;
+  variantCourse: Course;
+  instanceQuestionId: string;
+  userId: string;
+  testType: TestType;
+  grade: boolean;
+}): Promise<{ submission_id: string | null }> {
+  const variant = await ensureVariant({
+    question_id: question.id,
+    instance_question_id: instanceQuestionId,
+    user_id: userId,
+    authn_user_id: userId,
+    course_instance: courseInstance,
+    variant_course: variantCourse,
+    question_course: questionCourse,
+    options: { variant_seed: null },
+    require_open: true,
+    client_fingerprint_id: null,
+  });
+
+  const { data, hasFatalIssue } = await createTestSubmissionData(
+    variant,
+    question,
+    variantCourse,
+    testType,
+    userId,
+    userId,
+  );
+  if (hasFatalIssue) return { submission_id: null };
+
+  const submissionData = {
+    ...data,
+    auth_user_id: userId,
+    user_id: userId,
+    variant_id: variant.id,
+    submitted_answer: data.raw_submitted_answer,
+    credit: 100,
+  };
+
+  if (grade) {
+    const submission_id = await saveAndGradeSubmission(
+      submissionData,
+      variant,
+      question,
+      variantCourse,
+      true,
+      true,
+    );
+    return { submission_id };
+  }
+
+  const { submission_id } = await saveSubmission(submissionData, variant, question, variantCourse);
+  return { submission_id };
 }
 
 /**

@@ -14,8 +14,8 @@ export interface FakeRubricConfig {
  * plus an optional negative "style/formatting penalty" item. Used to populate a
  * manually-graded question for dev testing of the manual-grading UI.
  *
- * Determinism: callers seed/shuffle their own randomness; this uses `Math.random`
- * only for point weights, which is acceptable for dev fixtures.
+ * Point weights use `Math.random`, so the generated rubric varies between runs.
+ * This non-determinism is acceptable for dev fixtures.
  */
 export function generateFakeRubric({
   numItems,

@@ -4,6 +4,7 @@ import { selectAssessmentHasInstances } from '../../models/assessment-instance.j
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectOptionalCourseByPath } from '../../models/course.js';
+import { selectOpenInstanceQuestionsForAssessment } from '../../models/instance-question.js';
 import { selectCompleteRubric } from '../../models/rubrics.js';
 import * as helperServer from '../../tests/helperServer.js';
 import { selectAssessmentQuestions } from '../assessment-question.js';
@@ -57,6 +58,17 @@ describe('seedDevData', { timeout: 60_000 }, () => {
     // so a strict interior range is a safe assertion.
     assert.isAbove(result.graded, 0);
     assert.isBelow(result.graded, manualQuestions.length * SEED_STUDENT_COUNT);
+
+    // Regression guard: manualGrade/addingNumbers2 is declared `gradingMethod:
+    // Manual` but carries only auto points, which the grading pipeline
+    // auto-grades like an internal question. It must be seeded and graded, not
+    // dropped by the auto-vs-manual classification.
+    const instanceQuestions = await selectOpenInstanceQuestionsForAssessment(assessment.id);
+    const autoOnlyManual = instanceQuestions.filter(
+      (row) => row.question.qid === 'manualGrade/addingNumbers2',
+    );
+    assert.lengthOf(autoOnlyManual, SEED_STUDENT_COUNT);
+    assert.isTrue(autoOnlyManual.every((row) => row.instance_question.status !== 'unanswered'));
 
     // Second run is a no-op because the assessment already has instances.
     const second = await seedDevData();

@@ -1,10 +1,23 @@
 import z from 'zod';
 
-import { loadSqlEquiv, queryOptionalScalar, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 
-import { type InstanceQuestion, InstanceQuestionSchema } from '../lib/db-types.js';
+import {
+  CourseSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+  UserSchema,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const InstanceQuestionForGenerationSchema = z.object({
+  instance_question: InstanceQuestionSchema,
+  question: QuestionSchema,
+  user: UserSchema,
+  question_course: CourseSchema,
+});
+export type InstanceQuestionForGeneration = z.infer<typeof InstanceQuestionForGenerationSchema>;
 
 export async function computeNextAllowedGradingTimeMs({
   instanceQuestionId,
@@ -20,19 +33,17 @@ export async function computeNextAllowedGradingTimeMs({
 }
 
 /**
- * Selects the (unique) instance question for an assessment question within a
- * specific assessment instance.
+ * Selects every open instance question across the open assessment instances of
+ * an assessment, joined to the question, the question's course, and the student
+ * (the assessment instance's user, or a random member for team assessments).
+ * Returns the context needed to generate a test submission for each.
  */
-export async function selectInstanceQuestionForAssessmentInstance({
-  assessment_instance_id,
-  assessment_question_id,
-}: {
-  assessment_instance_id: string;
-  assessment_question_id: string;
-}): Promise<InstanceQuestion> {
-  return await queryRow(
-    sql.select_instance_question_for_assessment_instance,
-    { assessment_instance_id, assessment_question_id },
-    InstanceQuestionSchema,
+export async function selectOpenInstanceQuestionsForAssessment(
+  assessment_id: string,
+): Promise<InstanceQuestionForGeneration[]> {
+  return await queryRows(
+    sql.select_open_instance_questions_for_assessment,
+    { assessment_id },
+    InstanceQuestionForGenerationSchema,
   );
 }
