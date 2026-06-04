@@ -209,7 +209,7 @@ export async function randomGroups({
         let groupsCreated = 0,
           studentsGrouped = 0;
         await runInTransactionAsync(async () => {
-          // Create random teams using the maximum size where possible
+          // Create random groups using the maximum size where possible
           const userGroups = chunk(
             shuffle(studentsWithoutGroup.map((user) => user.uid)),
             max_group_size,

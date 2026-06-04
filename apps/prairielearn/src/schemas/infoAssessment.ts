@@ -1,4 +1,4 @@
-import { type ZodSchema, z } from 'zod';
+import { z } from 'zod';
 
 import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
@@ -6,7 +6,7 @@ import { CommentJsonSchema } from './comment.js';
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
 export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
-function uniqueArray<T extends ZodSchema>(schema: T) {
+function uniqueArray<T extends z.ZodType>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
     message: 'All items must be unique, no duplicate values allowed',
   });
