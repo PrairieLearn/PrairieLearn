@@ -7794,6 +7794,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vitest/pretty-format@npm:4.1.8":
+  version: 4.1.8
+  resolution: "@vitest/pretty-format@npm:4.1.8"
+  dependencies:
+    tinyrainbow: "npm:^3.1.0"
+  checksum: 10c0/553c456692a4b9ae13cd116c234c74b4495e0f1a0d5c51ffc3fab8ea085e3550769967e29db79bdac0cf127b1bf88b7f70bfba3dcc72be6bddf834433e30cc91
+  languageName: node
+  linkType: hard
+
 "@vitest/runner@npm:4.1.7":
   version: 4.1.7
   resolution: "@vitest/runner@npm:4.1.7"
@@ -7831,6 +7840,17 @@ __metadata:
     convert-source-map: "npm:^2.0.0"
     tinyrainbow: "npm:^3.1.0"
   checksum: 10c0/aa0079d8923506300527dc23ff68cf090ffcb2c6a9549e598ae22ba0eb8a6bb4448b10724b38bc6b077f9957333302a857d791ad2f7abd807bb6263c9a218833
+  languageName: node
+  linkType: hard
+
+"@vitest/utils@npm:^4.1.7":
+  version: 4.1.8
+  resolution: "@vitest/utils@npm:4.1.8"
+  dependencies:
+    "@vitest/pretty-format": "npm:4.1.8"
+    convert-source-map: "npm:^2.0.0"
+    tinyrainbow: "npm:^3.1.0"
+  checksum: 10c0/acda9d3d640c1ebc81afb358ac30589d7d7d583af81e2d09419f0af9cbe41f3ce0b90527326943bf0da51614be5fc31afcd32259f6beb32b3417999d6ef380f3
   languageName: node
   linkType: hard
 
@@ -16065,6 +16085,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
+    "@vitest/utils": "npm:^4.1.7"
     async: "npm:^3.2.6"
     dependency-cruiser: "npm:^17.4.3"
     eslint: "npm:^10.4.1"

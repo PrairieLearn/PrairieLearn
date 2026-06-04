@@ -1,10 +1,10 @@
 import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { slash } from '@vitest/utils/helpers';
 import ignore from 'ignore';
-import { dirname, relative, resolve } from 'pathe';
 import { defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
