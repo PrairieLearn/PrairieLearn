@@ -29,8 +29,7 @@
     "version": "changeset version && pnpm install --no-frozen-lockfile"
   },
   "dependencies": {
-    "async": "^3.2.6",
-    "node-gyp": "^12.3.0"
+    "async": "^3.2.6"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
