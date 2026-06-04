@@ -3,6 +3,10 @@ import { type Course, type Question, type Submission, type Variant } from '../li
 import type { ResLocalsQuestionRender } from '../lib/question-render.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
+import type { QuestionCaller, QuestionGroup, QuestionUser } from './user-context.js';
+
+export type { QuestionCaller } from './user-context.js';
+
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 /**
@@ -99,12 +103,14 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
-    preferences?: Record<string, string | number | boolean>,
+    preferences: Record<string, string | number | boolean>,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
     course: Course,
     variant: PrepareVariant,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (params: {
     renderSelection: RenderSelection;
@@ -114,30 +120,35 @@ export interface QuestionServer {
     submissions: Submission[];
     course: Course;
     locals: QuestionRenderRequiredLocals;
+    caller: QuestionCaller;
   }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GradeResultData>>;
   file?: (
     filename: string,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Buffer>;
   test?: (
     variant: Variant,
     question: Question,
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<TestResultData>;
 }
 
@@ -158,6 +169,8 @@ export interface ExecutionData {
     client_files_course_path: string;
     server_files_course_path: string;
     course_extensions_path: string;
+    user: QuestionUser | null;
+    group: QuestionGroup | null;
   };
   preferences: Record<string, string | number | boolean>;
   answers_names?: Record<string, string>;

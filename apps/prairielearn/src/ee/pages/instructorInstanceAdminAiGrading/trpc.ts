@@ -20,7 +20,7 @@ import {
 } from '../../lib/ai-grading-credit-purchase-constants.js';
 import { MAX_FREE_AI_GRADING_CREDIT_REDEMPTIONS_PER_COURSE } from '../../lib/ai-grading-free-credit-constants.js';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe.js';
-import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
+import { aiGradingFeatureProcedure, creditPoolProcedures } from '../../lib/credit-pool-trpc.js';
 import { insertCreditCheckoutSession } from '../../models/ai-grading-credit-checkout-sessions.js';
 import {
   FreeCreditRedemptionCapReachedError,
@@ -62,7 +62,7 @@ const requireEditPermission = t.middleware(async (opts) => {
 
 const updateUseCustomApiKeysMutation = t.procedure
   .use(requireEditPermission)
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(z.object({ enabled: z.boolean() }))
   .mutation(async (opts) => {
     await updateUseCustomApiKeys({
@@ -74,7 +74,7 @@ const updateUseCustomApiKeysMutation = t.procedure
 
 const addCredentialMutation = t.procedure
   .use(requireEditPermission)
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(
     z.object({
       provider: EnumAiGradingProviderSchema,
@@ -96,7 +96,7 @@ const addCredentialMutation = t.procedure
 
 const deleteCredentialMutation = t.procedure
   .use(requireEditPermission)
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(z.object({ credential_id: z.string() }))
   .mutation(async (opts) => {
     await deleteCredential({
@@ -108,7 +108,7 @@ const deleteCredentialMutation = t.procedure
 
 const createCheckoutMutation = t.procedure
   .use(requireEditPermission)
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(
     z.object({
       amount_milli_dollars: z
@@ -202,7 +202,7 @@ const createCheckoutMutation = t.procedure
     return { checkoutUrl: session.url };
   });
 
-const freeCreditStatusQuery = t.procedure.use(requireAiGradingFeature).query(async (opts) => {
+const freeCreditStatusQuery = t.procedure.concat(aiGradingFeatureProcedure).query(async (opts) => {
   const redemptionsUsed = await selectCourseFreeCreditRedemptionsUsed(opts.ctx.course.id);
   return {
     redemptions_used: redemptionsUsed,
@@ -216,7 +216,7 @@ const freeCreditStatusQuery = t.procedure.use(requireAiGradingFeature).query(asy
 
 const redeemFreeCreditMutation = t.procedure
   .use(requireEditPermission)
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .mutation(async (opts) => {
     try {
       return await redeemFreeAiGradingCredit({

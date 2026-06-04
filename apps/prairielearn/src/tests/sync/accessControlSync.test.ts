@@ -1183,21 +1183,11 @@ describe('Access control syncing', () => {
           uuid: courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.uuid,
         });
 
-        const syncResults = await util.syncCourseData(courseDir);
+        await util.syncCourseData(courseDir);
 
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const courseInstance = syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID];
-          assert.isAbove(courseInstance.courseInstance.errors.length, 0);
-
-          const assessment = courseInstance.assessments[util.ASSESSMENT_ID];
-          assert.isTrue(
-            assessment.errors.some((error) => error.includes('Invalid student label(s): foobar')),
-          );
-          assert.isFalse(
-            assessment.errors.some((error) => error.includes('non-existent student labels')),
-          );
-        }
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        assert.isNotNull(assessment.sync_errors);
+        assert.match(assessment.sync_errors, /Invalid student label\(s\): foobar/);
 
         const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(syncedRules.length, 0);
@@ -1367,6 +1357,10 @@ describe('Access control syncing', () => {
           ]);
           assert.equal(syncedRules.length, 0);
           assert.isTrue(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
+
+          const assessment = await getAssessment(util.ASSESSMENT_ID);
+          assert.isNotNull(assessment.sync_errors);
+          assert.match(assessment.sync_errors, /Invalid PrairieTest exam UUID\(s\)/);
         }),
       ));
 

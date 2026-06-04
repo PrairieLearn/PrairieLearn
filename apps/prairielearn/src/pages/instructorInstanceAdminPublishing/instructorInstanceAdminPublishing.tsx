@@ -337,7 +337,7 @@ router.post(
 
     if (req.body.__action === 'add_extension') {
       const EmailsSchema = z
-        .array(z.string().trim().email())
+        .array(z.string().trim().pipe(z.email()))
         .min(1, 'At least one UID is required');
       const AddExtensionSchema = z.object({
         __action: z.literal('add_extension'),
@@ -429,7 +429,7 @@ router.post(
       return;
     } else if (req.body.__action === 'edit_extension') {
       const EmailsSchema = z
-        .array(z.string().trim().email('Invalid email format'))
+        .array(z.string().trim().pipe(z.email('Invalid UID format')))
         .min(1, 'At least one UID is required');
       const EditExtensionSchema = z.object({
         __action: z.literal('edit_extension'),
@@ -453,7 +453,7 @@ router.post(
       });
       const editExtensionBodyResult = EditExtensionSchema.safeParse(req.body);
       if (!editExtensionBodyResult.success) {
-        const errorMessages = editExtensionBodyResult.error.errors.map((error) => {
+        const errorMessages = editExtensionBodyResult.error.issues.map((error) => {
           if (error.path.length > 0) {
             const field = error.path.join('.');
             return `${field}: ${error.message}`;
