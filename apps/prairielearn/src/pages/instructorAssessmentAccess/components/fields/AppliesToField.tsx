@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { get, useFieldArray, useFormState, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
@@ -57,9 +57,6 @@ export function AppliesToField({
     name: `${namePrefix}.appliesTo.studentLabels`,
   });
 
-  const { errors } = useFormState<AccessControlFormData>();
-  const appliesToError: string | undefined = get(errors, `${namePrefix}.appliesTo.root`)?.message;
-
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
     replaceEnrollments(students);
   };
@@ -102,11 +99,6 @@ export function AppliesToField({
         <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
           Student-specific overrides require student data editor permissions. You can still create
           or edit overrides for students with specific labels.
-        </Alert>
-      )}
-      {appliesToError && (
-        <Alert variant="danger" className="py-2 mb-3">
-          {appliesToError}
         </Alert>
       )}
       <fieldset className="mb-3">
