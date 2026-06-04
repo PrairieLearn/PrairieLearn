@@ -105,7 +105,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+export const JsonCommentSchema = z.union([
+  z.string(),
+  z.array(z.any()),
+  z.record(z.string(), z.any()),
+]);
 
 export const QuestionPreferenceValuesSchema = z.record(
   z.string(),
@@ -313,7 +317,7 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credits_added: z.boolean(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
   id: IdSchema,
   refunded_at: DateFromISOString.nullable(),
   stripe_object_id: z.string(),
@@ -609,7 +613,7 @@ export const AssessmentToolSchema = z.object({
   assessment_id: IdSchema.nullable(),
   enabled: z.boolean(),
   id: IdSchema,
-  settings: z.record(z.unknown()),
+  settings: z.record(z.string(), z.unknown()),
   tool: EnumAssessmentToolSchema,
   zone_id: IdSchema.nullable(),
 });
@@ -1429,10 +1433,8 @@ export const QuestionSchema = z.object({
   grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
-  json_external_grading_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.any())])
-    .nullable(),
-  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.any())]).nullable(),
+  json_external_grading_comment: JsonCommentSchema.nullable(),
+  json_workspace_comment: JsonCommentSchema.nullable(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
