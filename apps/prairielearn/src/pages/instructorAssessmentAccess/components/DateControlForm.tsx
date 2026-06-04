@@ -75,6 +75,9 @@ export function DefaultDateControlForm({
                   });
                 }
               } else {
+                // Date-control fields are inactive while this section is off.
+                // Clear any existing sub-field errors before the editors
+                // unmount so hidden inputs cannot keep Save disabled.
                 clearErrors([
                   'defaultRule.release',
                   'defaultRule.due',

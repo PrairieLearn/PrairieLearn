@@ -55,41 +55,6 @@ function makeFormData(
   };
 }
 
-function makeEnrollments(count: number): OverrideData['appliesTo']['enrollments'] {
-  return Array.from({ length: count }, (_, i) => ({
-    enrollmentId: String(i),
-    uid: `student${i}`,
-    name: `Student ${i}`,
-  }));
-}
-
-function makeStudentLabels(count: number): OverrideData['appliesTo']['studentLabels'] {
-  return Array.from({ length: count }, (_, i) => ({
-    studentLabelId: String(i),
-    name: `Section ${i}`,
-  }));
-}
-
-function makeEnrollmentAppliesTo(
-  enrollments: OverrideData['appliesTo']['enrollments'],
-): OverrideData['appliesTo'] {
-  return {
-    targetType: 'enrollment',
-    enrollments,
-    studentLabels: [],
-  };
-}
-
-function makeStudentLabelAppliesTo(
-  studentLabels: OverrideData['appliesTo']['studentLabels'],
-): OverrideData['appliesTo'] {
-  return {
-    targetType: 'student_label',
-    enrollments: [],
-    studentLabels,
-  };
-}
-
 describe('getGlobalDateValidationErrors', () => {
   it('maps an impossible early deadline to the matching override field path', () => {
     const errors = getGlobalDateValidationErrors(
@@ -99,7 +64,11 @@ describe('getGlobalDateValidationErrors', () => {
           release: { date: '2024-04-06T00:00:00', released: true },
         }),
         makeOverride({
-          appliesTo: makeEnrollmentAppliesTo(makeEnrollments(1)),
+          appliesTo: {
+            targetType: 'enrollment',
+            enrollments: [{ enrollmentId: 'e1', uid: 'student1', name: 'Student 1' }],
+            studentLabels: [],
+          },
           overriddenFields: ['earlyDeadlines'],
           earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
         }),
@@ -118,7 +87,11 @@ describe('getGlobalDateValidationErrors', () => {
       makeFormData([
         makeOverride({ overriddenFields: ['due'] }),
         makeOverride({
-          appliesTo: makeStudentLabelAppliesTo(makeStudentLabels(1)),
+          appliesTo: {
+            targetType: 'student_label',
+            enrollments: [],
+            studentLabels: [{ studentLabelId: '2', name: 'Section B' }],
+          },
           overriddenFields: ['lateDeadlines'],
           lateDeadlines: [{ date: '2024-04-07T12:00:00', credit: 50 }],
         }),
