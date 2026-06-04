@@ -436,7 +436,8 @@ The `group` dict has `name` and `members` (a list with the same shape as `user`)
 User and group data are provided to `server.py` only when **all** of the following are true:
 
 1. The course has opted in so that `server.py` receives user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
-2. The question is rendered in its owning course. For questions imported from another course via sharing (public or sharing set), `server.py` never receives user data, regardless of either course's settings.
+2. The question is not shared. Once a question is shared publicly or has its source shared publicly, `server.py` never receives user data, including in the question's own course and in public previews.
+3. The question is rendered in its owning course. For questions imported from another course via a sharing set, `server.py` never receives user data, regardless of either course's settings.
 
 When user data is not provided to `server.py`, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present.
 

@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { updateCourseQuestionsReceiveUserData, updateCourseSharingName } from '../models/course.js';
 
 import {
   testElementClientFiles,
@@ -127,6 +127,61 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
           },
         });
         assert.equal(res.status, 403);
+      });
+    });
+  });
+
+  describe('User identity is never exposed for shared questions', () => {
+    let userInfoQuestionId: string;
+
+    beforeAll(async () => {
+      userInfoQuestionId = await sqldb.queryScalar(
+        sql.select_question_id,
+        { qid: 'userInfo' },
+        z.string(),
+      );
+      // Opt the owning course in to receiving user data. The `userInfo` question
+      // renders the variant owner's identity from `data['options']['user']`.
+      await updateCourseQuestionsReceiveUserData({
+        course_id: '1',
+        questions_receive_user_data: true,
+        authn_user_id: '1',
+        user_id: '1',
+        old_questions_receive_user_data: false,
+      });
+    });
+
+    it('exposes user identity in the owning course when the question is not shared', async () => {
+      const res = await fetch(`${baseUrl}/course/1/question/${userInfoQuestionId}/preview`);
+      assert.equal(res.status, 200);
+      const text = await res.text();
+      // First-party render: toggle on, owning course, question not shared, so
+      // `options.user` is populated and the viewer's uid appears.
+      assert.include(text, 'Variant owner');
+      assert.include(text, config.authUid!);
+    });
+
+    describe('once the question is shared publicly', () => {
+      beforeAll(async () => {
+        await sqldb.execute(sql.update_share_publicly, { question_id: userInfoQuestionId });
+      });
+
+      it('stops exposing user identity in the owning course preview', async () => {
+        const res = await fetch(`${baseUrl}/course/1/question/${userInfoQuestionId}/preview`);
+        assert.equal(res.status, 200);
+        const text = await res.text();
+        assert.include(text, 'No user data is available');
+        assert.notInclude(text, 'Variant owner');
+      });
+
+      it('does not expose user identity in the public preview', async () => {
+        const res = await fetch(
+          `${baseUrl}/public/course/1/question/${userInfoQuestionId}/preview`,
+        );
+        assert.equal(res.status, 200);
+        const text = await res.text();
+        assert.include(text, 'No user data is available');
+        assert.notInclude(text, 'Variant owner');
       });
     });
   });
