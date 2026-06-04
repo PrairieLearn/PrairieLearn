@@ -27,7 +27,7 @@ export interface ZipArchive {
 
 export type ZipInput = Blob | ArrayBuffer | ArrayBufferView;
 
-export function normalizeZipPath(name: string): string | null {
+function normalizeZipPath(name: string): string | null {
   const normalized = name.replaceAll('\\', '/');
   if (
     normalized.startsWith('/') ||
@@ -39,7 +39,7 @@ export function normalizeZipPath(name: string): string | null {
   return normalized;
 }
 
-export function isDirectoryEntry(name: string): boolean {
+function isDirectoryEntry(name: string): boolean {
   return name.endsWith('/');
 }
 
@@ -80,7 +80,7 @@ export function listZipEntries(archive: ZipArchive): ZipEntrySummary[] {
   return archive.entries;
 }
 
-export async function readZipEntryBuffer(
+async function readZipEntryBuffer(
   archive: ZipArchive,
   entryName: string,
   maxBytes = 64 * 1024 * 1024,
