@@ -1,6 +1,10 @@
 import { type ZodSchema, z } from 'zod';
 
+import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
+
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
@@ -45,6 +49,7 @@ export const GroupsRoleJsonSchema = z
       .describe('The maximum number of users that should be in this role.')
       .optional(),
   })
+  .strict()
   .describe('A custom role for use in group assessments.');
 
 export type GroupsRoleJson = z.infer<typeof GroupsRoleJsonSchema>;
@@ -55,23 +60,24 @@ const GroupsStudentPermissionsJsonSchema = z
       .boolean()
       .describe('Whether students can create groups.')
       .optional()
-      .default(false),
+      .default(true),
     canJoinGroup: z
       .boolean()
       .describe('Whether students can join groups.')
       .optional()
-      .default(false),
+      .default(true),
     canLeaveGroup: z
       .boolean()
       .describe('Whether students can leave groups.')
       .optional()
-      .default(false),
+      .default(true),
     canNameGroup: z
       .boolean()
       .describe('Whether students can choose a group name when creating a group.')
       .optional()
       .default(true),
   })
+  .strict()
   .describe('Student permissions for group management.');
 
 const GroupsRolePermissionsJsonSchema = z
@@ -89,15 +95,11 @@ const GroupsRolePermissionsJsonSchema = z
       .optional()
       .default([]),
   })
+  .strict()
   .describe('Role-based permissions for group assessments.');
 
 export const GroupsJsonSchema = z
   .object({
-    enabled: z
-      .boolean()
-      .describe('Whether groups are enabled for this assessment.')
-      .optional()
-      .default(true),
     minMembers: z.number().describe('Minimum number of students in a group.').optional(),
     maxMembers: z.number().describe('Maximum number of students in a group.').optional(),
     roles: z
@@ -148,7 +150,10 @@ export const AssessmentAccessRuleJsonSchema = z
       .gte(0)
       .describe('The time limit to complete the assessment, in minutes (only for Exams).')
       .optional(),
-    password: z.string().describe('Password to begin the assessment (only for Exams).').optional(),
+    password: z
+      .string()
+      .describe('Password to begin the assessment. Typically used for proctored exams.')
+      .optional(),
     showClosedAssessment: z
       .boolean()
       .describe('Whether the student can view the assessment after it has been closed')
@@ -174,18 +179,15 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export const PointsSingleJsonSchema = z
-  .number()
-  .gte(0)
-  .default(0)
-  .describe('A single point value.');
+export type AssessmentAccessRuleJson = z.input<typeof AssessmentAccessRuleJsonSchema>;
+export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
   .min(1)
   .describe('An array of point values.');
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema.default(0), PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
@@ -200,6 +202,12 @@ export const AdvanceScorePercJsonSchema = z
   .gte(0)
   .lte(100)
   .describe('Minimum score percentage to unlock access to subsequent questions.');
+
+export const QuestionPreferencesJsonSchema = z.record(
+  z.string().min(1),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
+export type QuestionPreferences = z.infer<typeof QuestionPreferencesJsonSchema>;
 
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
@@ -235,12 +243,16 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
     )
     .optional(),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The preferences passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
+export type QuestionAlternativeJsonInput = z.input<typeof QuestionAlternativeJsonSchema>;
 
 // 'Block' is used to signify that this can either be a single question, or
-// a container for multiple question alternatives.
+// a container for multiple question alternatives (an "alternative pool").
 export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   points: PointsJsonSchema.optional(),
@@ -259,7 +271,7 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     .number()
     .int()
     .gte(0)
-    .describe('Number of questions to choose from this group.')
+    .describe('Number of questions to choose from this pool.')
     .optional(),
   triesPerVariant: z
     .number()
@@ -293,9 +305,18 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     )
     .optional()
     .default([]),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The preferences passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
+export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
+
+const AssessmentToolJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+});
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -307,6 +328,7 @@ export const ZoneAssessmentJsonSchema = z.object({
   comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
   maxPoints: z
     .number()
+    .gte(0)
     .describe(
       'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
     )
@@ -362,6 +384,10 @@ export const ZoneAssessmentJsonSchema = z.object({
     )
     .optional()
     .default([]),
+  tools: z
+    .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+    .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
+    .optional(),
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
@@ -405,17 +431,23 @@ export const AssessmentJsonSchema = z
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional()
-      .default([]),
+      .optional(),
+    accessControl: z
+      .array(AccessControlJsonSchema)
+      .max(MAX_ACCESS_CONTROL_RULES)
+      .describe('Access control settings for the assessment.')
+      .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
+      .gte(0)
       .describe(
         'The number of points that must be earned in this assessment to achieve a score of 100%.',
       )
       .optional(),
     maxBonusPoints: z
       .number()
+      .gte(0)
       .describe('The maximum number of additional points that can be earned beyond maxPoints.')
       .optional(),
     allowPersonalNotes: z
@@ -457,8 +489,12 @@ export const AssessmentJsonSchema = z
     honorCode: z
       .string()
       .describe(
-        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+        'Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments.',
       )
+      .optional(),
+    showQuestionTitles: z
+      .boolean()
+      .describe('Whether to show question titles in the student view.')
       .optional(),
     groupWork: z
       .boolean()
@@ -546,6 +582,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default(false),
+    tools: z
+      .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+      .describe('Configuration for assessment tools.')
+      .optional(),
   })
   .strict()
   .describe('Configuration data for an assessment.');

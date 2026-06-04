@@ -1,5 +1,6 @@
 node_modules
 .yarn
+.claude/worktrees
 .context
 
 # Coverage reports
@@ -65,3 +66,9 @@ apps/prairielearn/src/tests/*/**/*.json
 
 # Conductor
 .context
+
+# Playwright
+test-results/
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
+.playwright-mcp/

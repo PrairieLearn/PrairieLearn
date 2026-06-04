@@ -13,7 +13,6 @@
   },
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-c",
     "timeout": 5
   }

@@ -1,13 +1,18 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { formatDate } from '@prairielearn/formatter';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import type {
+  CounterClockwiseRotationDegrees,
+  InstanceQuestionAIGradingInfo,
+} from '../ee/lib/ai-grading/types.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
+  Course,
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
@@ -15,7 +20,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -56,10 +61,11 @@ export function QuestionContainer({
     variant,
     variantToken,
     questionJsonBase64,
+    course,
     course_instance,
     authz_data,
     is_administrator,
-    showTrueAnswer,
+    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -77,7 +83,7 @@ export function QuestionContainer({
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
       ${issues.map((issue: IssueRenderData) =>
-        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+        IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
       )}
       ${question.type === 'Freeform'
         ? html`
@@ -99,28 +105,32 @@ export function QuestionContainer({
         // it here to avoid confusion.
         questionRenderContext !== 'ai_grading'
           ? html`
-              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
             `
           : ''
       }
-      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
-        ? AIGradingExplanation({
-            explanation: aiGradingInfo.explanation,
-            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
-          })
-        : ''}
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
-        ? AIGradingPrompt({
-            prompt: aiGradingInfo.prompt,
-          })
+      ${['instructor', 'manual_grading'].includes(questionContext)
+        ? html`
+            <div class="js-ai-grading-explanation-slot">
+              ${aiGradingInfo
+                ? AIGradingExplanation({
+                    explanation: aiGradingInfo.explanation,
+                    hasImage: aiGradingInfo.hasImage,
+                    rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+                  })
+                : ''}
+            </div>
+            <div class="js-ai-grading-prompt-slot">
+              ${aiGradingInfo?.prompt ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }) : ''}
+            </div>
+          `
         : ''}
       ${submissions.length > 0
         ? html`
@@ -169,7 +179,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt({ prompt }: { prompt: string }) {
+export function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -198,15 +208,24 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({
+export function AIGradingExplanation({
   explanation,
+  hasImage,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
-  rotationCorrectionDegrees: string | null;
+  hasImage: boolean;
+  rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
 }) {
+  const rotationCorrectionApplied =
+    rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
+
   return html`
-    <div class="card mb-3 grading-block">
+    <div
+      id="ai-grading-explanation"
+      class="card mb-3 grading-block"
+      style="scroll-margin-top: 10px;"
+    >
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
@@ -227,6 +246,34 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
+          ${hasImage && rotationCorrectionApplied
+            ? html`<div class="alert alert-warning mb-3" role="alert">
+                <p>
+                  One or more images were uploaded in a rotated state by the student (this was an
+                  error by the student). The system corrected their rotation prior to AI grading.
+                </p>
+                <div class="card table-responsive mb-0" style="max-width: 800px;">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-nowrap">Filename</th>
+                        <th class="text-nowrap">Correction (counterclockwise)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${Object.entries(rotationCorrectionDegrees).map(
+                        ([filename, degrees]) => html`
+                          <tr>
+                            <td class="text-nowrap"><code>${filename}</code></td>
+                            <td>${degrees}&deg;</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`
+            : ''}
           ${explanation
             ? html`
                 <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
@@ -234,18 +281,6 @@ ${explanation}
 </pre>
               `
             : ''}
-          ${rotationCorrectionDegrees
-            ? html`
-                <br />
-                <pre>
-Not all images were upright
-Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
-</pre>
-              `
-            : html`
-                <br />
-                <pre>All images were upright</pre>
-              `}
         </div>
       </div>
     </div>
@@ -254,11 +289,13 @@ Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
 
 function IssuePanel({
   issue,
+  course,
   course_instance,
   authz_data,
   is_administrator,
 }: {
   issue: IssueRenderData;
+  course: Course;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -339,7 +376,12 @@ function IssuePanel({
             </tr>
             <tr>
               <th>Date:</th>
-              <td>${issue.formatted_date}</td>
+              <td>
+                ${formatDate(
+                  issue.date!,
+                  course_instance?.display_timezone ?? course.display_timezone,
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -411,13 +453,17 @@ export function QuestionTitle({
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}) {
+}): HtmlValue {
+  const hasTitle = !!question.title?.trim();
+
   if (questionContext === 'student_homework') {
-    return `${questionNumber}. ${question.title}`;
+    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
+    return hasTitle
+      ? `Question ${questionNumber}: ${question.title}`
+      : `Question ${questionNumber}`;
   } else {
-    return question.title;
+    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
 }
 
@@ -926,7 +972,8 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance?.id,
+      course_instance: resLocals.course_instance,
+      course: resLocals.course,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,

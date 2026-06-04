@@ -119,7 +119,7 @@
     <div class="form-check d-flex align-items-center py-1">
     ${{type}}({{a_sub}})$
 
-    <!-- Show submitted answer submission was parsed from -->
+    {{! Show submitted answer submission was parsed from }}
     <button type="button" class="ms-1 btn btn-sm btn-secondary small border"
         data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
         title="Original Input"
@@ -146,7 +146,7 @@ ${{type}}({{a_tru}})$
 
 {{#format}}
 <p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.</p>
-<!-- From https://stackoverflow.com/a/14417521/2923069 -->
+{{! From https://stackoverflow.com/a/14417521/2923069 }}
 {{#variables.0}}
 <p>
     <strong>Allowable variables:</strong><br>

@@ -94,7 +94,7 @@ router.post(
       error = err.toString();
     }
 
-    const query_run_id = await sqldb.queryRow(
+    const query_run_id = await sqldb.queryScalar(
       sql.insert_query_run,
       {
         name: req.params.query,

@@ -15,7 +15,7 @@ describe('topics number backfill migration', () => {
     await helperDb.testMigration({
       name: NOT_NULL_CONSTRAINT_MIGRATION,
       beforeMigration: async () => {
-        const courseId = await sqldb.queryRow(
+        const courseId = await sqldb.queryScalar(
           `INSERT INTO courses (path, short_name, title, display_timezone, institution_id)
            VALUES ('test', 'TEST', 'Test Course', 'America/Chicago', 1) RETURNING id`,
           {},
@@ -56,7 +56,7 @@ describe('topics number backfill migration', () => {
     await helperDb.testMigration({
       name: NOT_NULL_CONSTRAINT_MIGRATION,
       beforeMigration: async () => {
-        const courseId = await sqldb.queryRow(
+        const courseId = await sqldb.queryScalar(
           `INSERT INTO courses (path, short_name, title, display_timezone, institution_id)
            VALUES ('test2', 'TEST2', 'Test Course 2', 'America/Chicago', 1) RETURNING id`,
           {},
@@ -93,7 +93,7 @@ describe('topics number backfill migration', () => {
     await helperDb.testMigration({
       name: NOT_NULL_CONSTRAINT_MIGRATION,
       beforeMigration: async () => {
-        const courseId = await sqldb.queryRow(
+        const courseId = await sqldb.queryScalar(
           `INSERT INTO courses (path, short_name, title, display_timezone, institution_id)
            VALUES ('test3', 'TEST3', 'Test Course 3', 'America/Chicago', 1) RETURNING id`,
           {},

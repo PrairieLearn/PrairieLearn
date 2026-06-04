@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 _MARKER = "<!-- ci-report -->"
 _SECTION_PATTERN = re.compile(r"(<!-- ([\w-]+) -->.*?<!-- /\2 -->)", re.DOTALL)
@@ -28,16 +29,18 @@ def _get_pr_number(repo: str, run_id: str) -> str | None:
         "api",
         f"repos/{repo}/actions/runs/{run_id}",
         "--jq",
-        ".pull_requests[0].number // .head_sha",
+        r'.pull_requests[0].number // "\(.head_repository.owner.login):\(.head_branch)"',
     )
     if not raw:
         return None
     if raw.isdigit():
         return raw
-    # pull_requests is empty for fork PRs; fall back to finding the PR by commit SHA.
+    # pull_requests is empty for fork PRs; fall back to looking up by
+    # head owner:branch, which is stable across pushes (unlike head_sha,
+    # which stops matching once the PR head advances).
     raw = _gh(
         "api",
-        f"repos/{repo}/commits/{raw}/pulls",
+        f"repos/{repo}/pulls?head={quote(raw)}&state=all",
         "--jq",
         ".[0].number // empty",
     )

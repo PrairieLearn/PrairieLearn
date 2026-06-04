@@ -61,10 +61,10 @@ router.get(
           navContext: {
             type: 'instructor',
             page: 'instance_admin',
-            subPage: 'integrations',
+            subPage: 'lms_connections',
           },
           courseOwners,
-          pageTitle: 'Integrations',
+          pageTitle: 'LMS connections',
           requiredPermissions: 'Student Data Editor',
         }),
       );
@@ -315,7 +315,6 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
           courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

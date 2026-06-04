@@ -8,6 +8,9 @@ import {
   zodToJsonSchema,
 } from 'zod-to-json-schema';
 
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+
+import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -22,6 +25,7 @@ import {
   PointsSingleJsonSchema,
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
+  QuestionPreferencesJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
@@ -51,7 +55,6 @@ import {
   type QuestionOptionsMultipleTrueFalseJson,
   QuestionOptionsMultipleTrueFalseJsonSchema,
 } from './questionOptionsMultipleTrueFalse.js';
-import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
  * Override certain fields in the JSON schema.
@@ -178,10 +181,20 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
     ZoneQuestionBlockJsonSchema,
+    QuestionPreferencesJsonSchema,
     LegacyGroupRoleJsonSchema,
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
+    // `DatetimeLocalStringSchema` must precede any definition (e.g.
+    // `AccessControlJsonSchema`) that inlines a helper schema which wraps it
+    // in `.describe(...)`. Processing order determines the canonical `$ref`
+    // target: if the described instance is emitted first, the generator
+    // makes the deep inline path canonical and points the
+    // `DatetimeLocalStringSchema` definition back at it.
+    DatetimeLocalStringSchema,
+    AccessControlJsonSchema,
+    DeadlineEntryJsonSchema,
   },
 }) as JSONSchemaType<AssessmentJson>;
 
@@ -273,13 +286,6 @@ const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsMultipleTrueFalseJson>;
 
-const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
-  name: 'v3 question options',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<QuestionOptionsv3Json>;
-
 export const ajvSchemas = {
   infoAssessment,
   infoCourse,
@@ -293,5 +299,4 @@ export const ajvSchemas = {
   questionOptionsFile,
   questionOptionsMultipleChoice,
   questionOptionsMultipleTrueFalse,
-  questionOptionsv3,
 };

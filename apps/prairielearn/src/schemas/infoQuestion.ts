@@ -2,6 +2,32 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
+// This schema is intentionally a subset of JSON Schema. The `type`, `default`,
+// and `enum` keys map directly to their JSON Schema equivalents, which allows
+// the syncing code to pass preference field definitions directly to AJV for
+// validation of assessment-level overrides. If new keys are added here, they
+// must either be valid JSON Schema keywords or the AJV validation in
+// `assessments.ts` (`mergeAndValidatePreferences`) must be updated to construct
+// the JSON Schema explicitly.
+//
+// Not expressed as a union of more precise types because `ajv` doesn't present
+// errors in a sensible way if we do that. Instead, we perform validation
+// manually in the syncing code (e.g., checking that `default` matches `type`).
+const QuestionPreferencesFieldSchema = z
+  .object({
+    type: z.enum(['string', 'number', 'boolean']),
+    default: z.union([z.string(), z.number(), z.boolean()]),
+    enum: z.array(z.union([z.string(), z.number()])).optional(),
+  })
+  .strict();
+
+export const QuestionPreferencesSchemaJsonSchema = z.record(
+  z.string().min(1),
+  QuestionPreferencesFieldSchema,
+);
+
+export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
+
 const QuestionDependencyJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -209,16 +235,18 @@ export const QuestionJsonSchema = z
     authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client.')
+      .describe(
+        '[DEPRECATED] The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.',
+      )
       .optional()
       .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
-      .describe('List of client-accessible templates to render server-side.')
+      .describe('[DEPRECATED] List of client-accessible templates to render server-side.')
       .optional(),
     template: z
       .string()
-      .describe('The QID of a question that serves at the template for this question.')
+      .describe('[DEPRECATED] The QID of a question that serves as the template for this question.')
       .optional(),
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
@@ -245,7 +273,7 @@ export const QuestionJsonSchema = z
       .object({})
       .catchall(z.any())
       .describe(
-        'Options that define how the question will work, specific to the individual question type.',
+        '[DEPRECATED] Options that define how the question will work, specific to the individual question type (not supported for v3 questions).',
       )
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
@@ -265,6 +293,7 @@ export const QuestionJsonSchema = z
       .describe("Whether this question's source code is publicly shared.")
       .optional()
       .default(false),
+    preferences: QuestionPreferencesSchemaJsonSchema.optional(),
   })
   .strict()
   .describe('Info files for questions.');

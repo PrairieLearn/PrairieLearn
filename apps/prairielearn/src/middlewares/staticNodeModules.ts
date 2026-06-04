@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import express, { Router } from 'express';
-import { type ServeStaticOptions } from 'serve-static';
+import type { ServeStaticOptions } from 'serve-static';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 

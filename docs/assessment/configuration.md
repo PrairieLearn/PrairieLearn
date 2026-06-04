@@ -40,6 +40,7 @@ In addition to those properties, the following properties can be used to further
 | `advanceScorePerc`                                             | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
+| [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -207,10 +208,11 @@ If a question alternative list is specified, some of these questions are first s
 | `maxPoints`            | number          | The maximum points available for this question (or for each question in this alternative list if `alternatives` is set) on a Homework that allows multiple attempts for more points. May only be specified in Homework-type assessments, and only if `points` is specified. (Optional; default: same as `points`)                                                |
 | `id`                   | string          | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)                                                                                                                                                                                                                                      |
 | `alternatives`         | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                                                                                                                                                                                                                 |
-| `numberChoose`         | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                                                                                                                                                                                                          |
+| `numberChoose`         | integer         | If `alternatives` are specified, the number of them to select. (Optional; default: select all).                                                                                                                                                                                                                                                                  |
 | `triesPerVariant`      | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                                                                                                                                                                                                         |
 | `allowRealTimeGrading` | boolean         | Whether to allow real-time grading for this question (Exams only). (Optional; default `true`)                                                                                                                                                                                                                                                                    |
 | `forceMaxPoints`       | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                                                                                                                                                                                                              |
+| `preferences`          | object          | Override values for the question's [preferences](../question/preferences.md). Keys must match the preference names defined in the question's `info.json`. (Optional; default: use question defaults)                                                                                                                                                             |
 
 Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
@@ -355,9 +357,28 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 
 The specific questions assigned to a particular assessment instance are chosen in three steps:
 
-1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to 1).
+1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to selecting all alternatives).
 
 2. For each zone, concatenate the _selected questions_ from each `questions` entry to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). If shuffling is enabled, randomly shuffle the order of the _zone questions_.
+
+   The selection tries to stratify / spread out the selection between the different questions equally.
+
+   ```json
+   {
+     "zones": [
+       {
+         "numberChoose": 3,
+         "questions": [
+           { "alternatives": [{ "id": "q1" }, { "id": "q2" }] },
+           { "alternatives": [{ "id": "q3" }, { "id": "q4" }], "numberChoose": 1 },
+           { "id": "q5" }
+         ]
+       }
+     ]
+   }
+   ```
+
+   When `numberChoose` is set to 3, it will try to select one question from each group (spreading out the selection). Thus, one of the two alternatives in the first question, one of the two alternatives in the second question, and the third question will be selected. The algorithm will never select both `q1` and `q2` with `numberChoose = 3`.
 
 3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_. This set of questions forms the _assessment instance_ for this student/group.
 
@@ -422,12 +443,13 @@ The `groups` object supports the following properties:
 
 | Attribute            | Type    | Default | Description                                                                                                                      |
 | -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`            | boolean | `true`  | Whether groups are enabled for this assessment.                                                                                  |
 | `minMembers`         | integer | -       | The minimum number of students in a group.                                                                                       |
 | `maxMembers`         | integer | -       | The maximum number of students in a group.                                                                                       |
 | `roles`              | array   | `[]`    | Array of custom user roles in a group. See [Enabling custom group roles](#enabling-custom-group-roles).                          |
 | `studentPermissions` | object  | `{}`    | Student permissions for group management. See below.                                                                             |
 | `rolePermissions`    | object  | `{}`    | Role-based permissions for group assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
+
+The presence of the `groups` object indicates that group work is enabled for the assessment; remove the property to disable group work.
 
 ### Student permissions
 
@@ -435,10 +457,14 @@ The `studentPermissions` object controls what students can do to manage their gr
 
 | Attribute        | Type    | Default | Description                                                                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
+| `canCreateGroup` | boolean | `true`  | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `true`  | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `true`  | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+
+??? note "Legacy defaults"
+
+    The previous legacy defaults were `canCreateGroup: false`, `canJoinGroup: false`, `canLeaveGroup: false`, `canNameGroup: true`.
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
 
@@ -482,9 +508,9 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group memberships. This can be used to copy group memberships from one assessment to another. The same file can also be exported from the "Groups" tab by using "Actions" > "Export CSV".
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Assign randomly" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
@@ -803,6 +829,74 @@ Course staff see any reported issues show up on the "Issues" tab.
 
 ![Issue report](assessment-report3.png)
 
+## Assessment tools
+
+Assessment tools provide students with utilities they can use while working on questions. Tools can be configured at the assessment level or overridden per zone.
+
+### Available tools
+
+| Tool                        | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| [`calculator`](#calculator) | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+
+#### Calculator
+
+The calculator tool is a scientific calculator with expression evaluation, history, and deg/rad toggle. The calculator history is persistent across the assessment.
+
+| Property  | Type    | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `enabled` | boolean | Whether the calculator is enabled. (default: `false`) |
+
+### Enabling tools for an entire assessment
+
+To enable a tool for all questions in an assessment, add a `tools` property to the `infoAssessment.json` file:
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": {
+      "enabled": true
+    }
+  }
+}
+```
+
+### Overriding tools per zone
+
+Zone-level tool configuration override the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": {
+      "enabled": true
+    }
+  },
+  "zones": [
+    {
+      "title": "Part 1: No calculator",
+      "tools": {
+        "calculator": {
+          "enabled": false
+        }
+      },
+      "questions": [{ "id": "manualComputation", "points": 10 }]
+    },
+    {
+      "title": "Part 2: Calculator allowed",
+      "lockpoint": true,
+      "questions": [{ "id": "complexCalculation", "points": 10 }]
+    }
+  ]
+}
+```
+
+In this example, the calculator is disabled in "Part 1: No calculator" (zone-level override) but remains enabled in "Part 2: Calculator allowed" (inherits from the assessment-level configuration). Because "Part 2: Calculator allowed" has a [lockpoint](#lockpoints), students will have to complete all questions in "Part 1: No calculator" before they can attempt any questions in "Part 2: Calculator allowed".
+
+!!! warning
+
+    It is highly recommended to use [lockpoints](#lockpoints) when configuring tools per zone. If you do not use lockpoints, students may access tools from other zones by keeping a browser tab open with the other zone's question open.
+
 ## Access control
 
 See the [Assessment access control page](../assessment/accessControl.md) for details.
@@ -863,7 +957,7 @@ Real-time grading can be disabled for an entire assessment:
 }
 ```
 
-It can also be disabled for specific zones, alternative groups, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
+It can also be disabled for specific zones, alternative pools, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
 
 ```json title="infoAssessment.json"
 {
@@ -959,7 +1053,7 @@ To disable this requirement, set `"requireHonorCode": false` as a top-level opti
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
 
-The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting; HTML is not supported. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
 
 For example:
 

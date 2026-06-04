@@ -16,6 +16,7 @@ BEGIN
 
     -- Move all our data into a temporary table so it's easier to work with
 
+    DROP TABLE IF EXISTS disk_questions;
     CREATE TEMPORARY TABLE disk_questions (
         qid TEXT NOT NULL,
         uuid uuid,
@@ -150,7 +151,6 @@ BEGIN
         share_publicly = (src.data->>'share_publicly')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         json_comment = (src.data->'comment'),
-        external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
         external_grading_image = src.data->>'external_grading_image',
         external_grading_files = jsonb_array_to_text_array(src.data->'external_grading_files'),
         external_grading_entrypoint = src.data->>'external_grading_entrypoint',
@@ -168,6 +168,7 @@ BEGIN
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
         json_workspace_comment = (src.data->'workspace_comment'),
+        preferences_schema = (src.data->'preferences_schema'),
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
@@ -204,16 +205,33 @@ BEGIN
     -- Ensure that all questions have numbers
     WITH
     questions_needing_numbers AS (
-        SELECT id, row_number() OVER () AS index
+        SELECT id, row_number() OVER (ORDER BY id) AS index
         FROM questions
         WHERE
             number IS NULL
             AND course_id = syncing_course_id
-        ORDER BY id
+    ),
+    course_question_count AS (
+        SELECT COUNT(*) AS total
+        FROM questions
+        WHERE course_id = syncing_course_id
+    ),
+    available_numbers AS (
+        SELECT gs.number
+        FROM
+          -- 3-digit numbers are used if the number of questions allows for
+          -- enough unique 3-digit numbers with reasonable gaps.
+          generate_series(100, GREATEST(999, 101 + 2 * (SELECT total FROM course_question_count))) AS gs (number)
+          -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
+          LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
+        WHERE q.number IS NULL
     ),
     new_numbers AS (
-        SELECT *
-        FROM random_unique(100, 1000, (SELECT array_agg(number) FROM questions WHERE course_id = syncing_course_id))
+        SELECT
+          row_number() OVER (ORDER BY random()) AS index,
+          number
+        FROM available_numbers
+        LIMIT (SELECT COUNT(*) FROM questions_needing_numbers)
     ),
     questions_with_new_numbers AS (
         -- use row_number() as the matching key for the join

@@ -1,0 +1,77 @@
+.preferences-grid-row,
+.preferences-grid-header {
+  display: grid;
+  gap: 0 0.5rem;
+  padding: 0.25rem 0.5rem;
+  align-items: center;
+  min-width: 36rem;
+}
+
+/* Clip vertical overflow so a dragged row can't escape into the header
+   above or beyond the rows area below. overflow-x stays visible so rows
+   can extend past the wrapper's width and trigger the parent card's
+   horizontal scroll on narrow viewports. `clip` (not `hidden`) avoids
+   creating a scroll container, which would let focused inputs trigger
+   programmatic scrolls. */
+.preferences-grid-rows {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+
+/* Horizontal scroll for narrow viewports. overflow-x: auto forces
+   overflow-y to auto as well; clip it so dragged rows don't trigger
+   a vertical scrollbar. */
+.preferences-grid-editable,
+.preferences-grid-readonly {
+  overflow-x: auto;
+  overflow-y: clip;
+}
+
+.preferences-grid-editable .preferences-grid-row,
+.preferences-grid-editable .preferences-grid-header {
+  grid-template-columns: 2rem minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr) 2.5rem;
+}
+
+.preferences-grid-readonly .preferences-grid-row,
+.preferences-grid-readonly .preferences-grid-header {
+  grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr);
+}
+
+.preferences-grid-header {
+  font-weight: bold;
+  font-size: 0.875rem;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.preferences-grid-row {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.preferences-grid-row:last-child {
+  border-bottom: none;
+}
+
+/* Enum value badges */
+.preferences-enum-badge {
+  max-width: 12rem;
+}
+
+.preferences-enum-remove {
+  font-size: 0.5rem;
+}
+
+/* Inline enum input */
+.preferences-enum-input {
+  width: 8rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+}
+
+.preferences-enum-add-btn {
+  font-size: 0.75em;
+}
+
+/* ComboBox dropdown items */
+.preferences-combobox-item {
+  white-space: normal;
+}

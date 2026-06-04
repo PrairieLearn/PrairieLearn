@@ -35,7 +35,7 @@ export const BatchedMigrationRowSchema = z.object({
 });
 export type BatchedMigrationRow = z.infer<typeof BatchedMigrationRowSchema>;
 
-export interface BatchedMigrationParameters {
+interface BatchedMigrationParameters {
   min?: bigint | string | null;
   max: bigint | string | null;
   batchSize?: number;

@@ -1,8 +1,33 @@
+import type { QuestionRenderContext } from '../components/QuestionContainer.types.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { ResLocalsQuestionRender } from '../lib/question-render.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
+import type { QuestionCaller, QuestionGroup, QuestionUser } from './user-context.js';
+
+export type { QuestionCaller } from './user-context.js';
+
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
+
+/**
+ * The narrow set of `res.locals` fields that {@link QuestionServer.render} actually reads.
+ * Callers should construct this object explicitly rather than passing a full `res.locals`.
+ */
+export type QuestionRenderRequiredLocals = Pick<
+  ResLocalsQuestionRender,
+  | 'questionUrl'
+  | 'baseUrl'
+  | 'clientFilesQuestionUrl'
+  | 'clientFilesCourseUrl'
+  | 'clientFilesQuestionGeneratedFileUrl'
+  | 'externalImageCaptureUrl'
+  | 'workspaceUrl'
+  | 'showCorrectAnswer'
+  | 'allowAnswerEditing'
+> & {
+  urlPrefix: string;
+  questionRenderContext?: QuestionRenderContext;
+};
 
 export interface RenderSelection {
   question?: boolean;
@@ -65,7 +90,7 @@ export interface TestResultData {
 
 export type PrepareVariant = Pick<
   Variant,
-  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'
+  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'preferences'
 >;
 
 export type ParseSubmission = Pick<
@@ -78,11 +103,14 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
+    preferences: Record<string, string | number | boolean>,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,
     course: Course,
     variant: PrepareVariant,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (params: {
     renderSelection: RenderSelection;
@@ -91,31 +119,36 @@ export interface QuestionServer {
     submission: Submission | null;
     submissions: Submission[];
     course: Course;
-    locals: UntypedResLocals;
+    locals: QuestionRenderRequiredLocals;
+    caller: QuestionCaller;
   }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GradeResultData>>;
   file?: (
     filename: string,
     variant: Variant,
     question: Question,
     course: Course,
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<Buffer>;
   test?: (
     variant: Variant,
     question: Question,
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
+    caller: QuestionCaller,
   ) => QuestionServerReturnValue<TestResultData>;
 }
 
@@ -136,7 +169,10 @@ export interface ExecutionData {
     client_files_course_path: string;
     server_files_course_path: string;
     course_extensions_path: string;
+    user: QuestionUser | null;
+    group: QuestionGroup | null;
   };
+  preferences: Record<string, string | number | boolean>;
   answers_names?: Record<string, string>;
   submitted_answers?: Record<string, unknown>;
   format_errors?: Record<string, unknown>;
@@ -148,6 +184,7 @@ export interface ExecutionData {
   manual_grading?: boolean;
   ai_grading?: boolean;
   panel?: 'question' | 'answer' | 'submission';
+  correct_answer_shown?: boolean;
   num_valid_submissions?: number;
   filename?: string;
   gradable?: boolean;

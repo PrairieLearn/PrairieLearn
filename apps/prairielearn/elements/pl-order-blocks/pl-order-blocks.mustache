@@ -13,7 +13,7 @@ $(function() {
 
 
     <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
-        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} " >
+        <div class="pl-order-blocks-container {{block_layout}} {{block_scroll}} {{dropzone_layout}} " >
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
                 <button type="button" class="btn btn-light btn-sm align-middle" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks Help Button" data-bs-content="{{help_text}}">
@@ -27,14 +27,21 @@ $(function() {
                         string="{{inner_html}}"
                         data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
-                        tabindex="0"
                         role="option"
-                        >{{{inner_html}}}
+                        tabindex="0">
+                        <div class="pl-order-block-row">
+                            <div class="pl-order-block-handle" aria-hidden="true">
+                                <i class="bi bi-grip-vertical"></i>
+                            </div>
+                            <div class="pl-order-block-content">
+                                {{{inner_html}}}
+                            </div>
+                        </div>
                     </li>
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
+        <div class="pl-order-blocks-container {{block_layout}} {{block_scroll}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{solution-header}}</span>
             </div>
@@ -47,8 +54,15 @@ $(function() {
                         data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         role="option"
-                        >
-                        {{{inner_html}}}
+                        tabindex="0">
+                        <div class="pl-order-block-row">
+                            <div class="pl-order-block-handle" aria-hidden="true">
+                                <i class="bi bi-grip-vertical"></i>
+                            </div>
+                            <div class="pl-order-block-content">
+                                {{{inner_html}}}
+                            </div>
+                        </div>
                     </li>
                 {{/submission_dict}}
             </ul>
@@ -60,7 +74,7 @@ $(function() {
 
 {{#submission}}
     {{^parse-error}}
-    <div class="pl-order-blocks-answer-container {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header">
             Your answer:
         {{#correct}}
@@ -133,13 +147,13 @@ $(function() {
         <strong>Your answer: </strong>
         <div id="pl-order-blocks" class="d-inline-block">
             <span class="badge text-danger badge-invalid"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fas fa-question-circle" aria-hidden="true"></i></a>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fas fa-question-circle" aria-hidden="true"></i></button>
         </div>
     {{/parse-error}}
 {{/submission}}
 
 {{#true_answer}}
-    <div class="pl-order-blocks-answer-container {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-success-subtle">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
@@ -150,7 +164,7 @@ $(function() {
 
     {{#show_distractors}}
     <br><br>
-    <div class="pl-order-blocks-answer-container  {{block_layout}} {{dropzone_layout}}">
+    <div class="pl-order-blocks-answer-container  {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
         <div class="card-header bg-danger-subtle">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group list-unstyled">
         {{#distractors}}
