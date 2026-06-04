@@ -7,7 +7,6 @@ import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { isOverrideFieldActive, validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
 
@@ -188,29 +187,6 @@ function DueDateInput({
   );
 }
 
-function validateDueDate(
-  date: string | null,
-  releaseDate: string | null | undefined,
-): string | undefined {
-  if (date === null) return undefined;
-  if (!date) return 'Date is required';
-  if (releaseDate && new Date(date) <= new Date(releaseDate)) {
-    return 'Due date must be after the release date';
-  }
-  return undefined;
-}
-
-function validateDueCredit(credit: number | null, customCredit: boolean): string | undefined {
-  if (credit === null) {
-    if (customCredit) return 'Credit is required';
-    return undefined;
-  }
-  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
-  if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
-  return undefined;
-}
-
 export function DefaultDueDateField({ displayTimezone }: { displayTimezone: string }) {
   const { trigger } = useFormContext<AccessControlFormData>();
   const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
@@ -227,17 +203,9 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
 
   const dateCtrl = useController<AccessControlFormData, 'defaultRule.due.date'>({
     name: 'defaultRule.due.date',
-    rules: {
-      validate: (value, formValues) =>
-        validateDueDate(value, formValues.defaultRule.release.date) ?? true,
-    },
   });
   const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
     name: 'defaultRule.due.credit',
-    rules: {
-      validate: (value, formValues) =>
-        validateDueCredit(value, formValues.defaultRule.due.customCredit) ?? true,
-    },
   });
 
   const value: DueValue = {
@@ -320,25 +288,9 @@ export function OverrideDueDateField({
 
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'due', (value, formValues) => {
-        const overrideReleaseDate = isOverrideFieldActive(formValues, index, 'release')
-          ? formValues.overrides[index]?.release.date
-          : undefined;
-        return validateDueDate(value, overrideReleaseDate) ?? true;
-      }),
-    },
   });
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
     name: `overrides.${index}.due.credit`,
-    rules: {
-      validate: validateActiveOverrideField(
-        index,
-        'due',
-        (value, formValues) =>
-          validateDueCredit(value, formValues.overrides[index]?.due.customCredit ?? false) ?? true,
-      ),
-    },
   });
 
   const value: DueValue = {
