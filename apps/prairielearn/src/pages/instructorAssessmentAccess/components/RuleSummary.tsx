@@ -597,16 +597,6 @@ function generateOverrideFieldItems(
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
-  const appliesToError = formErrors?.appliesTo?.root?.message;
-
-  if (appliesToError) {
-    items.push({
-      label: 'Applies to',
-      value:
-        rule.appliesTo.targetType === 'student_label' ? 'Students by label' : 'Specific students',
-      error: appliesToError,
-    });
-  }
 
   if (overriddenFields.has('release')) {
     // A null/empty release date means "not released" (resolver returns active: false).
