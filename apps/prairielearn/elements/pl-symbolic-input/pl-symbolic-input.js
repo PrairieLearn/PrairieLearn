@@ -100,6 +100,97 @@
     'sign',
   ]);
 
+  const mathJSONUnaryFunctionHeads = new Set([
+    'Abs',
+    'AiryAi',
+    'AiryBi',
+    'Arccos',
+    'Arccot',
+    'Arccsc',
+    'Arcosh',
+    'Arcoth',
+    'Arcsch',
+    'Arcsec',
+    'Arcsin',
+    'Arctan',
+    'Arsech',
+    'Arsinh',
+    'Artanh',
+    'Ceil',
+    'Cos',
+    'Cosh',
+    'Cot',
+    'Coth',
+    'Csc',
+    'Csch',
+    'Conjugate',
+    'Denominator',
+    'Digamma',
+    'Erf',
+    'Erfc',
+    'ErfInv',
+    'Exp',
+    'Exp2',
+    'Factorial',
+    'Factorial2',
+    'Fibonacci',
+    'Floor',
+    'FresnelC',
+    'FresnelS',
+    'Gamma',
+    'GammaLn',
+    'Heaviside',
+    'Imaginary',
+    'Lb',
+    'LambertW',
+    'Lg',
+    'Log10',
+    'Log2',
+    'Negate',
+    'Numerator',
+    'Real',
+    'Sec',
+    'Sech',
+    'Sign',
+    'Sin',
+    'Sinc',
+    'Sinh',
+    'Sqrt',
+    'Square',
+    'Subfactorial',
+    'Tan',
+    'Tanh',
+    'Zeta',
+  ]);
+
+  const mathJSONBinaryFunctionHeads = new Set([
+    'BesselI',
+    'BesselJ',
+    'BesselK',
+    'BesselY',
+    'Beta',
+    'Binomial',
+    'Mod',
+    'PolyGamma',
+  ]);
+
+  const mathJSONNumericVariadicFunctionHeads = new Set(['GCD', 'LCM', 'Max', 'Min']);
+  const mathJSONLogicalVariadicFunctionHeads = new Set(['And', 'Or', 'Xor']);
+  const mathJSONVariadicFunctionHeads = new Set([
+    ...mathJSONNumericVariadicFunctionHeads,
+    ...mathJSONLogicalVariadicFunctionHeads,
+  ]);
+  const mathJSONRelationHeads = new Set([
+    'Equal',
+    'Greater',
+    'GreaterEqual',
+    'Less',
+    'LessEqual',
+    'NotEqual',
+  ]);
+  const mathJSONSetHeads = new Set(['Set', 'Interval', 'Union', 'Intersection']);
+  const mathJSONTupleHeads = new Set(['List', 'Tuple', 'Single', 'Pair', 'Triple']);
+
   /**
    * The English and Greek alphabet virtual keyboards are always the same for all elements,
    * so we initialize them once and only swap out the math symbol keyboard per-element.
@@ -469,23 +560,274 @@
 
   /**
    * @param {unknown} expr
-   * @returns {string | null} The first MathJSON parse error message, if present
+   * @returns {string[]} User-facing formula editor parse error messages
    */
-  function findMathJSONParseError(expr) {
+  function collectMathJSONParseErrors(expr) {
     if (Array.isArray(expr)) {
-      if (expr[0] === 'Error') return formatMathJSONParseError(expr);
-      for (const arg of expr.slice(1)) {
-        const error = findMathJSONParseError(arg);
-        if (error) return error;
+      if (expr[0] === 'Error') return [formatMathJSONParseError(expr)];
+      return expr.slice(1).flatMap(collectMathJSONParseErrors);
+    }
+
+    if (expr && typeof expr === 'object' && 'fn' in expr) {
+      return collectMathJSONParseErrors(expr.fn);
+    }
+
+    return [];
+  }
+
+  /**
+   * @param {unknown} expr
+   * @param {{ allowSets: boolean }} options
+   * @returns {string[]} Student-safe conversion errors that can be checked without SymPy
+   */
+  function collectMathJSONConversionErrors(expr, options) {
+    if (Array.isArray(expr)) {
+      const [head, ...args] = expr;
+      if (typeof head !== 'string') return [];
+
+      const arityError = validateMathJSONArity(head, args, options);
+      if (arityError) return [arityError];
+
+      const childErrors = args.flatMap((arg) => collectMathJSONConversionErrors(arg, options));
+      if (childErrors.length > 0) return childErrors;
+
+      if (head === 'String') return ['Text values cannot be used as symbolic expressions.'];
+
+      if (requiresNumericMathJSONArgs(head, args, options)) {
+        const numericArgs = head === 'Apply' ? args.slice(1) : args;
+        for (const arg of numericArgs) {
+          if (!isNumericMathJSONExpression(arg, options)) return ['Expected a numeric expression.'];
+        }
+      }
+
+      if (mathJSONRelationHeads.has(head)) {
+        for (const arg of args) {
+          if (!isNumericMathJSONExpression(arg, options)) return ['Expected a numeric expression.'];
+        }
+      }
+
+      if (head === 'Not' && !isLogicalMathJSONExpression(args[0], options)) {
+        return ['Expected a logical expression.'];
+      }
+
+      if (mathJSONLogicalVariadicFunctionHeads.has(head)) {
+        for (const arg of args) {
+          if (!isLogicalMathJSONExpression(arg, options)) return ['Expected a logical expression.'];
+        }
+      }
+
+      return [];
+    }
+
+    if (expr && typeof expr === 'object') {
+      if ('fn' in expr) return collectMathJSONConversionErrors(expr.fn, options);
+    }
+
+    return [];
+  }
+
+  /**
+   * @param {unknown} expr
+   * @param {{ allowSets: boolean }} options
+   * @returns {string[]} User-facing formula editor error messages
+   */
+  function collectMathJSONClientErrors(expr, options) {
+    const parseErrors = collectMathJSONParseErrors(expr);
+    if (parseErrors.length > 0) return parseErrors;
+    return collectMathJSONConversionErrors(expr, options);
+  }
+
+  /**
+   * @param {string} head
+   * @param {unknown[]} args
+   * @param {{ allowSets: boolean }} options
+   * @returns {string | null} A student-safe arity error, if present
+   */
+  function validateMathJSONArity(head, args, options) {
+    if (mathJSONUnaryFunctionHeads.has(head)) return requireMathJSONArity(head, args, 1);
+    if (mathJSONBinaryFunctionHeads.has(head)) return requireMathJSONArity(head, args, 2);
+    if (mathJSONVariadicFunctionHeads.has(head)) return requireMathJSONArity(head, args, 1, null);
+    if (mathJSONRelationHeads.has(head)) return requireMathJSONArity(head, args, 2, null);
+    if (head === 'List' && options.allowSets) return requireMathJSONArity(head, args, 2);
+
+    switch (head) {
+      case 'Error':
+      case 'Rational':
+      case 'Log':
+      case 'Ln':
+        return requireMathJSONArity(head, args, 1, 2);
+      case 'Apply':
+      case 'Add':
+      case 'Subtract':
+      case 'Multiply':
+      case 'InvisibleOperator':
+      case 'Union':
+      case 'Intersection':
+        return requireMathJSONArity(head, args, 1, null);
+      case 'Divide':
+        return requireMathJSONArity(head, args, 2, null);
+      case 'Power':
+      case 'Root':
+      case 'Arctan2':
+      case 'Pair':
+      case 'Interval':
+      case 'KroneckerDelta':
+        return requireMathJSONArity(head, args, 2);
+      case 'Not':
+      case 'Single':
+      case 'Symbol':
+      case 'Open':
+        return requireMathJSONArity(head, args, 1);
+      case 'Triple':
+        return requireMathJSONArity(head, args, 3);
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * @param {string} head
+   * @param {unknown[]} args
+   * @param {number} minCount
+   * @param {number | null} [maxCount]
+   * @returns {string | null} A student-safe arity error, if present
+   */
+  function requireMathJSONArity(head, args, minCount, maxCount = minCount) {
+    if (maxCount === null) {
+      if (args.length < minCount) {
+        return `${head} expects at least ${minCount} ${pluralizeArg(minCount)}.`;
       }
       return null;
     }
 
-    if (expr && typeof expr === 'object' && 'fn' in expr) {
-      return findMathJSONParseError(expr.fn);
+    if (minCount === maxCount) {
+      if (args.length !== minCount) {
+        return `${head} expects exactly ${minCount} ${pluralizeArg(minCount)}.`;
+      }
+      return null;
     }
 
+    if (args.length < minCount || args.length > maxCount) {
+      return `${head} expects between ${minCount} and ${maxCount} arguments.`;
+    }
     return null;
+  }
+
+  /**
+   * @param {number} count
+   * @returns {string} Singular or plural argument label
+   */
+  function pluralizeArg(count) {
+    return count === 1 ? 'argument' : 'arguments';
+  }
+
+  /**
+   * @param {string} head
+   * @param {unknown[]} args
+   * @param {{ allowSets: boolean }} options
+   * @returns {boolean} Whether all arguments must be numeric
+   */
+  function requiresNumericMathJSONArgs(head, args, options) {
+    if (
+      mathJSONUnaryFunctionHeads.has(head) ||
+      mathJSONBinaryFunctionHeads.has(head) ||
+      mathJSONNumericVariadicFunctionHeads.has(head)
+    ) {
+      return true;
+    }
+
+    switch (head) {
+      case 'Apply':
+      case 'Add':
+      case 'Multiply':
+      case 'InvisibleOperator':
+      case 'Divide':
+      case 'Power':
+      case 'Root':
+      case 'Rational':
+      case 'Arctan2':
+      case 'Log':
+      case 'Ln':
+      case 'KroneckerDelta':
+        return true;
+      case 'Subtract':
+        return !(
+          options.allowSets && args.every((arg) => mathJSONExpressionKind(arg, options) === 'set')
+        );
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * @param {unknown} expr
+   * @param {{ allowSets: boolean }} options
+   * @returns {boolean} Whether the expression is numeric-like
+   */
+  function isNumericMathJSONExpression(expr, options) {
+    return mathJSONExpressionKind(expr, options) === 'numeric';
+  }
+
+  /**
+   * @param {unknown} expr
+   * @param {{ allowSets: boolean }} options
+   * @returns {boolean} Whether the expression is logical-like
+   */
+  function isLogicalMathJSONExpression(expr, options) {
+    return mathJSONExpressionKind(expr, options) === 'logical';
+  }
+
+  /**
+   * @param {unknown} expr
+   * @param {{ allowSets: boolean }} options
+   * @returns {'numeric' | 'logical' | 'set' | 'collection' | 'string' | 'error' | 'unknown'} Broad MathJSON result kind
+   */
+  function mathJSONExpressionKind(expr, options) {
+    if (typeof expr === 'number') return 'numeric';
+    if (typeof expr === 'boolean') return 'logical';
+    if (typeof expr === 'string') {
+      if (isMathJSONStringLiteral(expr)) return 'string';
+      if (expr === 'True' || expr === 'False') return 'logical';
+      if (expr === 'EmptySet') return 'set';
+      return 'numeric';
+    }
+
+    if (Array.isArray(expr)) {
+      const head = expr[0];
+      if (head === 'Error') return 'error';
+      if (head === 'String') return 'string';
+      if (
+        head === 'Not' ||
+        mathJSONRelationHeads.has(head) ||
+        mathJSONLogicalVariadicFunctionHeads.has(head)
+      ) {
+        return 'logical';
+      }
+      if (mathJSONSetHeads.has(head)) return 'set';
+      if (head === 'List' && options.allowSets) return 'set';
+      if (mathJSONTupleHeads.has(head)) return 'collection';
+      if (head === 'Delimiter' && options.allowSets) return 'set';
+      return 'numeric';
+    }
+
+    if (expr && typeof expr === 'object') {
+      if ('str' in expr) return 'string';
+      if ('sym' in expr && (expr.sym === 'True' || expr.sym === 'False')) return 'logical';
+      if ('sym' in expr && expr.sym === 'EmptySet') return 'set';
+      if ('num' in expr || 'sym' in expr) return 'numeric';
+      if ('fn' in expr) return mathJSONExpressionKind(expr.fn, options);
+      return 'unknown';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * @param {string} value
+   * @returns {boolean} Whether the string uses MathJSON string-literal quotes
+   */
+  function isMathJSONStringLiteral(value) {
+    return value.length >= 2 && value[0] === value.at(-1) && (value[0] === "'" || value[0] === '"');
   }
 
   /**
@@ -572,24 +914,28 @@
 
   /**
    * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
-   * @param {import('@cortex-js/compute-engine').MathJsonExpression} mathJSON
+   * @param {unknown} mathJSON
    */
-  function syncClientParseError(inputEl, errorEl, mathJSON) {
-    const error = findMathJSONParseError(mathJSON);
-    if (!error) {
-      clearClientParseError(inputEl, errorEl);
+  function syncClientParseError(inputEl, validationEl, errorEl, mathJSON) {
+    const errors = collectMathJSONClientErrors(mathJSON, {
+      allowSets: inputEl.hasAttribute('allow-sets'),
+    });
+    if (errors.length === 0) {
+      clearClientParseError(inputEl, validationEl, errorEl);
       return;
     }
-    setClientParseError(inputEl, errorEl, error);
+    setClientParseError(inputEl, validationEl, errorEl, errors.join(' '));
   }
 
   /**
    * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
    * @param {string} message
    */
-  function setClientParseError(inputEl, errorEl, message) {
+  function setClientParseError(inputEl, validationEl, errorEl, message) {
     if (!inputEl.classList.contains('is-invalid')) inputEl.dataset.clientParseWasValid = 'true';
     inputEl.dataset.clientParseError = 'true';
     inputEl.classList.add('is-invalid');
@@ -600,7 +946,7 @@
       }
       inputEl.setAttribute('aria-errormessage', errorEl.id);
     }
-    setCustomValidity(inputEl, message);
+    setCustomValidity(validationEl ?? inputEl, message);
 
     if (!errorEl) return;
     errorEl.textContent = message;
@@ -609,9 +955,10 @@
 
   /**
    * @param {HTMLElement} inputEl
+   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
    */
-  function clearClientParseError(inputEl, errorEl) {
+  function clearClientParseError(inputEl, validationEl, errorEl) {
     if (inputEl.dataset.clientParseWasValid === 'true') {
       inputEl.classList.remove('is-invalid');
       inputEl.removeAttribute('aria-invalid');
@@ -622,7 +969,7 @@
     delete inputEl.dataset.clientParseWasValid;
     delete inputEl.dataset.clientParseAddedErrormessage;
     delete inputEl.dataset.clientParseError;
-    setCustomValidity(inputEl, '');
+    setCustomValidity(validationEl ?? inputEl, '');
 
     if (!errorEl) return;
     errorEl.textContent = '\u00a0'; // NBSP to preserve element height
@@ -649,6 +996,7 @@
     const mf = /** @type {import('mathlive').MathfieldElement} */ (
       document.getElementById('symbolic-input-' + name)
     );
+    const validationEl = document.getElementById(`symbolic-input-validation-${name}`);
     const clientErrorEl = document.getElementById(`pl-symbolic-input-client-error-${name}`);
 
     // Always keep basic right-click items and append to other menu items
@@ -922,7 +1270,7 @@
       const ls = createSyntax(mf);
       const json = parseLatex(ls, mf.getValue('latex-unstyled'));
       $('#symbolic-input-json-' + name).val(JSON.stringify(json));
-      syncClientParseError(/** @type {HTMLElement} */ (mf), clientErrorEl, json);
+      syncClientParseError(/** @type {HTMLElement} */ (mf), validationEl, clientErrorEl, json);
     };
 
     updateSubmissionData();

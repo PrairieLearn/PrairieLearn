@@ -5,7 +5,7 @@
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
         {{#formula_editor}}
-        {{! hidden input for formula editor to submit MathJSON of the answer }}
+        {{! hidden input for formula editor structured answer data }}
         <input
             name="{{name}}-json"
             id="symbolic-input-json-{{name}}"
@@ -28,6 +28,14 @@
             id="symbolic-input-latex-{{name}}"
             type="hidden"
             value=""
+        />
+        <input
+            id="symbolic-input-validation-{{name}}"
+            type="text"
+            class="visually-hidden"
+            tabindex="-1"
+            aria-hidden="true"
+            autocomplete="off"
         />
         <math-field
             id="symbolic-input-{{name}}"

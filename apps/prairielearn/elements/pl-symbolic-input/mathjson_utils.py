@@ -366,7 +366,7 @@ def _mathjson_to_sympy_expr(
         case [*_]:
             return _function(expr, allow_sets=allow_sets)
         case _:
-            raise MathJsonConversionError("Invalid MathJSON expression.")
+            raise MathJsonConversionError("Invalid formula editor input.")
 
 
 def _mathjson_object_to_sympy_expr(
@@ -376,29 +376,21 @@ def _mathjson_object_to_sympy_expr(
         case {"num": str(num)}:
             return _number(num)
         case {"num": _}:
-            raise MathJsonConversionError(
-                "MathJSON number object expects a string value."
-            )
+            raise MathJsonConversionError("Invalid formula editor input.")
         case {"sym": str(sym)}:
             return _symbol(sym)
         case {"sym": _}:
-            raise MathJsonConversionError(
-                "MathJSON symbol object expects a string value."
-            )
+            raise MathJsonConversionError("Invalid formula editor input.")
         case {"fn": fn}:
             return _function(fn, allow_sets=allow_sets)
         case {"str": str(string)}:
             return _string(string)
         case {"str": _}:
-            raise MathJsonConversionError(
-                "MathJSON string object expects a string value."
-            )
+            raise MathJsonConversionError("Invalid formula editor input.")
         case {"dict": _}:
-            raise MathJsonConversionError(
-                "MathJSON dictionary objects cannot be converted to SymPy."
-            )
+            raise MathJsonConversionError("Unsupported formula editor input.")
         case _:
-            raise MathJsonConversionError("Unsupported MathJSON object.")
+            raise MathJsonConversionError("Unsupported formula editor input.")
 
 
 def _number(value: str) -> sympy.Basic:
@@ -463,13 +455,13 @@ def _function(
     expr: MathJsonFunctionExpression, *, allow_sets: bool = False
 ) -> sympy.Basic:
     if not isinstance(expr, list | tuple):
-        raise MathJsonConversionError("Expected MathJSON function expression.")
+        raise MathJsonConversionError("Invalid formula editor input.")
     if len(expr) == 0:
-        raise MathJsonConversionError("MathJSON function expression cannot be empty.")
+        raise MathJsonConversionError("Invalid formula editor input.")
 
     head = expr[0]
     if not isinstance(head, str):
-        raise MathJsonConversionError("MathJSON function head must be a string.")
+        raise MathJsonConversionError("Invalid formula editor input.")
 
     raw_args = tuple(expr[1:])
 
@@ -499,7 +491,9 @@ def _function(
     match head:
         case "Error":
             _require_arity(head, raw_args, 1, 2)
-            raise MathJsonParseError(f"MathJSON parse error: {_format_error(expr)}")
+            raise MathJsonParseError(
+                f"Formula editor parse error: {_format_error(expr)}"
+            )
         case "Symbol":
             if len(raw_args) != 1:
                 raise MathJsonConversionError(
@@ -509,7 +503,7 @@ def _function(
             return sympy.Symbol(symbol_name)
         case "String":
             raise MathJsonConversionError(
-                "MathJSON string expressions cannot be converted to SymPy."
+                "Text values cannot be used as symbolic expressions."
             )
         case "Apply":
             _require_arity(head, raw_args, 1, None)
@@ -711,9 +705,11 @@ def _raise_mathjson_errors(
     errors = _collect_mathjson_errors(expr, allow_trig=allow_trig)
     match errors:
         case [error]:
-            raise MathJsonParseError(f"MathJSON parse error: {error}")
+            raise MathJsonParseError(f"Formula editor parse error: {error}")
         case [_, _, *_]:
-            raise MathJsonParseError(f"MathJSON parse errors: {'; '.join(errors)}")
+            raise MathJsonParseError(
+                f"Formula editor parse errors: {'; '.join(errors)}"
+            )
         case _:
             pass
 
@@ -780,7 +776,7 @@ def _format_error(expr: MathJsonFunctionExpression) -> str:
             detail = details[0] if details else _format_error_part(detail_expr)
             return f"{code}: {detail}"
         case _:
-            raise MathJsonConversionError("Expected MathJSON error expression.")
+            raise MathJsonConversionError("Invalid formula editor parse error.")
 
 
 def _format_error_code(expr: MathJsonExpression) -> tuple[str, list[str]]:
@@ -927,7 +923,7 @@ def _symbol_name(expr: object) -> str:
         case {"sym": str(sym)}:
             return _normalize_symbol(sym)
         case _:
-            raise MathJsonConversionError("Expected a MathJSON symbol expression.")
+            raise MathJsonConversionError("Expected a symbol.")
 
 
 def _undefined_function(name: str) -> Callable[..., sympy.Basic]:
