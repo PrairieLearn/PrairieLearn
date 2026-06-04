@@ -21,12 +21,8 @@ import {
 import {
   MAX_ACCESS_CONTROL_DURATION_MINUTES,
   MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE,
-  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
   MAX_ACCESS_CONTROL_PASSWORD_LENGTH,
   MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
-  MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
-  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
-  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../../schemas/accessControl.js';
 
 import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
@@ -48,13 +44,8 @@ export const DATE_REQUIRED_MESSAGE = 'Date is required';
 
 export type AccessControlFormFieldPath = FieldPath<AccessControlFormData>;
 
-type AccessControlFormValidationPath =
-  | AccessControlFormFieldPath
-  | 'overrides.root'
-  | `overrides.${number}.appliesTo.root`;
-
 interface AccessControlFormValidationError {
-  path: AccessControlFormValidationPath;
+  path: AccessControlFormFieldPath;
   message: string;
 }
 
@@ -83,10 +74,7 @@ type DateControlValidationPath =
 
 type RuleFormFields = Pick<AccessControlFormData['defaultRule'], OverridableFieldName>;
 
-type AddValidationError = (
-  path: AccessControlFormValidationPath,
-  message: string | undefined,
-) => void;
+type AddValidationError = (path: AccessControlFormFieldPath, message: string | undefined) => void;
 
 export interface AccessControlFormResolverContext {
   displayTimezone: string;
@@ -297,8 +285,8 @@ export function getGlobalDateValidationErrors(
 
 function addValidationError(
   errors: AccessControlFormValidationError[],
-  seenPaths: Set<AccessControlFormValidationPath>,
-  path: AccessControlFormValidationPath,
+  seenPaths: Set<AccessControlFormFieldPath>,
+  path: AccessControlFormFieldPath,
   message: string | undefined,
 ) {
   if (!message || seenPaths.has(path)) return;
@@ -485,35 +473,6 @@ function validatePrairieTestExams(
   });
 }
 
-function pluralize(count: number, singular: string, plural: string): string {
-  return count === 1 ? singular : plural;
-}
-
-function validateRuleCounts(formData: AccessControlFormData, addError: AddValidationError) {
-  const studentLabelOverrideCount = formData.overrides.filter(
-    (override) => override.appliesTo.targetType === 'student_label',
-  ).length;
-  const enrollmentRuleCount = formData.overrides.filter(
-    (override) => override.appliesTo.targetType === 'enrollment',
-  ).length;
-
-  const messages: string[] = [];
-  if (studentLabelOverrideCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
-    const excess = studentLabelOverrideCount - MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES;
-    messages.push(
-      `At most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides are allowed. Remove ${excess} student-label ${pluralize(excess, 'override', 'overrides')} before saving.`,
-    );
-  }
-  if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
-    const excess = enrollmentRuleCount - MAX_ENROLLMENT_ACCESS_CONTROL_RULES;
-    messages.push(
-      `At most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides are allowed. Remove ${excess} student-specific ${pluralize(excess, 'override', 'overrides')} before saving.`,
-    );
-  }
-
-  addError('overrides.root', messages.join(' '));
-}
-
 function validateRuleFields(
   rule: RuleFormFields,
   prefix: RulePrefix,
@@ -584,31 +543,6 @@ function validateDefaultRule(formData: AccessControlFormData, addError: AddValid
   validatePrairieTestExams(rule.prairieTestExams, addError);
 }
 
-function validateOverrideTargets(
-  override: AccessControlFormData['overrides'][number],
-  prefix: `overrides.${number}`,
-  addError: AddValidationError,
-) {
-  if (
-    override.appliesTo.targetType === 'student_label' &&
-    override.appliesTo.studentLabels.length > MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE
-  ) {
-    addError(
-      `${prefix}.appliesTo.root`,
-      `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`,
-    );
-  }
-  if (
-    override.appliesTo.targetType === 'enrollment' &&
-    override.appliesTo.enrollments.length > MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE
-  ) {
-    addError(
-      `${prefix}.appliesTo.root`,
-      `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
-    );
-  }
-}
-
 function validateOverrideRule(
   formData: AccessControlFormData,
   index: number,
@@ -617,7 +551,6 @@ function validateOverrideRule(
   const override = formData.overrides[index];
   const prefix = `overrides.${index}` as const;
 
-  validateOverrideTargets(override, prefix, addError);
   validateRuleFields(
     override,
     prefix,
@@ -626,16 +559,26 @@ function validateOverrideRule(
   );
 }
 
+/**
+ * Validates a complete access control form data structure.
+ *
+ * There are certain things which we choose not to validate here. Namely, we don't validate
+ * overall rule count, nor do we validate that an override doesn't have too many targets.
+ * The UI makes it impossible to exceed those limits, so we don't gain anything by
+ * trying to compute and surface such validation errors. If the UI does for some reason
+ * permit such invalid data, the server will catch it and surface it to the user. While
+ * it won't be pretty, it's good enough, and at any rate would indicate a bug in the UI
+ * that should be fixed, rather than a user error that we need to handle gracefully.
+ */
 export function getAccessControlFormValidationErrors(
   formData: AccessControlFormData,
   displayTimezone: string,
 ): AccessControlFormValidationError[] {
   const errors: AccessControlFormValidationError[] = [];
-  const seenPaths = new Set<AccessControlFormValidationPath>();
-  const addError = (path: AccessControlFormValidationPath, message: string | undefined) =>
+  const seenPaths = new Set<AccessControlFormFieldPath>();
+  const addError = (path: AccessControlFormFieldPath, message: string | undefined) =>
     addValidationError(errors, seenPaths, path, message);
 
-  validateRuleCounts(formData, addError);
   validateDefaultRule(formData, addError);
   formData.overrides.forEach((_override, index) => validateOverrideRule(formData, index, addError));
 

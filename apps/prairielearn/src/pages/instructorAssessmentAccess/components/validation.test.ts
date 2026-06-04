@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
-  MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
-  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
-  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
-} from '../../../schemas/accessControl.js';
-
 import type { AccessControlFormData, OverrideData } from './types.js';
 import {
   getAccessControlFormValidationErrors,
@@ -379,62 +372,6 @@ describe('getAccessControlFormValidationErrors', () => {
     expect(errors).toContainEqual({
       path: 'overrides.0.password',
       message: 'Password is required',
-    });
-  });
-
-  it.each([
-    {
-      name: 'student-label overrides',
-      limit: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
-      makeTargetedOverride: () => makeOverride(),
-      message: `At most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides are allowed. Remove 1 student-label override before saving.`,
-    },
-    {
-      name: 'enrollment rules',
-      limit: MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
-      makeTargetedOverride: () =>
-        makeOverride({
-          appliesTo: makeEnrollmentAppliesTo([]),
-        }),
-      message: `At most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides are allowed. Remove 1 student-specific override before saving.`,
-    },
-  ])('validates the maximum number of $name', ({ limit, makeTargetedOverride, message }) => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData(Array.from({ length: limit + 1 }, makeTargetedOverride)),
-      TEST_TIMEZONE,
-    );
-
-    expect(errors).toContainEqual({
-      path: 'overrides.root',
-      message,
-    });
-  });
-
-  it.each([
-    {
-      name: 'student labels',
-      override: makeOverride({
-        appliesTo: makeStudentLabelAppliesTo(
-          makeStudentLabels(MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE + 1),
-        ),
-      }),
-      message: `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`,
-    },
-    {
-      name: 'students',
-      override: makeOverride({
-        appliesTo: makeEnrollmentAppliesTo(
-          makeEnrollments(MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE + 1),
-        ),
-      }),
-      message: `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
-    },
-  ])('validates the maximum number of $name per override', ({ override, message }) => {
-    const errors = getAccessControlFormValidationErrors(makeFormData([override]), TEST_TIMEZONE);
-
-    expect(errors).toContainEqual({
-      path: 'overrides.0.appliesTo.root',
-      message,
     });
   });
 });

@@ -226,7 +226,6 @@ export function AccessControlSummary({
   const { errors } = useFormState<AccessControlFormData>();
   const defaultRuleErrorCount = countErrors(errors.defaultRule);
   const overridesErrorCount = countErrors(errors.overrides);
-  const overridesRootError = errors.overrides?.root?.message;
   const hiddenEnrollmentRuleNoun =
     hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
   const hiddenEnrollmentRuleVerb = hiddenEnrollmentRuleCount === 1 ? 'is' : 'are';
@@ -341,12 +340,6 @@ export function AccessControlSummary({
             {hiddenEnrollmentRuleVerb} hidden because you do not have student data viewer
             permissions. These overrides remain in place when you save, but visible changes may
             still affect them through inherited settings.
-          </Alert>
-        )}
-
-        {overridesRootError && (
-          <Alert variant="danger" className="mb-3">
-            {overridesRootError}
           </Alert>
         )}
 
