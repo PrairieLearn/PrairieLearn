@@ -9,6 +9,10 @@ import type {
   AccessControlJsonWithId,
   PrairieTestExamMetadata,
 } from '../../../models/assessment-access-control-rules.js';
+import {
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../../schemas/accessControl.js';
 
 import { AccessControlEditabilityProvider } from './AccessControlEditabilityContext.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
@@ -17,6 +21,7 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
+  type OverrideData,
   type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
@@ -35,6 +40,48 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
 const accessControlFormInitialRightWidth = 560;
 
 type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | null;
+
+function getOverrideLimitPolicy(
+  overrides: OverrideData[],
+  canEditEnrollmentRules: boolean,
+): {
+  nextTargetType: TargetType;
+  addDisabledReason: string | null;
+  getTargetTypeDisabledReasons: (
+    currentTargetType: TargetType,
+  ) => Partial<Record<TargetType, string | null>>;
+} {
+  const enrollmentOverrideCount = overrides.filter(
+    (override) => override.appliesTo.targetType === 'enrollment',
+  ).length;
+  const studentLabelOverrideCount = overrides.length - enrollmentOverrideCount;
+  const enrollmentLimitReached = enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES;
+  const studentLabelLimitReached =
+    studentLabelOverrideCount >= MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES;
+
+  const enrollmentLimitReason = `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides.`;
+  const studentLabelLimitReason = `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`;
+
+  return {
+    nextTargetType:
+      !canEditEnrollmentRules || enrollmentLimitReached ? 'student_label' : 'enrollment',
+    addDisabledReason: !canEditEnrollmentRules
+      ? studentLabelLimitReached
+        ? studentLabelLimitReason
+        : null
+      : enrollmentLimitReached && studentLabelLimitReached
+        ? `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides and ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides.`
+        : null,
+    getTargetTypeDisabledReasons: (currentTargetType) => ({
+      enrollment:
+        currentTargetType !== 'enrollment' && enrollmentLimitReached ? enrollmentLimitReason : null,
+      student_label:
+        currentTargetType !== 'student_label' && studentLabelLimitReached
+          ? studentLabelLimitReason
+          : null,
+    }),
+  };
+}
 
 export function AccessControlForm({
   initialData = defaultInitialData,
@@ -105,6 +152,7 @@ export function AccessControlForm({
 
   const watchedData = watch();
   const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
+  const overrideLimitPolicy = getOverrideLimitPolicy(watchedData.overrides, canEditEnrollmentRules);
 
   // Sync cross-field validation errors into react-hook-form as manual errors,
   // and clear them when the underlying issues are resolved. Depends on `errors`
@@ -147,9 +195,7 @@ export function AccessControlForm({
 
   const addOverride = () => {
     const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
-    if (!canEditEnrollmentRules) {
-      newOverride.appliesTo.targetType = 'student_label';
-    }
+    newOverride.appliesTo.targetType = overrideLimitPolicy.nextTargetType;
     if (newOverride.appliesTo.targetType === 'student_label') {
       const firstEnrollmentIndex = watchedData.overrides.findIndex(
         (override) => override.appliesTo.targetType === 'enrollment',
@@ -299,6 +345,9 @@ export function AccessControlForm({
                 courseInstanceId={courseInstance.id}
                 canEditAccessSettings={canEditAccessSettings}
                 canEditEnrollmentRules={canEditEnrollmentRules}
+                targetTypeDisabledReasons={overrideLimitPolicy.getTargetTypeDisabledReasons(
+                  watchedData.overrides[selectedRule.index].appliesTo.targetType,
+                )}
                 onTargetTypeChange={(targetType) =>
                   handleOverrideTargetTypeChange(selectedRule.index, targetType)
                 }
@@ -362,6 +411,7 @@ export function AccessControlForm({
                     canFetchPrairieTestMetadata={canFetchPrairieTestMetadata}
                     readOnlyMessage={readOnlyMessage}
                     hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
+                    addOverrideDisabledReason={overrideLimitPolicy.addDisabledReason}
                     onAddOverride={addOverride}
                     onRemoveOverride={handleDeleteOverride}
                     onMoveOverride={handleMoveOverride}

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 import { ColorJsonSchema } from './infoCourse.js';
 
+export const MAX_STUDENT_LABEL_NAME_LENGTH = 255;
 export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 100;
 
 const AccessRuleJsonSchema = z
@@ -54,7 +55,12 @@ export const StudentLabelJsonSchema = z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
-    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_STUDENT_LABEL_NAME_LENGTH)
+      .describe('The name of the student label.'),
     color: ColorJsonSchema,
   })
   .strict()
@@ -108,8 +114,7 @@ export const CourseInstanceJsonSchema = z
           .optional()
           .default(false),
       })
-      .optional()
-      .default({}),
+      .prefault({}),
     hideInEnrollPage: z
       .boolean()
       .describe(
