@@ -527,7 +527,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const port_used = await sqldb.queryRow(sql.get_is_port_occupied, params, PortOccupiedSchema);
+    const port_used = await sqldb.queryScalar(sql.get_is_port_occupied, params, PortOccupiedSchema);
     return !port_used;
   }
 
@@ -633,6 +633,10 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
   workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
+  // Set networking disabled status for workspaces that have actions that depend on it (e.g., vscode)
+  if (!row.workspace_enable_networking) {
+    workspace_environment['WORKSPACE_NETWORKING_DISABLED'] = '1';
+  }
 
   const settings = {
     workspace_image: row.workspace_image,
@@ -659,6 +663,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 }
 
 const ProgressDetailsSchema = z.record(
+  z.string(),
   z.object({
     current: z.number(),
     total: z.number(),

@@ -7,19 +7,15 @@
   "groups": {
     "minMembers": 2,
     "maxMembers": 2,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    }
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true }
   },
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": "Hard questions",
       "questions": [
-        { "id": "addNumbers", "points": [10, 5, 1] },
-        { "id": "positionTimeGraph", "points": [10] }
+        { "id": "addNumbers", "autoPoints": [10, 5, 1] },
+        { "id": "positionTimeGraph", "autoPoints": [10] }
       ]
     }
   ]

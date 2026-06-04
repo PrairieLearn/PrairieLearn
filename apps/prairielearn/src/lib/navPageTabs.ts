@@ -1,12 +1,10 @@
+import { html } from '@prairielearn/html';
+
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
 import { encodeSearchString } from './uri-util.shared.js';
 
-/**
- * Retrieves horizontal navigation tab info for ContextNavigation.
- * @returns Navigation page tabs and their configurations
- */
 export function getNavPageTabs() {
   const navPagesTabs = {
     public_question: [
@@ -38,7 +36,13 @@ export function getNavPageTabs() {
         iconClasses: 'far fa-calendar-alt',
         tabLabel: 'Publishing',
       },
-
+      {
+        activeSubPage: 'ai_grading',
+        urlSuffix: '/instance_admin/ai_grading',
+        iconClasses: 'bi bi-stars',
+        tabLabel: 'AI grading',
+        renderCondition: (resLocals) => resLocals.ai_grading_enabled,
+      },
       {
         activeSubPage: 'lti',
         urlSuffix: '/instance_admin/lti',
@@ -47,13 +51,26 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) =>
           resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
       },
-
       {
         activeSubPage: 'billing',
         urlSuffix: '/instance_admin/billing',
         iconClasses: 'fas fa-credit-card',
         tabLabel: 'Billing',
         renderCondition: (resLocals) => resLocals.billing_enabled,
+      },
+    ],
+    students: [
+      {
+        activeSubPage: ['overview', 'detail'],
+        urlSuffix: '/instance_admin/students',
+        iconClasses: 'bi bi-people-fill',
+        tabLabel: 'Students',
+      },
+      {
+        activeSubPage: 'student_labels',
+        urlSuffix: '/instance_admin/students/labels',
+        iconClasses: 'bi bi-person-badge',
+        tabLabel: 'Student labels',
       },
     ],
     course_admin: [
@@ -126,19 +143,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
         tabLabel: 'Groups',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
-      {
-        activeSubPage: 'questions',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
-        iconClasses: 'far fa-file-alt',
-        tabLabel: 'Questions',
-      },
-      {
-        activeSubPage: 'question_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/question_statistics`,
-        iconClasses: 'fas fa-table',
-        tabLabel: 'Question stats',
       },
       {
         activeSubPage: 'manual_grading',
@@ -148,11 +152,10 @@ export function getNavPageTabs() {
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
-        activeSubPage: 'regrading',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/regrading`,
-        iconClasses: 'fa fa-sync',
-        tabLabel: 'Regrading',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+        activeSubPage: 'questions',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+        iconClasses: 'far fa-file-alt',
+        tabLabel: 'Questions',
       },
       {
         activeSubPage: 'settings',
@@ -161,8 +164,8 @@ export function getNavPageTabs() {
         tabLabel: 'Settings',
       },
       {
-        activeSubPage: 'assessment_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/assessment_statistics`,
+        activeSubPage: 'statistics',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
       },
@@ -171,13 +174,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/instances`,
         iconClasses: 'fas fa-user-graduate',
         tabLabel: 'Students',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
-      {
-        activeSubPage: 'uploads',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/uploads`,
-        iconClasses: 'fas fa-upload',
-        tabLabel: 'Uploads',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
     ],
@@ -245,10 +241,16 @@ export function getNavPageTabs() {
         tabLabel: 'Courses',
       },
       {
-        activeSubPage: 'networks',
-        urlSuffix: '/administrator/networks',
-        iconClasses: 'fas fa-network-wired',
-        tabLabel: 'Exam networks',
+        activeSubPage: 'courseRequests',
+        urlSuffix: '/administrator/courseRequests',
+        iconClasses: 'fa fa-inbox',
+        tabLabel: 'Requests',
+        htmlSuffix: ({ pendingCourseRequestCount }) => {
+          if (!pendingCourseRequestCount) return '';
+          return html`<span class="badge rounded-pill text-bg-primary ms-2"
+            >${pendingCourseRequestCount}</span
+          >`;
+        },
       },
       {
         activeSubPage: 'queries',
@@ -320,6 +322,12 @@ export function getNavPageTabs() {
       },
     ],
     institution_admin: [
+      {
+        activeSubPage: 'general',
+        urlSuffix: '',
+        iconClasses: 'fa fa-gear',
+        tabLabel: 'General',
+      },
       {
         activeSubPage: 'admins',
         urlSuffix: '/admins',

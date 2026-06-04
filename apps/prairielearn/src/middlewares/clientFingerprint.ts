@@ -35,7 +35,7 @@ export default asyncHandler(async (req, res, next) => {
 });
 
 export async function getClientFingerprintId(req: Request, res: Response) {
-  const user_session_id = await sqldb.queryOptionalRow(
+  const user_session_id = await sqldb.queryOptionalScalar(
     sql.select_user_session_id,
     { session_id: req.session.id },
     IdSchema,
@@ -54,14 +54,18 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     accept_language: req.headers['accept-language'],
   };
 
-  let client_fingerprint_id = await sqldb.queryOptionalRow(
+  let client_fingerprint_id = await sqldb.queryOptionalScalar(
     sql.select_client_fingerprint,
     params,
     IdSchema,
   );
 
   if (!client_fingerprint_id) {
-    client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
+    client_fingerprint_id = await sqldb.queryScalar(
+      sql.insert_client_fingerprint,
+      params,
+      IdSchema,
+    );
   }
 
   return client_fingerprint_id;

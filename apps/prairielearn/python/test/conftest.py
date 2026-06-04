@@ -4,8 +4,10 @@ from prairielearn import QuestionData
 
 @pytest.fixture
 def question_data() -> QuestionData:
+    """Fixture for a question data dictionary."""
     return {
         "params": {},
+        "preferences": {},
         "correct_answers": {},
         "submitted_answers": {},
         "format_errors": {},
@@ -17,9 +19,11 @@ def question_data() -> QuestionData:
         "raw_submitted_answers": {},
         "editable": False,
         "panel": "question",
+        "correct_answer_shown": False,
         "extensions": {},
         "num_valid_submissions": 0,
         "manual_grading": False,
         "ai_grading": False,
         "answers_names": {},
+        "gradable": False,
     }

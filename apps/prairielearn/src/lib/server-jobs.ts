@@ -12,8 +12,10 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -22,8 +24,9 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { type EnumJobStatus, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
+import { patchServerJobProgress } from './serverJobProgressSocket.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -98,6 +101,12 @@ export interface ServerJobLogger {
 
 export interface ServerJob extends ServerJobLogger {
   fail(msg: string): never;
+  /**
+   * Terminates the job as a successful cancellation. The inner job row and
+   * the surrounding job sequence both land in 'Stopped' status, and the
+   * provided message is written to the job output.
+   */
+  stop(msg: string): never;
   exec(file: string, args: string[], options: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
@@ -109,7 +118,7 @@ export interface ServerJobExecutor {
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
-export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 
 /**
  * Store currently active job information in memory. This is used
@@ -129,6 +138,17 @@ class ServerJobAbortError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ServerJobAbortError';
+  }
+}
+
+/**
+ * Internal error subclass so we can identify when `stop()` is called and
+ * settle the job and its sequence as 'Stopped' instead of 'Error'.
+ */
+class ServerJobStopSignal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerJobStopSignal';
   }
 }
 
@@ -162,6 +182,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   fail(msg: string): never {
     this.error(msg);
     throw new ServerJobAbortError(msg);
+  }
+
+  stop(msg: string): never {
+    this.info(msg);
+    throw new ServerJobStopSignal(msg);
   }
 
   error(msg: string) {
@@ -264,9 +289,14 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       await fn(this);
       await this.finish();
     } catch (err) {
-      // Report unexpected errors to Sentry if enabled.
-      // ServerJobAbortError is expected (thrown by job.fail()) and should not be reported.
-      if (this.reportErrorsToSentry && !(err instanceof ServerJobAbortError)) {
+      // Report unexpected errors to Sentry if enabled. ServerJobAbortError
+      // (from job.fail()) and ServerJobStopSignal (from job.stop()) are both
+      // expected control-flow signals, not real errors.
+      if (
+        this.reportErrorsToSentry &&
+        !(err instanceof ServerJobAbortError) &&
+        !(err instanceof ServerJobStopSignal)
+      ) {
         Sentry.captureException(err, {
           tags: {
             'job_sequence.id': this.jobSequenceId,
@@ -287,7 +317,9 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
           throw err;
         }
       }
-      if (shouldThrow) {
+      // `job.stop()` is a successful cancellation, not a failure — don't
+      // surface its control-flow signal to `executeUnsafe()` callers.
+      if (shouldThrow && !(err instanceof ServerJobStopSignal)) {
         throw err;
       }
     }
@@ -332,10 +364,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     if (this.finished) return;
     this.finished = true;
 
-    // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
-    // any details about the error object itself, as `fail` will have already
-    // printed the message. This error is just used as a form of control flow.
-    if (err && !(err instanceof ServerJobAbortError)) {
+    const isStop = err instanceof ServerJobStopSignal;
+    const isAbort = err instanceof ServerJobAbortError;
+
+    // `ServerJobAbortError` (fail) and `ServerJobStopSignal` (stop) are
+    // control-flow signals — their message was already printed by the
+    // throwing method, so we don't re-print details here.
+    if (err && !isAbort && !isStop) {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
@@ -364,7 +399,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_id: this.jobId,
       output: this.output,
       data: this.data,
-      status: err ? 'Error' : 'Success',
+      status: run(() => {
+        if (isStop) return 'Stopped';
+        if (err) return 'Error';
+        return 'Success';
+      }),
     });
 
     // Notify sockets.
@@ -414,6 +453,74 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
 
 export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
   return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
+}
+
+/**
+ * Atomically transitions a Running job sequence into 'Stopping'. Returns true
+ * only when this call was the one that flipped the row.
+ *
+ * Optional `type` / `assessment_question_id` filters scope the update to a
+ * specific kind of job. Callers should pass whatever scope corresponds to
+ * the page/request that initiated the stop, so a user can't stop a job
+ * outside their authorization.
+ */
+export async function stopJobSequence({
+  job_sequence_id,
+  authn_user_id,
+  type,
+  assessment_question_id,
+}: {
+  job_sequence_id: string;
+  authn_user_id: string;
+  type?: string;
+  assessment_question_id?: string;
+}): Promise<boolean> {
+  const rowCount = await execute(sql.stop_job_sequence, {
+    job_sequence_id,
+    authn_user_id,
+    type: type ?? null,
+    assessment_question_id: assessment_question_id ?? null,
+  });
+  if (rowCount === 0) return false;
+  // Best-effort cache patch: the DB transition is authoritative.
+  try {
+    await patchServerJobProgress(job_sequence_id, { stop_state: 'stopping' });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error('stopJobSequence: failed to patch progress cache', err);
+  }
+  return true;
+}
+
+/**
+ * Returns IDs of job sequences still in an active state (Running or Stopping).
+ * Used by page-level handlers to reattach the live progress alert on initial
+ * load. Pass `type` / `assessment_question_id` to scope.
+ */
+export async function getOngoingJobSequenceIds({
+  type,
+  assessment_question_id,
+}: {
+  type?: string;
+  assessment_question_id?: string;
+}): Promise<string[]> {
+  return await queryScalars(
+    sql.select_ongoing_job_sequences,
+    {
+      type: type ?? null,
+      assessment_question_id: assessment_question_id ?? null,
+    },
+    IdSchema,
+  );
+}
+
+/** Returns the current status of a job sequence. */
+export async function selectJobSequenceStatus(job_sequence_id: string) {
+  return await queryRow(
+    sql.select_job_sequence_status,
+    { job_sequence_id },
+    z.object({ status: EnumJobStatusSchema.nullable() }),
+  );
 }
 
 /*
@@ -587,10 +694,10 @@ export async function errorAbandonedJobs() {
     }
   }
 
-  const abandonedJobSequences = await queryRows(sql.error_abandoned_job_sequences, IdSchema);
-  abandonedJobSequences.forEach(function (job_sequence_id) {
+  const abandonedJobSequences = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
+  for (const job_sequence_id of abandonedJobSequences) {
     socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
-  });
+  }
 }
 
 export async function getJobSequence(
@@ -614,33 +721,4 @@ export async function getJobSequence(
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
   };
-}
-
-/**
- * Retrieve the IDs of job sequences matching the provided filters.
- */
-export async function getJobSequenceIds({
-  assessment_question_id,
-  course_id,
-  course_instance_id,
-  status,
-  type,
-}: {
-  assessment_question_id?: string;
-  course_id?: string;
-  course_instance_id?: string;
-  status?: EnumJobStatus;
-  type?: string;
-}) {
-  return await queryRows(
-    sql.select_job_sequence_ids,
-    {
-      assessment_question_id: assessment_question_id ?? null,
-      course_id: course_id ?? null,
-      course_instance_id: course_instance_id ?? null,
-      status: status ?? null,
-      type: type ?? null,
-    },
-    IdSchema,
-  );
 }

@@ -3,7 +3,7 @@
 # https://github.com/moby/buildkit/issues/6512
 
 FROM ubuntu:24.04
-ARG CACHEBUST=2026-02-15-14-23-34
+ARG CACHEBUST=2026-05-15-14-49-21
 
 WORKDIR /PrairieLearn
 

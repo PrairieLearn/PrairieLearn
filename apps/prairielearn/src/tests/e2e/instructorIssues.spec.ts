@@ -2,15 +2,12 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { insertIssue } from '../../lib/issues.js';
-import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
-import { syncCourse } from '../helperCourse.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const ISSUES_URL = '/pl/course/1/course_admin/issues';
 
 async function closeIssue(issueId: string) {
   await sqldb.execute(sql.close_issue, { issue_id: issueId });
@@ -29,7 +26,7 @@ async function insertTestVariant({
   userId: string;
   variantSeed?: string;
 }) {
-  return await sqldb.queryRow(
+  return await sqldb.queryScalar(
     sql.insert_test_variant,
     {
       question_id: questionId,
@@ -88,12 +85,11 @@ const BASE_TEST_ISSUES: TestIssueData[] = [
   },
 ];
 
-async function createTestIssues() {
-  const course = await selectCourseByShortName('QA 101');
+async function createTestIssues(courseId: string) {
   const user = await getOrCreateUser(TEST_USER);
 
-  const addNumbersQuestion = await selectQuestionByQid({ qid: 'addNumbers', course_id: course.id });
-  const addVectorsQuestion = await selectQuestionByQid({ qid: 'addVectors', course_id: course.id });
+  const addNumbersQuestion = await selectQuestionByQid({ qid: 'addNumbers', course_id: courseId });
+  const addVectorsQuestion = await selectQuestionByQid({ qid: 'addVectors', course_id: courseId });
 
   const questionMap: Record<string, { id: string }> = {
     addNumbers: addNumbersQuestion,
@@ -104,7 +100,7 @@ async function createTestIssues() {
     const question = questionMap[issueData.qid];
     const variantId = await insertTestVariant({
       questionId: question.id,
-      courseId: course.id,
+      courseId,
       authnUserId: user.id,
       userId: user.id,
       variantSeed: `seed_${Date.now()}_${Math.random()}`,
@@ -133,14 +129,16 @@ async function createTestIssues() {
 test.describe('Instructor issues page', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test.beforeAll(async ({ testCoursePath }) => {
-    await syncCourse(testCoursePath);
-    await createTestIssues();
+  let issuesUrl: string;
+
+  test.beforeAll(async ({ courseInstance }) => {
+    issuesUrl = `/pl/course/${courseInstance.course_id}/course_admin/issues`;
+    await createTestIssues(courseInstance.course_id);
   });
 
   test.describe('View issues list', () => {
     test('page loads with correct title and shows issues', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
       await expect(page).toHaveTitle(/Issues/);
 
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Issues');
@@ -150,7 +148,7 @@ test.describe('Instructor issues page', () => {
     });
 
     test('issues display QID and status badges', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       await expect(page.getByText('addNumbers').first()).toBeVisible();
       await expect(page.getByTestId(/issue-status-(open|closed)/).first()).toBeVisible();
@@ -162,7 +160,7 @@ test.describe('Instructor issues page', () => {
 
   test.describe('Filter issues', () => {
     test('can filter to show only open issues', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       await page.getByRole('link', { name: /\d+ open/ }).click();
       await expect(page.getByTestId('issue-status-open').first()).toBeVisible();
@@ -170,7 +168,7 @@ test.describe('Instructor issues page', () => {
     });
 
     test('can filter to show only closed issues', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       await page.getByRole('link', { name: /\d+ closed/ }).click();
       await expect(page.getByTestId('issue-status-closed').first()).toBeVisible();
@@ -178,7 +176,7 @@ test.describe('Instructor issues page', () => {
     });
 
     test('can filter to show manually-reported issues', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       await page.getByRole('button', { name: 'Filters' }).click();
       await page.getByRole('link', { name: 'Manually-reported issues' }).click();
@@ -186,7 +184,7 @@ test.describe('Instructor issues page', () => {
     });
 
     test('can search by qid qualifier', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
       await searchInput.fill('qid:addVectors');
@@ -202,7 +200,7 @@ test.describe('Instructor issues page', () => {
     });
 
     test('can search with wildcard qid', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
       await searchInput.fill('qid:add*');
@@ -213,14 +211,14 @@ test.describe('Instructor issues page', () => {
     });
 
     test('can clear filters', async ({ page }) => {
-      await page.goto(`${ISSUES_URL}?q=is%3Aopen`);
+      await page.goto(`${issuesUrl}?q=is%3Aopen`);
       await page.getByRole('link', { name: 'Clear filters' }).click();
       await expect(page.getByTestId('issue-status-open').first()).toBeVisible();
       await expect(page.getByTestId('issue-status-closed').first()).toBeVisible();
     });
 
     test('filter help modal opens', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       await page.getByRole('button', { name: 'Filter help' }).click();
 
@@ -232,21 +230,21 @@ test.describe('Instructor issues page', () => {
 
   test.describe('Issue actions', () => {
     test('can close an open issue', async ({ page }) => {
-      await page.goto(`${ISSUES_URL}?q=is%3Aopen`);
+      await page.goto(`${issuesUrl}?q=is%3Aopen`);
       const openCountBefore = await page.getByTestId('issue-list-item').count();
       await page.getByRole('button', { name: 'Close issue' }).first().click();
       await expect(page.getByTestId('issue-list-item')).toHaveCount(openCountBefore - 1);
     });
 
     test('can reopen a closed issue', async ({ page }) => {
-      await page.goto(`${ISSUES_URL}?q=is%3Aclosed`);
+      await page.goto(`${issuesUrl}?q=is%3Aclosed`);
       const closedCountBefore = await page.getByTestId('issue-list-item').count();
       await page.getByRole('button', { name: 'Reopen issue' }).first().click();
       await expect(page.getByTestId('issue-list-item')).toHaveCount(closedCountBefore - 1);
     });
 
     test('can batch close matching issues', async ({ page }) => {
-      await page.goto(ISSUES_URL);
+      await page.goto(issuesUrl);
 
       const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
       await searchInput.fill('qid:addNumbers is:open');
@@ -262,17 +260,16 @@ test.describe('Instructor issues page', () => {
       await expect(page.getByTestId('issue-list-item')).toHaveCount(0);
     });
 
-    test('cancel batch close modal keeps issues unchanged', async ({ page }) => {
-      const course = await selectCourseByShortName('QA 101');
+    test('cancel batch close modal keeps issues unchanged', async ({ page, courseInstance }) => {
       const user = await getOrCreateUser(TEST_USER);
       const addNumbersQuestion = await selectQuestionByQid({
         qid: 'addNumbers',
-        course_id: course.id,
+        course_id: courseInstance.course_id,
       });
 
       const variantId = await insertTestVariant({
         questionId: addNumbersQuestion.id,
-        courseId: course.id,
+        courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
         variantSeed: `cancel_test_${Date.now()}`,
@@ -290,7 +287,7 @@ test.describe('Instructor issues page', () => {
         authnUserId: user.id,
       });
 
-      await page.goto(`${ISSUES_URL}?q=is%3Aopen`);
+      await page.goto(`${issuesUrl}?q=is%3Aopen`);
       const countBefore = await page.getByTestId('issue-list-item').count();
 
       await page.getByRole('button', { name: 'Close matching issues' }).click();

@@ -1,11 +1,11 @@
+import type { Locator, Page } from '@playwright/test';
+
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
-import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -14,15 +14,29 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const STUDENT = { uid: 'e2e_rubric_student@test.com', name: 'E2E Rubric Student', uin: 'E2E001' };
 
-let courseInstanceId: string;
 let assessmentId: string;
 
-test.describe('Manual grading rubric submission panel update', () => {
-  test.beforeAll(async ({ testCoursePath }) => {
-    await syncCourse(testCoursePath);
+async function addRubricItem(page: Page, rubricTable: Locator): Promise<Locator> {
+  const rubricRows = rubricTable
+    .locator('tr')
+    .filter({ has: page.getByRole('spinbutton', { name: 'Points' }) });
+  const previousRowCount = await rubricRows.count();
 
+  await expect(async () => {
+    if ((await rubricRows.count()) === previousRowCount + 1) return;
+
+    await page.getByRole('button', { name: 'Add item' }).click();
+    await expect(rubricRows).toHaveCount(previousRowCount + 1, { timeout: 2000 });
+  }).toPass({ timeout: 10000 });
+
+  return rubricRows.nth(previousRowCount);
+}
+
+test.describe('Manual grading rubric submission panel update', () => {
+  test.setTimeout(60000);
+
+  test.beforeAll(async ({ courseInstance }) => {
     const student = await getOrCreateUser(STUDENT);
-    const courseInstance = await selectCourseInstanceById('1');
 
     await ensureUncheckedEnrollment({
       userId: student.id,
@@ -34,19 +48,22 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     const assessment = await selectAssessmentByTid({
       tid: 'hw9-internalExternalManual',
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
     });
     assessmentId = assessment.id;
-    courseInstanceId = '1';
   });
 
-  test('submission panel updates after rubric settings change', async ({ page, baseURL }) => {
+  test('submission panel updates after rubric settings change', async ({
+    page,
+    baseURL,
+    courseInstance,
+  }) => {
     await page.context().addCookies([
       { name: 'pl2_requested_uid', value: STUDENT.uid, url: baseURL },
       { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
     ]);
 
-    await page.goto(`/pl/course_instance/${courseInstanceId}/assessments`);
+    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
     await page.getByRole('link', { name: 'Homework for Internal, External, Manual' }).click();
     await page
       .getByRole('link', { name: 'Manual Grading: Fibonacci function, file upload' })
@@ -77,13 +94,13 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     await page.context().clearCookies();
 
-    const iqId = await sqldb.queryRow(
+    const iqId = await sqldb.queryScalar(
       sql.select_instance_question_for_manual_grading,
       { assessment_id: assessmentId, qid: 'manualGrade/codeUpload' },
       IdSchema,
     );
 
-    const manualGradingIQUrl = `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${iqId}`;
+    const manualGradingIQUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${iqId}`;
     await page.goto(manualGradingIQUrl);
 
     await expect(page.locator('[data-testid="submission-status"] .badge').first()).toContainText(
@@ -94,12 +111,13 @@ test.describe('Manual grading rubric submission panel update', () => {
     // Set up a rubric and grade the submission.
     await page.locator('[aria-label="Toggle rubric settings"]').click();
     await expect(page.locator('#rubric-setting')).toBeVisible();
-    await page.getByRole('button', { name: 'Add item' }).click();
 
-    const rubricTable = page.locator('#rubric-editor table tbody');
-    const firstRow = rubricTable.locator('tr').first();
-    await firstRow.locator('input[type="number"]').fill('6');
-    await firstRow.locator('input[type="text"]').first().fill('Full credit for correct solution');
+    const rubricTable = page.locator('#rubric-editor table[aria-label="Rubric items"] tbody');
+    const firstRow = await addRubricItem(page, rubricTable);
+    await firstRow.getByRole('spinbutton', { name: 'Points' }).fill('6');
+    await firstRow
+      .getByRole('textbox', { name: 'Description' })
+      .fill('Full credit for correct solution');
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
     await expect(
@@ -123,11 +141,10 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     await page.locator('[aria-label="Toggle rubric settings"]').click();
     await expect(page.locator('#rubric-setting')).toBeVisible();
-    await page.getByRole('button', { name: 'Add item' }).click();
 
-    const newRow = rubricTable.locator('tr').last();
-    await newRow.locator('input[type="number"]').fill('3');
-    await newRow.locator('input[type="text"]').first().fill('Partial credit');
+    const newRow = await addRubricItem(page, rubricTable);
+    await newRow.getByRole('spinbutton', { name: 'Points' }).fill('3');
+    await newRow.getByRole('textbox', { name: 'Description' }).fill('Partial credit');
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
 

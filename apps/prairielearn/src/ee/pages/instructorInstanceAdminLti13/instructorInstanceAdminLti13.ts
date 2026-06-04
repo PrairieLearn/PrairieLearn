@@ -61,10 +61,10 @@ router.get(
           navContext: {
             type: 'instructor',
             page: 'instance_admin',
-            subPage: 'integrations',
+            subPage: 'lms_connections',
           },
           courseOwners,
-          pageTitle: 'Integrations',
+          pageTitle: 'LMS connections',
           requiredPermissions: 'Student Data Editor',
         }),
       );
@@ -184,6 +184,7 @@ router.post(
           },
           Lti13CourseInstanceSchema,
         );
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',
@@ -315,7 +316,6 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
           courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

@@ -3,16 +3,16 @@ import { assert } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import type { User } from '../../lib/db-types.js';
+import { getCSRFToken } from '../helperClient.js';
 
 /**
  * Switches active user and loads assessment, returning the user's CSRF
- * token value from a form on the page
+ * token value from a form on the page.
  */
 export async function switchUserAndLoadAssessment(
   studentUser: User,
   assessmentUrl: string,
   formName: string | null,
-  formContainer = 'body',
 ): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
@@ -25,19 +25,19 @@ export async function switchUserAndLoadAssessment(
   const page = await res.text();
   const $ = cheerio.load(page);
 
-  // Find the form. We look in three places:
-  // - A form with the given name.
-  // - A form in the given container.
-  // - The closest form to the given container.
-  const form =
-    $(`form[name="${formName}"]`).get(0) ??
-    $(formContainer).find('form').get(0) ??
-    $(formContainer).closest('form').get(0);
+  // When a specific form is requested, only look up that form and fail if it's
+  // missing. Otherwise fall back to the nearest form or the page-level token.
+  const form = formName != null ? $(`form[name="${formName}"]`).get(0) : undefined;
 
-  // Extract the CSRF token from the form
-  const csrfTokenElement = $(form).find('input[name="__csrf_token"]');
-  assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
-  const csrfToken = csrfTokenElement.attr('value');
+  if (formName != null) {
+    assert.ok(form, `Expected form "${formName}" to be present`);
+  }
+
+  const csrfTokenElement = form ? $(form).find('input[name="__csrf_token"]') : undefined;
+  const csrfToken =
+    formName != null
+      ? csrfTokenElement?.attr('value')
+      : (csrfTokenElement?.attr('value') ?? getCSRFToken($));
   assert.ok(csrfToken);
 
   return { $, csrfToken };

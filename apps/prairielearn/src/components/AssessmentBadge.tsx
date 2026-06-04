@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
+
 import { renderHtml } from '@prairielearn/react';
 
-import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
+import { type AssessmentUrlParts, getAssessmentUrl } from '../lib/client/url.js';
 
 export function AssessmentBadge({
   assessment,
@@ -8,16 +10,23 @@ export function AssessmentBadge({
   urlPrefix,
   courseInstanceId,
   publicURL = false,
+  prefix,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+  prefix?: ReactNode;
+} & AssessmentUrlParts) {
   if (hideLink) {
-    return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
+    return (
+      <span className={`badge color-${assessment.color}`}>
+        {prefix}
+        {assessment.label}
+      </span>
+    );
   }
 
-  const link = getAssessmentInstanceUrl(
+  const link = getAssessmentUrl(
     // TypeScript is not smart enough to infer the correct type here
     urlPrefix !== undefined
       ? {
@@ -34,6 +43,7 @@ export function AssessmentBadge({
 
   return (
     <a href={link} className={`btn btn-badge color-${assessment.color}`}>
+      {prefix}
       {assessment.label}
     </a>
   );
@@ -49,7 +59,7 @@ export function AssessmentBadgeHtml({
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+} & AssessmentUrlParts) {
   if (urlPrefix === undefined) {
     return renderHtml(
       <AssessmentBadge

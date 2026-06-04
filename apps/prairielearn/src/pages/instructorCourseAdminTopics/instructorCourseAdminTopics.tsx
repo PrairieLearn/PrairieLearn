@@ -14,8 +14,9 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { TopicSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -25,7 +26,7 @@ const router = Router();
 
 router.get(
   '/',
-  typedAsyncHandler<'course'>(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -55,6 +56,8 @@ router.get(
               allowEdit={allowEdit}
               origHash={origHash}
               csrfToken={pageContext.__csrf_token}
+              courseId={pageContext.course.id}
+              courseInstanceId={res.locals.course_instance?.id}
             />
           </Hydrate>
         ),

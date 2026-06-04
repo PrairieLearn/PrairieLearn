@@ -23,6 +23,11 @@ const NO_RESTRICTED_SYNTAX = [
     message: 'Use a default import instead of a namespace import for fs-extra',
     selector: 'ImportDeclaration[source.value="fs-extra"]:has(ImportNamespaceSpecifier)',
   },
+  {
+    // Forbid `snake_case` props.
+    message: 'Props with snake_case names are forbidden.',
+    selector: 'JSXAttribute[name.name=/_/]',
+  },
 ];
 
 export default [
@@ -33,15 +38,17 @@ export default [
       allowDbTypes: [
         // This is innocuous, it's just a string enum.
         'SprocUsersGetDisplayedRoleSchema',
-        // This is also just an enum.
+        // The following are just enums.
         'EnumAiQuestionGenerationMessageStatus',
+        'EnumAiGradingProviderSchema',
+        'EnumAiGradingProvider',
       ],
     },
     tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
     typeAwareFiles: ['apps/prairielearn/**/*.{ts,tsx}'],
   }),
 
-  // HTML plugin
+  // HTML plugin (applies to all files; per-language overrides below)
   {
     plugins: {
       '@html-eslint': html,
@@ -51,6 +58,12 @@ export default [
       ...Object.fromEntries(
         Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
       ),
+      // This has false positives in our codebase.
+      '@eslint-react/jsx-no-leaked-semicolon': 'off',
+      // False positive on renderer/dispatch maps (e.g. AppErrorAlert's `render`
+      // prop): callbacks invoked directly via `renderer(arg)` are flagged as
+      // nested components even though they're never used as components.
+      '@eslint-react/no-nested-component-definitions': 'off',
       // We don't want these style rules
       '@html-eslint/attrs-newline': 'off',
       '@html-eslint/element-newline': 'off',
@@ -59,11 +72,6 @@ export default [
       '@html-eslint/no-trailing-spaces': 'off',
       '@html-eslint/sort-attrs': 'off',
       // We don't want these rules
-      '@html-eslint/no-heading-inside-button': 'off', // not important
-      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
-      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
-      '@html-eslint/require-input-label': 'off', // we don't always have labels.
-      // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/no-extra-spacing-attrs': [
         'error',
         {
@@ -73,12 +81,24 @@ export default [
           enforceBeforeSelfClose: true,
         },
       ],
+      // Use our PrairieLearn-specific variant instead.
+      '@html-eslint/no-duplicate-id': 'off',
+      '@html-eslint/no-heading-inside-button': 'off', // not important
+      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
+      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
+      '@html-eslint/require-input-label': 'off', // we don't always have labels.
+      // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
       // False positives for attribute/element baseline browser compatibility.
       '@html-eslint/use-baseline': 'off',
       // We violate these rules in a lot of places.
       '@html-eslint/id-naming-convention': 'off',
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
+
+      // TODO: Fix these rule violations.
+      '@html-eslint/no-extra-spacing-tags': 'off', // ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-button-type': 'off',
+      '@html-eslint/require-content': 'off',
     },
   },
   {
@@ -101,37 +121,6 @@ export default [
     },
   },
 
-  // HTML rules in JS/TS files
-  {
-    files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
-    rules: {
-      // Use the recommended rules for HTML.
-      ...Object.fromEntries(
-        Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
-      ),
-      // We don't want these style rules
-      '@html-eslint/attrs-newline': 'off',
-      '@html-eslint/element-newline': 'off',
-      '@html-eslint/indent': 'off',
-      '@html-eslint/no-inline-styles': 'off',
-      '@html-eslint/no-trailing-spaces': 'off',
-      '@html-eslint/sort-attrs': 'off',
-      // We don't want these rules
-      '@html-eslint/no-heading-inside-button': 'off', // not important
-      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
-      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
-      '@html-eslint/require-input-label': 'off', // we don't always have labels.
-      // We prefer tags like `<img />` over `<img>`.
-      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
-      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
-      // False positives for attribute/element baseline browser compatibility.
-      '@html-eslint/use-baseline': 'off',
-      // We violate these rules in a lot of places.
-      '@html-eslint/id-naming-convention': 'off',
-      '@html-eslint/require-button-type': 'off',
-    },
-  },
-
   {
     files: ['**/*.{ts,tsx}'],
     rules: {
@@ -147,6 +136,15 @@ export default [
           ],
         },
       ],
+    },
+  },
+
+  {
+    files: ['apps/prairielearn/src/trpc/**/*.ts'],
+    rules: {
+      // We use empty object types for typed errors in tRPC subrouters.
+      // This is intended to force the client to reference the error type.
+      '@typescript-eslint/no-empty-object-type': ['error', { allowInterfaces: 'always' }],
     },
   },
 
@@ -183,10 +181,26 @@ export default [
     },
   },
   {
+    files: ['apps/prairielearn/src/tests/e2e/**/*'],
+    rules: {
+      // Playwright's `use()` fixture function is misidentified as React's `use` hook.
+      '@eslint-react/error-boundaries': 'off',
+      '@eslint-react/rules-of-hooks': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],
+    rules: {
+      // TODO: Fix deprecations in tests
+      '@typescript-eslint/no-deprecated': 'off',
+    },
+  },
+  {
     files: ['**/*.html', '**/*.mustache'],
     languageOptions: {
       parser: htmlParser,
       parserOptions: {
+        rawContentTags: ['markdown'],
         templateEngineSyntax: htmlParser.TEMPLATE_ENGINE_SYNTAX.HANDLEBAR,
       },
     },
@@ -213,12 +227,13 @@ export default [
     },
   },
   globalIgnores([
+    '.claude/worktrees/*',
     '.venv/*',
     '.yarn/*',
     'docs/*',
     'node_modules/*',
     'testCourse',
-    'exampleCourse/**/*.{js,html}',
+    'exampleCourse/**/*.js',
     'coverage/*',
     'out/*',
     'workspaces/*',
@@ -237,5 +252,11 @@ export default [
     'apps/*/dist/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
+
+    // Playwright
+    'test-results/*',
+    'apps/prairielearn/test-results/*',
+    'apps/prairielearn/playwright/.cache/*',
+    '.playwright-mcp/*',
   ]),
 ];
