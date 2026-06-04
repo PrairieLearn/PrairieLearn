@@ -1,127 +1,146 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Element Info",
-  "description": "Info files for v3 elements.",
   "type": "object",
-  "additionalProperties": false,
-  "required": ["controller"],
   "properties": {
     "comment": {
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "controller": {
-      "description": "The name of the element's controller file.",
-      "type": "string"
+      "type": "string",
+      "description": "The name of the element's controller file."
     },
     "dependencies": {
-      "description": "The element's client-side dependencies.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "comment": {
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "coreStyles": {
-          "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
           "type": "array",
           "items": {
-            "description": "A .css file located in /public/stylesheets.",
-            "type": "string"
+            "type": "string",
+            "description": "A .css file located in /public/stylesheets."
           },
+          "description": "The styles required by this element from /public/stylesheets.",
           "deprecated": true
         },
         "coreScripts": {
-          "description": "[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.",
           "type": "array",
           "items": {
-            "description": "A .js file located in /public/javascripts.",
-            "type": "string"
+            "type": "string",
+            "description": "A .js file located in /public/javascripts."
           },
+          "description": "The scripts required by this element from /public/javascripts.",
           "deprecated": true
         },
         "nodeModulesStyles": {
-          "description": "The styles required by this element from /node_modules.",
           "type": "array",
           "items": {
-            "description": "A .css file located in /node_modules.",
-            "type": "string"
-          }
+            "type": "string",
+            "description": "A .css file located in /node_modules."
+          },
+          "description": "The styles required by this element from /node_modules."
         },
         "nodeModulesScripts": {
-          "description": "The scripts required by this element from /node_modules.",
           "type": "array",
           "items": {
-            "description": "A .js file located in /node_modules.",
-            "type": "string"
-          }
+            "type": "string",
+            "description": "A .js file located in /node_modules."
+          },
+          "description": "The scripts required by this element from /node_modules."
         },
         "elementStyles": {
-          "description": "The styles required by this element from the element's directory.",
           "type": "array",
           "items": {
-            "description": "A .css file located in the element's directory.",
-            "type": "string"
-          }
+            "type": "string",
+            "description": "A .css file located in the element's directory."
+          },
+          "description": "The styles required by this element from the element's directory."
         },
         "elementScripts": {
-          "description": "The scripts required by this element from the element's directory.",
           "type": "array",
           "items": {
-            "description": "A .js file located in the element's directory.",
-            "type": "string"
-          }
+            "type": "string",
+            "description": "A .js file located in the element's directory."
+          },
+          "description": "The scripts required by this element from the element's directory."
         }
-      }
+      },
+      "additionalProperties": false,
+      "description": "The element's client-side dependencies."
     },
     "dynamicDependencies": {
-      "description": "The element's client-side dynamic dependencies.",
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "comment": {
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "nodeModulesScripts": {
-          "description": "The scripts required by this element from /node_modules as an importmap.",
           "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "The scripts required by this element from /node_modules as an importmap."
         },
         "elementScripts": {
-          "description": "The scripts required by this element from the element's directory as an importmap.",
           "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "The scripts required by this element from the element's directory as an importmap."
         }
-      }
+      },
+      "additionalProperties": false,
+      "description": "The element's client-side dynamic dependencies."
     },
     "additionalNames": {
-      "description": "Any additional names to give this element, i.e. for backwards compatibility.",
       "type": "array",
       "items": {
-        "description": "A name for this element to be used in question HTML files.",
-        "type": "string"
-      }
+        "type": "string",
+        "description": "A name for this element to be used in question HTML files."
+      },
+      "description": "Any additional names to give this element, i.e. for backwards compatibility."
     }
   },
+  "required": ["controller"],
+  "additionalProperties": false,
+  "description": "Info files for v3 elements.",
+  "title": "Element Info",
   "definitions": {
     "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
         {
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",
-          "additionalProperties": {},
-          "properties": {}
+          "properties": {},
+          "additionalProperties": {}
         }
-      ]
+      ],
+      "description": "Arbitrary comment for reference purposes."
     }
   }
 }

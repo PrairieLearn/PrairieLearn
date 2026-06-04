@@ -7,15 +7,13 @@ const DependencyJsonSchema = z
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.',
-      )
+      .describe('The styles required by this element from /public/stylesheets.')
+      .meta({ deprecated: true })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.',
-      )
+      .describe('The scripts required by this element from /public/javascripts.')
+      .meta({ deprecated: true })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -66,6 +64,7 @@ export const ElementCoreJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('Info files for v3 elements.');
+  .describe('Info files for v3 elements.')
+  .meta({ title: 'Element Info' });
 
 export type ElementCoreJson = z.infer<typeof ElementCoreJsonSchema>;
