@@ -1,4 +1,4 @@
-import { type ZodSchema, z } from 'zod';
+import { z } from 'zod';
 
 import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
@@ -6,10 +6,16 @@ import { CommentJsonSchema } from './comment.js';
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
 export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
-function uniqueArray<T extends ZodSchema>(schema: T) {
-  return z.array(schema).refine((items) => new Set(items).size === items.length, {
-    message: 'All items must be unique, no duplicate values allowed',
-  });
+function uniqueArray<T extends z.ZodType>(schema: T) {
+  // Zod cannot express `uniqueItems` directly, and the `.refine()` uniqueness
+  // check is unrepresentable in JSON Schema, so advertise it via metadata that
+  // `z.toJSONSchema` copies through verbatim.
+  return z
+    .array(schema)
+    .refine((items) => new Set(items).size === items.length, {
+      message: 'All items must be unique, no duplicate values allowed',
+    })
+    .meta({ uniqueItems: true });
 }
 
 // TODO: This schema is being deprecated
@@ -105,6 +111,7 @@ export const GroupsJsonSchema = z
     roles: z
       .array(GroupsRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
+      .meta({ uniqueItems: true })
       .optional()
       .default([]),
     studentPermissions: GroupsStudentPermissionsJsonSchema.prefault({}),
@@ -127,7 +134,7 @@ export const AssessmentAccessRuleJsonSchema = z
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
       .optional(),
-    role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
+    role: z.enum(['Student', 'TA', 'Instructor']).meta({ deprecated: true }).optional(),
     uids: z
       .array(z.string())
       .describe(
@@ -325,7 +332,7 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional(),
   comment: CommentJsonSchema.optional(),
   // Do we need to allow for additional keys?
-  comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
+  comments: CommentJsonSchema.optional().meta({ deprecated: true }),
   maxPoints: z
     .number()
     .gte(0)
@@ -499,67 +506,71 @@ export const AssessmentJsonSchema = z
     groupWork: z
       .boolean()
       .describe(
-        'Whether the assessment will support group work. DEPRECATED -- prefer using the "groups" property instead.',
+        'Whether the assessment will support group work. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional()
       .default(false),
     groupMaxSize: z
       .number()
       .describe(
-        'Maximum number of students in a group. DEPRECATED -- prefer using the "groups" property instead.',
+        'Maximum number of students in a group. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional(),
     groupMinSize: z
       .number()
       .describe(
-        'Minimum number of students in a group. DEPRECATED -- prefer using the "groups" property instead.',
+        'Minimum number of students in a group. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional(),
     groupRoles: z
       .array(LegacyGroupRoleJsonSchema)
       .describe(
-        'Array of custom user roles in a group. DEPRECATED -- prefer using the "groups" property instead.',
+        'Array of custom user roles in a group. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional()
       .default([]),
     canSubmit: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.',
+        'A list of group role names that can submit questions. Only applicable for group assessments. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional()
       .default([]),
     canView: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.',
+        'A list of group role names that can view questions. Only applicable for group assessments. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional()
       .default([]),
     studentGroupCreate: z
       .boolean()
-      .describe(
-        'Whether students can create groups. DEPRECATED -- prefer using the "groups" property instead.',
-      )
+      .describe('Whether students can create groups. Prefer using the "groups" property instead.')
+      .meta({ deprecated: true })
       .optional()
       .default(false),
     studentGroupChooseName: z
       .boolean()
       .describe(
-        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the "groups" property instead.',
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. Prefer using the "groups" property instead.',
       )
+      .meta({ deprecated: true })
       .optional()
       .default(true),
     studentGroupJoin: z
       .boolean()
-      .describe(
-        'Whether students can join groups. DEPRECATED -- prefer using the "groups" property instead.',
-      )
+      .describe('Whether students can join groups. Prefer using the "groups" property instead.')
+      .meta({ deprecated: true })
       .optional()
       .default(false),
     studentGroupLeave: z
       .boolean()
-      .describe(
-        'Whether students can leave groups. DEPRECATED -- prefer using the "groups" property instead.',
-      )
+      .describe('Whether students can leave groups. Prefer using the "groups" property instead.')
+      .meta({ deprecated: true })
       .optional()
       .default(false),
     groups: GroupsJsonSchema.optional(),
@@ -588,7 +599,8 @@ export const AssessmentJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('Configuration data for an assessment.');
+  .describe('Configuration data for an assessment.')
+  .meta({ title: 'Assessment info' });
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;

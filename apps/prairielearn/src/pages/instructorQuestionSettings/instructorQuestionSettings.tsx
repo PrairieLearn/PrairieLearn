@@ -217,7 +217,7 @@ router.post(
                       // Fall through to error
                     }
                     ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
+                      code: 'custom',
                       message: 'Invalid enum format',
                     });
                     return z.NEVER;
@@ -229,7 +229,7 @@ router.post(
               prefs.forEach((pref, i) => {
                 if (names.has(pref.name)) {
                   ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: 'custom',
                     message: `Duplicate preference name: "${pref.name}"`,
                     path: [i, 'name'],
                   });

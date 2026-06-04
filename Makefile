@@ -115,7 +115,7 @@ check-badge-contrast:
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
 update-jsonschema:
-	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
+	@yarn dlx tsx scripts/gen-jsonschema.mts
 update-element-schemas:
 	@yarn dlx tsx scripts/gen-element-schemas.mts && yarn prettier --write "apps/prairielearn/elements/**/schemas/*.json"
 
