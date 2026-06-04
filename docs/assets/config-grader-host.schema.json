@@ -1,159 +1,201 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "maxConcurrentJobs": {
-      "type": "number",
-      "default": 5
+      "default": 5,
+      "type": "number"
     },
     "useEc2MetadataService": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "useConsoleLoggingForJobs": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "useImagePreloading": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "useHealthCheck": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "cacheImageRegistry": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "parallelInitPulls": {
-      "type": "number",
-      "default": 5
+      "default": 5,
+      "type": "number"
     },
     "lifecycleHeartbeatIntervalMS": {
-      "type": "number",
-      "default": 300000
+      "default": 300000,
+      "type": "number"
     },
     "jobLogGroup": {
-      "type": "string",
-      "default": "grading-jobs-debug"
+      "default": "grading-jobs-debug",
+      "type": "string"
     },
     "reportLoad": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "reportIntervalSec": {
-      "type": "number",
-      "default": 10
+      "default": 10,
+      "type": "number"
     },
     "graderDockerMemory": {
-      "type": "number",
-      "default": 2147483648
+      "default": 2147483648,
+      "type": "number"
     },
     "graderDockerMemorySwap": {
-      "type": "number",
-      "default": 2147483648
+      "default": 2147483648,
+      "type": "number"
     },
     "graderDockerKernelMemory": {
-      "type": "number",
-      "default": 536870912
+      "default": 536870912,
+      "type": "number"
     },
     "graderDockerDiskQuota": {
-      "type": "number",
-      "default": 1073741824
+      "default": 1073741824,
+      "type": "number"
     },
     "graderDockerCpuPeriod": {
-      "type": "number",
-      "default": 100000
+      "default": 100000,
+      "type": "number"
     },
     "graderDockerCpuQuota": {
-      "type": "number",
-      "default": 90000
+      "default": 90000,
+      "type": "number"
     },
     "graderDockerPidsLimit": {
-      "type": "number",
-      "default": 1024
+      "default": 1024,
+      "type": "number"
     },
     "healthCheckPort": {
-      "type": "number",
-      "default": 4000
+      "default": 4000,
+      "type": "number"
     },
     "healthCheckInterval": {
-      "type": "number",
-      "default": 30000
+      "default": 30000,
+      "type": "number"
     },
     "jobsQueueName": {
-      "type": "string",
-      "default": "grading_jobs_dev"
+      "default": "grading_jobs_dev",
+      "type": "string"
     },
     "jobsQueueUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "resultsQueueName": {
-      "type": "string",
-      "default": "grading_results_dev"
+      "default": "grading_results_dev",
+      "type": "string"
     },
     "resultsQueueUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "timeoutOverhead": {
-      "type": "number",
-      "default": 300
+      "default": 300,
+      "type": "number"
     },
     "postgresqlHost": {
-      "type": "string",
-      "default": "localhost"
+      "default": "localhost",
+      "type": "string"
     },
     "postgresqlDatabase": {
-      "type": "string",
-      "default": "postgres"
+      "default": "postgres",
+      "type": "string"
     },
     "postgresqlUser": {
-      "type": "string",
-      "default": "postgres"
+      "default": "postgres",
+      "type": "string"
     },
     "postgresqlPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "postgresqlPoolSize": {
-      "type": "number",
-      "default": 2
+      "default": 2,
+      "type": "number"
     },
     "postgresqlIdleTimeoutMillis": {
-      "type": "number",
-      "default": 30000
+      "default": 30000,
+      "type": "number"
     },
     "autoScalingGroupName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "instanceId": {
-      "type": "string",
-      "default": "server"
+      "default": "server",
+      "type": "string"
     },
     "sentryDsn": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryEnvironment": {
-      "type": "string",
-      "default": "development"
+      "default": "development",
+      "type": "string"
     },
     "awsRegion": {
-      "type": "string",
-      "default": "us-east-2"
+      "default": "us-east-2",
+      "type": "string"
     },
     "visibilityTimeout": {
-      "type": "number",
-      "default": 60
+      "default": 60,
+      "type": "number"
     },
     "visibilityTimeoutHeartbeatIntervalSec": {
-      "type": "number",
-      "default": 30
+      "default": 30,
+      "type": "number"
     }
-  }
+  },
+  "additionalProperties": false
 }

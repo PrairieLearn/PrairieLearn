@@ -113,7 +113,7 @@ check-badge-contrast:
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
 update-jsonschema:
-	@pnpm dlx tsx scripts/gen-jsonschema.mts && pnpm prettier --write "apps/prairielearn/src/schemas/**/*.json" && pnpm prettier --write "docs/assets/*.schema.json"
+	@pnpm dlx tsx scripts/gen-jsonschema.mts
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
