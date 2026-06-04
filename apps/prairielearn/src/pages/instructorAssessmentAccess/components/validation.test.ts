@@ -62,6 +62,41 @@ function makeFormData(
   };
 }
 
+function makeEnrollments(count: number): OverrideData['appliesTo']['enrollments'] {
+  return Array.from({ length: count }, (_, i) => ({
+    enrollmentId: String(i),
+    uid: `student${i}`,
+    name: `Student ${i}`,
+  }));
+}
+
+function makeStudentLabels(count: number): OverrideData['appliesTo']['studentLabels'] {
+  return Array.from({ length: count }, (_, i) => ({
+    studentLabelId: String(i),
+    name: `Section ${i}`,
+  }));
+}
+
+function makeEnrollmentAppliesTo(
+  enrollments: OverrideData['appliesTo']['enrollments'],
+): OverrideData['appliesTo'] {
+  return {
+    targetType: 'enrollment',
+    enrollments,
+    studentLabels: [],
+  };
+}
+
+function makeStudentLabelAppliesTo(
+  studentLabels: OverrideData['appliesTo']['studentLabels'],
+): OverrideData['appliesTo'] {
+  return {
+    targetType: 'student_label',
+    enrollments: [],
+    studentLabels,
+  };
+}
+
 describe('getGlobalDateValidationErrors', () => {
   it('maps an impossible early deadline to the matching override field path', () => {
     const errors = getGlobalDateValidationErrors(
@@ -71,11 +106,7 @@ describe('getGlobalDateValidationErrors', () => {
           release: { date: '2024-04-06T00:00:00', released: true },
         }),
         makeOverride({
-          appliesTo: {
-            targetType: 'enrollment',
-            enrollments: [{ enrollmentId: 'e1', uid: 'student1', name: 'Student 1' }],
-            studentLabels: [],
-          },
+          appliesTo: makeEnrollmentAppliesTo(makeEnrollments(1)),
           overriddenFields: ['earlyDeadlines'],
           earlyDeadlines: [{ date: '2024-04-05T00:00:00', credit: 120 }],
         }),
@@ -94,11 +125,7 @@ describe('getGlobalDateValidationErrors', () => {
       makeFormData([
         makeOverride({ overriddenFields: ['due'] }),
         makeOverride({
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: [{ studentLabelId: '2', name: 'Section B' }],
-          },
+          appliesTo: makeStudentLabelAppliesTo(makeStudentLabels(1)),
           overriddenFields: ['lateDeadlines'],
           lateDeadlines: [{ date: '2024-04-07T12:00:00', credit: 50 }],
         }),
@@ -355,92 +382,59 @@ describe('getAccessControlFormValidationErrors', () => {
     });
   });
 
-  it('validates the maximum number of student-label overrides', () => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData(
-        Array.from({ length: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1 }, () => makeOverride()),
-      ),
-      TEST_TIMEZONE,
-    );
-
-    expect(errors).toContainEqual({
-      path: 'overrides.root',
+  it.each([
+    {
+      name: 'student-label overrides',
+      limit: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+      makeTargetedOverride: () => makeOverride(),
       message: `At most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides are allowed. Remove 1 student-label override before saving.`,
-    });
-  });
-
-  it('validates the maximum number of enrollment rules', () => {
+    },
+    {
+      name: 'enrollment rules',
+      limit: MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+      makeTargetedOverride: () =>
+        makeOverride({
+          appliesTo: makeEnrollmentAppliesTo([]),
+        }),
+      message: `At most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides are allowed. Remove 1 student-specific override before saving.`,
+    },
+  ])('validates the maximum number of $name', ({ limit, makeTargetedOverride, message }) => {
     const errors = getAccessControlFormValidationErrors(
-      makeFormData(
-        Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1 }, () =>
-          makeOverride({
-            appliesTo: {
-              targetType: 'enrollment',
-              enrollments: [],
-              studentLabels: [],
-            },
-          }),
-        ),
-      ),
+      makeFormData(Array.from({ length: limit + 1 }, makeTargetedOverride)),
       TEST_TIMEZONE,
     );
 
     expect(errors).toContainEqual({
       path: 'overrides.root',
-      message: `At most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides are allowed. Remove 1 student-specific override before saving.`,
+      message,
     });
   });
 
-  it('validates the maximum number of student labels per override', () => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData([
-        makeOverride({
-          appliesTo: {
-            targetType: 'student_label',
-            enrollments: [],
-            studentLabels: Array.from(
-              { length: MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE + 1 },
-              (_, i) => ({
-                studentLabelId: String(i),
-                name: `Section ${i}`,
-              }),
-            ),
-          },
-        }),
-      ]),
-      TEST_TIMEZONE,
-    );
-
-    expect(errors).toContainEqual({
-      path: 'overrides.0.appliesTo.root',
+  it.each([
+    {
+      name: 'student labels',
+      override: makeOverride({
+        appliesTo: makeStudentLabelAppliesTo(
+          makeStudentLabels(MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE + 1),
+        ),
+      }),
       message: `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`,
-    });
-  });
-
-  it('validates the maximum number of students per enrollment override', () => {
-    const errors = getAccessControlFormValidationErrors(
-      makeFormData([
-        makeOverride({
-          appliesTo: {
-            targetType: 'enrollment',
-            enrollments: Array.from(
-              { length: MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE + 1 },
-              (_, i) => ({
-                enrollmentId: String(i),
-                uid: `student${i}`,
-                name: `Student ${i}`,
-              }),
-            ),
-            studentLabels: [],
-          },
-        }),
-      ]),
-      TEST_TIMEZONE,
-    );
+    },
+    {
+      name: 'students',
+      override: makeOverride({
+        appliesTo: makeEnrollmentAppliesTo(
+          makeEnrollments(MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE + 1),
+        ),
+      }),
+      message: `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
+    },
+  ])('validates the maximum number of $name per override', ({ override, message }) => {
+    const errors = getAccessControlFormValidationErrors(makeFormData([override]), TEST_TIMEZONE);
 
     expect(errors).toContainEqual({
       path: 'overrides.0.appliesTo.root',
-      message: `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
+      message,
     });
   });
 });

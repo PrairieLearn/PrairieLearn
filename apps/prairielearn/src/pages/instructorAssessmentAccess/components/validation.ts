@@ -34,6 +34,7 @@ import {
   type AccessControlFormData,
   type AfterLastDeadlineValue,
   type DeadlineEntry,
+  type OverridableFieldName,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   defaultRuleHasCompletionMechanism,
@@ -57,6 +58,36 @@ interface AccessControlFormValidationError {
   message: string;
 }
 
+type RulePrefix = 'defaultRule' | `overrides.${number}`;
+
+type RuleValidationFieldPath =
+  | 'release.date'
+  | 'due.date'
+  | 'due.credit'
+  | `earlyDeadlines.${number}.date`
+  | `earlyDeadlines.${number}.credit`
+  | `lateDeadlines.${number}.date`
+  | `lateDeadlines.${number}.credit`
+  | 'afterLastDeadline.credit'
+  | 'durationMinutes'
+  | 'password'
+  | 'questionVisibility'
+  | 'questionVisibility.visibleFromDate'
+  | 'questionVisibility.visibleUntilDate'
+  | 'scoreVisibility'
+  | 'scoreVisibility.visibleFromDate';
+
+type DateControlValidationPath =
+  | `defaultRule.${RuleValidationFieldPath}`
+  | `overrides.${number}.${RuleValidationFieldPath}`;
+
+type RuleFormFields = Pick<AccessControlFormData['defaultRule'], OverridableFieldName>;
+
+type AddValidationError = (
+  path: AccessControlFormValidationPath,
+  message: string | undefined,
+) => void;
+
 export interface AccessControlFormResolverContext {
   displayTimezone: string;
 }
@@ -65,33 +96,9 @@ export function isDateFieldEmpty(value: string | undefined): boolean {
   return value !== undefined && !value;
 }
 
-type DateControlValidationPath =
-  | 'defaultRule.release.date'
-  | 'defaultRule.due.date'
-  | 'defaultRule.due.credit'
-  | `defaultRule.earlyDeadlines.${number}.date`
-  | `defaultRule.earlyDeadlines.${number}.credit`
-  | `defaultRule.lateDeadlines.${number}.date`
-  | `defaultRule.lateDeadlines.${number}.credit`
-  | 'defaultRule.afterLastDeadline.credit'
-  | 'defaultRule.questionVisibility'
-  | 'defaultRule.questionVisibility.visibleFromDate'
-  | 'defaultRule.questionVisibility.visibleUntilDate'
-  | 'defaultRule.scoreVisibility'
-  | 'defaultRule.scoreVisibility.visibleFromDate'
-  | `overrides.${number}.release.date`
-  | `overrides.${number}.due.date`
-  | `overrides.${number}.due.credit`
-  | `overrides.${number}.earlyDeadlines.${number}.date`
-  | `overrides.${number}.earlyDeadlines.${number}.credit`
-  | `overrides.${number}.lateDeadlines.${number}.date`
-  | `overrides.${number}.lateDeadlines.${number}.credit`
-  | `overrides.${number}.afterLastDeadline.credit`
-  | `overrides.${number}.questionVisibility`
-  | `overrides.${number}.questionVisibility.visibleFromDate`
-  | `overrides.${number}.questionVisibility.visibleUntilDate`
-  | `overrides.${number}.scoreVisibility`
-  | `overrides.${number}.scoreVisibility.visibleFromDate`;
+function rulePath(prefix: RulePrefix, suffix: RuleValidationFieldPath): DateControlValidationPath {
+  return `${prefix}.${suffix}`;
+}
 
 function buildValidationRules(formData: AccessControlFormData): AccessControlValidationRule[] {
   return formDataToJson(formData).map((rule, index) => ({
@@ -104,51 +111,51 @@ function buildValidationRules(formData: AccessControlFormData): AccessControlVal
 function mapIssueToFormFieldPath(
   issue: AccessControlValidationIssue,
 ): DateControlValidationPath | null {
-  const prefix: 'defaultRule' | `overrides.${number}` =
+  const prefix: RulePrefix =
     issue.ruleIndex === 0 ? 'defaultRule' : `overrides.${issue.ruleIndex - 1}`;
 
   switch (issue.path[0]) {
     case 'dateControl':
       switch (issue.path[1]) {
         case 'release':
-          return `${prefix}.release.date`;
+          return rulePath(prefix, 'release.date');
         case 'due':
-          return issue.path[2] === 'credit' ? `${prefix}.due.credit` : `${prefix}.due.date`;
+          return rulePath(prefix, issue.path[2] === 'credit' ? 'due.credit' : 'due.date');
         case 'earlyDeadlines':
           return issue.path[3] === 'credit'
-            ? `${prefix}.earlyDeadlines.${issue.path[2]}.credit`
-            : `${prefix}.earlyDeadlines.${issue.path[2]}.date`;
+            ? rulePath(prefix, `earlyDeadlines.${issue.path[2]}.credit`)
+            : rulePath(prefix, `earlyDeadlines.${issue.path[2]}.date`);
         case 'lateDeadlines':
           return issue.path[3] === 'credit'
-            ? `${prefix}.lateDeadlines.${issue.path[2]}.credit`
-            : `${prefix}.lateDeadlines.${issue.path[2]}.date`;
+            ? rulePath(prefix, `lateDeadlines.${issue.path[2]}.credit`)
+            : rulePath(prefix, `lateDeadlines.${issue.path[2]}.date`);
         case 'afterLastDeadline':
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          return issue.path[2] === 'credit' ? `${prefix}.afterLastDeadline.credit` : null;
+          return issue.path[2] === 'credit' ? rulePath(prefix, 'afterLastDeadline.credit') : null;
         default:
           return null;
       }
     case 'afterComplete':
       if (issue.path[1] === 'questions') {
         if (issue.path.length === 2) {
-          return `${prefix}.questionVisibility`;
+          return rulePath(prefix, 'questionVisibility');
         }
         switch (issue.path[2]) {
           case 'visibleFromDate':
-            return `${prefix}.questionVisibility.visibleFromDate`;
+            return rulePath(prefix, 'questionVisibility.visibleFromDate');
           case 'visibleUntilDate':
-            return `${prefix}.questionVisibility.visibleUntilDate`;
+            return rulePath(prefix, 'questionVisibility.visibleUntilDate');
           default:
             return null;
         }
       }
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (issue.path[1] === 'score') {
-        if (issue.path.length === 2) return `${prefix}.scoreVisibility`;
+        if (issue.path.length === 2) return rulePath(prefix, 'scoreVisibility');
         switch (issue.path[2]) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           case 'visibleFromDate':
-            return `${prefix}.scoreVisibility.visibleFromDate`;
+            return rulePath(prefix, 'scoreVisibility.visibleFromDate');
           default:
             return null;
         }
@@ -310,15 +317,26 @@ function validateDueDate(date: string | null): string | undefined {
   return undefined;
 }
 
-function validateDueCredit(credit: number | null, customCredit: boolean): string | undefined {
-  if (credit === null) {
+function validateIntegerCredit(
+  credit: number,
+  { max, rangeMessage }: { max: number; rangeMessage: string },
+): string | undefined {
+  if (Number.isNaN(credit)) return 'Credit is required';
+  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
+  if (!Number.isInteger(credit)) return 'Credit must be an integer';
+  if (credit < 0 || credit > max) return rangeMessage;
+  return undefined;
+}
+
+function validateDueCredit(value: number | null, customCredit: boolean): string | undefined {
+  if (value === null) {
     if (customCredit) return 'Credit is required';
     return undefined;
   }
-  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
-  if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
-  return undefined;
+  return validateIntegerCredit(value, {
+    max: 200,
+    rangeMessage: 'Credit must be between 0% and 200%',
+  });
 }
 
 function validateDuration(value: number | null): string | undefined {
@@ -339,28 +357,28 @@ function validatePassword(value: string | null): string | undefined {
 
 function validateQuestionVisibility(
   value: QuestionVisibilityValue,
-  prefix: 'defaultRule' | `overrides.${number}`,
-  addError: (path: AccessControlFormFieldPath, message: string | undefined) => void,
+  prefix: RulePrefix,
+  addError: AddValidationError,
 ) {
   if (!value.hidden) return;
   addError(
-    `${prefix}.questionVisibility.visibleFromDate`,
+    rulePath(prefix, 'questionVisibility.visibleFromDate'),
     isDateFieldEmpty(value.visibleFromDate) ? DATE_REQUIRED_MESSAGE : undefined,
   );
   addError(
-    `${prefix}.questionVisibility.visibleUntilDate`,
+    rulePath(prefix, 'questionVisibility.visibleUntilDate'),
     isDateFieldEmpty(value.visibleUntilDate) ? DATE_REQUIRED_MESSAGE : undefined,
   );
 }
 
 function validateScoreVisibility(
   value: ScoreVisibilityValue,
-  prefix: 'defaultRule' | `overrides.${number}`,
-  addError: (path: AccessControlFormFieldPath, message: string | undefined) => void,
+  prefix: RulePrefix,
+  addError: AddValidationError,
 ) {
   if (!value.hidden) return;
   addError(
-    `${prefix}.scoreVisibility.visibleFromDate`,
+    rulePath(prefix, 'scoreVisibility.visibleFromDate'),
     isDateFieldEmpty(value.visibleFromDate) ? DATE_REQUIRED_MESSAGE : undefined,
   );
 }
@@ -389,15 +407,11 @@ function validateDeadlineCredit({
   type: 'early' | 'late';
   value: number;
 }): string | undefined {
-  if (Number.isNaN(value)) return 'Credit is required';
-  if (!Number.isFinite(value)) return 'Credit must be a finite number';
-  if (!Number.isInteger(value)) return 'Credit must be an integer';
-  if (type === 'early') {
-    if (value < 0 || value > 200) return 'Credit must be 0-200%';
-  } else if (value < 0 || value >= 100) {
-    return 'Credit after the due date must be 0-99%';
-  }
-  return undefined;
+  return validateIntegerCredit(value, {
+    max: type === 'early' ? 200 : 99,
+    rangeMessage:
+      type === 'early' ? 'Credit must be 0-200%' : 'Credit after the due date must be 0-99%',
+  });
 }
 
 function validateDeadlineArray({
@@ -407,26 +421,26 @@ function validateDeadlineArray({
   deadlines,
   addError,
 }: {
-  prefix: 'defaultRule' | `overrides.${number}`;
+  prefix: RulePrefix;
   fieldName: 'earlyDeadlines' | 'lateDeadlines';
   type: 'early' | 'late';
   deadlines: DeadlineEntry[];
-  addError: (path: AccessControlFormFieldPath, message: string | undefined) => void;
+  addError: AddValidationError;
 }) {
   if (deadlines.length > MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) {
     addError(
-      `${prefix}.${fieldName}.${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE}.date`,
+      rulePath(prefix, `${fieldName}.${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE}.date`),
       `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`,
     );
   }
 
   deadlines.forEach((deadline, index) => {
     addError(
-      `${prefix}.${fieldName}.${index}.date`,
+      rulePath(prefix, `${fieldName}.${index}.date`),
       validateDeadlineDate({ value: deadline.date, index, deadlines }),
     );
     addError(
-      `${prefix}.${fieldName}.${index}.credit`,
+      rulePath(prefix, `${fieldName}.${index}.credit`),
       validateDeadlineCredit({ type, value: deadline.credit }),
     );
   });
@@ -434,19 +448,17 @@ function validateDeadlineArray({
 
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue | null): string | undefined {
   if (value?.credit === undefined) return undefined;
-  const credit = value.credit;
-  if (Number.isNaN(credit)) return 'Credit is required';
-  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
-  if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit >= 100) return 'Credit after the due date must be 0-99%';
-  return undefined;
+  return validateIntegerCredit(value.credit, {
+    max: 99,
+    rangeMessage: 'Credit after the due date must be 0-99%',
+  });
 }
 
 function validatePrairieTestExams(
-  formData: AccessControlFormData,
-  addError: (path: AccessControlFormFieldPath, message: string | undefined) => void,
+  exams: AccessControlFormData['defaultRule']['prairieTestExams'],
+  addError: AddValidationError,
 ) {
-  if (formData.defaultRule.prairieTestExams.length > MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) {
+  if (exams.length > MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) {
     addError(
       `defaultRule.prairieTestExams.${MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS}.examUuid`,
       `A rule can have at most ${MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS} PrairieTest exams.`,
@@ -454,14 +466,14 @@ function validatePrairieTestExams(
   }
 
   const examUuidCounts = new Map<string, number>();
-  for (const exam of formData.defaultRule.prairieTestExams) {
+  for (const exam of exams) {
     if (UUID_PATTERN.test(exam.examUuid)) {
       const normalizedUuid = exam.examUuid.toLowerCase();
       examUuidCounts.set(normalizedUuid, (examUuidCounts.get(normalizedUuid) ?? 0) + 1);
     }
   }
 
-  formData.defaultRule.prairieTestExams.forEach((exam, index) => {
+  exams.forEach((exam, index) => {
     const path: AccessControlFormFieldPath = `defaultRule.prairieTestExams.${index}.examUuid`;
     if (!exam.examUuid) {
       addError(path, 'Exam UUID is required');
@@ -477,10 +489,7 @@ function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural;
 }
 
-function validateRuleCounts(
-  formData: AccessControlFormData,
-  addError: (path: AccessControlFormValidationPath, message: string | undefined) => void,
-) {
+function validateRuleCounts(formData: AccessControlFormData, addError: AddValidationError) {
   const studentLabelOverrideCount = formData.overrides.filter(
     (override) => override.appliesTo.targetType === 'student_label',
   ).length;
@@ -505,55 +514,81 @@ function validateRuleCounts(
   addError('overrides.root', messages.join(' '));
 }
 
-function validateDefaultRule(
-  formData: AccessControlFormData,
-  addError: (path: AccessControlFormFieldPath, message: string | undefined) => void,
+function validateRuleFields(
+  rule: RuleFormFields,
+  prefix: RulePrefix,
+  fieldActive: (fieldName: OverridableFieldName) => boolean,
+  addError: AddValidationError,
 ) {
-  const rule = formData.defaultRule;
-
-  if (rule.dateControlEnabled) {
-    addError('defaultRule.release.date', validateReleaseDate(rule.release.date));
-    addError('defaultRule.due.date', validateDueDate(rule.due.date));
-    addError('defaultRule.due.credit', validateDueCredit(rule.due.credit, rule.due.customCredit));
+  if (fieldActive('release')) {
+    addError(rulePath(prefix, 'release.date'), validateReleaseDate(rule.release.date));
+  }
+  if (fieldActive('due')) {
+    addError(rulePath(prefix, 'due.date'), validateDueDate(rule.due.date));
+    addError(
+      rulePath(prefix, 'due.credit'),
+      validateDueCredit(rule.due.credit, rule.due.customCredit),
+    );
+  }
+  if (fieldActive('earlyDeadlines')) {
     validateDeadlineArray({
-      prefix: 'defaultRule',
+      prefix,
       fieldName: 'earlyDeadlines',
       type: 'early',
       deadlines: rule.earlyDeadlines,
       addError,
     });
+  }
+  if (fieldActive('lateDeadlines')) {
     validateDeadlineArray({
-      prefix: 'defaultRule',
+      prefix,
       fieldName: 'lateDeadlines',
       type: 'late',
       deadlines: rule.lateDeadlines,
       addError,
     });
+  }
+  if (fieldActive('afterLastDeadline')) {
     addError(
-      'defaultRule.afterLastDeadline.credit',
+      rulePath(prefix, 'afterLastDeadline.credit'),
       validateAfterLastDeadlineCredit(rule.afterLastDeadline),
     );
-    addError('defaultRule.durationMinutes', validateDuration(rule.durationMinutes));
-    addError('defaultRule.password', validatePassword(rule.password));
   }
-
-  validatePrairieTestExams(formData, addError);
-  if (defaultRuleHasCompletionMechanism(rule)) {
-    validateQuestionVisibility(rule.questionVisibility, 'defaultRule', addError);
-    validateScoreVisibility(rule.scoreVisibility, 'defaultRule', addError);
+  if (fieldActive('durationMinutes')) {
+    addError(rulePath(prefix, 'durationMinutes'), validateDuration(rule.durationMinutes));
+  }
+  if (fieldActive('password')) {
+    addError(rulePath(prefix, 'password'), validatePassword(rule.password));
+  }
+  if (fieldActive('questionVisibility')) {
+    validateQuestionVisibility(rule.questionVisibility, prefix, addError);
+  }
+  if (fieldActive('scoreVisibility')) {
+    validateScoreVisibility(rule.scoreVisibility, prefix, addError);
   }
 }
 
-function validateOverrideRule(
-  formData: AccessControlFormData,
-  index: number,
-  addError: (path: AccessControlFormValidationPath, message: string | undefined) => void,
-) {
-  const override = formData.overrides[index];
-  const prefix = `overrides.${index}` as const;
-  const fieldActive = (fieldName: Parameters<typeof isOverrideFieldActive>[2]) =>
-    isOverrideFieldActive(formData, index, fieldName);
+function validateDefaultRule(formData: AccessControlFormData, addError: AddValidationError) {
+  const rule = formData.defaultRule;
+  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
 
+  validateRuleFields(
+    rule,
+    'defaultRule',
+    (fieldName) =>
+      fieldName === 'questionVisibility' || fieldName === 'scoreVisibility'
+        ? hasCompletionMechanism
+        : rule.dateControlEnabled,
+    addError,
+  );
+  validatePrairieTestExams(rule.prairieTestExams, addError);
+}
+
+function validateOverrideTargets(
+  override: AccessControlFormData['overrides'][number],
+  prefix: `overrides.${number}`,
+  addError: AddValidationError,
+) {
   if (
     override.appliesTo.targetType === 'student_label' &&
     override.appliesTo.studentLabels.length > MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE
@@ -572,53 +607,23 @@ function validateOverrideRule(
       `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
     );
   }
+}
 
-  if (fieldActive('release')) {
-    addError(`${prefix}.release.date`, validateReleaseDate(override.release.date));
-  }
-  if (fieldActive('due')) {
-    addError(`${prefix}.due.date`, validateDueDate(override.due.date));
-    addError(
-      `${prefix}.due.credit`,
-      validateDueCredit(override.due.credit, override.due.customCredit),
-    );
-  }
-  if (fieldActive('earlyDeadlines')) {
-    validateDeadlineArray({
-      prefix,
-      fieldName: 'earlyDeadlines',
-      type: 'early',
-      deadlines: override.earlyDeadlines,
-      addError,
-    });
-  }
-  if (fieldActive('lateDeadlines')) {
-    validateDeadlineArray({
-      prefix,
-      fieldName: 'lateDeadlines',
-      type: 'late',
-      deadlines: override.lateDeadlines,
-      addError,
-    });
-  }
-  if (fieldActive('afterLastDeadline')) {
-    addError(
-      `${prefix}.afterLastDeadline.credit`,
-      validateAfterLastDeadlineCredit(override.afterLastDeadline),
-    );
-  }
-  if (fieldActive('durationMinutes')) {
-    addError(`${prefix}.durationMinutes`, validateDuration(override.durationMinutes));
-  }
-  if (fieldActive('password')) {
-    addError(`${prefix}.password`, validatePassword(override.password));
-  }
-  if (fieldActive('questionVisibility')) {
-    validateQuestionVisibility(override.questionVisibility, prefix, addError);
-  }
-  if (fieldActive('scoreVisibility')) {
-    validateScoreVisibility(override.scoreVisibility, prefix, addError);
-  }
+function validateOverrideRule(
+  formData: AccessControlFormData,
+  index: number,
+  addError: AddValidationError,
+) {
+  const override = formData.overrides[index];
+  const prefix = `overrides.${index}` as const;
+
+  validateOverrideTargets(override, prefix, addError);
+  validateRuleFields(
+    override,
+    prefix,
+    (fieldName) => isOverrideFieldActive(formData, index, fieldName),
+    addError,
+  );
 }
 
 export function getAccessControlFormValidationErrors(
