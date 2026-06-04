@@ -48,7 +48,7 @@ export const PartialScoresSchema = z
         score: z.coerce.number().nullish(),
         weight: z.coerce.number().nullish(),
       })
-      .passthrough(),
+      .loose(),
   )
   .nullable();
 
