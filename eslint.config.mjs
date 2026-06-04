@@ -191,7 +191,7 @@ export default [
   {
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],
     rules: {
-      // Tests frequently need to exercise deprecated APIs to ensure they keep working.
+      // TODO: Fix deprecations in tests
       '@typescript-eslint/no-deprecated': 'off',
     },
   },
