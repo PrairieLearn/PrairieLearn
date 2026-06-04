@@ -482,8 +482,11 @@ export type StaffJob = z.infer<typeof StaffJobSchema>;
 /** Job Sequences */
 export const RawStaffJobSequenceSchema = RawJobSequenceSchema.pick({
   description: true,
+  id: true,
   legacy: true,
   number: true,
+  start_date: true,
+  status: true,
 });
 export const StaffJobSequenceSchema = RawStaffJobSequenceSchema.brand<'StaffJobSequence'>();
 export type StaffJobSequence = z.infer<typeof StaffJobSequenceSchema>;

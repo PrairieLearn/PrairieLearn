@@ -168,7 +168,7 @@ export const aiDraftFilesRouter = t.router({
         selection: z
           .discriminatedUnion('kind', [
             z.object({ kind: z.literal('file'), path: QuestionRelativeFilePathSchema }),
-            z.object({ kind: z.literal('dir'), path: QuestionRelativeDirectorySchema }),
+            z.object({ kind: z.literal('dir'), path: QuestionRelativeDirectorySchema.nullable() }),
           ])
           .catch(ROOT_SELECTION),
       }),

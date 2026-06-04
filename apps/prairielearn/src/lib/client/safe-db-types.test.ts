@@ -483,22 +483,12 @@ const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSe
 };
 
 const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
-  assessment_id: '2',
-  assessment_question_id: null,
-  authn_user_id: '4',
-  course_id: '1',
-  course_instance_id: '3',
-  course_request_id: null,
   description: 'Regrade assessment',
-  finish_date: null,
   id: '12',
   legacy: false,
   number: 1,
   start_date: new Date(),
   status: 'Success',
-  stop_requested_by_authn_user_id: null,
-  type: 'regrade_assessment',
-  user_id: '4',
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
