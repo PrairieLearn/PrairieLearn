@@ -225,9 +225,9 @@ function toOnDiskCustomTag(
  * the dynamically-imported config reflects the current element modules.
  */
 async function buildHtmlMustacheConfig(elements: DiscoveredElement[]): Promise<string> {
-  const { htmlMustacheConfig } = (await import(
-    pathToFileURL(HTMLMUSTACHE_CONFIG_SRC).href
-  )) as { htmlMustacheConfig: Config };
+  const { htmlMustacheConfig } = (await import(pathToFileURL(HTMLMUSTACHE_CONFIG_SRC).href)) as {
+    htmlMustacheConfig: Config;
+  };
   const elementByTag = new Map(elements.map((e) => [e.tag, e]));
   const config = {
     include: CONFIG_INCLUDE,
