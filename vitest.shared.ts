@@ -3,10 +3,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { slash } from '@vitest/utils/helpers';
 import ignore from 'ignore';
 import { defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
+
+// Normalize Windows-style path separators to forward slashes.
+function slash(path: string) {
+  return path.replace(/\\/g, '/');
+}
 
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which

@@ -44,7 +44,6 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
-    "@vitest/utils": "^4.1.7",
     "dependency-cruiser": "^17.4.3",
     "eslint": "^10.4.1",
     "fast-glob": "^3.3.3",
