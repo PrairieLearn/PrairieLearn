@@ -56,10 +56,10 @@ function toQuestionUser({
  *   1. The question is not shared (`share_publicly` / `share_source_publicly` are
  *      both false). A shared question never receives user data, in any context.
  *      This closes the public-preview leak: a public preview renders the question
- *      inside its own owning course, so the course-id check below would otherwise
+ *      inside its own original course, so the course-id check below would otherwise
  *      pass and expose the viewer's identity.
- *   2. The question's owning course has `questions_receive_user_data = true`.
- *   3. The question is rendered in its owning course (`question.course_id === caller.variantCourse.id`).
+ *   2. The question's original course has `questions_receive_user_data = true`.
+ *   3. The question is rendered in its original course (`question.course_id === caller.variantCourse.id`).
  *      This excludes sharing-set imports and instructor preview of foreign questions,
  *      which are shared to specific courses without setting the public-share flags.
  *
@@ -73,7 +73,7 @@ export async function buildQuestionUserContext({
   caller,
 }: {
   question: Pick<Question, 'course_id' | 'share_publicly' | 'share_source_publicly'>;
-  /** The question's owning course; `questions_receive_user_data` is the opt-in switch. */
+  /** The question's original course; `questions_receive_user_data` is the opt-in switch. */
   course: Pick<Course, 'questions_receive_user_data'>;
   caller: QuestionCaller;
 }): Promise<QuestionUserContext> {
