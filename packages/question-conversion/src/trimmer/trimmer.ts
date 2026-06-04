@@ -383,7 +383,12 @@ async function discoverQtiEntriesWithoutManifest(
   const entries: QtiArchiveEntry[] = [];
   for (const name of [...entryMap.keys()].sort()) {
     if (!CANDIDATE_QTI_RE.test(name) || NON_QTI_XML_FILES.has(basename(name))) continue;
-    const sample = await readZipEntryText(archive, name, MAX_QTI_SCAN_BYTES);
+    let sample: string;
+    try {
+      sample = await readZipEntryText(archive, name, MAX_QTI_SCAN_BYTES);
+    } catch {
+      continue;
+    }
     if (!sample.includes('<questestinterop') && !sample.includes(':questestinterop')) continue;
     if (!sample.includes('<assessment') && !sample.includes('<objectbank')) continue;
     entries.push({
@@ -453,19 +458,28 @@ async function analyzeTitleCollisions(
     bySlug.set(container.slug, [...(bySlug.get(container.slug) ?? []), container]);
   }
 
+  const usedSlugs = new Set(containers.map((c) => c.slug));
   const renames: TitleRename[] = [];
   for (const [slug, duplicates] of bySlug) {
     if (duplicates.length <= 1) continue;
     duplicates.forEach((container, index) => {
       if (index === 0) return;
-      const newTitle = `${container.title} (${index + 1})`;
+      let n = index + 1;
+      let newTitle = `${container.title} (${n})`;
+      let newSlug = slugify(newTitle);
+      while (usedSlugs.has(newSlug)) {
+        n++;
+        newTitle = `${container.title} (${n})`;
+        newSlug = slugify(newTitle);
+      }
+      usedSlugs.add(newSlug);
       renames.push({
         entry: container.qtiPath,
         kind: container.kind,
         oldTitle: container.title,
         newTitle,
         oldSlug: slug,
-        newSlug: slugify(newTitle),
+        newSlug,
       });
     });
   }
@@ -796,7 +810,7 @@ function encodeXmlText(value: string): string {
 }
 
 function encodeXmlAttr(value: string): string {
-  return encodeXmlText(value).replaceAll('"', '&quot;');
+  return encodeXmlText(value).replaceAll('"', '&quot;').replaceAll("'", '&apos;');
 }
 
 function escapeRegExp(value: string): string {

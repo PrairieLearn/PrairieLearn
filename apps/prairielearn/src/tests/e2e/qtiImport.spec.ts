@@ -719,7 +719,7 @@ test.describe('QTI Import', () => {
     });
     await expect(firstBankUploadButton).toBeEnabled();
     await expect(firstBankUploadButton).toContainText('Upload export');
-    await expect(firstBankUploadButton).not.toContainText('Processing...');
+    await expect(firstBankUploadButton).not.toContainText('Uploading');
 
     // Hold the first supplemental upload open so we can verify that only its button shows
     // the processing state while other bank uploads are temporarily disabled.

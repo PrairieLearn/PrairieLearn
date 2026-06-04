@@ -310,7 +310,6 @@ export function QtiImportForm({
       throw new Error('No file selected');
     }
 
-    setProcessingPhase('trimming');
     const trimmed = await trimQtiArchive(file, file.name);
     if (trimmed.blob.size > QTI_IMPORT_MAX_UPLOAD_BYTES) {
       const trimmedSizeLabel = filesize(trimmed.blob.size, { round: 0, standard: 'jedec' });
