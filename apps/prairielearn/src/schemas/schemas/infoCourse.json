@@ -7,7 +7,6 @@
   "required": ["name", "title", "topics"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
@@ -34,7 +33,6 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "useNewQuestionRenderer": {
@@ -77,7 +75,6 @@
         "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
           },
           "abbreviation": {
@@ -126,7 +123,6 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
           },
           "name": {
@@ -152,7 +148,6 @@
         "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
           },
           "shortName": {

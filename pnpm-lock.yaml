@@ -119,11 +119,8 @@ importers:
         specifier: ^4.1.7
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(@vitest/coverage-v8@4.1.7)(jsdom@29.1.1)(vite@8.0.14(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
-      zod-to-json-schema:
-        specifier: ^3.25.2
-        version: 3.25.2(zod@3.25.76)
+        specifier: ^4.3.0
+        version: 4.4.3
 
   apps/grader-host:
     dependencies:
@@ -203,8 +200,8 @@ importers:
         specifier: ^4.9.0
         version: 4.9.0
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -247,19 +244,19 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.81
-        version: 3.0.81(zod@3.25.76)
+        version: 3.0.81(zod@4.4.3)
       '@ai-sdk/google':
         specifier: ^3.0.80
-        version: 3.0.80(zod@3.25.76)
+        version: 3.0.80(zod@4.4.3)
       '@ai-sdk/openai':
         specifier: ^3.0.67
-        version: 3.0.67(zod@3.25.76)
+        version: 3.0.67(zod@4.4.3)
       '@ai-sdk/provider':
         specifier: ^3.0.10
         version: 3.0.10
       '@ai-sdk/react':
         specifier: ^3.0.195
-        version: 3.0.195(react@19.2.6)(zod@3.25.76)
+        version: 3.0.195(react@19.2.6)(zod@4.4.3)
       '@aws-sdk/client-auto-scaling':
         specifier: ^3.1057.0
         version: 3.1057.0
@@ -547,7 +544,7 @@ importers:
         version: 1.44.0
       ai:
         specifier: ^6.0.193
-        version: 6.0.193(zod@3.25.76)
+        version: 6.0.193(zod@4.4.3)
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -975,11 +972,8 @@ importers:
         specifier: ^13.6.31
         version: 13.6.31
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
-      zod-to-json-schema:
-        specifier: ^3.25.2
-        version: 3.25.2(zod@3.25.76)
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@playwright/test':
         specifier: ^1.60.0
@@ -1249,8 +1243,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -1364,8 +1358,8 @@ importers:
         specifier: ^3.3.2
         version: 3.3.2
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -1525,8 +1519,8 @@ importers:
         specifier: ^11.3.5
         version: 11.3.5
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -1956,8 +1950,8 @@ importers:
         specifier: ^13.0.1
         version: 13.0.1
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2149,8 +2143,8 @@ importers:
         specifier: ^2.20.0
         version: 2.20.0(pg@8.21.0)
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2610,8 +2604,8 @@ importers:
         specifier: ^4.8.3
         version: 4.8.3
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -2632,8 +2626,8 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2
       zod:
-        specifier: ^3.25.76 <4
-        version: 3.25.76
+        specifier: ^4.3.0
+        version: 4.4.3
     devDependencies:
       '@prairielearn/tsconfig':
         specifier: workspace:^
@@ -10547,19 +10541,11 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod-to-json-schema@3.25.2:
-    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
-    peerDependencies:
-      zod: ^3.25.28 || ^4
-
   zod-validation-error@4.0.2:
     resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
-
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
@@ -10603,46 +10589,46 @@ snapshots:
 
   '@actions/io@3.0.2': {}
 
-  '@ai-sdk/anthropic@3.0.81(zod@3.25.76)':
+  '@ai-sdk/anthropic@3.0.81(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/gateway@3.0.121(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.121(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@vercel/oidc': 3.2.0
-      zod: 3.25.76
+      zod: 4.4.3
 
-  '@ai-sdk/google@3.0.80(zod@3.25.76)':
+  '@ai-sdk/google@3.0.80(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/openai@3.0.67(zod@3.25.76)':
+  '@ai-sdk/openai@3.0.67(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
 
-  '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@ai-sdk/provider@3.0.10':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@3.0.195(react@19.2.6)(zod@3.25.76)':
+  '@ai-sdk/react@3.0.195(react@19.2.6)(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      ai: 6.0.193(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      ai: 6.0.193(zod@4.4.3)
       react: 19.2.6
       swr: 2.4.1(react@19.2.6)
       throttleit: 2.1.0
@@ -11698,7 +11684,7 @@ snapshots:
       eslint: 10.4.1(jiti@2.7.0)
       ts-pattern: 5.9.0
       typescript: 6.0.3
-      zod: 3.25.76
+      zod: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -14057,13 +14043,13 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.193(zod@3.25.76):
+  ai@6.0.193(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 3.0.121(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.121(zod@4.4.3)
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
-      zod: 3.25.76
+      zod: 4.4.3
 
   ajv-errors@3.0.0(ajv@8.20.0):
     dependencies:
@@ -15307,8 +15293,8 @@ snapshots:
       '@babel/parser': 7.29.7
       eslint: 10.4.1(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
+      zod: 4.4.3
+      zod-validation-error: 4.0.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -19306,15 +19292,9 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod-to-json-schema@3.25.2(zod@3.25.76):
+  zod-validation-error@4.0.2(zod@4.4.3):
     dependencies:
-      zod: 3.25.76
-
-  zod-validation-error@4.0.2(zod@3.25.76):
-    dependencies:
-      zod: 3.25.76
-
-  zod@3.25.76: {}
+      zod: 4.4.3
 
   zod@4.4.3: {}
 

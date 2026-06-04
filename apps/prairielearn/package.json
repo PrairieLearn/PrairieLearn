@@ -264,8 +264,7 @@
     "xml2js": "^0.6.2",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.31",
-    "zod": "^3.25.76 <4",
-    "zod-to-json-schema": "^3.25.2"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
