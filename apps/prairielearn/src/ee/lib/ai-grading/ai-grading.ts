@@ -751,8 +751,8 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const RubricImageGradingResultSchema = RubricGradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+        const RubricImageGradingResultSchema = RubricGradingResultSchema.extend(
+          HandwritingOrientationsOutputSchema.shape,
         );
 
         const {
@@ -1001,8 +1001,8 @@ export async function aiGrade({
             ),
         });
 
-        const ImageGradingResultSchema = GradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+        const ImageGradingResultSchema = GradingResultSchema.extend(
+          HandwritingOrientationsOutputSchema.shape,
         );
 
         const {

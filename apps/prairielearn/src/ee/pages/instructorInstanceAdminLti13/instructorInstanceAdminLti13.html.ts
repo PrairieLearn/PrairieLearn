@@ -14,8 +14,8 @@ import {
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
+export const AssessmentRowSchema = AssessmentSchema.extend(
+  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }).shape,
 ).extend({
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
