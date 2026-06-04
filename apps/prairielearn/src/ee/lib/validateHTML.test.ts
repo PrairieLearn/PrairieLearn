@@ -386,7 +386,9 @@ describe('validateHTML htmlmustache schema diagnostics', () => {
 
     assert.isTrue(
       errors.some((error) =>
-        error.includes('"weight" should not be set when builtin-grading is false.'),
+        error.includes(
+          'Attribute "weight" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
+        ),
       ),
     );
   });
