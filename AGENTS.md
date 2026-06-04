@@ -207,7 +207,7 @@ When changing element properties or options, you MUST update the corresponding d
 
 When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
 
-When changing attributes on an element exposed to AI question generation (any element in `SUPPORTED_ELEMENTS` in `apps/prairielearn/src/ee/lib/validateHTML.ts`), see the [`ai-html-validator` skill](./.agents/skills/ai-html-validator/SKILL.md) for the validator and documentation files that must be kept in sync.
+When changing an element's attribute contract — its element schema module in `apps/prairielearn/src/lib/element-schemas/`, or any element in `SUPPORTED_ELEMENTS` in `apps/prairielearn/src/ee/lib/validateHTML.ts` (exposed to AI question generation) — see the [`element-validation` skill](./.agents/skills/element-validation/SKILL.md) for the schema, validator, Python, and documentation files that must be kept in sync.
 
 ### Testing
 
