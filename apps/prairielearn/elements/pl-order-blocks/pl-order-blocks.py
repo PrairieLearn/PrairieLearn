@@ -574,20 +574,25 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_raw_name = answer_name + "-input"
     student_answer_raw = data["raw_submitted_answers"].get(answer_raw_name, "[]")
 
+    invalid_format_message = (
+        "The submitted answer is not in the expected format. This usually means "
+        "the submission was modified outside of the PrairieLearn interface."
+    )
+
     try:
         student_answer = json.loads(student_answer_raw)
-        if not isinstance(student_answer, list):
-            raise ValueError()
-        for item in student_answer:
-            if not isinstance(item, dict) or "inner_html" not in item:
-                raise ValueError()
-    except (json.JSONDecodeError, TypeError, ValueError):
-        data["format_errors"][answer_name] = "Invalid format"
+    except (json.JSONDecodeError, TypeError):
+        data["format_errors"][answer_name] = invalid_format_message
         return
 
-    if (not order_block_options.allow_blank) and (
-        student_answer is None or student_answer == []
+    if not isinstance(student_answer, list) or any(
+        not isinstance(item, dict) or "inner_html" not in item
+        for item in student_answer
     ):
+        data["format_errors"][answer_name] = invalid_format_message
+        return
+
+    if (not order_block_options.allow_blank) and student_answer == []:
         data["submitted_answers"][answer_name] = []
         data["submitted_answers"].pop(answer_raw_name, None)
         data["format_errors"][answer_name] = (
