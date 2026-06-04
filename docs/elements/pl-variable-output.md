@@ -38,10 +38,10 @@ Attributes for `<pl-variable-output>`:
 
 | Attribute          | Type                                                      | Default    | Description                                                          |
 | ------------------ | --------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
-| `digits`           | integer                                                   | —          | Number of digits to display after the decimal.                       |
 | `default-tab`      | `"matlab"`, `"mathematica"`, `"python"`, `"r"`, `"sympy"` | `"matlab"` | Select the active tab.                                               |
-| `show-matlab`      | boolean                                                   | true       | Toggles the display of the Matlab tab (also compatible with Octave). |
+| `digits`           | integer                                                   | —          | Number of digits to display after the decimal.                       |
 | `show-mathematica` | boolean                                                   | true       | Toggles the display of the Mathematica tab.                          |
+| `show-matlab`      | boolean                                                   | true       | Toggles the display of the Matlab tab (also compatible with Octave). |
 | `show-python`      | boolean                                                   | true       | Toggles the display of the Python tab.                               |
 | `show-r`           | boolean                                                   | true       | Toggles the display of the R tab.                                    |
 | `show-sympy`       | boolean                                                   | true       | Toggles the display of the SymPy tab.                                |
@@ -50,9 +50,9 @@ Attributes for `<pl-variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
-| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
 | `comment`     | string  | —       | Comment to add after the displayed variable.                    |
 | `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
+| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
 
 ## Details
 

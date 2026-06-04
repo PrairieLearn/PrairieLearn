@@ -1,197 +1,235 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Course information",
-  "description": "The specification file for a course.",
   "type": "object",
-  "additionalProperties": false,
-  "required": ["name", "title", "topics"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
-      "description": "[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Unique identifier (UUID v4).",
       "deprecated": true
     },
     "name": {
-      "description": "The course name (e.g., 'TAM 212').",
-      "type": "string"
+      "type": "string",
+      "description": "The course name (e.g., 'TAM 212')."
     },
     "title": {
-      "description": "The course title (e.g., 'Introductory Dynamics').",
-      "type": "string"
+      "type": "string",
+      "description": "The course title (e.g., 'Introductory Dynamics')."
     },
     "timezone": {
-      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred.",
-      "type": "string"
+      "type": "string",
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred."
     },
     "options": {
-      "description": "Options for this course.",
+      "default": {},
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "useNewQuestionRenderer": {
-          "description": "[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.",
           "type": "boolean",
+          "description": "Feature flag to enable the new question renderer.",
           "deprecated": true
         },
         "devModeFeatures": {
-          "description": "Feature flags to enable/disable in development mode.",
           "anyOf": [
             {
-              "description": "Legacy format; use an object instead.",
               "type": "array",
               "items": {
-                "description": "A single feature flag.",
-                "type": "string"
-              }
+                "type": "string",
+                "description": "A single feature flag."
+              },
+              "description": "Legacy format; use an object instead."
             },
             {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {
                 "type": "boolean"
               }
             }
-          ]
+          ],
+          "description": "Feature flags to enable/disable in development mode."
+        },
+        "questionsReceiveUserData": {
+          "type": "boolean",
+          "description": "If true, server.py receives the variant owner's identity (UID, UIN, name) and group data (if applicable) via `data[\"options\"][\"user\"]` and `data[\"options\"][\"group\"]`. The user value is null for group variants. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. This JSON setting is honored only in development mode. In production, configure this on the course settings page; sync reports a warning if the JSON value differs from the production setting."
         }
       },
-      "default": {}
+      "additionalProperties": false,
+      "description": "Options for this course."
     },
     "assessmentSets": {
-      "description": "Assessment sets.",
       "type": "array",
       "items": {
-        "description": "A single assessment set description.",
         "type": "object",
-        "required": ["abbreviation", "name", "heading", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "abbreviation": {
-            "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
-            "type": "string"
+            "type": "string",
+            "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."
           },
           "name": {
-            "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'.",
-            "type": "string"
+            "type": "string",
+            "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'."
           },
           "heading": {
-            "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
-            "type": "string"
+            "type": "string",
+            "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'."
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"
           }
-        }
-      }
+        },
+        "required": ["abbreviation", "name", "heading", "color"],
+        "description": "A single assessment set description."
+      },
+      "description": "Assessment sets."
     },
     "assessmentModules": {
-      "description": "Course modules.",
       "type": "array",
       "items": {
-        "description": "A single course module description.",
         "type": "object",
-        "required": ["name", "heading"],
         "properties": {
           "name": {
-            "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'.",
-            "type": "string"
+            "type": "string",
+            "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'."
           },
           "heading": {
-            "description": "Full name of the module (visible to students)",
-            "type": "string"
+            "type": "string",
+            "description": "Full name of the module (visible to students)"
           }
-        }
-      }
+        },
+        "required": ["name", "heading"],
+        "description": "A single course module description."
+      },
+      "description": "Course modules."
     },
     "topics": {
-      "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single topic, can represent a unit of learning (e.g. 'vectors').",
         "type": "object",
-        "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "name": {
-            "description": "Long descriptive name (preferably less than 10 words).",
-            "type": "string"
+            "type": "string",
+            "description": "Long descriptive name (preferably less than 10 words)."
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
-            "description": "Description of the topic.",
-            "type": "string"
+            "type": "string",
+            "description": "Description of the topic."
           }
-        }
-      }
+        },
+        "required": ["name", "color"],
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors')."
+      },
+      "description": "Question topics (visible to students)."
     },
     "tags": {
-      "description": "Question tags (not visible to students).",
       "type": "array",
       "items": {
-        "description": "A single tag description.",
         "type": "object",
-        "required": ["name", "color"],
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "shortName": {
-            "description": "Short name (preferably 2 to 7 characters).",
-            "type": "string"
+            "type": "string",
+            "description": "Short name (preferably 2 to 7 characters)."
           },
           "name": {
-            "description": "Long descriptive name (preferably less than 10 words).",
-            "type": "string"
+            "type": "string",
+            "description": "Long descriptive name (preferably less than 10 words)."
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
-            "description": "Description of the tag.",
-            "type": "string"
+            "type": "string",
+            "description": "Description of the tag."
           }
-        }
-      }
+        },
+        "required": ["name", "color"],
+        "description": "A single tag description."
+      },
+      "description": "Question tags (not visible to students)."
     },
     "sharingSets": {
-      "description": "Sharing sets",
       "type": "array",
       "items": {
-        "description": "A sharing set description.",
         "type": "object",
-        "required": ["name"],
         "properties": {
           "name": {
-            "description": "Name of the sharing set.",
-            "type": "string"
+            "type": "string",
+            "description": "Name of the sharing set."
           },
           "description": {
-            "description": "Description of the sharing set.",
-            "type": "string"
+            "type": "string",
+            "description": "Description of the sharing set."
           }
-        }
-      }
+        },
+        "required": ["name"],
+        "description": "A sharing set description."
+      },
+      "description": "Sharing sets."
     }
   },
+  "required": ["name", "title", "topics"],
+  "additionalProperties": false,
+  "description": "The specification file for a course.",
+  "title": "Course information",
   "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    },
     "ColorJsonSchema": {
-      "description": "A color name.",
       "type": "string",
       "enum": [
         "red1",
@@ -224,23 +262,8 @@
         "gray1",
         "gray2",
         "gray3"
-      ]
-    },
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
-      ]
+      ],
+      "description": "A color name."
     }
   }
 }

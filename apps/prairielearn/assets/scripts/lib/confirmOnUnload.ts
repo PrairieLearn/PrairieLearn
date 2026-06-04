@@ -42,19 +42,22 @@ function updateQuestionFormData(form: HTMLFormElement, input: HTMLInputElement) 
 
   const skippedFields = skippedFieldsFromForm(form);
   const updatedFormData = new URLSearchParams(form.dataset.originalFormData);
+  const currentFormData = new FormData(form);
 
-  // Update only the relevant input value. Assumes that the input's name is unique in the form.
-  // If this input is marked to be skipped, do not update the form data.
-  if (!skippedFields.has(input.name)) {
+  // Update only the relevant input. Assumes that the input's name is unique in
+  // the form. If this input is marked to be skipped, do not update the form
+  // data. The value is retrieved from the FormData object, as it may have been
+  // changed in the formdata event handler.
+  if (!skippedFields.has(input.name) && currentFormData.has(input.name)) {
     updatedFormData.delete(input.name);
-    updatedFormData.append(input.name, input.value);
+    updatedFormData.append(input.name, currentFormData.get(input.name)?.toString() ?? '');
   }
 
   // The deferred initialization may have added new fields to the form, so
   // ensure those are included as well to ensure no problems on unload. Add any
   // fields that were not present in the original form data and are not marked
   // to be skipped.
-  new FormData(form).forEach((value, key) => {
+  currentFormData.forEach((value, key) => {
     if (!updatedFormData.has(key) && !skippedFields.has(key)) {
       updatedFormData.append(key, value.toString());
     }
@@ -113,18 +116,12 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
     if (!isSameForm) {
-      // event.preventDefault() is used in Safari/Firefox, but not supported by Chrome/Edge/etc.
-      // Returning a string is supported in almost all browsers that support beforeunload.
-      // Newer versions of Chrome/Edge appear to no longer support returning a string,
-      // but they do seem to support setting `event.returnValue`.
+      // Best practice per MDN is to call preventDefault() and set returnValue for legacy support.
       // Safari on iOS does not support confirmation on beforeunload at all.
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
-      // Note that per the spec, we must technically return a non-empty string,
-      // although the contents of the string should always be ignored.
-      // https://html.spec.whatwg.org/multipage/browsing-the-web.html#unloading-documents:event-beforeunload
       event.preventDefault();
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
       event.returnValue = 'prompt';
-      return 'prompt';
     }
   };
   window.addEventListener('beforeunload', handleBeforeUnload);

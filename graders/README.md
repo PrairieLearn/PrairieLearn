@@ -4,7 +4,7 @@ Within this directory are a set of docker containers for automatically grading s
 These docker containers may be modified as needed on a per-course basis.
 
 Full details on how externally graded questions are created can be found
-in the [Externally Graded Question](https://prairielearn.readthedocs.io/en/latest/externalGrading/)
+in the [Externally Graded Question](https://docs.prairielearn.com/externalGrading/)
 documentation.
 
 ## Obtaining the Image

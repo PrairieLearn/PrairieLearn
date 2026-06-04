@@ -6,25 +6,27 @@ import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
   RawStaffInstanceQuestionSchema,
   StaffAssessmentQuestionSchema,
-  type StaffInstanceQuestionGroup,
   StaffInstanceQuestionSchema,
+  StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StaffInstanceQuestionSchema,
   assessment_open: z.boolean(),
   uid: z.string().nullable(),
+  uid_list: z.array(z.string()),
+  user: StaffUserSchema.nullable(),
+  group_members: z.array(StaffUserSchema),
   assigned_grader_name: z.string().nullable(),
   last_grader_name: z.string().nullable(),
+  assigned_grader: StaffUserSchema.nullable(),
+  last_grader: StaffUserSchema.nullable(),
   assessment_question: StaffAssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),
 });
-export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
-
 export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
   ...InstanceQuestionRowSchema.shape,
   instance_question: RawStaffInstanceQuestionSchema.extend(AIGradingStatsSchema.shape).brand(
@@ -35,19 +37,6 @@ export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
 export type InstanceQuestionRowWithAIGradingStats = z.infer<
   typeof InstanceQuestionRowWithAIGradingStatsSchema
 >;
-
-export interface InstanceQuestionTableData {
-  hasCourseInstancePermissionEdit: boolean;
-  urlPrefix: string;
-  instancesUrl: string;
-  groupWork: boolean;
-  maxPoints: number | null;
-  maxAutoPoints: number | null;
-  aiGradingMode: boolean;
-  csrfToken: string;
-  rubric_data: RubricData | null;
-  instanceQuestionGroups: StaffInstanceQuestionGroup[];
-}
 
 // Grading status values for filtering
 export const GRADING_STATUS_VALUES = ['Requires grading', 'Graded'] as const;

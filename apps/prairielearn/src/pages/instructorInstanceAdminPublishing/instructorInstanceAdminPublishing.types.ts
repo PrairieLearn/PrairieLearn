@@ -11,8 +11,8 @@ export const CourseInstancePublishingExtensionRowSchema = z.object({
   course_instance_publishing_extension: StaffCourseInstancePublishingExtensionSchema,
   user_data: z.array(
     z.object({
-      uid: StaffUserSchema.unwrap().shape.uid,
-      name: StaffUserSchema.unwrap().shape.name,
+      uid: StaffUserSchema.shape.uid,
+      name: StaffUserSchema.shape.name,
       enrollment_id: IdSchema,
     }),
   ),

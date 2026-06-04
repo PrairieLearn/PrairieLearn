@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS questions_course_id_number_nondeleted_key;

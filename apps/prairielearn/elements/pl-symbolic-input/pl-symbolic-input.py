@@ -2,13 +2,13 @@ import random
 import re
 from enum import Enum
 from sys import get_int_max_str_digits
+from typing import assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -24,6 +24,7 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
+ALLOW_SETS_DEFAULT = False
 DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -36,10 +37,34 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
+
+
+def _get_variables_with_fallback(
+    element: lxml.html.HtmlElement,
+    data: pl.QuestionData,
+    name: str,
+) -> list[str]:
+    variables = psu.get_items_list(
+        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    if not pl.has_attrib(element, "variables"):
+        a_tru = data["correct_answers"].get(name, {})
+        if isinstance(a_tru, dict) and "_variables" in a_tru:
+            variables = a_tru["_variables"]
+    return variables
+
+
+def _replace_imaginary_for_display(
+    expr: sympy.Expr, imaginary_unit: str
+) -> sympy.Basic:
+    return expr.subs(sympy.I, sympy.Symbol(imaginary_unit))
+
+
 # Additional simplifications supported by SymPy
 SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
     "expand": sympy.expand,
@@ -59,6 +84,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "label",
         "aria-label",
         "display",
+        "allow-sets",
         "allow-complex",
         "imaginary-unit-for-display",
         "allow-trig-functions",
@@ -74,6 +100,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "display-simplified-expression",
         "show-score",
         "suffix",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -91,12 +118,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
+    simplify_expression = pl.get_boolean_attrib(
+        element,
+        "display-simplified-expression",
+        DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+    )
     psu.validate_names_for_conflicts(
         name,
         variables,
         custom_functions,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
+        allow_sets=allow_sets,
     )
 
     pl.check_answers_names(data, name)
@@ -107,25 +141,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
 
-        variables = psu.get_items_list(
-            pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
-        )
-        custom_functions = psu.get_items_list(
-            pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
-        )
-        allow_complex = pl.get_boolean_attrib(
-            element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-        )
-        allow_trig = pl.get_boolean_attrib(
-            element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
-        )
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-        simplify_expression = pl.get_boolean_attrib(
-            element,
-            "display-simplified-expression",
-            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
-        )
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
             try:
@@ -133,6 +150,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     a_true,
                     variables,
                     allow_complex=allow_complex,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -150,6 +168,32 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         data["correct_answers"][name] = a_true
 
+    variables = _get_variables_with_fallback(element, data, name)
+
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
+    initial_value = pl.get_string_attrib(
+        element, "initial-value", INITIAL_VALUE_DEFAULT
+    )
+    # Don't parse the initial value if it's not a formula editor, so that you can prefill
+    # partial inputs.
+    if formula_editor and initial_value is not None and initial_value.strip() != "":
+        try:
+            psu.convert_string_to_sympy(
+                initial_value,
+                variables,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
+            )
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Parsing initial value "{initial_value}" for "{name}" failed.'
+            ) from exc
+
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
@@ -161,6 +205,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
         )
     )
+    if allow_sets and additional_simplifications:
+        raise ValueError(
+            "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true."
+        )
     # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
     # intended way to work around SymPy limitations
     if not all(
@@ -193,6 +241,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -203,13 +252,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-    constants_class = psu._Constants()
+    constants_class = psu._Constants
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
+    if allow_sets:
+        operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
     operators.extend(constants_class.functions.keys())
     if allow_trig:
         operators.extend(constants_class.trig_functions.keys())
+    if allow_sets:
+        operators.extend(constants_class.set_functions.keys())
 
     constants = list(constants_class.variables.keys())
 
@@ -219,6 +272,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "operators": operators,
         "constants": constants,
         "allow_complex": allow_complex,
+        "allow_sets": allow_sets,
     }
 
     with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
@@ -237,21 +291,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_sub_parsed = ""
         elif isinstance(a_sub, str):
             # this is for backward-compatibility
-            a_sub_parsed = psu.convert_string_to_sympy(
-                a_sub,
-                variables,
-                allow_complex=allow_complex,
-                custom_functions=custom_functions,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
-            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+            a_sub_parsed = _replace_imaginary_for_display(
+                psu.convert_string_to_sympy(
+                    a_sub,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    custom_functions=custom_functions,
+                    allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
+                ),
+                imaginary_unit,
+            )
         else:
-            a_sub_parsed = psu.json_to_sympy(
-                a_sub,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
-            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+            a_sub_parsed = _replace_imaginary_for_display(
+                psu.json_to_sympy(
+                    a_sub,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
+                ),
+                imaginary_unit,
+            )
 
         if display_log_as_ln and a_sub_parsed != "":
             a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
@@ -269,10 +331,36 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+    initial_value = pl.get_string_attrib(
+        element, "initial-value", INITIAL_VALUE_DEFAULT
+    )
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = initial_value
+    if (
+        raw_submitted_answer_latex is None
+        and initial_value is not None
+        and initial_value.strip() != ""
+        and formula_editor
+    ):
+        initial_parsed = _replace_imaginary_for_display(
+            psu.convert_string_to_sympy(
+                initial_value,
+                _get_variables_with_fallback(element, data, name),
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                custom_functions=custom_functions,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            ),
+            imaginary_unit,
+        )
+        if display_log_as_ln:
+            initial_parsed = initial_parsed.replace(sympy.log, sympy.Function("ln"))
+        raw_submitted_answer_latex = sympy.latex(initial_parsed)
 
     score = data["partial_scores"].get(name, {}).get("score")
 
@@ -293,6 +381,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
             "allow_trig": allow_trig,
+            "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
             "raw_submitted_answer": raw_submitted_answer,
@@ -322,6 +411,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
+            "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
             display.value: True,
@@ -343,21 +433,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif isinstance(a_tru, str):
             if a_tru != "":
                 # this is so instructors can specify the true answer simply as a string
-                a_tru = psu.convert_string_to_sympy(
-                    a_tru,
-                    variables,
-                    allow_complex=allow_complex,
-                    allow_trig_functions=allow_trig,
-                    custom_functions=custom_functions,
-                    simplify_expression=simplify_expression,
-                ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+                a_tru = _replace_imaginary_for_display(
+                    psu.convert_string_to_sympy(
+                        a_tru,
+                        variables,
+                        allow_complex=allow_complex,
+                        allow_sets=allow_sets,
+                        allow_trig_functions=allow_trig,
+                        custom_functions=custom_functions,
+                        simplify_expression=simplify_expression,
+                    ),
+                    imaginary_unit,
+                )
         else:
-            a_tru = psu.json_to_sympy(
-                a_tru,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
-            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+            a_tru = _replace_imaginary_for_display(
+                psu.json_to_sympy(
+                    a_tru,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                    simplify_expression=simplify_expression,
+                ),
+                imaginary_unit,
+            )
 
         if display_log_as_ln and a_tru != "":
             a_tru = a_tru.replace(sympy.log, sympy.Function("ln"))
@@ -381,18 +479,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
 
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
-    )
-
-    # See https://github.com/PrairieLearn/PrairieLearn/issues/12053
-    has_variables = pl.has_attrib(element, "variables")
-    if not has_variables:
-        a_tru = data["correct_answers"].get(name, {})
-        # If no variables attribute was specified but we have a correct answer dict,
-        # use the correct answer's variables for parsing.
-        if isinstance(a_tru, dict) and "_variables" in a_tru:
-            variables = a_tru["_variables"]
+    variables = _get_variables_with_fallback(element, data, name)
 
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
@@ -406,6 +493,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
@@ -424,7 +512,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
 
     # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(submitted_answer)
+    a_sub, error_msg = format_submission_for_sympy(
+        submitted_answer, allow_sets=allow_sets
+    )
     if error_msg is not None:
         data["format_errors"][name] = error_msg
         data["submitted_answers"][name] = None
@@ -446,46 +536,45 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["submitted_answers"][name] = None
             return
 
-    error_msg = psu.validate_string_as_sympy(
-        a_sub,
-        variables,
-        allow_complex=allow_complex,
-        allow_trig_functions=allow_trig,
-        imaginary_unit=imaginary_unit,
-        custom_functions=custom_functions,
-        simplify_expression=simplify_expression,
-    )
-
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
-
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
     a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    a_sub_parsed = psu.convert_string_to_sympy(
+    result = psu.try_parse_string_as_sympy(
         a_sub,
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
+        allow_sets=allow_sets,
         allow_trig_functions=allow_trig,
-        assumptions=assumptions_dict,
+        imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
+        assumptions=assumptions_dict,
     )
+
+    if isinstance(result, psu.SympyParseFailure):
+        data["format_errors"][name] = result.error
+        data["submitted_answers"][name] = None
+        return
+
+    a_sub_parsed = result.expr
 
     # Make sure we can parse the json again
     try:
-        a_sub_json = psu.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
+        a_sub_json = psu.sympy_to_json(
+            a_sub_parsed,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
 
         # Convert safely to sympy
         psu.json_to_sympy(
             a_sub_json,
             allow_complex=allow_complex,
+            allow_sets=allow_sets,
             simplify_expression=simplify_expression,
         )
 
@@ -498,7 +587,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
+def format_submission_for_sympy(
+    sub: str | None, *, allow_sets: bool = False
+) -> tuple[str | None, str | None]:
     """
     Format submission to be compatible with SymPy.
 
@@ -510,6 +601,8 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
 
     Args:
         sub: The text submission to format
+        allow_sets: If true, leave any residual ``|`` characters in place
+            so the SymPy parser can interpret them as set-union operators.
 
     Returns:
         A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
@@ -518,22 +611,33 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
     if sub is None:
         return None, None
 
+    pattern = re.compile(
+        r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+    )
+    search_from = 0
     while True:
         # Find matches of |...| where:
         # when ignoring spaces, it either:
         # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
         # - is a single leter/number
-        match = re.search(
-            r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
-            sub,
-        )
+        match = pattern.search(sub, search_from)
         if not match:
             break
 
         content = match.group(0)[1:-1]  # Strip the bars
-        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+        # When set notation is allowed, a comma inside the match means the
+        # pipes are a union operator pair around an interval or finite set
+        # (e.g. the middle pipes in ``[0,1] | (2,3) | [4,5]``), not an
+        # absolute value.
+        # TODO: This can skip min/max operators or other functions that contain commas.
+        if allow_sets and "," in content:
+            search_from = match.start() + 1
+            continue
 
-    if "|" in sub:
+        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+        search_from = 0
+
+    if not allow_sets and "|" in sub:
         return (
             None,
             f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
@@ -598,7 +702,7 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants()
+    constants_class = psu._Constants
 
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
@@ -732,8 +836,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    simplify_expression = pl.get_boolean_attrib(
+        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     additional_simplifications = psu.get_items_list(
         pl.get_string_attrib(
@@ -765,11 +873,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_tru,
                 variables,
                 allow_complex=allow_complex,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         else:
-            a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
+            a_tru_sympy = psu.json_to_sympy(
+                a_tru,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                simplify_expression=simplify_expression,
+            )
 
         # Parse submitted answer
         if isinstance(a_sub, str):
@@ -778,13 +893,19 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub,
                 variables,
                 allow_complex=allow_complex,
+                allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
+                simplify_expression=simplify_expression,
             )
         else:
             a_sub_sympy = psu.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                a_sub,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
 
         for simplification in additional_simplifications:
@@ -794,6 +915,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             # Make the type checker happy
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
+
+        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
+            return a_tru_sympy == a_sub_sympy, None
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
@@ -839,10 +963,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
+    allow_sets = pl.get_boolean_attrib(element, "allow-sets", ALLOW_SETS_DEFAULT)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-
+    simplify_expression = pl.get_boolean_attrib(
+        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
+    )
     result = data["test_type"]
     a_tru_str = ""
 
@@ -861,36 +988,41 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
+                    allow_sets=allow_sets,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
+                    simplify_expression=simplify_expression,
                 )
         else:
             a_tru = psu.json_to_sympy(
-                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                a_tru,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig,
             )
 
         if a_tru != "":
             # Substitute in imaginary unit symbol
-            a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
+            a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
 
     if result == "correct":
         if a_tru_str == "":
             data["raw_submitted_answers"][name] = ""
         else:
-            correct_answers = [
-                a_tru_str,
-                f"{a_tru_str} + 0",
-            ]
-            if allow_complex:
-                correct_answers.append(f"2j + {a_tru_str} - 3j + j")
-            if allow_trig:
-                correct_answers.append(f"cos(0) * ( {a_tru_str} )")
+            correct_answers = [a_tru_str]
+            # Arithmetic-style variants below don't apply to sets/intervals.
+            if not allow_sets:
+                correct_answers.append(f"{a_tru_str} + 0")
+                if allow_complex:
+                    correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+                if allow_trig:
+                    correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
             data["raw_submitted_answers"][name] = random.choice(correct_answers)
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        if a_tru_str == "":
+        if a_tru_str == "" or allow_sets:
             data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
         else:
             data["raw_submitted_answers"][name] = (

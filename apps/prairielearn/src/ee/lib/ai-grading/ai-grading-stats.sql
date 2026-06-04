@@ -78,11 +78,11 @@ SELECT
   instance_question_id,
   COALESCE(u.name, u.uid) AS grader_name,
   COALESCE(
-    json_agg(to_jsonb(rgti)) FILTER (
+    jsonb_agg(to_jsonb(rgti)) FILTER (
       WHERE
         rgti.id IS NOT NULL
     ),
-    '[]'::json
+    '[]'::jsonb
   ) AS rubric_items
 FROM
   users AS u

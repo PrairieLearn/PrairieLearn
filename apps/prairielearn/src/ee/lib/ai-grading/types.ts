@@ -33,7 +33,7 @@ export interface AiGradingGeneralStats {
   rubric_stats: Record<string, number>;
 }
 
-export interface InstanceQuestionAIGradingInfo {
+export interface InstanceQuestionAIGradingInfoBase {
   /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;
   /** The IDs of the rubric items selected by the AI grader. */
@@ -42,11 +42,22 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
-  /** Stringified JSON of rotation degrees for each image, by filename. */
-  rotationCorrectionDegrees: string | null;
 }
 
-export const AIGradingOrientationSchema = z.enum([
+export type InstanceQuestionAIGradingInfo = InstanceQuestionAIGradingInfoBase &
+  (
+    | {
+        hasImage: true;
+        /** Mapping from filename to counterclockwise rotation degrees. Only includes corrected images. Empty if no correction occurred. */
+        rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees>;
+      }
+    | {
+        hasImage: false;
+        rotationCorrectionDegrees: null;
+      }
+  );
+
+const AIGradingOrientationSchema = z.enum([
   'Upright (0 degrees)',
   'Upside-down (180 degrees)',
   'Rotated Counterclockwise 90 degrees',
@@ -80,4 +91,4 @@ export const RotationCorrectionOutputSchema = z.object({
     .describe('The number corresponding to the image that is closest to being upright.'),
 });
 
-export type CounterClockwiseRotationDegrees = 0 | 90 | 180 | 270;
+export type CounterClockwiseRotationDegrees = number;

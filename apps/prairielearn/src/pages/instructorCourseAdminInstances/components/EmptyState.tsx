@@ -22,11 +22,7 @@ export function EmptyState({
       </p>
       <p>
         Learn more in the{' '}
-        <a
-          href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href="https://docs.prairielearn.com/courseInstance/" target="_blank" rel="noreferrer">
           course instance documentation
         </a>
         .

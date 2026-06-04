@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
@@ -15,13 +15,24 @@ import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
 import {
   type ExamplePromptWithId,
+  type SampleQuestionVariant,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
-  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
+export function SampleQuestionDemo({
+  prompt,
+  initialVariant,
+  header,
+}: {
+  prompt: ExamplePromptWithId;
+  initialVariant?: SampleQuestionVariant;
+  header?: ReactNode;
+}) {
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -162,34 +173,37 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) 
   });
 
   return (
-    <Card ref={cardRef} className="shadow">
-      <CardHeader>
-        <div className="d-flex align-items-center gap-2">
-          <p className="mb-0">{prompt.name}</p>
-          <span className="badge rounded-pill bg-success me-3">Try me!</span>
-        </div>
-      </CardHeader>
+    <Card ref={cardRef}>
+      {header && <CardHeader>{header}</CardHeader>}
       <CardBody>
-        {variant.question
-          .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-          .filter(Boolean)
-          .map((part) => {
-            // Bold text
-            if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
-            }
+        {/* Index keys are needed to disambiguate duplicate math expressions (e.g. two "$ c $")
+            while content in the key forces DOM recreation when values change between variants. */}
+        {
+          /* eslint-disable @eslint-react/no-array-index-key */
+          variant.question
+            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+            .filter(Boolean)
+            .map((part, index) => {
+              // Bold text
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return (
+                  <strong key={`bold-${index}-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>
+                );
+              }
 
-            // MathJax
-            if (
-              (part.startsWith('$$') && part.endsWith('$$')) ||
-              (part.startsWith('$') && part.endsWith('$'))
-            ) {
-              return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
-            }
+              // MathJax
+              if (
+                (part.startsWith('$$') && part.endsWith('$$')) ||
+                (part.startsWith('$') && part.endsWith('$'))
+              ) {
+                return <span key={`math-${index}-${part.slice(2, -2)}`}>{part}</span>;
+              }
 
-            // Regular text
-            return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
-          })}
+              // Regular text
+              return <span key={`text-${index}`}>{part}</span>;
+            })
+          /* eslint-enable @eslint-react/no-array-index-key */
+        }
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}

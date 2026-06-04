@@ -14,9 +14,10 @@ import {
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
+export const AssessmentRowSchema = AssessmentSchema.extend({
+  abbreviation: AssessmentSetSchema.shape.abbreviation,
+  name: AssessmentSetSchema.shape.name,
+  color: AssessmentSetSchema.shape.color,
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
   label: z.string(),
@@ -32,11 +33,11 @@ export function InstructorInstanceAdminLti13NoInstances({
 }): string {
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,
@@ -44,7 +45,7 @@ export function InstructorInstanceAdminLti13NoInstances({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Integrations with other learning systems</h1>
+          <h1>LMS connections</h1>
         </div>
         <div class="card-body">
           ${lti13_instances.length === 0
@@ -53,10 +54,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a
-                    target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
-                    rel="noreferrer"
+                  <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -75,7 +73,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                 <p>
                   <a
                     target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
                     rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?
@@ -108,11 +106,11 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,

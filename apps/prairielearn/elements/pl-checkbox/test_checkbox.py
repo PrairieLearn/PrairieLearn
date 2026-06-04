@@ -633,7 +633,7 @@ def test_grade_with_duplicate_submissions() -> None:
 
     # With duplicates, set(['a', 'b', 'b', 'c']) == set(['a', 'b', 'c'])
     # So it should be treated as selecting a, b, c (all correct)
-    assert data["partial_scores"]["test"]["score"] == 1.0
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
 
 
 def test_grade_with_duplicate_submissions_partial_credit() -> None:
@@ -682,7 +682,7 @@ def test_grade_with_duplicate_correct_answers() -> None:
 
     # Even with duplicate 'b' in correct_answers, set() should handle it
     # Submitted: {a, b}, Correct: {a, b} (after set conversion)
-    assert data["partial_scores"]["test"]["score"] == 1.0  # type: ignore[reportCallIssue, reportArgumentType]
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)  # type: ignore[reportCallIssue, reportArgumentType]
 
 
 def test_grade_coverage_with_duplicates() -> None:

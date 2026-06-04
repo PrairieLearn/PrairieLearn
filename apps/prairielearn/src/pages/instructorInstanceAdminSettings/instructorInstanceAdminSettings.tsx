@@ -9,27 +9,37 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import {
+  getCourseInstanceEditErrorUrl,
+  getCourseInstanceTrpcUrl,
+  getSelfEnrollmentLinkUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
-  propertyValueWithDefault,
 } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import {
+  assertCourseInstanceCanBeSharedPublicly,
+  selectNonPublicAssessmentsInCourseInstance,
+} from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -52,8 +62,6 @@ router.get(
       course,
       institution,
       authz_data,
-      urlPrefix,
-      navPage,
       __csrf_token,
       is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
@@ -66,7 +74,7 @@ router.get(
       { course_id: course.id },
       z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
-    const enrollmentCount = await sqldb.queryRow(
+    const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
       { course_instance_id: courseInstance.id },
       z.number(),
@@ -85,12 +93,12 @@ router.get(
     ).href;
     const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
 
-    const infoCourseInstancePath = path.join(
+    const fullInfoCourseInstancePath = path.join(
+      course.path,
       'courseInstances',
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
     const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
@@ -99,6 +107,35 @@ router.get(
     );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+
+    const questionSharingEnabled = res.locals.question_sharing_enabled;
+    const nonPublicAssessmentsInCourseInstance =
+      !questionSharingEnabled || courseInstance.share_source_publicly
+        ? []
+        : await selectNonPublicAssessmentsInCourseInstance({
+            course_instance_id: courseInstance.id,
+          });
+
+    const enhancedAccessControlEnabled = await features.enabledFromLocals(
+      'enhanced-access-control',
+      res.locals,
+    );
+    const accessControlMigrationNeeded =
+      canEdit && enhancedAccessControlEnabled
+        ? await sqldb.queryScalar(
+            sql.select_access_control_migration_needed,
+            { course_instance_id: courseInstance.id },
+            z.boolean(),
+          )
+        : false;
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getCourseInstanceTrpcUrl(courseInstance.id),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -109,13 +146,17 @@ router.get(
           page: 'instance_admin',
           subPage: 'settings',
         },
+        options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
+        },
         content: (
           <>
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
-                urlPrefix={urlPrefix}
-                navPage={navPage}
+                trpcCsrfToken={trpcCsrfToken}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -127,9 +168,11 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
+                questionSharingEnabled={questionSharingEnabled}
+                accessControlMigrationNeeded={accessControlMigrationNeeded}
               />
             </Hydrate>
             <Hydrate>
@@ -152,7 +195,6 @@ router.post(
     const {
       course_instance: courseInstance,
       course,
-      urlPrefix,
       authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -168,6 +210,8 @@ router.post(
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
         course_instance_permission,
+        access_control_strategy,
+        clear_incompatible,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -177,6 +221,8 @@ router.post(
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+          access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+          clear_incompatible: z.boolean().optional().default(false),
         })
         .parse(req.body);
 
@@ -252,6 +298,11 @@ router.post(
             }
           : undefined;
 
+      const enhancedAccessControlEnabled = await features.enabledFromLocals(
+        'enhanced-access-control',
+        res.locals,
+      );
+
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
@@ -262,6 +313,10 @@ router.post(
         metadataOverrides: {
           publishing: resolvedPublishing,
           selfEnrollment: resolvedSelfEnrollment,
+        },
+        accessControlMigration: {
+          strategy: enhancedAccessControlEnabled ? access_control_strategy : 'keep',
+          clearIncompatible: clear_incompatible,
         },
       });
 
@@ -301,7 +356,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         res.redirect(`/pl/course/${course.id}/course_admin/instances`);
       } catch {
-        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId));
       }
     } else if (req.body.__action === 'update_configuration') {
       const infoCourseInstancePath = path.join(
@@ -401,6 +456,19 @@ router.post(
       } else {
         courseInstanceInfo.selfEnrollment = undefined;
       }
+      if (res.locals.question_sharing_enabled) {
+        if (parsedBody.share_source_publicly && !courseInstance.share_source_publicly) {
+          await assertCourseInstanceCanBeSharedPublicly({
+            course_instance_id: courseInstance.id,
+          });
+        }
+        courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
+          courseInstanceInfo.shareSourcePublicly,
+          // If source is already public, preserve that setting regardless of the submitted value.
+          courseInstance.share_source_publicly || (parsedBody.share_source_publicly ?? false),
+          false,
+        );
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
@@ -440,7 +508,9 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(
+          getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId),
+        );
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);

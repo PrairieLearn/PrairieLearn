@@ -5,37 +5,28 @@ import { run } from '@prairielearn/run';
 import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
-import { IssueBadgeHtml } from './IssueBadge.js';
+import { Modal } from './Modal.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.js';
-import { ProgressCircle } from './ProgressCircle.js';
 
 export function Navbar({
   resLocals,
   navPage,
   navSubPage,
   navbarType,
-  marginBottom = true,
-  isInPageLayout = false,
   sideNavEnabled = false,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
-  marginBottom?: boolean;
-  /**
-   * Indicates if the Navbar component is used within the PageLayout component.
-   * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
-   */
-  isInPageLayout?: boolean;
   /**
    * Indicates if the side nav is enabled for the current page.
    */
   sideNavEnabled?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -59,8 +50,10 @@ export function Navbar({
     >
       <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
       <a
-        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        href="https://docs.prairielearn.com/student-guide/accessibility/"
         class="d-inline-flex p-2 m-2 text-white"
+        target="_blank"
+        rel="noreferrer"
       >
         Accessibility guide
       </a>
@@ -114,9 +107,7 @@ export function Navbar({
             ${NavbarByType({
               resLocals,
               navPage,
-              navSubPage,
               navbarType,
-              isInPageLayout,
             })}
           </ul>
 
@@ -125,13 +116,13 @@ export function Navbar({
                 <a
                   id="navbar-load-from-disk"
                   class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
+                  href="/pl/loadFromDisk"
                 >
                   Load from disk
                 </a>
               `
             : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${EndExamControl({ resLocals })} ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
@@ -143,50 +134,106 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${isInPageLayout
-      ? FlashMessages()
-      : html`
-          <div class="${marginBottom ? 'mb-3' : ''}">
-            ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
-          </div>
-        `}
+    ${FlashMessages()}
   `;
+}
+
+/**
+ * Renders an "End exam" control when the user is in a LockDown Browser
+ * session. The button opens a confirmation modal whose form POSTs to
+ * `/pl/end-exam`; that handler looks up the student's active
+ * LDB-required reservation, mints a short-lived JWT, calls PT
+ * server-to-server to end the reservation, and redirects into PT's
+ * close flow to exit LockDown Browser.
+ *
+ * PL's CSRF token is bound to the request URL, so we mint one specifically
+ * for `/pl/end-exam` rather than reusing `resLocals.__csrf_token` (which
+ * is bound to the current page's URL and would be rejected on submit).
+ */
+function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
+  if (!resLocals.lockdown_browser) return '';
+  const endExamCsrfToken = generateCsrfToken({
+    url: '/pl/end-exam',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#endExamModal"
+    >
+      End exam
+    </button>
+    ${EndExamModal({ csrfToken: endExamCsrfToken })}
+  `;
+}
+
+function EndExamModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'End exam',
+    id: 'endExamModal',
+    formAction: '/pl/end-exam',
+    formClass: 'js-end-exam-form',
+    body: html`
+      <p class="js-end-exam-confirm">
+        Are you sure you want to end your exam? Only do this after you have completed your entire
+        exam. This will close LockDown Browser.
+      </p>
+      <div
+        class="js-end-exam-loading d-none d-flex align-items-center text-muted"
+        aria-live="polite"
+      >
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Ending exam…
+      </div>
+      <div class="js-end-exam-error alert alert-danger d-flex mb-0 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5" aria-hidden="true"></i>
+        <div>
+          <strong>We couldn't end your exam.</strong>
+          <div>
+            This can happen if PrairieTest is temporarily unavailable. Try again, or ask your
+            proctor to end the exam for you.
+          </div>
+        </div>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary js-end-exam-cancel" data-bs-dismiss="modal">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger js-end-exam-submit">
+        <span
+          class="spinner-border spinner-border-sm me-1 js-end-exam-submit-spinner d-none"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <span class="js-end-exam-submit-label">End exam</span>
+      </button>
+    `,
+  });
 }
 
 function NavbarByType({
   resLocals,
   navPage,
-  navSubPage,
   navbarType,
-  isInPageLayout,
 }: {
   resLocals: UntypedResLocals;
   navPage: NavPage;
-  navSubPage: NavSubPage;
   navbarType: NavbarType;
-  isInPageLayout?: boolean;
 }) {
-  // Student and public navbars remain unchanged
-  // when enhanced navigation is enabled.
   if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (isInPageLayout) {
-      return NavbarButtons({
-        resLocals,
-        navPage,
-        navbarType,
-      });
-    } else if (navbarType === 'instructor') {
-      // TODO: Remove this once `instructorAiGenerateDraftEditor.html.tsx` uses PageLayout.
-      return NavbarInstructor({ resLocals, navPage, navSubPage });
-    } else {
-      // The only page that isn't in a PageLayout and hit by other checks
-      // is `instructorAiGenerateDraftEditor.html.tsx`, which has navbarType `instructor`.
-      throw new Error(`Invalid navbar type: ${navbarType}`);
-    }
+    return NavbarButtons({
+      resLocals,
+      navPage,
+      navbarType,
+    });
   }
 }
 
@@ -204,9 +251,7 @@ function UserDropdownMenu({
     authn_user,
     viewType,
     course_instance,
-    urlPrefix,
     access_as_administrator,
-    news_item_notification_count: newsCount,
     authn_is_administrator,
   } = resLocals;
 
@@ -260,11 +305,6 @@ function UserDropdownMenu({
           aria-expanded="false"
         >
           ${displayedName}
-          ${newsCount
-            ? html`<span class="badge rounded-pill text-bg-primary news-item-count"
-                >${newsCount}</span
-              >`
-            : ''}
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           ${authn_is_administrator
@@ -290,24 +330,9 @@ function UserDropdownMenu({
               `
             : ''}
           ${!authz_data || authz_data?.mode === 'Public'
-            ? html` <a class="dropdown-item" href="/pl/request_course"> Course Requests </a> `
+            ? html`<a class="dropdown-item" href="/pl/request_course">Course Requests</a>`
             : ''}
           <a class="dropdown-item" href="/pl/settings">Settings</a>
-          <a
-            class="dropdown-item news-item-link"
-            href="${urlPrefix}/news_items"
-            aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
-          >
-            News
-            ${newsCount
-              ? html`
-                  <span class="badge rounded-pill text-bg-primary news-item-link-count">
-                    ${newsCount}
-                  </span>
-                `
-              : ''}
-          </a>
-
           <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
       </li>
@@ -790,194 +815,6 @@ function NavbarStudent({ resLocals, navPage }: { resLocals: UntypedResLocals; na
           </li>
         `
       : ''}
-  `;
-}
-
-function NavbarInstructor({
-  resLocals,
-  navPage,
-  navSubPage,
-}: {
-  resLocals: UntypedResLocals;
-  navPage: NavPage;
-  navSubPage?: NavSubPage;
-}) {
-  const {
-    course,
-    course_instance,
-    navbarOpenIssueCount,
-    navbarCompleteGettingStartedTasksCount,
-    navbarTotalGettingStartedTasksCount,
-    authz_data,
-    urlPrefix,
-  } = resLocals;
-  return html`
-    <li class="nav-item btn-group" id="navbar-course-switcher">
-      <a
-        class="nav-link ${navPage === 'course_admin' &&
-        !(navSubPage === 'issues' || navSubPage === 'questions' || navSubPage === 'syncs')
-          ? 'active'
-          : ''} ${!authz_data.has_course_permission_view ? 'disabled' : ''}"
-        href="${urlPrefix}/course_admin"
-      >
-        ${course.short_name}
-      </a>
-      <a
-        class="nav-link dropdown-toggle dropdown-toggle-split"
-        id="navbarDropdownMenuCourseAdminLink"
-        href="#"
-        role="button"
-        data-bs-toggle="dropdown"
-        aria-label="Change course"
-        aria-haspopup="true"
-        aria-expanded="false"
-        hx-get="/pl/navbar/course/${course.id}/switcher"
-        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-        hx-target="#navbarDropdownMenuCourseAdmin"
-      ></a>
-      <div
-        class="dropdown-menu"
-        aria-labelledby="navbarDropdownMenuCourseAdminLink"
-        id="navbarDropdownMenuCourseAdmin"
-      >
-        <div class="d-flex justify-content-center">
-          <div class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">Loading courses...</span>
-          </div>
-        </div>
-      </div>
-    </li>
-
-    ${authz_data.has_course_permission_edit && course.show_getting_started
-      ? html`
-          <li class="nav-item d-flex align-items-center">
-            <a
-              style="display: inline-flex; align-items: center;"
-              class="nav-link pe-0"
-              href="${urlPrefix}/course_admin/getting_started"
-            >
-              Getting Started
-              ${ProgressCircle({
-                value: navbarCompleteGettingStartedTasksCount,
-                maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
-              })}
-            </a>
-          </li>
-        `
-      : ''}
-
-    <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
-      <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues ${IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true })}
-      </a>
-    </li>
-    ${authz_data.has_course_permission_preview
-      ? html`
-          <li
-            class="nav-item ${navPage === 'course_admin' && navSubPage === 'questions'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/course_admin/questions">Questions</a>
-          </li>
-        `
-      : ''}
-    ${authz_data.has_course_permission_edit
-      ? html`
-          <li
-            class="nav-item ${navPage === 'course_admin' && navSubPage === 'syncs' ? 'active' : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/course_admin/syncs">Sync</a>
-          </li>
-        `
-      : ''}
-    ${course_instance
-      ? html`
-          <li class="navbar-text mx-2 no-select">/</li>
-          <li class="nav-item btn-group" id="navbar-course-instance-switcher">
-            <a
-              class="nav-link ${navPage === 'instance_admin' &&
-              !(navSubPage === 'assessments' || navSubPage === 'gradebook')
-                ? 'active'
-                : ''}"
-              href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
-            >
-              ${course_instance.short_name}
-            </a>
-            <a
-              class="nav-link dropdown-toggle dropdown-toggle-split"
-              id="navbarDropdownMenuInstanceAdminLink"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-label="Change course instance"
-              aria-haspopup="true"
-              aria-expanded="false"
-              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
-              hx-trigger="show.bs.dropdown once delay:200ms"
-              hx-target="#navbarDropdownMenuInstanceAdmin"
-            ></a>
-            <div
-              class="dropdown-menu"
-              aria-labelledby="navbarDropdownMenuInstanceAdminLink"
-              id="navbarDropdownMenuInstanceAdmin"
-            >
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading course instances...</span>
-                </div>
-              </div>
-            </div>
-          </li>
-
-          <li
-            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'assessments'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/instance_admin/assessments">Assessments</a>
-          </li>
-
-          <li
-            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'gradebook'
-              ? 'active'
-              : ''}"
-          >
-            <a class="nav-link" href="${urlPrefix}/instance_admin/gradebook">Gradebook</a>
-          </li>
-        `
-      : html`
-          <li class="navbar-text mx-2 no-select">/</li>
-
-          <li class="nav-item dropdown" id="navbar-course-instance-switcher">
-            <a
-              class="nav-link dropdown-toggle"
-              id="navbarDropdownMenuInstanceChooseLink"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
-              hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-              hx-target="#navbarDropdownMenuInstanceChoose"
-            >
-              Choose course instance...
-            </a>
-            <div
-              class="dropdown-menu"
-              aria-labelledby="navbarDropdownMenuInstanceChooseLink"
-              id="navbarDropdownMenuInstanceChoose"
-            >
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading course instances...</span>
-                </div>
-              </div>
-            </div>
-          </li>
-        `}
   `;
 }
 

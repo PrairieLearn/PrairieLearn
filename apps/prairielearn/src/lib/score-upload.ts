@@ -7,13 +7,20 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { setAssessmentInstancePoints, setAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/** The subset of an uploaded file that the CSV upload functions need. */
+export interface UploadedCsvFile {
+  buffer: Buffer;
+  originalname: string;
+  size: number;
+}
 
 /**
  * Update question instance scores from a CSV file.
@@ -27,7 +34,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  */
 export async function uploadInstanceQuestionScores(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -117,7 +124,7 @@ export async function uploadInstanceQuestionScores(
  */
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -239,6 +246,16 @@ async function updateInstanceQuestionFromCsvRow(
 ): Promise<boolean> {
   const uid_or_group = record.group_name ?? record.uid;
 
+  // For the QID, accept either the raw QID or the sharing QID format. If the
+  // QID starts with "@", treat it as a sharing QID and split it into
+  // sharing_name and qid components. Otherwise, treat the entire QID as the raw
+  // qid and set sharing_name to null (so it's not enforced).
+  const [sharing_name, ...splitQid] =
+    typeof record.qid === 'string' && record.qid.startsWith('@')
+      ? record.qid.slice(1).split('/')
+      : [null, [record.qid]];
+  const qid = typeof record.qid === 'string' ? splitQid.join('/') : null;
+
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
@@ -247,12 +264,14 @@ async function updateInstanceQuestionFromCsvRow(
         submission_id: record.submission_id,
         uid_or_group,
         ai_number: record.instance,
-        qid: record.qid,
+        qid,
+        sharing_name,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
+        sharing_name: z.string().nullable(),
         qid: z.string(),
       }),
     );
@@ -267,9 +286,16 @@ async function updateInstanceQuestionFromCsvRow(
         `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
-    if (record.qid !== null && submission_data.qid !== record.qid) {
+
+    if (record.qid !== null && submission_data.qid !== qid) {
       throw new Error(
         `Found submission with id=${record.submission_id}, but QID does not match ${record.qid}.`,
+      );
+    }
+
+    if (sharing_name !== null && submission_data.sharing_name !== sharing_name) {
+      throw new Error(
+        `Found submission with id=${record.submission_id}, but sharing name does not match ${record.sharing_name}.`,
       );
     }
 
@@ -284,14 +310,14 @@ async function updateInstanceQuestionFromCsvRow(
       partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
-      await manualGrading.updateInstanceQuestionScore(
+      await manualGrading.updateInstanceQuestionScore({
         assessment,
-        submission_data.instance_question_id,
-        submission_data.submission_id,
-        null, // check_modified_at
-        new_score,
+        instance_question_id: submission_data.instance_question_id,
+        submission_id: submission_data.submission_id,
+        check_modified_at: null,
+        score: new_score,
         authn_user_id,
-      );
+      });
       return true;
     } else {
       return false;
@@ -303,7 +329,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   if (record.uid != null) {
     return {
       id: record.uid,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
@@ -316,7 +342,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   } else if (record.group_name != null) {
     return {
       id: record.group_name,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_group,
         {
           assessment_id,
@@ -348,9 +374,9 @@ async function updateAssessmentInstanceFromCsvRow(
     const scorePerc = validateNumericColumn(record, 'score_perc');
     const points = validateNumericColumn(record, 'points');
     if (scorePerc != null) {
-      await updateAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
+      await setAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
     } else if (points != null) {
-      await updateAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
+      await setAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }

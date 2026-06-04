@@ -1,6 +1,6 @@
-import { format, toZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 
+import { formatDateISO } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -18,7 +18,7 @@ export const CourseRolesSchema = z.object({
     .array(),
   available_uids: UserSchema.shape.uid.array().nullable(),
 });
-export type CourseRoles = z.infer<typeof CourseRolesSchema>;
+type CourseRoles = z.infer<typeof CourseRolesSchema>;
 
 export function InstructorEffectiveUser({
   resLocals,
@@ -45,16 +45,8 @@ export function InstructorEffectiveUser({
   // fall back to the course, which is guaranteed to have a display timezone.
   const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
-  const formattedTrueReqDate = format(
-    toZonedTime(true_req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
-  const formattedReqDate = format(
-    toZonedTime(req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
+  const formattedTrueReqDate = formatDateISO(true_req_date, displayTimezone);
+  const formattedReqDate = formatDateISO(req_date, displayTimezone);
 
   return PageLayout({
     pageTitle: 'Change Effective User',
@@ -305,7 +297,7 @@ export function InstructorEffectiveUser({
             The <em>date</em> of the server determines which assessments are available. Changing the
             effective date to something other than the current date allows you to check if homework
             and exam assessments will be available to students when you mean them to be. The date
-            has the format <code>YYYY-MM-DDTHH:MM:SS.SSS</code>, with a suffix that gives the offset
+            has the format <code>YYYY-MM-DDTHH:MM:SS</code>, with a suffix that gives the offset
             from UTC (i.e., the time zone) in the format <code>&plusmn;HH:MM</code>.
           </small>
         </div>

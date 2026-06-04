@@ -7,6 +7,7 @@ columns
     id: bigint not null default nextval('course_requests_id_seq'::regclass)
     institution: text
     last_name: text
+    note: text
     referral_source: text
     short_name: text not null
     title: text not null
@@ -15,6 +16,9 @@ columns
 
 indexes
     course_requests_pkey: PRIMARY KEY (id) USING btree (id)
+
+check constraints
+    note_length: CHECK (char_length(note) <= 10000)
 
 foreign-key constraints
     course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

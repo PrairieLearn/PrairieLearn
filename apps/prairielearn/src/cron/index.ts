@@ -67,16 +67,6 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
     },
     {
-      name: 'sendExternalGraderStats',
-      module: await import('./sendExternalGraderStats.js'),
-      intervalSec: 'daily',
-    },
-    {
-      name: 'sendExternalGraderDeadLetters',
-      module: await import('./sendExternalGraderDeadLetters.js'),
-      intervalSec: 'daily',
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
@@ -115,6 +105,14 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
   ];
+
+  if (config.newsFeedUrl) {
+    jobs.push({
+      name: 'fetchNewsItems',
+      module: await import('./fetchNewsItems.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
+    });
+  }
 
   if (isEnterprise()) {
     jobs.push(
@@ -328,7 +326,7 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
   const lockName = 'cron:' + job.name;
   const didLock = await namedLocks.doWithLock(
     lockName,
-    { onNotAcquired: () => false },
+    { onNotAcquired: () => false, autoRenew: true },
     async () => {
       debug(`tryJobWithLock(): ${job.name}: acquired lock`);
       logger.verbose('cron: ' + job.name + ' acquired lock', { cronUuid });

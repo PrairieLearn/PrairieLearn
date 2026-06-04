@@ -9,10 +9,11 @@
   "zones": [
     {
       "questions": [
-        { "id": "partialCredit1", "points": [19, 19, 19] },
-        { "id": "partialCredit2", "points": [9, 9, 9] },
-        { "id": "partialCredit3", "points": [13, 13, 13] }
+        { "id": "partialCredit1", "autoPoints": [19, 19, 19] },
+        { "id": "partialCredit2", "autoPoints": [9, 9, 9] },
+        { "id": "partialCredit3", "autoPoints": [13, 13, 13], "gradeRateMinutes": 5 }
       ]
-    }
+    },
+    { "questions": [{ "id": "externalGrade/alpine", "autoPoints": [10, 10, 10] }] }
   ]
 }

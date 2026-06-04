@@ -31,6 +31,7 @@ function addDataToError(err: Error, data: Record<string, any>): Error {
   return err;
 }
 
+/** @knipignore */
 export class PostgresError extends Error {
   public data: Record<string, any>;
 
@@ -130,6 +131,16 @@ function escapeIdentifier(identifier: string): string {
   // https://github.com/brianc/node-postgres/issues/1978
   // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
   return pg.Client.prototype.escapeIdentifier(identifier);
+}
+
+function assertSingleColumn(result: pg.QueryResult, context: Record<string, any>): string {
+  if (result.fields.length !== 1) {
+    throw new PostgresError(
+      `Expected exactly one column, but found ${result.fields.length}`,
+      context,
+    );
+  }
+  return result.fields[0].name;
 }
 
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
@@ -624,8 +635,8 @@ export class PostgresPool {
     return result;
   }
 
-  async queryRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async queryRows<Model extends z.ZodTypeAny>(
+  async queryRows<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -633,10 +644,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns an array of rows
    * that conform to the given Zod schema.
-   *
-   * If the query returns a single column, the return value will be a list of column values.
    */
-  async queryRows<Model extends z.ZodTypeAny>(
+  async queryRows<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -644,27 +653,19 @@ export class PostgresPool {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.queryAsync(sql, params);
-    if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      const rawData = results.rows.map((row) => row[columnName]);
-      return z.array(model).parse(rawData);
-    } else {
-      return z.array(model).parse(results.rows);
-    }
+    return z.array(model).parse(results.rows);
   }
 
-  async queryRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryRow<Model extends z.ZodTypeAny>(
+  async queryRow<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model>>;
   /**
    * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
-   *
-   * If the query returns a single column, the return value will be the column value itself.
    */
-  async queryRow<Model extends z.ZodTypeAny>(
+  async queryRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -672,19 +673,14 @@ export class PostgresPool {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.queryOneRowAsync(sql, params);
-    if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      return model.parse(results.rows[0][columnName]);
-    } else {
-      return model.parse(results.rows[0]);
-    }
+    return model.parse(results.rows[0]);
   }
 
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -692,10 +688,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns either null or a
    * single row that conforms to the given Zod schema, and errors otherwise.
-   *
-   * If the query returns a single column, the return value will be the column value itself.
    */
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -705,16 +699,12 @@ export class PostgresPool {
     const results = await this.queryZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
-    } else if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      return model.parse(results.rows[0][columnName]);
-    } else {
-      return model.parse(results.rows[0]);
     }
+    return model.parse(results.rows[0]);
   }
 
-  async callRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async callRows<Model extends z.ZodTypeAny>(
+  async callRows<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -723,7 +713,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Errors if the sproc does not return anything.
    */
-  async callRows<Model extends z.ZodTypeAny>(
+  async callRows<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -731,17 +721,11 @@ export class PostgresPool {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.callAsync(sql, params);
-    if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      const rawData = results.rows.map((row) => row[columnName]);
-      return z.array(model).parse(rawData);
-    } else {
-      return z.array(model).parse(results.rows);
-    }
+    return z.array(model).parse(results.rows);
   }
 
-  async callRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callRow<Model extends z.ZodTypeAny>(
+  async callRow<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -750,7 +734,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Returns exactly one row from the sproc that conforms to the given Zod schema.
    */
-  async callRow<Model extends z.ZodTypeAny>(
+  async callRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -758,19 +742,14 @@ export class PostgresPool {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.callOneRowAsync(sql, params);
-    if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      return model.parse(results.rows[0][columnName]);
-    } else {
-      return model.parse(results.rows[0]);
-    }
+    return model.parse(results.rows[0]);
   }
 
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -779,7 +758,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters. Returns either null
    * or a single row that conforms to the given Zod schema.
    */
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -789,12 +768,156 @@ export class PostgresPool {
     const results = await this.callZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
-    } else if (results.fields.length === 1) {
-      const columnName = results.fields[0].name;
-      return model.parse(results.rows[0][columnName]);
-    } else {
-      return model.parse(results.rows[0]);
     }
+    return model.parse(results.rows[0]);
+  }
+
+  async queryScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async queryScalars<Model extends z.ZodType>(
+    sql: string,
+    params: QueryParams,
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  /**
+   * Executes a query and returns all values from a single column, validated
+   * against the given Zod schema. Errors if the query returns more than one column.
+   */
+  async queryScalars<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryAsync(sql, params);
+    const columnName = assertSingleColumn(results, { sql, sqlParams: params });
+    return z.array(model).parse(results.rows.map((row) => row[columnName]));
+  }
+
+  async queryScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryScalar<Model extends z.ZodType>(
+    sql: string,
+    params: QueryParams,
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  /**
+   * Executes a query and returns a single value from a single column, validated
+   * against the given Zod schema. Errors if the query does not return exactly
+   * one row or returns more than one column.
+   */
+  async queryScalar<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryOneRowAsync(sql, params);
+    const columnName = assertSingleColumn(results, { sql, sqlParams: params });
+    return model.parse(results.rows[0][columnName]);
+  }
+
+  async queryOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async queryOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    params: QueryParams,
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  /**
+   * Executes a query and returns a single value from a single column, or null
+   * if no rows are returned. Validated against the given Zod schema. Errors if
+   * the query returns more than one row or more than one column.
+   */
+  async queryOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryZeroOrOneRowAsync(sql, params);
+    const columnName = assertSingleColumn(results, { sql, sqlParams: params });
+    if (results.rows.length === 0) {
+      return null;
+    }
+    return model.parse(results.rows[0][columnName]);
+  }
+
+  async callScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callScalars<Model extends z.ZodType>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  /**
+   * Calls the given sproc and returns all values from a single column, validated
+   * against the given Zod schema. Errors if the sproc returns more than one column.
+   */
+  async callScalars<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callAsync(sql, params);
+    const columnName = assertSingleColumn(results, { functionName: sql, sqlParams: params });
+    return z.array(model).parse(results.rows.map((row) => row[columnName]));
+  }
+
+  async callScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callScalar<Model extends z.ZodType>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  /**
+   * Calls the given sproc and returns a single value from a single column, validated
+   * against the given Zod schema. Errors if the sproc does not return exactly
+   * one row or returns more than one column.
+   */
+  async callScalar<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callOneRowAsync(sql, params);
+    const columnName = assertSingleColumn(results, { functionName: sql, sqlParams: params });
+    return model.parse(results.rows[0][columnName]);
+  }
+
+  async callOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async callOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  /**
+   * Calls the given sproc and returns a single value from a single column, or
+   * null if no rows are returned. Validated against the given Zod schema.
+   * Errors if the sproc returns more than one row or more than one column.
+   */
+  async callOptionalScalar<Model extends z.ZodType>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callZeroOrOneRowAsync(sql, params);
+    const columnName = assertSingleColumn(results, { functionName: sql, sqlParams: params });
+    if (results.rows.length === 0) {
+      return null;
+    }
+    return model.parse(results.rows[0][columnName]);
   }
 
   /**
@@ -835,12 +958,12 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  async queryCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
-  async queryCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -851,7 +974,7 @@ export class PostgresPool {
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: Model | QueryParams,
     maybeModel?: Model,
@@ -861,7 +984,7 @@ export class PostgresPool {
     return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryCursorInternal<Model extends z.ZodTypeAny>(
+  private async queryCursorInternal<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model?: Model,
@@ -870,7 +993,6 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
-    let rowKeys: string[] | null = null;
     const iterator: CursorIterator<z.infer<Model>> = {
       async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
@@ -887,15 +1009,10 @@ export class PostgresPool {
               break;
             }
 
-            if (rowKeys === null) {
-              rowKeys = Object.keys(rows[0] ?? {});
-            }
-            const flattened =
-              rowKeys.length === 1 ? rows.map((row) => row[(rowKeys as string[])[0]]) : rows;
             if (model) {
-              yield z.array(model).parse(flattened);
+              yield z.array(model).parse(rows);
             } else {
-              yield flattened;
+              yield rows;
             }
           }
         } catch (err: any) {

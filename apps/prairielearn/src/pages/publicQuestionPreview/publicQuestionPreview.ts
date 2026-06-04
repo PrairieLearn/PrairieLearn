@@ -24,6 +24,7 @@ async function setLocals(req: Request, res: Response) {
   res.locals.question = await selectQuestionById(req.params.question_id);
 
   if (
+    res.locals.question.deleted_at != null ||
     !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
@@ -76,10 +77,12 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: null,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'public',
       // This is only used by score panels, which are not rendered in this context.

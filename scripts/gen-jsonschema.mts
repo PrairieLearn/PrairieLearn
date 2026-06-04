@@ -6,8 +6,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import * as prettier from 'prettier';
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
 import {
@@ -17,82 +17,43 @@ import {
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 
+// Zod 4's `z.toJSONSchema` only emits `additionalProperties: false` for strict
+// objects, but the runtime config schema is a plain (non-strict) `z.object` that
+// silently strips unknown keys. The *published* config schemas should still flag
+// unknown/misspelled keys for editors validating against them, so we close plain
+// objects here (records keep their own `additionalProperties`) without making the
+// runtime schema strict.
+const closeObjectsForDocs = (node: unknown): void => {
+  if (Array.isArray(node)) {
+    node.forEach(closeObjectsForDocs);
+  } else if (node !== null && typeof node === 'object') {
+    const obj = node as Record<string, any>;
+    if (obj.type === 'object' && obj.properties && obj.additionalProperties === undefined) {
+      obj.additionalProperties = false;
+    }
+    Object.values(obj).forEach(closeObjectsForDocs);
+  }
+};
+
+const configToJsonSchema = (schema: z.ZodType) => {
+  const jsonSchema = z.toJSONSchema(schema, {
+    target: 'draft-07',
+    io: 'input',
+    unrepresentable: 'any',
+  });
+  closeObjectsForDocs(jsonSchema);
+  return jsonSchema;
+};
+
+// Serialize the raw Zod 4 output and format it with the repo's prettier config so
+// the result is identical to the committed files (no separate prettier pass needed).
+const formatSchema = async (filePath: string, schema: unknown) => {
+  const config = await prettier.resolveConfig(filePath);
+  return prettier.format(JSON.stringify(schema, null, 2), { ...config, filepath: filePath });
+};
+
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';
-
-const orderedStringify = (schema: any) => {
-  // TODO: this is a hack to get the schemas to be in a consistent order
-  // Remove in a future PR
-  const headKeys = [
-    '$schema',
-    'title',
-    'description',
-    'type',
-    'additionalProperties',
-    'required',
-    'comment',
-    // infoAssessment to improve diff
-    'GroupRoleJsonSchema',
-    'AssessmentAccessRuleJsonSchema',
-    'ZoneAssessmentJsonSchema',
-    'ZoneQuestionJsonSchema',
-    'QuestionAlternativeJsonSchema',
-    'PointsJsonSchema',
-    'PointsSingleJsonSchema',
-    'PointsListJsonSchema',
-    'QuestionIdJsonSchema',
-    'ForceMaxPointsJsonSchema',
-    'AdvanceScorePercJsonSchema',
-  ];
-
-  const tailKeys = ['definitions'];
-
-  return JSON.stringify(
-    schema,
-    (key, value) => {
-      if (key === 'additionalProperties' && value === true) return undefined;
-
-      let localHeadKeys = headKeys;
-      if (key === 'properties') {
-        localHeadKeys = headKeys.filter((k) => !['title', 'type', 'description'].includes(k));
-      }
-
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        return Object.keys(value)
-          .filter((k) => {
-            return !(k === 'additionalProperties' && value[k] === true);
-          })
-          .sort((a, b) => {
-            if (localHeadKeys.includes(a) && localHeadKeys.includes(b)) {
-              return localHeadKeys.indexOf(a) - localHeadKeys.indexOf(b);
-            }
-            if (tailKeys.includes(a) && tailKeys.includes(b)) {
-              return tailKeys.indexOf(a) - tailKeys.indexOf(b);
-            }
-            if (localHeadKeys.includes(a)) {
-              return -1;
-            }
-            if (localHeadKeys.includes(b)) {
-              return 1;
-            }
-            if (tailKeys.includes(a)) {
-              return 1;
-            }
-            if (tailKeys.includes(b)) {
-              return -1;
-            }
-            return 0;
-          })
-          .reduce<Record<string, any>>((acc, key) => {
-            acc[key] = value[key];
-            return acc;
-          }, {});
-      }
-      return value;
-    },
-    2,
-  );
-};
 
 console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
@@ -104,7 +65,7 @@ const PrairieLearnConfigSchema = z.object({
   courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(STANDARD_COURSE_DIRS),
 });
 
-const UnifiedConfigJsonSchema = zodToJsonSchema(
+const UnifiedConfigJsonSchema = configToJsonSchema(
   z.object({
     ...GraderHostConfigSchema.shape,
     ...WorkspaceHostConfigSchema.shape,
@@ -118,51 +79,38 @@ const configSchemas = {
   [path.resolve(import.meta.dirname, '../docs/assets/config-unified.schema.json')]:
     UnifiedConfigJsonSchema,
   [path.resolve(import.meta.dirname, '../docs/assets/config-prairielearn.schema.json')]:
-    zodToJsonSchema(PrairieLearnConfigSchema),
+    configToJsonSchema(PrairieLearnConfigSchema),
   [path.resolve(import.meta.dirname, '../docs/assets/config-workspace-host.schema.json')]:
-    zodToJsonSchema(WorkspaceHostConfigSchema),
+    configToJsonSchema(WorkspaceHostConfigSchema),
   [path.resolve(import.meta.dirname, '../docs/assets/config-grader-host.schema.json')]:
-    zodToJsonSchema(GraderHostConfigSchema),
+    configToJsonSchema(GraderHostConfigSchema),
 };
 
+const targets: [filePath: string, schema: unknown][] = [
+  ...Object.entries(ajvSchemas).map(([name, schema]): [string, unknown] => [
+    `${schemaDir}/${name}.json`,
+    schema,
+  ]),
+  ...Object.entries(configSchemas),
+];
+
 if (check) {
-  for (const [name, schema] of Object.entries(ajvSchemas)) {
-    // Compare abstract contents are the same since prettier formatting may be different
+  for (const [filePath, schema] of targets) {
     try {
-      const file = orderedStringify(
-        JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')),
-      );
-      if (file !== orderedStringify(schema)) {
-        console.error(`Mismatch in ${name} (Do you need to run \`make update-jsonschema\`?)`);
+      const file = fs.readFileSync(filePath, 'utf8');
+      if (file !== (await formatSchema(filePath, schema))) {
+        console.error(
+          `Mismatch in ${path.basename(filePath)} (Do you need to run \`make update-jsonschema\`?)`,
+        );
         process.exit(1);
       }
     } catch (error) {
-      console.error(`Error reading schema file ${name}.json:`, error);
-      process.exit(1);
-    }
-  }
-  // docs/assets/config-*.schema.json
-  for (const [filePath, schema] of Object.entries(configSchemas)) {
-    try {
-      const file = orderedStringify(JSON.parse(fs.readFileSync(filePath, 'utf8')));
-      if (file !== orderedStringify(schema)) {
-        console.error(`Mismatch in ${filePath} (Do you need to run \`make update-jsonschema\`?)`);
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(`Error reading config path ${filePath}:`, error);
+      console.error(`Error reading schema file ${filePath}:`, error);
       process.exit(1);
     }
   }
 } else {
-  for (const [name, schema] of Object.entries(ajvSchemas)) {
-    // These schemas still need to be prettified, so we won't format them at all
-    // However, we want to preserve the order of the keys, so we'll use the replacer function
-
-    fs.writeFileSync(`${schemaDir}/${name}.json`, orderedStringify(schema));
-  }
-
-  for (const [filePath, schema] of Object.entries(configSchemas)) {
-    fs.writeFileSync(filePath, orderedStringify(schema));
+  for (const [filePath, schema] of targets) {
+    fs.writeFileSync(filePath, await formatSchema(filePath, schema));
   }
 }

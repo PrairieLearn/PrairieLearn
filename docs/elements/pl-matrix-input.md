@@ -28,16 +28,17 @@ def generate(data):
 
 | Attribute        | Type                                  | Default    | Description                                                                                                                                                          |
 | ---------------- | ------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string                                | —          | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`         | integer                               | 1          | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `label`          | string                                | —          | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                    |
-| `aria-label`     | string                                | —          | An accessible label for the element.                                                                                                                                 |
-| `comparison`     | `"relabs"`, `"sigfig"`, or `"decdig"` | `"relabs"` | How to grade. `"relabs"` uses relative (`rtol`) and absolute (`atol`) tolerances. `"sigfig"` and `"decdig"` use `digits` significant or decimal digits.              |
-| `rtol`           | number                                | 1e-2       | Relative tolerance for `comparison="relabs"`.                                                                                                                        |
-| `atol`           | number                                | 1e-8       | Absolute tolerance for `comparison="relabs"`.                                                                                                                        |
-| `digits`         | integer                               | 2          | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                            |
 | `allow-complex`  | boolean                               | false      | Whether to allow complex numbers as answers.                                                                                                                         |
+| `answers-name`   | string                                | —          | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `aria-label`     | string                                | —          | An accessible label for the element.                                                                                                                                 |
+| `atol`           | number                                | 1e-8       | Absolute tolerance for `comparison="relabs"`.                                                                                                                        |
+| `comparison`     | `"relabs"`, `"sigfig"`, or `"decdig"` | `"relabs"` | How to grade. `"relabs"` uses relative (`rtol`) and absolute (`atol`) tolerances. `"sigfig"` and `"decdig"` use `digits` significant or decimal digits.              |
+| `digits`         | integer                               | 2          | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                            |
+| `initial-value`  | string                                | —          | Initial value to prefill the input box the first time it is rendered.                                                                                                |
+| `label`          | string                                | —          | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                    |
+| `rtol`           | number                                | 1e-2       | Relative tolerance for `comparison="relabs"`.                                                                                                                        |
 | `show-help-text` | boolean                               | true       | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
+| `weight`         | integer                               | 1          | Weight to use when computing a weighted average score over elements.                                                                                                 |
 
 ## Details
 

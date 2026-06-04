@@ -13,21 +13,14 @@ import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessmen
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
-import type {
-  ResLocalsInstructorQuestion,
-  ResLocalsInstructorQuestionWithCourseInstance,
-} from '../middlewares/selectAndAuthzInstructorQuestion.js';
+import type { ResLocalsInstructorQuestion } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
 import type { Course, CourseInstance } from './db-types.js';
-import type {
-  ResLocalsInstanceQuestionRender,
-  ResLocalsQuestionRender,
-} from './question-render.types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
+interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
@@ -43,34 +36,23 @@ interface ResLocalsForPageLookup {
   'instructor-instance-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionWithCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender &
-    ResLocalsQuestionRender & {
-      questionRenderContext: 'manual_grading' | 'ai_grading';
+    ResLocalsInstructorQuestion &
+    ResLocalsInstanceQuestion & {
       navbarType: 'instructor';
     };
   'instructor-question': ResLocals &
     ResLocalsCourse &
     ResLocalsCourseIssueCount &
     Partial<ResLocalsCourseInstance> &
-    ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender;
+    ResLocalsInstructorQuestion;
   'instructor-assessment-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender &
     ResLocalsAssessment &
     ResLocalsAssessmentQuestion;
-  'instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender;
-  'assessment-question': ResLocals &
-    ResLocalsAssessment &
-    ResLocalsAssessmentQuestion &
-    ResLocalsInstanceQuestionRender;
+  'instance-question': ResLocals & ResLocalsCourseInstance & ResLocalsInstanceQuestion;
+  'assessment-question': ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion;
   'assessment-instance': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsAssessment &
@@ -82,7 +64,7 @@ interface ResLocalsForPageLookup {
 export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
   true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
-export type PageType = keyof ResLocalsForPageLookup;
+type PageType = keyof ResLocalsForPageLookup;
 
 /**
  * A wrapper around {@link asyncHandler} that ensures that the locals

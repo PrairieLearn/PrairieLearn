@@ -1,37 +1,29 @@
-import { z } from 'zod';
-
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { WorkspaceLogSchema } from '../../lib/db-types.js';
+import type { WorkspaceLog } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
-
-export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
-  date_formatted: z.string(),
-});
-export type WorkspaceLogRow = z.infer<typeof WorkspaceLogRowSchema>;
 
 export function WorkspaceLogs({
   workspaceLogs,
   resLocals,
 }: {
-  workspaceLogs: WorkspaceLogRow[];
+  workspaceLogs: WorkspaceLog[];
   resLocals: UntypedResLocals;
 }) {
   // Get the list of unique versions and the date at which they were created.
   // These are ordered by date, so we can use the date of the first log for
   // each version as the version's creation date.
   const knownVersions = new Set();
-  const uniqueVersions: { version: string; date_formatted: string }[] = [];
+  const uniqueVersions: { version: string; date: Date }[] = [];
   workspaceLogs.forEach((log) => {
     if (!knownVersions.has(log.version)) {
       knownVersions.add(log.version);
-      uniqueVersions.push({
-        version: log.version,
-        date_formatted: log.date_formatted,
-      });
+      uniqueVersions.push({ version: log.version, date: log.date! });
     }
   });
+  const timezone = resLocals.course_instance?.display_timezone ?? resLocals.course.display_timezone;
 
   return PageLayout({
     resLocals,
@@ -58,7 +50,7 @@ export function WorkspaceLogs({
               return html`
                 <tr>
                   <td>${version.version}</td>
-                  <td>${version.date_formatted}</td>
+                  <td>${formatDate(version.date, timezone)}</td>
                   <td>
                     <a href="${logsUrl}"> View detailed logs </a>
                   </td>
@@ -70,7 +62,7 @@ export function WorkspaceLogs({
       </div>
 
       <h2>History</h2>
-      ${WorkspaceLogsTable({ workspaceLogs })}
+      ${WorkspaceLogsTable({ workspaceLogs, timezone })}
     `,
   });
 }
@@ -82,7 +74,7 @@ export function WorkspaceVersionLogs({
   containerLogsExpired,
   resLocals,
 }: {
-  workspaceLogs: WorkspaceLogRow[];
+  workspaceLogs: WorkspaceLog[];
   containerLogs: string | null;
   containerLogsEnabled: boolean;
   containerLogsExpired: boolean;
@@ -122,17 +114,23 @@ export function WorkspaceVersionLogs({
           `}
 
       <h2>History</h2>
-      ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
+      ${WorkspaceLogsTable({
+        workspaceLogs,
+        includeVersion: false,
+        timezone: resLocals.course_instance?.display_timezone ?? resLocals.course.display_timezone,
+      })}
     `,
   });
 }
 
-export function WorkspaceLogsTable({
+function WorkspaceLogsTable({
   workspaceLogs,
   includeVersion = true,
+  timezone,
 }: {
-  workspaceLogs: WorkspaceLogRow[];
+  workspaceLogs: WorkspaceLog[];
   includeVersion?: boolean;
+  timezone: string;
 }) {
   return html`
     <div class="table-responsive">
@@ -150,7 +148,7 @@ export function WorkspaceLogsTable({
           ${workspaceLogs.map((log) => {
             return html`
               <tr>
-                <td>${log.date_formatted}</td>
+                <td>${formatDate(log.date!, timezone)}</td>
                 <td>${log.message}</td>
                 <td>${log.state}</td>
                 ${includeVersion ? html`<td>${log.version}</td>` : ''}

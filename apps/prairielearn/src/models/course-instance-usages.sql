@@ -21,7 +21,7 @@ FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -66,7 +66,7 @@ FROM
   JOIN submissions AS s ON (s.id = gj.submission_id)
   JOIN variants AS v ON (v.id = s.variant_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -111,12 +111,10 @@ SELECT
   $authn_user_id,
   FALSE
 FROM
-  ai_question_generation_prompts AS p
-  JOIN questions AS q ON (q.id = p.question_id)
-  JOIN courses AS c ON (c.id = q.course_id)
+  courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-  p.id = $prompt_id
+  c.id = $course_id
 ON CONFLICT (
   type,
   course_id,
@@ -143,18 +141,17 @@ SELECT
   'AI grading',
   i.id AS institution_id,
   c.id AS course_id,
-  NULL,
+  ci.id AS course_instance_id,
   $cost_ai_grading,
   date_trunc('day', now() AT TIME ZONE 'UTC'),
   $authn_user_id,
   FALSE
 FROM
-  grading_jobs AS gj
-  JOIN ai_grading_jobs AS aj ON (aj.grading_job_id = gj.id)
-  JOIN courses AS c ON (c.id = aj.course_id)
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-  gj.id = $grading_job_id
+  ci.id = $course_instance_id
 ON CONFLICT (
   type,
   course_id,

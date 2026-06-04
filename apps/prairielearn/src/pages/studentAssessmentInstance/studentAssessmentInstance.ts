@@ -2,31 +2,38 @@ import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import * as assessment from '../../lib/assessment.js';
-import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
-import { deleteFile, uploadFile } from '../../lib/file-store.js';
-import { idsEqual } from '../../lib/id.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
-  canUserAssignGroupRoles,
+  crossLockpoint,
+  gradeAssessmentInstance,
+  renderText,
+  updateAssessmentInstance,
+} from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
+import type { File } from '../../lib/db-types.js';
+import { deleteFile, uploadFile } from '../../lib/file-store.js';
+import {
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/teams.js';
+} from '../../lib/groups.js';
+import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
+import { idsEqual } from '../../lib/id.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
+import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
-import {
-  InstanceQuestionRowSchema,
-  StudentAssessmentInstance,
-} from './studentAssessmentInstance.html.js';
+import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
+import { InstanceQuestionRowSchema } from './studentAssessmentInstance.types.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -35,18 +42,13 @@ router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
 async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
-  const updated = await assessment.updateAssessmentInstance(
+  const updated = await updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.id,
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
-    // @ts-expect-error This reload doesn't set 'formatted_date'
-    locals.assessment_instance = await queryRow(
-      sql.select_assessment_instance,
-      { assessment_instance_id: locals.assessment_instance.id },
-      AssessmentInstanceSchema,
-    );
+    locals.assessment_instance = await selectAssessmentInstanceById(locals.assessment_instance.id);
   }
 }
 
@@ -160,7 +162,7 @@ router.post(
       }
 
       const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
-      await assessment.gradeAssessmentInstance({
+      await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
         user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.id,
@@ -176,6 +178,23 @@ router.post(
       } else {
         res.redirect(req.originalUrl);
       }
+    } else if (req.body.__action === 'cross_lockpoint') {
+      if (!res.locals.authz_result.authorized_edit) {
+        throw new HttpStatusError(403, 'Action is only permitted to the assessment owner');
+      }
+      if (!res.locals.assessment_instance.open || !res.locals.authz_result.active) {
+        throw new HttpStatusError(
+          403,
+          'This assessment is not accepting submissions at this time.',
+        );
+      }
+      const zoneId = IdSchema.parse(req.body.zone_id);
+      await crossLockpoint({
+        assessmentInstance: res.locals.assessment_instance,
+        zoneId,
+        authnUser: res.locals.authn_user,
+      });
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');
@@ -229,22 +248,26 @@ router.get(
     const allPreviousVariants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
     });
-    for (const instance_question of instance_question_rows) {
-      instance_question.previous_variants = allPreviousVariants.filter((variant) =>
-        idsEqual(variant.instance_question_id, instance_question.id),
+    for (const row of instance_question_rows) {
+      row.previous_variants = allPreviousVariants.filter((variant) =>
+        idsEqual(variant.instance_question_id, row.instance_question.id),
       );
+      if (row.assessment_question.grade_rate_minutes) {
+        row.allowGradeLeftMs = await computeNextAllowedGradingTimeMs({
+          instanceQuestionId: row.instance_question.id,
+        });
+      }
     }
 
     res.locals.has_manual_grading_question = instance_question_rows.some(
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
+      ({ instance_question: iq, assessment_question: aq }) =>
+        aq.max_manual_points || iq.manual_points || iq.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = instance_question_rows.some(
-      (q) => q.max_auto_points || q.auto_points || !q.max_points,
+      ({ instance_question: iq, assessment_question: aq }) =>
+        aq.max_auto_points || iq.auto_points || !aq.max_points,
     );
-    const assessment_text_templated = assessment.renderText(
-      res.locals.assessment,
-      res.locals.urlPrefix,
-    );
+    const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix);
     res.locals.assessment_text_templated = assessment_text_templated;
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
@@ -254,7 +277,7 @@ router.get(
         StudentAssessmentInstance({
           instance_question_rows,
           showTimeLimitExpiredModal,
-          userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+          userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
           resLocals: res.locals,
         }),
       );
@@ -273,9 +296,9 @@ router.get(
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
-        for (const question of instance_question_rows) {
-          question.group_role_permissions = await getQuestionGroupPermissions(
-            question.id,
+        for (const row of instance_question_rows) {
+          row.group_role_permissions = await getQuestionGroupPermissions(
+            row.instance_question.id,
             res.locals.assessment_instance.team_id!,
             res.locals.authz_data.user.id,
           );
@@ -290,7 +313,7 @@ router.get(
         groupConfig,
         groupInfo,
         userCanAssignRoles,
-        userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         resLocals: res.locals,
       }),
     );

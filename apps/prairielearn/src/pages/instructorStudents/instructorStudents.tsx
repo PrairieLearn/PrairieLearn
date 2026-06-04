@@ -1,33 +1,46 @@
+import * as path from 'path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callScalar } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import type { AuthzDataWithEffectiveUser } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { createServerJob } from '../../lib/server-jobs.js';
+import type { CourseInstance } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import {
+  deleteEnrollment,
+  inviteStudentByUid,
+  reenrollEnrollmentFromSync,
+  removeEnrollmentFromSync,
+  selectOptionalEnrollmentByUid,
+  selectUsersAndEnrollmentsForCourseInstance,
+} from '../../models/enrollment.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
 
 const router = Router();
-const sql = loadSqlEquiv(import.meta.url);
 
-// Supports a client-side table refresh.
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
@@ -39,11 +52,8 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const { course_instance: courseInstance } = pageContext;
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const rows = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
+    const students = rows.map((r) => StudentRowSchema.parse(r));
     res.json(students);
   }),
 );
@@ -78,9 +88,153 @@ router.get(
   }),
 );
 
+const InviteUidsBodySchema = z.object({
+  __action: z.literal('invite_uids'),
+  uids: UniqueUidsFromStringSchema(1000),
+});
+
+const SyncStudentsBodySchema = z.object({
+  __action: z.literal('sync_students'),
+  toInvite: z.array(z.email()).max(5000),
+  toCancelInvitation: z.array(z.email()).max(5000),
+  toRemove: z.array(z.email()).max(5000),
+});
+
+const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
+
+interface InviteCounts {
+  invited: number;
+  unblocked: number;
+  reenrolled: number;
+  skippedLti13Pending: number;
+  skippedInstructor: number;
+  skippedAlreadyInvited: number;
+  skippedAlreadyJoined: number;
+  skippedAlreadyBlocked: number;
+  skippedAlreadyRemoved: number;
+  errors: number;
+}
+
+async function processInvitations({
+  uids,
+  courseInstance,
+  authzData,
+  job,
+  counts,
+  skipBlocked,
+  allowReenroll,
+  actionDetail = 'invited',
+}: {
+  uids: string[];
+  courseInstance: CourseInstance;
+  authzData: AuthzDataWithEffectiveUser;
+  job: ServerJobLogger;
+  counts: InviteCounts;
+  /**
+   * If true, skips students who are currently blocked. This is useful for `invite_uids`.
+   * If false, blocked students can be handled by `allowReenroll` in `sync_students`.
+   */
+  skipBlocked: boolean;
+  /**
+   * If true, re-enrolls blocked/removed students. This is useful for `sync_students`.
+   * If false, skips blocked/removed students. This is useful for `invite_uids`.
+   */
+  allowReenroll: boolean;
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
+}): Promise<void> {
+  for (const uid of uids) {
+    try {
+      const user = await selectOptionalUserByUid(uid);
+      if (user) {
+        const isInstructor = await callScalar(
+          'users_is_instructor_in_course_instance',
+          [user.id, courseInstance.id],
+          z.boolean(),
+        );
+        if (isInstructor) {
+          job.info(`${uid}: Skipped (instructor)`);
+          counts.skippedInstructor++;
+          continue;
+        }
+      }
+
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData,
+      });
+
+      if (existingEnrollment?.status === 'joined') {
+        job.info(`${uid}: Skipped (already enrolled)`);
+        counts.skippedAlreadyJoined++;
+        continue;
+      }
+      if (existingEnrollment?.status === 'invited') {
+        job.info(`${uid}: Skipped (already invited)`);
+        counts.skippedAlreadyInvited++;
+        continue;
+      }
+      if (existingEnrollment?.status === 'lti13_pending') {
+        // TODO: this is intentionally skipped until LTI roster syncing is supported.
+        // Once it exists, handle this status from the LTI source of truth.
+        job.info(`${uid}: Skipped (LTI-managed enrollment)`);
+        counts.skippedLti13Pending++;
+        continue;
+      }
+      if (skipBlocked && existingEnrollment?.status === 'blocked') {
+        job.info(`${uid}: Skipped (blocked)`);
+        counts.skippedAlreadyBlocked++;
+        continue;
+      }
+      if (!allowReenroll && existingEnrollment?.status === 'removed') {
+        job.info(`${uid}: Skipped (removed)`);
+        counts.skippedAlreadyRemoved++;
+        continue;
+      }
+
+      if (allowReenroll && existingEnrollment?.status === 'blocked') {
+        await reenrollEnrollmentFromSync({
+          enrollment: existingEnrollment,
+          authzData,
+          requiredRole: ['Student Data Editor'],
+        });
+        job.info(`${uid}: Unblocked`);
+        counts.unblocked++;
+        continue;
+      }
+
+      if (allowReenroll && existingEnrollment?.status === 'removed') {
+        await reenrollEnrollmentFromSync({
+          enrollment: existingEnrollment,
+          authzData,
+          requiredRole: ['Student Data Editor'],
+        });
+        job.info(`${uid}: Reenrolled`);
+        counts.reenrolled++;
+        continue;
+      }
+
+      await inviteStudentByUid({
+        courseInstance,
+        uid,
+        requiredRole: ['Student Data Editor'],
+        authzData,
+        actionDetail,
+      });
+      job.info(`${uid}: Invited`);
+      counts.invited++;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      job.error(`${uid}: Error - ${message}`);
+      counts.errors++;
+    }
+  }
+}
+
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
@@ -103,124 +257,207 @@ router.post(
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
     }
 
-    const BodySchema = z.object({
-      uids: UniqueUidsFromStringSchema(1000),
-      __action: z.literal('invite_uids'),
-    });
     const body = BodySchema.parse(req.body);
 
-    const serverJob = await createServerJob({
-      type: 'invite_students',
-      description: 'Invite students to course instance',
-      userId,
-      authnUserId,
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
-    });
-
-    serverJob.executeInBackground(async (job) => {
-      const counts = {
-        success: 0,
-        instructor: 0,
-        alreadyEnrolled: 0,
-        alreadyInvited: 0,
-        alreadyRemoved: 0,
-        alreadyBlocked: 0,
-      };
-
-      for (const uid of body.uids) {
-        const user = await selectOptionalUserByUid(uid);
-        if (user) {
-          // Check if user is an instructor
-          const isInstructor = await callRow(
-            'users_is_instructor_in_course_instance',
-            [user.id, courseInstance.id],
-            z.boolean(),
-          );
-          if (isInstructor) {
-            job.info(`${uid}: Skipped (instructor)`);
-            counts.instructor++;
-            continue;
-          }
-        }
-
-        const existingEnrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Viewer'],
-          authzData,
+    switch (body.__action) {
+      case 'invite_uids': {
+        const serverJob = await createServerJob({
+          type: 'invite_students',
+          description: 'Invite students to course instance',
+          userId,
+          authnUserId,
+          courseId: course.id,
+          courseInstanceId: courseInstance.id,
         });
 
-        if (existingEnrollment) {
-          switch (existingEnrollment.status) {
-            case 'joined': {
-              job.info(`${uid}: Skipped (already enrolled)`);
-              counts.alreadyEnrolled++;
-              continue;
-            }
-            case 'invited': {
-              job.info(`${uid}: Skipped (already invited)`);
-              counts.alreadyInvited++;
-              continue;
-            }
-            case 'removed': {
-              job.info(`${uid}: Skipped (removed)`);
-              counts.alreadyRemoved++;
-              continue;
-            }
-            case 'blocked': {
-              job.info(`${uid}: Skipped (blocked)`);
-              counts.alreadyBlocked++;
-              continue;
-            }
-            case 'lti13_pending': {
-              // We don't currently have any `lti13_pending` enrollments, so we'll just
-              // ignore this for now. We should have this better once we support LTI 1.3
-              // roster syncing.
-              continue;
-            }
-            case 'left':
-            case 'rejected': {
-              // We can re-invite these users below.
-              break;
-            }
-            default: {
-              assertNever(existingEnrollment.status);
+        serverJob.executeInBackground(async (job) => {
+          const counts: InviteCounts = {
+            invited: 0,
+            unblocked: 0,
+            reenrolled: 0,
+            skippedLti13Pending: 0,
+            skippedInstructor: 0,
+            skippedAlreadyInvited: 0,
+            skippedAlreadyJoined: 0,
+            skippedAlreadyBlocked: 0,
+            skippedAlreadyRemoved: 0,
+            errors: 0,
+          };
+
+          await processInvitations({
+            uids: body.uids,
+            courseInstance,
+            authzData,
+            job,
+            counts,
+            skipBlocked: true,
+            allowReenroll: false,
+          });
+
+          job.info('\nSummary:');
+          job.info(`  Successfully invited: ${counts.invited}`);
+          const summaryLines: [number, string][] = [
+            [counts.skippedAlreadyJoined, 'Skipped (already enrolled)'],
+            [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
+            [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
+            [counts.skippedAlreadyRemoved, 'Skipped (removed)'],
+            [counts.skippedLti13Pending, 'Skipped (LTI-managed)'],
+            [counts.skippedInstructor, 'Skipped (instructor)'],
+            [counts.errors, 'Errors'],
+          ];
+          for (const [count, label] of summaryLines) {
+            if (count > 0) {
+              job.info(`  ${label}: ${count}`);
             }
           }
-        }
-
-        await inviteStudentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Editor'],
-          authzData,
         });
-        job.info(`${uid}: Invited`);
-        counts.success++;
-      }
 
-      // Log summary at the end
-      job.info('\nSummary:');
-      job.info(`  Successfully invited: ${counts.success}`);
-      if (counts.alreadyEnrolled > 0) {
-        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+        res.json({ job_sequence_id: serverJob.jobSequenceId });
+        break;
       }
-      if (counts.alreadyInvited > 0) {
-        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
-      }
-      if (counts.alreadyRemoved > 0) {
-        job.info(`  Skipped (removed): ${counts.alreadyRemoved}`);
-      }
-      if (counts.alreadyBlocked > 0) {
-        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
-      }
-      if (counts.instructor > 0) {
-        job.info(`  Skipped (instructor): ${counts.instructor}`);
-      }
-    });
+      case 'sync_students': {
+        const { toInvite, toCancelInvitation, toRemove } = body;
 
-    res.json({ job_sequence_id: serverJob.jobSequenceId });
+        const serverJob = await createServerJob({
+          type: 'sync_students',
+          description: 'Synchronize student list',
+          userId,
+          authnUserId,
+          courseId: course.id,
+          courseInstanceId: courseInstance.id,
+        });
+
+        serverJob.executeInBackground(async (job) => {
+          const syncCounts: InviteCounts = {
+            invited: 0,
+            unblocked: 0,
+            reenrolled: 0,
+            skippedLti13Pending: 0,
+            skippedInstructor: 0,
+            skippedAlreadyInvited: 0,
+            skippedAlreadyJoined: 0,
+            skippedAlreadyBlocked: 0,
+            skippedAlreadyRemoved: 0,
+            errors: 0,
+          };
+          let cancelled = 0;
+          let cancelErrors = 0;
+          let removed = 0;
+          let removeErrors = 0;
+
+          if (toInvite.length > 0) {
+            job.info('Processing invitations...');
+            await processInvitations({
+              uids: toInvite,
+              courseInstance,
+              authzData,
+              job,
+              counts: syncCounts,
+              skipBlocked: false,
+              allowReenroll: true,
+              actionDetail: 'invited_by_manual_sync',
+            });
+          }
+
+          if (toCancelInvitation.length > 0) {
+            job.info('\nCancelling invitations...');
+            for (const uid of toCancelInvitation) {
+              try {
+                const enrollment = await selectOptionalEnrollmentByUid({
+                  courseInstance,
+                  uid,
+                  requiredRole: ['Student Data Viewer'],
+                  authzData,
+                });
+
+                if (!enrollment) {
+                  job.info(`${uid}: Skipped (no enrollment found)`);
+                  continue;
+                }
+                if (!['invited', 'rejected'].includes(enrollment.status)) {
+                  job.info(`${uid}: Skipped (not an invitation)`);
+                  continue;
+                }
+
+                await deleteEnrollment({
+                  enrollment,
+                  actionDetail: 'invitation_deleted_by_manual_sync',
+                  authzData,
+                  requiredRole: ['Student Data Editor'],
+                });
+                job.info(`${uid}: Invitation cancelled`);
+                cancelled++;
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                job.error(`${uid}: Error - ${message}`);
+                cancelErrors++;
+              }
+            }
+          }
+
+          if (toRemove.length > 0) {
+            job.info('\nProcessing removals...');
+            for (const uid of toRemove) {
+              try {
+                const enrollment = await selectOptionalEnrollmentByUid({
+                  courseInstance,
+                  uid,
+                  requiredRole: ['Student Data Viewer'],
+                  authzData,
+                });
+
+                if (!enrollment) {
+                  job.info(`${uid}: Skipped (no enrollment found)`);
+                  continue;
+                }
+                if (enrollment.status === 'removed') {
+                  job.info(`${uid}: Skipped (already removed)`);
+                  continue;
+                }
+
+                await removeEnrollmentFromSync({
+                  enrollment,
+                  authzData,
+                  requiredRole: ['Student Data Editor'],
+                });
+                job.info(`${uid}: Removed`);
+                removed++;
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                job.error(`${uid}: Error - ${message}`);
+                removeErrors++;
+              }
+            }
+          }
+
+          job.info('\nSummary:');
+          job.info(`  Invited: ${syncCounts.invited}`);
+          job.info(`  Invitations cancelled: ${cancelled}`);
+          job.info(`  Removed: ${removed}`);
+          const totalErrors = syncCounts.errors + cancelErrors + removeErrors;
+          const syncSummaryLines: [number, string][] = [
+            [syncCounts.unblocked, 'Unblocked'],
+            [syncCounts.reenrolled, 'Reenrolled'],
+            [syncCounts.skippedAlreadyJoined, 'Skipped (already joined)'],
+            [syncCounts.skippedAlreadyInvited, 'Skipped (already invited)'],
+            [syncCounts.skippedLti13Pending, 'Skipped (LTI-managed)'],
+            [syncCounts.skippedInstructor, 'Skipped (instructor)'],
+            [totalErrors, 'Errors'],
+          ];
+          for (const [count, label] of syncSummaryLines) {
+            if (count > 0) {
+              job.info(`  ${label}: ${count}`);
+            }
+          }
+        });
+
+        res.json({ job_sequence_id: serverJob.jobSequenceId });
+        break;
+      }
+      default: {
+        assertNever(body);
+      }
+    }
   }),
 );
 
@@ -251,8 +488,8 @@ router.get(
           resLocals: res.locals,
           navContext: {
             type: 'instructor',
-            page: 'instance_admin',
-            subPage: 'students',
+            page: 'students',
+            subPage: 'overview',
           },
           courseOwners,
           pageTitle: 'Students',
@@ -262,11 +499,9 @@ router.get(
       return;
     }
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const allRows = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
+    const students = allRows.map((r) => StudentRowSchema.parse(r));
+    const studentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -279,14 +514,28 @@ router.get(
       host,
     ).href;
 
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
+    const origHash = await getOriginalHash(
+      path.join(
+        course.path,
+        'courseInstances',
+        courseInstance.short_name,
+        'infoCourseInstance.json',
+      ),
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'overview',
         },
         options: {
           fullWidth: true,
@@ -298,12 +547,15 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
+              trpcCsrfToken={trpcCsrfToken}
+              origHash={origHash}
             />
           </Hydrate>
         ),

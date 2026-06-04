@@ -1,5 +1,5 @@
 import { type OpenAIProvider } from '@ai-sdk/openai';
-import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
+import type { GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 
@@ -15,19 +15,19 @@ type Prompt = (string | string[])[];
 export type AiImageGradingResponses =
   | {
       rotationCorrectionApplied: false;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: GenerateTextResult<any, any>;
     }
   | {
       rotationCorrectionApplied: true;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: GenerateTextResult<any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateObjectResult<any>;
+          response: GenerateTextResult<any, any>;
         }
       >;
-      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
     };
 
 /**
@@ -45,15 +45,15 @@ export function logResponseUsage({
   response,
   logger,
 }: {
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any>;
   logger: { info: (msg: string) => void };
 }) {
   const usage = response.usage;
   logger.info(`Input tokens: ${usage.inputTokens ?? 0}`);
-  logger.info(`  Cached input tokens: ${usage.cachedInputTokens ?? 0}`);
+  logger.info(`  Cache read tokens: ${usage.inputTokenDetails.cacheReadTokens ?? 0}`);
+  logger.info(`  Cache write tokens: ${usage.inputTokenDetails.cacheWriteTokens ?? 0}`);
   logger.info(`Output tokens: ${usage.outputTokens ?? 0}`);
-  logger.info(`  Reasoning tokens: ${usage.reasoningTokens ?? 0}`);
-  logger.info(`Total tokens: ${usage.totalTokens ?? 0}`);
+  logger.info(`  Reasoning tokens: ${usage.outputTokenDetails.reasoningTokens ?? 0}`);
 }
 
 /**
@@ -63,7 +63,7 @@ export function logResponsesUsage({
   responses,
   logger,
 }: {
-  responses: (GenerateObjectResult<any> | GenerateTextResult<any, any>)[];
+  responses: GenerateTextResult<any, any>[];
   logger: { info: (msg: string) => void };
 }) {
   const { inputTokens, cachedInputTokens, outputTokens, reasoningTokens, totalTokens } =
@@ -71,9 +71,9 @@ export function logResponsesUsage({
       (acc, response) => {
         const usage = response.usage;
         acc.inputTokens += usage.inputTokens ?? 0;
-        acc.cachedInputTokens += usage.cachedInputTokens ?? 0;
+        acc.cachedInputTokens += usage.inputTokenDetails.cacheReadTokens ?? 0;
         acc.outputTokens += usage.outputTokens ?? 0;
-        acc.reasoningTokens += usage.reasoningTokens ?? 0;
+        acc.reasoningTokens += usage.outputTokenDetails.reasoningTokens ?? 0;
         acc.totalTokens += usage.totalTokens ?? 0;
         return acc;
       },
@@ -107,21 +107,18 @@ export function calculateResponseCost({
 
   const modelPricing = config.costPerMillionTokens[model];
 
-  // TODO: this doesn't take into account cache writes, which some providers
-  // (e.g. Anthropic) charge for.
-  const cachedInputTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
   const inputTokens = usage.inputTokenDetails.noCacheTokens ?? 0;
+  const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
+  const cacheWriteTokens = usage.inputTokenDetails.cacheWriteTokens ?? 0;
   const outputTokens = usage.outputTokens ?? 0;
 
-  const cachedInputTokenCost = modelPricing.cachedInput / 10 ** 6;
-  const inputTokenCost = modelPricing.input / 10 ** 6;
-  const outputTokenCost = modelPricing.output / 10 ** 6;
+  // The prices are per million tokens, so divide by 1e6.
+  const inputCost = inputTokens * (modelPricing.input / 1e6);
+  const cacheReadCost = cacheReadTokens * (modelPricing.cachedInput / 1e6);
+  const cacheWriteCost = cacheWriteTokens * (modelPricing.cacheWrite / 1e6);
+  const outputCost = outputTokens * (modelPricing.output / 1e6);
 
-  const cachedInputCost = cachedInputTokens * cachedInputTokenCost;
-  const inputCost = inputTokens * inputTokenCost;
-  const outputCost = outputTokens * outputTokenCost;
-
-  return cachedInputCost + inputCost + outputCost;
+  return inputCost + cacheReadCost + cacheWriteCost + outputCost;
 }
 
 export function emptyUsage(): LanguageModelUsage {
@@ -141,6 +138,7 @@ export function emptyUsage(): LanguageModelUsage {
   };
 }
 
+/** @knipignore */
 export function mergeUsage(
   a: LanguageModelUsage | undefined,
   b: LanguageModelUsage | undefined,

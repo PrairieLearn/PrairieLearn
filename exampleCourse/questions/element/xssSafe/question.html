@@ -1,7 +1,7 @@
 <pl-question-panel>
   <p>
     Questions below were designed to showcase the different features of 
-    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-xss-safe"><code>pl-xss-safe</code></a>. 
+    <a href="https://docs.prairielearn.com/elements/pl-xss-safe"><code>pl-xss-safe</code></a>. 
     The goal of <code>pl-xss-safe</code>
     is to allow instructors to display to students formatted HTML with potentially malicious source, such as student-submitted content.
   </p>
@@ -40,7 +40,7 @@
   <p>The element <code>pl-xss-safe</code> also supports content that does not come from a file, using the <code>contents</code> attribute. A typical use-case for this processing is when a regular element is used that does not save its content in a file, such as a <code>pl-string-input</code>. In that case, <code>contents="{{submitted_answers.answers_name}}"</code> provides the content to be displayed.</p>
   <p>Provide the input <code>This is a **bold** text</code> to make the word bold.</p>
 </pl-question-panel>
-<pl-string-input answers-name="ans3"></pl-string-input>
+<pl-string-input answers-name="ans3" aria-label="Markdown input"></pl-string-input>
 <pl-submission-panel>
   <pl-xss-safe contents="{{submitted_answers.ans3}}" language="markdown"></pl-xss-safe>
 </pl-submission-panel>

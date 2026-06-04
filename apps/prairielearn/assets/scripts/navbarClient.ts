@@ -1,11 +1,15 @@
-import './lib/htmx';
+import './lib/htmx.js';
 import 'htmx-ext-loading-states/dist/loading-states.js';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { removeCookieClient, setCookieClient } from '../../src/lib/client/cookie.js';
 
+import { setupEndExamModal } from './lib/endExamModal.js';
+
 onDocumentReady(() => {
+  setupEndExamModal();
+
   const usernameNav = document.getElementById('username-nav');
   // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
   if (!usernameNav) return;

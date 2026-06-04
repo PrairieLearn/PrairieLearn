@@ -188,6 +188,22 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
 
 
 def worker_loop() -> None:
+    from prairielearn.internal.traceback import make_rich_excepthook
+
+    sys.excepthook = make_rich_excepthook(
+        suppress=[
+            # Suppress source code for core library code — show
+            # the filename/line but not the code itself.
+            os.path.join(os.path.dirname(__file__), "prairielearn"),
+        ],
+        hide=[
+            # Hide frames from internal library and infrastructure code.
+            __file__,
+            os.path.join(os.path.dirname(__file__), "prairielearn", "internal"),
+        ],
+        # Print paths relative to `apps/prairielearn`
+        relative_to=os.path.dirname(os.path.dirname(__file__)),
+    )
 
     # The prairielearn.internal module is only needed in the worker process.
     # Because it makes use of threading, we only import it after forking to
@@ -270,6 +286,8 @@ def worker_loop() -> None:
                 # care about graceful termination, we just want to get out of here as
                 # fast as possible.
                 os._exit(0)
+
+            assert file is not None
 
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
@@ -492,7 +510,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                     # were running as the `executor` user
                     if drop_privileges:
                         # Kill all processes started by `executor`.
-                        os.system("pkill -u executor --signal SIGKILL")
+                        subprocess.run(
+                            ["/usr/bin/pkill", "-u", "executor", "--signal", "SIGKILL"],
+                            check=False,
+                        )
 
                         # Check that all processes are gone. If they're not,
                         # that probably means that someone is trying to escape
@@ -515,10 +536,14 @@ with open(4, "w", encoding="utf-8") as exitf:
                     json.dump({"exited": True}, exitf)
                     exitf.write("\n")
                     exitf.flush()
+                elif os.WEXITSTATUS(status) == 1:
+                    # The worker died due to an unhandled exception; its
+                    # stderr already contains the relevant traceback, so
+                    # exit without adding another one.
+                    sys.exit(1)
                 else:
-                    # The worker did not exit gracefully
                     raise RuntimeError(
-                        f"worker process exited unexpectedly with status {status}"
+                        f"worker process exited unexpectedly with status {os.WEXITSTATUS(status)}"
                     )
             else:
                 # Something else happened that is weird

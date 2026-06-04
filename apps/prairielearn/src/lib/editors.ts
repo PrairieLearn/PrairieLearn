@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import * as async from 'async';
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -15,7 +15,7 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAssessments } from '../models/assessment.js';
+import { selectAssessments, selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -23,9 +23,12 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
+import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
+import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -39,14 +42,27 @@ import {
   type Question,
   type User,
 } from './db-types.js';
-import { getNamesForCopy } from './editorUtil.shared.js';
+import { discoverInfoDirs } from './discover-info-dirs.js';
+import { computeFileContentHash } from './editorUtil.js';
+import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
+import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
+import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
+import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
+
+function todayAsDatetimeLocal(
+  timezone: string,
+  instant: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
+  return `${today.toString()}T00:00:00`;
+}
 
 async function syncCourseFromDisk(
   course: Course,
@@ -56,12 +72,7 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
-    course.id,
-    course.path,
-    job,
-    courseData,
-  );
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -98,129 +109,6 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
-}
-
-export function getUniqueNames({
-  shortNames,
-  longNames,
-  shortName = 'New',
-  longName = 'New',
-}: {
-  shortNames: string[];
-  longNames: string[];
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
-   * Long name is matched case-sensitively
-   */
-  shortName?: string;
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
-   * Short name is always matched case-insensitively, as it is generally used to construct file paths
-   */
-  longName?: string;
-}): { shortName: string; longName: string } {
-  function getNumberShortName(oldShortNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-
-    const shortNameCompare = shortName.toLowerCase();
-
-    oldShortNames.forEach((oldShortName) => {
-      // shortName is a copy of oldShortName if:
-      // it matches (case-sensitively), or
-      // if oldShortName matches {shortName}_{number from 0-9}
-
-      const oldShortNameCompare = oldShortName.toLowerCase();
-      const found =
-        shortNameCompare === oldShortNameCompare ||
-        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  function getNumberLongName(oldLongNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-    // longName is a copy of oldLongName if:
-    // it matches exactly, or
-    // if oldLongName matches {longName} ({number from 0-9})
-
-    oldLongNames.forEach((oldLongName) => {
-      if (typeof oldLongName !== 'string') return;
-      const found =
-        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  const numberShortName = getNumberShortName(shortNames);
-  const numberLongName = getNumberLongName(longNames);
-  const number = Math.max(numberShortName, numberLongName);
-
-  if (number === 1 && shortName !== 'New' && longName !== 'New') {
-    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
-    return {
-      shortName,
-      longName,
-    };
-  } else {
-    // If there are existing copies, a number is needed at the end of the names
-    return {
-      shortName: `${shortName}_${number}`,
-      longName: `${longName} (${number})`,
-    };
-  }
-}
-
-export async function getOriginalHash(path: string) {
-  try {
-    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
-}
-
-/**
- * Returns the new value if it differs from the default value. Otherwise, returns undefined.
- * This is helpful for setting JSON properties that we only want to write to if they are different
- * than the default value.
- *
- * `defaultValue` may be either a value to compare directly with `===`, or a function
- * that accepts a value and returns a boolean to indicate if it should be considered
- * a default value.
- *
- */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
-  const isExistingDefault =
-    typeof defaultValue === 'function'
-      ? defaultValue(existingValue)
-      : existingValue === defaultValue;
-  const isNewDefault =
-    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
-
-  if (existingValue === undefined) {
-    if (!isNewDefault) {
-      return newValue;
-    }
-    return undefined;
-  } else {
-    if (!isExistingDefault && isNewDefault) {
-      return undefined;
-    } else {
-      return newValue;
-    }
-  }
 }
 
 interface BaseEditorOptions<ResLocals = object> {
@@ -412,7 +300,7 @@ export abstract class Editor {
             this.course.path,
           );
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
-            this.course.id,
+            this.course,
             possibleCourseData,
             job,
           );
@@ -431,7 +319,7 @@ export abstract class Editor {
               // an unreasonable amount of time and causing a 504 when we fail
               // to respond to the request in time, we'll use a relatively short
               // timeout to fail the push if it takes too long.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
             job.data.saveSucceeded = true;
 
@@ -455,7 +343,7 @@ export abstract class Editor {
               env: gitEnv,
               // As with `git push` above, we'll use a timeout here to avoid
               // long delays during GitHub incidents resulting in 504 errors.
-              cancelSignal: AbortSignal.timeout(10_000),
+              cancelSignal: AbortSignal.timeout(30_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -470,7 +358,7 @@ export abstract class Editor {
                 cwd: this.course.path,
                 env: gitEnv,
                 // See above `git push` attempt for an explanation of this timeout.
-                cancelSignal: AbortSignal.timeout(10_000),
+                cancelSignal: AbortSignal.timeout(30_000),
               });
               job.data.saveSucceeded = true;
             } finally {
@@ -539,58 +427,68 @@ export abstract class Editor {
 }
 
 /**
- * Get all existing shortnames, recursing on nonempty directories that do not contain
- * an "info" file.
+ * Validates that a new QID does not conflict with any existing question QIDs
+ * by being a subdirectory or parent directory of an existing question. The sync
+ * process stops recursing into subdirectories once it finds an info.json, so
+ * nesting one question inside another would make the nested question invisible.
  *
- * TODO: we might be able to get away with querying the database for this information instead.
- * It's unclear why we're going to disk in the first place. Possibly it's to be extra cautious
- * in case we're in a state where there are sync errors, but even in that case, sync errors
- * should not have prevented us from persisting short names in the first place.
- *
- * @param rootDirectory Directory to start searching from.
- * @param infoFile Name of the info file, will stop recursing once a directory contains this.
+ * @param newQid - The QID to validate.
+ * @param existingQids - List of existing question QIDs.
+ * @param skipQid - Optional QID to skip (e.g., the question being renamed).
  */
-async function getExistingShortNames(rootDirectory: string, infoFile: string) {
-  const files: string[] = [];
-  const walk = async (relativeDir: string) => {
-    const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
-      // If the directory doesn't exist, then we have nothing to load
-      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        return [] as string[];
-      }
-      throw err;
-    });
+function validateQidNesting(newQid: string, existingQids: string[], skipQid?: string): void {
+  const normalizedNewQid = path.normalize(newQid);
+  for (const existingQid of existingQids) {
+    if (skipQid != null && existingQid === skipQid) continue;
 
-    // For each subdirectory, try to find an Info file
-    await async.each(directories, async (dir) => {
-      // Relative path to the current folder
-      const subdirPath = path.join(relativeDir, dir);
-      // Absolute path to the info file
-      const infoPath = path.join(rootDirectory, subdirPath, infoFile);
-      const hasInfoFile = await fs.pathExists(infoPath);
-      if (hasInfoFile) {
-        // Info file exists, we can use this directory
-        files.push(subdirPath);
-      } else {
-        // No info file, let's try recursing
-        await walk(subdirPath);
-      }
-    });
-  };
-
-  await walk('');
-  debug('getExistingShortNames() returning', files);
-  return files;
+    const normalizedExistingQid = path.normalize(existingQid);
+    if (normalizedNewQid.startsWith(normalizedExistingQid + '/')) {
+      throw new AugmentedError(
+        `The QID "${newQid}" is a subdirectory of the existing question "${existingQid}". A question cannot be nested inside another question's directory.`,
+        {
+          info: html`
+            <p>
+              The QID <code>${newQid}</code> is a subdirectory of the existing question
+              <code>${existingQid}</code>. A question cannot be nested inside another question's
+              directory.
+            </p>
+          `,
+        },
+      );
+    }
+    if (normalizedExistingQid.startsWith(normalizedNewQid + '/')) {
+      throw new AugmentedError(
+        `The QID "${newQid}" would be a parent directory of the existing question "${existingQid}". A question cannot contain another question's directory.`,
+        {
+          info: html`
+            <p>
+              The QID <code>${newQid}</code> would be a parent directory of the existing question
+              <code>${existingQid}</code>. A question cannot contain another question's directory.
+            </p>
+          `,
+        },
+      );
+    }
+  }
 }
 
 export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
+  private tid_new?: string;
+  private title_new?: string;
+  private number_new?: string;
+  private set_new?: string;
 
   public readonly uuid: string;
 
   constructor(
-    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }>,
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
+      tid_new?: string;
+      title_new?: string;
+      number_new?: string;
+      set_new?: string;
+    },
   ) {
     const { course_instance, assessment } = params.locals;
 
@@ -601,6 +499,10 @@ export class AssessmentCopyEditor extends Editor {
 
     this.assessment = assessment;
     this.course_instance = course_instance;
+    this.tid_new = params.tid_new;
+    this.title_new = params.title_new;
+    this.number_new = params.number_new;
+    this.set_new = params.set_new;
 
     this.uuid = crypto.randomUUID();
   }
@@ -617,22 +519,29 @@ export class AssessmentCopyEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
-    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    let tid: string;
+    let assessmentTitle: string;
+    if (this.tid_new !== undefined && this.title_new !== undefined) {
+      tid = this.tid_new;
+      assessmentTitle = this.title_new;
+    } else {
+      debug('Get all existing long names');
+      const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+      const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
-    debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+      debug('Get all existing short names');
+      const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
-    debug('Generate TID and Title');
-    const names = getNamesForCopy(
-      this.assessment.tid,
-      oldNamesShort,
-      this.assessment.title,
-      oldNamesLong,
-    );
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+      debug('Generate TID and Title');
+      const names = getNamesForCopy(
+        this.assessment.tid,
+        oldNamesShort,
+        this.assessment.title,
+        oldNamesLong,
+      );
+      tid = names.shortName;
+      assessmentTitle = names.longName;
+    }
     const assessmentPath = path.join(assessmentsPath, tid);
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
@@ -649,6 +558,12 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
+    if (this.number_new) {
+      infoJson.number = this.number_new;
+    }
+    if (this.set_new) {
+      infoJson.set = this.set_new;
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
@@ -826,7 +741,7 @@ export class AssessmentAddEditor extends Editor {
       ) + 1;
 
     debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
     const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
@@ -888,6 +803,10 @@ export class CourseInstanceCopyEditor extends Editor {
   private from_path: string;
   private is_transfer: boolean;
   private metadataOverrides?: Record<string, any>;
+  private accessControlMigration?: {
+    strategy: 'migrate' | 'keep' | 'clear';
+    clearIncompatible: boolean;
+  };
 
   public readonly uuid: string;
 
@@ -897,6 +816,10 @@ export class CourseInstanceCopyEditor extends Editor {
       from_path: string;
       course_instance: CourseInstance;
       metadataOverrides?: Record<string, any>;
+      accessControlMigration?: {
+        strategy: 'migrate' | 'keep' | 'clear';
+        clearIncompatible: boolean;
+      };
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -909,6 +832,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
     this.metadataOverrides = params.metadataOverrides;
+    this.accessControlMigration = params.accessControlMigration;
 
     this.uuid = crypto.randomUUID();
   }
@@ -920,17 +844,14 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
+    const oldNamesLong = await sqldb.queryScalars(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
       z.string(),
     );
 
     debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
+    const oldNamesShort = await discoverInfoDirs(courseInstancesPath, 'infoCourseInstance.json');
 
     // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
@@ -964,7 +885,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
       const existingQuestionUuids = new Set(await selectQuestionUuidsForCourse(this.course));
       const existingQuestionTitles = await selectQuestionTitlesForCourse(this.course);
-      const existingQuestionQids = await getExistingShortNames(
+      const existingQuestionQids = await discoverInfoDirs(
         path.join(this.course.path, 'questions'),
         'info.json',
       );
@@ -1066,6 +987,22 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
+
+    const assessmentsPath = path.join(courseInstancePath, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+    for (const dir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+
+      if (this.accessControlMigration && this.accessControlMigration.strategy !== 'keep') {
+        await applyMigrationToAssessmentFile(
+          infoPath,
+          this.accessControlMigration.strategy,
+          this.accessControlMigration.clearIncompatible,
+          this.metadataOverrides?.publishing?.startDate ??
+            todayAsDatetimeLocal(this.course_instance.display_timezone),
+        );
+      }
+    }
 
     pathsToAdd.push(courseInstancePath);
     return {
@@ -1333,7 +1270,7 @@ export class QuestionAddEditor extends Editor {
 
     const { qid, title } = await run(async () => {
       if (!(this.qid && this.title) && this.isDraft) {
-        let draftNumber = await sqldb.queryRow(
+        let draftNumber = await sqldb.queryScalar(
           sql.update_draft_number,
           { course_id: this.course.id },
           z.number(),
@@ -1343,7 +1280,7 @@ export class QuestionAddEditor extends Editor {
           await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
         ) {
           // increment and sync to postgres
-          draftNumber = await sqldb.queryRow(
+          draftNumber = await sqldb.queryScalar(
             sql.update_draft_number,
             { course_id: this.course.id },
             z.number(),
@@ -1357,7 +1294,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
-      const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
+      const oldNamesShort = await discoverInfoDirs(questionsPath, 'info.json');
 
       debug('Generate qid and title');
       const { shortName, longName } = getUniqueNames({
@@ -1387,6 +1324,9 @@ export class QuestionAddEditor extends Editor {
         `,
       });
     }
+
+    const existingQids = await discoverInfoDirs(questionsPath, 'info.json');
+    validateQidNesting(qid, existingQids);
 
     if (this.template_source !== 'empty' && this.template_qid) {
       const sourceQuestionsPath =
@@ -1600,21 +1540,55 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
+    const pathsToAdd: string[] = [];
+    const qidsToRemove = qidsToRemoveForQuestions(this.questions);
+
+    // Assessment files are rewritten under this course's repository path, so
+    // shared-question references from other courses must be ignored here.
+    const referencingAssessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: this.questions.map((q) => q.id),
+    });
+
+    for (const referenced of referencingAssessments) {
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        referenced.course_instance_short_name,
+        'assessments',
+        referenced.assessment_directory,
+        'infoAssessment.json',
+      );
+      let formattedJson: string;
+      try {
+        const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+        const { assessment: updatedInfoJson } = removeQidsFromAssessment(infoJson, qidsToRemove);
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      } catch (err) {
+        if (err instanceof AugmentedError) throw err;
+        throw new AugmentedError(`Unable to rewrite ${infoPath} while deleting questions.`, {
+          cause: err,
+        });
+      }
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+
     for (const question of this.questions) {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      const questionPath = path.join(this.course.path, 'questions', question.qid);
+      await fs.remove(questionPath);
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
+      pathsToAdd.push(questionPath);
     }
 
     return {
-      pathsToAdd: this.questions.flatMap((question) =>
-        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
-      ),
+      pathsToAdd,
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`
@@ -1625,12 +1599,16 @@ export class QuestionDeleteEditor extends Editor {
 
 export class QuestionRenameEditor extends Editor {
   private qid_new: string;
+  private title_new: string | undefined;
   private question: Question;
 
-  constructor(params: BaseEditorOptions<{ question: Question }> & { qid_new: string }) {
+  constructor(
+    params: BaseEditorOptions<{ question: Question }> & { qid_new: string; title_new?: string },
+  ) {
     const {
       locals: { question },
       qid_new,
+      title_new,
     } = params;
 
     super({
@@ -1639,7 +1617,69 @@ export class QuestionRenameEditor extends Editor {
     });
 
     this.qid_new = qid_new;
+    this.title_new = title_new;
     this.question = question;
+  }
+
+  private async moveQuestion({
+    oldPath,
+    newPath,
+    existingQid,
+    questionsPath,
+  }: {
+    oldPath: string;
+    newPath: string;
+    existingQid: string;
+    questionsPath: string;
+  }) {
+    const pathsToAdd: string[] = [];
+
+    debug(`Move files from ${oldPath} to ${newPath}`);
+    await fs.move(oldPath, newPath, { overwrite: false });
+    await this.removeEmptyPrecedingSubfolders(questionsPath, existingQid);
+
+    pathsToAdd.push(oldPath, newPath);
+
+    debug(
+      `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
+    );
+    const assessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: [this.question.id],
+    });
+
+    debug(
+      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
+    );
+    for (const assessment of assessments) {
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_short_name,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json',
+      );
+      pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+
+      debug(`Find/replace QID in ${infoPath}`);
+      const { assessment: updatedInfoJson, renamedCount } = renameQidInAssessment(
+        infoJson,
+        existingQid,
+        this.qid_new,
+      );
+      if (renamedCount === 0) {
+        logger.info(`Should have but did not find ${existingQid} in ${infoPath}`);
+      }
+      debug(`Write ${infoPath}`);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      await fs.writeFile(infoPath, formattedJson);
+    }
+
+    return pathsToAdd;
   }
 
   async write() {
@@ -1651,11 +1691,13 @@ export class QuestionRenameEditor extends Editor {
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
-    // Skip editing if the paths are the same.
-    if (oldPath === newPath) return null;
+    const qidChanging = oldPath !== newPath;
+
+    // Skip editing if neither the QID nor the title is changing.
+    if (!qidChanging && !this.title_new) return null;
 
     // Ensure that the updated question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, newPath)) {
+    if (qidChanging && !contains(questionsPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
           <p>The updated path of the question folder</p>
@@ -1670,72 +1712,58 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
-
-    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_question,
-      { question_id: this.question.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
-
-    const pathsToAdd = [oldPath, newPath];
-
-    debug(
-      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
-    );
-    for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
-      );
-      pathsToAdd.push(infoPath);
-
-      debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
-
-      debug(`Find/replace QID in ${infoPath}`);
-      let found = false as boolean;
-      infoJson.zones?.forEach((zone: any) => {
-        zone.questions?.forEach((question: any) => {
-          if (question.alternatives) {
-            question.alternatives?.forEach((alternative: any) => {
-              if (alternative.id === this.question.qid) {
-                alternative.id = this.qid_new;
-                found = true;
-              }
-            });
-          } else if (question.id === this.question.qid) {
-            question.id = this.qid_new;
-            found = true;
-          }
-        });
-      });
-      if (!found) {
-        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
-      }
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
+    if (qidChanging) {
+      const existingQids = await discoverInfoDirs(questionsPath, 'info.json');
+      validateQidNesting(this.qid_new, existingQids, this.question.qid);
     }
+
+    const pathsToAdd: string[] = [];
+
+    if (qidChanging) {
+      pathsToAdd.push(
+        ...(await this.moveQuestion({
+          oldPath,
+          newPath,
+          questionsPath,
+          existingQid: this.question.qid,
+        })),
+      );
+    }
+
+    // Update the question title in info.json if a new title was provided.
+    if (this.title_new) {
+      // Use the new path if QID changed, otherwise use the old path.
+      const questionPath = qidChanging ? newPath : oldPath;
+      const questionInfoPath = path.join(questionPath, 'info.json');
+
+      debug(`Read ${questionInfoPath}`);
+      const questionInfoJson: any = await fs.readJson(questionInfoPath);
+
+      debug(`Update title in ${questionInfoPath}`);
+      questionInfoJson.title = this.title_new;
+
+      const formattedQuestionInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(questionInfoJson),
+      );
+      await fs.writeFile(questionInfoPath, formattedQuestionInfoJson);
+
+      // Only add to pathsToAdd if we haven't already added the question path.
+      if (!qidChanging) {
+        pathsToAdd.push(questionPath);
+      }
+    }
+
+    const commitMessage = run(() => {
+      if (qidChanging) {
+        return `rename question ${this.question.qid} to ${this.qid_new}`;
+      }
+
+      return `update title of question ${this.question.qid}`;
+    });
 
     return {
       pathsToAdd,
-      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+      commitMessage,
     };
   }
 }
@@ -1782,10 +1810,6 @@ export class AssessmentSetRenameEditor extends Editor {
     const pathsToAdd: string[] = [];
 
     for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
       assert(assessment.assessment_directory !== null, 'assessment_directory is required');
 
       const infoPath = path.join(
@@ -1862,10 +1886,7 @@ export class QuestionCopyEditor extends Editor {
       from_qid: this.from_qid,
       uuid: this.uuid,
       existingTitles: await selectQuestionTitlesForCourse(this.course),
-      existingQids: await getExistingShortNames(
-        path.join(this.course.path, 'questions'),
-        'info.json',
-      ),
+      existingQids: await discoverInfoDirs(path.join(this.course.path, 'questions'), 'info.json'),
     });
 
     return {
@@ -1876,7 +1897,7 @@ export class QuestionCopyEditor extends Editor {
 }
 
 async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_titles_for_course,
     { course_id: course.id },
     z.string(),
@@ -1884,7 +1905,7 @@ async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> 
 }
 
 async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_uuids_for_course,
     { course_id: course.id },
     z.string(),
@@ -1955,6 +1976,8 @@ async function copyQuestion({
     questionTitle = names.longName;
   }
   const questionPath = path.join(questionsPath, qid);
+
+  validateQidNesting(qid, oldShortNames);
 
   const fromPath = from_path;
   const toPath = questionPath;
@@ -2510,4 +2533,370 @@ export class MultiEditor extends Editor {
       commitMessage: commitMessages.join('; '),
     };
   }
+}
+
+export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+
+/** A single question to import, with all file contents as serialized data. */
+export interface QtiImportQuestionData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  questionHtml: string;
+  serverPy?: string;
+  /** Map of filename -> base64-encoded content. */
+  clientFiles: Record<string, string>;
+  /** Whether this question should overwrite an existing question directory. */
+  overwrite?: boolean;
+}
+
+/** A single assessment to import, including its questions. */
+export interface QtiImportAssessmentData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  questions: QtiImportQuestionData[];
+}
+
+export class QtiImportEditor extends Editor {
+  private course_instance: CourseInstance;
+  private assessments: QtiImportAssessmentData[];
+  private questions: QtiImportQuestionData[];
+
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
+      assessments: QtiImportAssessmentData[];
+      questions?: QtiImportQuestionData[];
+    },
+  ) {
+    const { course_instance } = params.locals;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: Import QTI content`,
+    });
+    this.course_instance = course_instance;
+    this.assessments = params.assessments;
+    this.questions = params.questions ?? [];
+  }
+
+  async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
+    // If the course instance is publicly shared, imported assessments and
+    // questions must also be marked as shared to avoid a sync error.
+    const ciConfigPath = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'infoCourseInstance.json',
+    );
+    let shareSourcePublicly = false;
+    try {
+      const ciConfig = JSON.parse(await fs.readFile(ciConfigPath, 'utf-8'));
+      shareSourcePublicly = ciConfig.shareSourcePublicly === true;
+    } catch {
+      // Config may not exist yet or may be malformed; default to not sharing.
+    }
+
+    const questionsBaseDir = path.join(this.course.path, 'questions');
+    const assessmentsBaseDir = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'assessments',
+    );
+
+    // Pre-validate all paths before writing anything to avoid partial state.
+    const existingQids = await discoverInfoDirs(questionsBaseDir, 'info.json');
+    const importedQids: string[] = [];
+    const questionsByDirectoryName = new Map<string, QtiImportQuestionData>();
+    for (const question of this.questions) {
+      questionsByDirectoryName.set(question.directoryName, question);
+    }
+    for (const assessment of this.assessments) {
+      for (const question of assessment.questions) {
+        if (!questionsByDirectoryName.has(question.directoryName)) {
+          questionsByDirectoryName.set(question.directoryName, question);
+        }
+      }
+    }
+
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+      if (!contains(questionsBaseDir, qDir)) {
+        throw new AugmentedError('Invalid question folder path', {
+          info: html`
+            <p>The question folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
+            </div>
+            <p>must be inside the questions directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+      // Validate that the new QID doesn't nest inside (or contain) an existing question.
+      validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
+      importedQids.push(question.directoryName);
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const name of Object.keys(question.clientFiles)) {
+          const filePath = path.join(cfDir, name);
+          if (!contains(cfDir, filePath)) {
+            throw new AugmentedError('Invalid client file path', {
+              info: html`
+                <p>The client file path</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                </div>
+                <p>must be inside the clientFilesQuestion directory</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                </div>
+              `,
+            });
+          }
+        }
+      }
+    }
+
+    for (const assessment of this.assessments) {
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+      if (!contains(assessmentsBaseDir, assessmentDir)) {
+        throw new AugmentedError('Invalid assessment folder path', {
+          info: html`
+            <p>The assessment folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentDir}</pre>
+            </div>
+            <p>must be inside the assessments directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+    }
+
+    const pathsToAdd: string[] = [];
+
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+
+      // When overwriting, wipe the entire directory so stale artifacts
+      // (e.g. a previous server.py or old clientFilesQuestion entries)
+      // don't persist alongside the fresh import.
+      if (question.overwrite && (await fs.pathExists(qDir))) {
+        await fs.remove(qDir);
+      }
+
+      const qInfoJson = { ...question.infoJson };
+      if (shareSourcePublicly) {
+        qInfoJson.sharePublicly = true;
+        qInfoJson.shareSourcePublicly = true;
+      }
+      const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
+      await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
+      await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
+
+      if (question.serverPy) {
+        await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
+      }
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const [name, base64Content] of Object.entries(question.clientFiles)) {
+          await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
+        }
+      }
+
+      pathsToAdd.push(qDir);
+    }
+
+    for (const assessment of this.assessments) {
+      // Write the assessment (path already validated above).
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+      const aInfoJson = { ...assessment.infoJson };
+      if (shareSourcePublicly) {
+        aInfoJson.shareSourcePublicly = true;
+      }
+      const formattedAssessmentJson = await formatJsonWithPrettier(JSON.stringify(aInfoJson));
+      await fs.outputFile(path.join(assessmentDir, 'infoAssessment.json'), formattedAssessmentJson);
+
+      pathsToAdd.push(assessmentDir);
+    }
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `${this.course_instance.short_name}: import QTI content`,
+    };
+  }
+}
+
+type PrepareJsonFileEditorResult<T extends Record<string, unknown>> =
+  | {
+      success: true;
+      editor: FileModifyEditor;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
+    }
+  | { success: false; reason: 'conflict' };
+
+type SaveJsonFileResult<T extends Record<string, unknown>> =
+  | {
+      success: true;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
+    }
+  | { success: false; reason: 'conflict' }
+  | { success: false; reason: 'sync_failed'; jobSequenceId: string };
+
+interface JsonFileEdit<T extends Record<string, unknown>> {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  conflictCheck: {
+    origHash: string | null;
+    /** The section of the JSON file to hash for conflict detection. */
+    scope: (jsonContents: T) => object | object[];
+  };
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+}
+
+/**
+ * Prepares a `FileModifyEditor` for a JSON file edit: reads the file, runs
+ * scoped conflict detection, applies the caller's mutation, formats the
+ * result, and constructs the editor without executing it. Useful when the
+ * edit needs to be bundled into a `MultiEditor` so it commits and syncs as
+ * part of a larger atomic operation.
+ */
+export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
+  applyChanges,
+  jsonPath,
+  conflictCheck,
+  locals,
+  container,
+}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult<T>> {
+  // Read file once for conflict check, content modification, and TOCTOU hash.
+  const rawContents = await fs.readFile(jsonPath, 'utf8');
+  const fullFileHash = computeFileContentHash(rawContents);
+  const jsonContents = JSON.parse(rawContents) as T;
+
+  // Scoped conflict detection: hash only the section being edited.
+  if (conflictCheck.origHash) {
+    const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
+    if (currentHash !== conflictCheck.origHash) {
+      return { success: false, reason: 'conflict' };
+    }
+  }
+
+  const modifiedJsonContents = applyChanges(jsonContents);
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
+
+  // Use the full-file hash for FileModifyEditor's TOCTOU safety net.
+  const editor = new FileModifyEditor({
+    locals,
+    container,
+    filePath: jsonPath,
+    editContents: b64EncodeUnicode(formattedJson),
+    origHash: fullFileHash,
+  });
+
+  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
+  return { success: true, editor, newHash, jsonData: modifiedJsonContents };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>(
+  args: JsonFileEdit<T>,
+): Promise<SaveJsonFileResult<T>> {
+  const prepared = await prepareJsonFileEditor(args);
+  if (!prepared.success) return prepared;
+
+  const serverJob = await prepared.editor.prepareServerJob();
+  try {
+    await prepared.editor.executeWithServerJob(serverJob);
+  } catch {
+    return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
+  }
+
+  return { success: true, newHash: prepared.newHash, jsonData: prepared.jsonData };
+}
+
+/**
+ * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
+ * access control references `labelName`. The caller supplies `transform` to
+ * either rename the label (rewrite array entries) or delete it (filter it
+ * out). Intended to be bundled with the `infoCourseInstance.json` edit in a
+ * `MultiEditor` so the changes commit and sync atomically.
+ *
+ * Affected assessments are located by joining through the synced
+ * `assessment_access_control_student_labels` table, matching the pattern
+ * used by `AssessmentSetRenameEditor`.
+ */
+export async function prepareAccessControlLabelRewriteEditors({
+  course,
+  courseInstanceId,
+  labelName,
+  transform,
+  locals,
+}: {
+  course: Course;
+  courseInstanceId: string;
+  labelName: string;
+  transform: (labels: string[]) => string[];
+  locals: { authz_data: AuthzData; course: Course; user: User };
+}): Promise<FileModifyEditor[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_student_label,
+    { course_instance_id: courseInstanceId, label_name: labelName },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessment of assessments) {
+    if (assessment.assessment_directory == null) continue;
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+    );
+    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (contents) => {
+        for (const rule of contents.accessControl ?? []) {
+          if (rule.labels == null) continue;
+          if (!rule.labels.includes(labelName)) continue;
+          rule.labels = transform(rule.labels);
+        }
+        return contents;
+      },
+      jsonPath: infoPath,
+      // No scoped hash: this edit is not driven by a user-held origHash.
+      // FileModifyEditor's full-file hash still guards against TOCTOU at
+      // write time, and shouldEdit() makes unchanged files a no-op.
+      conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    // `prepared` can only fail with reason 'conflict', which can't happen
+    // when origHash is null.
+    if (prepared.success) editors.push(prepared.editor);
+  }
+
+  return editors;
 }

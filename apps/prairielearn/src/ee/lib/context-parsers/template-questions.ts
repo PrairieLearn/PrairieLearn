@@ -4,7 +4,14 @@ import fs from 'fs-extra';
 
 import { validateHTML } from '../validateHTML.js';
 
-export async function buildContextForQuestion(dir: string): Promise<string | undefined> {
+export interface QuestionContext {
+  context: string;
+  readme: string | null;
+  html: string;
+  python: string | null;
+}
+
+export async function buildContextForQuestion(dir: string): Promise<QuestionContext | undefined> {
   const readmePath = path.join(dir, 'README.md');
   const hasReadme = await fs.pathExists(readmePath);
 
@@ -16,21 +23,29 @@ export async function buildContextForQuestion(dir: string): Promise<string | und
 
   const context: string[] = [];
 
-  if (validateHTML(html, hasPython).length > 0) {
+  const { errors, warnings } = validateHTML(html, hasPython);
+  if (errors.length > 0 || warnings.length > 0) {
     return undefined;
   }
 
+  let readme: string | null = null;
   if (hasReadme) {
-    const readme = await fs.readFile(readmePath, 'utf-8');
+    readme = await fs.readFile(readmePath, 'utf-8');
     context.push(readme, '\n');
   }
 
   context.push('```html', html, '```');
 
+  let python: string | null = null;
   if (hasPython) {
-    const python = await fs.readFile(pythonPath, 'utf-8');
+    python = await fs.readFile(pythonPath, 'utf-8');
     context.push('\n```python', python, '```');
   }
 
-  return context.join('\n');
+  return {
+    context: context.join('\n'),
+    readme,
+    html,
+    python,
+  };
 }

@@ -9,32 +9,34 @@ dependencies = [
   "ansi2html==1.9.2",
   "automata-lib==9.2.0",
   "chevron==0.14.0",
-  "coloraide==8.0",
-  "faker==40.1.2",
+  "coloraide==8.8.1",
+  "faker==40.15.0",
   "jinja2==3.1.6",
-  "lxml==6.0.2",
-  "matplotlib==3.10.8",
+  "lxml==6.1.0",
+  "matplotlib==3.10.9",
   "networkx==3.6.1",
-  "nltk==3.9.2",
-  "numpy==2.4.2",
+  "nltk==3.9.4",
+  "numpy==2.4.4",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
-  "pillow==12.1.0",
-  "pint==0.25.2",
+  "pillow==12.2.0",
+  "pint==0.25.3",
   "psutil==7.2.2",
   "pulp==3.3.0",
-  "pyarrow==23.0.0",
+  "pyarrow==24.0.0",
   "pycryptodome==3.23.0",
-  "pygments==2.19.2",
+  "pygments==2.20.0",
   "pygments-ansi-color==0.3.0",
   "pygraphviz==1.14",
   "pyquaternion==0.9.9",
-  "regex==2026.1.15",
-  "requests==2.32.5",
+  "regex==2026.4.4",
+  "requests==2.33.1",
+  "rich==15.0.0",
   "schemdraw==0.22",
   "scikit-learn==1.8.0",
-  "scipy==1.17.0",
+  "scipy==1.17.1",
   "seaborn==0.13.2",
+  "sketchresponse==0.1.4",
   "statsmodels==0.14.6",
   "sympy==1.14.0",
   "text-unidecode==1.3",
@@ -45,33 +47,35 @@ dependencies = [
 [dependency-groups]
 dev = [
   "pandas-stubs==2.3.3.260113",
-  "pytest==9.0.2",
-  "pytest-cov==7.0.0",
-  "pytest-github-actions-annotate-failures==0.3.0",
+  "pytest==9.0.3",
+  "pytest-cov==7.1.0",
+  "pytest-github-actions-annotate-failures==0.4.0",
   "pytest-repeat==0.9.4",
-  "ruff==0.14.14",
-  "sqlfluff==4.0.0",
-  "squawk-cli==2.39.0",
-  "types-chevron==0.14.2.20250103",
-  "types-lxml==2026.1.1",
-  "types-pygments==2.19.0.20251121",
+  "ruff==0.15.12",
+  "sqlfluff==4.1.0",
+  "squawk-cli==2.49.0",
+  "types-chevron==0.14.2.20260408",
+  "types-lxml==2026.2.16",
+  "types-pygments==2.20.0.20260408",
 ]
 
 docs = [
   "jsonschema2md==1.7.0",
   "mdx-truly-sane-lists==1.3",
   "mkdocs==1.6.1",
-  "mkdocs-d2-plugin==1.6.0",
+  "mkdocs-d2-plugin==1.7.0",
   "mkdocs-exclude==1.0.2",
-  "mkdocs-gen-files==0.6.0",
-  "mkdocs-literate-nav==0.6.2",
-  "mkdocs-material==9.7.1",
-  "mkdocstrings==1.0.2",
-  "mkdocstrings-python==2.0.1",
-  "pymdown-extensions==10.20.1",
+  "mkdocs-gen-files==0.6.1",
+  "mkdocs-literate-nav==0.6.3",
+  "mkdocs-material==9.7.6",
+  "mkdocstrings==1.0.4",
+  "mkdocstrings-python==2.0.3",
+  "pymdown-extensions==10.21.2",
+  # https://github.com/pygments/pygments/issues/3076
+  "pygments==2.20.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.14.14",
+  "ruff==0.15.12",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -91,7 +95,7 @@ extend-exclude = [
   "exampleCourse/questions/**/tests/initial_code.py",
   "exampleCourse/questions/**/tests/trailing_code.py",
 ]
-target-version = "py310"
+target-version = "py313"
 preview = true
 [tool.ruff.lint]
 select = ["ALL"]
@@ -100,7 +104,7 @@ ignore = [
   # These rules provide little value to us
   "BLE",     # flake8-blind-except
   "COM",     # flake8-commas
-  "CPY001",  # missing-copyright-notice 
+  "CPY001",  # missing-copyright-notice
   "C901",    # mccabe (complexity checks)
   "ERA",     # eradicate (code in comments)
   "EM",      # flake8-errmsg
@@ -109,7 +113,7 @@ ignore = [
   "FIX",     # flake8-fixme
   "INP001",  # implicit-namespace-package
   "S",       # flake8-bandit (security rules)
-  "SLF001",  # private-member-access 
+  "SLF001",  # private-member-access
   "T201",    # flake8-print
   "T100",    # flake8-debugger
   "TD",      # flake8-todos
@@ -220,15 +224,15 @@ convention = "google"
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"apps/prairielearn/**/*_test.py" = ["ANN", "D", "PLR0904"]
+"apps/prairielearn/python/test/**/*.py" = ["D"]
 "contrib/**/*.py" = ["ANN", "D", "DOC201"]
 "scripts/**/*.py" = ["D100", "DOC"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
 "exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
-"apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 
@@ -243,6 +247,8 @@ exclude = [
 ]
 
 [tool.pyright]
+venvPath = "."
+venv = ".venv"
 typeCheckingMode = "strict"
 include = [
   "./apps/prairielearn/elements",
@@ -255,7 +261,6 @@ include = [
 ignore = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-  "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]

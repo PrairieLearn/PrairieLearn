@@ -11,7 +11,7 @@
       "questions": [
         {
           "numberChoose": 1,
-          "points": 1,
+          "autoPoints": 1,
           "advanceScorePerc": 1,
           "alternatives": [{ "id": "partialCredit1", "advanceScorePerc": 0 }]
         }
@@ -19,11 +19,11 @@
     },
     {
       "advanceScorePerc": 25,
-      "questions": [{ "id": "partialCredit3", "points": [1, 1, 1, 1], "advanceScorePerc": 60 }]
+      "questions": [{ "id": "partialCredit3", "autoPoints": [1, 1, 1, 1], "advanceScorePerc": 60 }]
     },
-    { "advanceScorePerc": 75, "questions": [{ "id": "partialCredit2", "points": 1 }] },
-    { "questions": [{ "id": "partialCredit4_v2", "points": 1, "advanceScorePerc": 0 }] },
-    { "questions": [{ "id": "addNumbers", "points": 1, "advanceScorePerc": 30 }] },
-    { "questions": [{ "id": "internalGrade/addingNumbers", "points": 1 }] }
+    { "advanceScorePerc": 75, "questions": [{ "id": "partialCredit2", "autoPoints": 1 }] },
+    { "questions": [{ "id": "partialCredit4_v2", "autoPoints": 1, "advanceScorePerc": 0 }] },
+    { "questions": [{ "id": "addNumbers", "autoPoints": 1, "advanceScorePerc": 30 }] },
+    { "questions": [{ "id": "internalGrade/addingNumbers", "autoPoints": 1 }] }
   ]
 }

@@ -1,29 +1,21 @@
--- BLOCK select_assessment_instance
-SELECT
-  ai.*
-FROM
-  assessment_instances AS ai
-WHERE
-  ai.id = $assessment_instance_id;
-
 -- BLOCK select_instance_questions
 SELECT
-  iq.*,
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(z.*) AS zone,
+  to_jsonb(aq.*) AS assessment_question,
+  to_jsonb(q.*) AS question,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
-  z.id AS zone_id,
-  z.title AS zone_title,
-  q.title AS question_title,
-  aq.max_points,
-  aq.max_manual_points,
-  aq.max_auto_points,
-  aq.init_points,
-  aq.allow_real_time_grading,
+  (aicl.id IS NOT NULL) AS lockpoint_crossed,
+  aicl.crossed_at AS lockpoint_crossed_at,
+  lockpoint_user.uid AS lockpoint_crossed_authn_user_uid,
   qo.row_order,
   qo.question_number,
-  z.max_points AS zone_max_points,
-  (z.max_points IS NOT NULL) AS zone_has_max_points,
-  z.best_questions AS zone_best_questions,
-  (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+  (
+    count(*) OVER (
+      PARTITION BY
+        z.id
+    )
+  )::int AS zone_question_count,
   (
     SELECT
       count(*)
@@ -33,14 +25,13 @@ SELECT
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
   )::int AS file_count,
-  qo.sequence_locked,
+  qo.question_access_mode,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
     WHEN a.type = 'Homework' THEN ''
     ELSE 'Question '
   END || (lag(qo.question_number) OVER w) AS prev_title,
-  (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
-  iqnag.*
+  (lag(qo.question_access_mode) OVER w) AS prev_question_access_mode
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -48,9 +39,13 @@ FROM
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN zones AS z ON (z.id = ag.zone_id)
+  LEFT JOIN assessment_instance_crossed_lockpoints AS aicl ON (
+    aicl.zone_id = z.id
+    AND aicl.assessment_instance_id = ai.id
+  )
+  LEFT JOIN users AS lockpoint_user ON (lockpoint_user.id = aicl.authn_user_id)
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-  JOIN instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
 WHERE
   ai.id = $assessment_instance_id
   AND (

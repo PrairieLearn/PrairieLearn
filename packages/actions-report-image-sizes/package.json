@@ -16,14 +16,12 @@
     "build": "tsgo"
   },
   "dependencies": {
-    "@actions/core": "^3.0.0",
-    "@actions/github": "^9.0.0",
-    "zod": "^3.25.76"
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
-    "typescript": "^5.9.3"
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta"
   }
 }

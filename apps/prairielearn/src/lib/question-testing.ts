@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { ElementType } from 'domelementtype';
+import { isTag } from 'domhandler';
 import { isEqual, pick, range } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   // people might use `srcset`, or use `data-*` attributes for lazy loading or
   // other client-side purposes.
   $('*').each((_, el) => {
-    if (el.type !== ElementType.Tag) return;
+    if (!isTag(el)) return;
     for (const value of Object.values(el.attribs)) {
       const match = value.match(pattern);
       if (match) filenames.add(match[1].trim());
@@ -94,6 +94,11 @@ async function testDynamicFiles({
       variant,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: course,
+      },
     );
 
     const studentMessage = 'Error creating file: ' + decodedFilename;
@@ -158,6 +163,11 @@ export async function createTestSubmissionData(
     question,
     question_course,
     test_type,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
@@ -188,6 +198,7 @@ function compareTestResults(
   expectedData: questionServers.TestResultData,
   hasFatalIssue: boolean,
   submission: Submission,
+  question: Question,
 ): Error[] {
   const courseIssues: Error[] = [];
 
@@ -217,8 +228,13 @@ function compareTestResults(
   if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
-  checkEqual('score', expectedData.score, submission.score);
+  // For manual-only questions, auto-grading is skipped entirely, so the
+  // submission will have null partial_scores and score. Skip comparison
+  // in that case since there's nothing to compare against.
+  if (question.grading_method !== 'Manual') {
+    checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+    checkEqual('score', expectedData.score, submission.score);
+  }
   return courseIssues;
 }
 
@@ -283,7 +299,7 @@ async function testVariant(
   const submission = await selectSubmission(submission_id);
 
   // Step 3: Compare expected results with actual submission
-  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission, question);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
@@ -306,23 +322,32 @@ async function testVariant(
 /**
  * Test a question. Issues will be inserted into the issues table.
  *
- * @param question - The question for the variant.
- * @param course_instance - The course instance for the variant.
- * @param variant_course - The course for the variant.
- * @param test_type - The type of test to run.
- * @param authn_user_id - The currently authenticated user.
- * @param user_id - The current effective user.
- * @param variant_seed - Optional seed for the variant.
+ * @param params
+ * @param params.question - The question for the variant.
+ * @param params.course_instance - The course instance for the variant.
+ * @param params.variant_course - The course for the variant.
+ * @param params.test_type - The type of test to run.
+ * @param params.authn_user_id - The currently authenticated user.
+ * @param params.user_id - The current effective user.
+ * @param params.variant_seed - Optional seed for the variant.
  */
-async function testQuestion(
-  question: Question,
-  course_instance: CourseInstance | null,
-  variant_course: Course,
-  test_type: TestType,
-  authn_user_id: string,
-  user_id: string,
-  variant_seed?: string,
-): Promise<TestQuestionResults> {
+async function testQuestion({
+  question,
+  course_instance,
+  variant_course,
+  test_type,
+  authn_user_id,
+  user_id,
+  variant_seed,
+}: {
+  question: Question;
+  course_instance: CourseInstance | null;
+  variant_course: Course;
+  test_type: TestType;
+  authn_user_id: string;
+  user_id: string;
+  variant_seed?: string;
+}): Promise<TestQuestionResults> {
   let generateDuration;
   let initialRenderDuration;
   let gradeDuration;
@@ -333,24 +358,20 @@ async function testQuestion(
   let submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
-  const instance_question_id = null;
-  const options = { variant_seed };
-  const require_open = true;
-  const client_fingerprint_id = null;
   const generateStart = Date.now();
   try {
-    variant = await ensureVariant(
-      question.id,
-      instance_question_id,
-      authn_user_id,
+    variant = await ensureVariant({
+      question_id: question.id,
+      instance_question_id: null,
+      user_id: authn_user_id,
       authn_user_id,
       course_instance,
       variant_course,
       question_course,
-      options,
-      require_open,
-      client_fingerprint_id,
-    );
+      options: { variant_seed },
+      require_open: true,
+      client_fingerprint_id: null,
+    });
   } finally {
     const generateEnd = Date.now();
     generateDuration = generateEnd - generateStart;
@@ -484,15 +505,15 @@ async function runTest({
   variant_seed?: string;
 }): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
-  const { variant, expectedTestData, submission, stats } = await testQuestion(
+  const { variant, expectedTestData, submission, stats } = await testQuestion({
     question,
     course_instance,
-    course,
+    variant_course: course,
     test_type,
     authn_user_id,
     user_id,
     variant_seed,
-  );
+  });
 
   if (showDetails) {
     const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'] as const;
@@ -529,7 +550,7 @@ async function runTest({
     }
   }
 
-  const issueCount = await sqldb.queryRow(
+  const issueCount = await sqldb.queryScalar(
     sql.select_issue_count_for_variant,
     { variant_id: variant.id },
     z.number(),

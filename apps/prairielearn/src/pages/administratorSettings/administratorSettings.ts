@@ -6,11 +6,11 @@ import * as error from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
-import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectAllNewsItems, setNewsItemHidden } from '../../models/news-items.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
@@ -19,7 +19,8 @@ const router = Router();
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    res.send(AdministratorSettings({ resLocals: res.locals }));
+    const newsItems = await selectAllNewsItems();
+    res.send(AdministratorSettings({ resLocals: res.locals, newsItems }));
   }),
 );
 
@@ -61,7 +62,7 @@ router.post(
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(
-        openai.textEmbeddingModel('text-embedding-3-small'),
+        openai.embeddingModel('text-embedding-3-small'),
         res.locals.authn_user.id,
       );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
@@ -84,12 +85,20 @@ router.post(
       const { benchmarkAiQuestionGeneration } =
         await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),
         evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'sync_news_feed') {
+      const { fetchAndCacheNewsItems } = await import('../../lib/news-feed.js');
+      await fetchAndCacheNewsItems();
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'hide_news_item') {
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), true);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'unhide_news_item') {
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), false);
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

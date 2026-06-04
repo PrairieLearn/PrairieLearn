@@ -15,7 +15,7 @@ export interface InstitutionAuthnProvider {
   url: string;
 }
 
-export interface InstitutionSupportedProvider {
+interface InstitutionSupportedProvider {
   name: AuthnProvider['name'];
   is_default: boolean;
 }

@@ -31,8 +31,8 @@ WITH
       ssq.question_id = $question_id
   )
 SELECT
-  to_json(q) AS question,
-  to_json(top) AS topic,
+  to_jsonb(q) AS question,
+  to_jsonb(top) AS topic,
   issue_count.open_issue_count
 FROM
   questions AS q
@@ -81,9 +81,8 @@ WITH
       ssq.question_id = $question_id
   )
 SELECT
-  to_json(q) AS question,
-  to_json(top) AS topic,
-  assessments_format_for_question (q.id, ci.id) AS assessments,
+  to_jsonb(q) AS question,
+  to_jsonb(top) AS topic,
   issue_count.open_issue_count
 FROM
   questions AS q

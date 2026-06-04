@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
 
@@ -97,9 +98,11 @@ describe('BatchedMigrationsRunner', () => {
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');
 
     await expect(
-      runner.finalizeBatchedMigration('20230406184107_failing_migration', {
-        logProgress: false,
-      }),
+      withoutLogging(() =>
+        runner.finalizeBatchedMigration('20230406184107_failing_migration', {
+          logProgress: false,
+        }),
+      ),
     ).rejects.toThrow("but it is 'failed'");
     const migrations = await selectAllBatchedMigrations('test');
     assert.lengthOf(migrations, 1);

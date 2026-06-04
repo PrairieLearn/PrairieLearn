@@ -1,44 +1,12 @@
-import { z } from 'zod';
-
 import { Hydrate } from '@prairielearn/react/server';
-import { DateFromISOString } from '@prairielearn/zod';
 
-import {
-  RawStudentCourseInstanceSchema,
-  RawStudentCourseSchema,
-  type StaffInstitution,
-  StudentEnrollmentSchema,
-} from '../../lib/client/safe-db-types.js';
-import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
+import { type NewsItem } from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
-
-export const InstructorHomePageCourseSchema = z.object({
-  id: RawStudentCourseSchema.shape.id,
-  short_name: RawStudentCourseSchema.shape.short_name,
-  title: RawStudentCourseSchema.shape.title,
-  can_open_course: z.boolean(),
-  course_instances: z.array(
-    z.object({
-      id: RawStudentCourseSchema.shape.id,
-      long_name: RawStudentCourseInstanceSchema.shape.long_name,
-      expired: z.boolean(),
-    }),
-  ),
-});
-export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
-
-export const StudentHomePageCourseSchema = z.object({
-  course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
-  start_date: DateFromISOString.nullable(),
-  end_date: DateFromISOString.nullable(),
-  latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
-});
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+import { NewsAlert } from './components/NewsAlert.js';
+import type { InstructorHomePageCourse, StudentHomePageCourse } from './home.types.js';
 
 export function Home({
   canAddCourses,
@@ -49,6 +17,9 @@ export function Home({
   urlPrefix,
   isDevMode,
   search,
+  unreadNewsItems,
+  blogUrl,
+  now,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -58,6 +29,9 @@ export function Home({
   urlPrefix: string;
   isDevMode: boolean;
   search: string;
+  unreadNewsItems: NewsItem[];
+  blogUrl: string | null;
+  now: Date;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -76,10 +50,11 @@ export function Home({
   });
 
   return (
-    <div className="pt-5">
+    <div className="pt-5 mx-auto" style={{ maxWidth: 960 }}>
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
+      <NewsAlert newsItems={unreadNewsItems} csrfToken={csrfToken} blogUrl={blogUrl} now={now} />
       <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards
@@ -116,8 +91,11 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           different page or if you reload the current page in your web browser.
         </p>
         <p className="mb-0">
-          See the <a href="https://prairielearn.readthedocs.io">PrairieLearn documentation</a> for
-          information on creating questions and assessments.
+          See the{' '}
+          <a href="https://docs.prairielearn.com" target="_blank" rel="noreferrer">
+            PrairieLearn documentation
+          </a>{' '}
+          for information on creating questions and assessments.
         </p>
       </div>
     </div>
@@ -162,7 +140,7 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>Courses with instructor access</h2>
         <a
-          href="https://prairielearn.readthedocs.io/en/latest"
+          href="https://docs.prairielearn.com"
           className="btn btn-light btn-sm ms-auto"
           target="_blank"
           rel="noopener noreferrer"

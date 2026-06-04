@@ -6,10 +6,12 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   PotentialEnrollmentStatus,
@@ -19,8 +21,8 @@ import {
   type AuthzData,
   type AuthzDataWithEffectiveUser,
   type AuthzDataWithoutEffectiveUser,
-  type CourseInstanceRole,
   type DangerousSystemAuthzData,
+  type Role,
   assertHasRole,
   assertRoleIsPermitted,
   dangerousFullSystemAuthz,
@@ -392,6 +394,48 @@ export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
   );
 }
 
+/**
+ * Gets enrollments for the given UIDs in a course instance, matching against
+ * both user UIDs and pending UIDs (for invited/rejected students).
+ */
+export async function selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+  uids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  uids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_uids_or_pending_uids,
+    { uids, course_instance_id: courseInstance.id },
+    z.object({ enrollment: EnrollmentSchema, uid: z.string() }),
+  );
+}
+
+export async function selectEnrollmentsByIdsInCourseInstance({
+  ids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  ids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_ids_in_course_instance,
+    { ids, course_instance_id: courseInstance.id },
+    EnrollmentSchema,
+  );
+}
+
 export async function selectEnrollmentById({
   id,
   courseInstance,
@@ -453,11 +497,13 @@ async function _inviteExistingEnrollment({
   pendingUid,
   authzData,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   lockedEnrollment: Enrollment;
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: ('Student Data Editor' | 'System')[];
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
@@ -473,7 +519,7 @@ async function _inviteExistingEnrollment({
   await insertAuditEvent({
     tableName: 'enrollments',
     action: 'update',
-    actionDetail: 'invited',
+    actionDetail,
     rowId: newEnrollment.id,
     oldRow: lockedEnrollment,
     newRow: newEnrollment,
@@ -490,11 +536,13 @@ async function inviteNewEnrollment({
   authzData,
   courseInstance,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
   requiredRole: ('Student Data Editor' | 'System')[];
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -506,7 +554,7 @@ async function inviteNewEnrollment({
   await insertAuditEvent({
     tableName: 'enrollments',
     action: 'insert',
-    actionDetail: 'invited',
+    actionDetail,
     rowId: newEnrollment.id,
     newRow: newEnrollment,
     subjectUserId: null,
@@ -529,11 +577,13 @@ export async function inviteStudentByUid({
   authzData,
   courseInstance,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   uid: string;
   requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({
@@ -553,6 +603,7 @@ export async function inviteStudentByUid({
         pendingUid: uid,
         authzData,
         requiredRole,
+        actionDetail,
       });
     }
 
@@ -561,6 +612,7 @@ export async function inviteStudentByUid({
       authzData,
       courseInstance,
       requiredRole,
+      actionDetail,
     });
   });
 }
@@ -575,6 +627,16 @@ async function _selectAndLockEnrollment(id: string) {
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
+ *
+ * This function enforces specific state transitions:
+ * - `blocked` → `joined` (unblock)
+ * - `joined` → `blocked` (block)
+ * - `joined` → `left` (student self-removal)
+ * - `joined` → `removed` (instructor removal)
+ * - `invited` → `rejected` (student rejects invitation)
+ *
+ * For student list sync operations, use `removeEnrollmentFromSync` and
+ * `reenrollEnrollmentFromSync` instead.
  */
 export async function setEnrollmentStatus({
   enrollment,
@@ -585,7 +647,7 @@ export async function setEnrollmentStatus({
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'left' | 'removed' | 'joined';
   authzData: AuthzData;
-  requiredRole: CourseInstanceRole[];
+  requiredRole: Role[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -597,7 +659,7 @@ export async function setEnrollmentStatus({
       equivalentStatuses?: EnumEnrollmentStatus[];
       previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
       actionDetail: SupportedActionsForTable<'enrollments'>;
-      permittedRoles: CourseInstanceRole[];
+      permittedRoles: Role[];
     }
 
     const transitionInformation = run((): EnrollmentStatusTransitionInformation => {
@@ -605,11 +667,11 @@ export async function setEnrollmentStatus({
         case 'joined':
           return {
             previousStatus: ['blocked', 'removed'],
-            // TODO: when we add support for re-enrolling via manual and LTI sync,
-            // we'll need to differentiate those action details here.
+            // TODO: this intentionally uses instructor action details until
+            // LTI roster syncing exists. Add LTI-specific action details then.
             actionDetail:
               lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         case 'left':
           return {
@@ -618,25 +680,25 @@ export async function setEnrollmentStatus({
             equivalentStatuses: ['removed'],
             previousStatus: 'joined',
             actionDetail: 'left',
-            permittedRoles: ['Student'],
+            permittedRoles: ['Student', 'System'],
           };
         case 'removed':
           return {
             previousStatus: 'joined',
             actionDetail: 'removed',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         case 'rejected':
           return {
             previousStatus: 'invited',
             actionDetail: 'invitation_rejected',
-            permittedRoles: ['Student'],
+            permittedRoles: ['Student', 'System'],
           };
         case 'blocked':
           return {
             previousStatus: 'joined',
             actionDetail: 'blocked',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         default:
           assertNever(status);
@@ -675,6 +737,137 @@ export async function setEnrollmentStatus({
       newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+    });
+
+    return newEnrollment;
+  });
+}
+
+/**
+ * Removes an enrollment as part of a student list sync operation.
+ *
+ * Unlike `setEnrollmentStatus`, this function uses a sync-specific action detail.
+ * Student list sync treats the provided student list as the source of truth and removes
+ * anyone not on it who is currently joined.
+ *
+ * LTI-managed enrollments (lti13_pending) cannot be removed via student list sync.
+ */
+export async function removeEnrollmentFromSync({
+  enrollment,
+  authzData,
+  requiredRole,
+}: {
+  enrollment: Enrollment;
+  authzData: AuthzDataWithEffectiveUser;
+  requiredRole: 'Student Data Editor'[];
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
+    if (lockedEnrollment.user_id) {
+      await selectAndLockUser(lockedEnrollment.user_id);
+    }
+
+    // Already removed - nothing to do.
+    if (lockedEnrollment.status === 'removed') {
+      return lockedEnrollment;
+    }
+
+    // LTI-managed enrollments cannot be removed via student list sync.
+    if (lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot remove LTI-managed enrollment');
+    }
+
+    // Can only remove joined enrollments via student list sync.
+    if (lockedEnrollment.status !== 'joined') {
+      throw new error.HttpStatusError(
+        400,
+        `Cannot remove enrollment with status "${lockedEnrollment.status}"`,
+      );
+    }
+
+    assertHasRole(authzData, requiredRole);
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id: lockedEnrollment.id, status: 'removed' },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'removed_by_manual_sync',
+      rowId: newEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: newEnrollment,
+      agentUserId: authzData.user.id,
+      agentAuthnUserId: authzData.authn_user.id,
+    });
+
+    return newEnrollment;
+  });
+}
+
+/**
+ * Re-enrolls a blocked or removed enrollment as part of a student list sync operation.
+ *
+ * This is used when the student list is the source of truth and a previously blocked or removed
+ * student reappears on the student list.
+ */
+export async function reenrollEnrollmentFromSync({
+  enrollment,
+  authzData,
+  requiredRole,
+}: {
+  enrollment: Enrollment;
+  authzData: AuthzDataWithEffectiveUser;
+  requiredRole: 'Student Data Editor'[];
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
+    if (lockedEnrollment.user_id) {
+      await selectAndLockUser(lockedEnrollment.user_id);
+    }
+
+    // Already joined - nothing to do.
+    if (lockedEnrollment.status === 'joined') {
+      return lockedEnrollment;
+    }
+
+    // LTI-managed enrollments cannot be modified via student list sync.
+    if (lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot re-enroll LTI-managed enrollment');
+    }
+
+    if (!['blocked', 'removed'].includes(lockedEnrollment.status)) {
+      throw new error.HttpStatusError(
+        400,
+        `Cannot re-enroll enrollment with status "${lockedEnrollment.status}"`,
+      );
+    }
+
+    assertHasRole(authzData, requiredRole);
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id: lockedEnrollment.id, status: 'joined' },
+      EnrollmentSchema,
+    );
+
+    const actionDetail =
+      lockedEnrollment.status === 'blocked'
+        ? 'unblocked_by_manual_sync'
+        : 'reenrolled_by_manual_sync';
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail,
+      rowId: newEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: newEnrollment,
+      agentUserId: authzData.user.id,
+      agentAuthnUserId: authzData.authn_user.id,
     });
 
     return newEnrollment;
@@ -752,4 +945,29 @@ export async function inviteEnrollment({
       requiredRole,
     });
   });
+}
+
+export async function selectUsersAndEnrollmentsForCourseInstance(
+  courseInstance: CourseInstanceContext,
+) {
+  return queryRows(
+    sql.select_users_and_enrollments_for_course_instance,
+    { course_instance_id: courseInstance.id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema.nullable(),
+      student_label_ids: z.array(IdSchema),
+    }),
+  );
+}
+
+export async function validateEnrollmentIdsInCourseInstance(
+  ids: Set<string>,
+  courseInstance: CourseInstanceContext,
+): Promise<number> {
+  return queryScalar(
+    sql.validate_enrollment_ids_in_course_instance,
+    { enrollment_ids: [...ids], course_instance_id: courseInstance.id },
+    z.number(),
+  );
 }

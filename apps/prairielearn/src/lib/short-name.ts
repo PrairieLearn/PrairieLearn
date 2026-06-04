@@ -1,15 +1,13 @@
 /**
  * Regular expression for validating short names, including course instance short names and QIDs.
  *
- * The RegExp is compiled with the `v` flag, which matches the behavior of browsers when this is
- * used in a `pattern` attribute. This is important, because it forces/allows us to escape the
- * `-` character in character classes.
- *
  * Dots are allowed in non-leading positions of each path segment (e.g., `foo.bar` or `foo/bar.baz`
  * are valid, but `.foo` or `foo/.bar` are not).
+ *
+ * TODO: Use the `v` flag to ensure this matches the behavior of browsers when this is used in the pattern attribute once we are on ES2024.
  */
 export const SHORT_NAME_REGEX =
-  /^[A-Za-z0-9\-_][A-Za-z0-9\-_.]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_.]*)*$/v;
+  /^[A-Za-z0-9\-_][A-Za-z0-9\-_.]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_.]*)*$/;
 
 /**
  * String pattern for short names, suitable for use in HTML pattern attributes.
@@ -29,7 +27,7 @@ interface ShortNameValidationFailure {
   lowercaseMessage: string;
 }
 
-export type ShortNameValidationResult = ShortNameValidationSuccess | ShortNameValidationFailure;
+type ShortNameValidationResult = ShortNameValidationSuccess | ShortNameValidationFailure;
 
 function buildValidationError(message: string): ShortNameValidationFailure {
   // Client message starts with capital, server message starts with lowercase

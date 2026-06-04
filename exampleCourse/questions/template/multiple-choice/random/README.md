@@ -1,1 +1,0 @@
-This question demonstrates the ability of `<pl-multiple-choice>` to randomly select a correct answer and distractors from hardcoded lists of correct and incorrect answers. `number-answers="4"` configures the element to select a single correct answer and three distractors.

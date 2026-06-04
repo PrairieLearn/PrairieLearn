@@ -42,6 +42,15 @@
         </div>
     {{/answers}}
     </span>
+    {{#editable}}{{#allow_blank}}
+    <button
+        type="button"
+        class="btn btn-link btn-sm p-0 text-secondary small"
+        data-name="{{name}}"
+        aria-label="Clear multiple choice selection"
+        onclick="window.PLMultipleChoiceClearRadio(this)"
+    >Clear</button>
+    {{/allow_blank}}{{/editable}}
 
 {{#display_score_badge}}
     {{#correct}}
@@ -60,7 +69,7 @@
 {{/inline}}
 {{/radio}}
 {{^radio}}
-<!-- Weirdly enough putting this in a div causes it to display without the inline -->
+{{! Weirdly enough putting this in a div causes it to display without the inline }}
 <span
     class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
     {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
@@ -73,9 +82,10 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        {{#allow_blank}}data-allow-blank="true"{{/allow_blank}}
         aria-label="{{aria_label}}"
     >
-        <option value="" disabled selected data-content="{{placeholder}}"></option>
+        <option value="" {{^allow_blank}}disabled{{/allow_blank}} selected data-content="{{placeholder}}"></option>
         {{#answers}}
             <option
                 value="{{key}}"

@@ -1,7 +1,7 @@
 <pl-question-panel>
   <p>
   The
-  <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-symbolic-input"><code>pl-symbolic-input</code></a>
+  <a href="https://docs.prairielearn.com/elements/pl-symbolic-input"><code>pl-symbolic-input</code></a>
   has a new visual formula editor. Here we test a bunch of different configurations alongside the visual formula editor.
   </p>
   </pl-question-panel>
@@ -70,7 +70,7 @@
 <pl-card header="An example where we use assumptions">
   <pl-question-panel>
       <p>Sometimes, certain expressions can only be treated as equivalent by sympy if additional assumptions are made. For example, consider that $\sqrt{B^2} = B$ is only true if $B \geq 0$. To use these, assumptions must be set in the <code>server.py</code> file when variables are declared.</p>
-      <p>Submit an expression equivalent to $\sqrt{B^2}$ when assuming $B > 0$.</p>
+      <p>Submit an expression equivalent to $\sqrt{B^2}$ when assuming $B &gt; 0$.</p>
   </pl-question-panel>
   <pl-symbolic-input formula-editor="true" aria-label="Expression for B" answers-name="assumptions" variables="B"></pl-symbolic-input>
 </pl-card>
@@ -102,6 +102,14 @@
   </pl-question-panel>
   <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
 </pl-card>
+
+<pl-card header="An example in which interval notation is allowed (&lt;code&gt;allow-sets=&quot;true&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Submit: $ \{0\} \cup [1/2, \infty) $</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" allow-sets="true" aria-label="Set notation expression" answers-name="interval_notation" correct-answer="{0} U [1/2, infty)"></pl-symbolic-input>
+</pl-card>
+
 
 <pl-card header="Absolute value problem">
   <pl-question-panel>

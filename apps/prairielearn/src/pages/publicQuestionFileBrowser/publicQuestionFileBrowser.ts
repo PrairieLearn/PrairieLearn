@@ -18,6 +18,7 @@ async function setLocals(req: Request, res: Response) {
   res.locals.question = await selectQuestionById(req.params.question_id);
 
   if (
+    res.locals.question.deleted_at != null ||
     !res.locals.question.share_source_publicly ||
     !idsEqual(res.locals.question.course_id, res.locals.course.id)
   ) {

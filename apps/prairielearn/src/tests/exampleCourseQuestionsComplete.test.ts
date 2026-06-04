@@ -1,3 +1,4 @@
+import * as os from 'node:os';
 import { join } from 'path';
 
 import { A11yError, A11yResults } from '@sa11y/format';
@@ -8,14 +9,15 @@ import { HtmlValidate } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -62,11 +64,11 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
-    .on('.pl-drawing-button img', {
+    .on('.pl-drawing-button img, .js-cropper-base-image', {
       element(el) {
         const src = el.getAttribute('src');
-        if (src === '') {
-          el.setAttribute('src', 'pl-drawing-dummy-img.png');
+        if (src == null || src === '') {
+          el.setAttribute('src', 'pl-dummy-img.png');
         }
       },
     })
@@ -83,6 +85,13 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         // Our blank option has no text by default.
         // html-validate claims that it's not recommended to set aria-label on an option.
         el.removeAttribute('aria-label');
+      },
+    })
+    .on('ul.dropdown-menu[aria-labelledby]', {
+      element(el) {
+        // Bootstrap's canonical dropdown pattern uses aria-labelledby on <ul class="dropdown-menu">.
+        // html-validate flags this as "strictly allowed but not recommended" on <ul>.
+        el.removeAttribute('aria-labelledby');
       },
     });
   await rewriter.write(encoder.encode(html));
@@ -203,6 +212,14 @@ const validateHtml = async (html: string) => {
   }
 };
 
+// axe-core relies on module-level globals (`window`, `document`, `axe._running`)
+let axeQueue: Promise<unknown> = Promise.resolve();
+const runAxeSerially = <T>(fn: () => Promise<T>): Promise<T> => {
+  const next = axeQueue.then(fn, fn);
+  axeQueue = next.catch(() => {});
+  return next;
+};
+
 const validateAxe = async (html: string) => {
   const virtualConsole = new VirtualConsole();
   const jsdom = new JSDOM(html, {
@@ -210,19 +227,21 @@ const validateAxe = async (html: string) => {
   });
 
   const messages: string[] = [];
-  const axeResults = await axe.run(jsdom.window.document.documentElement, {
-    rules: {
-      // document-level rules that don't apply
-      'document-title': { enabled: false },
-      'html-has-lang': { enabled: false },
-      region: { enabled: false },
-      // pl-dataframe emits empty headers
-      'empty-table-header': { enabled: false },
-      // TODO: see h37 above
-      'role-img-alt': { enabled: false },
-      'image-alt': { enabled: false },
-    },
-  });
+  const axeResults = await runAxeSerially(() =>
+    axe.run(jsdom.window.document.documentElement, {
+      rules: {
+        // document-level rules that don't apply
+        'document-title': { enabled: false },
+        'html-has-lang': { enabled: false },
+        region: { enabled: false },
+        // pl-dataframe emits empty headers
+        'empty-table-header': { enabled: false },
+        // TODO: see h37 above
+        'role-img-alt': { enabled: false },
+        'image-alt': { enabled: false },
+      },
+    }),
+  );
   if (axeResults.violations.length > 0) {
     const err = new A11yError(
       axeResults.violations,
@@ -239,7 +258,7 @@ const validateAxe = async (html: string) => {
 // Find all question directories
 const allQuestionDirs = findQuestionDirectories(questionsPath);
 
-// Filter for questions that don't use Manual or External grading
+// Filter for questions that don't use External grading
 const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
@@ -253,7 +272,7 @@ const internallyGradedQuestions = allQuestionDirs
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
-      !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
+      !['External'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
 const course = {
@@ -263,47 +282,42 @@ const course = {
 
 const questionModule = questionServers.getModule('Freeform');
 
-// TODO: support '_files'
-const unsupportedQuestions = new Set(['element/fileEditor', 'element/codeDocumentation']);
-
 const accessibilitySkip = new Set([
   // Extremely large question
   'element/dataframe',
 ]);
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
-  const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-
   beforeAll(async function () {
-    config.features['process-questions-in-server'] = false;
-    await helperServer.before()();
+    await withConfig({ workersCount: os.cpus().length }, async () => {
+      await helperServer.before()();
+    });
   });
 
-  afterAll(async function () {
-    await helperServer.after();
-    config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
-  });
+  afterAll(helperServer.after);
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
-    it(`should succeed for ${relativePath}`, async function (context) {
-      if (unsupportedQuestions.has(relativePath)) {
-        context.skip();
-      }
+    it.concurrent(`should succeed for ${relativePath}`, async () => {
       const question = {
-        options: info.options ?? {}, // Use options from info.json if available
+        options: info.options ?? {},
+        preferences_schema: info.preferences ?? null,
         directory: relativePath,
         type: 'Freeform',
       } as unknown as Question;
 
+      // Extract default preferences from info.json preferences schema
+      const preferences = info.preferences ? extractDefaultPreferences(info.preferences) : {};
+
       // Prepare and generate
-      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
+      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({
         question,
         course,
-        {
-          variant_seed: null,
-        },
-      );
-
+        variant_course: course,
+        variant_seed: null,
+        preferences,
+        effective_user_id: null,
+        group_id: null,
+      });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
       const variant = rawVariant as Variant;
@@ -312,8 +326,9 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
+        showCorrectAnswer: false,
+        allowAnswerEditing: true,
         ...buildQuestionUrls(
           '/prefix2',
           { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
@@ -321,22 +336,28 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
           null,
         ),
       };
+      const caller = {
+        userId: null,
+        groupId: null,
+        variantCourse: course,
+      };
       const {
         courseIssues: renderIssues,
         data: { questionHtml },
-      } = await questionModule.render(
-        {
+      } = await questionModule.render({
+        renderSelection: {
           question: true,
           submissions: false,
           answer: false,
         },
         variant,
         question,
-        null /* submission */,
-        [] /* submissions */,
+        submission: null,
+        submissions: [],
         course,
         locals,
-      );
+        caller,
+      });
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
       // Validate HTML
@@ -353,7 +374,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
       const {
         data: { raw_submitted_answer },
-      } = await questionModule.test(variant, question, course, 'correct');
+      } = await questionModule.test(variant, question, course, 'correct', caller);
 
       const parseResult = await questionModule.parse(
         {
@@ -364,6 +385,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
 
@@ -379,6 +401,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
 
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via grade+render, add more checks.

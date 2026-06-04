@@ -1,6 +1,6 @@
 # Installing and running for local course development
 
-This page describes the procedure to install and run your course locally within Docker. You can develop course content locally following the instructions below, or using the [in-browser tools](getStarted.md).
+This page describes the procedure to install and run your course locally within Docker. You can develop course content locally following the instructions below, or using the [in-browser tools](getting-started/index.md).
 
 ## Why run PrairieLearn locally?
 

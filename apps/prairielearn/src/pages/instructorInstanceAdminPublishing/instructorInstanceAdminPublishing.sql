@@ -12,8 +12,8 @@ ORDER BY
 SELECT
   to_jsonb(ci_extensions.*) AS course_instance_publishing_extension,
   COALESCE(
-    json_agg(
-      json_build_object(
+    jsonb_agg(
+      jsonb_build_object(
         'uid',
         u.uid,
         'name',
@@ -27,7 +27,7 @@ SELECT
       WHERE
         u.uid IS NOT NULL
     ),
-    '[]'::json
+    '[]'::jsonb
   ) AS user_data
 FROM
   course_instance_publishing_extensions AS ci_extensions

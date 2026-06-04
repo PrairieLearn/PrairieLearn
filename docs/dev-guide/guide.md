@@ -252,6 +252,8 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
+- The `assessment_tools` table stores tool configuration (e.g., calculator) for assessments. Each row references either a `zone_id` or an `assessment_id`, allowing tools to be configured at the assessment level or overridden per zone.
+
 ??? tip "Schema and data exploration"
 
     The [`ms-ossdata.vscode-pgsql` VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) can help you explore the database schema and data in your editor.
@@ -390,7 +392,7 @@ FOR NO KEY UPDATE;
     id = ANY ($id_list::BIGINT[]);
   ```
 
-- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:
+- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_questions.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_questions.sql). For example:
 
   ```javascript
   let data = [
@@ -484,11 +486,11 @@ There are 4 non-overlapping types of roles: "System roles", "Student course inst
 
     This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
 
-For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we institute two checks:
+For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. Route-specific role checks should normally live in middleware or the handler; model functions should focus on ownership and record-belonging checks. To help with this, we institute two checks:
 
 1. Model functions should accept full, typed row objects as parameters. Possession of this object implies the caller is authorized to read the record. For example, updates to the enrollment status should require the caller to pass in the full enrollment row object. We want to make it hard to update an enrollment status using just an enrollment ID (e.g. by sending a POST request to `/api/enrollments/<enrollment_id>/status`, and performing an unvalidated update with `req.params.enrollment_id`).
 
-2. Model functions should require the caller to pass in context about their authorization. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
+2. Ownership-sensitive model functions should require the caller to pass in the context needed to prove ownership or record belonging. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
 
 ```typescript
 const enrollment = await selectEnrollment({

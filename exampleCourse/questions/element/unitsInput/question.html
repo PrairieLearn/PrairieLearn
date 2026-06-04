@@ -1,10 +1,10 @@
 <pl-question-panel>
     <p>
         Questions below were designed to showcase the different features of
-        <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-units-input"><code>pl-units-input</code></a>.
+        <a href="https://docs.prairielearn.com/elements/pl-units-input"><code>pl-units-input</code></a>.
         The goal of <code>pl-units-input</code>
         is to allow users to enter <b>real values with units</b>. This element has similar behavior to the <a
-            href="https://prairielearn.readthedocs.io/en/latest/elements/pl-number-input"><code>pl-number-input</code></a>
+            href="https://docs.prairielearn.com/elements/pl-number-input"><code>pl-number-input</code></a>
         element, with the added benefit of being able to interact with units.
     </p>
 </pl-question-panel>
@@ -12,13 +12,14 @@
 <pl-card>
     <pl-question-panel>
         <p> Within this question, you can observe the default behavior of the <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/pl-units-input"><code>pl-units-input</code></a>
+                href="https://docs.prairielearn.com/elements/pl-units-input"><code>pl-units-input</code></a>
             element. The submitted answer and reference solutions will be first be converted to base units and then
-            compared. Submitting units of incorrect dimensionality will not be given any credit.
+            compared. Submitting units of incorrect dimensionality will not be given any credit. The attribute
+            <code>initial-value</code> fills the input the first time it renders to provide a suggested starting point.
         </p>
         <p> What is the length of a meter stick? </p>
     </pl-question-panel>
-    <pl-units-input aria-label="Length with units" answers-name="c_1" correct-answer="1m"></pl-units-input>
+    <pl-units-input aria-label="Length with units" answers-name="c_1" correct-answer="1m" initial-value="1 m"></pl-units-input>
 </pl-card>
 
 <pl-card>
@@ -40,7 +41,7 @@
     <pl-question-panel>
         <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of
             <code>1e-8</code>) underneath <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/pl-units-input"><code>pl-units-input</code></a>
+                href="https://docs.prairielearn.com/elements/pl-units-input"><code>pl-units-input</code></a>
             element. Furthermore, we add a label to the front of the input field to specify what the field should
             receive.
         </p>
@@ -53,7 +54,7 @@
 <pl-card>
     <pl-question-panel>
         <p>In this question, we opt to change the default comparison of <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/pl-units-input"><code>pl-units-input</code></a>
+                href="https://docs.prairielearn.com/elements/pl-units-input"><code>pl-units-input</code></a>
             from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits
             (<code>comparison="sigfig"</code>), which has a default of two digits. In addition, this question
             showcases some of the more complex units that this element can handle.

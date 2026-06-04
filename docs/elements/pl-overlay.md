@@ -1,6 +1,6 @@
 # `pl-overlay` element
 
-The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
+The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions. It is most commonly used to place input fields (such as [`pl-number-input`](pl-number-input.md)) on top of a [`pl-figure`](pl-figure.md) or [`pl-drawing`](../pl-drawing/index.md) so students can fill in labels at specific positions on a diagram.
 
 ## Sample element
 
@@ -32,20 +32,20 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 | Attribute | Type    | Default | Description                                                          |
 | --------- | ------- | ------- | -------------------------------------------------------------------- |
-| `width`   | float   | —       | The width of the overlay canvas in pixels.                           |
-| `height`  | float   | —       | The height of the overlay canvas in pixels.                          |
 | `clip`    | boolean | true    | If true, children will be cut off when exceeding overlay boundaries. |
+| `height`  | float   | —       | The height of the overlay canvas in pixels.                          |
+| `width`   | float   | —       | The width of the overlay canvas in pixels.                           |
 
 ## `pl-location` Customizations
 
 | Attribute | Type   | Default    | Description                                                                                           |
 | --------- | ------ | ---------- | ----------------------------------------------------------------------------------------------------- |
-| `left`    | float  | —          | The x coordinate of the child element (relative to the left of the overlay)                           |
-| `top`     | float  | —          | The y coordinate of the child element (relative to the top of the overlay)                            |
-| `right`   | float  | —          | The x coordinate of the child element (relative to the right of the overlay)                          |
 | `bottom`  | float  | —          | The y coordinate of the child element (relative to the bottom of the overlay)                         |
-| `valign`  | string | `"middle"` | Specifies the vertical alignment of the contents. Can be one of `"top"`, `"middle"`, or `"bottom"`.   |
 | `halign`  | string | `"center"` | Specifies the horizontal alignment of the contents. Can be one of `"left"`, `"center"`, or `"right"`. |
+| `left`    | float  | —          | The x coordinate of the child element (relative to the left of the overlay)                           |
+| `right`   | float  | —          | The x coordinate of the child element (relative to the right of the overlay)                          |
+| `top`     | float  | —          | The y coordinate of the child element (relative to the top of the overlay)                            |
+| `valign`  | string | `"middle"` | Specifies the vertical alignment of the contents. Can be one of `"top"`, `"middle"`, or `"bottom"`.   |
 
 ## `pl-background` Customizations
 

@@ -104,13 +104,68 @@ describe('isValidMustacheTemplateName', () => {
   });
 });
 
+describe('validateHTML forbidden document tags', () => {
+  it('rejects <html> tag', () => {
+    const { errors } = validateHTML(
+      '<html><pl-question-panel>Hello</pl-question-panel></html>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<html>');
+  });
+
+  it('rejects <body> tag', () => {
+    const { errors } = validateHTML(
+      '<body><pl-question-panel>Hello</pl-question-panel></body>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<body>');
+  });
+
+  it('rejects <head> tag', () => {
+    const { errors } = validateHTML(
+      '<head><meta charset="utf-8"></head><pl-question-panel>Hello</pl-question-panel>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<head>');
+  });
+
+  it('rejects <!DOCTYPE> declaration', () => {
+    const { errors } = validateHTML(
+      '<!DOCTYPE html>\n<pl-question-panel>Hello</pl-question-panel>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<!DOCTYPE>');
+  });
+
+  it('rejects case-insensitive variants', () => {
+    const { errors } = validateHTML(
+      '<HTML><BODY><pl-question-panel>Hello</pl-question-panel></BODY></HTML>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<html>');
+  });
+
+  it('accepts valid content without document tags', () => {
+    const { errors } = validateHTML(
+      '<pl-question-panel><p>What is 2+2?</p></pl-question-panel><pl-integer-input answers-name="ans" correct-answer="4"></pl-integer-input>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+});
+
 describe('validateHTML integer attributes', () => {
   /** Test integer validation via pl-integer-input's weight attribute */
   function validateIntegerAttr(value: string): string[] {
     return validateHTML(
       `<pl-integer-input answers-name="x" weight="${value}"></pl-integer-input>`,
       true,
-    );
+    ).errors;
   }
 
   it('accepts positive integers', () => {
@@ -166,7 +221,7 @@ describe('validateHTML float attributes', () => {
     return validateHTML(
       `<pl-number-input answers-name="x" rtol="${value}"></pl-number-input>`,
       true,
-    );
+    ).errors;
   }
 
   it('accepts positive integers', () => {
@@ -244,5 +299,113 @@ describe('validateHTML float attributes', () => {
     const errors2 = validateFloatAttr('e5');
     assert.isNotEmpty(errors2);
     assert.isTrue(errors2.some((e) => e.includes('must be an floating-point number')));
+  });
+});
+
+describe('validateHTML pl-multiple-choice', () => {
+  it('accepts boolean all/none of the above values when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="true" none-of-the-above="true" order="fixed">
+        <pl-answer>Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects grading attributes when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" weight="1" hide-score-badge="true" builtin-grading="false" order="fixed">
+        <pl-answer score="0.5" feedback="Partial">Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.isTrue(errors.some((e) => e.includes('weight cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('hide-score-badge cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('score cannot be used')));
+    assert.isTrue(errors.some((e) => e.includes('feedback cannot be used')));
+  });
+
+  it('rejects correctness semantics for all/none of the above when builtin grading is disabled', () => {
+    const { errors } = validateHTML(
+      `<pl-multiple-choice answers-name="survey" builtin-grading="false" all-of-the-above="random" none-of-the-above="correct" order="fixed">
+        <pl-answer>Option A</pl-answer>
+        <pl-answer>Option B</pl-answer>
+      </pl-multiple-choice>`,
+      true,
+    );
+
+    assert.isTrue(
+      errors.some((e) => e.includes('all-of-the-above') && e.includes('must be in true')),
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('none-of-the-above') && e.includes('must be in true')),
+    );
+  });
+});
+
+describe('validateHTML panel nesting', () => {
+  it('warns about input element inside pl-submission-panel', () => {
+    const { warnings } = validateHTML(
+      '<pl-submission-panel><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></pl-submission-panel>',
+      true,
+    );
+    assert.isTrue(
+      warnings.some((w) => w.includes('pl-string-input') && w.includes('pl-submission-panel')),
+    );
+  });
+
+  it('warns about input element inside pl-answer-panel', () => {
+    const { warnings } = validateHTML(
+      '<pl-answer-panel><pl-number-input answers-name="ans"></pl-number-input></pl-answer-panel>',
+      true,
+    );
+    assert.isTrue(
+      warnings.some((w) => w.includes('pl-number-input') && w.includes('pl-answer-panel')),
+    );
+  });
+
+  it('warns about input element inside pl-question-panel', () => {
+    const { warnings } = validateHTML(
+      '<pl-question-panel><pl-integer-input answers-name="ans" correct-answer="42"></pl-integer-input></pl-question-panel>',
+      true,
+    );
+    assert.isTrue(
+      warnings.some((w) => w.includes('pl-integer-input') && w.includes('pl-question-panel')),
+    );
+  });
+
+  it('accepts input element at top level', () => {
+    const { errors, warnings } = validateHTML(
+      '<pl-question-panel><p>Question</p></pl-question-panel>' +
+        '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it('warns about input element deeply nested inside panel', () => {
+    const { warnings } = validateHTML(
+      '<pl-submission-panel><div><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></div></pl-submission-panel>',
+      true,
+    );
+    assert.isTrue(
+      warnings.some((w) => w.includes('pl-string-input') && w.includes('pl-submission-panel')),
+    );
+  });
+
+  it('accepts non-input content inside pl-submission-panel', () => {
+    const { errors, warnings } = validateHTML(
+      '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>' +
+        '<pl-submission-panel><p>Your answer was submitted.</p></pl-submission-panel>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
   });
 });

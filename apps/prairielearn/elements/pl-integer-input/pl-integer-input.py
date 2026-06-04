@@ -1,12 +1,11 @@
 import random
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -26,6 +25,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 BASE_DEFAULT = 10
 SHOW_SCORE_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
@@ -46,6 +46,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "blank-value",
         "placeholder",
+        "initial-value",
         "show-score",
     ]
 
@@ -101,6 +102,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     score = data["partial_scores"].get(name, {"score": None}).get("score")
 
     with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:

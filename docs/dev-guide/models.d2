@@ -32,6 +32,7 @@ assessment_sets.style.fill: "#f0fff0"
 topics.style.fill: "#f0fff0"
 alternative_groups.style.fill: "#f0fff0"
 zones.style.fill: "#f0fff0"
+assessment_tools.style.fill: "#f0fff0"
 
 issues.style.fill: lavender
 enrollments.style.fill: lavender
@@ -46,7 +47,6 @@ jobs.style.fill: lavender
 assessment_state_logs.style.fill: white
 assessment_score_logs.style.fill: white
 question_score_logs.style.fill: white
-variant_view_logs.style.fill: white
 assessment_view_logs.style.fill: white
 
 # Connections
@@ -76,6 +76,8 @@ assessment_sets -> courses
 topics -> courses
 zones -> assessments
 alternative_groups -> zones
+assessment_tools -> assessments
+assessment_tools -> zones
 
 issues -> variants: {
   style.stroke-dash: 5
@@ -103,7 +105,6 @@ question_score_logs -> instance_questions
 question_score_logs -> grading_jobs: {
   style.stroke-dash: 5
 }
-variant_view_logs -> variants
 assessment_view_logs -> assessment_instances
 
 legend: "Legend" {

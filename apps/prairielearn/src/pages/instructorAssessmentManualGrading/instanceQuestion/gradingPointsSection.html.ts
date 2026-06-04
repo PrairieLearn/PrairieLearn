@@ -23,10 +23,6 @@ export function ManualPointsSection({
     show_percentage: !!resLocals.assessment_question.max_points,
     show_input: !resLocals.rubric_data,
     show_input_edit: false,
-    show_rubric_button:
-      context === 'main' &&
-      !resLocals.rubric_data?.replace_auto_points &&
-      resLocals.authz_data.has_course_instance_permission_edit,
   });
 }
 
@@ -51,31 +47,17 @@ export function AutoPointsSection({
     show_percentage: !!resLocals.assessment_question.max_points,
     show_input: false,
     show_input_edit: !disable,
-    show_rubric_button: false,
   });
 }
 
 export function TotalPointsSection({
-  context,
-  disable,
   points,
   resLocals,
 }: {
-  context: 'main' | 'existing' | 'conflicting';
-  disable: boolean;
   points: number;
   resLocals: UntypedResLocals;
 }) {
   return html`
-    ${context === 'main' && resLocals.rubric_data?.replace_auto_points && !disable
-      ? html`
-          <span class="float-end btn-group btn-group-sm ms-1" role="group">
-            <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
-              <i class="fas fa-list-check"></i> Rubric
-            </button>
-          </span>
-        `
-      : ''}
     <div class="mb-3 js-manual-grading-points w-100">
       Total Points:
       <span class="float-end">
@@ -94,7 +76,7 @@ export function TotalPointsSection({
   `;
 }
 
-export function GradingPointsSection({
+function GradingPointsSection({
   type,
   type_label,
   context,
@@ -104,7 +86,6 @@ export function GradingPointsSection({
   show_percentage,
   disable,
   show_input_edit,
-  show_rubric_button,
 }: {
   type: string;
   type_label: string;
@@ -115,7 +96,6 @@ export function GradingPointsSection({
   show_percentage: boolean;
   disable: boolean;
   show_input_edit: boolean;
-  show_rubric_button: boolean;
 }) {
   return html`
     <div class="mb-3">
@@ -164,16 +144,6 @@ export function GradingPointsSection({
                     class="btn btn-outline-secondary js-enable-${type}-score-edit js-${type}-score-value-info"
                   >
                     <i class="fas fa-pencil"></i>
-                  </button>
-                `
-              : ''}
-            ${show_rubric_button
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary js-show-rubric-settings-button"
-                  >
-                    <i class="fas fa-list-check"></i> Rubric
                   </button>
                 `
               : ''}

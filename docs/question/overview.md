@@ -17,11 +17,13 @@ A question is made up of three main components:
 To create a new question through the PrairieLearn web interface:
 
 1. Navigate to the **Questions** tab in your course.
-2. Click the **Add Question** button.
-3. Choose a starting point:
-   - **Blank question**: Creates an empty question with just the essential files.
-   - **Template**: You can select one of PrairieLearn's pre-built question templates to use as a starting point, or [create your own template](#custom-templates). Templates provide pre-configured structures that can speed up question creation.
-4. Enter a Question ID (QID) for your new question and click **Create**.
+2. Click the **Add question** button.
+3. Enter a title and Question ID (QID) for your new question.
+4. Choose a starting point:
+   - **Empty question**: Creates a blank question with just the essential files (`question.html` and `server.py`).
+   - **PrairieLearn template**: Start from one of PrairieLearn's pre-built question templates.
+   - **Course template**: Start from a template defined in your course. See [Custom templates](#custom-templates) for details.
+5. Click **Create question**.
 
 !!! tip
 
@@ -98,6 +100,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
+| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                                                                                                          |
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
@@ -148,7 +151,11 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+Additional details about how to access these fields from `server.py` can be found in the [clientFiles and serverFiles documentation](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
+
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your question. More information can be found in the [element developer guide](../devElements.md#using-node-dependencies-in-element-code).
 
 ### Non-randomized questions
 
@@ -202,7 +209,7 @@ The `question.html` is regular HTML, with a few special features:
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
-5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students in different contexts.
+5. Special layout elements like [`<pl-question-panel>`](../elements/pl-question-panel.md) and [`<pl-answer-panel>`](../elements/pl-answer-panel.md) can be used to show content to students in different contexts.
 
 !!! info
 

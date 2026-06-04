@@ -10,6 +10,7 @@ import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
@@ -113,14 +114,11 @@ const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/se
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assessmentSettingsUrl = assessmentUrl + '/settings';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl =
@@ -133,12 +131,6 @@ const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('inf
 
 const findEditUrlData = [
   {
-    name: 'assessment',
-    selector: '[data-testid="edit-assessment-configuration-link"]',
-    url: assessmentSettingsUrl,
-    expectedEditUrl: assessmentEditUrl,
-  },
-  {
     name: 'course admin via course instance',
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseInstanceCourseAdminSettingsUrl,
@@ -149,18 +141,6 @@ const findEditUrlData = [
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
-  },
-  {
-    name: 'instance admin',
-    selector: '[data-testid="edit-course-instance-configuration-link"]',
-    url: courseInstanceInstanceAdminSettingsUrl,
-    expectedEditUrl: courseInstanceInstanceAdminEditUrl,
-  },
-  {
-    name: 'question',
-    selector: '[data-testid="edit-question-configuration-link"]',
-    url: courseInstanceQuestionSettingsUrl,
-    expectedEditUrl: courseInstanceQuestionJsonEditUrl,
   },
 ];
 
@@ -318,44 +298,46 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
       // `fetch()` pre-normalizes the URL, which means we can't use it to test
       // path traversal attacks. In this specific case, we'll use `http.request()`
       // directly to avoid this normalization.
-      const res = await new Promise<{ status: number; text: () => Promise<string> }>(
-        (resolve, reject) => {
-          // We deliberately use the deprecated `node:url#parse()` instead of
-          // `new URL()` to avoid path normalization.
-          const parsedUrl = nodeUrl.parse(url);
-          const req = http.request(
-            {
-              hostname: 'localhost',
-              port: config.serverPort,
-              path: parsedUrl.path,
-              method: 'GET',
-            },
-            (res) => {
-              let data = '';
+      await withoutLogging(async () => {
+        const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+          (resolve, reject) => {
+            // We deliberately use the deprecated `node:url#parse()` instead of
+            // `new URL()` to avoid path normalization.
+            const parsedUrl = nodeUrl.parse(url);
+            const req = http.request(
+              {
+                hostname: 'localhost',
+                port: config.serverPort,
+                path: parsedUrl.path,
+                method: 'GET',
+              },
+              (res) => {
+                let data = '';
 
-              res.on('data', (chunk) => {
-                data += chunk;
-              });
-
-              res.on('end', () => {
-                resolve({
-                  status: res.statusCode ?? 500,
-                  text: () => Promise.resolve(data),
+                res.on('data', (chunk) => {
+                  data += chunk;
                 });
-              });
-            },
-          );
 
-          req.on('error', (err) => {
-            reject(err);
-          });
+                res.on('end', () => {
+                  resolve({
+                    status: res.statusCode ?? 500,
+                    text: () => Promise.resolve(data),
+                  });
+                });
+              },
+            );
 
-          req.end();
-        },
-      );
+            req.on('error', (err) => {
+              reject(err);
+            });
 
-      assert.equal(res.status, expected_status);
-      page = await res.text();
+            req.end();
+          },
+        );
+
+        assert.equal(res.status, expected_status);
+        page = await res.text();
+      });
     });
     if (should_parse) {
       it('should parse', function () {
@@ -455,7 +437,7 @@ function verifyEdit(
     const fileContents = b64DecodeUnicode(editor.data('contents'));
     assert.strictEqual(fileContents, expectedDraftContents);
   });
-  it(`should have results of save and sync - ${expectedToFindResults}`, function () {
+  it(`should have save results - ${expectedToFindResults}`, function () {
     elemList = locals.$('form[name="editor-form"] #job-sequence-results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);

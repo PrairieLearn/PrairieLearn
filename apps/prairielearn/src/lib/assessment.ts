@@ -4,71 +4,59 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
+  computeAssessmentInstanceScoreByZone,
+  updateAssessmentInstanceGrade,
+} from './assessment-grading.js';
+import {
   type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
+  CourseInstanceSchema,
   CourseSchema,
   QuestionSchema,
+  type User,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
-import { getGroupId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
   instance_question_id: z.string().nullable(),
   variant_id: z.string().nullable(),
   variant_number: z.number().nullable(),
+  variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
-  data: z.record(z.any()).nullable(),
+  data: z.record(z.string(), z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
+  assessment_instance_date: DateFromISOString,
+  display_timezone: CourseInstanceSchema.shape.display_timezone,
 });
-export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
-
-/**
- * Check that an assessment_instance_id really belongs to the given assessment_id
- *
- * @param assessment_instance_id - The assessment instance to check.
- * @param assessment_id - The assessment it should belong to.
- * @returns Throws an error if the assessment instance doesn't belong to the assessment.
- */
-export async function checkBelongs(
-  assessment_instance_id: string,
-  assessment_id: string,
-): Promise<void> {
-  if (
-    (await sqldb.queryOptionalRow(
-      sql.check_belongs,
-      { assessment_instance_id, assessment_id },
-      IdSchema,
-    )) == null
-  ) {
-    throw new error.HttpStatusError(403, 'access denied');
-  }
-}
+export type InstanceLogEntry = Omit<
+  z.infer<typeof InstanceLogSchema>,
+  'display_timezone' | 'assessment_instance_date'
+>;
 
 /**
  * Render the "text" property of an assessment.
@@ -192,15 +180,18 @@ export async function updateAssessmentInstance(
     }
 
     // Insert any new questions not previously in the assessment instance
-    const newInstanceQuestionIds = await sqldb.queryRows(
+    const newInstanceQuestionIds = await sqldb.queryScalars(
       sql.insert_instance_questions,
       { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
       IdSchema,
     );
 
+    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
+    const totalPointsZones = pointsByZone.reduce((sum, zone) => sum + zone.max_points, 0);
+
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
-      { assessment_instance_id, authn_user_id },
+      { assessment_instance_id, total_points_zones: totalPointsZones, authn_user_id },
       AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
     );
     // If assessment was not updated, grades do not need to be recomputed.
@@ -208,20 +199,12 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          assessment_instance_id,
-          authn_user_id,
-          null, // credit
-          true, // only_log_if_score_updated
-        ],
-        z.object({
-          updated: z.boolean(),
-          new_points: z.number(),
-          new_score_perc: z.number(),
-        }),
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id,
+        onlyLogIfScoreUpdated: true,
+        precomputedPointsByZone: pointsByZone,
+      });
     }
     return true;
   });
@@ -315,10 +298,9 @@ export async function gradeAssessmentInstance({
     // to grade a broken variant as an error.
     if (row.variant.broken_at) return;
 
-    const check_submission_id = null;
     await gradeVariant({
       variant: row.variant,
-      check_submission_id,
+      check_submission_id: null,
       question: row.question,
       variant_course: row.variant_course,
       user_id,
@@ -346,6 +328,38 @@ export async function gradeAssessmentInstance({
   await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
 }
 
+export async function crossLockpoint({
+  assessmentInstance,
+  zoneId,
+  authnUser,
+}: {
+  assessmentInstance: AssessmentInstance;
+  zoneId: string;
+  authnUser: User;
+}): Promise<void> {
+  const crossedLockpointId = await sqldb.queryOptionalScalar(
+    sql.cross_lockpoint,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId, authn_user_id: authnUser.id },
+    IdSchema,
+  );
+  if (crossedLockpointId != null) return;
+
+  // The INSERT uses ON CONFLICT DO NOTHING, which returns nothing both when
+  // the conflict fires (already crossed) and when the WHERE conditions fail
+  // (not eligible to cross). This second query distinguishes those cases.
+  const alreadyCrossed = await sqldb.queryOptionalScalar(
+    sql.check_lockpoint_crossed,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId },
+    IdSchema,
+  );
+  if (alreadyCrossed != null) return;
+
+  throw new error.HttpStatusError(
+    403,
+    'Unable to cross this lockpoint. Please return to the assessment overview and try again.',
+  );
+}
+
 const InstancesToGradeSchema = z.object({
   assessment_instance_id: IdSchema,
   instance_number: z.number(),
@@ -357,6 +371,7 @@ const InstancesToGradeSchema = z.object({
  *
  * @param params
  * @param params.assessment_id - The assessment to grade.
+ * @param params.assessment_instance_ids - If provided, only grade these instances; otherwise grade all open instances.
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
@@ -366,6 +381,7 @@ const InstancesToGradeSchema = z.object({
  */
 export async function gradeAllAssessmentInstances({
   assessment_id,
+  assessment_instance_ids = null,
   user_id,
   authn_user_id,
   close,
@@ -373,6 +389,11 @@ export async function gradeAllAssessmentInstances({
   ignoreRealTimeGradingDisabled,
 }: {
   assessment_id: string;
+  /**
+   * If provided, restricts grading to these assessment instance ids; otherwise
+   * grades every open instance for the assessment.
+   */
+  assessment_instance_ids?: string[] | null;
   user_id: string;
   authn_user_id: string;
   close: boolean;
@@ -385,7 +406,7 @@ export async function gradeAllAssessmentInstances({
 
   const serverJob = await createServerJob({
     type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
+    description: `${close ? 'Grade and close' : 'Grade'} all assessment instances for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_id,
@@ -398,7 +419,7 @@ export async function gradeAllAssessmentInstances({
 
     const instances = await sqldb.queryRows(
       sql.select_instances_to_grade,
-      { assessment_id },
+      { assessment_id, assessment_instance_ids },
       InstancesToGradeSchema,
     );
     job.info(instances.length === 1 ? 'One instance found' : instances.length + ' instances found');
@@ -429,7 +450,7 @@ export async function gradeAllAssessmentInstances({
 export async function updateAssessmentStatisticsForCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
-  const rows = await sqldb.queryRows(
+  const rows = await sqldb.queryScalars(
     sql.select_assessments_for_statistics_update,
     { course_instance_id },
     IdSchema,
@@ -448,7 +469,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
     await sqldb.executeRow(sql.select_assessment_lock, { assessment_id });
 
     // check whether we need to update the statistics
-    const needs_statistics_update = await sqldb.queryRow(
+    const needs_statistics_update = await sqldb.queryScalar(
       sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
@@ -460,7 +481,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
   });
 }
 
-export async function updateAssessmentInstanceScore(
+export async function setAssessmentInstanceScore(
   assessment_instance_id: string,
   score_perc: number,
   authn_user_id: string,
@@ -481,7 +502,7 @@ export async function updateAssessmentInstanceScore(
   });
 }
 
-export async function updateAssessmentInstancePoints(
+export async function setAssessmentInstancePoints(
   assessment_instance_id: string,
   points: number,
   authn_user_id: string,
@@ -502,6 +523,35 @@ export async function updateAssessmentInstancePoints(
   });
 }
 
+function formatLogEntryValues({
+  display_timezone,
+  assessment_instance_date,
+  ...row
+}: z.infer<typeof InstanceLogSchema>): InstanceLogEntry {
+  if (row.event_name === 'Open') {
+    const dateLimit = DateFromISOString.nullable().parse(row.data?.date_limit);
+    if (dateLimit == null) {
+      row.data = {
+        ...row.data,
+        date_limit: 'Unlimited',
+        time_limit: 'Unlimited',
+        remaining_time: 'Unlimited',
+      };
+    } else {
+      row.data = {
+        ...row.data,
+        date_limit: formatDate(dateLimit, display_timezone),
+        time_limit: formatInterval(dateLimit.getTime() - assessment_instance_date.getTime()),
+        remaining_time: formatInterval(dateLimit.getTime() - row.event_date.getTime()),
+      };
+    }
+  } else if (row.event_name === 'Time limit expiry') {
+    const dateLimit = DateFromISOString.parse(row.data?.date_limit);
+    row.data = { ...row.data, date_limit: formatDate(dateLimit, display_timezone) };
+  }
+  return row;
+}
+
 /**
  * Selects a log of all events associated to an assessment instance.
  *
@@ -517,7 +567,7 @@ export async function selectAssessmentInstanceLog(
   const log: InstanceLogEntry[] = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
   const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
@@ -540,24 +590,22 @@ export async function selectAssessmentInstanceLogCursor(
   return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
-}
-
-export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 
 export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessment_questions = await sqldb.queryRows(
+    const assessment_questions = await sqldb.queryScalars(
       sql.select_assessment_questions,
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await async.eachSeries(assessment_questions, async (assessment_question_id) => {
+      await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+    });
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
@@ -567,7 +615,7 @@ export async function deleteAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  const deleted_id = await sqldb.queryOptionalRow(
+  const deleted_id = await sqldb.queryOptionalScalar(
     sql.delete_assessment_instance,
     { assessment_id, assessment_instance_id, authn_user_id },
     IdSchema,
@@ -583,64 +631,17 @@ export async function deleteAssessmentInstance(
 export async function deleteAllAssessmentInstancesForAssessment(
   assessment_id: string,
   authn_user_id: string,
+  assessment_instance_ids: string[] | null = null,
 ): Promise<void> {
   await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
     assessment_id,
     authn_user_id,
+    assessment_instance_ids,
   });
 }
 
-/**
- * This is used to conditionally display/permit a shortcut to delete the
- * assessment instance. Usually, the only way to delete an assessment instance
- * is from the "Students" tab of an assessment. However, when a staff member is
- * iterating on or testing an assessment, it can be tedious to constantly go
- * back to that page to delete the instance in order to recreate it.
- *
- * The shortcut is a "Regenerate assessment instance" button on the assessment
- * instance page and instance question page. It's only displayed if the user
- * has the necessary permissions: either "Previewer" or above access on the
- * course, or "Student Data Viewer" or above access on the course instance.
- * We're deliberately permissive with these permissions to allow "untrusted"
- * course staff to e.g. perform quality control on assessments.
- *
- * We have an extra check: the instance must have been created by a user that
- * was an instructor at the time of creation. This addresses the case where
- * some user was an enrolled student in course instance X and was later added
- * as course staff to course instance Y. In this case, the user should not be
- * able to delete their old assessment instances in course instance X. This
- * check is performed with the `assessment_instances.include_in_statistics`
- * column, which reflects whether or not the user was an instructor at the time
- * of creation. We'll rename this column to something more general, e.g.
- * `created_by_instructor`, in a future migration.
- *
- * There's one exception to the above check: the example course, where
- * `include_in_statistics` is generally `false` even when instructors create
- * assessment instances; this is because the example course has weird implicit
- * permissions.
- *
- * Note that we check for `authn_` permissions specifically. This ensures that
- * the menu appears for both "student view" and "student view without access
- * restrictions".
- *
- * @returns Whether or not the user should be allowed to delete the assessment instance.
- */
-export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolean {
-  return (
-    // Check for permissions.
-    (resLocals.authz_data.authn_has_course_permission_preview ||
-      resLocals.authz_data.authn_has_course_instance_permission_view) &&
-    // Check that the assessment instance belongs to this user, or that the
-    // user belongs to the group that created the assessment instance.
-    resLocals.authz_result.authorized_edit &&
-    // Check that the assessment instance was created by an instructor; bypass
-    // this check if the course is an example course.
-    (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
-  );
-}
-
 export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
-  return await sqldb.queryRow(
+  return await sqldb.queryScalar(
     sql.select_assessment_instance_last_submission_date,
     { assessment_instance_id },
     DateFromISOString.nullable(),

@@ -61,49 +61,42 @@ You should also include the CSS file in your page:
 @import url('@prairielearn/ui/components/styles.css');
 ```
 
-### CategoricalColumnFilter
+### MultiSelectColumnFilter
 
-You can refer to [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for an example of how to use this component.
+A column filter that lets the user pick a set of values to include or exclude. See [`instructorStudents.html.tsx`](../../apps/prairielearn/src/pages/instructorStudents/instructorStudents.html.tsx) for a full example.
 
 ```tsx
-import { CategoricalColumnFilter } from '@prairielearn/ui';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { EnumEnrollmentStatusSchema } from '../../lib/db-types.js';
-import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
+import {
+  MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
+  applyMultiSelectFilter,
+  parseAsMultiSelectFilter,
+} from '@prairielearn/ui';
+import { useQueryState } from 'nuqs';
 
-const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
-const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
+const STATUS_VALUES = ['joined', 'invited', 'removed'] as const;
+const DEFAULT_STATUS_FILTER: MultiSelectFilterValue<(typeof STATUS_VALUES)[number]> = {
+  values: [],
+  mode: 'include',
+};
 
-const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+const [statusFilter, setStatusFilter] = useQueryState(
   'status',
-  parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_ENROLLMENT_STATUS_FILTER),
+  parseAsMultiSelectFilter(STATUS_VALUES).withDefault(DEFAULT_STATUS_FILTER),
 );
 
-const columnFilters = useMemo(() => {
-  return [
-    {
-      id: 'enrollment_status',
-      value: enrollmentStatusFilter,
-    },
-  ];
-}, [enrollmentStatusFilter]);
-
-// Setting up the filters in the table options
-const tableOptions = {
-  // ... other table options
-  filters: {
-    enrollment_status: ({ header }) => (
-      <CategoricalColumnFilter
-        columnId={header.column.id}
-        columnLabel="Status"
-        allColumnValues={STATUS_VALUES}
-        renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
-        columnValuesFilter={enrollmentStatusFilter}
-        setColumnValuesFilter={setEnrollmentStatusFilter}
-      />
-    ),
-  },
+// In the column definition's `filterFn`:
+filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+  const current = row.getValue<string>(columnId);
+  return applyMultiSelectFilter(filter, (values) => values.includes(current));
 };
+
+// In the table's filters config:
+filters: {
+  enrollment_status: ({ header }) => (
+    <MultiSelectColumnFilter column={header.column} allColumnValues={STATUS_VALUES} />
+  ),
+}
 ```
 
 ### ComboBox and TagPicker
@@ -129,6 +122,32 @@ const [selectedIds, setSelectedIds] = useState<string[]>([]);
 ```
 
 Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
+
+### FilterDropdown
+
+A multi-select filter dropdown built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+
+```tsx
+import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
+import { useState } from 'react';
+
+const items: FilterItem[] = [
+  { id: '1', name: 'JavaScript', color: 'blue1' },
+  { id: '2', name: 'TypeScript', color: 'blue2' },
+  { id: '3', name: 'Python', color: 'green1' },
+];
+
+const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+<FilterDropdown
+  label="Language"
+  items={items}
+  selectedIds={selectedIds}
+  onChange={setSelectedIds}
+/>;
+```
+
+The `color` property maps to PrairieLearn's badge color classes (e.g., `color-blue1`). Custom rendering can be provided via `renderItem`.
 
 ## nuqs Utilities
 

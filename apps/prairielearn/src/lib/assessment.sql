@@ -1,13 +1,3 @@
--- BLOCK check_belongs
-SELECT
-  ai.id
-FROM
-  assessment_instances AS ai
-  JOIN assessments AS a ON (a.id = ai.assessment_id)
-WHERE
-  ai.id = $assessment_instance_id
-  AND a.id = $assessment_id;
-
 -- BLOCK insert_assessment_instance
 WITH
   latest_assessment_instance AS (
@@ -303,12 +293,6 @@ FROM
 
 -- BLOCK update_assessment_instance_max_points
 WITH
-  zones_total_max_points AS (
-    SELECT
-      SUM(max_points) AS total_max_points
-    FROM
-      assessment_instances_points ($assessment_instance_id)
-  ),
   new_max_points AS (
     SELECT
       ai.max_points AS old_max_points,
@@ -316,7 +300,7 @@ WITH
       COALESCE(
         a.max_points,
         GREATEST(
-          ztmp.total_max_points - COALESCE(a.max_bonus_points, 0),
+          $total_points_zones - COALESCE(a.max_bonus_points, 0),
           0
         )
       ) AS new_max_points,
@@ -324,7 +308,6 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN zones_total_max_points ztmp ON TRUE
     WHERE
       ai.id = $assessment_instance_id
   ),
@@ -408,7 +391,11 @@ FROM
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
-  AND ai.open;
+  AND ai.open
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR ai.id = ANY ($assessment_instance_ids::bigint[])
+  );
 
 -- BLOCK close_assessment_instance
 WITH
@@ -492,6 +479,72 @@ SELECT
   $client_fingerprint_id
 FROM
   updated_assessment_instance;
+
+-- BLOCK cross_lockpoint
+INSERT INTO
+  assessment_instance_crossed_lockpoints (assessment_instance_id, zone_id, authn_user_id)
+SELECT
+  $assessment_instance_id,
+  z.id,
+  $authn_user_id
+FROM
+  zones AS z
+  JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
+WHERE
+  z.id = $zone_id
+  AND ai.open = TRUE
+  AND z.lockpoint = TRUE
+  AND z.assessment_id = ai.assessment_id
+  -- All earlier lockpoints must already be crossed (sequential enforcement).
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      zones AS z2
+      LEFT JOIN assessment_instance_crossed_lockpoints AS aicl ON (
+        aicl.zone_id = z2.id
+        AND aicl.assessment_instance_id = $assessment_instance_id
+      )
+    WHERE
+      z2.assessment_id = z.assessment_id
+      AND z2.lockpoint = TRUE
+      AND z2.number < z.number
+      AND aicl.id IS NULL
+  )
+  -- No questions in prior zones have an unmet advanceScorePerc threshold.
+  -- We check the source (locking flag) rather than the downstream effect
+  -- (blocked_sequence), because blocked_sequence can propagate into the
+  -- lockpoint zone itself when advanceScorePerc is on the last question
+  -- of the preceding zone.
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      instance_questions AS iq
+      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS prior_zone ON (prior_zone.id = ag.zone_id)
+    WHERE
+      iq.assessment_instance_id = $assessment_instance_id
+      AND aq.deleted_at IS NULL
+      AND prior_zone.assessment_id = z.assessment_id
+      AND prior_zone.number < z.number
+      AND aq.effective_advance_score_perc IS NOT NULL
+      AND iq.open = TRUE
+      AND 100 * COALESCE(iq.highest_submission_score, 0) < aq.effective_advance_score_perc
+  )
+ON CONFLICT (assessment_instance_id, zone_id) DO NOTHING
+RETURNING
+  id;
+
+-- BLOCK check_lockpoint_crossed
+SELECT
+  id
+FROM
+  assessment_instance_crossed_lockpoints
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND zone_id = $zone_id;
 
 -- BLOCK select_variants_for_assessment_instance_grading
 SELECT DISTINCT
@@ -849,6 +902,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         NULL::bigint AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -873,6 +927,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         v.id AS log_id,
         v.client_fingerprint_id,
@@ -912,6 +967,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         v.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -940,6 +996,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         s.id AS submission_id,
         s.id AS log_id,
         s.client_fingerprint_id,
@@ -989,6 +1046,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1023,6 +1081,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1095,6 +1154,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1127,6 +1187,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         gj.id AS submission_id,
         gj.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1172,6 +1233,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         qsl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1211,6 +1273,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1245,27 +1308,12 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         asl.client_fingerprint_id,
         CASE
-          WHEN asl.open THEN jsonb_build_object(
-            'date_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_date_full_compact (asl.date_limit, ci.display_timezone)
-            END,
-            'time_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - ai.date)
-            END,
-            'remaining_time',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - asl.date)
-            END
-          )
+          WHEN asl.open THEN jsonb_build_object('date_limit', asl.date_limit)
           ELSE NULL::jsonb
         END AS data
       FROM
@@ -1291,13 +1339,11 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         asl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
-        jsonb_build_object(
-          'time_limit',
-          format_interval (asl.date_limit - ai.date)
-        ) AS data
+        jsonb_build_object('date_limit', asl.date_limit) AS data
       FROM
         assessment_state_logs AS asl
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
@@ -1325,6 +1371,32 @@ WITH
     UNION
     (
       SELECT
+        7.7 AS event_order,
+        'Cross lockpoint'::text AS event_name,
+        'purple2'::text AS event_color,
+        aicl.crossed_at AS date,
+        u.id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
+        NULL::integer AS submission_id,
+        aicl.id AS log_id,
+        NULL::bigint AS client_fingerprint_id,
+        jsonb_build_object('zone_title', z.title, 'zone_number', z.number) AS data
+      FROM
+        assessment_instance_crossed_lockpoints AS aicl
+        JOIN zones AS z ON (z.id = aicl.zone_id)
+        LEFT JOIN users AS u ON (u.id = aicl.authn_user_id)
+      WHERE
+        aicl.assessment_instance_id = $assessment_instance_id
+    )
+    UNION
+    (
+      SELECT
         8 AS event_order,
         'View variant'::text AS event_name,
         'green3'::text AS event_color,
@@ -1336,6 +1408,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
+        v.variant_seed,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id,
@@ -1364,6 +1437,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id,
@@ -1389,6 +1463,7 @@ WITH
         NULL::integer AS instance_question_id,
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
+        NULL::text AS variant_seed,
         NULL::integer AS submission_id,
         gl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
@@ -1427,14 +1502,15 @@ SELECT
   el.instance_question_id,
   el.variant_id,
   el.variant_number,
+  el.variant_seed,
   el.submission_id,
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
   NULL AS client_fingerprint_number,
-  format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
-  format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
-  qd.instructor_question_number
+  qd.instructor_question_number,
+  ai.date AS assessment_instance_date,
+  ci.display_timezone
 FROM
   event_log AS el
   LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)
@@ -1768,6 +1844,10 @@ WITH
     DELETE FROM assessment_instances AS ai
     WHERE
       ai.assessment_id = $assessment_id
+      AND (
+        $assessment_instance_ids::bigint[] IS NULL
+        OR ai.id = ANY ($assessment_instance_ids::bigint[])
+      )
     RETURNING
       ai.*
   )

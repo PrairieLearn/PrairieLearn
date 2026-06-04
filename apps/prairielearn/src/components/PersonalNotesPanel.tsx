@@ -12,6 +12,7 @@ export function PersonalNotesPanel({
   authz_result,
   variantId,
   allowNewUploads = true,
+  lockdownBrowser = false,
   csrfToken,
   context,
 }: {
@@ -21,6 +22,8 @@ export function PersonalNotesPanel({
   authz_result: Record<string, any>;
   variantId?: string;
   allowNewUploads?: boolean;
+  /** Hides the file-picker form; its OS file dialog would let students open desktop files. */
+  lockdownBrowser?: boolean;
   csrfToken: string;
   context: 'question' | 'assessment';
 }) {
@@ -71,13 +74,13 @@ export function PersonalNotesPanel({
                   `
                 : !authz_result.authorized_edit
                   ? html`
-                      <div class="alert alert-warning mt-2" role="alert">
+                      <div class="alert alert-warning mb-0" role="alert">
                         You are viewing the ${context} instance of a different user and so are not
                         authorized to add or delete personal notes.
                       </div>
                     `
                   : html`
-                      ${AttachFileForm({ variantId, csrfToken })}
+                      ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
                       ${UploadTextForm({ variantId, csrfToken })}
                     `}
             </div>

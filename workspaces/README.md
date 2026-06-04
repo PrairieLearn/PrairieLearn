@@ -1,12 +1,11 @@
 # PrairieLearn workspace images
 
-This directory contains source files for Docker images that are intended to be used as [PrairieLearn workspaces](https://prairielearn.readthedocs.io/en/latest/workspaces/).
+This directory contains source files for Docker images that are intended to be used as [PrairieLearn workspaces](https://docs.prairielearn.com/workspaces/).
 
 ## Maintained images
 
 The following workspace images are maintained by PrairieLearn:
 
-- [`prairielearn/workspace-desktop`](./desktop/): An Ubuntu 24.04 desktop
 - [`prairielearn/workspace-jupyterlab-base`](./jupyterlab-base/): JupyterLab
 - [`prairielearn/workspace-jupyterlab-python`](./jupyterlab-python/): JupyterLab with Python 3.13
 - [`prairielearn/workspace-jupyterlab-r`](./jupyterlab-r/): JupyterLab with R 4.4

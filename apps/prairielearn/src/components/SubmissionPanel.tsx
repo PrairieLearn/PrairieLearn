@@ -3,10 +3,13 @@ import * as url from 'node:url';
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import {
   type AssessmentQuestion,
+  type Course,
+  type CourseInstance,
   type GradingJob,
   GradingJobSchema,
   type InstanceQuestion,
@@ -37,7 +40,6 @@ const detailedSubmissionColumns = {
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
-  formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
 
@@ -57,7 +59,8 @@ export function SubmissionPanel({
   assessment_question,
   instance_question,
   variant_id,
-  course_instance_id,
+  course,
+  course_instance,
   submission,
   submissionHtml,
   submissionCount,
@@ -72,7 +75,8 @@ export function SubmissionPanel({
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
   variant_id: string;
-  course_instance_id?: string | null;
+  course_instance?: CourseInstance | null;
+  course: Course;
   submission: SubmissionForRender;
   submissionHtml?: string | null;
   submissionCount: number;
@@ -81,6 +85,10 @@ export function SubmissionPanel({
   expanded?: boolean;
   renderSubmissionSearchParams?: URLSearchParams;
 }) {
+  const formattedDate = formatDate(
+    submission.date!,
+    course_instance?.display_timezone || course.display_timezone,
+  );
   const isLatestSubmission = submission.submission_number === submissionCount;
   expanded = expanded || isLatestSubmission;
 
@@ -106,7 +114,7 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex align-items-center collapsible-card-header ${!expanded
+                class="card-header bg-info d-flex align-items-center collapsible-card-header ${!expanded
                   ? ' collapsed'
                   : ''}"
               >
@@ -118,7 +126,7 @@ export function SubmissionPanel({
                 </div>
                 <button
                   type="button"
-                  class="expand-icon-container btn btn-outline-light btn-sm ${!expanded
+                  class="expand-icon-container btn btn-outline-dark btn-sm ${!expanded
                     ? 'collapsed'
                     : ''}"
                   data-bs-toggle="collapse"
@@ -196,8 +204,8 @@ export function SubmissionPanel({
             </div>
             <span class="small">
               ${!submission.user_uid || questionContext === 'manual_grading'
-                ? `Submitted at ${submission.formatted_date} `
-                : `${submission.user_uid} submitted at ${submission.formatted_date}`}
+                ? `Submitted at ${formattedDate} `
+                : `${submission.user_uid} submitted at ${formattedDate}`}
             </span>
           </div>
           <div class="me-auto align-self-end" data-testid="submission-status">
@@ -256,7 +264,12 @@ export function SubmissionPanel({
           </div>
         </div>
 
-        ${SubmissionInfoModal({ submission, course_id: question.course_id, course_instance_id })}
+        ${SubmissionInfoModal({
+          submission,
+          formattedDate,
+          course_id: question.course_id,
+          course_instance_id: course_instance?.id,
+        })}
       </div>
     </div>
   `;
@@ -397,10 +410,12 @@ function SubmissionInfoModal({
   submission,
   course_id,
   course_instance_id,
+  formattedDate,
 }: {
   submission: SubmissionForRender;
   course_id: string;
   course_instance_id?: string | null;
+  formattedDate: string;
 }) {
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
   const gradingJobUrl =
@@ -420,7 +435,7 @@ function SubmissionInfoModal({
         <tbody>
           <tr>
             <th>Submission time</th>
-            <td>${submission.formatted_date}</td>
+            <td>${formattedDate}</td>
           </tr>
           ${submission.user_uid
             ? html`

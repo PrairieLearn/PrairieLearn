@@ -7,15 +7,13 @@ from prairielearn import ...
 
 import base64
 import math
-from typing import Any, Literal, TypedDict
-
-from typing_extensions import NotRequired
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 class PartialScore(TypedDict):
     """A class with type signatures for the partial scores dict.
 
-    For more information see the [element developer guide](https://prairielearn.readthedocs.io/en/latest/devElements/).
+    For more information see the [element developer guide](https://docs.prairielearn.com/devElements/).
 
     Attributes:
         score: The score for the partial score.
@@ -38,21 +36,36 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     """The data dictionary passed to the question element throughout the lifecycle of the question.
 
-    For more information see the [element developer guide](https://prairielearn.readthedocs.io/en/latest/devElements/).
+    For more information see the [element developer guide](https://docs.prairielearn.com/devElements/).
 
     Attributes:
         params: Parameters that describe the question variant.
+        preferences: Preferences for the question variant. These can be set to different values in different assessments.
         correct_answers: The true answer (if any) for the variant.
         submitted_answers: The answer submitted by the student (after parsing).
         format_errors: Any errors encountered while parsing the student input.
         partial_scores: Partial scores for individual variables in the question.
         score: The total final score for the question.
         feedback: Any feedback to the student on their submitted answer.
-
+        variant_seed: The random seed for this question variant.
+        options: Any options associated with the question.
+        raw_submitted_answers: The answer submitted by the student before parsing.
+        editable: Whether the question is currently in an editable state.
+        panel: The panel that is being rendered.
+        correct_answer_shown: Whether the correct answer is currently shown to the student.
+        extensions: A list of extensions that are available to be loaded by this element.
+        num_valid_submissions: The number of valid submissions by the student for the current variant.
+        manual_grading: Whether manual-grading content should be shown.
+        ai_grading: Whether the question is being rendered for AI grading.
+        gradable: Whether the submission can be graded.
+        answers_names: A dictionary whose keys list the names of the answers in the question.
     """
 
     params: dict[str, Any]
     """Parameters that describe the question variant."""
+
+    preferences: dict[str, Any]
+    """Preferences for the question variant. These can be set to different values in different assessments."""
 
     correct_answers: dict[str, Any]
     """The true answer (if any) for the variant."""
@@ -87,6 +100,9 @@ class QuestionData(TypedDict):
     panel: Literal["question", "submission", "answer"]
     """The panel that is being rendered."""
 
+    correct_answer_shown: bool
+    """Whether the correct answer (in the answer panel) is currently shown to the student."""
+
     extensions: dict[str, Any]
     """A list of extensions that are available to be loaded by this element."""
 
@@ -94,10 +110,13 @@ class QuestionData(TypedDict):
     """The number of valid (not containing format errors) submissions by the student for the current variant."""
 
     manual_grading: bool
-    """Whether the question is being rendered in the manual grading view."""
+    """Whether manual-grading content should be shown. This is true in the manual grading view, and also for question and answer panels when rendered for AI grading."""
 
     ai_grading: bool
-    """Whether the question is being rendered in the AI grading view."""
+    """Whether the question is being rendered for AI grading."""
+
+    gradable: bool
+    """Whether the submission can be graded. Automatically set to ``False`` if there are format errors."""
 
     answers_names: dict[str, bool]
     """A dictionary whose keys list the names of the answers in the question."""

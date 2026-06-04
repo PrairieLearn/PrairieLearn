@@ -18,20 +18,12 @@ WITH
       AND f.deleted_at IS NULL
   )
 SELECT
-  jsonb_set(
-    to_jsonb(ai),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (ai.date, ci.display_timezone)
-    )
-  ) AS assessment_instance,
+  to_jsonb(ai) AS assessment_instance,
   CASE
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
       ) * 1000
     )
   END AS assessment_instance_remaining_ms,
@@ -39,9 +31,7 @@ SELECT
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - ai.date
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - ai.date
       ) * 1000
     )
   END AS assessment_instance_time_limit_ms,
@@ -54,8 +44,6 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(aai) AS authz_result,
-  assessment_instance_label (ai, a, aset) AS assessment_instance_label,
-  aset.abbreviation || a.number AS assessment_label,
   fl.list AS file_list,
   to_jsonb(g) AS instance_group,
   teams_uid_list (g.id) AS instance_group_uid_list

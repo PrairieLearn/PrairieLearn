@@ -1,7 +1,6 @@
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from html import escape as html_escape
-from html import unescape as html_unescape
 from itertools import chain
 
 import lxml.html
@@ -48,27 +47,23 @@ def format_attrib_value(v: str) -> str:
     return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
 
 
-def get_source_definition(element: lxml.html.HtmlElement) -> str:
+def get_source_definition(
+    element: lxml.html.HtmlElement,
+    attribute_filter: Sequence[str] | None = None,
+) -> str:
     if not isinstance(element.tag, str):
         raise TypeError(f"Invalid tag type: {type(element.tag)}")
 
     attributes = (
-        f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
+        f'''{k}="{format_attrib_value(v)}"'''
+        for k, v in element.attrib.items()
+        if attribute_filter is None or k in attribute_filter
     )
     return f"<{' '.join((element.tag, *attributes))}>"
 
 
-# `lxml` uses `libxml2` under the hood, which does not support the full set
-# of HTML5 named entities:
-# https://gitlab.gnome.org/GNOME/libxml2/-/issues/857
-# This means that with a naive approach, we'd end up double escaping entities
-# like `&langle;` into `&amp;langle;`. To work around this (at least until
-# `libxml2` hopefully adds support for HTML5 named entities), we first
-# unescape the text to get the actual Unicode characters, and then escape them
-# again. Escaping will only escape `&`, `<`, and `>`; it won't escape everything
-# that could possibly be represented by a named entity.
 def prepare_text(text: str) -> str:
-    return html_escape(html_unescape(text))
+    return html_escape(text)
 
 
 def traverse_and_replace(

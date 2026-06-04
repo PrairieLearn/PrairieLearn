@@ -1,5 +1,60 @@
 # @prairielearn/opentelemetry
 
+## 4.0.10
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.9
+
+### Patch Changes
+
+- 3350cc5: Bump opentelemetry dependencies
+
+## 4.0.8
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- 895b3b9: Upgrade OpenTelemetry dependencies
+
+## 4.0.7
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- 9aa950a: Upgrade OpenTelemetry dependencies
+
+## 4.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 4.0.3
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 4.0.2
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
 ## 4.0.1
 
 ### Patch Changes

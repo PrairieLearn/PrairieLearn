@@ -53,25 +53,9 @@ async function courseInstancesAllowedToLink({
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
     authzData,
-    requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
-}
-
-async function coursesAllowedToLink({
-  user_id,
-  is_administrator,
-}: {
-  user_id: string;
-  is_administrator: boolean;
-}) {
-  const courses = await selectCoursesWithEditAccess({
-    user_id,
-    is_administrator,
-  });
-
-  return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
 
 router.get(
@@ -196,7 +180,7 @@ router.get(
       Lti13CourseNavigationInstructor({
         resLocals: res.locals,
         courseName,
-        courses: await coursesAllowedToLink({
+        courses: await selectCoursesWithEditAccess({
           user_id: res.locals.authn_user.id,
           is_administrator: res.locals.is_administrator,
         }),

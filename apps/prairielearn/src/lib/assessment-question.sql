@@ -18,7 +18,7 @@ SELECT
   to_jsonb(aq.*) AS assessment_question,
   to_jsonb(q.*) AS question,
   to_jsonb(top.*) AS topic,
-  to_jsonb(ag.*) AS alternative_group,
+  to_jsonb(ag.*) AS alternative_pool,
   to_jsonb(z.*) AS zone,
   to_jsonb(a.*) AS assessment,
   to_jsonb(ci.*) AS course_instance,
@@ -39,6 +39,8 @@ SELECT
         jsonb_build_object(
           'assessment_set_abbreviation',
           aset.abbreviation,
+          'assessment_set_name',
+          aset.name,
           'assessment_number',
           a2.number,
           'assessment_id',
