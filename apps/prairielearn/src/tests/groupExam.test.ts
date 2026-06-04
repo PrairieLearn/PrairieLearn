@@ -92,8 +92,9 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   });
 
   describe('instructor access for exam assessment', function () {
-    test.sequential(
+    test(
       "should load the group tab for the first assessment's instructor URL",
+      { concurrent: false },
       async function () {
         // Get exam assessment URL using ids from database
         const assessment = await selectAssessmentByTid({
@@ -109,8 +110,9 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       },
     );
 
-    test.sequential(
+    test(
       "should load the group tab for the second assessment's instructor URL",
+      { concurrent: false },
       async function () {
         // Get exam assessment URLs using ids from database
         const assessment = await selectAssessmentByTid({
@@ -128,37 +130,45 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   });
 
   describe('group config correctness', function () {
-    test.sequential('first assessment group config in database is correct', async function () {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: GROUP_EXAM_1_TID,
-      });
-      const groupConfigResult = await queryRow(
-        sql.select_group_config,
-        { assessment_id: assessment.id },
-        z.object({ minimum: z.number(), maximum: z.number() }),
-      );
-      const min = groupConfigResult.minimum;
-      const max = groupConfigResult.maximum;
-      assert.equal(min, 2);
-      assert.equal(max, 2);
-    });
+    test(
+      'first assessment group config in database is correct',
+      { concurrent: false },
+      async function () {
+        const assessment = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: GROUP_EXAM_1_TID,
+        });
+        const groupConfigResult = await queryRow(
+          sql.select_group_config,
+          { assessment_id: assessment.id },
+          z.object({ minimum: z.number(), maximum: z.number() }),
+        );
+        const min = groupConfigResult.minimum;
+        const max = groupConfigResult.maximum;
+        assert.equal(min, 2);
+        assert.equal(max, 2);
+      },
+    );
 
-    test.sequential('second assessment group config in database is correct', async function () {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: GROUP_EXAM_2_TID,
-      });
-      const groupConfigResult = await queryRow(
-        sql.select_group_config,
-        { assessment_id: assessment.id },
-        z.object({ minimum: z.number(), maximum: z.number() }),
-      );
-      const min = groupConfigResult.minimum;
-      const max = groupConfigResult.maximum;
-      assert.equal(min, 2);
-      assert.equal(max, 4);
-    });
+    test(
+      'second assessment group config in database is correct',
+      { concurrent: false },
+      async function () {
+        const assessment = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: GROUP_EXAM_2_TID,
+        });
+        const groupConfigResult = await queryRow(
+          sql.select_group_config,
+          { assessment_id: assessment.id },
+          z.object({ minimum: z.number(), maximum: z.number() }),
+        );
+        const min = groupConfigResult.minimum;
+        const max = groupConfigResult.maximum;
+        assert.equal(min, 2);
+        assert.equal(max, 4);
+      },
+    );
   });
 
   describe('exam group creation, joining, and starting', function () {

@@ -24,18 +24,18 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
 
   afterAll(helperServer.after);
 
-  test.sequential('get group-based homework assessment', async () => {
+  test('get group-based homework assessment', { concurrent: false }, async () => {
     const assessmentIds = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
     assert.equal(assessmentIds.length, 2);
     locals.assessment_id = assessmentIds[0];
   });
 
-  test.sequential('create 500 users', async () => {
+  test('create 500 users', { concurrent: false }, async () => {
     const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
     assert.equal(result.length, 500);
   });
 
-  test.sequential('randomly assign groups', async () => {
+  test('randomly assign groups', { concurrent: false }, async () => {
     const assessment = await selectAssessmentById(locals.assessment_id);
     const course_instance = await selectCourseInstanceById(assessment.course_instance_id);
     const job_sequence_id = await groupUpdate.randomGroups({
@@ -50,7 +50,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
-  test.sequential('check groups and users', async () => {
+  test('check groups and users', { concurrent: false }, async () => {
     const groupUserCountsRowCount = await sqldb.execute(
       'SELECT count(team_id) FROM team_users GROUP BY team_id',
     );
@@ -60,7 +60,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     assert.equal(groupUsersRowCount, 500);
   });
 
-  test.sequential('delete groups', async () => {
+  test('delete groups', { concurrent: false }, async () => {
     await deleteAllGroups(locals.assessment_id, '1');
 
     const groupsRowCount = await sqldb.execute(
@@ -82,7 +82,7 @@ describe('deleting a group closes its assessment instances', { timeout: 20_000 }
   let assessment: Awaited<ReturnType<typeof selectAssessmentById>>;
   let userUids: string[];
 
-  test.sequential('setup', async () => {
+  test('setup', { concurrent: false }, async () => {
     const assessmentIds = await sqldb.queryScalars(sql.select_group_work_assessment, IdSchema);
     assessmentId = assessmentIds[0];
     assessment = await selectAssessmentById(assessmentId);
@@ -91,32 +91,36 @@ describe('deleting a group closes its assessment instances', { timeout: 20_000 }
     userUids = users.map((u) => u.uid);
   });
 
-  test.sequential('deleting a single group closes its assessment instance', async () => {
-    const group = await createGroup({
-      course_instance: courseInstance,
-      assessment,
-      group_name: 'testgroup1',
-      uids: [userUids[0]],
-      authn_user_id: '1',
-      authzData: dangerousFullSystemAuthz(),
-    });
+  test(
+    'deleting a single group closes its assessment instance',
+    { concurrent: false },
+    async () => {
+      const group = await createGroup({
+        course_instance: courseInstance,
+        assessment,
+        group_name: 'testgroup1',
+        uids: [userUids[0]],
+        authn_user_id: '1',
+        authzData: dangerousFullSystemAuthz(),
+      });
 
-    // Create an open assessment instance for the group.
-    const ai = await insertGroupAssessmentInstance({
-      assessment_id: assessmentId,
-      team_id: group.id,
-      authn_user_id: '1',
-    });
-    assert.isTrue(ai.open);
+      // Create an open assessment instance for the group.
+      const ai = await insertGroupAssessmentInstance({
+        assessment_id: assessmentId,
+        team_id: group.id,
+        authn_user_id: '1',
+      });
+      assert.isTrue(ai.open);
 
-    await deleteGroup(assessmentId, group.id, '1');
+      await deleteGroup(assessmentId, group.id, '1');
 
-    const updated = await selectAssessmentInstanceById(ai.id);
-    assert.isFalse(updated.open);
-    assert.isNotNull(updated.closed_at);
-  });
+      const updated = await selectAssessmentInstanceById(ai.id);
+      assert.isFalse(updated.open);
+      assert.isNotNull(updated.closed_at);
+    },
+  );
 
-  test.sequential('deleting all groups closes their assessment instances', async () => {
+  test('deleting all groups closes their assessment instances', { concurrent: false }, async () => {
     const group = await createGroup({
       course_instance: courseInstance,
       assessment,

@@ -57,7 +57,7 @@ describe('Instructor group controls', () => {
   let group1RowId: string | undefined;
   let group2RowId: string | undefined;
 
-  test.sequential('has group-based homework assessment', async () => {
+  test('has group-based homework assessment', { concurrent: false }, async () => {
     assessment_id = await queryScalar(sql.select_group_work_assessment, IdSchema);
     individual_assessment_id = await queryScalar(sql.select_individual_work_assessment, IdSchema);
     const csrfToken = generatePrefixCsrfToken(
@@ -75,37 +75,41 @@ describe('Instructor group controls', () => {
     });
   });
 
-  test.sequential('group work enable button reflects course edit permissions', async () => {
-    const groupsUrl = `${siteUrl}${getAssessmentUrl({
-      courseInstanceId,
-      assessmentId: individual_assessment_id,
-    })}/groups`;
-    const previewerResponse = await helperClient.fetchCheerio(groupsUrl, {
-      headers: {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
-      },
-    });
-    assert.isTrue(previewerResponse.ok);
-    const previewerBody = await previewerResponse.text();
-    assert.include(previewerBody, 'Enabling group work requires course editor permissions.');
-    assert.lengthOf(previewerResponse.$('button:contains("Enable group work")'), 0);
+  test(
+    'group work enable button reflects course edit permissions',
+    { concurrent: false },
+    async () => {
+      const groupsUrl = `${siteUrl}${getAssessmentUrl({
+        courseInstanceId,
+        assessmentId: individual_assessment_id,
+      })}/groups`;
+      const previewerResponse = await helperClient.fetchCheerio(groupsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
+        },
+      });
+      assert.isTrue(previewerResponse.ok);
+      const previewerBody = await previewerResponse.text();
+      assert.include(previewerBody, 'Enabling group work requires course editor permissions.');
+      assert.lengthOf(previewerResponse.$('button:contains("Enable group work")'), 0);
 
-    const editorResponse = await helperClient.fetchCheerio(groupsUrl, {
-      headers: {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
-      },
-    });
-    assert.isTrue(editorResponse.ok);
-    assert.lengthOf(editorResponse.$('button:contains("Enable group work")'), 1);
-  });
+      const editorResponse = await helperClient.fetchCheerio(groupsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+        },
+      });
+      assert.isTrue(editorResponse.ok);
+      assert.lengthOf(editorResponse.$('button:contains("Enable group work")'), 1);
+    },
+  );
 
-  test.sequential('enroll random users', async () => {
+  test('enroll random users', { concurrent: false }, async () => {
     users = await generateAndEnrollUsers({ count: 5, course_instance_id: courseInstanceId });
   });
 
-  test.sequential('can create a new group', async () => {
+  test('can create a new group', { concurrent: false }, async () => {
     await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroup',
       uids: users
@@ -121,8 +125,9 @@ describe('Instructor group controls', () => {
     group1RowId = group.group_id;
   });
 
-  test.sequential(
+  test(
     'course previewer can load groups page without receiving membership data',
+    { concurrent: false },
     async () => {
       const groupsUrl = `${siteUrl}${getAssessmentUrl({
         courseInstanceId,
@@ -146,8 +151,9 @@ describe('Instructor group controls', () => {
     },
   );
 
-  test.sequential(
+  test(
     'course editor can edit group settings without seeing membership data',
+    { concurrent: false },
     async () => {
       const groupsUrl = `${siteUrl}${getAssessmentUrl({
         courseInstanceId,
@@ -174,7 +180,7 @@ describe('Instructor group controls', () => {
     },
   );
 
-  test.sequential('student data viewer can see group memberships', async () => {
+  test('student data viewer can see group memberships', { concurrent: false }, async () => {
     const groupsUrl = `${siteUrl}${getAssessmentUrl({
       courseInstanceId,
       assessmentId: assessment_id,
@@ -194,42 +200,50 @@ describe('Instructor group controls', () => {
     assert.include(body, users[1].uid);
   });
 
-  test.sequential('student data editor can edit memberships without editing settings', async () => {
-    const groupsUrl = `${siteUrl}${getAssessmentUrl({
-      courseInstanceId,
-      assessmentId: assessment_id,
-    })}/groups`;
-    const response = await helperClient.fetchCheerio(groupsUrl, {
-      headers: {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
-      },
-    });
-    assert.isTrue(response.ok);
-    const body = await response.text();
-    assert.include(body, 'Editing group settings requires course editor permissions.');
-    assert.include(
-      body,
-      'Disabling group work requires course editor permissions because it changes group settings.',
-    );
-    assert.lengthOf(response.$('button:contains("Add group"):not(:disabled)'), 1);
-    assert.include(body, users[0].uid);
-    assert.include(body, users[1].uid);
-  });
+  test(
+    'student data editor can edit memberships without editing settings',
+    { concurrent: false },
+    async () => {
+      const groupsUrl = `${siteUrl}${getAssessmentUrl({
+        courseInstanceId,
+        assessmentId: assessment_id,
+      })}/groups`;
+      const response = await helperClient.fetchCheerio(groupsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+        },
+      });
+      assert.isTrue(response.ok);
+      const body = await response.text();
+      assert.include(body, 'Editing group settings requires course editor permissions.');
+      assert.include(
+        body,
+        'Disabling group work requires course editor permissions because it changes group settings.',
+      );
+      assert.lengthOf(response.$('button:contains("Add group"):not(:disabled)'), 1);
+      assert.include(body, users[0].uid);
+      assert.include(body, users[1].uid);
+    },
+  );
 
-  test.sequential('cannot create a group with a user already in another group', async () => {
-    await expect(
-      trpcClient.assessmentGroups.addGroup.mutate({
-        groupName: 'TestGroup2',
-        uids: users
-          .slice(0, 2)
-          .map((u) => u.uid)
-          .join(','),
-      }),
-    ).rejects.toThrow(/in another group/);
-  });
+  test(
+    'cannot create a group with a user already in another group',
+    { concurrent: false },
+    async () => {
+      await expect(
+        trpcClient.assessmentGroups.addGroup.mutate({
+          groupName: 'TestGroup2',
+          uids: users
+            .slice(0, 2)
+            .map((u) => u.uid)
+            .join(','),
+        }),
+      ).rejects.toThrow(/in another group/);
+    },
+  );
 
-  test.sequential('can create a second group', async () => {
+  test('can create a second group', { concurrent: false }, async () => {
     await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroup2',
       uids: users
@@ -245,7 +259,7 @@ describe('Instructor group controls', () => {
     group2RowId = group.group_id;
   });
 
-  test.sequential('can create a group with an instructor', async () => {
+  test('can create a group with an instructor', { concurrent: false }, async () => {
     await trpcClient.assessmentGroups.addGroup.mutate({
       groupName: 'TestGroupWithInstructor',
       uids: 'dev@example.com',
@@ -257,7 +271,7 @@ describe('Instructor group controls', () => {
     assert.ok(group.users.some((u) => u.uid === 'dev@example.com'));
   });
 
-  test.sequential('can add a user to an existing group', async () => {
+  test('can add a user to an existing group', { concurrent: false }, async () => {
     assert.isDefined(group1RowId);
     const { failures } = await trpcClient.assessmentGroups.editGroup.mutate({
       groupId: group1RowId,
@@ -270,22 +284,26 @@ describe('Instructor group controls', () => {
     assert.ok(group.users.some((u) => u.uid === users[4].uid));
   });
 
-  test.sequential('cannot add a user to a group if they are already in another group', async () => {
-    assert.isDefined(group2RowId);
-    const { failures } = await trpcClient.assessmentGroups.editGroup.mutate({
-      groupId: group2RowId,
-      uids: [users[2].uid, users[3].uid, users[4].uid].join(','),
-    });
-    assert.lengthOf(failures, 1);
-    assert.equal(failures[0].uid, users[4].uid);
-    assert.match(failures[0].message, /in another group/);
-    const membership = await trpcClient.assessmentGroups.membership.query();
-    const group = membership.groups.find((group) => group.group_id === group2RowId);
-    assert.isDefined(group);
-    assert.notOk(group.users.some((u) => u.uid === users[4].uid));
-  });
+  test(
+    'cannot add a user to a group if they are already in another group',
+    { concurrent: false },
+    async () => {
+      assert.isDefined(group2RowId);
+      const { failures } = await trpcClient.assessmentGroups.editGroup.mutate({
+        groupId: group2RowId,
+        uids: [users[2].uid, users[3].uid, users[4].uid].join(','),
+      });
+      assert.lengthOf(failures, 1);
+      assert.equal(failures[0].uid, users[4].uid);
+      assert.match(failures[0].message, /in another group/);
+      const membership = await trpcClient.assessmentGroups.membership.query();
+      const group = membership.groups.find((group) => group.group_id === group2RowId);
+      assert.isDefined(group);
+      assert.notOk(group.users.some((u) => u.uid === users[4].uid));
+    },
+  );
 
-  test.sequential('can fetch current group membership', async () => {
+  test('can fetch current group membership', { concurrent: false }, async () => {
     assert.isDefined(group1RowId);
     assert.isDefined(group2RowId);
 

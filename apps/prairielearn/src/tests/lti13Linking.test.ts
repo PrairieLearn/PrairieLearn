@@ -85,7 +85,7 @@ describe('LTI 1.3 course instance linking', () => {
     config.features = {};
   });
 
-  test.sequential('linkLtiContext helper creates link record', async () => {
+  test('linkLtiContext helper creates link record', { concurrent: false }, async () => {
     await execute(
       `DELETE FROM lti13_course_instances
        WHERE lti13_instance_id = '1'
@@ -122,7 +122,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor sees linking UI for unlinked context', async () => {
+  test('instructor sees linking UI for unlinked context', { concurrent: false }, async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -165,7 +165,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('student sees "not ready" page for unlinked context', async () => {
+  test('student sees "not ready" page for unlinked context', { concurrent: false }, async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -196,7 +196,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor can link course instance via POST', async () => {
+  test('instructor can link course instance via POST', { concurrent: false }, async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -265,155 +265,30 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(linkRecord.course_instance_id, '1');
   });
 
-  test.sequential('already linked context redirects instructor to course instance', async () => {
-    const fetchWithCookies = fetchCookie(fetch);
-    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
-
-    // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
-    // since the target user doesn't exist yet - grantCoursePermissions will create them.
-    await grantCoursePermissions({
-      uid: 'linked-instructor@example.com',
-      courseId: '1',
-      courseRole: 'Editor',
-      courseInstanceId: '1',
-      courseInstanceRole: 'Student Data Editor',
-      authnUserId: '1',
-    });
-
-    const executor = await makeLoginExecutor({
-      user: {
-        name: 'Linked Context Instructor',
-        email: 'linked-instructor@example.com',
-        uin: '101010101',
-        sub: 'linked-instructor-sub-1',
-      },
-      fetchWithCookies,
-      oidcProviderPort,
-      keystore,
-      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
-      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-      targetLinkUri,
-      isInstructor: true,
-    });
-
-    const res = await executor.login();
-    assert.equal(res.status, 200);
-    assert.include(res.url, '/pl/course_instance/1/instructor/');
-  });
-
-  test.sequential('already linked context redirects student to course instance', async () => {
-    const fetchWithCookies = fetchCookie(fetch);
-    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
-
-    const executor = await makeLoginExecutor({
-      user: {
-        name: 'Linked Context Student',
-        email: 'linked-student@example.com',
-        uin: '121212121',
-        sub: 'linked-student-sub-1',
-      },
-      fetchWithCookies,
-      oidcProviderPort,
-      keystore,
-      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
-      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-      targetLinkUri,
-      isInstructor: false,
-    });
-
-    const res = await executor.login();
-    assert.equal(res.status, 200);
-    assert.include(res.url, '/pl/course_instance/1/');
-    assert.notInclude(res.url, '/instructor/');
-  });
-
-  describe('LTI 1.3 linking authorization', () => {
-    test.sequential('instructor without course permissions does not see linking form', async () => {
-      // First, clean up any existing link to test the unauthorized view
-      await execute(
-        `DELETE FROM lti13_course_instances
-         WHERE lti13_instance_id = '1'
-         AND deployment_id = $deployment_id
-         AND context_id = $context_id`,
-        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
-      );
-
+  test(
+    'already linked context redirects instructor to course instance',
+    { concurrent: false },
+    async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
-      // Login as instructor via LTI (passes LTI role check) but WITHOUT granting
-      // any PrairieLearn course permissions
-      const executor = await makeLoginExecutor({
-        user: {
-          name: 'Unauthorized Instructor',
-          email: 'unauthorized-instructor@example.com',
-          uin: '999000111',
-          sub: 'unauthorized-instructor-sub-1',
-        },
-        fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-        targetLinkUri,
-        isInstructor: true,
-      });
-
-      const loginRes = await executor.login();
-      assert.equal(loginRes.status, 200);
-
-      // The linking page should NOT show the course instance selector for instructors
-      // without course permissions - this is the authorization check at the UI level
-      const linkingPageRes = await fetchWithCookies(targetLinkUri);
-      assert.equal(linkingPageRes.status, 200);
-
-      const linkingPageText = await linkingPageRes.text();
-      const $ = cheerio.load(linkingPageText);
-
-      // Verify the linking form is NOT shown (no course instance selector)
-      const courseInstanceSelector = $('select[name="unsafe_course_instance_id"]');
-      assert.equal(
-        courseInstanceSelector.length,
-        0,
-        'Instructor without permissions should not see course instance selector',
-      );
-
-      // Verify no link was created
-      const linkRecord = await queryOptionalRow(
-        `SELECT * FROM lti13_course_instances
-         WHERE lti13_instance_id = '1'
-         AND deployment_id = $deployment_id
-         AND context_id = $context_id`,
-        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
-        Lti13CourseInstanceSchema,
-      );
-      assert.isNull(linkRecord);
-    });
-
-    test.sequential('cannot link course instance from different institution', async () => {
-      // Create a second institution with its own course and course instance
-      const { courseId, courseInstanceId } = await createCrossInstitutionFixture();
-
-      const fetchWithCookies = fetchCookie(fetch);
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
-
-      // Grant permissions for the OTHER institution's course
-      // This user has permissions for course in institution 2, but the LTI instance is in institution 1
+      // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
+      // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
-        uid: 'cross-inst-instructor@example.com',
-        courseId,
+        uid: 'linked-instructor@example.com',
+        courseId: '1',
         courseRole: 'Editor',
-        courseInstanceId,
+        courseInstanceId: '1',
         courseInstanceRole: 'Student Data Editor',
         authnUserId: '1',
       });
 
       const executor = await makeLoginExecutor({
         user: {
-          name: 'Cross Institution Instructor',
-          email: 'cross-inst-instructor@example.com',
-          uin: '888000222',
-          sub: 'cross-inst-instructor-sub-1',
+          name: 'Linked Context Instructor',
+          email: 'linked-instructor@example.com',
+          uin: '101010101',
+          sub: 'linked-instructor-sub-1',
         },
         fetchWithCookies,
         oidcProviderPort,
@@ -424,55 +299,196 @@ describe('LTI 1.3 course instance linking', () => {
         isInstructor: true,
       });
 
-      const loginRes = await executor.login();
-      assert.equal(loginRes.status, 200);
+      const res = await executor.login();
+      assert.equal(res.status, 200);
+      assert.include(res.url, '/pl/course_instance/1/instructor/');
+    },
+  );
 
-      // Fetch the linking page to get a CSRF token
-      const linkingPageRes = await fetchWithCookies(targetLinkUri);
-      assert.equal(linkingPageRes.status, 200);
+  test(
+    'already linked context redirects student to course instance',
+    { concurrent: false },
+    async () => {
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
-      const linkingPageText = await linkingPageRes.text();
-      const $ = cheerio.load(linkingPageText);
-      const csrfToken = $('input[name="__csrf_token"]').val() as string;
-      assert.ok(csrfToken, 'Could not find CSRF token');
-
-      // Attempt to link course instance from institution 2 to LTI instance from institution 1
-      // Use redirect: 'manual' to see the actual response status
-      const linkRes = await fetchWithCookies(targetLinkUri, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __csrf_token: csrfToken,
-          unsafe_course_instance_id: courseInstanceId,
-        }),
-        redirect: 'manual',
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Linked Context Student',
+          email: 'linked-student@example.com',
+          uin: '121212121',
+          sub: 'linked-student-sub-1',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
       });
 
-      // Should get 403 because the course instance belongs to a different institution
-      // than the LTI instance
-      assert.equal(linkRes.status, 403);
+      const res = await executor.login();
+      assert.equal(res.status, 200);
+      assert.include(res.url, '/pl/course_instance/1/');
+      assert.notInclude(res.url, '/instructor/');
+    },
+  );
 
-      // Verify no link was created
-      const linkRecord = await queryOptionalRow(
-        `SELECT * FROM lti13_course_instances
+  describe('LTI 1.3 linking authorization', () => {
+    test(
+      'instructor without course permissions does not see linking form',
+      { concurrent: false },
+      async () => {
+        // First, clean up any existing link to test the unauthorized view
+        await execute(
+          `DELETE FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+          { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+        );
+
+        const fetchWithCookies = fetchCookie(fetch);
+        const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+        // Login as instructor via LTI (passes LTI role check) but WITHOUT granting
+        // any PrairieLearn course permissions
+        const executor = await makeLoginExecutor({
+          user: {
+            name: 'Unauthorized Instructor',
+            email: 'unauthorized-instructor@example.com',
+            uin: '999000111',
+            sub: 'unauthorized-instructor-sub-1',
+          },
+          fetchWithCookies,
+          oidcProviderPort,
+          keystore,
+          loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+          callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+          targetLinkUri,
+          isInstructor: true,
+        });
+
+        const loginRes = await executor.login();
+        assert.equal(loginRes.status, 200);
+
+        // The linking page should NOT show the course instance selector for instructors
+        // without course permissions - this is the authorization check at the UI level
+        const linkingPageRes = await fetchWithCookies(targetLinkUri);
+        assert.equal(linkingPageRes.status, 200);
+
+        const linkingPageText = await linkingPageRes.text();
+        const $ = cheerio.load(linkingPageText);
+
+        // Verify the linking form is NOT shown (no course instance selector)
+        const courseInstanceSelector = $('select[name="unsafe_course_instance_id"]');
+        assert.equal(
+          courseInstanceSelector.length,
+          0,
+          'Instructor without permissions should not see course instance selector',
+        );
+
+        // Verify no link was created
+        const linkRecord = await queryOptionalRow(
+          `SELECT * FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+          { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+          Lti13CourseInstanceSchema,
+        );
+        assert.isNull(linkRecord);
+      },
+    );
+
+    test(
+      'cannot link course instance from different institution',
+      { concurrent: false },
+      async () => {
+        // Create a second institution with its own course and course instance
+        const { courseId, courseInstanceId } = await createCrossInstitutionFixture();
+
+        const fetchWithCookies = fetchCookie(fetch);
+        const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+        // Grant permissions for the OTHER institution's course
+        // This user has permissions for course in institution 2, but the LTI instance is in institution 1
+        await grantCoursePermissions({
+          uid: 'cross-inst-instructor@example.com',
+          courseId,
+          courseRole: 'Editor',
+          courseInstanceId,
+          courseInstanceRole: 'Student Data Editor',
+          authnUserId: '1',
+        });
+
+        const executor = await makeLoginExecutor({
+          user: {
+            name: 'Cross Institution Instructor',
+            email: 'cross-inst-instructor@example.com',
+            uin: '888000222',
+            sub: 'cross-inst-instructor-sub-1',
+          },
+          fetchWithCookies,
+          oidcProviderPort,
+          keystore,
+          loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+          callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+          targetLinkUri,
+          isInstructor: true,
+        });
+
+        const loginRes = await executor.login();
+        assert.equal(loginRes.status, 200);
+
+        // Fetch the linking page to get a CSRF token
+        const linkingPageRes = await fetchWithCookies(targetLinkUri);
+        assert.equal(linkingPageRes.status, 200);
+
+        const linkingPageText = await linkingPageRes.text();
+        const $ = cheerio.load(linkingPageText);
+        const csrfToken = $('input[name="__csrf_token"]').val() as string;
+        assert.ok(csrfToken, 'Could not find CSRF token');
+
+        // Attempt to link course instance from institution 2 to LTI instance from institution 1
+        // Use redirect: 'manual' to see the actual response status
+        const linkRes = await fetchWithCookies(targetLinkUri, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __csrf_token: csrfToken,
+            unsafe_course_instance_id: courseInstanceId,
+          }),
+          redirect: 'manual',
+        });
+
+        // Should get 403 because the course instance belongs to a different institution
+        // than the LTI instance
+        assert.equal(linkRes.status, 403);
+
+        // Verify no link was created
+        const linkRecord = await queryOptionalRow(
+          `SELECT * FROM lti13_course_instances
          WHERE lti13_instance_id = '1'
          AND course_instance_id = $course_instance_id`,
-        { course_instance_id: courseInstanceId },
-        Lti13CourseInstanceSchema,
-      );
-      assert.isNull(linkRecord);
+          { course_instance_id: courseInstanceId },
+          Lti13CourseInstanceSchema,
+        );
+        assert.isNull(linkRecord);
 
-      // Re-create the link for subsequent tests that depend on it
-      await linkLtiContext({
-        lti13InstanceId: '1',
-        deploymentId: LTI_DEPLOYMENT_ID,
-        contextId: LTI_CONTEXT_ID,
-        courseInstanceId: '1',
-      });
-    });
+        // Re-create the link for subsequent tests that depend on it
+        await linkLtiContext({
+          lti13InstanceId: '1',
+          deploymentId: LTI_DEPLOYMENT_ID,
+          contextId: LTI_CONTEXT_ID,
+          courseInstanceId: '1',
+        });
+      },
+    );
   });
 
   describe('LTI 1.3 instructor admin page', () => {
-    test.sequential('GET admin page shows linked instance', async () => {
+    test('GET admin page shows linked instance', { concurrent: false }, async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -528,7 +544,7 @@ describe('LTI 1.3 course instance linking', () => {
       );
     });
 
-    test.sequential('GET admin page redirects when no ID provided', async () => {
+    test('GET admin page redirects when no ID provided', { concurrent: false }, async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 

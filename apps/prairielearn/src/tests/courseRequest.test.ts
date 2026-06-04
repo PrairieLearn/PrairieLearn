@@ -34,7 +34,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
 
-  test.sequential('insert a course request', async () => {
+  test('insert a course request', { concurrent: false }, async () => {
     courseRequestId = await insertCourseRequest({
       short_name: shortName,
       title,
@@ -49,18 +49,18 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('deny a course request', () => {
-    test.sequential('deny the course request', async () => {
+    test('deny the course request', { concurrent: false }, async () => {
       await trpcClient.courseRequests.deny.mutate({ courseRequestId });
     });
 
-    test.sequential('verify status is denied in database', async () => {
+    test('verify status is denied in database', { concurrent: false }, async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);
       assert.equal(request.approved_status, 'denied');
     });
 
-    test.sequential('verify denied badge is rendered on the page', async () => {
+    test('verify denied badge is rendered on the page', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -72,7 +72,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('dedicated course requests page', () => {
-    test.sequential('default course requests page shows pending requests', async () => {
+    test('default course requests page shows pending requests', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -84,19 +84,23 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.length, 0);
     });
 
-    test.sequential('all course requests page loads and shows all statuses', async () => {
-      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'all course requests page loads and shows all statuses',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
+        assert.isTrue(response.ok);
 
-      const heading = response.$('h1');
-      assert.include(heading.text(), 'All');
+        const heading = response.$('h1');
+        assert.include(heading.text(), 'All');
 
-      const requestCell = response.$(`td:contains("${shortName}")`);
-      assert.strictEqual(requestCell.length, 1);
-      assert.strictEqual(requestCell.text().trim(), `${shortName}: ${title}`);
-    });
+        const requestCell = response.$(`td:contains("${shortName}")`);
+        assert.strictEqual(requestCell.length, 1);
+        assert.strictEqual(requestCell.text().trim(), `${shortName}: ${title}`);
+      },
+    );
 
-    test.sequential('all course requests page shows "Updated By" column', async () => {
+    test('all course requests page shows "Updated By" column', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -110,7 +114,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     let secondRequestId: string;
     const secondShortName = 'CR TEST 202';
 
-    test.sequential('insert a new pending course request', async () => {
+    test('insert a new pending course request', { concurrent: false }, async () => {
       secondRequestId = await insertCourseRequest({
         short_name: secondShortName,
         title: 'Second Test Course',
@@ -124,7 +128,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('pending request has deny and approve buttons', async () => {
+    test('pending request has deny and approve buttons', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -136,23 +140,27 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.include(rowHtml, 'Approve');
     });
 
-    test.sequential('deny the second request', async () => {
+    test('deny the second request', { concurrent: false }, async () => {
       await trpcClient.courseRequests.deny.mutate({
         courseRequestId: secondRequestId,
       });
     });
 
-    test.sequential('denied request still has action buttons (can be re-approved)', async () => {
-      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'denied request still has action buttons (can be re-approved)',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
+        assert.isTrue(response.ok);
 
-      const requestRow = response.$(`td:contains("${secondShortName}")`).closest('tr');
-      assert.equal(requestRow.length, 1);
-      const rowHtml = requestRow.html();
-      assert.isString(rowHtml);
-      assert.include(rowHtml, 'Deny');
-      assert.include(rowHtml, 'Approve');
-    });
+        const requestRow = response.$(`td:contains("${secondShortName}")`).closest('tr');
+        assert.equal(requestRow.length, 1);
+        const rowHtml = requestRow.html();
+        assert.isString(rowHtml);
+        assert.include(rowHtml, 'Deny');
+        assert.include(rowHtml, 'Approve');
+      },
+    );
   });
 
   describe('course request appears on the right pages', () => {
@@ -160,7 +168,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     const pendingShortName = 'CR TEST 303';
     const pendingTitle = 'Pending Test Course';
 
-    test.sequential('insert a pending course request', async () => {
+    test('insert a pending course request', { concurrent: false }, async () => {
       pendingRequestId = await insertCourseRequest({
         short_name: pendingShortName,
         title: pendingTitle,
@@ -174,24 +182,32 @@ describe('Course requests', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('pending request does not appear on admin courses page', async () => {
-      const response = await helperClient.fetchCheerio(coursesAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'pending request does not appear on admin courses page',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(coursesAdminUrl);
+        assert.isTrue(response.ok);
 
-      const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.strictEqual(requestCell.length, 0);
-    });
+        const requestCell = response.$(`td:contains("${pendingShortName}")`);
+        assert.strictEqual(requestCell.length, 0);
+      },
+    );
 
-    test.sequential('pending request appears on default course requests page', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'pending request appears on default course requests page',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+        assert.isTrue(response.ok);
 
-      const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.strictEqual(requestCell.length, 1);
-      assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
-    });
+        const requestCell = response.$(`td:contains("${pendingShortName}")`);
+        assert.strictEqual(requestCell.length, 1);
+        assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
+      },
+    );
 
-    test.sequential('pending request appears on all course requests page', async () => {
+    test('pending request appears on all course requests page', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -200,14 +216,15 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
-    test.sequential('deny the pending request', async () => {
+    test('deny the pending request', { concurrent: false }, async () => {
       await trpcClient.courseRequests.deny.mutate({
         courseRequestId: pendingRequestId,
       });
     });
 
-    test.sequential(
+    test(
       'denied request does NOT appear on admin courses page (pending only)',
+      { concurrent: false },
       async () => {
         const response = await helperClient.fetchCheerio(coursesAdminUrl);
         assert.isTrue(response.ok);
@@ -217,21 +234,29 @@ describe('Course requests', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential('denied request does not appear on default course requests page', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'denied request does not appear on default course requests page',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+        assert.isTrue(response.ok);
 
-      const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.strictEqual(requestCell.length, 0);
-    });
+        const requestCell = response.$(`td:contains("${pendingShortName}")`);
+        assert.strictEqual(requestCell.length, 0);
+      },
+    );
 
-    test.sequential('denied request still appears on all course requests page', async () => {
-      const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
-      assert.isTrue(response.ok);
+    test(
+      'denied request still appears on all course requests page',
+      { concurrent: false },
+      async () => {
+        const response = await helperClient.fetchCheerio(allCourseRequestsAdminUrl);
+        assert.isTrue(response.ok);
 
-      const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.strictEqual(requestCell.length, 1);
-      assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
-    });
+        const requestCell = response.$(`td:contains("${pendingShortName}")`);
+        assert.strictEqual(requestCell.length, 1);
+        assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
+      },
+    );
   });
 });

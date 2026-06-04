@@ -40,14 +40,14 @@ describe('Generate chunks and use them for a student homework', { timeout: 60_00
     config.chunksConsumerDirectory = originalChunksConsumerDirectory;
   });
 
-  test.sequential('generate course chunks', async () => {
+  test('generate course chunks', { concurrent: false }, async () => {
     const course_ids = ['1'];
     const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
-  test.sequential('start the homework', async () => {
+  test('start the homework', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -61,7 +61,7 @@ describe('Generate chunks and use them for a student homework', { timeout: 60_00
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
   });
 
-  test.sequential('visit the "Add two numbers" question', async () => {
+  test('visit the "Add two numbers" question', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.questionUrl);
     assert.isTrue(response.ok);
 

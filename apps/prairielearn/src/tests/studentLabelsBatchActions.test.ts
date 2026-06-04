@@ -72,12 +72,12 @@ describe('Student labels batch actions', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential('should load the students page', async () => {
+  test('should load the students page', { concurrent: false }, async () => {
     const response = await fetch(studentsUrl);
     assert.equal(response.status, 200);
   });
 
-  test.sequential('should batch add label to multiple students', async () => {
+  test('should batch add label to multiple students', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchAdd.mutate({
       enrollmentIds,
@@ -97,7 +97,7 @@ describe('Student labels batch actions', () => {
     assert.includeMembers(studentsWithLabel, enrollmentIds);
   });
 
-  test.sequential('should batch remove label from multiple students', async () => {
+  test('should batch remove label from multiple students', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[0], enrollmentIds[1]],
@@ -108,7 +108,7 @@ describe('Student labels batch actions', () => {
     assert.deepEqual(studentsWithLabel, [enrollmentIds[2]]);
   });
 
-  test.sequential('should remove label from the last student', async () => {
+  test('should remove label from the last student', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[2]],
@@ -119,7 +119,7 @@ describe('Student labels batch actions', () => {
     assert.equal(studentsWithLabel.length, 0);
   });
 
-  test.sequential('should fail when adding non-existent label', async () => {
+  test('should fail when adding non-existent label', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     try {
       await trpcClient.studentLabels.batchAdd.mutate({

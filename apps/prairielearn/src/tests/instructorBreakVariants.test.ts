@@ -52,7 +52,7 @@ describe('Instructor force-breaking variants on homework', () => {
   });
   afterAll(helperServer.after);
 
-  test.sequential('student creates and submits to first variant', async () => {
+  test('student creates and submits to first variant', { concurrent: false }, async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -79,7 +79,7 @@ describe('Instructor force-breaking variants on homework', () => {
     });
   });
 
-  test.sequential('student creates and submits to second variant', async () => {
+  test('student creates and submits to second variant', { concurrent: false }, async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -105,75 +105,95 @@ describe('Instructor force-breaking variants on homework', () => {
     });
   });
 
-  test.sequential('instructor breaks first variant via assessment question page', async () => {
-    const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
+  test(
+    'instructor breaks first variant via assessment question page',
+    { concurrent: false },
+    async () => {
+      const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
 
-    const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
-    const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
+      const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
+      const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
 
-    const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_assessment_question_id: partialCredit1AssessmentQuestion.id,
-      }),
-    });
-    assert.equal(breakVariantsResponse.status, 200);
-  });
+      const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_assessment_question_id: partialCredit1AssessmentQuestion.id,
+        }),
+      });
+      assert.equal(breakVariantsResponse.status, 200);
+    },
+  );
 
-  test.sequential('instructor breaks second variant via student instance page', async () => {
-    const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
+  test(
+    'instructor breaks second variant via student instance page',
+    { concurrent: false },
+    async () => {
+      const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
-    const instanceQuestion = await queryScalar(
-      sql.select_instance_question,
-      { assessment_question_id: partialCredit2AssessmentQuestion.id },
-      IdSchema,
-    );
+      const instanceQuestion = await queryScalar(
+        sql.select_instance_question,
+        { assessment_question_id: partialCredit2AssessmentQuestion.id },
+        IdSchema,
+      );
 
-    const instanceResponse = await fetchCheerio(instanceUrl);
-    const csrfToken = getCSRFToken(instanceResponse.$);
+      const instanceResponse = await fetchCheerio(instanceUrl);
+      const csrfToken = getCSRFToken(instanceResponse.$);
 
-    const breakVariantsResponse = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_instance_question_id: instanceQuestion,
-      }),
-    });
-    assert.equal(breakVariantsResponse.status, 200);
-  });
+      const breakVariantsResponse = await fetchCheerio(instanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_instance_question_id: instanceQuestion,
+        }),
+      });
+      assert.equal(breakVariantsResponse.status, 200);
+    },
+  );
 
-  test.sequential('student sees new variant when revisiting first question', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const partialCredit1Url = assessmentResponse.$('a:contains("Partial credit 1")').attr('href');
+  test(
+    'student sees new variant when revisiting first question',
+    { concurrent: false },
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const partialCredit1Url = assessmentResponse
+          .$('a:contains("Partial credit 1")')
+          .attr('href');
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
-      assert.equal(questionResponse.status, 200);
+        const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
+        assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      assert.notEqual(variantId.toString(), partialCredit1VariantId);
-    });
-  });
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        assert.notEqual(variantId.toString(), partialCredit1VariantId);
+      });
+    },
+  );
 
-  test.sequential('student sees new variant when revisiting second question', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const partialCredit2Url = assessmentResponse.$('a:contains("Partial credit 2")').attr('href');
+  test(
+    'student sees new variant when revisiting second question',
+    { concurrent: false },
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const partialCredit2Url = assessmentResponse
+          .$('a:contains("Partial credit 2")')
+          .attr('href');
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
-      assert.equal(questionResponse.status, 200);
+        const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
+        assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      assert.notEqual(variantId.toString(), partialCredit2VariantId);
-    });
-  });
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        assert.notEqual(variantId.toString(), partialCredit2VariantId);
+      });
+    },
+  );
 });
 
 // We currently forbid resetting variants for Exam assessments.
@@ -206,7 +226,7 @@ describe('Instructor force-breaking variants on exam', () => {
   });
   afterAll(helperServer.after);
 
-  test.sequential('student starts assessment', async () => {
+  test('student starts assessment', { concurrent: false }, async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -222,7 +242,7 @@ describe('Instructor force-breaking variants on exam', () => {
     });
   });
 
-  test.sequential('student creates and submits to first variant', async () => {
+  test('student creates and submits to first variant', { concurrent: false }, async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -249,7 +269,7 @@ describe('Instructor force-breaking variants on exam', () => {
     });
   });
 
-  test.sequential('student creates and submits to second variant', async () => {
+  test('student creates and submits to second variant', { concurrent: false }, async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -275,8 +295,9 @@ describe('Instructor force-breaking variants on exam', () => {
     });
   });
 
-  test.sequential(
+  test(
     'instructor cannot break first variant via assessment question page',
+    { concurrent: false },
     async () => {
       const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
 
@@ -295,56 +316,68 @@ describe('Instructor force-breaking variants on exam', () => {
     },
   );
 
-  test.sequential('instructor cannot break second variant via student instance page', async () => {
-    const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
+  test(
+    'instructor cannot break second variant via student instance page',
+    { concurrent: false },
+    async () => {
+      const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
-    const instanceQuestion = await queryScalar(
-      sql.select_instance_question,
-      { assessment_question_id: partialCredit2AssessmentQuestion.id },
-      IdSchema,
-    );
+      const instanceQuestion = await queryScalar(
+        sql.select_instance_question,
+        { assessment_question_id: partialCredit2AssessmentQuestion.id },
+        IdSchema,
+      );
 
-    const instanceResponse = await fetchCheerio(instanceUrl);
-    const csrfToken = getCSRFToken(instanceResponse.$);
+      const instanceResponse = await fetchCheerio(instanceUrl);
+      const csrfToken = getCSRFToken(instanceResponse.$);
 
-    const breakVariantsResponse = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_instance_question_id: instanceQuestion,
-      }),
-    });
-    assert.equal(breakVariantsResponse.status, 403);
-  });
+      const breakVariantsResponse = await fetchCheerio(instanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_instance_question_id: instanceQuestion,
+        }),
+      });
+      assert.equal(breakVariantsResponse.status, 403);
+    },
+  );
 
-  test.sequential('student sees same variant when revisiting first question', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 1")').attr('href');
+  test(
+    'student sees same variant when revisiting first question',
+    { concurrent: false },
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const addNumbersUrl = assessmentResponse.$('a:contains("Question 1")').attr('href');
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
-      assert.equal(questionResponse.status, 200);
+        const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
+        assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      assert.equal(variantId.toString(), partialCredit1VariantId);
-    });
-  });
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        assert.equal(variantId.toString(), partialCredit1VariantId);
+      });
+    },
+  );
 
-  test.sequential('student sees same variant when revisiting second question', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 2")').attr('href');
+  test(
+    'student sees same variant when revisiting second question',
+    { concurrent: false },
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const addNumbersUrl = assessmentResponse.$('a:contains("Question 2")').attr('href');
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
-      assert.equal(questionResponse.status, 200);
+        const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
+        assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      assert.equal(variantId.toString(), partialCredit2VariantId);
-    });
-  });
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        assert.equal(variantId.toString(), partialCredit2VariantId);
+      });
+    },
+  );
 });

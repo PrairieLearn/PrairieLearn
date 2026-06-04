@@ -29,7 +29,7 @@ function doTest(issuesUrl: string, label: string) {
   describe(`Report issue with question and close all issues in ${label}`, () => {
     let questionUrl;
 
-    test.sequential('should report issues to a question', async () => {
+    test('should report issues to a question', { concurrent: false }, async () => {
       const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
       questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
       let res = await fetch(questionUrl);
@@ -85,7 +85,7 @@ function doTest(issuesUrl: string, label: string) {
       assert.equal(rowCount, 3, 'Expected three open issues');
     });
 
-    test.sequential('should close issues matching a query', async () => {
+    test('should close issues matching a query', { concurrent: false }, async () => {
       const issuesUrlWithQuery = `${issuesUrl}?q=is%3Aopen+mountain`;
       let res = await fetch(issuesUrlWithQuery);
       const $ = cheerio.load(await res.text());
@@ -114,7 +114,7 @@ function doTest(issuesUrl: string, label: string) {
       assert.equal(rowCount, 2, 'Expected two open issues');
     });
 
-    test.sequential('should close all open issues', async () => {
+    test('should close all open issues', { concurrent: false }, async () => {
       let res = await fetch(issuesUrl);
       const $ = cheerio.load(await res.text());
 

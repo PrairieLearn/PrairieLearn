@@ -109,7 +109,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
 
   afterAll(helperServer.after);
 
-  test.sequential('should default to grouping by Set', async function () {
+  test('should default to grouping by Set', { concurrent: false }, async function () {
     const courseInstance = await selectCourseInstanceByShortName({
       course: await selectCourseById('1'),
       shortName: 'Fa19',
@@ -117,7 +117,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     assert.equal(courseInstance.assessments_group_by, 'Set');
   });
 
-  test.sequential('should use correct order when grouping by Set', async function () {
+  test('should use correct order when grouping by Set', { concurrent: false }, async function () {
     const response = await fetchAssessmentsPage();
     testHeadingOrder(response, ['Homeworks', 'Exams']);
 
@@ -125,25 +125,29 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     assessmentBadges = extractAssessmentSetBadgeText(response);
   });
 
-  test.sequential('should use correct order when grouping by Module', async function () {
-    // Update course to group by Module
-    course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupAssessmentsBy = 'Module';
-    await overwriteAndSyncCourseData(course, courseDir);
+  test(
+    'should use correct order when grouping by Module',
+    { concurrent: false },
+    async function () {
+      // Update course to group by Module
+      course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupAssessmentsBy = 'Module';
+      await overwriteAndSyncCourseData(course, courseDir);
 
-    const response = await fetchAssessmentsPage();
-    testHeadingOrder(response, ['Module 1', 'Module 2']);
+      const response = await fetchAssessmentsPage();
+      testHeadingOrder(response, ['Module 1', 'Module 2']);
 
-    const badges = extractAssessmentSetBadgeText(response);
-    assert.sameOrderedMembers(badges, [
-      // Module 1
-      'HW1',
-      'E1',
-      // Module 2
-      'HW2',
-      'E2',
-    ]);
+      const badges = extractAssessmentSetBadgeText(response);
+      assert.sameOrderedMembers(badges, [
+        // Module 1
+        'HW1',
+        'E1',
+        // Module 2
+        'HW2',
+        'E2',
+      ]);
 
-    // compare this new set of badges with the old one
-    assert.sameMembers(badges, assessmentBadges);
-  });
+      // compare this new set of badges with the old one
+      assert.sameMembers(badges, assessmentBadges);
+    },
+  );
 });

@@ -152,7 +152,7 @@ describe('Access control save via tRPC', () => {
     );
   }
 
-  test.sequential('saves rules to disk and syncs to DB', async () => {
+  test('saves rules to disk and syncs to DB', { concurrent: false }, async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
@@ -184,23 +184,27 @@ describe('Access control save via tRPC', () => {
     assert.isArray(parsed.zones);
   });
 
-  test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
-    const client = await createClient();
-    const origHash = await getOrigHash();
+  test(
+    'omits beforeRelease.listed: false and empty objects from disk',
+    { concurrent: false },
+    async () => {
+      const client = await createClient();
+      const origHash = await getOrigHash();
 
-    const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
+      const rules: AccessControlJsonInput[] = [{ beforeRelease: { listed: false } }];
 
-    const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
-    assert.isString(result.newHash);
+      const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
+      assert.isString(result.newHash);
 
-    const fileContent = await fs.readFile(assessmentPath(), 'utf8');
-    const parsed = JSON.parse(fileContent);
+      const fileContent = await fs.readFile(assessmentPath(), 'utf8');
+      const parsed = JSON.parse(fileContent);
 
-    assert.equal(parsed.accessControl.length, 1);
-    assert.notProperty(parsed.accessControl[0], 'beforeRelease');
-  });
+      assert.equal(parsed.accessControl.length, 1);
+      assert.notProperty(parsed.accessControl[0], 'beforeRelease');
+    },
+  );
 
-  test.sequential('course editor without student data permissions', async () => {
+  test('course editor without student data permissions', { concurrent: false }, async () => {
     const courseEditor = await getOrCreateUser({
       uid: 'access-control-course-editor@example.com',
       name: 'Access Control Course Editor',
@@ -258,7 +262,7 @@ describe('Access control save via tRPC', () => {
     assert.include(html, 'hidden because you do not have student data viewer permissions');
   });
 
-  test.sequential('course editor with student data view permissions', async () => {
+  test('course editor with student data view permissions', { concurrent: false }, async () => {
     const courseEditorWithStudentDataView = await getOrCreateUser({
       uid: 'access-control-student-data-viewer@example.com',
       name: 'Access Control Student Data Viewer',
@@ -293,7 +297,7 @@ describe('Access control save via tRPC', () => {
     assert.include(html, '"hiddenEnrollmentRuleCount":0');
   });
 
-  test.sequential('persists student-specific override order', async () => {
+  test('persists student-specific override order', { concurrent: false }, async () => {
     const client = await createClient();
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -371,7 +375,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(reorderedRuleA.number, 2);
   });
 
-  test.sequential('rejects duplicate student-specific override ids', async () => {
+  test('rejects duplicate student-specific override ids', { concurrent: false }, async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'hw19-accessControlUi',
@@ -411,7 +415,7 @@ describe('Access control save via tRPC', () => {
     );
   });
 
-  test.sequential('rejects save with stale origHash', async () => {
+  test('rejects save with stale origHash', { concurrent: false }, async () => {
     const client = await createClient();
     const staleHash = await getOrigHash();
 

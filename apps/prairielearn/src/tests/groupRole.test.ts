@@ -228,29 +228,37 @@ describe(
       Object.assign(config, storedConfig);
     });
 
-    test.sequential('contains a group-based homework assessment with roles', async function () {
-      locals.assessment_id = await sqldb.queryScalar(
-        sql.select_group_work_assessment_with_roles,
-        IdSchema,
-      );
-      locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
-    });
+    test(
+      'contains a group-based homework assessment with roles',
+      { concurrent: false },
+      async function () {
+        locals.assessment_id = await sqldb.queryScalar(
+          sql.select_group_work_assessment_with_roles,
+          IdSchema,
+        );
+        locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
+      },
+    );
 
-    test.sequential('contains a group-based homework assessment without roles', async function () {
-      const result = await sqldb.queryRow(
-        sql.select_group_work_assessment_without_roles,
-        z.object({
-          id: AssessmentSchema.shape.id,
-          has_roles: GroupConfigSchema.shape.has_roles,
-        }),
-      );
-      assert.equal(result.has_roles, false);
-      locals.assessment_id_without_roles = result.id;
-      locals.assessmentUrlWithoutRoles =
-        locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
-    });
+    test(
+      'contains a group-based homework assessment without roles',
+      { concurrent: false },
+      async function () {
+        const result = await sqldb.queryRow(
+          sql.select_group_work_assessment_without_roles,
+          z.object({
+            id: AssessmentSchema.shape.id,
+            has_roles: GroupConfigSchema.shape.has_roles,
+          }),
+        );
+        assert.equal(result.has_roles, false);
+        locals.assessment_id_without_roles = result.id;
+        locals.assessmentUrlWithoutRoles =
+          locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
+      },
+    );
 
-    test.sequential('contains the 4 group roles for the assessment', async function () {
+    test('contains the 4 group roles for the assessment', { concurrent: false }, async function () {
       const result = await sqldb.queryRows(
         sql.select_assessment_group_roles,
         { assessment_id: locals.assessment_id },
@@ -278,13 +286,13 @@ describe(
       locals.contributor = contributor;
     });
 
-    test.sequential('can insert/get 5 users into/from the DB', async function () {
+    test('can insert/get 5 users into/from the DB', { concurrent: false }, async function () {
       // @ts-expect-error We forced name to be a string
       locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 5);
     });
 
-    test.sequential('can create a group as first user', async function () {
+    test('can create a group as first user', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(
         locals.studentUsers[0],
         locals.assessmentUrl,
@@ -304,62 +312,73 @@ describe(
       locals.$ = cheerio.load(await res.text());
     });
 
-    test.sequential('group creator should have manager role in database', async function () {
-      // Updating local variables to persist role updates across tests
-      locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
+    test(
+      'group creator should have manager role in database',
+      { concurrent: false },
+      async function () {
+        // Updating local variables to persist role updates across tests
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        ];
 
-      // Check role config
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    });
+        // Check role config
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential('contains the 4-character join code', function () {
+    test('contains the 4-character join code', { concurrent: false }, function () {
       elemList = locals.$('#join-code');
       locals.joinCode = elemList.text();
       assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
     });
 
-    test.sequential('group role table is visible and has one user in it', function () {
+    test('group role table is visible and has one user in it', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
     });
 
-    test.sequential('contains four textboxes per table row', function () {
+    test('contains four textboxes per table row', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
       assert.lengthOf(elemList, 4);
     });
 
-    test.sequential('should have only manager role checked in the role table', function () {
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
-      assert.lengthOf(elemList, 1);
+    test(
+      'should have only manager role checked in the role table',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
+        assert.lengthOf(elemList, 1);
 
-      elemList = elemList.parent('label');
-      assert.equal(elemList.text().trim(), locals.manager.role_name);
-    });
+        elemList = elemList.parent('label');
+        assert.equal(elemList.text().trim(), locals.manager.role_name);
+      },
+    );
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
 
-    test.sequential('displays error for too few recorders/reflectors', function () {
+    test('displays error for too few recorders/reflectors', { concurrent: false }, function () {
       assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
       assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
     });
 
-    test.sequential('cannot select the contributor role', function () {
+    test('cannot select the contributor role', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 1);
       elemList = elemList.parent('label');
       assert.equal(elemList.text().trim(), locals.contributor.role_name);
     });
 
-    test.sequential('should be missing 1 more group members to start', function () {
+    test('should be missing 1 more group members to start', { concurrent: false }, function () {
       elemList = locals.$('.text-center:contains(1 more)');
       assert.lengthOf(elemList, 1);
     });
 
-    test.sequential(
+    test(
       'should have no role assignments in the database after assigner leaves',
+      { concurrent: false },
       async function () {
         await leaveGroup(locals.assessmentUrl);
 
@@ -374,19 +393,25 @@ describe(
       },
     );
 
-    test.sequential('assigns first user to manager role after re-joining', async function () {
-      await joinGroup(locals.assessmentUrl, locals.joinCode);
+    test(
+      'assigns first user to manager role after re-joining',
+      { concurrent: false },
+      async function () {
+        await joinGroup(locals.assessmentUrl, locals.joinCode);
 
-      locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    });
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        ];
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential('group role table is visible and has one user in it', function () {
+    test('group role table is visible and has one user in it', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
     });
 
-    test.sequential('second user should join group as recorder', async function () {
+    test('second user should join group as recorder', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(
         locals.studentUsers[1],
         locals.assessmentUrl,
@@ -402,35 +427,44 @@ describe(
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
     });
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
 
-    test.sequential('does not enable the group role table for non-assigner', function () {
-      elemList = locals.$('#role-select-form').find('input:not([disabled])');
-      assert.lengthOf(elemList, 0);
-    });
+    test(
+      'does not enable the group role table for non-assigner',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('input:not([disabled])');
+        assert.lengthOf(elemList, 0);
+      },
+    );
 
-    test.sequential('displays error for too few reflectors', function () {
+    test('displays error for too few reflectors', { concurrent: false }, function () {
       assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
     });
 
-    test.sequential('first user sees group role select table with two rows', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
+    test(
+      'first user sees group role select table with two rows',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
 
-      elemList = locals.$('#role-select-form').find('tr');
-      // Header row and two user rows
-      assert.lengthOf(elemList, 3);
-    });
+        elemList = locals.$('#role-select-form').find('tr');
+        // Header row and two user rows
+        assert.lengthOf(elemList, 3);
+      },
+    );
 
-    test.sequential(
+    test(
       'first user should be able to remove role assignments from second user',
+      { concurrent: false },
       async function () {
         // Remove role assignments from second user
         locals.roleUpdates = [
@@ -445,7 +479,7 @@ describe(
       },
     );
 
-    test.sequential('second user should have no roles after update', async function () {
+    test('second user should have no roles after update', { concurrent: false }, async function () {
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
 
       // Reload assessment and verify in UI
@@ -455,17 +489,25 @@ describe(
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
     });
 
-    test.sequential('should have error displayed for requiring all users have a role', function () {
-      assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
-    });
+    test(
+      'should have error displayed for requiring all users have a role',
+      { concurrent: false },
+      function () {
+        assertAlert(
+          locals.$,
+          'At least one user does not have a role. All users must have a role.',
+        );
+      },
+    );
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
 
-    test.sequential(
+    test(
       'can switch to second user and load assessment without error',
+      { concurrent: false },
       async function () {
         // By loading assessment as second user, we verify that an assessment can be loaded
         // by a user with no role assignments
@@ -478,53 +520,62 @@ describe(
       },
     );
 
-    test.sequential('second user cannot update roles as non-assigner', async function () {
-      const roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-      ];
+    test(
+      'second user cannot update roles as non-assigner',
+      { concurrent: false },
+      async function () {
+        const roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        ];
 
-      const checkedElementIds: Record<string, string> = {};
-      for (const { roleId, groupUserId } of roleUpdates) {
-        checkedElementIds[`user_role_${roleId}-${groupUserId}`] = 'on';
-      }
-      const res = await fetch(locals.assessmentUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_group_roles',
-          __csrf_token: locals.__csrf_token,
-          ...checkedElementIds,
-        }),
-      });
+        const checkedElementIds: Record<string, string> = {};
+        for (const { roleId, groupUserId } of roleUpdates) {
+          checkedElementIds[`user_role_${roleId}-${groupUserId}`] = 'on';
+        }
+        const res = await fetch(locals.assessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_group_roles',
+            __csrf_token: locals.__csrf_token,
+            ...checkedElementIds,
+          }),
+        });
 
-      // Second user cannot update group roles
-      assert.isNotOk(res.ok);
-      assert.equal(res.status, 403);
-    });
+        // Second user cannot update group roles
+        assert.isNotOk(res.ok);
+        assert.equal(res.status, 403);
+      },
+    );
 
-    test.sequential('first user can edit role table to make both users manager', async function () {
-      // Switch to first user
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
+    test(
+      'first user can edit role table to make both users manager',
+      { concurrent: false },
+      async function () {
+        // Switch to first user
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
 
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].id },
-      ];
-      await updateGroupRoles(
-        locals.roleUpdates,
-        locals.groupRoles,
-        locals.studentUsers,
-        locals.assessmentUrl,
-      );
-    });
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].id },
+        ];
+        await updateGroupRoles(
+          locals.roleUpdates,
+          locals.groupRoles,
+          locals.studentUsers,
+          locals.assessmentUrl,
+        );
+      },
+    );
 
-    test.sequential(
+    test(
       'second user can load assessment as manager and see group role select table',
+      { concurrent: false },
       async function () {
         await switchUserAndLoadAssessment(
           locals.studentUsers[1],
@@ -539,18 +590,23 @@ describe(
       },
     );
 
-    test.sequential('displays errors for incorrect number of role assignments', function () {
-      assertAlert(locals.$, 'less student needs to be assigned');
-      assertAlert(locals.$, 'more student needs to be assigned', 2);
-    });
+    test(
+      'displays errors for incorrect number of role assignments',
+      { concurrent: false },
+      function () {
+        assertAlert(locals.$, 'less student needs to be assigned');
+        assertAlert(locals.$, 'more student needs to be assigned', 2);
+      },
+    );
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
 
-    test.sequential(
+    test(
       'second user can leave group as manager and rejoin without error',
+      { concurrent: false },
       async function () {
         await leaveGroup(locals.assessmentUrl);
 
@@ -561,8 +617,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'database contains correct role configuration after second user leaves and rejoins',
+      { concurrent: false },
       async function () {
         const expectedRoleUpdates = [
           { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
@@ -572,7 +629,7 @@ describe(
       },
     );
 
-    test.sequential('third user can load assessment and join group', async function () {
+    test('third user can load assessment and join group', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(
         locals.studentUsers[2],
         locals.assessmentUrl,
@@ -582,53 +639,70 @@ describe(
       await joinGroup(locals.assessmentUrl, locals.joinCode);
     });
 
-    test.sequential('assigns third user with required role upon join', async function () {
-      const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
-      ];
-      await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
-    });
+    test(
+      'assigns third user with required role upon join',
+      { concurrent: false },
+      async function () {
+        const expectedRoleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+        ];
+        await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential('third user can start assessment as minimum roles are complete', function () {
-      elemList = locals.$('#start-assessment');
-      assert.isFalse(elemList.is(':disabled'));
-    });
+    test(
+      'third user can start assessment as minimum roles are complete',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#start-assessment');
+        assert.isFalse(elemList.is(':disabled'));
+      },
+    );
 
-    test.sequential('does not enable the group role table as non-assigner', function () {
-      elemList = locals.$('#role-select-form').find('input:not([disabled])');
-      assert.lengthOf(elemList, 0);
-    });
+    test(
+      'does not enable the group role table as non-assigner',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('input:not([disabled])');
+        assert.lengthOf(elemList, 0);
+      },
+    );
 
-    test.sequential('displays no role assignment error', function () {
+    test('displays no role assignment error', { concurrent: false }, function () {
       assertAlert(locals.$, 'needs to be assigned', 0);
     });
 
-    test.sequential('first user can edit role table to make two users recorder', async function () {
-      // Switch to first user
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
+    test(
+      'first user can edit role table to make two users recorder',
+      { concurrent: false },
+      async function () {
+        // Switch to first user
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
 
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
-      ];
-      await updateGroupRoles(
-        locals.roleUpdates,
-        locals.groupRoles,
-        locals.studentUsers,
-        locals.assessmentUrl,
-      );
-    });
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        ];
+        await updateGroupRoles(
+          locals.roleUpdates,
+          locals.groupRoles,
+          locals.studentUsers,
+          locals.assessmentUrl,
+        );
+      },
+    );
 
-    test.sequential(
+    test(
       'displays error for too few reflectors and too many recorders',
+      { concurrent: false },
       async function () {
         await switchUserAndLoadAssessment(
           locals.studentUsers[2],
@@ -641,52 +715,69 @@ describe(
       },
     );
 
-    test.sequential('cannot start assessment as minimum roles are incomplete', function () {
-      elemList = locals.$('#start-assessment');
-      assert.isTrue(elemList.is(':disabled'));
-    });
+    test(
+      'cannot start assessment as minimum roles are incomplete',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#start-assessment');
+        assert.isTrue(elemList.is(':disabled'));
+      },
+    );
 
-    test.sequential('fourth user can load assessment and join group', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[3],
-        locals.assessmentUrl,
-        '00000004',
-        2,
-      );
-      await joinGroup(locals.assessmentUrl, locals.joinCode);
-    });
+    test(
+      'fourth user can load assessment and join group',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[3],
+          locals.assessmentUrl,
+          '00000004',
+          2,
+        );
+        await joinGroup(locals.assessmentUrl, locals.joinCode);
+      },
+    );
 
-    test.sequential('should not enable the group role table', function () {
+    test('should not enable the group role table', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('input:not([disabled])');
       assert.lengthOf(elemList, 0);
     });
 
-    test.sequential('assigns fourth user with required role upon join', async function () {
-      // Fourth user should receive required role because there is one role still to be assigned its minimum
-      const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
-      ];
-      await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
-    });
+    test(
+      'assigns fourth user with required role upon join',
+      { concurrent: false },
+      async function () {
+        // Fourth user should receive required role because there is one role still to be assigned its minimum
+        const expectedRoleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
+        ];
+        await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential('first user should see group role table with four users', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
+    test(
+      'first user should see group role table with four users',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
 
-      elemList = locals.$('#role-select-form').find('tr');
-      // Header row and four user rows
-      assert.lengthOf(elemList, 5);
-    });
+        elemList = locals.$('#role-select-form').find('tr');
+        // Header row and four user rows
+        assert.lengthOf(elemList, 5);
+      },
+    );
 
-    test.sequential(
+    test(
       'first user can edit role table to correct role configuration and remove manager role',
+      { concurrent: false },
       async function () {
         // Remove manager role to test whether it is correctly reassigned upon date
         locals.roleUpdates = [
@@ -709,8 +800,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'database contains correct role configuration after reassigning roles',
+      { concurrent: false },
       async function () {
         // We expect the db to have all role updates, including the assigner role
         locals.roleUpdates = [...locals.roleUpdates, locals.assignerRoleUpdate];
@@ -718,30 +810,38 @@ describe(
       },
     );
 
-    test.sequential('should have all four roles checked once in the table', async function () {
-      // Reload assessment
-      const res = await fetch(locals.assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
+    test(
+      'should have all four roles checked once in the table',
+      { concurrent: false },
+      async function () {
+        // Reload assessment
+        const res = await fetch(locals.assessmentUrl);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
 
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential('displays no errors when role config is correct', function () {
+    test('displays no errors when role config is correct', { concurrent: false }, function () {
       assertAlert(locals.$, 'needs to be assigned', 0);
     });
 
-    test.sequential('should be able to start assessment when role config is correct', function () {
-      elemList = locals.$('#start-assessment');
-      assert.isFalse(elemList.is(':disabled'));
-    });
+    test(
+      'should be able to start assessment when role config is correct',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#start-assessment');
+        assert.isFalse(elemList.is(':disabled'));
+      },
+    );
 
-    test.sequential('should be able to select the contributor role', function () {
+    test('should be able to select the contributor role', { concurrent: false }, function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 0);
     });
 
-    test.sequential('first user can assign too many recorders', async function () {
+    test('first user can assign too many recorders', { concurrent: false }, async function () {
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
@@ -756,70 +856,88 @@ describe(
       );
     });
 
-    test.sequential(
+    test(
       'should have correct role configuration in the database after assigning two recorders',
+      { concurrent: false },
       async function () {
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
       },
     );
 
-    test.sequential('should have correct roles checked in the table', async function () {
-      // Reload assessment
-      const res = await fetch(locals.assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
+    test(
+      'should have correct roles checked in the table',
+      { concurrent: false },
+      async function () {
+        // Reload assessment
+        const res = await fetch(locals.assessmentUrl);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
 
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential('displays error for too many recorders', function () {
+    test('displays error for too many recorders', { concurrent: false }, function () {
       assertAlert(locals.$, '1 less student needs to be assigned to the role "Recorder"');
     });
 
-    test.sequential('first user can update roles to have two contributors', async function () {
-      locals.roleUpdates = [
-        // First user has both manager and contributor
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[0].id },
+    test(
+      'first user can update roles to have two contributors',
+      { concurrent: false },
+      async function () {
+        locals.roleUpdates = [
+          // First user has both manager and contributor
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[0].id },
 
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
-      ];
-      await updateGroupRoles(
-        locals.roleUpdates,
-        locals.groupRoles,
-        locals.studentUsers,
-        locals.assessmentUrl,
-      );
-    });
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
+        ];
+        await updateGroupRoles(
+          locals.roleUpdates,
+          locals.groupRoles,
+          locals.studentUsers,
+          locals.assessmentUrl,
+        );
+      },
+    );
 
-    test.sequential('should have correct role configuration in the database', async function () {
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    });
+    test(
+      'should have correct role configuration in the database',
+      { concurrent: false },
+      async function () {
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential('should have correct roles checked in the table', async function () {
-      // Reload assessment
-      const res = await fetch(locals.assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
+    test(
+      'should have correct roles checked in the table',
+      { concurrent: false },
+      async function () {
+        // Reload assessment
+        const res = await fetch(locals.assessmentUrl);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
 
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential('displays error for a student having too many roles', function () {
+    test('displays error for a student having too many roles', { concurrent: false }, function () {
       assertAlert(locals.$, 'too many roles');
     });
 
-    test.sequential(
+    test(
       'should not be able to start assessment with unbalanced role config',
+      { concurrent: false },
       function () {
         elemList = locals.$('#start-assessment');
         assert.isTrue(elemList.is(':disabled'));
       },
     );
 
-    test.sequential('fourth user can leave group', async function () {
+    test('fourth user can leave group', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(
         locals.studentUsers[3],
         locals.assessmentUrl,
@@ -829,8 +947,9 @@ describe(
       await leaveGroup(locals.assessmentUrl);
     });
 
-    test.sequential(
+    test(
       'should remove non-required roles when group size does not exceed minimum required role assignments',
+      { concurrent: false },
       async function () {
         // First user has no contributor role now that group size = # of required roles
         locals.roleUpdates = [
@@ -842,18 +961,23 @@ describe(
       },
     );
 
-    test.sequential('first user should see correct roles checked in the table', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+    test(
+      'first user should see correct roles checked in the table',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential(
+    test(
       'should assign fourth user as non-required role after rejoining',
+      { concurrent: false },
       async function () {
         await switchUserAndLoadAssessment(
           locals.studentUsers[3],
@@ -874,18 +998,23 @@ describe(
       },
     );
 
-    test.sequential('first user should see correct roles checked in the table', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+    test(
+      'first user should see correct roles checked in the table',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential(
+    test(
       'should assign fifth user as non-required role when group size exceeds minimum required role assignments',
+      { concurrent: false },
       async function () {
         // Switch to fifth user and join group
         await switchUserAndLoadAssessment(
@@ -908,18 +1037,23 @@ describe(
       },
     );
 
-    test.sequential('first user should see five roles checked in the table', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[0],
-        locals.assessmentUrl,
-        '00000001',
-        3,
-      );
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    });
+    test(
+      'first user should see five roles checked in the table',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[0],
+          locals.assessmentUrl,
+          '00000001',
+          3,
+        );
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
+      },
+    );
 
-    test.sequential(
+    test(
       'first user can swap recorder and contributor roles between second and fifth user',
+      { concurrent: false },
       async function () {
         locals.roleUpdates = [
           // Second user has contributor, fifth user has recorder
@@ -948,8 +1082,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'should replace non-required role with required role of leaving user when group is big enough',
+      { concurrent: false },
       async function () {
         // Switch to fifth user and leave
         await switchUserAndLoadAssessment(
@@ -1005,8 +1140,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'correct roles are checked in group role table after required roles are transferred',
+      { concurrent: false },
       async function () {
         // Switch to assigner
         await switchUserAndLoadAssessment(
@@ -1020,8 +1156,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'first user can swap reflector and contributor roles between third and fourth user',
+      { concurrent: false },
       async function () {
         locals.roleUpdates = [
           // Third user has contributor, fourth user has reflector
@@ -1049,18 +1186,23 @@ describe(
       },
     );
 
-    test.sequential('should be able to switch to fourth user and leave group', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[3],
-        locals.assessmentUrl,
-        '00000004',
-        2,
-      );
-      await leaveGroup(locals.assessmentUrl);
-    });
+    test(
+      'should be able to switch to fourth user and leave group',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[3],
+          locals.assessmentUrl,
+          '00000004',
+          2,
+        );
+        await leaveGroup(locals.assessmentUrl);
+      },
+    );
 
-    test.sequential(
+    test(
       'should replace non-required role with required role of leaving user when group meets minimum required role assignments',
+      { concurrent: false },
       async function () {
         // Fourth user's contributor role should replace third user's contributor role
         locals.roleUpdates = [
@@ -1081,18 +1223,23 @@ describe(
       },
     );
 
-    test.sequential('should be able to switch to fourth user and leave group', async function () {
-      await switchUserAndLoadAssessment(
-        locals.studentUsers[2],
-        locals.assessmentUrl,
-        '00000003',
-        2,
-      );
-      await leaveGroup(locals.assessmentUrl);
-    });
+    test(
+      'should be able to switch to fourth user and leave group',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(
+          locals.studentUsers[2],
+          locals.assessmentUrl,
+          '00000003',
+          2,
+        );
+        await leaveGroup(locals.assessmentUrl);
+      },
+    );
 
-    test.sequential(
+    test(
       'required roles of leaving user are transferred when group size falls below minimum required role assignments',
+      { concurrent: false },
       async function () {
         // Reflector role should be transferred after third user leaves. The role can either
         // fall to the first user or second user. We'll test for either case happening
@@ -1135,8 +1282,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'group role table should have correct roles checked after roles transfer upon leave',
+      { concurrent: false },
       async function () {
         await switchUserAndLoadAssessment(
           locals.studentUsers[0],
@@ -1148,8 +1296,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'all required roles of a leaving user should be transferred if possible',
+      { concurrent: false },
       async function () {
         // Leave group as first user
         await leaveGroup(locals.assessmentUrl);
@@ -1172,14 +1321,18 @@ describe(
       },
     );
 
-    test.sequential('group role table is visible and has one user with three roles', function () {
-      elemList = locals.$('#role-select-form').find('tr');
-      assert.lengthOf(elemList, 2);
+    test(
+      'group role table is visible and has one user with three roles',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('tr');
+        assert.lengthOf(elemList, 2);
 
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential('first user can load assessment without roles', async function () {
+    test('first user can load assessment without roles', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(
         locals.studentUsers[0],
         locals.assessmentUrlWithoutRoles,
@@ -1188,24 +1341,32 @@ describe(
       );
     });
 
-    test.sequential('first user can create a group in assessment without roles', async function () {
-      locals.group_name = 'groupAA';
-      const res = await fetch(locals.assessmentUrlWithoutRoles, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'create_group',
-          __csrf_token: locals.__csrf_token,
-          group_name: locals.group_name,
-        }),
-      });
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
+    test(
+      'first user can create a group in assessment without roles',
+      { concurrent: false },
+      async function () {
+        locals.group_name = 'groupAA';
+        const res = await fetch(locals.assessmentUrlWithoutRoles, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'create_group',
+            __csrf_token: locals.__csrf_token,
+            group_name: locals.group_name,
+          }),
+        });
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+      },
+    );
 
-    test.sequential('group role table is not visible in assessment without roles', function () {
-      elemList = locals.$('#role-select-form');
-      assert.lengthOf(elemList, 0);
-    });
+    test(
+      'group role table is not visible in assessment without roles',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form');
+        assert.lengthOf(elemList, 0);
+      },
+    );
   },
 );
 
@@ -1273,50 +1434,54 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     Object.assign(config, storedConfig);
   });
 
-  test.sequential('change group config to include a role with minimum of two', async function () {
-    const groupRoles: GroupsRoleJson[] = [
-      { name: 'Manager', minMembers: 1, maxMembers: 1 },
-      { name: 'Recorder', minMembers: 2, maxMembers: 2 },
-      { name: 'Reflector', minMembers: 1, maxMembers: 1 },
-      { name: 'Contributor', minMembers: 0 },
-    ];
-    await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles, ['Manager']);
-    const groupRolesResult = await sqldb.queryRows(
-      sql.select_assessment_group_roles,
-      { assessment_id: assessmentId },
-      GroupRoleSchema,
-    );
-    assert.lengthOf(groupRolesResult, 4);
-    locals.groupRoles = groupRolesResult;
+  test(
+    'change group config to include a role with minimum of two',
+    { concurrent: false },
+    async function () {
+      const groupRoles: GroupsRoleJson[] = [
+        { name: 'Manager', minMembers: 1, maxMembers: 1 },
+        { name: 'Recorder', minMembers: 2, maxMembers: 2 },
+        { name: 'Reflector', minMembers: 1, maxMembers: 1 },
+        { name: 'Contributor', minMembers: 0 },
+      ];
+      await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles, ['Manager']);
+      const groupRolesResult = await sqldb.queryRows(
+        sql.select_assessment_group_roles,
+        { assessment_id: assessmentId },
+        GroupRoleSchema,
+      );
+      assert.lengthOf(groupRolesResult, 4);
+      locals.groupRoles = groupRolesResult;
 
-    const manager = groupRolesResult.find((row) => row.role_name === 'Manager');
-    assert.isDefined(manager);
-    locals.manager = manager;
+      const manager = groupRolesResult.find((row) => row.role_name === 'Manager');
+      assert.isDefined(manager);
+      locals.manager = manager;
 
-    const recorder = groupRolesResult.find((row) => row.role_name === 'Recorder');
-    assert.isDefined(recorder);
-    assert.equal(2, recorder.minimum);
-    assert.equal(2, recorder.maximum);
-    locals.recorder = recorder;
+      const recorder = groupRolesResult.find((row) => row.role_name === 'Recorder');
+      assert.isDefined(recorder);
+      assert.equal(2, recorder.minimum);
+      assert.equal(2, recorder.maximum);
+      locals.recorder = recorder;
 
-    const reflector = groupRolesResult.find((row) => row.role_name === 'Reflector');
-    assert.isDefined(reflector);
-    locals.reflector = reflector;
+      const reflector = groupRolesResult.find((row) => row.role_name === 'Reflector');
+      assert.isDefined(reflector);
+      locals.reflector = reflector;
 
-    const contributor = groupRolesResult.find((row) => row.role_name === 'Contributor');
-    assert.isDefined(contributor);
-    locals.contributor = contributor;
+      const contributor = groupRolesResult.find((row) => row.role_name === 'Contributor');
+      assert.isDefined(contributor);
+      locals.contributor = contributor;
 
-    // Insert/get 5 users into/from the DB
-    // @ts-expect-error We forced name to be a string
-    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
-    assert.lengthOf(locals.studentUsers, 5);
+      // Insert/get 5 users into/from the DB
+      // @ts-expect-error We forced name to be a string
+      locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      assert.lengthOf(locals.studentUsers, 5);
 
-    // Switch current user to the group creator and load assessment
-    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
-  });
+      // Switch current user to the group creator and load assessment
+      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
+    },
+  );
 
-  test.sequential('create group as first user', async function () {
+  test('create group as first user', { concurrent: false }, async function () {
     locals.group_name = 'groupBB';
     const joinRes = await fetch(assessmentUrl, {
       method: 'POST',
@@ -1336,23 +1501,24 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
   });
 
-  test.sequential('check role configuration', async function () {
+  test('check role configuration', { concurrent: false }, async function () {
     locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
     await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
   });
 
-  test.sequential('second user should be able to join group', async function () {
+  test('second user should be able to join group', { concurrent: false }, async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[1], assessmentUrl, '00000002', 2);
     await joinGroup(assessmentUrl, locals.joinCode);
   });
 
-  test.sequential('should not be able to start assessment', function () {
+  test('should not be able to start assessment', { concurrent: false }, function () {
     elemList = locals.$('#start-assessment');
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  test.sequential(
+  test(
     'should have correct role configuration in the database for two users',
+    { concurrent: false },
     async function () {
       const expectedRoleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
@@ -1362,22 +1528,30 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     },
   );
 
-  test.sequential('should not enable the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('input:not([disabled])');
-    assert.lengthOf(elemList, 0);
-  });
+  test(
+    'should not enable the group role table for non-assigner',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#role-select-form').find('input:not([disabled])');
+      assert.lengthOf(elemList, 0);
+    },
+  );
 
-  test.sequential('should display correct errors for too few role assignments', function () {
-    assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
-    assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
-  });
+  test(
+    'should display correct errors for too few role assignments',
+    { concurrent: false },
+    function () {
+      assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
+      assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
+    },
+  );
 
-  test.sequential('third user should be able to join group', async function () {
+  test('third user should be able to join group', { concurrent: false }, async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[2], assessmentUrl, '00000003', 2);
     await joinGroup(assessmentUrl, locals.joinCode);
   });
 
-  test.sequential('database assigns third user with required role', async function () {
+  test('database assigns third user with required role', { concurrent: false }, async function () {
     const expectedRoleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
@@ -1386,86 +1560,119 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
   });
 
-  test.sequential('should not be able to start assessment as non-assigner', function () {
-    elemList = locals.$('#start-assessment');
-    assert.isTrue(elemList.is(':disabled'));
-  });
+  test(
+    'should not be able to start assessment as non-assigner',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
+    },
+  );
 
-  test.sequential('should not enable the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('input:not([disabled])');
-    assert.lengthOf(elemList, 0);
-  });
+  test(
+    'should not enable the group role table for non-assigner',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#role-select-form').find('input:not([disabled])');
+      assert.lengthOf(elemList, 0);
+    },
+  );
 
-  test.sequential('displays error for too few recorders', function () {
+  test('displays error for too few recorders', { concurrent: false }, function () {
     assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
   });
 
-  test.sequential('displays no errors for reflector', function () {
+  test('displays no errors for reflector', { concurrent: false }, function () {
     assertAlert(locals.$, 'Reflector', 0);
   });
 
-  test.sequential('first user can see group role table with four users', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
+  test(
+    'first user can see group role table with four users',
+    { concurrent: false },
+    async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
-    elemList = locals.$('#role-select-form').find('tr');
-    // Header row and three user rows
-    assert.lengthOf(elemList, 4);
-  });
+      elemList = locals.$('#role-select-form').find('tr');
+      // Header row and three user rows
+      assert.lengthOf(elemList, 4);
+    },
+  );
 
-  test.sequential('first user should not be able to select the contributor role', function () {
-    elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-    assert.lengthOf(elemList, 1);
-    elemList = elemList.parent('label');
-    assert.equal(elemList.text().trim(), locals.contributor.role_name);
-  });
+  test(
+    'first user should not be able to select the contributor role',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+      assert.lengthOf(elemList, 1);
+      elemList = elemList.parent('label');
+      assert.equal(elemList.text().trim(), locals.contributor.role_name);
+    },
+  );
 
-  test.sequential('fourth user should be able to join group', async function () {
+  test('fourth user should be able to join group', { concurrent: false }, async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 2);
     await joinGroup(assessmentUrl, locals.joinCode);
   });
 
-  test.sequential('assigns fourth user with required role upon join', async function () {
-    const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].id },
-    ];
-    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
-  });
+  test(
+    'assigns fourth user with required role upon join',
+    { concurrent: false },
+    async function () {
+      const expectedRoleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].id },
+      ];
+      await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
+    },
+  );
 
-  test.sequential('should be able to start assessment', function () {
+  test('should be able to start assessment', { concurrent: false }, function () {
     elemList = locals.$('#start-assessment');
     assert.isFalse(elemList.is(':disabled'));
   });
 
-  test.sequential('displays no role assignment errors', function () {
+  test('displays no role assignment errors', { concurrent: false }, function () {
     assertAlert(locals.$, 'needs to be assigned', 0);
   });
 
-  test.sequential('should not enable the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('input:not([disabled])');
-    assert.lengthOf(elemList, 0);
-  });
+  test(
+    'should not enable the group role table for non-assigner',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#role-select-form').find('input:not([disabled])');
+      assert.lengthOf(elemList, 0);
+    },
+  );
 
-  test.sequential('first user can see group role table with four users', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
+  test(
+    'first user can see group role table with four users',
+    { concurrent: false },
+    async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
-    elemList = locals.$('#role-select-form').find('tr');
-    // Header row and four user rows
-    assert.lengthOf(elemList, 5);
-  });
+      elemList = locals.$('#role-select-form').find('tr');
+      // Header row and four user rows
+      assert.lengthOf(elemList, 5);
+    },
+  );
 
-  test.sequential('first user should not be able to select the contributor role', function () {
-    elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-    assert.lengthOf(elemList, 1);
-    elemList = elemList.parent('label');
-    assert.equal(elemList.text().trim(), locals.contributor.role_name);
-  });
+  test(
+    'first user should not be able to select the contributor role',
+    { concurrent: false },
+    function () {
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+      assert.lengthOf(elemList, 1);
+      elemList = elemList.parent('label');
+      assert.equal(elemList.text().trim(), locals.contributor.role_name);
+    },
+  );
 
   describe('test correct role config where group size matches minimum required role count', function () {
-    test.sequential(
+    test(
       'first user can update roles with correct role configuration without manager',
+      { concurrent: false },
       async function () {
         // First user keeps manager unchecked, since we expect the role to be automatically assigned
         locals.roleUpdates = [
@@ -1488,8 +1695,9 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       },
     );
 
-    test.sequential(
+    test(
       'contains correct role configuration with manager role after reassigning',
+      { concurrent: false },
       async function () {
         // We expect the db to have all role updates, including the assigner role
         locals.roleUpdates = [...locals.roleUpdates, locals.assignerRoleUpdate];
@@ -1505,47 +1713,60 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       },
     );
 
-    test.sequential('should have no errors displayed', function () {
+    test('should have no errors displayed', { concurrent: false }, function () {
       assertAlert(locals.$, 'to be assigned', 0);
       assertAlert(locals.$, 'At least one user does not have a role', 0);
     });
 
-    test.sequential('first user should not be able to select the contributor role', function () {
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-      assert.lengthOf(elemList, 1);
-      elemList = elemList.parent('label');
-      assert.equal(elemList.text().trim(), locals.contributor.role_name);
-    });
+    test(
+      'first user should not be able to select the contributor role',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+        assert.lengthOf(elemList, 1);
+        elemList = elemList.parent('label');
+        assert.equal(elemList.text().trim(), locals.contributor.role_name);
+      },
+    );
 
-    test.sequential('should be able to start assessment', function () {
+    test('should be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isFalse(elemList.is(':disabled'));
     });
   });
 
   describe('test correct role config where group size exceeds minimum required role count', function () {
-    test.sequential('assigns fifth user with non-required role after join', async function () {
-      // Switch to fifth user and join group
-      await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 2);
-      await joinGroup(assessmentUrl, locals.joinCode);
+    test(
+      'assigns fifth user with non-required role after join',
+      { concurrent: false },
+      async function () {
+        // Switch to fifth user and join group
+        await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 2);
+        await joinGroup(assessmentUrl, locals.joinCode);
 
-      // Fifth user should have contributor role
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
-      ];
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
-    });
+        // Fifth user should have contributor role
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
+        ];
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
+      },
+    );
 
-    test.sequential('switch back to first user and load group role table', async function () {
-      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
-    });
+    test(
+      'switch back to first user and load group role table',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
+      },
+    );
 
-    test.sequential(
+    test(
       'group role table is visible and has five users with correct roles',
+      { concurrent: false },
       function () {
         elemList = locals.$('#role-select-form').find('tr');
         // Header row and five user rows
@@ -1555,7 +1776,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       },
     );
 
-    test.sequential('should have no errors displayed', function () {
+    test('should have no errors displayed', { concurrent: false }, function () {
       assertAlert(locals.$, 'to be assigned', 0);
       assertAlert(
         locals.$,
@@ -1564,55 +1785,63 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       );
     });
 
-    test.sequential('first user should be able to select the contributor role', function () {
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-      assert.lengthOf(elemList, 0);
-    });
+    test(
+      'first user should be able to select the contributor role',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+        assert.lengthOf(elemList, 0);
+      },
+    );
 
-    test.sequential('should be able to start assessment', function () {
+    test('should be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isFalse(elemList.is(':disabled'));
     });
   });
 
   describe('test incorrect role config where group size exceeds minimum required role count', function () {
-    test.sequential('first user should be able to add extra contributor', async function () {
-      // Third user receives contributor
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
-      ];
-      await updateGroupRoles(
-        locals.roleUpdates,
-        locals.groupRoles,
-        locals.studentUsers,
-        assessmentUrl,
-      );
+    test(
+      'first user should be able to add extra contributor',
+      { concurrent: false },
+      async function () {
+        // Third user receives contributor
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
+        ];
+        await updateGroupRoles(
+          locals.roleUpdates,
+          locals.groupRoles,
+          locals.studentUsers,
+          assessmentUrl,
+        );
 
-      // Verify update in database
-      await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
+        // Verify update in database
+        await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
 
-      // Reload and verify update in UI
-      const res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-      verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    });
+        // Reload and verify update in UI
+        const res = await fetch(assessmentUrl);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+        verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
+      },
+    );
 
-    test.sequential('should have correct errors displayed', function () {
+    test('should have correct errors displayed', { concurrent: false }, function () {
       assertAlert(locals.$, 'student has too many roles');
     });
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
 
-    test.sequential('should be able to leave as fifth user', async function () {
+    test('should be able to leave as fifth user', { concurrent: false }, async function () {
       // Switch to fifth user
       await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 2);
 
@@ -1622,7 +1851,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   describe('test incorrect role config where user has no roles', function () {
-    test.sequential('first user can remove a recorder assignment', async function () {
+    test('first user can remove a recorder assignment', { concurrent: false }, async function () {
       // Switch to first user and load assessment
       await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
@@ -1650,7 +1879,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
     });
 
-    test.sequential('should have correct errors displayed', function () {
+    test('should have correct errors displayed', { concurrent: false }, function () {
       assertAlert(
         locals.$,
         '1 more student needs to be assigned to the role "Recorder" (1 assigned, 2 expected)',
@@ -1658,14 +1887,14 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
     });
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
   });
 
   describe('test incorrect role config where roles are unbalanced', function () {
-    test.sequential('first user can add too many roles to assigner', async function () {
+    test('first user can add too many roles to assigner', { concurrent: false }, async function () {
       // Give first user both manager and recorder
       // Leave fourth user without a role
       locals.roleUpdates = [
@@ -1693,28 +1922,29 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
     });
 
-    test.sequential('should have correct errors displayed', function () {
+    test('should have correct errors displayed', { concurrent: false }, function () {
       assertAlert(locals.$, 'to be assigned to the role "Recorder"', 0);
       assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
       assertAlert(locals.$, 'student has too many roles');
     });
 
-    test.sequential('should not be able to start assessment', function () {
+    test('should not be able to start assessment', { concurrent: false }, function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
   });
 
   describe('test correct role config where group size falls below minimum required role count', function () {
-    test.sequential('should be able to leave as fourth user', async function () {
+    test('should be able to leave as fourth user', { concurrent: false }, async function () {
       await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 2);
 
       // Leave as fourth user
       await leaveGroup(assessmentUrl);
     });
 
-    test.sequential(
+    test(
       'should have correct role configuration in the database after fourth user leaves',
+      { concurrent: false },
       async function () {
         locals.roleUpdates = [
           { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
@@ -1726,26 +1956,35 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       },
     );
 
-    test.sequential('first user sees group role table with three users', async function () {
-      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
-      elemList = locals.$('#role-select-form').find('tr');
-      // Header row and two user rows
-      assert.lengthOf(elemList, 4);
-    });
+    test(
+      'first user sees group role table with three users',
+      { concurrent: false },
+      async function () {
+        await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
+        elemList = locals.$('#role-select-form').find('tr');
+        // Header row and two user rows
+        assert.lengthOf(elemList, 4);
+      },
+    );
 
-    test.sequential('first user should not be able to select the contributor role', function () {
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-      assert.lengthOf(elemList, 1);
-      elemList = elemList.parent('label');
-      assert.equal(elemList.text().trim(), locals.contributor.role_name);
-    });
+    test(
+      'first user should not be able to select the contributor role',
+      { concurrent: false },
+      function () {
+        elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+        assert.lengthOf(elemList, 1);
+        elemList = elemList.parent('label');
+        assert.equal(elemList.text().trim(), locals.contributor.role_name);
+      },
+    );
 
-    test.sequential('should be able to leave as first user', async function () {
+    test('should be able to leave as first user', { concurrent: false }, async function () {
       await leaveGroup(assessmentUrl);
     });
 
-    test.sequential(
+    test(
       'should have correct role configuration in the database after first user leaves',
+      { concurrent: false },
       async function () {
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
@@ -1790,51 +2029,59 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     Object.assign(config, storedConfig);
   });
 
-  test.sequential('should contain a group-based homework assessment with roles', async function () {
-    const assessment_id = await sqldb.queryScalar(
-      sql.select_group_work_assessment_with_roles,
-      IdSchema,
-    );
-    locals.assessment_id = assessment_id;
-    locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
-  });
+  test(
+    'should contain a group-based homework assessment with roles',
+    { concurrent: false },
+    async function () {
+      const assessment_id = await sqldb.queryScalar(
+        sql.select_group_work_assessment_with_roles,
+        IdSchema,
+      );
+      locals.assessment_id = assessment_id;
+      locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
+    },
+  );
 
-  test.sequential('should contain the 4 group roles for the assessment', async function () {
-    const result = await sqldb.queryRows(
-      sql.select_assessment_group_roles,
-      { assessment_id: locals.assessment_id },
-      GroupRoleSchema,
-    );
+  test(
+    'should contain the 4 group roles for the assessment',
+    { concurrent: false },
+    async function () {
+      const result = await sqldb.queryRows(
+        sql.select_assessment_group_roles,
+        { assessment_id: locals.assessment_id },
+        GroupRoleSchema,
+      );
 
-    assert.lengthOf(result, 4);
-    locals.groupRoles = result;
+      assert.lengthOf(result, 4);
+      locals.groupRoles = result;
 
-    // Store roles by name for later tests
-    const manager = result.find((row) => row.role_name === 'Manager');
-    assert.isDefined(manager);
+      // Store roles by name for later tests
+      const manager = result.find((row) => row.role_name === 'Manager');
+      assert.isDefined(manager);
 
-    const recorder = result.find((row) => row.role_name === 'Recorder');
-    assert.isDefined(recorder);
+      const recorder = result.find((row) => row.role_name === 'Recorder');
+      assert.isDefined(recorder);
 
-    const reflector = result.find((row) => row.role_name === 'Reflector');
-    assert.isDefined(reflector);
+      const reflector = result.find((row) => row.role_name === 'Reflector');
+      assert.isDefined(reflector);
 
-    const contributor = result.find((row) => row.role_name === 'Contributor');
-    assert.isDefined(contributor);
+      const contributor = result.find((row) => row.role_name === 'Contributor');
+      assert.isDefined(contributor);
 
-    locals.manager = manager;
-    locals.recorder = recorder;
-    locals.reflector = reflector;
-    locals.contributor = contributor;
-  });
+      locals.manager = manager;
+      locals.recorder = recorder;
+      locals.reflector = reflector;
+      locals.contributor = contributor;
+    },
+  );
 
-  test.sequential('should insert/get 5 users into/from the DB', async function () {
+  test('should insert/get 5 users into/from the DB', { concurrent: false }, async function () {
     // @ts-expect-error We forced name to be a string
     locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
     assert.lengthOf(locals.studentUsers, 5);
   });
 
-  test.sequential('should setup group info', function () {
+  test('should setup group info', { concurrent: false }, function () {
     locals.groupId = '1';
     locals.groupName = '1';
     locals.groupMembers = locals.studentUsers.map((user) => ({
@@ -1858,8 +2105,9 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     };
   });
 
-  test.sequential(
+  test(
     'should transfer required roles to another user when there are no non-required roles to replace',
+    { concurrent: false },
     function () {
       // Setup group of 2 users with one user as manager and the other user as recorder
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
@@ -1904,8 +2152,9 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     },
   );
 
-  test.sequential(
+  test(
     "should replace another user's non-required role with leaving user's required role",
+    { concurrent: false },
     function () {
       // Setup group of 2 users with one user as manager and the other user as recorder
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
@@ -1945,8 +2194,9 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     },
   );
 
-  test.sequential(
+  test(
     "should replace other users' non-required roles with leaving user's required roles",
+    { concurrent: false },
     function () {
       // Setup group of 3 users with first user as manager AND reflector, and the other users as contributors
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
@@ -2018,8 +2268,9 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     },
   );
 
-  test.sequential(
+  test(
     "should replace other users' non-required roles with leaving user's required roles, then transfer after non-required roles run out",
+    { concurrent: false },
     function () {
       // Setup group of 3 users with one user as manager, recorder, and reflector, and the other users as contributor
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
@@ -2083,42 +2334,49 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     },
   );
 
-  test.sequential('should not transfer non-required roles to another user', function () {
-    // Setup group of 2 users with one user as manager and the other user as contributor
-    locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
-    locals.groupInfo.groupSize = 2;
-    const roleAssignments = [
-      {
-        user_id: locals.studentUsers[0].id,
-        team_role_id: locals.manager.id,
-      },
-      {
-        user_id: locals.studentUsers[1].id,
-        team_role_id: locals.contributor.id,
-      },
-    ];
-    locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
-      ...role,
-      count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
-        .length,
-    }));
-    locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
-      string,
-      RoleAssignment[]
-    >;
-    // Get role reassignments if second user leaves
-    const result = getGroupRoleReassignmentsAfterLeave(locals.groupInfo, locals.studentUsers[1].id);
-    // Recorder role should be transferred to first user
-    const expected = [
-      {
-        user_id: locals.studentUsers[0].id,
-        team_role_id: locals.manager.id,
-      },
-    ];
-    assert.sameDeepMembers(result, expected);
-  });
+  test(
+    'should not transfer non-required roles to another user',
+    { concurrent: false },
+    function () {
+      // Setup group of 2 users with one user as manager and the other user as contributor
+      locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
+      locals.groupInfo.groupSize = 2;
+      const roleAssignments = [
+        {
+          user_id: locals.studentUsers[0].id,
+          team_role_id: locals.manager.id,
+        },
+        {
+          user_id: locals.studentUsers[1].id,
+          team_role_id: locals.contributor.id,
+        },
+      ];
+      locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+        ...role,
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
+          .length,
+      }));
+      locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+        string,
+        RoleAssignment[]
+      >;
+      // Get role reassignments if second user leaves
+      const result = getGroupRoleReassignmentsAfterLeave(
+        locals.groupInfo,
+        locals.studentUsers[1].id,
+      );
+      // Recorder role should be transferred to first user
+      const expected = [
+        {
+          user_id: locals.studentUsers[0].id,
+          team_role_id: locals.manager.id,
+        },
+      ];
+      assert.sameDeepMembers(result, expected);
+    },
+  );
 
-  test.sequential('should do nothing when leaving user has no roles', function () {
+  test('should do nothing when leaving user has no roles', { concurrent: false }, function () {
     // Setup group of 2 users with one user as manager and the other user without roles
     locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
     locals.groupInfo.groupSize = 2;

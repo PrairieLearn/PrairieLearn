@@ -33,7 +33,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
   const note = 'This is a test note';
 
   describe('create course request note', () => {
-    test.sequential('insert a course request', async () => {
+    test('insert a course request', { concurrent: false }, async () => {
       courseRequestId = await insertCourseRequest({
         short_name: shortName,
         title: 'Test Course',
@@ -47,14 +47,14 @@ describe('Course request note', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('update the note on the course request', async () => {
+    test('update the note on the course request', { concurrent: false }, async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note,
       });
     });
 
-    test.sequential('check note information', async () => {
+    test('check note information', { concurrent: false }, async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -68,28 +68,28 @@ describe('Course request note', { timeout: 60_000 }, function () {
     const firstNote = 'First note';
     const secondNote = 'Updated note';
 
-    test.sequential('update with first note', async () => {
+    test('update with first note', { concurrent: false }, async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: firstNote,
       });
     });
 
-    test.sequential('verify first note is saved', async () => {
+    test('verify first note is saved', { concurrent: false }, async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);
       assert.equal(request.note, firstNote);
     });
 
-    test.sequential('update with second note overwrites first', async () => {
+    test('update with second note overwrites first', { concurrent: false }, async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: secondNote,
       });
     });
 
-    test.sequential('verify note was overwritten, not appended', async () => {
+    test('verify note was overwritten, not appended', { concurrent: false }, async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);

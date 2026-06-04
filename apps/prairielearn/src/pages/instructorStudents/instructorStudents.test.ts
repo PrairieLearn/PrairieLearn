@@ -63,7 +63,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
-  test.sequential('should successfully invite a nonexistent user', async () => {
+  test('should successfully invite a nonexistent user', { concurrent: false }, async () => {
     const response = await fetch(studentsUrl, {
       method: 'POST',
       headers: {
@@ -98,7 +98,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test.sequential('should skip when user is an instructor', async () => {
+  test('should skip when user is an instructor', { concurrent: false }, async () => {
     await getOrCreateUser({
       uid: 'another_instructor@example.com',
       name: 'Another Instructor',
@@ -147,7 +147,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test.sequential('should skip when trying to invite a blocked user', async () => {
+  test('should skip when trying to invite a blocked user', { concurrent: false }, async () => {
     const blockedStudent = await getOrCreateUser({
       uid: 'blocked_student@example.com',
       name: 'Blocked Student',
@@ -200,7 +200,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test.sequential('should successfully invite a new student', async () => {
+  test('should successfully invite a new student', { concurrent: false }, async () => {
     await getOrCreateUser({
       uid: 'new_student@example.com',
       name: 'New Student',
@@ -241,7 +241,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test.sequential('should successfully invite multiple students', async () => {
+  test('should successfully invite multiple students', { concurrent: false }, async () => {
     await getOrCreateUser({
       uid: 'bulk_student1@example.com',
       name: 'Bulk Student 1',

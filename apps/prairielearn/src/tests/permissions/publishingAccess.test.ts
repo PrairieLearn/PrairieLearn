@@ -94,13 +94,13 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('page access with different permission levels', () => {
-    test.sequential('course owner can view publishing page', async () => {
+    test('course owner can view publishing page', { concurrent: false }, async () => {
       const headers = { cookie: 'pl_test_user=test_instructor' };
       const response = await helperClient.fetchCheerio(publishingUrl, { headers });
       assert.isTrue(response.ok);
     });
 
-    test.sequential('course viewer can view publishing page', async () => {
+    test('course viewer can view publishing page', { concurrent: false }, async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
@@ -109,7 +109,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
     });
 
-    test.sequential('student data viewer can view publishing page', async () => {
+    test('student data viewer can view publishing page', { concurrent: false }, async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
@@ -118,16 +118,20 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
     });
 
-    test.sequential('user with no permissions cannot view publishing page', async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
-      };
-      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-      assert.equal(response.status, 403);
-    });
+    test(
+      'user with no permissions cannot view publishing page',
+      { concurrent: false },
+      async () => {
+        const headers = {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
+        };
+        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+        assert.equal(response.status, 403);
+      },
+    );
 
-    test.sequential('course previewer cannot view publishing page', async () => {
+    test('course previewer cannot view publishing page', { concurrent: false }, async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
@@ -138,8 +142,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   });
 
   describe('publishing settings edit permissions', () => {
-    test.sequential(
+    test(
       'course viewer sees "no permission to edit" alert for publishing settings',
+      { concurrent: false },
       async () => {
         const headers = {
           cookie:
@@ -154,21 +159,26 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential('course editor can edit publishing settings (no alert shown)', async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
-      };
-      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-      assert.isTrue(response.ok);
-      assert.lengthOf(
-        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
-        0,
-      );
-    });
+    test(
+      'course editor can edit publishing settings (no alert shown)',
+      { concurrent: false },
+      async () => {
+        const headers = {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+        };
+        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+        assert.isTrue(response.ok);
+        assert.lengthOf(
+          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
+          0,
+        );
+      },
+    );
 
-    test.sequential(
+    test(
       'student data editor (without course editor) sees "no permission to edit" alert',
+      { concurrent: false },
       async () => {
         const headers = {
           cookie:
@@ -183,8 +193,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential(
+    test(
       'course editor with student data editor can edit publishing settings (no alert shown)',
+      { concurrent: false },
       async () => {
         const headers = {
           cookie:
@@ -201,8 +212,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   });
 
   describe('publishing settings POST permissions', () => {
-    test.sequential(
+    test(
       'student data editor (without course editor) cannot POST to update publishing settings',
+      { concurrent: false },
       async () => {
         const cookie =
           'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
@@ -214,8 +226,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential(
+    test(
       'course editor (without student data) can POST to update publishing settings',
+      { concurrent: false },
       async () => {
         const cookie =
           'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
@@ -226,8 +239,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   });
 
   describe('extensions POST permissions', () => {
-    test.sequential(
+    test(
       'student data editor (without course editor) cannot POST to add extension',
+      { concurrent: false },
       async () => {
         const cookie =
           'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
@@ -240,8 +254,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential(
+    test(
       'course editor (without student data editor) cannot POST to add extension',
+      { concurrent: false },
       async () => {
         const cookie =
           'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
@@ -256,8 +271,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   });
 
   describe('extensions view permissions', () => {
-    test.sequential(
+    test(
       'course viewer (no course instance permission) sees "no permission to view extensions" alert',
+      { concurrent: false },
       async () => {
         const headers = {
           cookie:
@@ -274,8 +290,9 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       },
     );
 
-    test.sequential(
+    test(
       'course instance viewer can view extensions (no "no permission" alert)',
+      { concurrent: false },
       async () => {
         const headers = {
           cookie:

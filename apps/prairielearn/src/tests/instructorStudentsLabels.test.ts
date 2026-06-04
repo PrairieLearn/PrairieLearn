@@ -121,7 +121,7 @@ describe('Instructor student labels page', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential('should load page and API endpoints correctly', async () => {
+  test('should load page and API endpoints correctly', { concurrent: false }, async () => {
     const pageResponse = await fetch(labelsUrl);
     assert.equal(pageResponse.status, 200);
 
@@ -148,7 +148,7 @@ describe('Instructor student labels page', () => {
     assert.deepEqual(mixedCheckResult.unenrolledUids, [invalidUid]);
   });
 
-  test.sequential('should handle create label operations', async () => {
+  test('should handle create label operations', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -219,8 +219,9 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential(
+  test(
     'should require student data view and only show label management actions to users with both permissions',
+    { concurrent: false },
     async () => {
       const courseEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
         headers: {
@@ -252,7 +253,7 @@ describe('Instructor student labels page', () => {
     },
   );
 
-  test.sequential('should handle edit label operations', async () => {
+  test('should handle edit label operations', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -353,7 +354,7 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential('should handle delete label operations', async () => {
+  test('should handle delete label operations', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -389,7 +390,7 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential('should support invited (pending) students in labels', async () => {
+  test('should support invited (pending) students in labels', { concurrent: false }, async () => {
     const trpcClient = createTrpcClient();
     const invitedUid = 'invited-student@example.com';
 
@@ -438,133 +439,145 @@ describe('Instructor student labels page', () => {
     assert.include(uidsInLabel, studentUids[0]);
   });
 
-  test.sequential('renames propagate to accessControl entries in infoAssessment.json', async () => {
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+  test(
+    'renames propagate to accessControl entries in infoAssessment.json',
+    { concurrent: false },
+    async () => {
+      await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+        const trpcClient = createTrpcClient();
+        const assessmentJsonPath = path.join(
+          courseRepo.courseLiveDir,
+          'courseInstances',
+          courseInstanceShortName,
+          'assessments',
+          'hw19-accessControlUi',
+          'infoAssessment.json',
+        );
+
+        const before = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
+        assert.deepEqual(before.accessControl?.[1].labels, ['Section A']);
+
+        const courseInstance = await selectCourseInstanceById('1');
+        const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+        const sectionA = labels.find((l) => l.name === 'Section A');
+        assert.isDefined(sectionA);
+
+        const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+          getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+          (json) => json.studentLabels ?? [],
+        );
+
+        await trpcClient.studentLabels.upsert.mutate({
+          labelId: sectionA.id,
+          name: 'Section A Renamed',
+          color: 'red1',
+          origHash,
+        });
+
+        const after = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
+        assert.deepEqual(after.accessControl?.[1].labels, ['Section A Renamed']);
+      });
+    },
+  );
+
+  test(
+    'deletes propagate to accessControl entries, leaving labels: []',
+    { concurrent: false },
+    async () => {
+      await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+        const trpcClient = createTrpcClient();
+        const assessmentJsonPath = path.join(
+          courseRepo.courseLiveDir,
+          'courseInstances',
+          courseInstanceShortName,
+          'assessments',
+          'hw19-accessControlUi',
+          'infoAssessment.json',
+        );
+
+        const courseInstance = await selectCourseInstanceById('1');
+        const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+        const renamedSectionA = labels.find((l) => l.name === 'Section A Renamed');
+        assert.isDefined(renamedSectionA);
+
+        const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+          getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+          (json) => json.studentLabels ?? [],
+        );
+
+        await trpcClient.studentLabels.destroy.mutate({
+          labelId: renamedSectionA.id,
+          origHash,
+        });
+
+        const after = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
+        // Override rule survives with an empty labels array; other fields are preserved.
+        assert.deepEqual(after.accessControl?.[1].labels, []);
+        assert.isDefined(after.accessControl?.[1].dateControl);
+      });
+    },
+  );
+
+  test(
+    'should enforce the student label limit only for new labels',
+    { concurrent: false },
+    async () => {
       const trpcClient = createTrpcClient();
-      const assessmentJsonPath = path.join(
-        courseRepo.courseLiveDir,
-        'courseInstances',
+      const originInfoPath = getCourseInstanceJsonPath(
+        courseRepo.courseOriginDir,
         courseInstanceShortName,
-        'assessments',
-        'hw19-accessControlUi',
-        'infoAssessment.json',
       );
+      const originJson = (await fs.readJson(originInfoPath)) as CourseInstanceJsonInput;
+      originJson.studentLabels = Array.from(
+        { length: MAX_STUDENT_LABELS_PER_COURSE_INSTANCE },
+        (_, index) => ({
+          uuid: crypto.randomUUID(),
+          name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
+          color: 'blue1' as const,
+        }),
+      );
+      await fs.writeJson(originInfoPath, originJson, { spaces: 2 });
 
-      const before = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
-      assert.deepEqual(before.accessControl?.[1].labels, ['Section A']);
+      await commitOriginAndSync(courseRepo, 'Fill student labels to limit', [
+        path.relative(courseRepo.courseOriginDir, originInfoPath),
+      ]);
 
-      const courseInstance = await selectCourseInstanceById('1');
-      const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-      const sectionA = labels.find((l) => l.name === 'Section A');
-      assert.isDefined(sectionA);
+      let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
+      assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
 
-      const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+      const labelToEdit = labels.find((l) => l.name === 'Limit Label 02');
+      assert.isDefined(labelToEdit);
+
+      let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
         getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
         (json) => json.studentLabels ?? [],
       );
 
       await trpcClient.studentLabels.upsert.mutate({
-        labelId: sectionA.id,
-        name: 'Section A Renamed',
-        color: 'red1',
+        labelId: labelToEdit.id,
+        name: 'Limit Label 02 Renamed',
+        color: 'green1',
+        uids: [],
         origHash,
       });
 
-      const after = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
-      assert.deepEqual(after.accessControl?.[1].labels, ['Section A Renamed']);
-    });
-  });
+      labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
+      assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
+      assert.isDefined(labels.find((l) => l.name === 'Limit Label 02 Renamed'));
 
-  test.sequential('deletes propagate to accessControl entries, leaving labels: []', async () => {
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
-      const trpcClient = createTrpcClient();
-      const assessmentJsonPath = path.join(
-        courseRepo.courseLiveDir,
-        'courseInstances',
-        courseInstanceShortName,
-        'assessments',
-        'hw19-accessControlUi',
-        'infoAssessment.json',
-      );
-
-      const courseInstance = await selectCourseInstanceById('1');
-      const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-      const renamedSectionA = labels.find((l) => l.name === 'Section A Renamed');
-      assert.isDefined(renamedSectionA);
-
-      const origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+      origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
         getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
         (json) => json.studentLabels ?? [],
       );
 
-      await trpcClient.studentLabels.destroy.mutate({
-        labelId: renamedSectionA.id,
-        origHash,
-      });
-
-      const after = (await fs.readJson(assessmentJsonPath)) as AssessmentJsonInput;
-      // Override rule survives with an empty labels array; other fields are preserved.
-      assert.deepEqual(after.accessControl?.[1].labels, []);
-      assert.isDefined(after.accessControl?.[1].dateControl);
-    });
-  });
-
-  test.sequential('should enforce the student label limit only for new labels', async () => {
-    const trpcClient = createTrpcClient();
-    const originInfoPath = getCourseInstanceJsonPath(
-      courseRepo.courseOriginDir,
-      courseInstanceShortName,
-    );
-    const originJson = (await fs.readJson(originInfoPath)) as CourseInstanceJsonInput;
-    originJson.studentLabels = Array.from(
-      { length: MAX_STUDENT_LABELS_PER_COURSE_INSTANCE },
-      (_, index) => ({
-        uuid: crypto.randomUUID(),
-        name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
-        color: 'blue1' as const,
-      }),
-    );
-    await fs.writeJson(originInfoPath, originJson, { spaces: 2 });
-
-    await commitOriginAndSync(courseRepo, 'Fill student labels to limit', [
-      path.relative(courseRepo.courseOriginDir, originInfoPath),
-    ]);
-
-    let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
-    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
-
-    const labelToEdit = labels.find((l) => l.name === 'Limit Label 02');
-    assert.isDefined(labelToEdit);
-
-    let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
-      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
-      (json) => json.studentLabels ?? [],
-    );
-
-    await trpcClient.studentLabels.upsert.mutate({
-      labelId: labelToEdit.id,
-      name: 'Limit Label 02 Renamed',
-      color: 'green1',
-      uids: [],
-      origHash,
-    });
-
-    labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
-    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
-    assert.isDefined(labels.find((l) => l.name === 'Limit Label 02 Renamed'));
-
-    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
-      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
-      (json) => json.studentLabels ?? [],
-    );
-
-    await expect(
-      trpcClient.studentLabels.upsert.mutate({
-        name: 'Overflow Label',
-        color: 'red1',
-        uids: [],
-        origHash,
-      }),
-    ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels`);
-  });
+      await expect(
+        trpcClient.studentLabels.upsert.mutate({
+          name: 'Overflow Label',
+          color: 'red1',
+          uids: [],
+          origHash,
+        }),
+      ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels`);
+    },
+  );
 });

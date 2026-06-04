@@ -23,7 +23,7 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
 
   afterAll(helperServer.after);
 
-  test.sequential('visit start exam page', async () => {
+  test('visit start exam page', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -32,7 +32,7 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  test.sequential('start the exam', async () => {
+  test('start the exam', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -53,8 +53,9 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  test.sequential(
+  test(
     'check for enabled grade button on a question page before submission',
+    { concurrent: false },
     async () => {
       const response = await helperClient.fetchCheerio(context.question1Url);
       assert.isTrue(response.ok);
@@ -68,7 +69,7 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
     },
   );
 
-  test.sequential('submit an answer to the question', async () => {
+  test('submit an answer to the question', { concurrent: false }, async () => {
     const response = await fetch(context.question1Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -82,8 +83,9 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
     assert.isTrue(response.ok);
   });
 
-  test.sequential(
+  test(
     'check for disabled grade button on a question page after submission',
+    { concurrent: false },
     async () => {
       const response = await helperClient.fetchCheerio(context.question1Url);
       assert.isTrue(response.ok);
@@ -94,12 +96,16 @@ describe('Exam assessment with grade rate set', { timeout: 60_000 }, function ()
     },
   );
 
-  test.sequential('check for enabled grade button on another question page', async () => {
-    const response = await helperClient.fetchCheerio(context.question2Url);
-    assert.isTrue(response.ok);
+  test(
+    'check for enabled grade button on another question page',
+    { concurrent: false },
+    async () => {
+      const response = await helperClient.fetchCheerio(context.question2Url);
+      assert.isTrue(response.ok);
 
-    const elemList = response.$('button[name="__action"][value="grade"]');
-    assert.lengthOf(elemList, 1);
-    assert.isFalse(elemList.is(':disabled'));
-  });
+      const elemList = response.$('button[name="__action"][value="grade"]');
+      assert.lengthOf(elemList, 1);
+      assert.isFalse(elemList.is(':disabled'));
+    },
+  );
 });

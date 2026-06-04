@@ -46,8 +46,9 @@ describe(
 
     afterAll(helperServer.after);
 
-    test.sequential(
+    test(
       'Minimum advancement score is computed correctly for each question',
+      { concurrent: false },
       async function () {
         const response = await helperClient.fetchCheerio(context.instructorAssessmentQuestionsUrl, {
           method: 'GET',
@@ -84,8 +85,9 @@ describe(
       });
     }
 
-    test.sequential(
+    test(
       'Questions are locked/unlocked properly on student assessment page',
+      { concurrent: false },
       async function () {
         // Generate assessment instance
         const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
@@ -136,14 +138,19 @@ describe(
       },
     );
 
-    test.sequential('Instructor can access sequence-locked Question 3', async function () {
-      context.lockedQuestion = context.instanceQuestions[2];
-      const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
-      assert.isTrue(response.ok);
-    });
+    test(
+      'Instructor can access sequence-locked Question 3',
+      { concurrent: false },
+      async function () {
+        context.lockedQuestion = context.instanceQuestions[2];
+        const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
+        assert.isTrue(response.ok);
+      },
+    );
 
-    test.sequential(
+    test(
       'Question 3 URL is not exposed from student assessment page',
+      { concurrent: false },
       async function () {
         const response = await helperClient.fetchCheerio(context.assessmentUrl);
         assert.isTrue(response.ok);
@@ -154,8 +161,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'Question 2 "next question" link is locked before any submissions',
+      { concurrent: false },
       async function () {
         context.firstUnlockedQuestion = context.instanceQuestions[1];
         const response = await helperClient.fetchCheerio(context.firstUnlockedQuestion.url);
@@ -165,8 +173,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'Question 2 "next question" link contains the correct advanceScorePerc',
+      { concurrent: false },
       async function () {
         const response = await submitQuestion(50, context.firstUnlockedQuestion);
         assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
@@ -193,23 +202,36 @@ describe(
       return response;
     }
 
-    test.sequential('Submitting 50% on Question 2 does not unlock Question 3', async function () {
-      const response = await submitQuestion(50, context.firstUnlockedQuestion);
-      assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-    });
+    test(
+      'Submitting 50% on Question 2 does not unlock Question 3',
+      { concurrent: false },
+      async function () {
+        const response = await submitQuestion(50, context.firstUnlockedQuestion);
+        assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+      },
+    );
 
-    test.sequential('Submitting 75% on Question 2 unlocks Question 3', async function () {
-      const response = await submitQuestion(75, context.firstUnlockedQuestion);
-      assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-    });
+    test(
+      'Submitting 75% on Question 2 unlocks Question 3',
+      { concurrent: false },
+      async function () {
+        const response = await submitQuestion(75, context.firstUnlockedQuestion);
+        assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+      },
+    );
 
-    test.sequential('Submitting 0% on Question 2 leaves Question 3 unlocked', async function () {
-      const response = await submitQuestion(0, context.firstUnlockedQuestion);
-      assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-    });
+    test(
+      'Submitting 0% on Question 2 leaves Question 3 unlocked',
+      { concurrent: false },
+      async function () {
+        const response = await submitQuestion(0, context.firstUnlockedQuestion);
+        assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+      },
+    );
 
-    test.sequential(
+    test(
       'Accessing Question 3 no longer returns a 403 and Question 4 is locked',
+      { concurrent: false },
       async function () {
         const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
         assert.isTrue(response.ok);
@@ -217,8 +239,9 @@ describe(
       },
     );
 
-    test.sequential(
+    test(
       'Submitting 0% on Question 3 unlocks Question 4 (run out of attempts)',
+      { concurrent: false },
       async function () {
         const response = await submitQuestion(0, context.lockedQuestion);
         assert.isTrue(response.ok);
@@ -226,17 +249,18 @@ describe(
       },
     );
 
-    test.sequential('Unlocking question 4 cascades to question 5', async function () {
+    test('Unlocking question 4 cascades to question 5', { concurrent: false }, async function () {
       await refreshContextQuestions();
       assert.isFalse(context.instanceQuestions[4].locked);
     });
 
-    test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
+    test('Unlocking question 4 does NOT cascade to question 6', { concurrent: false }, function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
 
-    test.sequential(
+    test(
       'student gets 403 when accessing a sequence-locked question',
+      { concurrent: false },
       async function () {
         const studentUser: AuthUser = {
           uid: 'student@example.com',

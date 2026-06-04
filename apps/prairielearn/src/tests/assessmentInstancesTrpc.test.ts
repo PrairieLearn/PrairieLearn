@@ -65,13 +65,13 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     });
   });
 
-  test.sequential('list returns the created instance', async () => {
+  test('list returns the created instance', { concurrent: false }, async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     assert.lengthOf(rows, 1);
     assert.isTrue(rows[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit (set_rem) applies a time limit', async () => {
+  test('setTimeLimit (set_rem) applies a time limit', { concurrent: false }, async () => {
     const before = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: [before[0].assessment_instance.id],
@@ -83,7 +83,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit (remove) clears the time limit', async () => {
+  test('setTimeLimit (remove) clears the time limit', { concurrent: false }, async () => {
     const before = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: [before[0].assessment_instance.id],
@@ -94,7 +94,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('setTimeLimit accepts null ids to update all instances', async () => {
+  test('setTimeLimit accepts null ids to update all instances', { concurrent: false }, async () => {
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
       assessmentInstanceIds: null,
       action: 'set_rem',
@@ -111,7 +111,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isNull(withoutLimit[0].time_remaining_sec);
   });
 
-  test.sequential('setTimeLimit ignores foreign ids', async () => {
+  test('setTimeLimit ignores foreign ids', { concurrent: false }, async () => {
     // A foreign id simply doesn't match the assessment_id predicate, so the
     // instance for this assessment is untouched.
     await trpcClient.assessmentInstances.setTimeLimit.mutate({
@@ -123,7 +123,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isNull(after[0].time_remaining_sec);
   });
 
-  test.sequential('grade returns a job sequence', async () => {
+  test('grade returns a job sequence', { concurrent: false }, async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     const { jobSequenceId } = await trpcClient.assessmentInstances.grade.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -134,18 +134,22 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.isTrue(after[0].assessment_instance.open);
   });
 
-  test.sequential('gradeAndClose returns a job sequence and closes the instance', async () => {
-    const rows = await trpcClient.assessmentInstances.list.query();
-    const { jobSequenceId } = await trpcClient.assessmentInstances.gradeAndClose.mutate({
-      assessmentInstanceIds: [rows[0].assessment_instance.id],
-    });
-    assert.isString(jobSequenceId);
-    await waitForJobSequence(jobSequenceId);
-    const after = await trpcClient.assessmentInstances.list.query();
-    assert.isFalse(after[0].assessment_instance.open);
-  });
+  test(
+    'gradeAndClose returns a job sequence and closes the instance',
+    { concurrent: false },
+    async () => {
+      const rows = await trpcClient.assessmentInstances.list.query();
+      const { jobSequenceId } = await trpcClient.assessmentInstances.gradeAndClose.mutate({
+        assessmentInstanceIds: [rows[0].assessment_instance.id],
+      });
+      assert.isString(jobSequenceId);
+      await waitForJobSequence(jobSequenceId);
+      const after = await trpcClient.assessmentInstances.list.query();
+      assert.isFalse(after[0].assessment_instance.open);
+    },
+  );
 
-  test.sequential('regrade returns a job sequence', async () => {
+  test('regrade returns a job sequence', { concurrent: false }, async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     const { jobSequenceId } = await trpcClient.assessmentInstances.regrade.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],
@@ -154,14 +158,18 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     await waitForJobSequence(jobSequenceId);
   });
 
-  test.sequential('regradePreview accepts null ids to preview all instances', async () => {
-    const questions = await trpcClient.assessmentInstances.regradePreview.query({
-      assessmentInstanceIds: null,
-    });
-    assert.isArray(questions);
-  });
+  test(
+    'regradePreview accepts null ids to preview all instances',
+    { concurrent: false },
+    async () => {
+      const questions = await trpcClient.assessmentInstances.regradePreview.query({
+        assessmentInstanceIds: null,
+      });
+      assert.isArray(questions);
+    },
+  );
 
-  test.sequential('delete ignores foreign ids', async () => {
+  test('delete ignores foreign ids', { concurrent: false }, async () => {
     await trpcClient.assessmentInstances.delete.mutate({
       assessmentInstanceIds: ['999999999'],
     });
@@ -169,7 +177,7 @@ describe('assessmentInstances tRPC router', { timeout: 60_000 }, () => {
     assert.lengthOf(after, 1);
   });
 
-  test.sequential('delete removes the selected instance', async () => {
+  test('delete removes the selected instance', { concurrent: false }, async () => {
     const rows = await trpcClient.assessmentInstances.list.query();
     await trpcClient.assessmentInstances.delete.mutate({
       assessmentInstanceIds: [rows[0].assessment_instance.id],

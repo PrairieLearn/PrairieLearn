@@ -71,8 +71,9 @@ describe('Updating a course instance ID', () => {
     await helperServer.after();
   });
 
-  test.sequential(
+  test(
     'should not be able to change course instance id to one that falls outside the correct root directory',
+    { concurrent: false },
     async () => {
       const courseInstancePageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
@@ -135,8 +136,9 @@ describe('Updating a course instance ID', () => {
     return body;
   }
 
-  test.sequential(
+  test(
     'cannot share course instance source publicly while it contains non-public assessments',
+    { concurrent: false },
     async () => {
       const response = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
@@ -151,8 +153,9 @@ describe('Updating a course instance ID', () => {
     },
   );
 
-  test.sequential(
+  test(
     'ignores course instance source sharing when source is already public',
+    { concurrent: false },
     async () => {
       await setSharingFilesPublic(true);
       try {

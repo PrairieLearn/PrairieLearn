@@ -42,14 +42,14 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
   afterAll(helperServer.after);
 
   // we need to access the homepage to create the test_student user in the DB
-  test.sequential('visit home page', async () => {
+  test('visit home page', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.baseUrl, {
       headers,
     });
     assert.isTrue(response.ok);
   });
 
-  test.sequential('enroll the test student user in the course', async () => {
+  test('enroll the test student user in the course', { concurrent: false }, async () => {
     const user = await selectUserByUid('student@example.com');
     const courseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
@@ -61,7 +61,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
     });
   });
 
-  test.sequential('visit start exam page', async () => {
+  test('visit start exam page', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       headers,
     });
@@ -72,7 +72,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  test.sequential('start the exam', async () => {
+  test('start the exam', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -95,7 +95,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
     context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
-  test.sequential('simulate a time limit expiration', async () => {
+  test('simulate a time limit expiration', { concurrent: false }, async () => {
     const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -118,13 +118,14 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
     assert.match(msg.text(), /Assessment .* is no longer available/);
   });
 
-  test.sequential('check the assessment instance is closed', async () => {
+  test('check the assessment instance is closed', { concurrent: false }, async () => {
     const result = await sqldb.queryRow(sql.select_assessment_instances, AssessmentInstanceSchema);
     assert.equal(result.open, false);
   });
 
-  test.sequential(
+  test(
     'check that accessing a question gives the "assessment closed" message',
+    { concurrent: false },
     async () => {
       const response = await helperClient.fetchCheerio(context.questionUrl, {
         headers,
