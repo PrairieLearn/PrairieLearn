@@ -166,7 +166,9 @@ lint-changeset:
 # Runs additional third-party formatters
 format-all: format-js format-python format-sql format-mustache
 
+fix: fix-js fix-python
 format: format-js format-python
+
 format-sql:
 	@uv run sqlfluff fix
 
@@ -187,11 +189,14 @@ format-mustache:
 	@pnpm htmlmustache format --write
 
 format-python:
-	@uv run ruff check --fix ./
 	@uv run ruff format ./
 
 format-changed:
 	@node scripts/format-changed.mjs
+
+fix-python:
+	@uv run ruff check --fix ./
+	@uv run ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:

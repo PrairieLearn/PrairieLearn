@@ -572,13 +572,30 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     order_block_options = OrderBlocksOptions(element)
     answer_name = order_block_options.answers_name
     answer_raw_name = answer_name + "-input"
-    student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+    student_answer_raw = data["raw_submitted_answers"].get(answer_raw_name, "[]")
 
-    student_answer = json.loads(student_answer)
+    invalid_format_message = (
+        "The submitted answer is not in the expected format. This usually means "
+        "the submission was modified outside of the PrairieLearn interface."
+    )
 
-    if (not order_block_options.allow_blank) and (
-        student_answer is None or student_answer == []
+    try:
+        student_answer = json.loads(student_answer_raw)
+    except (json.JSONDecodeError, TypeError):
+        data["format_errors"][answer_name] = invalid_format_message
+        return
+
+    if not isinstance(student_answer, list) or any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("inner_html"), str)
+        or not isinstance(item.get("uuid"), str)
+        or not (item.get("indent") is None or isinstance(item.get("indent"), int))
+        for item in student_answer
     ):
+        data["format_errors"][answer_name] = invalid_format_message
+        return
+
+    if (not order_block_options.allow_blank) and student_answer == []:
         data["submitted_answers"][answer_name] = []
         data["submitted_answers"].pop(answer_raw_name, None)
         data["format_errors"][answer_name] = (

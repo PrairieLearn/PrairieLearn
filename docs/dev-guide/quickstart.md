@@ -127,8 +127,8 @@ make lint-all    # Additional linters
 You can format + autofix lint errors with:
 
 ```sh
-make fix-js-cached
-make format-python
+make fix-js
+make fix-python
 ```
 
 To format all changed files (staged + unstaged + untracked) compared to HEAD:

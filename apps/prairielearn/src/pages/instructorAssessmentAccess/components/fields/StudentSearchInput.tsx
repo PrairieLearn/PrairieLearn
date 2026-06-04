@@ -12,10 +12,12 @@ interface Student {
 export function StudentSearchInput({
   allStudents,
   selectedUids,
+  maxSelected,
   onSelectedUidsChange,
 }: {
   allStudents: Student[];
   selectedUids: Set<string>;
+  maxSelected: number;
   onSelectedUidsChange: (uids: Set<string>) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,15 +35,7 @@ export function StudentSearchInput({
   const handleToggleStudent = (uid: string) => {
     const newSet = new Set(selectedUids);
     if (newSet.has(uid)) newSet.delete(uid);
-    else newSet.add(uid);
-    onSelectedUidsChange(newSet);
-  };
-
-  const handleSelectAll = () => {
-    const newSet = new Set(selectedUids);
-    for (const student of filteredStudents) {
-      newSet.add(student.uid);
-    }
+    else if (newSet.size < maxSelected) newSet.add(uid);
     onSelectedUidsChange(newSet);
   };
 
@@ -68,8 +62,8 @@ export function StudentSearchInput({
           label="Student selection"
           checkboxIdPrefix="student-select"
           maxHeight="300px"
+          maxSelected={maxSelected}
           onToggle={handleToggleStudent}
-          onSelectAll={handleSelectAll}
           onDeselectAll={handleClearAll}
         />
       )}
