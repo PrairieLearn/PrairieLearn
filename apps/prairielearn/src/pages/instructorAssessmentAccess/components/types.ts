@@ -275,10 +275,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
+  if (json.ruleType === 'enrollment') {
     appliesTo = {
       targetType: 'enrollment',
-      enrollments: json.enrollments.map((i) => ({
+      enrollments: (json.enrollments ?? []).map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,

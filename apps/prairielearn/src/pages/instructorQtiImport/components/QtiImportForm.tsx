@@ -27,6 +27,7 @@ import {
   ImportSummary,
   MissingBanksStep,
   NonRubricWarnings,
+  QuestionBankDeduplicationWarning,
   UnresolvedBankWarnings,
   UploadStep,
 } from './ImportReviewComponents.js';
@@ -53,8 +54,10 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // MDN recommends setting returnValue for legacy browser support:
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -272,6 +275,8 @@ export function QtiImportForm({
   const [existingDirs, setExistingDirs] = useState<Set<string>>(new Set());
   const [strippedRules, setStrippedRules] = useState<StrippedAccessRules | null>(null);
   const [parseWarnings, setParseWarnings] = useState<ParseWarning[]>([]);
+  const [deduplicatedQuestionBankQuestionCount, setDeduplicatedQuestionBankQuestionCount] =
+    useState(0);
   const [questionOverrides, setQuestionOverrides] = useState<Map<string, QuestionOverrides>>(
     new Map(),
   );
@@ -354,6 +359,7 @@ export function QtiImportForm({
       setExistingDirs(dirs);
       setStrippedRules(data.strippedAccessRules);
       setParseWarnings(data.parseWarnings);
+      setDeduplicatedQuestionBankQuestionCount(data.deduplicatedQuestionBankQuestionCount);
       const mergedResults = mergeEmbeddedSourceBanks(data.results);
       setResults(mergedResults);
       if (data.assessmentSetNames.length > 0) {
@@ -633,6 +639,7 @@ export function QtiImportForm({
     setExistingDirs(new Set());
     setStrippedRules(null);
     setParseWarnings([]);
+    setDeduplicatedQuestionBankQuestionCount(0);
     setQuestionOverrides(new Map());
     setSupplementalSuccessMessage(null);
     setUploadingBankKey(null);
@@ -737,6 +744,7 @@ export function QtiImportForm({
 
           <AssessmentQuestionsSection
             questions={result.questions}
+            warnings={result.warnings}
             questionOverrides={questionOverrides}
             existingDirs={existingDirs}
             onUpdateOverride={updateQuestionOverride}
@@ -828,7 +836,7 @@ export function QtiImportForm({
 
             {assessmentResults.length > 0 && (
               <section className="mb-4" aria-labelledby="qti-import-assessments-heading">
-                <h2 id="qti-import-assessments-heading" className="h5 mb-1">
+                <h2 id="qti-import-assessments-heading" className="h4 mb-1">
                   Assessments
                 </h2>
                 <p className="text-muted mb-3">
@@ -841,8 +849,11 @@ export function QtiImportForm({
             )}
 
             {questionBankResults.length > 0 && (
-              <section className="mb-4" aria-labelledby="qti-import-question-banks-heading">
-                <h2 id="qti-import-question-banks-heading" className="h5 mb-1">
+              <section
+                className={assessmentResults.length > 0 ? 'mb-4 border-top pt-4' : 'mb-4'}
+                aria-labelledby="qti-import-question-banks-heading"
+              >
+                <h2 id="qti-import-question-banks-heading" className="h4 mb-1">
                   Question banks
                 </h2>
                 <p className="text-muted mb-3">
@@ -850,6 +861,9 @@ export function QtiImportForm({
                   can add them to existing assessments or use them in any new assessments you
                   create.
                 </p>
+                <QuestionBankDeduplicationWarning
+                  deduplicatedQuestionCount={deduplicatedQuestionBankQuestionCount}
+                />
                 {questionBankResults.map(renderResultCard)}
               </section>
             )}

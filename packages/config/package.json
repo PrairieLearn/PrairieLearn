@@ -17,13 +17,13 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.1056.0",
-    "@aws-sdk/client-kms": "^3.1056.0",
-    "@aws-sdk/client-secrets-manager": "^3.1056.0",
+    "@aws-sdk/client-ec2": "^3.1057.0",
+    "@aws-sdk/client-kms": "^3.1057.0",
+    "@aws-sdk/client-secrets-manager": "^3.1057.0",
     "@prairielearn/aws-imds": "workspace:^",
     "es-toolkit": "^1.47.0",
     "fs-extra": "^11.3.5",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

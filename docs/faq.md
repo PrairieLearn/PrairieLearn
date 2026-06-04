@@ -8,9 +8,9 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then click the pencil icon in the "Remaining" column to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam by selecting it on the "Students" tab and choosing "Delete" from the "Actions" menu above the table. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
@@ -333,7 +333,7 @@ To fix student scores without requiring them to answer another question you can:
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
 2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
 3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
-4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
+4. Upload the new scores by selecting "Upload total scores" from the "Upload" menu on the "Students" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
 

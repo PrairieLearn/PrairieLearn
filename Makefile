@@ -113,7 +113,7 @@ check-badge-contrast:
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
 update-jsonschema:
-	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
+	@yarn dlx tsx scripts/gen-jsonschema.mts
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
@@ -166,7 +166,9 @@ lint-changeset:
 # Runs additional third-party formatters
 format-all: format-js format-python format-sql format-mustache
 
+fix: fix-js fix-python
 format: format-js format-python
+
 format-sql:
 	@uv run sqlfluff fix
 
@@ -187,11 +189,14 @@ format-mustache:
 	@yarn htmlmustache format --write
 
 format-python:
-	@uv run ruff check --fix ./
 	@uv run ruff format ./
 
 format-changed:
 	@node scripts/format-changed.mjs
+
+fix-python:
+	@uv run ruff check --fix ./
+	@uv run ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:

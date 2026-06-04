@@ -158,7 +158,6 @@ function DueDateInput({
                 value={value.credit ?? ''}
                 placeholder="100"
                 disabled={!ruleEditable}
-                onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
                   const parsed = raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
