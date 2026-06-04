@@ -107,11 +107,7 @@ export async function readZipEntryText(
   const size = archive.entryMap.get(entryName)?.uncompressedSize ?? 0;
   if (size > maxBytes) throw new Error(`Entry is too large to buffer: ${entryName}`);
 
-  const data = await entry.getData(new TextWriter());
-  if (new TextEncoder().encode(data).byteLength > maxBytes) {
-    throw new Error(`Entry is too large to buffer: ${entryName}`);
-  }
-  return data;
+  return entry.getData(new TextWriter());
 }
 
 type ZipSource =
