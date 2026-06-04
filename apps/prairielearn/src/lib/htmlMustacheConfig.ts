@@ -49,7 +49,10 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
-// This should be kept in sync with `.htmlmustache.jsonc`
+// Source of truth for the htmlmustache linter config. The on-disk
+// `.htmlmustache.jsonc` (used by the standalone CLI / editor integration) is
+// generated from this file by `scripts/gen-element-schemas.mts`; run
+// `make update-element-schemas` after editing.
 export const htmlMustacheConfig: Config = {
   printWidth: 100,
   customTagDefaults: {
