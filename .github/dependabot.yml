@@ -107,14 +107,11 @@ updates:
       - dependency-name: 'quill'
         versions: ['>2.0.2']
     cooldown:
-      # Dependabot does not understand the npmMinimalAgeGate setting in
-      # .yarnrc.yml, so we set a cooldown here to obtain the same effect. Once
-      # https://github.com/dependabot/dependabot-core/issues/13678 is resolved,
-      # we can remove this cooldown and rely on dependabot respecting the
-      # npmMinimalAgeGate setting.
-      #
-      # This also affects PNPM:
-      # https://github.com/dependabot/dependabot-core/issues/13405
+      # Dependabot does not understand the minimumReleaseAge setting in
+      # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
+      # effect. Once https://github.com/dependabot/dependabot-core/issues/13405
+      # is resolved, we can remove this cooldown and rely on dependabot
+      # respecting the pnpm setting.
       default-days: 3
 
     groups:
