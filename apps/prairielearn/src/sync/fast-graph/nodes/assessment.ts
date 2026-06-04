@@ -1,39 +1,79 @@
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-
+import type { ChangedFiles } from '../../../lib/chunks.js';
 import type { Course } from '../../../lib/db-types.js';
+import { syncSingleAssessment } from '../../fromDisk/assessments.js';
 import type { DirtyNode, MatchResult, SyncNode, SyncOutcome } from '../engine.js';
 
-const sql = loadSqlEquiv(import.meta.url);
-
 interface AssessmentPayload {
-  assessmentId: string;
-  questionId: string;
+  courseInstanceShortName: string;
+  tid: string;
+}
+
+/** Parses an `infoAssessment.json` path into its course instance + tid, or null. */
+function assessmentFromInfoPath(file: string): AssessmentPayload | null {
+  const parts = file.split('/');
+  if (
+    parts.length < 5 ||
+    parts[0] !== 'courseInstances' ||
+    parts[2] !== 'assessments' ||
+    parts[parts.length - 1] !== 'infoAssessment.json'
+  ) {
+    return null;
+  }
+  return { courseInstanceShortName: parts[1], tid: parts.slice(3, -1).join('/') };
 }
 
 /**
- * Assessment node. In this POC it's only reached as a ripple from a question
- * whose grading method changed: it recomputes the manual/auto point split on the
- * affected assessment question. Direct edits to an assessment's JSON aren't
- * claimed by any node, so they fall back to a full sync.
+ * Assessment node. Re-derives a whole assessment from disk — both when its own
+ * JSON changed directly and when it's marked dirty by a ripple from a question
+ * it references (grading-method change, rename, ...). Either way the sync is the
+ * same operation: re-sync this one assessment from disk.
  */
 export const assessmentNode: SyncNode = {
   type: 'Assessment',
   topoRank: 20,
 
-  async match(_course: Course, _changedFiles: string[]): Promise<MatchResult> {
-    return { nodes: [], claimedFiles: [] };
+  async match(_course: Course, changed: ChangedFiles): Promise<MatchResult> {
+    // A modified `infoAssessment.json` marks its assessment dirty (covers direct
+    // edits and the in-place rewrite a question rename does to it). We
+    // deliberately ignore renamed/deleted assessment JSON: an assessment rename
+    // or deletion needs the old tid soft-deleted, which `partial_sync` can't do,
+    // so those are left unclaimed and fall back to a full sync.
+    const dirty = new Map<string, AssessmentPayload>();
+    for (const file of changed.modified) {
+      const assessment = assessmentFromInfoPath(file);
+      if (assessment) {
+        dirty.set(`${assessment.courseInstanceShortName}/${assessment.tid}`, assessment);
+      }
+    }
+    if (dirty.size === 0) return { nodes: [], claimedFiles: [] };
+
+    // Claim every changed file inside a dirty assessment's directory.
+    const allPaths = [
+      ...changed.modified,
+      ...changed.deleted,
+      ...changed.renamed.flatMap((r) => [r.from, r.to]),
+    ];
+    const claimedFiles: string[] = [];
+    for (const { courseInstanceShortName, tid } of dirty.values()) {
+      const dir = `courseInstances/${courseInstanceShortName}/assessments/${tid}/`;
+      for (const file of allPaths) {
+        if (file.startsWith(dir)) claimedFiles.push(file);
+      }
+    }
+
+    return {
+      nodes: [...dirty.entries()].map(([key, payload]) => ({ type: 'Assessment', key, payload })),
+      claimedFiles,
+    };
   },
 
   async dependents(_course: Course, _nodes: DirtyNode[]): Promise<DirtyNode[]> {
     return [];
   },
 
-  async sync(_course: Course, node: DirtyNode): Promise<SyncOutcome> {
-    const { assessmentId, questionId } = node.payload as AssessmentPayload;
-    await execute(sql.recompute_question_points_split, {
-      assessment_id: assessmentId,
-      question_id: questionId,
-    });
-    return { status: 'ok' };
+  async sync(course: Course, node: DirtyNode): Promise<SyncOutcome> {
+    const { courseInstanceShortName, tid } = node.payload as AssessmentPayload;
+    const ok = await syncSingleAssessment({ course, courseInstanceShortName, tid });
+    return ok ? { status: 'ok' } : { status: 'fallback' };
   },
 };

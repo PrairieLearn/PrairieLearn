@@ -1,7 +1,3 @@
-import type { Course } from '../../lib/db-types.js';
-
-import { fastSyncQuestion } from './question.js';
-
 function longestCommonPathPrefix(paths: string[]) {
   if (paths.length === 0) return '';
   if (paths.length === 1) return paths[0];
@@ -57,24 +53,4 @@ export function getFastSyncStrategy(changedFiles: string[]): FastSyncStrategy | 
   // - Just a question's `info.json` file has changed.
   // - Any non-JSON question files have changed.
   return getQuestionFastSyncStrategy(changedFiles) ?? null;
-}
-
-/**
- * Attempts a fast sync with the given strategy. Returns whether or not the fast
- * sync was able to be performed. This does NOT indicate success of the sync.
- * Rather, the attempted sync may discover that fast sync is not in fact possible.
- * If that's the case, one should fall back to a full sync, which is slower but
- * will correctly handle any unexpected situations. Fast sync is conservative to
- * avoid correctness and consistency issues.
- */
-export async function attemptFastSync(
-  course: Course,
-  strategy: FastSyncStrategy,
-): Promise<boolean> {
-  switch (strategy.type) {
-    // Keep this switch so future fast-sync strategies have an obvious extension point.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    case 'Question':
-      return fastSyncQuestion(course, strategy.pathPrefix);
-  }
 }

@@ -287,18 +287,41 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
 }
 
 /**
- * Identifies the files that changes between two commits in a given course.
+ * The files that changed between two commits, classified by how they changed.
+ * Renames are reported explicitly (rather than as an add + delete) so callers
+ * can reason about a move as a single event.
+ */
+export interface ChangedFiles {
+  /** Files added or modified, by their current (course-relative) path. */
+  modified: string[];
+  /** Files that were deleted, by their (course-relative) path. */
+  deleted: string[];
+  /** Files git detected as renamed/moved: previous path → current path. */
+  renamed: { from: string; to: string }[];
+}
+
+/** Flattens {@link ChangedFiles} into a flat list of every affected path. */
+export function changedFilePaths(changed: ChangedFiles): string[] {
+  return [
+    ...changed.modified,
+    ...changed.deleted,
+    ...changed.renamed.flatMap(({ from, to }) => [from, to]),
+  ];
+}
+
+/**
+ * Identifies the files that changed between two commits in a given course,
+ * including renames.
  *
  * @param coursePath The course directory to diff
  * @param oldHash The old (previous) hash for the diff
  * @param newHash The new (current) hash for the diff
- * @returns List of changed files
  */
 export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
   newHash: string,
-): Promise<string[]> {
+): Promise<ChangedFiles> {
   // In some specific scenarios, the course directory and the root of the course
   // repository might be different. For example, the example course is usually
   // manually cloned in production environments, and then the course is added
@@ -314,8 +337,10 @@ export async function identifyChangedFiles(
   );
   const topLevel = topLevelStdout.trim();
 
+  // `--name-status -M` reports renames (`R<score>`) and copies (`C<score>`)
+  // explicitly, as tab-separated `<status>\t<from>\t<to>` lines.
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
-    `git diff --name-only ${oldHash}..${newHash}`,
+    `git diff --name-status -M ${oldHash}..${newHash}`,
     {
       cwd: coursePath,
       // This defaults to 1MB of output, however, we've observed in the past that
@@ -326,20 +351,47 @@ export async function identifyChangedFiles(
       maxBuffer: 10 * 1024 * 1024,
     },
   );
-  const changedFiles = diffStdout.trim().split('\n');
 
-  // Construct absolute path to all changed files.
-  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
+  // Map a repo-relative path to a course-relative one, or `null` if it's outside
+  // the course directory.
+  const toCourseRelative = (repoPath: string): string | null => {
+    const absolute = path.join(topLevel, repoPath);
+    if (!contains(coursePath, absolute)) return null;
+    return path.relative(coursePath, absolute);
+  };
 
-  // Exclude any changed files that aren't in the course directory.
-  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(coursePath, absoluteChangedFile),
-  );
+  const changed: ChangedFiles = { modified: [], deleted: [], renamed: [] };
 
-  // Convert all absolute paths back into relative paths.
-  return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(coursePath, absoluteChangedFile),
-  );
+  for (const line of diffStdout.trim().split('\n')) {
+    if (!line) continue;
+    const [status, ...paths] = line.split('\t');
+
+    if (status.startsWith('R')) {
+      const from = toCourseRelative(paths[0]);
+      const to = toCourseRelative(paths[1]);
+      if (from && to) {
+        changed.renamed.push({ from, to });
+      } else if (to) {
+        changed.modified.push(to);
+      } else if (from) {
+        changed.deleted.push(from);
+      }
+    } else if (status.startsWith('C')) {
+      // A copy leaves the source untouched; treat the destination as added.
+      const to = toCourseRelative(paths[1]);
+      if (to) changed.modified.push(to);
+    } else {
+      const file = toCourseRelative(paths[0]);
+      if (!file) continue;
+      if (status === 'D') {
+        changed.deleted.push(file);
+      } else {
+        changed.modified.push(file);
+      }
+    }
+  }
+
+  return changed;
 }
 
 /**
@@ -886,7 +938,9 @@ export async function updateChunksForCourse({
 
     if (changedFiles) return changedFiles;
 
-    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
+    if (oldHash && newHash) {
+      return changedFilePaths(await identifyChangedFiles(coursePath, oldHash, newHash));
+    }
 
     return [];
   });

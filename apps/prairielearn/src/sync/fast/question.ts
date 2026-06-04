@@ -11,8 +11,6 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { createAndUploadChunks } from '../../lib/chunks.js';
-import { config } from '../../lib/config.js';
 import {
   type Course,
   type Question,
@@ -315,32 +313,39 @@ export async function syncQuestionJson(
   });
 }
 
-export async function fastSyncQuestion(course: Course, pathPrefix: string): Promise<boolean> {
-  // TODO: We do need to consider deletion here; it's possible that a question may
-  // consist just of a JSON file, and that deleting the file could delete the
-  // question. It's also possible that someone might delete a JSON file that's
-  // not actually part of a question. It's ALSO possible that someone might
-  // delete a JSON file that would cause another directory to start being treated
-  // as a question. For instance, if `foo/info.json` and `foo/bar/info.json` exist
-  // and `foo/info.json` is deleted, `foo/bar/info.json` would become a question's
-  // JSON file.
-  //
-  // To keep things simple, if a JSON file was deleted, we'll require that the
-  // entire containing directory was also deleted. If not, we'll fall back to slow
-  // sync.
+/**
+ * Fast-syncs a question rename: the question directory moved from `oldQid` to
+ * `newQid` (same UUID). Updates the `questions` row's `qid`/`directory` and
+ * re-syncs its fields from the new `info.json`. Returns the updated question, or
+ * `null` to fall back to a full sync.
+ */
+export async function syncQuestionRename(
+  course: Course,
+  oldQid: string,
+  newQid: string,
+): Promise<Question | null> {
+  const jsonData = await loadAndValidateQuestionJson(
+    course,
+    path.join('questions', newQid, 'info.json'),
+  );
+  // Need valid JSON with a UUID to safely rename.
+  if (!jsonData?.uuid || infofile.hasErrors(jsonData)) return null;
 
-  const question = await syncQuestionJson(course, pathPrefix);
-  if (!question) return false;
+  const existingQuestion = await selectOptionalQuestionByUuid({
+    course_id: course.id,
+    uuid: jsonData.uuid,
+  });
+  // For this to be a rename, the question must already exist under the old QID.
+  if (!existingQuestion || existingQuestion.qid !== oldQid) return null;
 
-  if (config.chunksGenerator) {
-    // Generate chunks no matter what changed. It's possible that people are doing
-    // insane things like reading their question's JSON file from `server.py`, so
-    // even if only the JSON file changed, we still need to generate chunks.
-    assert(question.qid, 'Question must have a QID');
-    await createAndUploadChunks(course.path, course.id, [
-      { type: 'question', questionName: question.qid },
-    ]);
-  }
+  const topic = await validateAndGetTopic(course, jsonData);
+  if (!topic) return null;
 
-  return true;
+  const tags = await validateAndGetTags(course, jsonData);
+  if (tags === null) return null;
+
+  return await runInTransactionAsync(async () => {
+    await execute(sql.update_question_qid, { id: existingQuestion.id, qid: newQid });
+    return await updateQuestion({ ...existingQuestion, qid: newQid }, jsonData, topic, tags);
+  });
 }

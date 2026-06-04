@@ -1,3 +1,24 @@
+-- BLOCK select_course_instance_id
+SELECT
+  id
+FROM
+  course_instances
+WHERE
+  course_id = $course_id
+  AND short_name = $short_name
+  AND deleted_at IS NULL;
+
+-- BLOCK select_question_ids
+SELECT
+  qid,
+  id
+FROM
+  questions
+WHERE
+  course_id = $course_id
+  AND deleted_at IS NULL
+  AND qid IS NOT NULL;
+
 -- BLOCK check_access_rules_exam_uuid
 SELECT
   exam_uuids.value AS uuid,

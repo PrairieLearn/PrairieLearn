@@ -25,7 +25,6 @@ import {
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
-import { attemptFastSync, getFastSyncStrategy } from '../sync/fast/index.js';
 import { attemptGraphFastSync } from '../sync/fast-graph/index.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -79,62 +78,27 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  // Check if we can use fast sync based on what files changed
+  // Try the graph-based fast sync: it resolves the objects whose files changed
+  // plus everything that depends on them, and re-syncs just those in dependency
+  // order. It reports the chunks to (re)generate, so we don't reload the full
+  // course. Anything it can't safely handle falls back to a full sync below.
   if (startGitHash !== endGitHash) {
     try {
-      // TODO: it'd be nice to have a single call to `identifyChangedFiles` per sync operation,
-      // as this is slower than many operations since it hits disk.
       const changedFiles = await identifyChangedFiles(course.path, startGitHash, endGitHash);
+      const fastSync = await attemptGraphFastSync(course, changedFiles);
 
-      if (config.fastSyncUseGraph) {
-        // Experimental graph-based engine: resolves dirty objects + their
-        // dependents and syncs them in dependency order. The engine reports the
-        // chunks to (re)generate, so we don't need to reload the full course.
-        const fastSync = await attemptGraphFastSync(course, changedFiles);
+      if (fastSync.ok) {
+        job.info('Fast sync completed successfully');
 
-        if (fastSync.ok) {
-          job.info('Graph fast sync completed successfully');
-
-          if (config.chunksGenerator && fastSync.chunks.length > 0) {
-            await createAndUploadChunks(course.path, course.id, fastSync.chunks);
-          }
-
-          await updateCourseCommitHash(course);
-          return;
+        if (config.chunksGenerator && fastSync.chunks.length > 0) {
+          await createAndUploadChunks(course.path, course.id, fastSync.chunks);
         }
 
-        job.info('Could not perform graph fast sync, falling back to full sync');
-      } else {
-        const fastSyncStrategy = getFastSyncStrategy(changedFiles);
-
-        if (fastSyncStrategy) {
-          job.info(
-            `Attempting fast sync for ${fastSyncStrategy.type.toLowerCase()}: ${fastSyncStrategy.pathPrefix}`,
-          );
-          const fastSyncSucceeded = await attemptFastSync(course, fastSyncStrategy);
-
-          if (fastSyncSucceeded) {
-            job.info('Fast sync completed successfully');
-
-            // Still need to handle chunks generation for fast sync
-            if (config.chunksGenerator) {
-              const chunkChanges = await updateChunksForCourse({
-                coursePath: course.path,
-                courseId: course.id,
-                courseData: courseData || (await courseDB.loadFullCourse(course.id, course.path)),
-                oldHash: startGitHash,
-                newHash: endGitHash,
-              });
-              logChunkChangesToJob(chunkChanges, job);
-            }
-
-            await updateCourseCommitHash(course);
-            return;
-          } else {
-            job.info('Could not perform fast sync, falling back to full sync');
-          }
-        }
+        await updateCourseCommitHash(course);
+        return;
       }
+
+      job.info('Could not perform fast sync, falling back to full sync');
     } catch (error) {
       job.error(formatErrorStack(error));
       job.info('Fast sync check failed, falling back to full sync');

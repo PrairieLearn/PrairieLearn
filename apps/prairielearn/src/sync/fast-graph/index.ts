@@ -1,3 +1,4 @@
+import type { ChangedFiles } from '../../lib/chunks.js';
 import type { Course } from '../../lib/db-types.js';
 
 import { type FastSyncResult, type SyncNode, runFastSync } from './engine.js';
@@ -17,7 +18,7 @@ export const REGISTRY: SyncNode[] = [questionNode, assessmentNode];
  */
 export async function attemptGraphFastSync(
   course: Course,
-  changedFiles: string[],
+  changed: ChangedFiles,
 ): Promise<FastSyncResult> {
-  return await runFastSync(course, changedFiles, REGISTRY);
+  return await runFastSync(course, changed, REGISTRY);
 }

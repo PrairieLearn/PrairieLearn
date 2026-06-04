@@ -88,3 +88,10 @@ WHERE
   id = $id
 RETURNING
   *;
+
+-- BLOCK update_question_qid
+UPDATE questions
+SET
+  qid = $qid
+WHERE
+  id = $id;

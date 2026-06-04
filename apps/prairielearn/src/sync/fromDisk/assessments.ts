@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { Ajv } from 'ajv';
 import { z } from 'zod';
 
@@ -7,10 +9,11 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { type AssessmentTool, type Course, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
+import * as schemas from '../../schemas/index.js';
 import {
   type AssessmentJson,
   EnumAssessmentToolSchema,
@@ -22,7 +25,7 @@ import {
   QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData } from '../course-db.js';
+import { type CourseInstanceData, loadAndValidateJson } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -578,6 +581,96 @@ export async function sync(
     await syncAssessmentTools(assessments, name_to_id_map);
     return { name_to_id_map };
   });
+}
+
+/**
+ * Fast-syncs a single assessment from disk without disturbing its siblings (via
+ * the `partial_sync` mode of the `sync_assessments` sproc). Used by the graph
+ * fast-sync engine when an assessment's JSON changed, or when a question it
+ * references changed (grading method, rename, etc.).
+ *
+ * Cross-entity validation (`validateAssessment`) is intentionally skipped here:
+ * the assessment was valid at its last full sync, and the edits that trigger a
+ * single-assessment re-sync don't invalidate it. Cases that might (e.g. a
+ * referenced question being deleted) are handled by falling back to a full sync.
+ *
+ * Returns `false` if the assessment can't be fast-synced; the caller should then
+ * fall back to a full sync.
+ */
+export async function syncSingleAssessment({
+  course,
+  courseInstanceShortName,
+  tid,
+}: {
+  course: Course;
+  courseInstanceShortName: string;
+  tid: string;
+}): Promise<boolean> {
+  const courseInstanceId = await sqldb.queryOptionalRow(
+    sql.select_course_instance_id,
+    { course_id: course.id, short_name: courseInstanceShortName },
+    IdSchema,
+  );
+  if (courseInstanceId == null) return false;
+
+  const infoFile = await loadAndValidateJson({
+    coursePath: course.path,
+    filePath: path.join(
+      'courseInstances',
+      courseInstanceShortName,
+      'assessments',
+      tid,
+      'infoAssessment.json',
+    ),
+    schema: schemas.infoAssessment,
+    zodSchema: schemas.AssessmentJsonSchema,
+    validate: () => ({ warnings: [], errors: [] }),
+    tolerateMissing: false,
+  });
+  // Missing/invalid JSON (e.g. a deleted assessment) can't be fast-synced.
+  if (!infoFile?.uuid || infofile.hasErrors(infoFile)) return false;
+
+  const questionRows = await sqldb.queryRows(
+    sql.select_question_ids,
+    { course_id: course.id },
+    z.object({ qid: z.string(), id: IdSchema }),
+  );
+  const questionIds: Record<string, string> = {};
+  for (const { qid, id } of questionRows) questionIds[qid] = id;
+
+  const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+    institution_id: course.institution_id,
+    course_id: course.id,
+    course_instance_id: courseInstanceId,
+  });
+
+  const params = getParamsForAssessment(infoFile, questionIds, enhancedAccessControlEnabled);
+
+  await sqldb.runInTransactionAsync(async () => {
+    const { name_to_id_map } = await sqldb.callRow(
+      'sync_assessments',
+      [
+        [
+          JSON.stringify([
+            tid,
+            infoFile.uuid,
+            infofile.stringifyErrors(infoFile),
+            infofile.stringifyWarnings(infoFile),
+            params,
+          ]),
+        ],
+        course.id,
+        courseInstanceId,
+        config.checkSharingOnSync,
+        true, // partial_sync: don't touch sibling assessments
+      ],
+      SprocSyncAssessmentsSchema,
+    );
+
+    await syncAssessmentTools({ [tid]: infoFile }, name_to_id_map);
+  });
+
+  return true;
 }
 
 async function syncAssessmentTools(

@@ -4,6 +4,11 @@ CREATE FUNCTION
         IN syncing_course_id bigint,
         IN syncing_course_instance_id bigint,
         IN check_sharing_on_sync boolean,
+        -- When true, only the assessments in `disk_assessments_data` are synced;
+        -- assessments in the course instance but not in the batch are left
+        -- untouched (instead of being soft-deleted). Used to sync a single
+        -- assessment without disturbing its siblings.
+        IN partial_sync boolean DEFAULT false,
         OUT name_to_id_map jsonb
     )
 AS $$
@@ -92,6 +97,9 @@ BEGIN
         WHERE dest.id NOT IN (
             SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
         ) AND dest.deleted_at IS NULL AND dest.course_instance_id = syncing_course_instance_id
+        -- In a partial sync the batch isn't the full set, so don't soft-delete
+        -- assessments that simply weren't included.
+        AND NOT partial_sync
     ),
     update_matched_dest_rows AS (
         UPDATE assessments AS dest
@@ -122,12 +130,16 @@ BEGIN
         RAISE EXCEPTION 'Assertion failure: TIDs on disk but not synced to DB: %', missing_dest_tids;
     END IF;
 
-    SELECT string_agg(dest.tid, ', ')
-    INTO missing_src_tids
-    FROM assessments AS dest
-    WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL AND dest.tid NOT IN (SELECT src.tid FROM disk_assessments AS src);
-    IF (missing_src_tids IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: TIDs in DB but not on disk: %', missing_src_tids;
+    -- In a partial sync the DB legitimately contains assessments that aren't in
+    -- the batch, so skip this "DB has extra assessments" assertion.
+    IF NOT partial_sync THEN
+        SELECT string_agg(dest.tid, ', ')
+        INTO missing_src_tids
+        FROM assessments AS dest
+        WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL AND dest.tid NOT IN (SELECT src.tid FROM disk_assessments AS src);
+        IF (missing_src_tids IS NOT NULL) THEN
+            RAISE EXCEPTION 'Assertion failure: TIDs in DB but not on disk: %', missing_src_tids;
+        END IF;
     END IF;
 
     SELECT string_agg(src.tid, ', ')

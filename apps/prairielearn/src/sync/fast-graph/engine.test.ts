@@ -1,11 +1,15 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import type { ChangedFiles } from '../../lib/chunks.js';
 import type { Course } from '../../lib/db-types.js';
 import { selectCourseById } from '../../models/course.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
 
 import { type DirtyNode, type SyncNode, runFastSync } from './engine.js';
+
+/** Builds a {@link ChangedFiles} with only modified paths. */
+const changed = (modified: string[]): ChangedFiles => ({ modified, deleted: [], renamed: [] });
 
 /**
  * Builds a {@link SyncNode} that does nothing by default, overriding only the
@@ -42,12 +46,12 @@ describe('runFastSync engine', () => {
       match: async () => ({ nodes: [dirty('A', '1')], claimedFiles: ['a.json'] }),
     });
 
-    const result = await runFastSync(course, ['a.json', 'b.json'], [node]);
+    const result = await runFastSync(course, changed(['a.json', 'b.json']), [node]);
     assert.isFalse(result.ok);
   });
 
   it('falls back when nothing matches the diff', async () => {
-    const result = await runFastSync(course, ['a.json'], [fakeNode({ type: 'A', topoRank: 0 })]);
+    const result = await runFastSync(course, changed(['a.json']), [fakeNode({ type: 'A', topoRank: 0 })]);
     assert.isFalse(result.ok);
   });
 
@@ -76,7 +80,7 @@ describe('runFastSync engine', () => {
     });
 
     // Registry order is deliberately the reverse of topo order.
-    const result = await runFastSync(course, ['questions/q1/info.json'], [assessment, question]);
+    const result = await runFastSync(course, changed(['questions/q1/info.json']), [assessment, question]);
 
     assert.isTrue(result.ok);
     assert.deepEqual(order, ['Question:q1', 'Assessment:a1']);
@@ -90,7 +94,7 @@ describe('runFastSync engine', () => {
       sync: async () => ({ status: 'ok', chunks: [{ type: 'question', questionName: 'foo' }] }),
     });
 
-    const result = await runFastSync(course, ['f'], [node]);
+    const result = await runFastSync(course, changed(['f']), [node]);
     assert.isTrue(result.ok);
     assert.deepEqual(result.chunks, [{ type: 'question', questionName: 'foo' }]);
   });
@@ -105,7 +109,7 @@ describe('runFastSync engine', () => {
       sync: async () => ({ status: 'ok', chunks: [{ type: 'question', questionName: 'foo' }] }),
     });
 
-    const result = await runFastSync(course, ['f'], [good, bad]);
+    const result = await runFastSync(course, changed(['f']), [good, bad]);
     assert.isFalse(result.ok);
     assert.deepEqual(result.chunks, []);
   });
@@ -132,7 +136,7 @@ describe('runFastSync engine', () => {
       sync: async () => ({ status: 'ok' }),
     });
 
-    const result = await runFastSync(course, ['f'], [assessment, question]);
+    const result = await runFastSync(course, changed(['f']), [assessment, question]);
     assert.isTrue(result.ok);
     assert.equal(assessmentSyncs, 1);
   });

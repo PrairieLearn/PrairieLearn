@@ -4,17 +4,27 @@ import path from 'node:path';
 
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { AuthorSchema, QuestionAuthorSchema } from '../../lib/db-types.js';
+import { AuthorSchema, type Course, QuestionAuthorSchema } from '../../lib/db-types.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { selectTagsByQuestionId } from '../../models/tags.js';
 import type { QuestionJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
+import { attemptGraphFastSync } from '../fast-graph/index.js';
 
 import { qidFromFilePath } from './question.js';
 
-import { attemptFastSync, getFastSyncStrategy } from './index.js';
+import { getFastSyncStrategy } from './index.js';
+
+/**
+ * Drives the question fast-sync path through the graph engine. Treats the given
+ * paths as modified files and returns whether the fast sync succeeded.
+ */
+async function fastSync(course: Course, files: string[]): Promise<boolean> {
+  const result = await attemptGraphFastSync(course, { modified: files, deleted: [], renamed: [] });
+  return result.ok;
+}
 
 /**
  * Makes an empty question.
@@ -61,9 +71,7 @@ describe('fastSyncQuestion', () => {
       await util.writeCourseToDirectory(courseData, courseDir);
 
       const course = await selectCourseById(syncResults.courseId);
-      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
-      assert(strategy !== null);
-      assert.isTrue(await attemptFastSync(course, strategy));
+      assert.isTrue(await fastSync(course, [path.join('questions', qid, 'info.json')]));
 
       const question = await selectQuestionByQid({ course_id: course.id, qid });
       assert.equal(question.title, courseData.questions[qid].title);
@@ -79,13 +87,11 @@ describe('fastSyncQuestion', () => {
       await util.writeCourseToDirectory(courseData, courseDir);
 
       const course = await selectCourseById(syncResults.courseId);
-      const strategy = getFastSyncStrategy([
+      assert.isTrue(await fastSync(course, [
         path.join('questions', qid, 'info.json'),
         path.join('questions', qid, 'question.html'),
         path.join('questions', qid, 'server.py'),
-      ]);
-      assert(strategy !== null);
-      assert.isTrue(await attemptFastSync(course, strategy));
+      ]));
 
       const question = await selectQuestionByQid({ course_id: course.id, qid });
       assert.equal(question.title, courseData.questions[qid].title);
@@ -104,9 +110,7 @@ describe('fastSyncQuestion', () => {
       await util.writeCourseToDirectory(courseData, courseDir);
 
       const course = await selectCourseById(syncResults.courseId);
-      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
-      assert(strategy !== null);
-      assert.isTrue(await attemptFastSync(course, strategy));
+      assert.isTrue(await fastSync(course, [path.join('questions', qid, 'info.json')]));
 
       const question = await selectQuestionByQid({ course_id: course.id, qid });
       assert.equal(question.title, courseData.questions[qid].title);
@@ -123,9 +127,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
     const tags = await selectTagsByQuestionId(question.id);
@@ -142,9 +144,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', 'test-question', 'info.json')]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    assert.isTrue(await fastSync(course, [path.join('questions', 'test-question', 'info.json')]));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: 'test-question' });
     const tags = await selectTagsByQuestionId(question.id);
@@ -160,9 +160,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
   });
 
   it('syncs both errors and warnings to question with fast sync', async () => {
@@ -180,9 +178,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
     assert.match(question.sync_errors ?? '', /author email address.*is invalid/);
@@ -200,9 +196,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
     assert.match(question.sync_warnings ?? '', /exceeds the maximum value and has been limited/);
@@ -226,9 +220,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
 
     const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
     const author = authors.find((a) => a.email === 'new.author@example.com');
@@ -248,11 +240,9 @@ describe('fastSyncQuestion', () => {
     courseData.questions[util.QUESTION_ID].authors = [];
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    const deleteStrategy = getFastSyncStrategy([
+    assert.isTrue(await fastSync(course, [
       path.join('questions', util.QUESTION_ID, 'info.json'),
-    ]);
-    assert(deleteStrategy !== null);
-    assert.isTrue(await attemptFastSync(course, deleteStrategy));
+    ]));
 
     const allQuestionAuthorsAfterDelete = await util.dumpTableWithSchema(
       'question_authors',
@@ -273,12 +263,10 @@ describe('fastSyncQuestion', () => {
     // TODO: in theory this can skip writing anything to the database at all.
     // Can we implement that and write a test for it?
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([
+    assert.isTrue(await fastSync(course, [
       path.join('questions', util.QUESTION_ID, 'server.py'),
       path.join('questions', util.QUESTION_ID, 'question.html'),
-    ]);
-    assert(strategy !== null);
-    assert.isTrue(await attemptFastSync(course, strategy));
+    ]));
   });
 
   it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
@@ -293,9 +281,7 @@ describe('fastSyncQuestion', () => {
       await util.writeCourseToDirectory(courseData, courseDir);
 
       const course = await selectCourseById(syncResults.courseId);
-      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
-      assert(strategy !== null);
-      assert.isFalse(await attemptFastSync(course, strategy));
+      assert.isFalse(await fastSync(course, [path.join('questions', qid, 'info.json')]));
     },
   );
 
@@ -311,9 +297,7 @@ describe('fastSyncQuestion', () => {
       await fs.rm(path.join(courseDir, 'questions', qid, 'info.json'));
 
       const course = await selectCourseById(syncResults.courseId);
-      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
-      assert(strategy !== null);
-      assert.isFalse(await attemptFastSync(course, strategy));
+      assert.isFalse(await fastSync(course, [path.join('questions', qid, 'info.json')]));
     },
   );
 
@@ -324,9 +308,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
   });
 
   it('falls back to slow sync when topic does not exist', async () => {
@@ -337,9 +319,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
   });
 
   it('falls back to slow sync when changing to Manual grading method', async () => {
@@ -350,9 +330,7 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
   });
 
   it('falls back to slow sync when changing from Manual grading method', async () => {
@@ -363,11 +341,9 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([
+    assert.isFalse(await fastSync(course, [
       path.join('questions', util.MANUAL_GRADING_QUESTION_ID, 'info.json'),
-    ]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    ]));
   });
 
   it('falls back to slow sync when question path changes', async () => {
@@ -379,7 +355,7 @@ describe('fastSyncQuestion', () => {
     courseData.questions['new-location/test-question'] = questionData;
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    const strategy = getFastSyncStrategy([
+    assert.isFalse(await fastSync(course, [
       path.join('questions', util.QUESTION_ID, 'info.json'),
       path.join('questions', 'new-location', 'test-question', 'info.json'),
     ]);
@@ -401,9 +377,7 @@ describe('fastSyncQuestion', () => {
     const strategy = getFastSyncStrategy([
       path.join('questions', 'nested', 'test-question', 'info.json'),
       path.join('questions', 'nested', 'another-test-question', 'info.json'),
-    ]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    ]));
   });
 
   it('falls back to slow sync when question is moved to a deeper-nested path', async () => {
@@ -418,11 +392,9 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([
+    assert.isFalse(await fastSync(course, [
       path.join('questions', 'nested', 'test-question', 'info.json'),
       path.join('questions', 'nested', 'test-question', 'nested-again', 'info.json'),
-    ]);
-    assert(strategy !== null);
-    assert.isFalse(await attemptFastSync(course, strategy));
+    ]));
   });
 });
