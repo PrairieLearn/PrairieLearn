@@ -162,6 +162,11 @@ const VISIBLE = Object.freeze({
   showScore: true,
 } satisfies Readonly<Visibility>);
 
+const HIDDEN = Object.freeze({
+  showQuestions: false,
+  showScore: false,
+} satisfies Readonly<Visibility>);
+
 const EMPTY_ACCESS_TIMELINE: readonly Readonly<AccessTimelineEntry>[] = Object.freeze([]);
 
 const UNAUTHORIZED_RESULT = Object.freeze({
@@ -445,10 +450,10 @@ export function resolveAccessControl(
   const accessTimeline = buildAccessTimeline(rule.dateControl, date);
 
   // In Exam mode, the only access path is a matching PrairieTest reservation;
-  // `dateControl` is intentionally ignored for the access decision (still
-  // consulted for the timeline). Without a match, we deny but propagate
-  // top-level visibility so the gradebook renders correctly during the post-
-  // reservation grace period (issue #12579).
+  // `dateControl` is intentionally ignored for the access decision. Without a
+  // match, hide completed-work visibility too: a student taking one PT exam
+  // should not be able to review other released assessments. This also keeps
+  // #12579 fixed during the post-reservation Exam-mode grace period.
   if (authzMode === 'Exam') {
     const matched = rule.prairieTestExams.find((exam) =>
       prairieTestReservations.some((r) => r.examUuid === exam.uuid),
@@ -456,11 +461,9 @@ export function resolveAccessControl(
     if (!matched) {
       return {
         ...UNAUTHORIZED_RESULT,
-        visibility: afterCompleteVisibility,
-        afterCompleteVisibility,
-        visibilitySource: 'afterComplete',
+        visibility: HIDDEN,
+        afterCompleteVisibility: HIDDEN,
         complete: true,
-        accessTimeline,
       };
     }
 

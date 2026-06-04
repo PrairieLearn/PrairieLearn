@@ -5,9 +5,12 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
+import { selectJobSequenceStatus } from '../lib/server-jobs.js';
+import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -25,6 +28,16 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/** Polls a background job sequence until it leaves the "Running" state. */
+async function waitForJobSequence(jobSequenceId: string): Promise<void> {
+  for (let i = 0; i < 100; i++) {
+    const { status } = await selectJobSequenceStatus(jobSequenceId);
+    if (status !== 'Running') return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Job sequence ${jobSequenceId} did not finish in time`);
+}
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -102,7 +115,7 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 }
 
 let iqUrl: string, iqId: string | number;
-let instancesAssessmentUrl: string;
+let assessmentId: string;
 let manualGradingAssessmentUrl: string;
 let manualGradingAssessmentQuestionUrl: string;
 let manualGradingIQUrl: string;
@@ -457,8 +470,8 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
+    assessmentId = assessment.id;
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
   });
 
   beforeAll(async () => {
@@ -589,18 +602,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('Manual grading behaviour when instance is closed', () => {
       test.sequential('close assessment', async () => {
         setUser(defaultUser);
-        const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
-        const $instancesBody = cheerio.load(instancesBody);
-        const token =
-          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
-        await fetch(instancesAssessmentUrl, {
-          method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            __action: 'close_all',
-            __csrf_token: token,
-          }).toString(),
+        const jobSequenceId = await gradeAllAssessmentInstances({
+          assessment_id: assessmentId,
+          user_id: '1',
+          authn_user_id: '1',
+          close: true,
+          ignoreGradeRateLimit: true,
+          ignoreRealTimeGradingDisabled: true,
         });
+        await waitForJobSequence(jobSequenceId);
       });
 
       test.sequential('manual grading page should NOT warn about an open instance', async () => {
@@ -1117,21 +1127,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('New submission after manual grading', () => {
       test.sequential('re-open assessment', async () => {
         setUser(defaultUser);
-        const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
-        const $instancesBody = cheerio.load(instancesBody);
-        const token = $instancesBody('input[name=__csrf_token]').attr('value') || '';
-        const response = await fetch(instancesAssessmentUrl, {
-          method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            __action: 'set_time_limit_all',
-            __csrf_token: token,
-            action: 'remove',
-            time_add: '0',
-            reopen_closed: 'on',
-          }).toString(),
+        await updateAssessmentInstancesTimeLimit({
+          assessment_id: assessmentId,
+          assessment_instance_ids: null,
+          base_time: 'null',
+          time_add: 0,
+          exact_date: new Date(),
+          reopen_closed: true,
+          authn_user_id: '1',
         });
-        assert.equal(response.status, 200);
       });
 
       test.sequential('load page as student', async () => {

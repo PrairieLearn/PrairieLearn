@@ -7,7 +7,6 @@
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
@@ -70,25 +69,28 @@
       "default": []
     },
     "clientFiles": {
-      "description": "The list of question files accessible by the client.",
+      "description": "[DEPRECATED] The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.",
       "type": "array",
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
       },
-      "default": ["client.js", "question.html", "answer.html"]
+      "default": ["client.js", "question.html", "answer.html"],
+      "deprecated": true
     },
     "clientTemplates": {
-      "description": "List of client-accessible templates to render server-side.",
+      "description": "[DEPRECATED] List of client-accessible templates to render server-side.",
       "type": "array",
       "items": {
         "description": "A single template file accessible by the client.",
         "type": "string"
-      }
+      },
+      "deprecated": true
     },
     "template": {
-      "description": "The QID of a question that serves at the template for this question.",
-      "type": "string"
+      "description": "[DEPRECATED] The QID of a question that serves as the template for this question.",
+      "type": "string",
+      "deprecated": true
     },
     "gradingMethod": {
       "description": "The grading method used for this question.",
@@ -111,10 +113,11 @@
       "type": "boolean"
     },
     "options": {
-      "description": "Options that define how the question will work, specific to the individual question type.",
+      "description": "[DEPRECATED] Options that define how the question will work, specific to the individual question type (not supported for v3 questions).",
       "type": "object",
       "additionalProperties": {},
-      "properties": {}
+      "properties": {},
+      "deprecated": true
     },
     "externalGradingOptions": {
       "description": "Options for externally graded questions.",
@@ -123,7 +126,6 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "enabled": {
@@ -184,7 +186,6 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "coreStyles": {
@@ -263,7 +264,6 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "image": {

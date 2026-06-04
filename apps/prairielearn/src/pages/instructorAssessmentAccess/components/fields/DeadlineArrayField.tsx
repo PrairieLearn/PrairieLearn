@@ -16,6 +16,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -115,6 +116,11 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
   return undefined;
 }
 
+function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): string | undefined {
+  if (count < MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) return undefined;
+  return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
+}
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -151,7 +157,10 @@ function DeadlineArrayInput({
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, deadlineFields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   const { errors } = useFormState();
 
@@ -334,8 +343,8 @@ function DeadlineArrayInput({
             <Button
               size="sm"
               variant="outline-primary"
-              disabled={addEarlyDisabled}
-              title={addEarlyDisabledTitle}
+              disabled={addDisabled}
+              title={addDisabledTitle}
               onClick={addDeadline}
             >
               Add {isEarly ? 'early' : 'late'}
@@ -344,9 +353,9 @@ function DeadlineArrayInput({
         </div>
       )}
 
-      {addEarlyDisabled && (
-        <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          {addEarlyDisabledTitle}
+      {addDisabledTitle && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-2">
+          {addDisabledTitle}
         </Alert>
       )}
 
@@ -403,7 +412,6 @@ function DeadlineArrayInput({
                   })}
                   step={1}
                   disabled={!ruleEditable}
-                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),
@@ -571,7 +579,10 @@ export function OverrideDeadlineArrayField({
     });
 
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(effectiveDueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, fields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   return (
     <FieldWrapper
@@ -584,7 +595,13 @@ export function OverrideDeadlineArrayField({
           checked={fields.length > 0}
           disabled={!ruleEditable || (addEarlyDisabled && fields.length === 0)}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
-          onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
+          onChange={(checked) => {
+            if (checked) {
+              append(nextDeadline());
+            } else {
+              remove();
+            }
+          }}
         />
       }
       headerAction={
@@ -592,8 +609,8 @@ export function OverrideDeadlineArrayField({
           <Button
             size="sm"
             variant="outline-primary"
-            disabled={addEarlyDisabled}
-            title={addEarlyDisabledTitle}
+            disabled={addDisabled}
+            title={addDisabledTitle}
             onClick={() => append(nextDeadline())}
           >
             Add {isEarly ? 'early' : 'late'}

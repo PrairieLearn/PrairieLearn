@@ -10,23 +10,6 @@ import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
 
-/**
- * Type constraint for row schemas accepted by query functions.
- * Accepts `z.object(...)`, unions/intersections/discriminated unions of objects,
- * transforms/refinements of any of those, branded variants, and `z.unknown()`
- * as an escape hatch.
- */
-type AnyObjectLikeSchema =
-  | z.AnyZodObject
-  | z.ZodEffects<AnyObjectLikeSchema, any, any>
-  | z.ZodIntersection<AnyObjectLikeSchema, AnyObjectLikeSchema>
-  | z.ZodUnion<Readonly<[AnyObjectLikeSchema, ...AnyObjectLikeSchema[]]>>
-  | z.ZodDiscriminatedUnion<string, z.AnyZodObject[]>;
-export type AnyRowSchema =
-  | AnyObjectLikeSchema
-  | z.ZodBranded<AnyObjectLikeSchema, any>
-  | z.ZodUnknown;
-
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
@@ -652,8 +635,8 @@ export class PostgresPool {
     return result;
   }
 
-  async queryRows<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async queryRows<Model extends AnyRowSchema>(
+  async queryRows<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -662,7 +645,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Returns an array of rows
    * that conform to the given Zod schema.
    */
-  async queryRows<Model extends AnyRowSchema>(
+  async queryRows<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -673,8 +656,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows);
   }
 
-  async queryRow<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryRow<Model extends AnyRowSchema>(
+  async queryRow<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -682,7 +665,7 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
    */
-  async queryRow<Model extends AnyRowSchema>(
+  async queryRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -693,11 +676,11 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -706,7 +689,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Returns either null or a
    * single row that conforms to the given Zod schema, and errors otherwise.
    */
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -720,8 +703,8 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async callRows<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async callRows<Model extends AnyRowSchema>(
+  async callRows<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -730,7 +713,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Errors if the sproc does not return anything.
    */
-  async callRows<Model extends AnyRowSchema>(
+  async callRows<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -741,8 +724,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows);
   }
 
-  async callRow<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callRow<Model extends AnyRowSchema>(
+  async callRow<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -751,7 +734,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Returns exactly one row from the sproc that conforms to the given Zod schema.
    */
-  async callRow<Model extends AnyRowSchema>(
+  async callRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -762,11 +745,11 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -775,7 +758,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters. Returns either null
    * or a single row that conforms to the given Zod schema.
    */
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -789,11 +772,8 @@ export class PostgresPool {
     return model.parse(results.rows[0]);
   }
 
-  async queryScalars<Model extends z.ZodTypeAny>(
-    sql: string,
-    model: Model,
-  ): Promise<z.infer<Model>[]>;
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async queryScalars<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -802,7 +782,7 @@ export class PostgresPool {
    * Executes a query and returns all values from a single column, validated
    * against the given Zod schema. Errors if the query returns more than one column.
    */
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -814,8 +794,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async queryScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryScalar<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -825,7 +805,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the query does not return exactly
    * one row or returns more than one column.
    */
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -837,11 +817,11 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -851,7 +831,7 @@ export class PostgresPool {
    * if no rows are returned. Validated against the given Zod schema. Errors if
    * the query returns more than one row or more than one column.
    */
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -866,11 +846,8 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async callScalars<Model extends z.ZodTypeAny>(
-    sql: string,
-    model: Model,
-  ): Promise<z.infer<Model>[]>;
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callScalars<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -879,7 +856,7 @@ export class PostgresPool {
    * Calls the given sproc and returns all values from a single column, validated
    * against the given Zod schema. Errors if the sproc returns more than one column.
    */
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -891,8 +868,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async callScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callScalar<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -902,7 +879,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the sproc does not return exactly
    * one row or returns more than one column.
    */
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -914,11 +891,11 @@ export class PostgresPool {
     return model.parse(results.rows[0][columnName]);
   }
 
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -928,7 +905,7 @@ export class PostgresPool {
    * null if no rows are returned. Validated against the given Zod schema.
    * Errors if the sproc returns more than one row or more than one column.
    */
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -981,12 +958,12 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     model: Model,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -997,7 +974,7 @@ export class PostgresPool {
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.ZodType>(
     sql: string,
     paramsOrSchema: Model | QueryParams,
     maybeModel?: Model,
@@ -1007,7 +984,7 @@ export class PostgresPool {
     return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryCursorInternal<Model extends AnyRowSchema>(
+  private async queryCursorInternal<Model extends z.ZodType>(
     sql: string,
     params: QueryParams,
     model?: Model,

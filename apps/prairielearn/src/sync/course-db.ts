@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import { type ZodSchema, z } from 'zod';
+import { type ZodType, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -18,7 +18,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
-import { findCoursesBySharingNames } from '../models/course.js';
+import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -401,7 +401,7 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
  */
-export async function loadInfoFile<T extends { uuid: string }>({
+export async function loadInfoFile<T = { uuid: string }>({
   coursePath,
   filePath,
   schema,
@@ -665,6 +665,25 @@ async function loadCourseInfo({
     }
   }
 
+  const questionsReceiveUserData = info.options.questionsReceiveUserData ?? false;
+  const questionsReceiveUserDataSpecified = info.options.questionsReceiveUserData !== undefined;
+
+  // In production, the database is the source of truth for this setting (managed
+  // via course settings UI). The infoCourse.json value is informational and emits
+  // a warning if it diverges from the DB.
+  if (questionsReceiveUserDataSpecified && courseId != null && !config.devMode) {
+    const existingCourse = await selectOptionalCourseById(courseId);
+    if (
+      existingCourse != null &&
+      existingCourse.questions_receive_user_data !== questionsReceiveUserData
+    ) {
+      infofile.addWarning(
+        loadedData,
+        `"options.questionsReceiveUserData" in infoCourse.json (${questionsReceiveUserData}) differs from the database value (${existingCourse.questions_receive_user_data}). In production, this setting is managed via course settings; sync will not change it.`,
+      );
+    }
+  }
+
   const course = {
     path: coursePath,
     name: info.name,
@@ -677,6 +696,7 @@ async function loadCourseInfo({
     sharingSets,
     options: {
       devModeFeatures,
+      questionsReceiveUserData,
     },
     comment: info.comment,
   };
@@ -685,7 +705,7 @@ async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends ZodSchema>({
+async function loadAndValidateJson<T extends ZodType>({
   coursePath,
   filePath,
   schema,
@@ -732,7 +752,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = validate(result.data, loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data as z.input<T>);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
 
@@ -744,7 +764,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 /**
  * Loads and schema-validates all info files in a directory.
  */
-async function loadInfoForDirectory<T extends ZodSchema>({
+async function loadInfoForDirectory<T extends ZodType>({
   coursePath,
   directory,
   infoFilename,
@@ -770,7 +790,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir: string) => {
-    const infoFiles: Record<string, InfoFile<T>> = {};
+    const infoFiles: Record<string, InfoFile<z.infer<T>>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory

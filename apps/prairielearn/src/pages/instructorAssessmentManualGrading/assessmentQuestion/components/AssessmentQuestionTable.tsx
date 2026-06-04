@@ -351,7 +351,7 @@ export function AssessmentQuestionTable({
         added = true;
       }
     }
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     if (added) setHasUnacknowledgedReview(true);
   }, [serverJobProgress.jobsProgress]);
 

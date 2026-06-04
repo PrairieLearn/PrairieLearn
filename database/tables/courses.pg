@@ -15,6 +15,7 @@ columns
     json_comment: jsonb
     options: jsonb not null default '{}'::jsonb
     path: text not null
+    questions_receive_user_data: boolean not null default false
     repository: text
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()

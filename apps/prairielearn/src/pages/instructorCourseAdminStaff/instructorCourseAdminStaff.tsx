@@ -34,7 +34,6 @@ router.get(
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Owner'],
     });
 
     const courseUsers = await selectCourseUsers({ course_id: res.locals.course.id });
