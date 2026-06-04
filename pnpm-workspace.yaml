@@ -16,7 +16,18 @@ overrides:
 minimumReleaseAge: 4320
 
 allowBuilds:
+  '@datadog/pprof': false
+  '@parcel/watcher': false
   '@prairielearn/bind-mount': true
+  '@prairielearn/tree-sitter-htmlmustache': false
+  core-js: false
+  cpu-features: false
+  dtrace-provider: false
+  esbuild: false
+  protobufjs: false
+  sharp: false
+  ssh2: false
+  unrs-resolver: false
 
 supportedArchitectures:
   # @postgres-language-server/cli currently tags its glibc Linux binaries with
@@ -26,3 +37,6 @@ supportedArchitectures:
   libc:
     - current
     - gnu
+
+minimumReleaseAgeExclude:
+  - '@prairielearn/tree-sitter-htmlmustache@1.4.3'
