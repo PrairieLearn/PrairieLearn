@@ -414,7 +414,7 @@ function AddUsersModal({
   });
   const appError = getAppError<CourseStaffError['InsertByUserUids']>(mutation.error);
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setWarnings([]);
     const uids = uidText.split(/[,;\s]+/).filter(Boolean);

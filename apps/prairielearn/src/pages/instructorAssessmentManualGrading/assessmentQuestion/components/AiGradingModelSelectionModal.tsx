@@ -586,7 +586,7 @@ export function AiGradingModelSelectionModal({
   }, [onHide]);
 
   const handleSubmit = useCallback(
-    (e: React.SyntheticEvent) => {
+    (e: React.SubmitEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (!modalState) return;
 
