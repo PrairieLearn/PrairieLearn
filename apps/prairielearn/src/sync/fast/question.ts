@@ -32,7 +32,7 @@ import * as infofile from '../infofile.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-async function selectMatchingQuestion(pathPrefix: string) {
+export async function selectMatchingQuestion(pathPrefix: string) {
   // Get all path components; exclude the first one since it's just "questions".
   const pathComponents = pathPrefix.split('/').slice(1);
 
@@ -176,7 +176,11 @@ async function updateQuestion(
  * was able to be fast synced, `null` otherwise. If `null`, one should fall back to
  * a full, slow sync.
  */
-async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Question | null> {
+export async function syncQuestionJson(
+  course: Course,
+  pathPrefix: string,
+  { skipGradingMethodBail = false }: { skipGradingMethodBail?: boolean } = {},
+): Promise<Question | null> {
   const existingQuestion = await selectMatchingQuestion(pathPrefix);
 
   if (existingQuestion) {
@@ -204,10 +208,12 @@ async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Que
     // If the UUIDs don't match, we can't do a fast sync.
     if (jsonData.uuid !== existingQuestion.uuid) return null;
 
-    // If we're changing either to or from the Manual grading method, we won't
-    // use fast sync. This will change point allocations in assessments, so we
-    // need to do a full sync.
+    // If we're changing either to or from the Manual grading method, point
+    // allocations in dependent assessments change. The per-case path can't
+    // handle that, so it bails to a full sync. Callers that resync those
+    // assessments themselves (e.g. the graph engine) pass `skipGradingMethodBail`.
     if (
+      !skipGradingMethodBail &&
       jsonData.data?.gradingMethod !== existingQuestion.grading_method &&
       (jsonData.data?.gradingMethod === 'Manual' || existingQuestion.grading_method === 'Manual')
     ) {

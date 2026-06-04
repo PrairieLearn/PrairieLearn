@@ -26,12 +26,18 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import { attemptFastSync, getFastSyncStrategy } from '../sync/fast/index.js';
+import { attemptGraphFastSync } from '../sync/fast-graph/index.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { identifyChangedFiles, logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import {
+  createAndUploadChunks,
+  identifyChangedFiles,
+  logChunkChangesToJob,
+  updateChunksForCourse,
+} from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
@@ -79,33 +85,54 @@ async function syncCourseFromDisk(
       // TODO: it'd be nice to have a single call to `identifyChangedFiles` per sync operation,
       // as this is slower than many operations since it hits disk.
       const changedFiles = await identifyChangedFiles(course.path, startGitHash, endGitHash);
-      const fastSyncStrategy = getFastSyncStrategy(changedFiles);
 
-      if (fastSyncStrategy) {
-        job.info(
-          `Attempting fast sync for ${fastSyncStrategy.type.toLowerCase()}: ${fastSyncStrategy.pathPrefix}`,
-        );
-        const fastSyncSucceeded = await attemptFastSync(course, fastSyncStrategy);
+      if (config.fastSyncUseGraph) {
+        // Experimental graph-based engine: resolves dirty objects + their
+        // dependents and syncs them in dependency order. The engine reports the
+        // chunks to (re)generate, so we don't need to reload the full course.
+        const fastSync = await attemptGraphFastSync(course, changedFiles);
 
-        if (fastSyncSucceeded) {
-          job.info('Fast sync completed successfully');
+        if (fastSync.ok) {
+          job.info('Graph fast sync completed successfully');
 
-          // Still need to handle chunks generation for fast sync
-          if (config.chunksGenerator) {
-            const chunkChanges = await updateChunksForCourse({
-              coursePath: course.path,
-              courseId: course.id,
-              courseData: courseData || (await courseDB.loadFullCourse(course.id, course.path)),
-              oldHash: startGitHash,
-              newHash: endGitHash,
-            });
-            logChunkChangesToJob(chunkChanges, job);
+          if (config.chunksGenerator && fastSync.chunks.length > 0) {
+            await createAndUploadChunks(course.path, course.id, fastSync.chunks);
           }
 
           await updateCourseCommitHash(course);
           return;
-        } else {
-          job.info('Could not perform fast sync, falling back to full sync');
+        }
+
+        job.info('Could not perform graph fast sync, falling back to full sync');
+      } else {
+        const fastSyncStrategy = getFastSyncStrategy(changedFiles);
+
+        if (fastSyncStrategy) {
+          job.info(
+            `Attempting fast sync for ${fastSyncStrategy.type.toLowerCase()}: ${fastSyncStrategy.pathPrefix}`,
+          );
+          const fastSyncSucceeded = await attemptFastSync(course, fastSyncStrategy);
+
+          if (fastSyncSucceeded) {
+            job.info('Fast sync completed successfully');
+
+            // Still need to handle chunks generation for fast sync
+            if (config.chunksGenerator) {
+              const chunkChanges = await updateChunksForCourse({
+                coursePath: course.path,
+                courseId: course.id,
+                courseData: courseData || (await courseDB.loadFullCourse(course.id, course.path)),
+                oldHash: startGitHash,
+                newHash: endGitHash,
+              });
+              logChunkChangesToJob(chunkChanges, job);
+            }
+
+            await updateCourseCommitHash(course);
+            return;
+          } else {
+            job.info('Could not perform fast sync, falling back to full sync');
+          }
         }
       }
     } catch (error) {

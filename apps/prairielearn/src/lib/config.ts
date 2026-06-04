@@ -432,6 +432,8 @@ export const ConfigSchema = z.object({
   chunksGenerator: z.boolean().default(false),
   /** Enables chunk consumption. */
   chunksConsumer: z.boolean().default(false),
+  /** Use the experimental graph-based fast sync engine instead of the per-case dispatcher. */
+  fastSyncUseGraph: z.boolean().default(false),
   /** Directory where chunks will be stored for a chunk consumer. */
   chunksConsumerDirectory: z.string().default('/chunks'),
   chunksMaxParallelDownload: z.number().default(20),

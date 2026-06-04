@@ -77,7 +77,7 @@ interface QuestionChunkMetadata {
  * For chunks that are identified by database IDs instead, see {@link Chunk}.
  *
  */
-type ChunkMetadata =
+export type ChunkMetadata =
   | ElementsChunkMetadata
   | ElementExtensionsChunkMetadata
   | ClientFilesCourseChunkMetadata
