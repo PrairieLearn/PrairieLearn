@@ -95,9 +95,9 @@ const InviteUidsBodySchema = z.object({
 
 const SyncStudentsBodySchema = z.object({
   __action: z.literal('sync_students'),
-  toInvite: z.array(z.string().email()).max(5000),
-  toCancelInvitation: z.array(z.string().email()).max(5000),
-  toRemove: z.array(z.string().email()).max(5000),
+  toInvite: z.array(z.email()).max(5000),
+  toCancelInvitation: z.array(z.email()).max(5000),
+  toRemove: z.array(z.email()).max(5000),
 });
 
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);

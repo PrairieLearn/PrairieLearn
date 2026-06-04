@@ -42,7 +42,7 @@ const InlineQuestionDataSchema = BaseQuestionDataSchema.extend({
 
 const DraftQuestionDataSchema = BaseQuestionDataSchema.extend({
   originalDirectoryName: SafeDirectoryName.optional(),
-  draftId: z.string().uuid(),
+  draftId: z.uuid(),
 });
 
 const QuestionDataSchema = z.union([InlineQuestionDataSchema, DraftQuestionDataSchema]);

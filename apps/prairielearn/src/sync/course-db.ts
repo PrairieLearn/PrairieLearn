@@ -1119,7 +1119,7 @@ function validateQuestion({
       if (author.email) {
         // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
         // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
-        const parsedEmail = z.string().email().safeParse(author.email);
+        const parsedEmail = z.email().safeParse(author.email);
 
         if (!parsedEmail.success) {
           errors.push(`The author email address "${author.email}" is invalid`);

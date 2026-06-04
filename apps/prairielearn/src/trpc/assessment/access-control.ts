@@ -66,9 +66,7 @@ const studentLabels = t.procedure
 const prairieTestExamMetadata = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
-  .input(
-    z.object({ examUuids: z.array(z.string().uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }),
-  )
+  .input(z.object({ examUuids: z.array(z.uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }))
   .query(async (opts) => {
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });

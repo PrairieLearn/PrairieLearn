@@ -124,7 +124,7 @@ const createCourse = t.procedure
   });
 
 const SourcesSchema = z
-  .array(z.object({ url: z.string().url(), title: z.string().optional() }))
+  .array(z.object({ url: z.url(), title: z.string().optional() }))
   .transform((sources) =>
     sources.filter((s) => {
       try {
