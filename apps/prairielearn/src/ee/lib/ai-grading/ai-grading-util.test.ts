@@ -9,6 +9,7 @@ import { type RubricItem } from '../../../lib/db-types.js';
 import {
   correctGeminiMalformedRubricGradingJson,
   createGeminiRepairMiddleware,
+  extractAiGradingExplanationFromCompletion,
   generatePrompt,
   parseAiRubricItems,
   parseSubmission,
@@ -241,6 +242,28 @@ describe('parseAiRubricItems', () => {
       'Wrote "QED"\nat end',
     ]);
     expect(result.unrecognizedKeys).toEqual([]);
+  });
+});
+
+describe('extractAiGradingExplanationFromCompletion', () => {
+  it('reads generateText explanations from runtime and serialized result shapes', () => {
+    expect(
+      extractAiGradingExplanationFromCompletion({
+        output: { explanation: ' runtime explanation ' },
+      }),
+    ).toBe('runtime explanation');
+
+    expect(
+      extractAiGradingExplanationFromCompletion({
+        _output: { explanation: ' serialized explanation ' },
+      }),
+    ).toBe('serialized explanation');
+  });
+
+  it('returns null for missing or blank explanations', () => {
+    expect(extractAiGradingExplanationFromCompletion({ _output: { explanation: ' ' } })).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
   });
 });
 

@@ -939,6 +939,67 @@ const AiGradingJobDataForSubmissionSchema = z.object({
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
 
+const AiGradingExplanationSchema = z.object({
+  explanation: z.string(),
+});
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractTrimmedAiGradingExplanation(value: unknown): string | null {
+  const parsed = AiGradingExplanationSchema.safeParse(value);
+  if (!parsed.success) return null;
+
+  return parsed.data.explanation.trim() || null;
+}
+
+export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
+  if (!isRecord(completion)) return null;
+
+  // OpenAI chat completion format
+  if ('choices' in completion) {
+    const parsed = z
+      .object({
+        choices: z.array(
+          z.object({
+            message: z.object({
+              parsed: z.unknown(),
+            }),
+          }),
+        ),
+      })
+      .safeParse(completion);
+
+    return extractTrimmedAiGradingExplanation(
+      parsed.success ? parsed.data.choices[0]?.message.parsed : null,
+    );
+  }
+
+  // OpenAI response format
+  if ('output_parsed' in completion) {
+    return extractTrimmedAiGradingExplanation(completion.output_parsed);
+  }
+
+  // `ai` package format
+  if ('object' in completion) {
+    return extractTrimmedAiGradingExplanation(completion.object);
+  }
+
+  // `ai` package `generateText` with structured output format
+  if ('output' in completion) {
+    return extractTrimmedAiGradingExplanation(completion.output);
+  }
+
+  // Serialized `generateText` results store the non-enumerable `output` getter
+  // under the backing `_output` property.
+  if ('_output' in completion) {
+    return extractTrimmedAiGradingExplanation(completion._output);
+  }
+
+  return null;
+}
+
 /**
  * Creates a language model middleware that repairs malformed JSON from Google Gemini models.
  *
@@ -1061,41 +1122,7 @@ export async function buildAiGradingInfo({
   // used for backwards-compatibility. Each one is documented below.
   const explanation = run(() => {
     const completion = aiGradingJobData.completion;
-    if (!completion) return null;
-
-    // OpenAI chat completion format
-    if (completion.choices) {
-      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    // OpenAI response format
-    if (completion.output_parsed) {
-      const explanation = completion?.output_parsed?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    // `ai` package format
-    if (completion.object) {
-      const explanation = completion?.object?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    // `ai` package `generateText` with structured output format
-    if (completion.output) {
-      const explanation = completion?.output?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    return null;
+    return extractAiGradingExplanationFromCompletion(completion);
   });
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
