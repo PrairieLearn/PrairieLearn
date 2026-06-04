@@ -9,7 +9,6 @@ import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
-import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -31,6 +30,7 @@ import {
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/zip';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
@@ -58,6 +58,9 @@ import {
 } from './instructorQtiImport.types.js';
 
 const router = Router();
+
+const QTI_IMPORT_MAX_ARCHIVE_ENTRIES = 10_000;
+const QTI_IMPORT_MAX_EXTRACTED_BYTES = 500 * 1024 * 1024;
 
 const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
   let uploadDir: string | undefined;
@@ -203,12 +206,18 @@ router.post(
         if (!file.path) {
           throw new Error('Uploaded archive was not written to disk');
         }
-        const directory = await unzipper.Open.file(file.path);
-        await directory.extract({ path: tempDir });
-      } catch (err) {
-        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt', {
-          cause: err,
+        await extractZipArchive({
+          archivePath: file.path,
+          destinationDir: tempDir,
+          maxEntries: QTI_IMPORT_MAX_ARCHIVE_ENTRIES,
+          maxExtractedBytes: QTI_IMPORT_MAX_EXTRACTED_BYTES,
         });
+      } catch (err) {
+        const message =
+          err instanceof ZipArchiveValidationError
+            ? qtiArchiveValidationMessage(err)
+            : 'The uploaded archive is invalid or corrupt';
+        throw new HttpStatusError(400, message, { cause: err });
       }
 
       // Find QTI content files from the manifest. If the archive has a
@@ -333,6 +342,24 @@ type ConvertEntryResult =
 interface SerializedEntryResult {
   result: StoredSerializedConversionResult;
   webResourcesDir: string;
+}
+
+function archiveLimitMessage(maxExtractedBytes: number): string {
+  const maxSizeLabel = filesize(maxExtractedBytes, { round: 0, standard: 'jedec' });
+  return `The uploaded archive exceeds the ${maxSizeLabel} expanded file size limit.`;
+}
+
+function qtiArchiveValidationMessage(error: ZipArchiveValidationError): string {
+  switch (error.code) {
+    case 'max_entries_exceeded':
+      return `The uploaded archive contains more than ${
+        error.details.limit ?? QTI_IMPORT_MAX_ARCHIVE_ENTRIES
+      } entries.`;
+    case 'max_extracted_bytes_exceeded':
+      return archiveLimitMessage(error.details.limit ?? QTI_IMPORT_MAX_EXTRACTED_BYTES);
+    case 'symlink_entry':
+      return 'The uploaded archive contains a symbolic link.';
+  }
 }
 
 async function findQtiEntries(contentDir: string): Promise<QtiFileEntry[]> {
