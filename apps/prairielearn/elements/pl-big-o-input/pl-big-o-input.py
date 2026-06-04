@@ -51,6 +51,31 @@ SYMPY_TIMEOUT = 3
 MAX_VARIABLES = 7
 
 
+def _get_answer_vars(a_true: str, variables: list[str]) -> set[str] | None:
+    variables_for_parse = set(variables)
+    extra_symbols: set[str] = set()
+
+    while len(extra_symbols) <= MAX_VARIABLES:
+        try:
+            a_true_reparsed = psu.convert_string_to_sympy(
+                a_true,
+                variables_for_parse,
+                allow_complex=False,
+                allow_trig_functions=False,
+            )
+        except psu.HasInvalidSymbolError as exc:
+            if exc.symbol in variables_for_parse:
+                return None
+            extra_symbols.add(exc.symbol)
+            variables_for_parse.add(exc.symbol)
+        except psu.BaseSympyError:
+            return None
+        else:
+            return {str(s) for s in a_true_reparsed.free_symbols}
+
+    return None
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
@@ -104,14 +129,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 )
             except psu.BaseSympyError as exc:
                 # Check if the error is due to undefined variables and give a clearer message
-                try:
-                    # Parse without variable restrictions to find what variables are used
-                    a_true_unrestricted = sympy.sympify(a_true)
-                    answer_vars = {str(s) for s in a_true_unrestricted.free_symbols}
-                    # Filter out known constants
-                    constants = set(psu._Constants().variables.keys())
-                    answer_vars -= constants
-                    specified_vars = set(variables)
+                answer_vars = _get_answer_vars(a_true, variables)
+                if answer_vars is not None:
+                    specified_vars = {psu.greek_unicode_transform(v) for v in variables}
                     missing_vars = answer_vars - specified_vars
                     if missing_vars:
                         raise ValueError(
@@ -119,8 +139,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                             f"{sorted(missing_vars)} not specified in the variable attribute. "
                             f"The correct answer uses the variable(s) {','.join(sorted(answer_vars))}."
                         ) from exc
-                except (sympy.SympifyError, TypeError):
-                    pass
                 raise ValueError(
                     f'Parsing correct answer "{a_true}" for "{name}" failed.'
                 ) from exc
