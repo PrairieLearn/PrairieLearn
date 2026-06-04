@@ -14,6 +14,26 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK sync_question_tags
+WITH
+  inserted_tags AS (
+    INSERT INTO
+      question_tags (question_id, tag_id)
+    SELECT
+      (question_tags_item ->> 0)::bigint,
+      JSONB_ARRAY_ELEMENTS_TEXT(question_tags_item -> 1)::bigint
+    FROM
+      UNNEST($new_question_tags::jsonb[]) AS question_tags_item
+    ON CONFLICT (question_id, tag_id) DO NOTHING
+  )
+DELETE FROM question_tags AS qt USING UNNEST($new_question_tags::jsonb[]) AS nqt
+WHERE
+  qt.question_id = (nqt ->> 0)::BIGINT
+  AND qt.tag_id NOT IN (
+    SELECT
+      JSONB_ARRAY_ELEMENTS_TEXT(nqt -> 1)::BIGINT
+  );
+
 -- BLOCK update_question_errors_and_warnings
 UPDATE questions
 SET
@@ -42,7 +62,6 @@ SET
   share_publicly = ($data::jsonb ->> 'share_publicly')::boolean,
   share_source_publicly = ($data::jsonb ->> 'share_source_publicly')::boolean,
   json_comment = ($data::jsonb -> 'comment'),
-  external_grading_enabled = ($data::jsonb ->> 'external_grading_enabled')::boolean,
   external_grading_image = $data::jsonb ->> 'external_grading_image',
   external_grading_files = jsonb_array_to_text_array ($data::jsonb -> 'external_grading_files'),
   external_grading_entrypoint = $data::jsonb ->> 'external_grading_entrypoint',
@@ -62,6 +81,7 @@ SET
   workspace_enable_networking = ($data::jsonb ->> 'workspace_enable_networking')::boolean,
   workspace_environment = ($data::jsonb ->> 'workspace_environment')::jsonb,
   json_workspace_comment = ($data::jsonb -> 'workspace_comment'),
+  preferences_schema = ($data::jsonb -> 'preferences_schema'),
   sync_errors = NULL,
   sync_warnings = $warnings
 WHERE

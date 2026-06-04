@@ -1,7 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { AuthorSchema, QuestionAuthorSchema } from '../../lib/db-types.js';
@@ -21,7 +21,7 @@ import { attemptFastSync, getFastSyncStrategy } from './index.js';
  */
 function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
-    uuid: uuidv4(),
+    uuid: randomUUID(),
     title: 'Test question',
     type: 'v3',
     topic: courseData.course.topics[0].name,
@@ -320,7 +320,7 @@ describe('fastSyncQuestion', () => {
   it('falls back to slow sync when question UUID changes', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
-    courseData.questions[util.QUESTION_ID].uuid = uuidv4();
+    courseData.questions[util.QUESTION_ID].uuid = randomUUID();
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);

@@ -2,10 +2,8 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import z from 'zod';
-
 import {
-  callRows,
+  execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -162,11 +160,9 @@ async function updateQuestion(
 
     // Update the question's tags.
     const tagIds = tags.map((tag) => tag.id);
-    await callRows(
-      'sync_question_tags',
-      [[JSON.stringify([updatedQuestion.id, tagIds])]],
-      z.unknown(),
-    );
+    await execute(sql.sync_question_tags, {
+      new_question_tags: [JSON.stringify([updatedQuestion.id, tagIds])],
+    });
 
     // Sync the authors.
     await syncAuthors({ [question.qid]: infoFile }, { [question.qid]: question.id });
