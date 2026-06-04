@@ -6,12 +6,12 @@
       "type": "string"
     },
     "weight": {
-      "format": "integer",
-      "type": "string"
+      "type": "string",
+      "format": "integer"
     },
     "number-answers": {
-      "format": "integer",
-      "type": "string"
+      "type": "string",
+      "format": "integer"
     },
     "order": {
       "type": "string",
@@ -22,36 +22,36 @@
       "enum": ["block", "inline", "dropdown"]
     },
     "hide-letter-keys": {
-      "format": "boolean",
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "fixed-order": {
+      "type": "string",
       "format": "boolean",
       "deprecated": true,
-      "description": "Use the \"order\" attribute instead.",
-      "type": "string"
+      "description": "Use the \"order\" attribute instead."
     },
     "inline": {
+      "type": "string",
       "format": "boolean",
       "deprecated": true,
-      "description": "Use the \"display\" attribute instead.",
-      "type": "string"
+      "description": "Use the \"display\" attribute instead."
     },
     "hide-score-badge": {
-      "format": "boolean",
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "allow-blank": {
-      "format": "boolean",
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "builtin-grading": {
-      "format": "boolean",
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "size": {
-      "format": "integer",
-      "type": "string"
+      "type": "string",
+      "format": "integer"
     },
     "placeholder": {
       "type": "string"
@@ -60,23 +60,23 @@
       "type": "string"
     },
     "external-json": {
+      "type": "string",
       "deprecated": true,
-      "description": "Define answer choices inline with <pl-answer> instead.",
-      "type": "string"
+      "description": "Define answer choices inline with <pl-answer> instead."
     },
     "external-json-correct-key": {
-      "deprecated": true,
-      "type": "string"
+      "type": "string",
+      "deprecated": true
     },
     "external-json-incorrect-key": {
-      "deprecated": true,
-      "type": "string"
+      "type": "string",
+      "deprecated": true
     },
     "all-of-the-above": {
       "anyOf": [
         {
-          "format": "boolean",
-          "type": "string"
+          "type": "string",
+          "format": "boolean"
         },
         {
           "type": "string",
@@ -87,8 +87,8 @@
     "none-of-the-above": {
       "anyOf": [
         {
-          "format": "boolean",
-          "type": "string"
+          "type": "string",
+          "format": "boolean"
         },
         {
           "type": "string",

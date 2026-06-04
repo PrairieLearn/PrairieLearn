@@ -3,15 +3,15 @@
   "type": "object",
   "properties": {
     "correct": {
-      "format": "boolean",
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "feedback": {
       "type": "string"
     },
     "score": {
-      "format": "number",
-      "type": "string"
+      "type": "string",
+      "format": "number"
     }
   },
   "additionalProperties": false

@@ -1,6 +1,6 @@
 import * as z from 'zod/v4';
 
-import { plBoolean, plInteger, plNumber, toDraft04JsonSchema } from '../element-schema-helpers.ts';
+import { plBoolean, plInteger, plNumber } from '../element-schema-helpers.ts';
 import type { ElementSchemaModule } from '../types.js';
 
 import { validators } from './pl-multiple-choice.validator.ts';
@@ -54,9 +54,9 @@ const plMultipleChoiceAttributesSchema = z
 
 export const element: ElementSchemaModule = {
   tag: 'pl-multiple-choice',
-  schema: toDraft04JsonSchema(plMultipleChoiceAttributesSchema),
+  schema: z.toJSONSchema(plMultipleChoiceAttributesSchema, { target: 'draft-04' }),
   children: {
-    'pl-answer': toDraft04JsonSchema(plMultipleChoiceAnswerAttributesSchema),
+    'pl-answer': z.toJSONSchema(plMultipleChoiceAnswerAttributesSchema, { target: 'draft-04' }),
   },
   validators,
 };
