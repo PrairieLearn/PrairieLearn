@@ -172,6 +172,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
         const text = await res.text();
         assert.include(text, 'No user data is available');
         assert.notInclude(text, 'Variant owner');
+        assert.notInclude(text, config.authUid!);
       });
 
       it('does not expose user identity in the public preview', async () => {
@@ -182,6 +183,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
         const text = await res.text();
         assert.include(text, 'No user data is available');
         assert.notInclude(text, 'Variant owner');
+        assert.notInclude(text, config.authUid!);
       });
     });
   });
