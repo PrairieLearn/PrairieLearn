@@ -83,7 +83,7 @@ export function listZipEntries(archive: ZipArchive): ZipEntrySummary[] {
 async function readZipEntryBuffer(
   archive: ZipArchive,
   entryName: string,
-  maxBytes = 64 * 1024 * 1024,
+  maxBytes = 99 * 1024 * 1024,
 ): Promise<Uint8Array> {
   const entry = archive.entryFiles.get(entryName);
   if (!entry) throw new Error(`Entry not found: ${entryName}`);
@@ -99,7 +99,7 @@ async function readZipEntryBuffer(
 export async function readZipEntryText(
   archive: ZipArchive,
   entryName: string,
-  maxBytes = 64 * 1024 * 1024,
+  maxBytes = 99 * 1024 * 1024,
 ): Promise<string> {
   const entry = archive.entryFiles.get(entryName);
   if (!entry) throw new Error(`Entry not found: ${entryName}`);
