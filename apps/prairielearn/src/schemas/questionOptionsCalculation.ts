@@ -7,6 +7,7 @@ export const QuestionOptionsCalculationJsonSchema = z
     comment: CommentJsonSchema.optional(),
   })
   .passthrough()
-  .describe('Options for a Calculation question.');
+  .describe('Options for a Calculation question.')
+  .meta({ title: 'Calculation question options' });
 
 export type QuestionOptionsCalculationJson = z.infer<typeof QuestionOptionsCalculationJsonSchema>;
