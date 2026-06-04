@@ -4587,7 +4587,6 @@ __metadata:
     "@prairielearn/utils": "workspace:^"
     "@prairielearn/vite-plugin-express": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@prairielearn/zip": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.11"
     "@sa11y/format": "npm:^8.0.27"
@@ -5051,10 +5050,15 @@ __metadata:
   resolution: "@prairielearn/utils@workspace:packages/utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/archiver": "npm:^7.0.0"
     "@types/node": "npm:^24.12.4"
+    "@types/yauzl": "npm:^2.10.3"
     "@typescript/native-preview": "npm:beta"
     "@vitest/coverage-v8": "npm:^4.1.7"
+    archiver: "npm:^7.0.1"
+    extract-zip: "npm:^2.0.1"
     vitest: "npm:^4.1.7"
+    yauzl: "npm:^2.10.0"
   languageName: unknown
   linkType: soft
 
@@ -5139,23 +5143,6 @@ __metadata:
     socket.io: "npm:^4.8.3"
     typescript-cp: "npm:^0.1.9"
     zod: "npm:^4.3.0"
-  languageName: unknown
-  linkType: soft
-
-"@prairielearn/zip@workspace:^, @prairielearn/zip@workspace:packages/zip":
-  version: 0.0.0-use.local
-  resolution: "@prairielearn/zip@workspace:packages/zip"
-  dependencies:
-    "@prairielearn/tsconfig": "workspace:^"
-    "@types/archiver": "npm:^7.0.0"
-    "@types/node": "npm:^24.12.4"
-    "@types/yauzl": "npm:^2.10.3"
-    "@typescript/native-preview": "npm:beta"
-    "@vitest/coverage-v8": "npm:^4.1.7"
-    archiver: "npm:^7.0.1"
-    extract-zip: "npm:^2.0.1"
-    vitest: "npm:^4.1.7"
-    yauzl: "npm:^2.10.0"
   languageName: unknown
   linkType: soft
 

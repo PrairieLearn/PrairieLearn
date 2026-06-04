@@ -30,7 +30,7 @@ import {
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/zip';
+import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/utils/zip';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';

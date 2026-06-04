@@ -81,7 +81,6 @@
     "@prairielearn/ui": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
-    "@prairielearn/zip": "workspace:^",
     "@prairielearn/zod": "workspace:^",
     "@pyroscope/nodejs": "^0.4.11",
     "@socket.io/redis-adapter": "^8.3.0",
