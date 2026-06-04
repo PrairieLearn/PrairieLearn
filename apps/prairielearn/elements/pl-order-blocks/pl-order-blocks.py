@@ -586,7 +586,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     if not isinstance(student_answer, list) or any(
-        not isinstance(item, dict) or "inner_html" not in item
+        not isinstance(item, dict)
+        or not isinstance(item.get("inner_html"), str)
+        or not isinstance(item.get("uuid"), str)
+        or not (item.get("indent") is None or isinstance(item.get("indent"), int))
         for item in student_answer
     ):
         data["format_errors"][answer_name] = invalid_format_message
