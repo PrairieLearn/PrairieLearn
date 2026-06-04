@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-import { callScalar, execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import {
+  callScalar,
+  execute,
+  loadSqlEquiv,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -9,6 +16,8 @@ import {
   AssessmentAccessControlRuleSchema,
 } from '../lib/db-types.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
+
+import { lockAssessment } from './assessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -58,6 +67,11 @@ export interface EnrollmentAccessControlRuleData {
   lateDeadlines: { date: string; credit: number }[];
 }
 
+export interface EnrollmentAccessControlRuleInput {
+  ruleData: EnrollmentAccessControlRuleData;
+  enrollmentIds: string[];
+}
+
 type AccessControlTargetType = 'none' | 'student_label' | 'enrollment';
 
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
@@ -101,7 +115,7 @@ function dbBaseRowToAccessControlJson(
     z.infer<typeof RuleRowSchema>,
     'access_control_rule' | 'early_deadlines' | 'late_deadlines'
   >,
-): AccessControlJson & { id: string } {
+): AccessControlJsonWithRequiredId {
   const rule = row.access_control_rule;
   const dateControl: AccessControlJson['dateControl'] = {};
 
@@ -200,6 +214,7 @@ function dbBaseRowToAccessControlJson(
 
   return {
     id: rule.id,
+    number: rule.number,
     ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
@@ -255,7 +270,7 @@ export function dbRowToAccessControlJson(
 
 export async function selectAccessControlRules(
   assessment: Assessment,
-  targetTypes: AccessControlTargetType[] = ['none', 'student_label', 'enrollment'],
+  targetTypes: AccessControlTargetType[],
 ): Promise<AccessControlJsonWithRequiredId[]> {
   const rows = await queryRows(
     sql.select_access_control_rules,
@@ -263,6 +278,14 @@ export async function selectAccessControlRules(
     RuleRowSchema,
   );
   return rows.map(dbRowToAccessControlJson);
+}
+
+export async function countEnrollmentAccessControlRules(assessment: Assessment): Promise<number> {
+  return await queryScalar(
+    sql.count_enrollment_access_control_rules,
+    { assessment_id: assessment.id },
+    z.number(),
+  );
 }
 
 const PrairieTestExamMetadataSchema = z.object({
@@ -289,13 +312,15 @@ export async function selectPrairieTestExamMetadataByUuids(
  * Creates or updates an enrollment-based access control rule (targeting individual students).
  * These rules are stored in the database with target_type = 'enrollment'.
  */
-export async function syncEnrollmentAccessControl(
+async function syncEnrollmentAccessControlRule(
   assessment: Assessment,
   ruleData: EnrollmentAccessControlRuleData,
+  ruleNumber: number,
   enrollmentIds: string[],
 ): Promise<string> {
   const ruleJson = JSON.stringify({
     id: ruleData.id ?? null,
+    number: ruleNumber,
     before_release_listed: ruleData.beforeReleaseListed,
     date_control_release_date: ruleData.releaseDate,
     date_control_due_overridden: ruleData.dueOverridden,
@@ -342,13 +367,48 @@ export async function syncEnrollmentAccessControl(
   );
 }
 
-export async function deleteEnrollmentAccessControlsByIds(
-  ids: string[],
+export async function replaceEnrollmentAccessControlRules(
   assessment: Assessment,
+  rules: EnrollmentAccessControlRuleInput[],
 ): Promise<void> {
-  if (ids.length === 0) return;
-  await execute(sql.delete_enrollment_rules_by_ids, {
-    ids,
-    assessment_id: assessment.id,
+  const submittedIds = new Set<string>();
+  for (const rule of rules) {
+    const id = rule.ruleData.id;
+    if (id == null) continue;
+    if (submittedIds.has(id)) {
+      throw new Error(`Duplicate enrollment access control rule ID: ${id}`);
+    }
+    submittedIds.add(id);
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockAssessment(assessment);
+
+    const currentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const existingIds = new Set(currentRules.map((rule) => rule.id));
+    const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
+    if (idsToDelete.length > 0) {
+      await execute(sql.delete_enrollment_rules_by_ids, {
+        ids: idsToDelete,
+        assessment_id: assessment.id,
+      });
+    }
+
+    if (rules.length === 0) return;
+
+    // Reordering can swap existing rule numbers, which would otherwise violate
+    // the unique constraint before the batch finishes. These temporary values
+    // stay inside this transaction and are replaced by the loop below.
+    await execute(sql.move_enrollment_rules_to_temporary_numbers, {
+      assessment_id: assessment.id,
+    });
+    for (const [index, rule] of rules.entries()) {
+      await syncEnrollmentAccessControlRule(
+        assessment,
+        rule.ruleData,
+        index + 1,
+        rule.enrollmentIds,
+      );
+    }
   });
 }

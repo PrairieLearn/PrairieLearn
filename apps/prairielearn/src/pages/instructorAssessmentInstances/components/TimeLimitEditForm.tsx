@@ -1,8 +1,15 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Alert, Button } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
 import { assertNever } from '@prairielearn/utils';
+
+import { getAppError } from '../../../lib/client/errors.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
+
+import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type TimeLimitAction =
   | 'set_total'
@@ -46,26 +53,57 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   return <small className="form-text text-muted">{explanation}</small>;
 }
 
+/** Data for the single instance targeted by the inline ✎ pencil. */
+interface TimeLimitSingleRow {
+  open: boolean;
+  total_time: string;
+  total_time_sec: number | null;
+  time_remaining: string;
+  time_remaining_sec: number | null;
+  date: string;
+}
+
 export function TimeLimitEditForm({
-  row,
-  csrfToken,
+  mode,
+  assessmentInstanceIds,
+  targetDescription,
+  hasOpenInstance,
+  hasClosedInstance,
+  hasTimeLimitInstance,
+  singleRow,
   timezone,
+  onSuccess,
+  onCancel,
 }: {
-  row: {
-    action: string | null;
-    assessment_instance_id: number;
-    date: string;
-    has_closed_instance: boolean;
-    has_open_instance: boolean;
-    total_time: string;
-    total_time_sec: number;
-    time_remaining: string;
-    time_remaining_sec: number | null;
-    open: boolean;
-  };
-  csrfToken: string;
+  mode: 'single' | 'bulk';
+  assessmentInstanceIds: string[] | null;
+  targetDescription?: string;
+  /** Whether the targeted instances include at least one open instance. */
+  hasOpenInstance: boolean;
+  /** Whether the targeted instances include at least one closed instance. */
+  hasClosedInstance: boolean;
+  /** Whether the targeted instances include at least one instance with a time limit. */
+  hasTimeLimitInstance: boolean;
+  /** Present only in single mode; describes the row behind the ✎ pencil. */
+  singleRow?: TimeLimitSingleRow;
   timezone: string;
+  onSuccess: () => void;
+  onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const invalidateList = useInvalidateAssessmentInstancesList();
+  const mutation = useMutation({
+    ...trpc.assessmentInstances.setTimeLimit.mutationOptions(),
+    onSuccess: async () => {
+      await invalidateList();
+      onSuccess();
+    },
+  });
+  const appError = getAppError<never>(mutation.error);
+
+  const canAddSubtract =
+    mode === 'single' ? singleRow?.time_remaining_sec != null : hasTimeLimitInstance;
+
   const [form, setForm] = useState<{
     action: TimeLimitAction;
     time_add: number;
@@ -73,26 +111,35 @@ export function TimeLimitEditForm({
     reopen_closed: boolean;
     reopen_without_limit: boolean;
   }>(() => ({
-    action: row.time_remaining_sec !== null ? 'add' : 'set_total',
+    action: canAddSubtract ? 'add' : 'set_total',
     time_add: 5,
     date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
     reopen_closed: false,
     reopen_without_limit: true,
   }));
-  const showTimeLimitOptions =
-    row.action === 'set_time_limit_all' || row.open || !form.reopen_without_limit;
+
+  // In single mode a closed instance shows the re-open radios; choosing
+  // "re-open without time limit" hides the time-limit options entirely.
+  const showReopenRadios = mode === 'single' && singleRow != null && !singleRow.open;
+  const showTimeLimitOptions = mode === 'bulk' || singleRow?.open || !form.reopen_without_limit;
+
+  const showRemove =
+    mode === 'bulk' ||
+    (singleRow != null && singleRow.open && singleRow.time_remaining !== 'Open (no time limit)');
+  const showExpire =
+    mode === 'bulk'
+      ? hasOpenInstance
+      : singleRow != null && singleRow.open && singleRow.time_remaining !== 'Expired';
 
   function updateFormState<T extends keyof typeof form>(key: T, value: (typeof form)[T]) {
-    setForm({
-      ...form,
-      [key]: value,
-    });
+    setForm({ ...form, [key]: value });
   }
 
   function proposedClosingTime() {
-    const totalTime = Math.round(row.total_time_sec);
+    if (singleRow?.total_time_sec == null) return null;
+    const totalTime = Math.round(singleRow.total_time_sec);
 
-    let startDate = Temporal.Instant.from(row.date).toZonedDateTimeISO(timezone);
+    let startDate = Temporal.Instant.from(singleRow.date).toZonedDateTimeISO(timezone);
     if (form.action === 'set_total') {
       startDate = startDate.add({ minutes: form.time_add });
     } else if (form.action === 'set_rem') {
@@ -106,14 +153,37 @@ export function TimeLimitEditForm({
     return formatDate(new Date(startDate.epochMilliseconds), timezone);
   }
 
+  function handleSubmit() {
+    const reopenWithoutLimit = showReopenRadios && form.reopen_without_limit;
+    const action = reopenWithoutLimit ? 'reopen_without_limit' : form.action;
+    mutation.mutate({
+      assessmentInstanceIds,
+      action,
+      time_add: form.time_add,
+      date: form.date,
+      // In single mode we always re-open the targeted instance (matching the
+      // legacy ✎ behavior). In bulk mode this is the explicit checkbox.
+      reopen_closed: mode === 'single' ? true : form.reopen_closed,
+    });
+  }
+
+  const showProposedClosingTime =
+    mode === 'single' &&
+    (singleRow?.open || !form.reopen_without_limit) &&
+    (form.action === 'set_total' ||
+      form.action === 'set_rem' ||
+      form.action === 'add' ||
+      form.action === 'subtract');
+
   return (
-    <form name="set-time-limit-form" className="js-popover-form" method="POST">
-      <input type="hidden" name="__action" value={row.action ?? 'set_time_limit'} />
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      {row.assessment_instance_id ? (
-        <input type="hidden" name="assessment_instance_id" value={row.assessment_instance_id} />
-      ) : null}
-      {row.action !== 'set_time_limit_all' && !row.open ? (
+    <form
+      name="set-time-limit-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
+      {showReopenRadios ? (
         <div>
           <div className="form-check">
             <input
@@ -121,9 +191,8 @@ export function TimeLimitEditForm({
               type="radio"
               name="reopen_without_limit"
               id="reopen_without_limit"
-              value="true"
               checked={form.reopen_without_limit}
-              onClick={() => updateFormState('reopen_without_limit', true)}
+              onChange={() => updateFormState('reopen_without_limit', true)}
             />
             <label className="form-check-label" htmlFor="reopen_without_limit">
               Re-open without time limit
@@ -135,9 +204,8 @@ export function TimeLimitEditForm({
               type="radio"
               name="reopen_without_limit"
               id="reopen_with_limit"
-              value="false"
               checked={!form.reopen_without_limit}
-              onClick={() => updateFormState('reopen_without_limit', false)}
+              onChange={() => updateFormState('reopen_without_limit', false)}
             />
             <label className="form-check-label" htmlFor="reopen_with_limit">
               Re-open with time limit
@@ -145,11 +213,15 @@ export function TimeLimitEditForm({
           </div>
         </div>
       ) : null}
-      <p>
-        Total time limit: {row.total_time}
-        <br />
-        Remaining time: {row.time_remaining}
-      </p>
+      {mode === 'single' && singleRow ? (
+        <p>
+          Total time limit: {singleRow.total_time}
+          <br />
+          Remaining time: {singleRow.time_remaining}
+        </p>
+      ) : (
+        <p>{targetDescription}</p>
+      )}
       {showTimeLimitOptions ? (
         <p>
           <select
@@ -159,8 +231,8 @@ export function TimeLimitEditForm({
             value={form.action}
             onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
           >
-            {row.time_remaining_sec !== null ? (
-              row.has_open_instance ? (
+            {canAddSubtract ? (
+              mode === 'bulk' && hasOpenInstance ? (
                 <>
                   <option value="add">Add to instances with time limit</option>
                   <option value="subtract">Subtract from instances with time limit</option>
@@ -175,13 +247,8 @@ export function TimeLimitEditForm({
             <option value="set_total">Set total time limit</option>
             <option value="set_rem">Set remaining time</option>
             <option value="set_exact">Set exact closing time</option>
-            {row.action === 'set_time_limit_all' ||
-            (row.open && row.time_remaining) !== 'Open (no time limit)' ? (
-              <option value="remove">Remove time limit</option>
-            ) : null}
-            {row.open && row.time_remaining !== 'Expired' ? (
-              <option value="expire">Expire time limit</option>
-            ) : null}
+            {showRemove ? <option value="remove">Remove time limit</option> : null}
+            {showExpire ? <option value="expire">Expire time limit</option> : null}
           </select>
           <TimeLimitExplanation action={form.action} />
         </p>
@@ -208,44 +275,42 @@ export function TimeLimitEditForm({
             className="form-control date-picker"
             type="datetime-local"
             name="date"
+            aria-label="Closing date and time"
             value={form.date}
+            required
             onChange={(e) => updateFormState('date', e.currentTarget.value)}
           />
           <span className="input-group-text date-picker">{timezone}</span>
         </div>
       ) : null}
-      {(row.open || !form.reopen_without_limit) &&
-      (form.action === 'set_total' ||
-        form.action === 'set_rem' ||
-        form.action === 'add' ||
-        form.action === 'subtract') ? (
-        <p>Proposed closing time: {proposedClosingTime()}</p>
+      {showProposedClosingTime ? <p>Proposed closing time: {proposedClosingTime()}</p> : null}
+      {mode === 'bulk' && hasClosedInstance ? (
+        <div className="form-check mb-2">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            name="reopen_closed"
+            checked={form.reopen_closed}
+            id="reopen_closed"
+            onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
+          />
+          <label className="form-check-label" htmlFor="reopen_closed">
+            Also re-open closed instances
+          </label>
+        </div>
       ) : null}
-      <p>
-        {row.has_closed_instance ? (
-          <div className="form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              name="reopen_closed"
-              value="true"
-              checked={form.reopen_closed}
-              id="reopen_closed"
-              onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
-            />
-            <label className="form-check-label" htmlFor="reopen_closed">
-              Also re-open closed instances
-            </label>
-          </div>
-        ) : null}
-      </p>
+      {appError ? (
+        <Alert variant="danger" className="mt-2 mb-2">
+          {appError.message}
+        </Alert>
+      ) : null}
       <div className="btn-toolbar justify-content-end">
-        <button type="button" className="btn btn-secondary me-2" data-bs-dismiss="popover">
+        <Button type="button" variant="secondary" className="me-2" onClick={onCancel}>
           Cancel
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Set
-        </button>
+        </Button>
+        <Button type="submit" variant="primary" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Saving...' : 'Set'}
+        </Button>
       </div>
     </form>
   );

@@ -2,6 +2,8 @@ import { parseAsMultiSelectFilter } from '@prairielearn/ui';
 
 import { encodeSearchString } from '../uri-util.shared.js';
 
+const multiSelectFilterParser = parseAsMultiSelectFilter();
+
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
@@ -27,23 +29,70 @@ export function getAssessmentUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
-export function getAssessmentQuestionEditorUrl(
-  parts: { assessmentId: string; qid: string } & AssessmentUrlParts,
-): string {
-  const encodedQid = encodeURIComponent(parts.qid).replaceAll('%2F', '/');
-  return `${getAssessmentUrl(parts)}/questions?selected=q:${encodedQid}`;
+export function getAssessmentQuestionEditorUrl({
+  courseInstanceId,
+  assessmentId,
+  qid,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  qid: string;
+}): string {
+  const encodedQid = encodeURIComponent(qid).replaceAll('%2F', '/');
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/questions?selected=q:${encodedQid}`;
 }
 
-export function getAssessmentStudentsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/instances`;
+export function getAssessmentStudentsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/instances`;
 }
 
-export function getAssessmentSettingsUrl(
-  parts: { assessmentId: string } & AssessmentUrlParts,
-): string {
-  return `${getAssessmentUrl(parts)}/settings`;
+export function getAssessmentSettingsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/settings`;
+}
+
+export function getAssessmentLogsUrl({
+  courseInstanceId,
+  assessmentId,
+  category,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  /**
+   * Pre-selects the "Type" column filter on the assessment logs table.
+   */
+  category?: 'regrade' | 'grade' | 'ai_grading' | 'upload' | 'groups';
+}): string {
+  const baseUrl = `${getAssessmentUrl({ courseInstanceId, assessmentId })}/logs`;
+  if (!category) return baseUrl;
+
+  const searchParams = new URLSearchParams();
+  searchParams.set(
+    'category',
+    multiSelectFilterParser.serialize({ values: [category], mode: 'include' }),
+  );
+  return `${baseUrl}?${searchParams.toString()}`;
+}
+
+export function getAssessmentDownloadsUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads`;
 }
 
 export function getStudentAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -60,6 +109,30 @@ export function getAssessmentDownloadUrl({
   filename: string;
 }): string {
   return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/downloads/${filename}`;
+}
+
+export function getAssessmentStatisticsDownloadUrl({
+  courseInstanceId,
+  assessmentId,
+  filename,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  filename: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/statistics/${filename}`;
+}
+
+export function getManualGradingAssessmentQuestionUrl({
+  courseInstanceId,
+  assessmentId,
+  assessmentQuestionId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  assessmentQuestionId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/manual_grading/assessment_question/${assessmentQuestionId}`;
 }
 
 export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: string): string {
@@ -255,8 +328,6 @@ interface CourseAdminQuestionsFilter {
   value: string;
 }
 
-const multiSelectFilterParser = parseAsMultiSelectFilter();
-
 function getCourseAdminUrl({ courseInstanceId, courseId }: CourseAdminUrlParts): string {
   if (courseInstanceId) {
     return `/pl/course_instance/${courseInstanceId}/instructor/course_admin`;
@@ -314,6 +385,19 @@ export function getQuestionSettingsUrl({
     ? `/pl/course_instance/${courseInstanceId}/instructor`
     : `/pl/course/${courseId}`;
   return `${urlPrefix}/question/${questionId}/settings`;
+}
+
+// LockDown Browser exit handshake URLs. The rldb* params are LDB magic stems
+// that must stay mirrored wherever the close flow is driven: rldbsm lowers the
+// session to medium security (hop 1), rldbxb tells LDB to exit (hop 2), rldbqn
+// marks each as quiz-sequence navigation.
+
+export function getEndExamCloseUrl(): string {
+  return '/pl/end-exam?rldbsm=1&rldbqn=1';
+}
+
+export function getEndExamExitUrl(): string {
+  return '/pl/end-exam?rldbxb=1&rldbqn=1';
 }
 
 // tRPC scope URLs

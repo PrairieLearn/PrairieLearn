@@ -33,8 +33,8 @@ function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
 }
 
-/** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
+/** react-hook-form error subtree for an override rule. */
+export type OverrideRuleFormErrors = FieldErrors<OverrideData>;
 type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
@@ -594,7 +594,7 @@ function HiddenAfterCompletionVisibility({
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: OverrideRuleFormErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -1117,12 +1117,14 @@ export function PrairieTestExamsTable({
   initialMetadata,
   ptHost,
   formErrors,
+  canFetchMetadata,
 }: {
   exams: DefaultRuleData['prairieTestExams'];
   beforeReleaseListed: boolean;
   initialMetadata: PrairieTestExamMetadata[];
   ptHost: string;
   formErrors?: FieldErrors<DefaultRuleData>;
+  canFetchMetadata: boolean;
 }) {
   const trpc = useTRPC();
 
@@ -1140,7 +1142,7 @@ export function PrairieTestExamsTable({
   // metadata until the first query result lands.
   const { data: metadata } = useQuery({
     ...trpc.accessControl.prairieTestExamMetadata.queryOptions({ examUuids: validExamUuids }),
-    enabled: validExamUuids.length > 0,
+    enabled: canFetchMetadata && validExamUuids.length > 0,
     initialData: initialMetadata,
   });
 
@@ -1238,15 +1240,17 @@ export function OverrideRuleSummaryCard({
   formErrors,
   dragHandleProps,
   isActive = false,
+  canEdit = true,
 }: {
   rule: OverrideData;
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  formErrors?: RuleFormErrors;
+  formErrors?: OverrideRuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
   isActive?: boolean;
+  canEdit?: boolean;
 }) {
   const overrideFieldItems = generateOverrideFieldItems(rule, displayTimezone, formErrors);
 
@@ -1293,12 +1297,12 @@ export function OverrideRuleSummaryCard({
             <Button
               variant="outline-primary"
               size="sm"
-              aria-label="Edit"
+              aria-label={canEdit ? 'Edit' : 'View'}
               className="d-inline-flex align-items-center"
               onClick={onEdit}
             >
-              <i className="bi bi-pencil" aria-hidden="true" />
-              <span className="toolbar-btn-label ms-1">Edit</span>
+              <i className={canEdit ? 'bi bi-pencil' : 'bi bi-eye'} aria-hidden="true" />
+              <span className="toolbar-btn-label ms-1">{canEdit ? 'Edit' : 'View'}</span>
             </Button>
           )}
           {onRemove && (

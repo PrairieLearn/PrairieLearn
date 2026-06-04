@@ -35,6 +35,11 @@ ruleTester.run('require-trpc-permission-middleware', rule, {
     {
       code: 'const list = t.procedure.use(requireCoursePermissionOwn).query(async () => {});',
     },
+    {
+      code: `const list = t.procedure
+        .use(requireCoursePermissionEditOrCourseInstancePermissionView)
+        .query(async () => {});`,
+    },
     // Not a t.procedure chain — should be ignored
     {
       code: 'const fn = somethingElse.query(async () => {});',

@@ -16,6 +16,8 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE } from '../../../../schemas/accessControl.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -114,6 +116,11 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
   return undefined;
 }
 
+function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): string | undefined {
+  if (count < MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) return undefined;
+  return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
+}
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -146,10 +153,14 @@ function DeadlineArrayInput({
   appendDeadline: UseFieldArrayAppend<AccessControlFormData, DeadlineArrayFieldName>;
   removeDeadline: UseFieldArrayRemove;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, deadlineFields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   const { errors } = useFormState();
 
@@ -255,7 +266,7 @@ function DeadlineArrayInput({
 
     if (isEarly) {
       if (currentDueDate && deadlineDate > currentDueDate) {
-        return 'Early deadline is out of range';
+        return 'Early deadline must be on or before the due date';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
         if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
@@ -263,14 +274,14 @@ function DeadlineArrayInput({
         }
       }
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Deadline is out of range';
+        return 'Early deadline must be after the release date';
       }
     } else {
       if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Deadline is out of range';
+        return 'Late deadline must be after the release date';
       }
       if (currentDueDate && deadlineDate < currentDueDate) {
-        return 'Late deadline is out of range';
+        return 'Late deadline must be on or after the due date';
       }
       if (index > 0 && currentDeadlines[index - 1]?.date) {
         if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
@@ -316,7 +327,7 @@ function DeadlineArrayInput({
             id={`${idPrefix}-${type}-deadlines-enabled`}
             label={isEarly ? 'Early deadlines' : 'Late deadlines'}
             checked={deadlineFields.length > 0}
-            disabled={addEarlyDisabled && deadlineFields.length === 0}
+            disabled={!ruleEditable || (addEarlyDisabled && deadlineFields.length === 0)}
             title={
               addEarlyDisabled && deadlineFields.length === 0 ? addEarlyDisabledTitle : undefined
             }
@@ -328,21 +339,23 @@ function DeadlineArrayInput({
               }
             }}
           />
-          <Button
-            size="sm"
-            variant="outline-primary"
-            disabled={addEarlyDisabled}
-            title={addEarlyDisabledTitle}
-            onClick={addDeadline}
-          >
-            Add {isEarly ? 'early' : 'late'}
-          </Button>
+          {ruleEditable && (
+            <Button
+              size="sm"
+              variant="outline-primary"
+              disabled={addDisabled}
+              title={addDisabledTitle}
+              onClick={addDeadline}
+            >
+              Add {isEarly ? 'early' : 'late'}
+            </Button>
+          )}
         </div>
       )}
 
-      {addEarlyDisabled && (
-        <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          {addEarlyDisabledTitle}
+      {addDisabledTitle && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-2">
+          {addDisabledTitle}
         </Alert>
       )}
 
@@ -362,6 +375,7 @@ function DeadlineArrayInput({
                     : undefined
                 }
                 placeholder="Deadline Date"
+                disabled={!ruleEditable}
                 {...register(`${fieldArrayName}.${index}.date`, {
                   validate: (value) => validateDate(value, index),
                 })}
@@ -397,7 +411,7 @@ function DeadlineArrayInput({
                     return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
                   })}
                   step={1}
-                  onWheel={({ currentTarget }) => currentTarget.blur()}
+                  disabled={!ruleEditable}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
                     validate: (value) => validateCredit(value, index),
@@ -405,14 +419,16 @@ function DeadlineArrayInput({
                 />
                 <InputGroup.Text>%</InputGroup.Text>
               </InputGroup>
-              <Button
-                size="sm"
-                variant="outline-danger"
-                aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
-                onClick={() => removeDeadline(index)}
-              >
-                <i className="bi bi-trash" aria-hidden="true" />
-              </Button>
+              {ruleEditable && (
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
+                  onClick={() => removeDeadline(index)}
+                >
+                  <i className="bi bi-trash" aria-hidden="true" />
+                </Button>
+              )}
             </div>
           </div>
           {getDateError(index) && (
@@ -502,6 +518,7 @@ export function OverrideDeadlineArrayField({
   type: 'early' | 'late';
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const isEarly = type === 'early';
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
@@ -562,7 +579,10 @@ export function OverrideDeadlineArrayField({
     });
 
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(effectiveDueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, fields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   return (
     <FieldWrapper
@@ -573,21 +593,29 @@ export function OverrideDeadlineArrayField({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={label}
           checked={fields.length > 0}
-          disabled={addEarlyDisabled && fields.length === 0}
+          disabled={!ruleEditable || (addEarlyDisabled && fields.length === 0)}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
-          onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
+          onChange={(checked) => {
+            if (checked) {
+              append(nextDeadline());
+            } else {
+              remove();
+            }
+          }}
         />
       }
       headerAction={
-        <Button
-          size="sm"
-          variant="outline-primary"
-          disabled={addEarlyDisabled}
-          title={addEarlyDisabledTitle}
-          onClick={() => append(nextDeadline())}
-        >
-          Add {isEarly ? 'early' : 'late'}
-        </Button>
+        ruleEditable ? (
+          <Button
+            size="sm"
+            variant="outline-primary"
+            disabled={addDisabled}
+            title={addDisabledTitle}
+            onClick={() => append(nextDeadline())}
+          >
+            Add {isEarly ? 'early' : 'late'}
+          </Button>
+        ) : undefined
       }
       onOverride={() => {
         const copied = defaultRuleDeadlines.map((d) => ({ ...d }));
@@ -599,7 +627,8 @@ export function OverrideDeadlineArrayField({
       {fields.length === 0 && (
         <Alert variant="info" className="py-2 mb-0">
           With no {type} deadlines set, this override clears any {type} deadlines inherited from the
-          defaults or earlier overrides. Click "Remove override" to inherit them instead.
+          defaults or earlier overrides.
+          {ruleEditable && <> Click "Remove override" to inherit them instead.</>}
         </Alert>
       )}
       <DeadlineArrayInput

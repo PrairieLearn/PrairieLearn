@@ -177,6 +177,36 @@ describe('resolverResultToAuthzAssessmentForInstance', () => {
     expect(result.password).toBeNull();
   });
 
+  it('keeps unmatched Exam-mode denies hidden for closed instances', () => {
+    const result = resolverResultToAuthzAssessmentForInstance({
+      result: {
+        ...baseResolverResult,
+        authorized: false,
+        submittable: false,
+        credit: 0,
+        creditDateString: 'None',
+        visibility: {
+          showQuestions: false,
+          showScore: false,
+        },
+        afterCompleteVisibility: {
+          showQuestions: false,
+          showScore: false,
+        },
+        complete: true,
+      },
+      authzMode: 'Exam',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(false);
+    expect(result.active).toBe(false);
+    expect(result.show_closed_assessment).toBe(false);
+    expect(result.show_closed_assessment_score).toBe(false);
+  });
+
   it('applies afterComplete score visibility when the time limit has expired', () => {
     const result = resolverResultToAuthzAssessmentForInstance({
       result: {

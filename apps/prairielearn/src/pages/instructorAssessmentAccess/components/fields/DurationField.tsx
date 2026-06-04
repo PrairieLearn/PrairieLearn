@@ -1,9 +1,12 @@
 import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { MAX_ACCESS_CONTROL_DURATION_MINUTES } from '../../../../schemas/accessControl.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
+import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function DurationDetails({
@@ -17,6 +20,7 @@ function DurationDetails({
   idPrefix: string;
   error?: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <>
       {value !== null && (
@@ -27,9 +31,12 @@ function DurationDetails({
               aria-label="Duration in minutes"
               aria-invalid={!!error}
               placeholder="Duration in minutes"
-              value={value || ''}
+              value={value === 0 ? '' : value}
+              min={1}
+              max={MAX_ACCESS_CONTROL_DURATION_MINUTES}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
+              disabled={!ruleEditable}
               onChange={({ currentTarget }) => {
                 if (currentTarget.value === '') {
                   onChange(0);
@@ -65,6 +72,9 @@ function DurationDetails({
 
 function validateDuration(value: number | null): string | true {
   if (value !== null && value < 1) return 'Duration must be at least 1 minute';
+  if (value !== null && value > MAX_ACCESS_CONTROL_DURATION_MINUTES) {
+    return `Duration must be at most ${MAX_ACCESS_CONTROL_DURATION_MINUTES} minutes`;
+  }
   return true;
 }
 
@@ -77,11 +87,13 @@ function DurationToggle({
   onChange: (value: number | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <ToggleTitle
       id={`${idPrefix}-time-limit-enabled`}
       label="Time limit"
       checked={value !== null}
+      disabled={!ruleEditable}
       onChange={(checked) => onChange(checked ? 60 : null)}
     />
   );
@@ -119,7 +131,9 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: { validate: validateDuration },
+    rules: {
+      validate: validateActiveOverrideField(index, 'durationMinutes', validateDuration),
+    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

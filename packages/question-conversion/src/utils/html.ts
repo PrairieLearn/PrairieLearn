@@ -44,7 +44,7 @@ export function extractInlineImages(html: string): {
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
 const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
-const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
@@ -94,6 +94,22 @@ const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
 const IMS_REF_OR_TAG_RE =
   /<(\w[\w-]*)\b[^>]*\$IMS-CC-FILEBASE\$[^>]*>[\s\S]*?<\/\1>|<\w[\w-]*\b[^>]*\$IMS-CC-FILEBASE\$[^>]*\/?>|\$IMS-CC-FILEBASE\$\/[^"'\s]+/gi;
 
+interface ResolveImsFileRefsResult {
+  /** Rewritten HTML with IMS file references changed to PrairieLearn clientFilesQuestion URLs. */
+  html: string;
+  /**
+   * Files to copy into clientFilesQuestion, keyed by generated filename.
+   * Values are decoded source paths from the QTI export, relative to the export's web_resources
+   * directory.
+   */
+  fileRefs: Map<string, string>;
+  /**
+   * Decoded source paths that matched an excluded extension and were intentionally omitted from
+   * `fileRefs`.
+   */
+  skippedFiles: string[];
+}
+
 /**
  * Resolve $IMS-CC-FILEBASE$ references in HTML for PrairieLearn output.
  *
@@ -103,27 +119,19 @@ const IMS_REF_OR_TAG_RE =
  *
  * When `excludeExtensions` is provided, a tag that references a file with an excluded
  * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
- * the path is readable), and the file is omitted from `fileRefs`. Excluded filenames are
- * returned in `skippedFiles`.
- *
- * Returns the rewritten HTML, a map of `{ filename → original decoded relative path }`
- * for files that should be copied to clientFilesQuestion, and the list of skipped filenames.
+ * the path is readable), and the file is omitted from `fileRefs`.
  */
 export function resolveImsFileRefs(
   html: string,
   excludeExtensions?: Set<string>,
-): {
-  html: string;
-  fileRefs: Map<string, string>;
-  skippedFiles: string[];
-} {
+): ResolveImsFileRefsResult {
   // Dedup index over all references (including excluded ones) so two files with the same basename
   // resolve to the same generated filename whether or not they're skipped.
   const pathByFilename = new Map<string, string>();
-  const skipped = new Set<string>();
+  const skippedSourcePaths = new Set<string>();
 
   function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
-    const decodedPath = decodeURIComponent(rawPath);
+    const decodedPath = normalizeImsFilePath(rawPath);
     const base = decodedPath.split('/').pop() ?? decodedPath;
     const dot = base.lastIndexOf('.');
     const stem = dot !== -1 ? base.slice(0, dot) : base;
@@ -136,7 +144,7 @@ export function resolveImsFileRefs(
     }
     pathByFilename.set(filename, decodedPath);
     const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
-    if (excluded) skipped.add(filename);
+    if (excluded) skippedSourcePaths.add(decodedPath);
     return { filename, excluded };
   }
 
@@ -144,7 +152,7 @@ export function resolveImsFileRefs(
     // Bare URL fallback (no enclosing tag): rewrite in place.
     if (!match.startsWith('<')) {
       const rawPath = match.slice('$IMS-CC-FILEBASE$/'.length);
-      return `${CLIENT_FILES_QUESTION_URL}/${rewriteUrl(rawPath).filename}`;
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(rewriteUrl(rawPath).filename)}`;
     }
     // Tag match. Only treat the open tag's own attributes as triggering the wrap — refs in the
     // body belong to nested tags and will get their own decision via recursion.
@@ -155,7 +163,7 @@ export function resolveImsFileRefs(
     const openRewritten = openTag.replaceAll(IMS_CC_FILEBASE_RE, (_, rawPath: string) => {
       const { filename, excluded } = rewriteUrl(rawPath);
       if (excluded) openExcluded = true;
-      return `${CLIENT_FILES_QUESTION_URL}/${filename}`;
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(filename)}`;
     });
     const tailRewritten = tail.replaceAll(IMS_REF_OR_TAG_RE, processMatch);
     const rewritten = openRewritten + tailRewritten;
@@ -170,10 +178,29 @@ export function resolveImsFileRefs(
 
   const fileRefs = new Map<string, string>();
   for (const [filename, path] of pathByFilename) {
-    if (!skipped.has(filename)) fileRefs.set(filename, path);
+    if (!skippedSourcePaths.has(path)) fileRefs.set(filename, path);
   }
 
-  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skipped] };
+  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
+}
+
+/**
+ * Normalize an IMS/Canvas file reference to the on-disk filename: strip any
+ * `?query`/`#fragment`, then URL- and HTML-decode. This is the canonical form
+ * stored in `fileRefs`; consumers that read the referenced asset back off disk
+ * must resolve against this same normalization.
+ */
+export function normalizeImsFilePath(rawPath: string): string {
+  const pathWithoutQuery = rawPath.replace(/[?#].*$/, '');
+  return he.decode(safeDecodeURIComponent(pathWithoutQuery));
+}
+
+export function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
@@ -358,15 +385,26 @@ const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/
 
 /**
  * Clean up question HTML for PrairieLearn output.
- * Strips wrapping <div> tags that Canvas often adds.
+ * Strips a single wrapping <div> tag that Canvas often adds.
  */
 export function cleanQuestionHtml(html: string): string {
   let cleaned = html.trim();
-  // Remove single wrapping <div>...</div>
-  const divWrapRe = /^<div>\s*([\s\S]*?)\s*<\/div>$/i;
-  const divMatch = divWrapRe.exec(cleaned);
-  if (divMatch) {
-    cleaned = divMatch[1].trim();
+  const divOpenMatch = /^<div(?:\s[^>]*)?>/i.exec(cleaned);
+  if (!divOpenMatch) return cleaned;
+
+  const divTagRe = /<\/?div(?:\s[^>]*)?>/gi;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = divTagRe.exec(cleaned)) !== null) {
+    const isClose = /^<\//.test(match[0]);
+    depth += isClose ? -1 : 1;
+
+    if (depth === 0) {
+      if (divTagRe.lastIndex === cleaned.length) {
+        cleaned = cleaned.slice(divOpenMatch[0].length, match.index).trim();
+      }
+      break;
+    }
   }
   return cleaned;
 }

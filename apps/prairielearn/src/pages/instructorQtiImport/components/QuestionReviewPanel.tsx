@@ -4,7 +4,7 @@ import hljs from 'highlight.js/lib/core';
 import hljsJson from 'highlight.js/lib/languages/json';
 import hljsPython from 'highlight.js/lib/languages/python';
 import hljsHtml from 'highlight.js/lib/languages/xml';
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Card, Collapse, Form } from 'react-bootstrap';
 
 hljs.registerLanguage('html', hljsHtml);
@@ -14,6 +14,7 @@ hljs.registerLanguage('python', hljsPython);
 import {
   type CollisionStrategy,
   type QuestionOverrides,
+  type SerializedConversionResult,
   type SerializedQuestionOutput,
   resolveRenamedDir,
 } from '../instructorQtiImport.types.js';
@@ -52,69 +53,107 @@ function detectQuestionType(html: string): string {
   return 'Unknown';
 }
 
-export function QuestionReviewPanel({
+interface ExpansionCommand {
+  version: number;
+  expanded: boolean;
+}
+
+function QuestionReviewPanelImpl({
   question: q,
   questionNumber,
+  warnings,
   overrides: qo,
   existingDirs,
-  isExpanded,
-  onToggleExpand,
+  expansionCommand,
   onUpdateOverride,
 }: {
   question: SerializedQuestionOutput;
   questionNumber: number;
+  warnings: SerializedConversionResult['warnings'];
   overrides: QuestionOverrides | undefined;
   existingDirs: Set<string>;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  onUpdateOverride: (updates: Partial<QuestionOverrides>) => void;
+  expansionCommand: ExpansionCommand;
+  onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
 }) {
+  const [localExpansion, setLocalExpansion] = useState({ version: 0, expanded: false });
   const [selectedFile, setSelectedFile] = useState<string | null>('question.html');
   const [rawTags, setRawTags] = useState<string | null>(null);
-  const questionType = detectQuestionType(q.questionHtml);
+  const questionType = useMemo(() => detectQuestionType(q.questionHtml), [q.questionHtml]);
   const included = qo?.included ?? true;
+  const isExpanded =
+    localExpansion.version === expansionCommand.version
+      ? localExpansion.expanded
+      : expansionCommand.expanded;
+  const title = qo?.title ?? q.infoJson.title;
+  const tags = qo?.tags ?? q.infoJson.tags;
 
-  const mergedInfoJson = {
-    ...q.infoJson,
-    ...(qo && {
-      title: qo.title,
-      topic: qo.topic,
-      tags: qo.tags,
+  const updateOverride = useCallback(
+    (updates: Partial<QuestionOverrides>) => onUpdateOverride(q.directoryName, updates),
+    [onUpdateOverride, q.directoryName],
+  );
+  const toggleExpanded = useCallback(
+    () =>
+      setLocalExpansion({
+        version: expansionCommand.version,
+        expanded: !isExpanded,
+      }),
+    [expansionCommand.version, isExpanded],
+  );
+
+  const mergedInfoJson = useMemo(
+    () => ({
+      ...q.infoJson,
+      ...(qo && {
+        title: qo.title,
+        topic: qo.topic,
+        tags: qo.tags,
+      }),
     }),
-  };
+    [q.infoJson, qo],
+  );
 
-  const fileEntries: { name: string; path: string; content: string; icon: string }[] = [
-    {
-      name: 'info.json',
-      path: 'info.json',
-      content: JSON.stringify(mergedInfoJson, null, 2),
-      icon: 'bi-file-earmark-code',
-    },
-    {
-      name: 'question.html',
-      path: 'question.html',
-      content: q.questionHtml,
-      icon: 'bi-filetype-html',
-    },
-  ];
-  if (q.serverPy) {
-    fileEntries.push({
-      name: 'server.py',
-      path: 'server.py',
-      content: q.serverPy,
-      icon: 'bi-filetype-py',
-    });
-  }
-  for (const name of Object.keys(q.clientFiles)) {
-    fileEntries.push({
-      name,
-      path: `clientFilesQuestion/${name}`,
-      content: `(binary file — ${filesize(Math.ceil((q.clientFiles[name].length * 3) / 4), { round: 0 })})`,
-      icon: 'bi-file-earmark-image',
-    });
-  }
+  const fileEntries = useMemo(() => {
+    const entries: { name: string; path: string; content: string; icon: string }[] = [
+      {
+        name: 'info.json',
+        path: 'info.json',
+        content: JSON.stringify(mergedInfoJson, null, 2),
+        icon: 'bi-file-earmark-code',
+      },
+      {
+        name: 'question.html',
+        path: 'question.html',
+        content: q.questionHtml,
+        icon: 'bi-filetype-html',
+      },
+    ];
+    if (q.serverPy) {
+      entries.push({
+        name: 'server.py',
+        path: 'server.py',
+        content: q.serverPy,
+        icon: 'bi-filetype-py',
+      });
+    }
+    for (const name of Object.keys(q.clientFiles)) {
+      entries.push({
+        name,
+        path: `clientFilesQuestion/${name}`,
+        content: `(binary file - ${filesize(q.clientFiles[name].size, { round: 0 })})`,
+        icon: 'bi-file-earmark-image',
+      });
+    }
+    return entries;
+  }, [mergedInfoJson, q.clientFiles, q.questionHtml, q.serverPy]);
 
-  const selectedContent = fileEntries.find((f) => f.path === selectedFile)?.content ?? null;
+  const selectedContent = useMemo(
+    () => fileEntries.find((f) => f.path === selectedFile)?.content ?? null,
+    [fileEntries, selectedFile],
+  );
+  const selectFile = useCallback(
+    (path: string) => setSelectedFile(path === selectedFile ? null : path),
+    [selectedFile],
+  );
 
   return (
     <Card className={clsx(!included && 'opacity-50')}>
@@ -123,8 +162,8 @@ export function QuestionReviewPanel({
           id={`q-include-${q.directoryName}`}
           checked={included}
           label=""
-          aria-label={`Include question ${questionNumber}: ${qo?.title ?? q.infoJson.title}`}
-          onChange={(e) => onUpdateOverride({ included: e.target.checked })}
+          aria-label={`Include question ${questionNumber}: ${title}`}
+          onChange={(e) => updateOverride({ included: e.target.checked })}
           onClick={(e) => e.stopPropagation()}
         />
         <div
@@ -134,11 +173,11 @@ export function QuestionReviewPanel({
           aria-expanded={isExpanded}
           aria-controls={`q-panel-${q.directoryName}`}
           tabIndex={0}
-          onClick={onToggleExpand}
+          onClick={toggleExpanded}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onToggleExpand();
+              toggleExpanded();
             }
           }}
         >
@@ -147,7 +186,7 @@ export function QuestionReviewPanel({
             aria-hidden="true"
           />
           <span className="text-muted">{questionNumber}.</span>
-          <span className="fw-medium">{qo?.title ?? q.infoJson.title}</span>
+          <span className="fw-medium">{title}</span>
           {q.skippedVideos.length > 0 && (
             <i
               className="bi bi-exclamation-triangle-fill text-danger flex-grow-1"
@@ -155,9 +194,16 @@ export function QuestionReviewPanel({
               title={`${q.skippedVideos.length} video file${q.skippedVideos.length !== 1 ? 's' : ''} excluded`}
             />
           )}
+          {warnings.length > 0 && (
+            <i
+              className="bi bi-exclamation-triangle-fill text-warning flex-grow-1"
+              aria-label={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
+              title={`${warnings.length} warning${warnings.length !== 1 ? 's' : ''}`}
+            />
+          )}
         </div>
         <span className="badge color-blue3">{questionType}</span>
-        {(qo?.tags ?? q.infoJson.tags).map((tag) => (
+        {tags.map((tag) => (
           <span key={tag} className="badge color-gray2">
             {tag}
           </span>
@@ -175,7 +221,7 @@ export function QuestionReviewPanel({
             value={qo.collisionStrategy}
             disabled={!included}
             onChange={(e) =>
-              onUpdateOverride({ collisionStrategy: e.target.value as CollisionStrategy })
+              updateOverride({ collisionStrategy: e.target.value as CollisionStrategy })
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -192,6 +238,24 @@ export function QuestionReviewPanel({
       <Collapse in={isExpanded && included}>
         <div id={`q-panel-${q.directoryName}`}>
           <Card.Body className="p-0">
+            {warnings.length > 0 && (
+              <div className="px-3 py-2 border-bottom bg-light d-flex align-items-start gap-2 small">
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning mt-1"
+                  aria-hidden="true"
+                />
+                <div>
+                  <strong>Warnings:</strong>
+                  <ul className="mb-0 mt-1">
+                    {warnings.map((warning) => (
+                      <li key={warning.message} className="text-muted">
+                        {warning.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
             <div className="d-flex flex-wrap" style={{ minHeight: '280px' }}>
               {/* Column 1: Question info & editing */}
               <div
@@ -210,7 +274,7 @@ export function QuestionReviewPanel({
                     size="sm"
                     type="text"
                     value={qo?.title ?? ''}
-                    onChange={(e) => onUpdateOverride({ title: e.target.value })}
+                    onChange={(e) => updateOverride({ title: e.target.value })}
                   />
                 </div>
                 <div className="mb-3">
@@ -225,7 +289,7 @@ export function QuestionReviewPanel({
                     size="sm"
                     type="text"
                     value={qo?.topic ?? ''}
-                    onChange={(e) => onUpdateOverride({ topic: e.target.value })}
+                    onChange={(e) => updateOverride({ topic: e.target.value })}
                   />
                 </div>
                 <div className="mb-3">
@@ -243,7 +307,7 @@ export function QuestionReviewPanel({
                     onChange={(e) => setRawTags(e.target.value)}
                     onBlur={() => {
                       if (rawTags !== null) {
-                        onUpdateOverride({
+                        updateOverride({
                           tags: rawTags
                             .split(',')
                             .map((t) => t.trim())
@@ -271,7 +335,7 @@ export function QuestionReviewPanel({
                     rootLabel={`${q.directoryName}/`}
                     entries={fileEntries}
                     selectedFile={selectedFile}
-                    onSelectFile={(p) => setSelectedFile(p === selectedFile ? null : p)}
+                    onSelectFile={selectFile}
                   />
                 </div>
 
@@ -314,6 +378,9 @@ export function QuestionReviewPanel({
     </Card>
   );
 }
+
+export const QuestionReviewPanel = memo(QuestionReviewPanelImpl);
+QuestionReviewPanel.displayName = 'QuestionReviewPanel';
 
 const FILENAME_LANGUAGE_MAP: Record<string, string> = {
   '.json': 'json',
