@@ -33,6 +33,7 @@ import {
   ImportSummary,
   MissingBanksStep,
   NonRubricWarnings,
+  type ProcessingPhase,
   QuestionBankDeduplicationWarning,
   UnresolvedBankWarnings,
   UploadStep,
@@ -289,7 +290,8 @@ export function QtiImportForm({
     new Map(),
   );
   const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
-  const [uploading, setUploading] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('idle');
+  const uploading = processingPhase !== 'idle';
   const [uploadingBankKey, setUploadingBankKey] = useState<string | null>(null);
   const [error, setError] = useState<{
     message: string;
@@ -308,6 +310,7 @@ export function QtiImportForm({
       throw new Error('No file selected');
     }
 
+    setProcessingPhase('trimming');
     const trimmed = await trimQtiArchive(file, file.name);
     if (trimmed.blob.size > QTI_IMPORT_MAX_UPLOAD_BYTES) {
       const trimmedSizeLabel = filesize(trimmed.blob.size, { round: 0, standard: 'jedec' });
@@ -321,6 +324,7 @@ export function QtiImportForm({
     });
     formData.set('file', trimmedFile);
 
+    setProcessingPhase('uploading');
     const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
     const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
       method: 'POST',
@@ -355,7 +359,7 @@ export function QtiImportForm({
     const form = e.currentTarget;
     setError(null);
     setSupplementalSuccessMessage(null);
-    setUploading(true);
+    setProcessingPhase('trimming');
     setUploadingBankKey(form.dataset.sourceBankKey ?? null);
 
     try {
@@ -365,7 +369,7 @@ export function QtiImportForm({
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
       setUploadingBankKey(null);
-      setUploading(false);
+      setProcessingPhase('idle');
     }
   };
 
@@ -815,6 +819,7 @@ export function QtiImportForm({
         {step === 'upload' && (
           <UploadStep
             uploading={uploading}
+            processingPhase={processingPhase}
             courseInstances={courseInstances}
             selectedCourseInstanceId={selectedCourseInstanceId}
             onSubmit={handleUpload}
@@ -837,6 +842,7 @@ export function QtiImportForm({
           <MissingBanksStep
             results={results}
             uploading={uploading}
+            processingPhase={processingPhase}
             uploadingBankKey={uploadingBankKey}
             successMessage={supplementalSuccessMessage}
             onSubmit={handleBankUpload}

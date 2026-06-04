@@ -283,14 +283,24 @@ export function ImportSummary({
   );
 }
 
+export type ProcessingPhase = 'idle' | 'trimming' | 'uploading';
+
+const PROCESSING_PHASE_LABELS: Record<ProcessingPhase, string> = {
+  idle: '',
+  trimming: 'Extracting QTI content\u2026',
+  uploading: 'Uploading\u2026',
+};
+
 export function UploadStep({
   uploading,
+  processingPhase,
   onSubmit,
   courseInstances,
   selectedCourseInstanceId,
   onCourseInstanceChange,
 }: {
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   courseInstances: CourseInstanceOption[];
   selectedCourseInstanceId: string;
@@ -342,7 +352,7 @@ export function UploadStep({
         {uploading ? (
           <>
             <Spinner size="sm" className="me-2" />
-            Processing...
+            {PROCESSING_PHASE_LABELS[processingPhase]}
           </>
         ) : (
           <>
@@ -358,6 +368,7 @@ export function UploadStep({
 export function MissingBanksStep({
   results,
   uploading,
+  processingPhase,
   uploadingBankKey,
   successMessage,
   onSubmit,
@@ -366,6 +377,7 @@ export function MissingBanksStep({
 }: {
   results: SerializedConversionResult[];
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   uploadingBankKey: string | null;
   successMessage: string | null;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
@@ -482,7 +494,7 @@ export function MissingBanksStep({
                   {isUploadingThisBank ? (
                     <>
                       <Spinner size="sm" className="me-2" />
-                      Processing...
+                      {PROCESSING_PHASE_LABELS[processingPhase]}
                     </>
                   ) : (
                     <>
