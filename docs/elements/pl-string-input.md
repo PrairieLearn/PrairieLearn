@@ -72,7 +72,6 @@ Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line bre
 ## Example implementations
 
 - [element/stringInput]
-- [template/string-input/regex]
 
 ## See also
 
@@ -83,4 +82,3 @@ Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line bre
 ---
 
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
-[template/string-input/regex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/template/string-input/regex
