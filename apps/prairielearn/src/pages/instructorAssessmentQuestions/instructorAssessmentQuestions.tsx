@@ -99,9 +99,8 @@ router.get(
     });
     for (const row of zoneToolRows) {
       const zone = jsonZones[row.zone_number - 1];
-      const tools = (zone.tools ?? {}) as Partial<Record<EnumAssessmentTool, { enabled: boolean }>>;
-      tools[row.tool] = { enabled: row.enabled };
-      zone.tools = tools;
+      zone.tools ??= {};
+      zone.tools[row.tool] = { enabled: row.enabled };
     }
 
     // Load assessment-level tool defaults for zone inheritance display.
