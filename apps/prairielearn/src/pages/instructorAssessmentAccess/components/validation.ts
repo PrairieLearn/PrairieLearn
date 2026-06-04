@@ -34,7 +34,6 @@ import {
   type AccessControlFormData,
   type AfterLastDeadlineValue,
   type DeadlineEntry,
-  type DueValue,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   defaultRuleHasCompletionMechanism,
@@ -300,29 +299,14 @@ function addValidationError(
   errors.push({ path, message });
 }
 
-function toDate(value: string): Date | null {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
 function validateReleaseDate(value: string | null): string | undefined {
   if (!value) return 'Release date is required';
   return undefined;
 }
 
-function validateDueDate(
-  date: string | null,
-  releaseDate: string | null | undefined,
-): string | undefined {
+function validateDueDate(date: string | null): string | undefined {
   if (date === null) return undefined;
   if (!date) return DATE_REQUIRED_MESSAGE;
-  if (releaseDate) {
-    const dueDate = toDate(date);
-    const release = toDate(releaseDate);
-    if (dueDate && release && dueDate <= release) {
-      return 'Due date must be after the release date';
-    }
-  }
   return undefined;
 }
 
@@ -382,93 +366,36 @@ function validateScoreVisibility(
 }
 
 function validateDeadlineDate({
-  type,
   value,
   index,
   deadlines,
-  releaseDate,
-  dueDate,
 }: {
-  type: 'early' | 'late';
   value: string;
   index: number;
   deadlines: DeadlineEntry[];
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
 }): string | undefined {
-  const isEarly = type === 'early';
   if (!value) return DATE_REQUIRED_MESSAGE;
-
-  const currentDueDate = dueDate ? toDate(dueDate) : null;
-  if (!currentDueDate && !isEarly) return 'Late deadlines require a due date';
 
   for (let i = 0; i < deadlines.length; i++) {
     if (i !== index && deadlines[i]?.date === value) return 'Duplicate deadline date';
   }
-
-  const deadlineDate = toDate(value);
-  if (!deadlineDate) return undefined;
-
-  const currentReleaseDate = releaseDate ? toDate(releaseDate) : null;
-  if (isEarly) {
-    if (currentDueDate && deadlineDate > currentDueDate) {
-      return 'Early deadline must be on or before the due date';
-    }
-    if (index > 0 && deadlines[index - 1]?.date) {
-      const previousDeadline = toDate(deadlines[index - 1].date);
-      if (previousDeadline && deadlineDate <= previousDeadline) {
-        return 'Must be after the previous deadline';
-      }
-    }
-    if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-      return 'Early deadline must be after the release date';
-    }
-  } else {
-    if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-      return 'Late deadline must be after the release date';
-    }
-    if (currentDueDate && deadlineDate < currentDueDate) {
-      return 'Late deadline must be on or after the due date';
-    }
-    if (index > 0 && deadlines[index - 1]?.date) {
-      const previousDeadline = toDate(deadlines[index - 1].date);
-      if (previousDeadline && deadlineDate <= previousDeadline) {
-        return 'Must be after the previous deadline';
-      }
-    }
-  }
-
   return undefined;
 }
 
 function validateDeadlineCredit({
   type,
   value,
-  index,
-  deadlines,
-  dueCredit,
 }: {
   type: 'early' | 'late';
   value: number;
-  index: number;
-  deadlines: DeadlineEntry[];
-  dueCredit: number;
 }): string | undefined {
-  const isEarly = type === 'early';
   if (Number.isNaN(value)) return 'Credit is required';
   if (!Number.isFinite(value)) return 'Credit must be a finite number';
   if (!Number.isInteger(value)) return 'Credit must be an integer';
-  if (isEarly) {
+  if (type === 'early') {
     if (value < 0 || value > 200) return 'Credit must be 0-200%';
-    if (value <= dueCredit) return 'Credit must be greater than due credit';
   } else if (value < 0 || value >= 100) {
     return 'Credit after the due date must be 0-99%';
-  }
-  if (index > 0 && value >= (deadlines[index - 1]?.credit ?? 0)) {
-    return 'Credit must be less than previous deadline';
-  }
-  if (!isEarly && index === 0 && value >= dueCredit) {
-    return 'Credit must be less than due credit';
   }
   return undefined;
 }
@@ -478,18 +405,12 @@ function validateDeadlineArray({
   fieldName,
   type,
   deadlines,
-  releaseDate,
-  dueDate,
-  dueCredit,
   addError,
 }: {
   prefix: 'defaultRule' | `overrides.${number}`;
   fieldName: 'earlyDeadlines' | 'lateDeadlines';
   type: 'early' | 'late';
   deadlines: DeadlineEntry[];
-  releaseDate: string | null | undefined;
-  dueDate: string | null | undefined;
-  dueCredit: number;
   addError: (path: AccessControlFormFieldPath, message: string | undefined) => void;
 }) {
   if (deadlines.length > MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) {
@@ -502,36 +423,22 @@ function validateDeadlineArray({
   deadlines.forEach((deadline, index) => {
     addError(
       `${prefix}.${fieldName}.${index}.date`,
-      validateDeadlineDate({ type, value: deadline.date, index, deadlines, releaseDate, dueDate }),
+      validateDeadlineDate({ value: deadline.date, index, deadlines }),
     );
     addError(
       `${prefix}.${fieldName}.${index}.credit`,
-      validateDeadlineCredit({ type, value: deadline.credit, index, deadlines, dueCredit }),
+      validateDeadlineCredit({ type, value: deadline.credit }),
     );
   });
 }
 
-function validateAfterLastDeadlineCredit({
-  value,
-  due,
-  lateDeadlines,
-}: {
-  value: AfterLastDeadlineValue | null;
-  due: DueValue;
-  lateDeadlines: DeadlineEntry[];
-}): string | undefined {
+function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue | null): string | undefined {
   if (value?.credit === undefined) return undefined;
   const credit = value.credit;
   if (Number.isNaN(credit)) return 'Credit is required';
   if (!Number.isFinite(credit)) return 'Credit must be a finite number';
   if (!Number.isInteger(credit)) return 'Credit must be an integer';
   if (credit < 0 || credit >= 100) return 'Credit after the due date must be 0-99%';
-  const dueDate = due.date;
-  const dueCredit = due.credit ?? 100;
-  const precedingCredit = lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-  if (precedingCredit != null && credit >= precedingCredit) {
-    return `Must be less than ${precedingCredit}% (the preceding deadline's credit)`;
-  }
   return undefined;
 }
 
@@ -606,16 +513,13 @@ function validateDefaultRule(
 
   if (rule.dateControlEnabled) {
     addError('defaultRule.release.date', validateReleaseDate(rule.release.date));
-    addError('defaultRule.due.date', validateDueDate(rule.due.date, rule.release.date));
+    addError('defaultRule.due.date', validateDueDate(rule.due.date));
     addError('defaultRule.due.credit', validateDueCredit(rule.due.credit, rule.due.customCredit));
     validateDeadlineArray({
       prefix: 'defaultRule',
       fieldName: 'earlyDeadlines',
       type: 'early',
       deadlines: rule.earlyDeadlines,
-      releaseDate: rule.release.date,
-      dueDate: rule.due.date,
-      dueCredit: rule.due.credit ?? 100,
       addError,
     });
     validateDeadlineArray({
@@ -623,18 +527,11 @@ function validateDefaultRule(
       fieldName: 'lateDeadlines',
       type: 'late',
       deadlines: rule.lateDeadlines,
-      releaseDate: rule.release.date,
-      dueDate: rule.due.date,
-      dueCredit: rule.due.credit ?? 100,
       addError,
     });
     addError(
       'defaultRule.afterLastDeadline.credit',
-      validateAfterLastDeadlineCredit({
-        value: rule.afterLastDeadline,
-        due: rule.due,
-        lateDeadlines: rule.lateDeadlines,
-      }),
+      validateAfterLastDeadlineCredit(rule.afterLastDeadline),
     );
     addError('defaultRule.durationMinutes', validateDuration(rule.durationMinutes));
     addError('defaultRule.password', validatePassword(rule.password));
@@ -656,13 +553,6 @@ function validateOverrideRule(
   const prefix = `overrides.${index}` as const;
   const fieldActive = (fieldName: Parameters<typeof isOverrideFieldActive>[2]) =>
     isOverrideFieldActive(formData, index, fieldName);
-  const effectiveReleaseDate = fieldActive('release')
-    ? override.release.date
-    : formData.defaultRule.release.date;
-  const effectiveDue = fieldActive('due') ? override.due : formData.defaultRule.due;
-  const effectiveLateDeadlines = fieldActive('lateDeadlines')
-    ? override.lateDeadlines
-    : formData.defaultRule.lateDeadlines;
 
   if (
     override.appliesTo.targetType === 'student_label' &&
@@ -687,7 +577,7 @@ function validateOverrideRule(
     addError(`${prefix}.release.date`, validateReleaseDate(override.release.date));
   }
   if (fieldActive('due')) {
-    addError(`${prefix}.due.date`, validateDueDate(override.due.date, effectiveReleaseDate));
+    addError(`${prefix}.due.date`, validateDueDate(override.due.date));
     addError(
       `${prefix}.due.credit`,
       validateDueCredit(override.due.credit, override.due.customCredit),
@@ -699,9 +589,6 @@ function validateOverrideRule(
       fieldName: 'earlyDeadlines',
       type: 'early',
       deadlines: override.earlyDeadlines,
-      releaseDate: effectiveReleaseDate,
-      dueDate: effectiveDue.date,
-      dueCredit: effectiveDue.credit ?? 100,
       addError,
     });
   }
@@ -711,20 +598,13 @@ function validateOverrideRule(
       fieldName: 'lateDeadlines',
       type: 'late',
       deadlines: override.lateDeadlines,
-      releaseDate: effectiveReleaseDate,
-      dueDate: effectiveDue.date,
-      dueCredit: effectiveDue.credit ?? 100,
       addError,
     });
   }
   if (fieldActive('afterLastDeadline')) {
     addError(
       `${prefix}.afterLastDeadline.credit`,
-      validateAfterLastDeadlineCredit({
-        value: override.afterLastDeadline,
-        due: effectiveDue,
-        lateDeadlines: effectiveLateDeadlines,
-      }),
+      validateAfterLastDeadlineCredit(override.afterLastDeadline),
     );
   }
   if (fieldActive('durationMinutes')) {
