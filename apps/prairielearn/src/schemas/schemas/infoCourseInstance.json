@@ -7,7 +7,6 @@
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
@@ -92,7 +91,6 @@
         "additionalProperties": false,
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
             "$ref": "#/definitions/CommentJsonSchema"
           },
           "role": {

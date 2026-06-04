@@ -25,8 +25,8 @@ const SafeDirectoryName = z
   .min(1)
   .regex(SHORT_NAME_REGEX, 'Directory name contains invalid characters');
 
-const QuestionInfoJsonSchema = QuestionJsonSchema.passthrough();
-const AssessmentInfoJsonSchema = AssessmentJsonSchema.passthrough();
+const QuestionInfoJsonSchema = QuestionJsonSchema.loose();
+const AssessmentInfoJsonSchema = AssessmentJsonSchema.loose();
 
 const BaseQuestionDataSchema = z.object({
   directoryName: SafeDirectoryName,
@@ -37,7 +37,7 @@ const BaseQuestionDataSchema = z.object({
 const InlineQuestionDataSchema = BaseQuestionDataSchema.extend({
   questionHtml: z.string(),
   serverPy: z.string().optional(),
-  clientFiles: z.record(z.string()),
+  clientFiles: z.record(z.string(), z.string()),
 });
 
 const DraftQuestionDataSchema = BaseQuestionDataSchema.extend({
@@ -60,7 +60,7 @@ const StoredSerializedQuestionOutputSchema = z.object({
   infoJson: QuestionInfoJsonSchema,
   questionHtml: z.string(),
   serverPy: z.string().optional(),
-  clientFiles: z.record(z.string()),
+  clientFiles: z.record(z.string(), z.string()),
   skippedVideos: z.array(z.string()),
 });
 

@@ -503,7 +503,7 @@ function AccessControlStep({
           <div className="ms-4 mt-1 mb-2">
             <small className="text-muted d-block">
               UID-based rules are copied only in legacy format. If you migrate the copy, those
-              individual-student rules are omitted and should be recreated later as enrollment
+              student-specific rules are omitted and should be recreated later as enrollment
               overrides if needed.
             </small>
           </div>

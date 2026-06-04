@@ -23,7 +23,7 @@
     "@prairielearn/aws-imds": "workspace:^",
     "es-toolkit": "^1.47.0",
     "fs-extra": "^11.3.5",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

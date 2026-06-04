@@ -9,7 +9,7 @@ import { defaultPool } from '@prairielearn/postgres';
 const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
   enabled: z.boolean().optional(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
+  resultFormats: z.record(z.string(), z.enum(['pre'])).optional(),
   params: z
     .array(
       z.object({
