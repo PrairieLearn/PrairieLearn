@@ -45,13 +45,7 @@ WITH
       AND f.deleted_at IS NULL
   )
 SELECT
-  jsonb_set(
-    to_jsonb(ai),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (ai.date, ci.display_timezone)
-    )
-  ) AS assessment_instance,
+  to_jsonb(ai) AS assessment_instance,
   CASE
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
@@ -128,6 +122,4 @@ WHERE
     $assessment_id::bigint IS NULL
     OR a.id = $assessment_id
   )
-  AND q.deleted_at IS NULL
-  AND a.deleted_at IS NULL
-  AND iqi.question_access_mode NOT IN ('blocked_sequence', 'blocked_lockpoint');
+  AND a.deleted_at IS NULL;

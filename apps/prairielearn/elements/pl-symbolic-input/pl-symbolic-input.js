@@ -307,6 +307,47 @@
     },
   ];
 
+  const isSelected = (mf) => {
+    const firstSelection = mf.selection?.ranges?.[0];
+    return firstSelection && firstSelection[1] !== firstSelection[0];
+  };
+
+  const makeShortcutProxy = (proxiedObject, mf) => {
+    const shortcutProxyHandler = {
+      get(target, prop, receiver) {
+        let value = Reflect.get(target, prop, receiver);
+
+        if (value === null) {
+          return value;
+        }
+
+        if (typeof value === 'object') {
+          return wrapWithProxy(value);
+        }
+
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+
+        if (
+          value &&
+          typeof value === 'string' &&
+          isSelected(mf) &&
+          !value.includes('\\left(#@\\right)')
+        ) {
+          value = value.replace('#@', '\\left(#@\\right)');
+        }
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    };
+
+    function wrapWithProxy(target) {
+      return new Proxy(target, shortcutProxyHandler);
+    }
+
+    return wrapWithProxy(proxiedObject);
+  };
+
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
@@ -319,11 +360,21 @@
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
     const endMenuItems = mf.menuItems.filter((item) => standardMenuItems.has(item.id));
 
-    // If the allow-trig attribute is set, basic trig functions are added to the virtual keyboard
+    // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
+    const allowSets = mf.getAttribute('allow-sets');
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
+
+    const signKey = {
+      class: 'small',
+      latex: '\\mathrm{sign}',
+      insert: '\\operatorname{sign}\\left({#@}\\right)',
+    };
+
+    /** A key that is only present if `allowSets` */
+    const onlyIfSets = (key) => (allowSets ? [key] : []);
 
     mf.menuItems = [
       {
@@ -334,7 +385,8 @@
       {
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
-        onMenuSelect: () => mf.insert('{#@}^{#?}'),
+        onMenuSelect: () =>
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
       },
       {
         id: 'sqrt',
@@ -357,14 +409,21 @@
 
     const elementKeyboardLayout = {
       label: 'math',
+      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
+      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // stay reachable in the same general region of the keyboard.
       rows: [
         [
-          { class: 'small', latex: '{#@}^{#?}' },
-          {
-            class: 'small',
-            latex: '{#@}^{2}',
-            variants: [{ class: 'small', latex: '{#@}^{3}' }],
-          },
+          ...onlyIfSets('[separator]'),
+          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy(
+            {
+              class: 'small',
+              latex: '{#@}^{2}',
+              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+            },
+            mf,
+          ),
           {
             class: 'small',
             latex: '\\frac{#@}{#?}',
@@ -377,11 +436,13 @@
           '9',
           '+',
           '[separator]',
-          'e',
+          allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e',
+          ...onlyIfSets(','),
           '\\infty',
           '\\pi',
         ],
         [
+          ...onlyIfSets('[separator]'),
           { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
           logAsLn
             ? {
@@ -401,11 +462,13 @@
           '6',
           '-',
           '[separator]',
-          { latex: 'x' },
-          { latex: 'y' },
+          allowSets ? '[' : 'x',
+          allowSets ? ']' : 'y',
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],
         [
+          ...onlyIfSets('[separator]'),
           { class: 'small', latex: '|#@|', insert: '|{#@}|' },
           { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
           { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
@@ -413,17 +476,21 @@
           '1',
           '2',
           '3',
-          { latex: '\\times', insert: '\\cdot' },
+          makeShortcutProxy(
+            {
+              latex: '\\times',
+              insert: '{#@}\\cdot',
+            },
+            mf,
+          ),
           '[separator]',
           '(',
           ')',
-          {
-            class: 'small',
-            latex: '\\mathrm{sign}',
-            insert: '\\operatorname{sign}\\left({#@}\\right)',
-          },
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', key: '&' }, mf)),
+          allowSets ? 'x' : signKey,
         ],
         [
+          ...onlyIfSets('[separator]'),
           allowTrig
             ? {
                 class: 'small',
@@ -518,20 +585,24 @@
               }
             : '[separator]',
           '[separator]',
-          { class: 'small', label: '0', width: 2 },
+          { latex: '0', width: 2 },
           '.',
           '/',
           '[separator]',
           { class: 'small hide-shift', label: '[left]' },
           { class: 'small hide-shift', label: '[right]' },
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
+          ...onlyIfSets(signKey), // sign shifted from above
         ],
       ],
     };
 
-    mf.addEventListener('focus', () => {
+    const updateKeyboardLayout = () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
-    });
+    };
+
+    mf.addEventListener('focus', updateKeyboardLayout);
+    mf.addEventListener('selection-change', updateKeyboardLayout);
 
     setUpSymbolicInputMacros(mf);
 
@@ -626,6 +697,7 @@
     const additionalFunctions = mf.getAttribute('custom-functions')?.split(',') ?? [];
 
     const customFunctions = new Set(additionalFunctions.concat(defaultFunctions));
+    const allowSets = mf.getAttribute('allow-sets');
 
     const macros = {};
     [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
@@ -638,8 +710,11 @@
       '**': {
         value: '{#@}^{#?}',
       },
+      '^': {
+        value: '{#@}^{#?}',
+      },
       '*': {
-        value: '\\cdot',
+        value: '{#@}\\cdot',
       },
       '|': {
         value: '|{#@}|',
@@ -657,11 +732,24 @@
         value: '\\infty',
       },
     };
-    [...customFunctions].forEach((f) => (inlineShortcuts[f] = `\\operatorname{${f}}`));
-    [...greekLettersToUnicode.keys()].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
-    [...greekLetters].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
+
+    if (allowSets) {
+      inlineShortcuts.cup = { value: '{#@}\\cup}' };
+      inlineShortcuts['\\cup'] = inlineShortcuts.cup;
+      inlineShortcuts.U = inlineShortcuts.cup;
+
+      inlineShortcuts.cap = { value: '{#@}\\cap' };
+      inlineShortcuts['\\cap'] = inlineShortcuts.cap;
+      inlineShortcuts['&'] = inlineShortcuts.cap;
+    }
+
+    const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
+
+    [...customFunctions].forEach((f) => (shortcutProxy[f] = `\\operatorname{${f}}`));
+    [...greekLettersToUnicode.keys()].forEach((l) => (shortcutProxy[l] = `\\${l}`));
+    [...greekLetters].forEach((l) => (shortcutProxy[l] = `\\${l}`));
 
     mf.macros = macros;
-    mf.inlineShortcuts = inlineShortcuts;
+    mf.inlineShortcuts = shortcutProxy;
   }
 })();

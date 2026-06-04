@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
+  queryOptionalScalar,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -49,8 +49,6 @@ router.get(
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
       courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      requiredRole: ['Student Data Viewer'],
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -84,8 +82,6 @@ router.post(
         (
           await selectCourseInstanceGraderStaff({
             courseInstance: res.locals.course_instance,
-            authzData: res.locals.authz_data,
-            requiredRole: ['Student Data Editor'],
           })
         ).map((user) => user.id),
       );
@@ -98,7 +94,7 @@ router.post(
         return;
       }
       await runInTransactionAsync(async () => {
-        const numInstancesToGrade = await queryOptionalRow(
+        const numInstancesToGrade = await queryOptionalScalar(
           sql.count_instance_questions_to_grade,
           {
             assessment_id: res.locals.assessment.id,
@@ -134,23 +130,8 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const model_id = req.body.model_id as AiGradingModelId | undefined;
-
-      if (!model_id) {
-        throw new HttpStatusError(400, 'No AI grading model specified');
-      }
-
-      const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-        'ai-grading-model-selection',
-        res.locals,
-      );
-
-      if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
-        throw new HttpStatusError(
-          403,
-          `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
-        );
-      }
+      const model_id =
+        (req.body.model_id as AiGradingModelId | undefined) ?? DEFAULT_AI_GRADING_MODEL;
 
       if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
         throw new HttpStatusError(400, 'Invalid AI grading model specified');

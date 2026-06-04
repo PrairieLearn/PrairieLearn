@@ -1,7 +1,5 @@
 import type { Locator } from '@playwright/test';
 
-import { syncCourse } from '../helperCourse.js';
-
 import { expect, test } from './fixtures.js';
 
 function getRowIndex(row: Locator) {
@@ -10,20 +8,17 @@ function getRowIndex(row: Locator) {
   );
 }
 
-const courseId = '1';
-
 test.describe('Assessment sets editor', () => {
-  test.beforeAll(async ({ testCoursePath }) => {
-    await syncCourse(testCoursePath);
-  });
-
-  test('can create assessment sets and persist changes after save', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can create assessment sets and persist changes after save', async ({
+    page,
+    courseInstance,
+  }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save and sync' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create two assessment sets with unique abbreviations
     const timestamp = Date.now().toString().slice(-4);
@@ -34,14 +29,14 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(abbrev1);
     await page.getByLabel('Name').fill('Test Set Alpha');
     await page.getByLabel('Heading').fill('Test Set Alpha Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     await page.getByRole('button', { name: 'New assessment set' }).click();
     await page.getByLabel('Abbreviation').fill(abbrev2);
     await page.getByLabel('Name').fill('Test Set Beta');
     await page.getByLabel('Heading').fill('Test Set Beta Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -64,7 +59,7 @@ test.describe('Assessment sets editor', () => {
 
     expect(await getRowIndex(betaRow)).toBeLessThan(betaIndexBefore);
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
@@ -72,7 +67,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify order persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const rowsAfterReload = page.locator('table[aria-label="Assessment sets"] tbody tr');
@@ -88,14 +83,14 @@ test.describe('Assessment sets editor', () => {
     );
   });
 
-  test('can edit an existing assessment set', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can edit an existing assessment set', async ({ page, courseInstance }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     // Enter edit mode
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save and sync' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create a new assessment set to edit
     const timestamp = Date.now().toString().slice(-4);
@@ -106,7 +101,7 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(originalAbbrev);
     await page.getByLabel('Name').fill('Original Name');
     await page.getByLabel('Heading').fill('Original Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -128,15 +123,15 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(editedAbbrev);
     await page.getByLabel('Name').fill('Edited Name');
     await page.getByLabel('Heading').fill('Edited Heading');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     // Verify the table shows updated values
     await expect(tbody.locator('.badge', { hasText: editedAbbrev })).toBeVisible();
     await expect(tbody.locator('.badge', { hasText: originalAbbrev })).not.toBeVisible();
 
-    // Save and sync
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    // Save
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
@@ -144,7 +139,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify changes persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const tbodyAfterReload = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -152,14 +147,14 @@ test.describe('Assessment sets editor', () => {
     await expect(tbodyAfterReload.locator('.badge', { hasText: originalAbbrev })).not.toBeVisible();
   });
 
-  test('can delete an assessment set', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can delete an assessment set', async ({ page, courseInstance }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     // Enter edit mode
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
-    await expect(page.getByRole('button', { name: 'Save and sync' })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('button', { name: 'Save' })).toBeVisible();
 
     // Create a new assessment set to delete
     const timestamp = Date.now().toString().slice(-4);
@@ -169,7 +164,7 @@ test.describe('Assessment sets editor', () => {
     await page.getByLabel('Abbreviation').fill(deleteAbbrev);
     await page.getByLabel('Name').fill('To Be Deleted');
     await page.getByLabel('Heading').fill('Delete Me');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -184,8 +179,8 @@ test.describe('Assessment sets editor', () => {
     // Verify it's removed from the table
     await expect(tbody.locator('.badge', { hasText: deleteAbbrev })).not.toBeVisible();
 
-    // Save and sync
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    // Save
+    await page.getByRole('main').getByRole('button', { name: 'Save' }).click();
     await page.waitForURL(/\/jobSequence\/|\/course_admin\/sets/);
 
     if (page.url().includes('/jobSequence/')) {
@@ -193,7 +188,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify deletion persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const tbodyAfterReload = page.locator('table[aria-label="Assessment sets"] tbody');

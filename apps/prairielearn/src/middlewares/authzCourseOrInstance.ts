@@ -12,7 +12,6 @@ import { type Result, withBrand } from '@prairielearn/utils';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
   type ConstructedCourseOrInstanceSuccessContext,
-  type CourseOrInstanceContextData,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
@@ -23,12 +22,7 @@ import {
 } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import {
-  type EnumCourseInstanceRole,
-  type EnumCourseRole,
-  InstitutionSchema,
-  UserSchema,
-} from '../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
@@ -295,19 +289,17 @@ type SelectUser = z.infer<typeof SelectUserSchema>;
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: CourseOrInstanceContextData['mode'];
-  authn_mode_reason: CourseOrInstanceContextData['mode_reason'];
+  authn_mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
+  authn_course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   authn_has_course_permission_preview: boolean;
   authn_has_course_permission_view: boolean;
   authn_has_course_permission_edit: boolean;
   authn_has_course_permission_own: boolean;
   user: ResLocalsAuthnUser['authn_user'];
-  mode: CourseOrInstanceContextData['mode'];
-  mode_reason: CourseOrInstanceContextData['mode_reason'];
+  mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
+  course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
   has_course_permission_edit: boolean;
@@ -316,22 +308,34 @@ interface ResLocalsCourseAuthz {
 }
 
 export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
+  authn_course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
-  authn_has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
-  authn_has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
-  course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
+  authn_has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
+  authn_has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   has_course_instance_permission_view: boolean;
   has_course_instance_permission_edit: boolean;
-  has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
-  has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
+  has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean | null;
 }
 
 export interface ResLocalsCourse {
-  course: CourseOrInstanceContextData['course'];
-  institution: CourseOrInstanceContextData['institution'];
+  course: ConstructedCourseOrInstanceSuccessContext['course'];
+  institution: ConstructedCourseOrInstanceSuccessContext['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
@@ -341,7 +345,7 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<CourseOrInstanceContextData['course_instance']>;
+  course_instance: NonNullable<ConstructedCourseOrInstanceSuccessContext['courseInstance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }
@@ -561,18 +565,17 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          course_role: 'None' as EnumCourseRole,
+          course_role: 'None',
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
             ? {
-                course_instance_role: 'None' as EnumCourseInstanceRole,
+                course_instance_role: 'None',
                 has_student_access: false,
                 has_student_access_with_enrollment: false,
                 ...calculateCourseInstanceRolePermissions('None'),
               }
             : {}),
           mode: authnAuthzData.mode,
-          mode_reason: authnAuthzData.mode_reason,
         }),
         course: authnCourse,
         institution: authnInstitution,
@@ -626,7 +629,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Authn user data
     authn_user: authnAuthzData.user,
     authn_mode: authnAuthzData.mode,
-    authn_mode_reason: authnAuthzData.mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: authnAuthzData.course_role,
     authn_has_course_permission_preview: authnAuthzData.has_course_permission_preview,
@@ -650,7 +652,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Effective user data
     user: effectiveAuthzData.user,
     mode: effectiveAuthzData.mode,
-    mode_reason: effectiveAuthzData.mode_reason,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
     course_role: effectiveAuthzData.course_role,
     has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,

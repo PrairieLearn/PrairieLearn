@@ -141,18 +141,17 @@ SELECT
   'AI grading',
   i.id AS institution_id,
   c.id AS course_id,
-  NULL,
+  ci.id AS course_instance_id,
   $cost_ai_grading,
   date_trunc('day', now() AT TIME ZONE 'UTC'),
   $authn_user_id,
   FALSE
 FROM
-  grading_jobs AS gj
-  JOIN ai_grading_jobs AS aj ON (aj.grading_job_id = gj.id)
-  JOIN courses AS c ON (c.id = aj.course_id)
+  course_instances AS ci
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-  gj.id = $grading_job_id
+  ci.id = $course_instance_id
 ON CONFLICT (
   type,
   course_id,

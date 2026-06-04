@@ -27,6 +27,7 @@ import {
 } from './db-types.js';
 import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
+import type { UploadedCsvFile } from './score-upload.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -34,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const ZodStringToJson = z.preprocess((val) => {
   if (val === '' || val == null) return {};
   return JSON.parse(String(val));
-}, z.record(z.any()).nullable());
+}, z.record(z.string(), z.any()).nullable());
 
 const BaseSubmissionCsvRowSchema = z.object({
   'Assessment instance': z.coerce.number().int(),
@@ -91,7 +92,7 @@ function makeDedupedInserter<T>() {
  */
 export async function uploadSubmissions(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -235,7 +236,7 @@ export async function uploadSubmissions(
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_assessment_instance,
               {
                 assessment_id: assessment.id,
@@ -250,7 +251,7 @@ export async function uploadSubmissions(
         const instance_question_id = await getOrInsertInstanceQuestion(
           [assessment_instance_id, question.id],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_instance_question,
               {
                 assessment_instance_id,
@@ -264,7 +265,7 @@ export async function uploadSubmissions(
         const variant_id = await getOrInsertVariant(
           [assessment_instance_id, question.id, row.Variant.toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_variant,
               {
                 course_id,
@@ -289,7 +290,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        const submission_id = await sqldb.queryRow(
+        const submission_id = await sqldb.queryScalar(
           sql.insert_submission,
           {
             variant_id,
@@ -369,7 +370,7 @@ export async function uploadSubmissions(
         );
         if (err instanceof z.ZodError) {
           job.error(
-            `Validation Error: ${err.errors
+            `Validation Error: ${err.issues
               .map((e) => `${e.path.join('.')}: ${e.message}`)
               .join(', ')}`,
           );

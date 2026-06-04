@@ -9,23 +9,19 @@
   "zones": [
     {
       "title": "Auto-graded questions with real-time grading disabled",
-      "questions": [{ "id": "partialCredit1", "points": 5, "allowRealTimeGrading": false }]
+      "questions": [{ "id": "partialCredit1", "autoPoints": 5, "allowRealTimeGrading": false }]
     },
     {
       "title": "Auto-graded questions with real-time grading enabled",
       "questions": [
-        { "id": "partialCredit2", "points": 5, "allowRealTimeGrading": true },
-        { "id": "partialCredit3", "points": 5, "allowRealTimeGrading": true }
+        { "id": "partialCredit2", "autoPoints": 5, "allowRealTimeGrading": true },
+        { "id": "partialCredit3", "autoPoints": 5, "allowRealTimeGrading": true }
       ]
     },
     {
       "title": "Manually-graded questions with real-time grading disabled",
       "questions": [
-        {
-          "id": "manualGrade/shortAnswer",
-          "points": 5,
-          "allowRealTimeGrading": false
-        }
+        { "id": "manualGrade/shortAnswer", "manualPoints": 5, "allowRealTimeGrading": false }
       ]
     },
     {

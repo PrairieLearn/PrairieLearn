@@ -16,8 +16,9 @@
     <pl-external-grader-variables params-name="names_from_user">
         <pl-variable name="last_element" type="function">Returns the last element of a list</pl-variable>
     </pl-external-grader-variables>
-    <pl-overlay width="600" height="200" clip="false">
-      <pl-background>
+</pl-question-panel>
+<pl-overlay width="600" height="200" clip="false">
+  <pl-background>
 <pl-code language="python">
 def last_element(lst: list):
     """    Returns the last element of a list.
@@ -29,11 +30,10 @@ def last_element(lst: list):
 
     return lst[                                      ]
 </pl-code></pl-background>
-      <pl-location left="270" top="155">
-        <pl-string-input answers-name="index" display="inline" size="30" show-help-text="false"></pl-string-input>
-      </pl-location>
-    </pl-overlay>
-</pl-question-panel>
+  <pl-location left="270" top="155">
+    <pl-string-input answers-name="index" display="inline" size="30" show-help-text="false"></pl-string-input>
+  </pl-location>
+</pl-overlay>
 
 <pl-submission-panel>
     <pl-external-grader-results></pl-external-grader-results>

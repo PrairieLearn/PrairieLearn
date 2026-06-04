@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
@@ -9,6 +11,46 @@ function toBadgeProps(assessment: AssessmentForPicker, useSetColor = true) {
     color: useSetColor ? (assessment.assessment_set_color ?? assessment.color) : assessment.color,
     label: assessment.label,
   };
+}
+
+const WARNING_PREFIX = <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />;
+
+function MarkedBadge({
+  assessment,
+  courseInstanceId,
+  marked,
+  useSetColor,
+  tooltipLabel,
+  tooltipIdPrefix,
+}: {
+  assessment: AssessmentForPicker;
+  courseInstanceId: string;
+  marked: boolean;
+  useSetColor: boolean;
+  tooltipLabel: string;
+  tooltipIdPrefix: string;
+}) {
+  const badge = (
+    <AssessmentBadge
+      courseInstanceId={courseInstanceId}
+      assessment={toBadgeProps(assessment, useSetColor)}
+      prefix={marked ? WARNING_PREFIX : undefined}
+    />
+  );
+  if (!marked) return badge;
+  return (
+    <OverlayTrigger
+      placement="top"
+      tooltip={{
+        body: tooltipLabel,
+        props: { id: `${tooltipIdPrefix}-${courseInstanceId}-${assessment.assessment_id}` },
+      }}
+    >
+      <span className="d-inline-block" data-testid="zone-removal-marker">
+        {badge}
+      </span>
+    </OverlayTrigger>
+  );
 }
 
 /**
@@ -42,17 +84,48 @@ function groupByAbbreviation(
 /**
  * Renders assessment badges with grouping for compact display.
  * Groups of 3+ assessments with the same abbreviation are collapsed.
+ *
+ * `markedAssessmentIds` decorates marked badges (and any collapsed group
+ * containing at least one marked assessment) with a warning-icon prefix
+ * inside the pill. Used by the bulk-delete preview to indicate assessments
+ * that will have a zone removed.
  */
 export function AssessmentBadges({
   assessments,
-  urlPrefix,
+  courseInstanceId,
+  markedAssessmentIds,
+  markedSingleLabel = 'A zone in this assessment will be removed',
+  markedGroupLabel = 'A zone in one or more of these assessments will be removed',
+  stopGroupClickPropagation = true,
 }: {
   assessments: AssessmentForPicker[];
-  urlPrefix: string;
+  courseInstanceId: string;
+  markedAssessmentIds?: ReadonlySet<string>;
+  markedSingleLabel?: string;
+  markedGroupLabel?: string;
+  /**
+   * Whether the `×N` group button stops click propagation. Defaults to true
+   * for the TreeQuestionRow use case (where the surrounding row has its own
+   * click handler). Set to false in contexts where multiple group popovers
+   * coexist, so that opening one closes the others via `rootClose`.
+   */
+  stopGroupClickPropagation?: boolean;
 }) {
   if (assessments.length === 0) {
     return null;
   }
+
+  const isMarked = (id: string) => markedAssessmentIds?.has(id) ?? false;
+  const renderBadge = (assessment: AssessmentForPicker, useSetColor: boolean, idPrefix: string) => (
+    <MarkedBadge
+      assessment={assessment}
+      courseInstanceId={courseInstanceId}
+      marked={isMarked(assessment.assessment_id)}
+      useSetColor={useSetColor}
+      tooltipLabel={markedSingleLabel}
+      tooltipIdPrefix={idPrefix}
+    />
+  );
 
   const grouped = groupByAbbreviation(assessments);
 
@@ -61,7 +134,7 @@ export function AssessmentBadges({
       <>
         {assessments.slice(0, 3).map((assessment) => (
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment, false)} />
+            {renderBadge(assessment, false, 'zone-removal')}
           </span>
         ))}
         {assessments.length > 3 && (
@@ -71,54 +144,60 @@ export function AssessmentBadges({
     );
   }
 
-  const elements: React.ReactNode[] = [];
+  const elements: ReactNode[] = [];
 
   for (const [abbrev, items] of grouped) {
     if (items.length < 3) {
       for (const assessment of items) {
         elements.push(
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment)} />
+            {renderBadge(assessment, true, 'zone-removal')}
           </span>,
         );
       }
-    } else {
-      const color = items[0].assessment_set_color ?? items[0].color;
-      const name = items[0].assessment_set_name ?? abbrev;
-      elements.push(
-        <span key={`group-${abbrev}`} className="d-inline-block me-1">
-          <OverlayTrigger
-            trigger="click"
-            placement="auto"
-            popover={{
-              props: { id: `picker-assessments-popover-${abbrev}` },
-              header: `${name} (${items.length})`,
-              body: (
-                <div className="d-flex flex-wrap gap-1">
-                  {items.map((assessment) => (
-                    <AssessmentBadge
-                      key={assessment.assessment_id}
-                      urlPrefix={urlPrefix}
-                      assessment={toBadgeProps(assessment)}
-                    />
-                  ))}
-                </div>
-              ),
-            }}
-            rootClose
-          >
-            <button
-              type="button"
-              className={`btn btn-badge color-${color}`}
-              aria-label={`${abbrev}: ${items.length} assessments`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {abbrev} ×{items.length}
-            </button>
-          </OverlayTrigger>
-        </span>,
-      );
+      continue;
     }
+
+    const color = items[0].assessment_set_color ?? items[0].color;
+    const name = items[0].assessment_set_name ?? abbrev;
+    const groupHasMarked = items.some((a) => isMarked(a.assessment_id));
+    elements.push(
+      <span key={`group-${abbrev}`} className="d-inline-block me-1">
+        <OverlayTrigger
+          trigger="click"
+          placement="auto"
+          popover={{
+            props: { id: `picker-assessments-popover-${abbrev}` },
+            header: `${name} (${items.length})`,
+            body: (
+              <div className="d-flex flex-wrap gap-1">
+                {items.map((assessment) => (
+                  <span key={assessment.assessment_id} className="d-inline-block">
+                    {renderBadge(assessment, true, 'zone-removal-popover')}
+                  </span>
+                ))}
+              </div>
+            ),
+          }}
+          rootClose
+        >
+          <button
+            type="button"
+            className={`btn btn-badge color-${color} tree-interactive-badge`}
+            aria-label={
+              groupHasMarked
+                ? `${abbrev}: ${items.length} assessments. ${markedGroupLabel}`
+                : `${abbrev}: ${items.length} assessments`
+            }
+            onClick={stopGroupClickPropagation ? (e) => e.stopPropagation() : undefined}
+          >
+            {groupHasMarked && WARNING_PREFIX}
+            {abbrev} ×{items.length}{' '}
+            <i className="bi bi-caret-down-fill" style={{ fontSize: '0.6em' }} aria-hidden="true" />
+          </button>
+        </OverlayTrigger>
+      </span>,
+    );
   }
 
   return <>{elements}</>;

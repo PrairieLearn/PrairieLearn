@@ -132,7 +132,7 @@
     <samp>{{a_sub}}</samp>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 
-    <!-- Show submitted answer submission was parsed from -->
+    {{! Show submitted answer submission was parsed from }}
     <button type="button" class="btn btn-sm btn-secondary small border"
         data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
         style="margin-left: 5px" title="Original Input"
@@ -176,13 +176,13 @@
 
 
 {{#format}}
+<p>
 {{#only_units}}
-<p> Your answer must be a string representing a unit of measure without a magnitude. You may use standard abbreviations (i.e., <code>m</code> representing meters). </p>
+Your answer must be a unit of measure only, with no number (e.g., <code>m/s^2</code>).
 {{/only_units}}
 {{^only_units}}
-<p> Your answer must be formatted as a number and then a unit (e.g. <code>9.8 m/s^2</code>). </p>
-<p> The number part of your answer must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number). </p>
-<p> Your answer should not be a symbolic expression to guarantee correct parsing. Fractions and scientific notation are accepted (e.g., <code>1.2e03</code>). </p>
-<p> Your unit must be formatted as a string after the numerical part of your answer. </p>
+Your answer must be a number followed by a unit of measure (e.g., <code>9.8 m/s^2</code>,
+<code>3.4e+09 kilogram*meter/second^2</code>). The number must be between <code>-1e308</code> and <code>1e308</code>. Fractions (e.g., <code>1/2</code>) and scientific notation (e.g., <code>1.2e03</code>) are accepted. Do not write variables or other symbols.
 {{/only_units}}
+You may use standard abbreviations (e.g., <code>m</code> representing meters).</p>
 {{/format}}

@@ -1,7 +1,6 @@
 import {
   DndContext,
   type DragEndEvent,
-  type DraggableAttributes,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
@@ -16,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type AriaRole, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
@@ -82,7 +81,7 @@ function AssessmentSetRow({
               className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag row"
-              {...(attributes as DraggableAttributes & { role: AriaRole })}
+              {...attributes}
               {...listeners}
             >
               <i className="fa fa-grip-vertical" aria-hidden="true" />
@@ -338,7 +337,7 @@ export function AssessmentSetsPage({
                   />
                   <button className="btn btn-sm btn-light mx-1" type="submit">
                     <i className="fa fa-save" aria-hidden="true" />
-                    Save and sync
+                    Save
                   </button>
                   <button
                     className="btn btn-sm btn-light"

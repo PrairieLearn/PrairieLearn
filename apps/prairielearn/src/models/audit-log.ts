@@ -11,7 +11,8 @@ type NewAuditLog = RequiredNewAuditLog & Partial<Omit<BaseNewAuditLog, keyof Req
 /**
  * @deprecated We are slowly deprecating this table in favor of the `audit_events` table.
  *
- * You should use `insertAuditEvent` instead.
+ * Existing callers can keep using this, but new code should use `insertAuditEvent` instead.
+ *
  */
 export async function insertAuditLog(auditLog: NewAuditLog): Promise<AuditLog> {
   return await queryRow(

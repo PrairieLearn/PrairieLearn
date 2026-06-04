@@ -71,7 +71,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   describe('workspaces created by instructors in a course instance', function () {
     let workspace_id: string | undefined;
     test.sequential('create instructor workspace', async () => {
-      const questionId = await sqldb.queryRow(sql.get_test_question, IdSchema);
+      const questionId = await sqldb.queryScalar(sql.get_test_question, IdSchema);
       const workspace_url =
         baseUrl + `/course_instance/1/instructor/question/${questionId}/preview`;
       const response = await fetch(workspace_url);
@@ -125,7 +125,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
     let workspace_id: string | undefined;
     test.sequential('create instructor workspace', async () => {
-      const questionId = await sqldb.queryRow(sql.get_test_question, IdSchema);
+      const questionId = await sqldb.queryScalar(sql.get_test_question, IdSchema);
       const workspace_url = baseUrl + `/course/1/question/${questionId}/preview`;
       const response = await fetch(workspace_url);
 

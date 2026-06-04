@@ -2,5 +2,10 @@
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
     "noEmit": true
-  }
+  },
+  "exclude": [
+    // This script reaches into `apps/prairielearn/dist` to access migration code.
+    // TypeScript does not like this, so we just exclude it from compilation.
+    "./migration-harness.mts"
+  ]
 }

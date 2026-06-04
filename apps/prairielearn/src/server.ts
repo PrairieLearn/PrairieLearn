@@ -64,6 +64,7 @@ import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './l
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
+import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
 import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
@@ -88,6 +89,11 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
+import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
+import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
+import { courseTrpcRouter } from './trpc/course/trpc.js';
+import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -213,10 +219,6 @@ export async function initExpress(): Promise<Express> {
     },
   });
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
-    upload.single('file'),
-  );
-  app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     upload.single('file'),
   );
@@ -306,7 +308,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
-
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
   // globally for the entire server.
@@ -366,15 +367,30 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
+  /**
+   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
+   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
+   * parsers don't parse multipart, but they still set `req.body = {}`, which
+   * makes tRPC's Express adapter stringify that empty object instead of reading
+   * the multipart stream. We skip them so the raw body reaches its real consumer.
+   */
+  function isMultipartRequest(req: Request) {
+    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
+  }
+
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON
     bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
   });
-  app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
+  app.use((req, res, next) => {
+    if (isMultipartRequest(req)) return next();
+    bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
+  });
   app.use(cookieParser());
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
@@ -459,6 +475,14 @@ export async function initExpress(): Promise<Express> {
       '/pl/auth/institution/:institution_id(\\d+)/saml',
       (await import('./ee/auth/saml/router.js')).default,
     );
+
+    // Receives a JWT minted by PrairieTest and starts a PrairieLearn session.
+    // Must come before the authn middleware since the user isn't authenticated yet,
+    // and before the CSRF middleware since the JWT signature is the auth proof.
+    app.use(
+      '/pl/auth/prairietest/callback',
+      (await import('./ee/auth/prairietestCallback.js')).default,
+    );
   }
 
   app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
@@ -475,6 +499,11 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
+
+  // Deny all access to a user with an active LockDown-Browser-required
+  // reservation whose session was not established inside LockDown Browser. Must
+  // come after authentication so it can read `res.locals.authn_user`.
+  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -527,6 +556,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -714,6 +744,8 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
+  app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
+
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
@@ -831,6 +863,18 @@ export async function initExpress(): Promise<Express> {
     [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/trpc',
+    assessmentTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)/trpc',
+    assessmentQuestionTrpcRouter,
+  );
+  app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
     (req, res, _next) => {
       res.redirect(`${req.params[0]}/questions`);
@@ -886,26 +930,14 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/statistics',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'assessment_statistics';
+        res.locals.navSubPage = 'statistics';
         next();
       },
       (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
         .default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/question_statistics',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'question_statistics';
-        next();
-      },
-      (
-        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
-      ).default,
     ],
   );
   app.use(
@@ -920,24 +952,13 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/logs',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'uploads';
+        res.locals.navSubPage = 'settings';
         next();
       },
-      (await import('./pages/instructorAssessmentUploads/instructorAssessmentUploads.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'regrading';
-        next();
-      },
-      (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
-        .default,
+      (await import('./pages/instructorAssessmentLogs/instructorAssessmentLogs.js')).default,
     ],
   );
   app.use(
@@ -1240,6 +1261,9 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1253,9 +1277,29 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
       .default,
   );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/ai_grading',
+      (
+        await import('./ee/pages/instructorInstanceAdminAiGrading/instructorInstanceAdminAiGrading.js')
+      ).default,
+    );
+  }
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/trpc',
+    courseInstanceTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students/labels',
+    (await import('./pages/instructorStudentsLabels/instructorStudentsLabels.js')).default,
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
@@ -1890,6 +1934,13 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
+  app.use('/pl/administrator/trpc', administratorTrpcRouter);
+
+  app.use(
+    '/pl/administrator',
+    (await import('./middlewares/selectPendingCourseRequestCount.js')).default,
+  );
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -1905,10 +1956,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator/courses',
     (await import('./pages/administratorCourses/administratorCourses.js')).default,
-  );
-  app.use(
-    '/pl/administrator/networks',
-    (await import('./pages/administratorNetworks/administratorNetworks.js')).default,
   );
   app.use(
     '/pl/administrator/workspaces',
@@ -2126,7 +2173,7 @@ export async function insertDevUser() {
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
+  const user_id = await sqldb.queryScalar(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2513,7 +2560,7 @@ if (shouldStartServer) {
     load.initEstimator('python_worker_idle', 1, false);
     load.initEstimator('python_callback_waiting', 1);
 
-    await codeCaller.init();
+    await codeCaller.init({ lazyWorkers: process.env.NODE_ENV === 'test' });
     await assets.init();
     await cache.init({
       type: config.cacheType,
@@ -2560,6 +2607,7 @@ if (shouldStartServer) {
     // requests, as they may actually end up executing course code.
     if (config.externalGradingEnableResults) {
       await externalGraderResults.init();
+      await externalGraderDeadLetters.init();
     }
 
     await cron.init();
@@ -2579,6 +2627,18 @@ if (shouldStartServer) {
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
   process.once('SIGTERM', async () => {
+    // In test environments, the entire process group receives SIGTERM, which
+    // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
+    // These unhandled 'error' events on ClientRequest objects would crash the
+    // process, so we suppress them during shutdown.
+    if (process.env.NODE_ENV === 'test') {
+      process.on('uncaughtException', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ECONNRESET') return;
+        logger.error('Uncaught exception during shutdown', err);
+        process.exit(1);
+      });
+    }
+
     // By this point, we should no longer be attached to the load balancer,
     // so there's no point shutting down the HTTP server or the socket.io
     // server.
@@ -2588,7 +2648,9 @@ if (shouldStartServer) {
     if (process.env.NODE_ENV !== 'test') {
       logger.info('Shutting down async processing');
     }
-    const results = await Promise.allSettled([
+    // First, stop all services that use the database.
+    const serviceResults = await Promise.allSettled([
+      externalGraderDeadLetters.stop(),
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
@@ -2597,12 +2659,19 @@ if (shouldStartServer) {
       assets.close(),
       codeCaller.finish(),
       stopBatchedMigrations(),
-      namedLocks.close(),
-      sqldb.closeAsync(),
     ]);
-    results.forEach((r) => {
+    serviceResults.forEach((r) => {
       if (r.status === 'rejected') {
         logger.error('Error shutting down async processing', r.reason);
+        Sentry.captureException(r.reason);
+      }
+    });
+
+    // Then close the database connections now that nothing is using them.
+    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
+    dbResults.forEach((r) => {
+      if (r.status === 'rejected') {
+        logger.error('Error closing database connections', r.reason);
         Sentry.captureException(r.reason);
       }
     });
