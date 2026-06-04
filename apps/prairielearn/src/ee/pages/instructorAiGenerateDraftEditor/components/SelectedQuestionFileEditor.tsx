@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { type FormEvent, type Ref, useImperativeHandle, useState } from 'react';
+import { type Ref, type SubmitEvent, useImperativeHandle, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
@@ -110,7 +110,7 @@ export function SelectedQuestionFileEditor({
     });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!hasChanges) return;
     save(false);

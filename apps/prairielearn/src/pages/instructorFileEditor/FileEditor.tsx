@@ -3,7 +3,7 @@ import type * as bootstrap from 'bootstrap';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
-import { type FormEvent, Fragment, useCallback, useRef, useState } from 'react';
+import { Fragment, type SubmitEvent, useCallback, useRef, useState } from 'react';
 import { Alert, Collapse, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -271,7 +271,7 @@ export function FileEditor({
 
   const discardDraft = () => window.location.reload();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     if (bypassSaveCheckRef.current) {
       bypassSaveCheckRef.current = false;
       return;
