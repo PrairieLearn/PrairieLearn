@@ -293,7 +293,7 @@ def test_converts_bare_string_shorthands_by_mathjson_rules() -> None:
 
 
 def test_rejects_mathjson_dictionary_objects() -> None:
-    with pytest.raises(TypeError, match="dictionary objects"):
+    with pytest.raises(TypeError, match="Unsupported formula editor input"):
         mathjson_to_sympy_expr({"dict": {"x": 1}})
 
 
@@ -370,10 +370,10 @@ def test_rejects_symbol_expressions_that_do_not_convert_to_sympy_symbols() -> No
     with pytest.raises(TypeError, match="Symbol expects a single symbol argument"):
         mathjson_to_sympy_expr(["Symbol", "x", "y"])
 
-    with pytest.raises(MathJsonStudentError, match="MathJSON symbol expression"):
+    with pytest.raises(MathJsonStudentError, match="Expected a symbol"):
         mathjson_to_sympy_expr(["Symbol", 1])
 
-    with pytest.raises(MathJsonStudentError, match="MathJSON symbol expression"):
+    with pytest.raises(MathJsonStudentError, match="Expected a symbol"):
         mathjson_to_sympy_expr(["Symbol", "'x'"])
 
 
