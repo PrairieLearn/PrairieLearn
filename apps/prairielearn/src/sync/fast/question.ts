@@ -177,7 +177,6 @@ async function updateQuestion(
 export async function syncQuestionJson(
   course: Course,
   pathPrefix: string,
-  { skipGradingMethodBail = false }: { skipGradingMethodBail?: boolean } = {},
 ): Promise<Question | null> {
   const existingQuestion = await selectMatchingQuestion(pathPrefix);
 
@@ -206,17 +205,9 @@ export async function syncQuestionJson(
     // If the UUIDs don't match, we can't do a fast sync.
     if (jsonData.uuid !== existingQuestion.uuid) return null;
 
-    // If we're changing either to or from the Manual grading method, point
-    // allocations in dependent assessments change. The per-case path can't
-    // handle that, so it bails to a full sync. Callers that resync those
-    // assessments themselves (e.g. the graph engine) pass `skipGradingMethodBail`.
-    if (
-      !skipGradingMethodBail &&
-      jsonData.data?.gradingMethod !== existingQuestion.grading_method &&
-      (jsonData.data?.gradingMethod === 'Manual' || existingQuestion.grading_method === 'Manual')
-    ) {
-      return null;
-    }
+    // A grading-method change (to/from Manual) shifts point allocations in
+    // dependent assessments. That's handled by the graph engine rippling to
+    // those assessments and re-syncing them, so we don't need to bail here.
 
     // The topic must already exist. If it doesn't, we can't do a fast sync.
     // The exception is when there's an error in the file, in which case we
@@ -336,7 +327,7 @@ export async function syncQuestionRename(
     uuid: jsonData.uuid,
   });
   // For this to be a rename, the question must already exist under the old QID.
-  if (!existingQuestion || existingQuestion.qid !== oldQid) return null;
+  if (existingQuestion?.qid !== oldQid) return null;
 
   const topic = await validateAndGetTopic(course, jsonData);
   if (!topic) return null;

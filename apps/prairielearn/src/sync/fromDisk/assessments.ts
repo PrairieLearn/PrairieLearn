@@ -9,7 +9,11 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { type AssessmentTool, type Course, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentTool,
+  type Course,
+  SprocSyncAssessmentsSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
@@ -606,7 +610,7 @@ export async function syncSingleAssessment({
   courseInstanceShortName: string;
   tid: string;
 }): Promise<boolean> {
-  const courseInstanceId = await sqldb.queryOptionalRow(
+  const courseInstanceId = await sqldb.queryOptionalScalar(
     sql.select_course_instance_id,
     { course_id: course.id, short_name: courseInstanceShortName },
     IdSchema,

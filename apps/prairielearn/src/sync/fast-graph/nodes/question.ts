@@ -2,7 +2,11 @@ import type { ChangedFiles } from '../../../lib/chunks.js';
 import type { Course } from '../../../lib/db-types.js';
 import { selectAssessmentsReferencingQuestions } from '../../../models/assessment.js';
 import { getFastSyncStrategy } from '../../fast/index.js';
-import { selectMatchingQuestion, syncQuestionJson, syncQuestionRename } from '../../fast/question.js';
+import {
+  selectMatchingQuestion,
+  syncQuestionJson,
+  syncQuestionRename,
+} from '../../fast/question.js';
 import type { DirtyNode, MatchResult, SyncNode, SyncOutcome } from '../engine.js';
 
 type QuestionPayload =

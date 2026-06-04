@@ -184,16 +184,13 @@ grows; declaring an edge is the additive unit (R5).
 | A2 | Engine `resolve(diff)`: collect dirty instances from every node type → BFS over `dependents()` to transitive closure → sort by `topoRank` | |
 | A3 | Engine `run(closure)`: `syncInstance` each in topo order inside one transaction; first `'fallback'` or throw → abort tx, return `false` → caller does `syncDiskToSqlWithLock` | |
 | A4 | **Question node** = port of Nathan's `fastSyncQuestion`, **minus** the Manual grading-method bail (that ripple is now handled). `dependents` = `selectAssessmentsReferencingQuestions` | |
-| A5 | 🟡 **Assessment node** = on a question grading-method flip, swap `max_manual_points`/`max_auto_points` on dependent `assessment_questions`. Per `sync_assessments` sproc L440–454, `max_points` (total) is **unchanged**; only the manual/auto split moves, and only for non-split rows. Bounded `UPDATE`, **no fallback needed**: split-points AQs are provably unaffected by grading method, so the `UPDATE`'s `WHERE` simply skips them (`json_max_auto_points`/`json_manual_points IS NULL` + `json_auto_points` is jsonb-`null`). 🟡 Build gotcha: `json_auto_points` is **jsonb**, so "unset" is JSON `null` not SQL `NULL` — detect with `JSONB_TYPEOF(...) = 'null'` | |
+| A5 | ~~Assessment node = narrow recompute of `max_manual_points`/`max_auto_points`~~ **superseded in Iteration 2** by whole-object re-sync (`syncSingleAssessment`). See below. | |
 
 | A6 | Same `syncCourseFromDisk` hook as CURRENT; engine emits the chunk set + calls `updateCourseCommitHash` | |
 
-**No remaining flagged unknowns.** A5's recompute is concrete (grading-method → manual/auto swap,
-total unchanged) with a safe fallback for the split-points edge. A1–A4, A6 are registry + BFS +
-topo-sort + a port of existing code + the existing hook. The **one residual sub-question** for
-build: identify split-points AQs from stored columns (e.g. `json_manual_points`/`json_max_auto_points`
-both non-null) vs. having to re-read `infoAssessment.json` — if unidentifiable, the conservative
-fallback covers it.
+A1–A4, A6 are registry + BFS + topo-sort + a port of existing code + the existing hook. A5 was
+initially a narrow per-edge recompute; **Iteration 2 replaced it** with a uniform whole-object
+re-sync (every node re-derives its object from disk) — see the section below.
 
 ### R8 self-check (the gate)
 - **Engine = A1 + A2 + A3 only** (registry type + BFS + topo-sort + transactional run). Target ≤ ~150 LOC.
@@ -206,13 +203,16 @@ fallback covers it.
 Built on top of Nathan's `fast-sync-questions` branch (merged in) so the Question node reuses his
 exact safety logic and the only genuinely new code is the engine + Assessment node.
 
+> Note: the table below is the Iteration-1 snapshot (narrow recompute, flag-gated). See
+> **Iteration 2** for the final shape (whole-object re-sync, graph-only, renames + assessment edits).
+
 | File | LOC | Role |
 |------|----:|------|
 | `fast-graph/engine.ts` | 124 (74 code) | A1+A2+A3 — the whole engine |
 | `fast-graph/index.ts` | 23 | registry + `attemptGraphFastSync` |
 | `fast-graph/nodes/question.ts` | 71 | Question node (reuses `sync/fast` via 2 exports + 1 param) |
 | `fast-graph/nodes/assessment.ts` | 39 | Assessment node — brand new, self-contained |
-| `fast-graph/nodes/assessment.sql` | 33 | the manual/auto recompute |
+| `fast-graph/nodes/assessment.sql` | 33 | the manual/auto recompute (deleted in Iteration 2) |
 
 Edits to existing code (all minimal / mechanical):
 - `sync/fast/question.ts`: `export` two helpers + add `skipGradingMethodBail` param.
@@ -229,3 +229,46 @@ still pass.
 cases. Both halves of the gate met. The graph buys R3 (ripple) + R4 (order) + R5 (additive) for a
 ~74-line engine; per-node safety (R1/R2) is the same work as CURRENT either way. The headline win:
 the graph fast-syncs the question grading-method change that CURRENT explicitly falls back on.
+
+---
+
+## Iteration 2: whole-object re-sync (supersedes the narrow recompute)
+
+Feedback: *"why resync specific properties on edges instead of just resyncing the entire
+dependent object?"* — correct. The narrow `recompute_question_points_split` (A5) was per-edge
+specialized SQL only because no single-object assessment sync existed. Replaced with a uniform
+model: **every node's `sync` re-derives its whole object from disk; edges are pure dirty
+propagation.** This also dissolved the rename-ripple problem.
+
+**New primitive — `syncSingleAssessment`** (`fromDisk/assessments.ts`). Re-syncs one assessment
+from disk without disturbing siblings, via a new `partial_sync boolean DEFAULT false` parameter on
+the central `sync_assessments` sproc. Only two CI-wide steps are guarded by it (sibling
+soft-delete + the "DB has extra assessments" assertion); all per-assessment upsert logic is reused
+unchanged. Cross-entity re-validation is skipped (the assessment was valid at last full sync and
+the triggering edit doesn't invalidate it) — a documented simplification; cases that could
+invalidate it (deletion, assessment rename) fall back.
+
+**Node changes:**
+- **Assessment node** now `match`es a modified `infoAssessment.json` → dirty assessment, *and*
+  serves as a ripple target — both run `syncSingleAssessment`. So **direct assessment edits now
+  fast-sync** (new capability), and a question grading-method change ripples → the assessment
+  re-syncs fully (no special recompute SQL).
+- **Question node** folds upsert + **rename** into one node (discriminated payload). A grading-method
+  change no longer bails — it ripples. A **rename** (detected from `identifyChangedFiles`'s new
+  rename info) updates the `questions` row's qid (matched by UUID) via `syncQuestionRename`; its
+  referencing assessments are re-synced from their rewritten JSON, so **referenced-question renames
+  fast-sync correctly** — the earlier conservative fallback is no longer needed.
+
+**`identifyChangedFiles`** now returns structured `ChangedFiles { modified, deleted, renamed }`
+(via `git diff --name-status -M`); `changedFilePaths()` flattens it for the chunk path.
+
+**Dispatcher removed (graph is the sole fast-sync path):** dropped the `fastSyncUseGraph` flag,
+`attemptFastSync`, and `fastSyncQuestion`; `editors.ts` calls only `attemptGraphFastSync`.
+`getFastSyncStrategy` + `syncQuestionJson` remain as reused building blocks. Assessment renames /
+deletions and multi-question moves still fall back (R2).
+
+**Tests (all green):** `engine.test.ts` (6, synthetic engine); `fast-graph/index.test.ts` (6:
+grading-method ripple, **direct assessment edit**, **question rename**, chunk reporting, fallback
+on unrecognized file); migrated `fast/question.test.ts` (33, now driven through the graph) + the
+matcher unit tests; full `assessmentsSync.test.ts` bulk suite (168) confirms the `partial_sync`
+sproc change is safe.

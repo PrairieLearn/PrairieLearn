@@ -87,11 +87,13 @@ describe('fastSyncQuestion', () => {
       await util.writeCourseToDirectory(courseData, courseDir);
 
       const course = await selectCourseById(syncResults.courseId);
-      assert.isTrue(await fastSync(course, [
-        path.join('questions', qid, 'info.json'),
-        path.join('questions', qid, 'question.html'),
-        path.join('questions', qid, 'server.py'),
-      ]));
+      assert.isTrue(
+        await fastSync(course, [
+          path.join('questions', qid, 'info.json'),
+          path.join('questions', qid, 'question.html'),
+          path.join('questions', qid, 'server.py'),
+        ]),
+      );
 
       const question = await selectQuestionByQid({ course_id: course.id, qid });
       assert.equal(question.title, courseData.questions[qid].title);
@@ -240,9 +242,7 @@ describe('fastSyncQuestion', () => {
     courseData.questions[util.QUESTION_ID].authors = [];
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    assert.isTrue(await fastSync(course, [
-      path.join('questions', util.QUESTION_ID, 'info.json'),
-    ]));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
 
     const allQuestionAuthorsAfterDelete = await util.dumpTableWithSchema(
       'question_authors',
@@ -263,10 +263,12 @@ describe('fastSyncQuestion', () => {
     // TODO: in theory this can skip writing anything to the database at all.
     // Can we implement that and write a test for it?
     const course = await selectCourseById(syncResults.courseId);
-    assert.isTrue(await fastSync(course, [
-      path.join('questions', util.QUESTION_ID, 'server.py'),
-      path.join('questions', util.QUESTION_ID, 'question.html'),
-    ]));
+    assert.isTrue(
+      await fastSync(course, [
+        path.join('questions', util.QUESTION_ID, 'server.py'),
+        path.join('questions', util.QUESTION_ID, 'question.html'),
+      ]),
+    );
   });
 
   it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
@@ -322,7 +324,7 @@ describe('fastSyncQuestion', () => {
     assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
   });
 
-  it('falls back to slow sync when changing to Manual grading method', async () => {
+  it('fast-syncs a change to the Manual grading method', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
     // Change the grading method to Manual.
@@ -330,10 +332,13 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    assert.isFalse(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
+    assert.isTrue(await fastSync(course, [path.join('questions', util.QUESTION_ID, 'info.json')]));
+
+    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    assert.equal(question.grading_method, 'Manual');
   });
 
-  it('falls back to slow sync when changing from Manual grading method', async () => {
+  it('fast-syncs a change from the Manual grading method', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
     // Change the grading method to Internal.
@@ -341,12 +346,20 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    assert.isFalse(await fastSync(course, [
-      path.join('questions', util.MANUAL_GRADING_QUESTION_ID, 'info.json'),
-    ]));
+    assert.isTrue(
+      await fastSync(course, [
+        path.join('questions', util.MANUAL_GRADING_QUESTION_ID, 'info.json'),
+      ]),
+    );
+
+    const question = await selectQuestionByQid({
+      course_id: course.id,
+      qid: util.MANUAL_GRADING_QUESTION_ID,
+    });
+    assert.equal(question.grading_method, 'Internal');
   });
 
-  it('falls back to slow sync when question path changes', async () => {
+  it('does not match a question path change as a single-question upsert', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
 
     // Move the question to a new path.
@@ -355,7 +368,7 @@ describe('fastSyncQuestion', () => {
     courseData.questions['new-location/test-question'] = questionData;
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    assert.isFalse(await fastSync(course, [
+    const strategy = getFastSyncStrategy([
       path.join('questions', util.QUESTION_ID, 'info.json'),
       path.join('questions', 'new-location', 'test-question', 'info.json'),
     ]);
@@ -374,10 +387,12 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([
-      path.join('questions', 'nested', 'test-question', 'info.json'),
-      path.join('questions', 'nested', 'another-test-question', 'info.json'),
-    ]));
+    assert.isFalse(
+      await fastSync(course, [
+        path.join('questions', 'nested', 'test-question', 'info.json'),
+        path.join('questions', 'nested', 'another-test-question', 'info.json'),
+      ]),
+    );
   });
 
   it('falls back to slow sync when question is moved to a deeper-nested path', async () => {
@@ -392,9 +407,11 @@ describe('fastSyncQuestion', () => {
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    assert.isFalse(await fastSync(course, [
-      path.join('questions', 'nested', 'test-question', 'info.json'),
-      path.join('questions', 'nested', 'test-question', 'nested-again', 'info.json'),
-    ]));
+    assert.isFalse(
+      await fastSync(course, [
+        path.join('questions', 'nested', 'test-question', 'info.json'),
+        path.join('questions', 'nested', 'test-question', 'nested-again', 'info.json'),
+      ]),
+    );
   });
 });

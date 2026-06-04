@@ -51,7 +51,9 @@ describe('runFastSync engine', () => {
   });
 
   it('falls back when nothing matches the diff', async () => {
-    const result = await runFastSync(course, changed(['a.json']), [fakeNode({ type: 'A', topoRank: 0 })]);
+    const result = await runFastSync(course, changed(['a.json']), [
+      fakeNode({ type: 'A', topoRank: 0 }),
+    ]);
     assert.isFalse(result.ok);
   });
 
@@ -80,7 +82,10 @@ describe('runFastSync engine', () => {
     });
 
     // Registry order is deliberately the reverse of topo order.
-    const result = await runFastSync(course, changed(['questions/q1/info.json']), [assessment, question]);
+    const result = await runFastSync(course, changed(['questions/q1/info.json']), [
+      assessment,
+      question,
+    ]);
 
     assert.isTrue(result.ok);
     assert.deepEqual(order, ['Question:q1', 'Assessment:a1']);

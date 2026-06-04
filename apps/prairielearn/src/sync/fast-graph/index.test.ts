@@ -49,7 +49,10 @@ describe('graph fast sync', () => {
     courseData.questions[QID].gradingMethod = 'Manual';
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    const result = await attemptGraphFastSync(course, onlyModified([path.join('questions', QID, 'info.json')]));
+    const result = await attemptGraphFastSync(
+      course,
+      onlyModified([path.join('questions', QID, 'info.json')]),
+    );
     assert.isTrue(result.ok);
 
     const updated = await selectQuestionByQid({ course_id: course.id, qid: QID });
@@ -72,9 +75,9 @@ describe('graph fast sync', () => {
     const before = await selectAssessmentQuestionsForQuestion(question.id);
     assert.equal(before[0].max_points, 10);
 
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-      util.ASSESSMENT_ID
-    ].zones[0].questions[0].points = 15;
+    const assessment =
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID];
+    assessment.zones![0].questions[0].points = 15;
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const result = await attemptGraphFastSync(course, onlyModified([ASSESSMENT_INFO]));
@@ -113,7 +116,9 @@ describe('graph fast sync', () => {
     const renamed = await selectQuestionByQid({ course_id: course.id, qid: 'renamed-question' });
     assert.equal(renamed.id, original.id);
     assert.equal(renamed.uuid, original.uuid);
-    assert.isNull(await selectOptionalQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID }));
+    assert.isNull(
+      await selectOptionalQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID }),
+    );
   });
 
   it('reports the question chunk to regenerate', async () => {
@@ -123,7 +128,10 @@ describe('graph fast sync', () => {
     courseData.questions[QID].title = 'Updated title';
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    const result = await attemptGraphFastSync(course, onlyModified([path.join('questions', QID, 'info.json')]));
+    const result = await attemptGraphFastSync(
+      course,
+      onlyModified([path.join('questions', QID, 'info.json')]),
+    );
     assert.isTrue(result.ok);
     assert.deepEqual(result.chunks, [{ type: 'question', questionName: QID }]);
   });
