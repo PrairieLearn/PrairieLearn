@@ -91,7 +91,8 @@ const CourseOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
-      .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
+      .describe('Feature flag to enable the new question renderer.')
+      .meta({ deprecated: true })
       .optional(),
     devModeFeatures: z
       .union([
@@ -118,7 +119,8 @@ export const CourseJsonSchema = z
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).')
+      .describe('Unique identifier (UUID v4).')
+      .meta({ deprecated: true })
       .optional(),
     name: z.string().describe("The course name (e.g., 'TAM 212')."),
     title: z.string().describe("The course title (e.g., 'Introductory Dynamics')."),
@@ -158,7 +160,8 @@ export const CourseJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('The specification file for a course.');
+  .describe('The specification file for a course.')
+  .meta({ title: 'Course information' });
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
 export type CourseJsonInput = z.input<typeof CourseJsonSchema>;
