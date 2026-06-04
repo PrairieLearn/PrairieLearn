@@ -1,5 +1,5 @@
 import { type OpenAIProvider } from '@ai-sdk/openai';
-import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
+import type { GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 
@@ -15,19 +15,19 @@ type Prompt = (string | string[])[];
 export type AiImageGradingResponses =
   | {
       rotationCorrectionApplied: false;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: GenerateTextResult<any, any>;
     }
   | {
       rotationCorrectionApplied: true;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: GenerateTextResult<any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateObjectResult<any>;
+          response: GenerateTextResult<any, any>;
         }
       >;
-      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
     };
 
 /**
@@ -45,7 +45,7 @@ export function logResponseUsage({
   response,
   logger,
 }: {
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any>;
   logger: { info: (msg: string) => void };
 }) {
   const usage = response.usage;
@@ -63,7 +63,7 @@ export function logResponsesUsage({
   responses,
   logger,
 }: {
-  responses: (GenerateObjectResult<any> | GenerateTextResult<any, any>)[];
+  responses: GenerateTextResult<any, any>[];
   logger: { info: (msg: string) => void };
 }) {
   const { inputTokens, cachedInputTokens, outputTokens, reasoningTokens, totalTokens } =
