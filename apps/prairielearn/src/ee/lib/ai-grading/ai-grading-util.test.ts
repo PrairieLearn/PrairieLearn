@@ -1,8 +1,18 @@
+import assert from 'node:assert';
+
+import { wrapLanguageModel } from 'ai';
+import { MockLanguageModelV3 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
 
 import { type RubricItem } from '../../../lib/db-types.js';
 
-import { generatePrompt, parseAiRubricItems, parseSubmission } from './ai-grading-util.js';
+import {
+  correctGeminiMalformedRubricGradingJson,
+  createGeminiRepairMiddleware,
+  generatePrompt,
+  parseAiRubricItems,
+  parseSubmission,
+} from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
   return {
@@ -278,5 +288,68 @@ describe('generatePrompt', () => {
       (m) => typeof m.content === 'string' && m.content.includes('grader guidelines'),
     );
     expect(guidelinesPreamble).toBeUndefined();
+  });
+});
+
+describe('correctGeminiMalformedRubricGradingJson', () => {
+  it('returns null when there is no rubric_items key', () => {
+    expect(correctGeminiMalformedRubricGradingJson('{"explanation": "ok"}')).toBeNull();
+  });
+
+  it('escapes unescaped backslashes in rubric item keys to produce valid JSON', () => {
+    // The raw text contains `\mathbb{x}` with an unescaped backslash, which is invalid JSON.
+    const malformed = '{"explanation": "ok", "rubric_items": {"\\mathbb{x}": true}}';
+    expect(() => JSON.parse(malformed)).toThrow();
+
+    const repaired = correctGeminiMalformedRubricGradingJson(malformed);
+    assert(repaired !== null);
+    expect(JSON.parse(repaired)).toEqual({
+      explanation: 'ok',
+      rubric_items: { '\\mathbb{x}': true },
+    });
+  });
+});
+
+describe('createGeminiRepairMiddleware', () => {
+  async function generateWithRepair(text: string): Promise<string> {
+    const model = wrapLanguageModel({
+      model: new MockLanguageModelV3({
+        doGenerate: {
+          content: [{ type: 'text', text }],
+          finishReason: { unified: 'stop', raw: undefined },
+          usage: {
+            inputTokens: {
+              total: undefined,
+              noCache: undefined,
+              cacheRead: undefined,
+              cacheWrite: undefined,
+            },
+            outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+          },
+          warnings: [],
+        },
+      }),
+      middleware: createGeminiRepairMiddleware(),
+    });
+
+    const result = await model.doGenerate({ prompt: [] });
+    const textPart = result.content.find((part) => part.type === 'text');
+    assert(textPart?.type === 'text');
+    return textPart.text;
+  }
+
+  it('leaves valid JSON untouched so backslashes are not double-escaped', async () => {
+    const valid = JSON.stringify({ rubric_items: { '\\mathbb{x}': true } });
+    expect(await generateWithRepair(valid)).toBe(valid);
+  });
+
+  it('repairs malformed Gemini JSON into parseable JSON', async () => {
+    const repaired = await generateWithRepair('{"rubric_items": {"\\mathbb{x}": true}}');
+    expect(JSON.parse(repaired)).toEqual({ rubric_items: { '\\mathbb{x}': true } });
+  });
+
+  it('leaves malformed JSON without a rubric_items key untouched', async () => {
+    const malformed = '{"explanation": "\\mathbb{x}"}';
+    expect(await generateWithRepair(malformed)).toBe(malformed);
   });
 });

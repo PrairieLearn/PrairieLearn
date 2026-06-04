@@ -372,6 +372,11 @@ export async function aiGrade({
     }
   });
 
+  // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
+  // unescaped backslashes in the rubric item keys of the response.
+  //
+  // TODO: Remove this temporary fix once Google fixes the underlying issue.
+  // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
   const gradingModel =
     provider === 'google'
       ? wrapLanguageModel({ model, middleware: createGeminiRepairMiddleware() })
