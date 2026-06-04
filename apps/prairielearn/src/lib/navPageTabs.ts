@@ -145,17 +145,17 @@ export function getNavPageTabs() {
         tabLabel: 'Groups',
       },
       {
-        activeSubPage: 'questions',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
-        iconClasses: 'far fa-file-alt',
-        tabLabel: 'Questions',
-      },
-      {
         activeSubPage: 'manual_grading',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',
         tabLabel: 'Manual grading',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+      },
+      {
+        activeSubPage: 'questions',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+        iconClasses: 'far fa-file-alt',
+        tabLabel: 'Questions',
       },
       {
         activeSubPage: 'settings',

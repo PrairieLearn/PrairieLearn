@@ -155,11 +155,23 @@ body:has(div.app-main-container) {
  * its vertical padding and soften the default `btn-ghost` gray.
  */
 .assessment-switcher-button.btn.btn-ghost {
-  --bs-btn-padding-y: 0.125rem;
+  --bs-btn-padding-y: 0;
   --bs-btn-hover-bg: rgba(var(--bs-secondary-rgb), 0.15);
   --bs-btn-hover-border-color: transparent;
   --bs-btn-active-bg: rgba(var(--bs-secondary-rgb), 0.25);
   --bs-btn-active-border-color: transparent;
+}
+
+.assessment-switcher-button .h6 {
+  line-height: 1.1;
+}
+
+.assessment-switcher-button .small {
+  line-height: 1.25;
+}
+
+.assessment-switcher-wrapper {
+  min-width: 0;
 }
 
 .assessment-navigation-container {
@@ -169,6 +181,7 @@ body:has(div.app-main-container) {
 
 .assessment-navigation-bar {
   flex-direction: column;
+  padding-top: 0.5rem;
   box-shadow: inset 0 -1px 0 var(--bs-border-color);
 }
 
@@ -187,6 +200,15 @@ body:has(div.app-main-container) {
   .assessment-navigation-bar {
     flex-direction: row;
     align-items: flex-end;
+    padding-top: 0;
+  }
+
+  .assessment-navigation-bar .pl-nav-tabs-bar {
+    padding-top: 0.5rem;
+  }
+
+  .assessment-navigation-bar .assessment-switcher-wrapper {
+    align-self: center;
   }
 
   .assessment-navigation-divider {
