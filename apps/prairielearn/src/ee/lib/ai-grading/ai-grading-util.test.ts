@@ -1,22 +1,8 @@
-import assert from 'node:assert';
-
-import { Output, generateText, wrapLanguageModel } from 'ai';
-import { MockLanguageModelV3 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
-
-import { sanitizeObject } from '@prairielearn/sanitize';
 
 import { type RubricItem } from '../../../lib/db-types.js';
 
-import {
-  correctGeminiMalformedRubricGradingJson,
-  createGeminiRepairMiddleware,
-  extractAiGradingExplanationFromCompletion,
-  generatePrompt,
-  parseAiRubricItems,
-  parseSubmission,
-} from './ai-grading-util.js';
+import { generatePrompt, parseAiRubricItems, parseSubmission } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
   return {
@@ -248,85 +234,6 @@ describe('parseAiRubricItems', () => {
   });
 });
 
-describe('extractAiGradingExplanationFromCompletion', () => {
-  it('reads the explanation from each persisted completion format', () => {
-    // OpenAI chat completions.
-    expect(
-      extractAiGradingExplanationFromCompletion({
-        choices: [{ message: { parsed: { explanation: ' from choices ' } } }],
-      }),
-    ).toBe('from choices');
-
-    // OpenAI responses API.
-    expect(
-      extractAiGradingExplanationFromCompletion({
-        output_parsed: { explanation: ' from output_parsed ' },
-      }),
-    ).toBe('from output_parsed');
-
-    // `ai` package `generateObject`.
-    expect(
-      extractAiGradingExplanationFromCompletion({ object: { explanation: ' from object ' } }),
-    ).toBe('from object');
-
-    // `ai` package `generateText` with structured output.
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: ' from _output ' } }),
-    ).toBe('from _output');
-  });
-
-  it('returns null for missing or blank explanations', () => {
-    expect(
-      extractAiGradingExplanationFromCompletion({ _output: { explanation: '   ' } }),
-    ).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion({})).toBeNull();
-    expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
-  });
-
-  // Regression test: a `generateText` result exposes its structured output via a
-  // non-enumerable `output` getter backed by an `_output` field. Persisting the
-  // result with `sanitizeObject` (which copies only own enumerable properties)
-  // drops the getter, so the explanation must be recovered from `_output`. A
-  // previous version read `output` and silently lost the explanation.
-  it('extracts the explanation from a serialized generateText result', async () => {
-    const model = new MockLanguageModelV3({
-      doGenerate: {
-        content: [
-          { type: 'text', text: JSON.stringify({ explanation: 'graded via generateText' }) },
-        ],
-        finishReason: { unified: 'stop', raw: undefined },
-        usage: {
-          inputTokens: {
-            total: undefined,
-            noCache: undefined,
-            cacheRead: undefined,
-            cacheWrite: undefined,
-          },
-          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
-        },
-        warnings: [],
-      },
-    });
-
-    const result = await generateText({
-      model,
-      output: Output.object({ schema: z.object({ explanation: z.string() }) }),
-      prompt: 'grade this',
-    });
-
-    const completion = sanitizeObject(result);
-
-    // The structured output is reachable at runtime via the `output` getter, but
-    // only `_output` survives serialization.
-    expect(result.output).toEqual({ explanation: 'graded via generateText' });
-    expect(completion).not.toHaveProperty('output');
-    expect(completion).toHaveProperty('_output');
-
-    expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
-  });
-});
-
 describe('generatePrompt', () => {
   const baseArgs = {
     questionPrompt: 'What is 2+2?',
@@ -371,68 +278,5 @@ describe('generatePrompt', () => {
       (m) => typeof m.content === 'string' && m.content.includes('grader guidelines'),
     );
     expect(guidelinesPreamble).toBeUndefined();
-  });
-});
-
-describe('correctGeminiMalformedRubricGradingJson', () => {
-  it('returns null when there is no rubric_items key', () => {
-    expect(correctGeminiMalformedRubricGradingJson('{"explanation": "ok"}')).toBeNull();
-  });
-
-  it('escapes unescaped backslashes in rubric item keys to produce valid JSON', () => {
-    // The raw text contains `\mathbb{x}` with an unescaped backslash, which is invalid JSON.
-    const malformed = '{"explanation": "ok", "rubric_items": {"\\mathbb{x}": true}}';
-    expect(() => JSON.parse(malformed)).toThrow();
-
-    const repaired = correctGeminiMalformedRubricGradingJson(malformed);
-    assert(repaired !== null);
-    expect(JSON.parse(repaired)).toEqual({
-      explanation: 'ok',
-      rubric_items: { '\\mathbb{x}': true },
-    });
-  });
-});
-
-describe('createGeminiRepairMiddleware', () => {
-  async function generateWithRepair(text: string): Promise<string> {
-    const model = wrapLanguageModel({
-      model: new MockLanguageModelV3({
-        doGenerate: {
-          content: [{ type: 'text', text }],
-          finishReason: { unified: 'stop', raw: undefined },
-          usage: {
-            inputTokens: {
-              total: undefined,
-              noCache: undefined,
-              cacheRead: undefined,
-              cacheWrite: undefined,
-            },
-            outputTokens: { total: undefined, text: undefined, reasoning: undefined },
-          },
-          warnings: [],
-        },
-      }),
-      middleware: createGeminiRepairMiddleware(),
-    });
-
-    const result = await model.doGenerate({ prompt: [] });
-    const textPart = result.content.find((part) => part.type === 'text');
-    assert(textPart?.type === 'text');
-    return textPart.text;
-  }
-
-  it('leaves valid JSON untouched so backslashes are not double-escaped', async () => {
-    const valid = JSON.stringify({ rubric_items: { '\\mathbb{x}': true } });
-    expect(await generateWithRepair(valid)).toBe(valid);
-  });
-
-  it('repairs malformed Gemini JSON into parseable JSON', async () => {
-    const repaired = await generateWithRepair('{"rubric_items": {"\\mathbb{x}": true}}');
-    expect(JSON.parse(repaired)).toEqual({ rubric_items: { '\\mathbb{x}': true } });
-  });
-
-  it('leaves malformed JSON without a rubric_items key untouched', async () => {
-    const malformed = '{"explanation": "\\mathbb{x}"}';
-    expect(await generateWithRepair(malformed)).toBe(malformed);
   });
 });

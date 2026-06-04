@@ -1,12 +1,11 @@
 import {
+  type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModel,
-  type LanguageModelMiddleware,
   type LanguageModelUsage,
   type ModelMessage,
-  Output,
   type UserContent,
-  generateText,
+  generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
@@ -505,7 +504,7 @@ export async function insertAiGradingJob({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  response: GenerateTextResult<any, any>;
+  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<string> {
@@ -559,15 +558,15 @@ export async function insertAiGradingJobWithRotationCorrection({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
+  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
   rotationCorrections: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateTextResult<any, any>;
+      response: GenerateObjectResult<any>;
     }
   >;
-  gradingResponseWithRotationCorrection: GenerateTextResult<any, any>;
+  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<string> {
@@ -806,7 +805,7 @@ async function correctImageOrientation({
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
-  response: GenerateTextResult<any, any>;
+  response: GenerateObjectResult<any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
@@ -849,15 +848,15 @@ async function correctImageOrientation({
     });
   }
 
-  const response = await generateText({
+  const response = await generateObject({
     model,
-    output: Output.object({ schema: RotationCorrectionOutputSchema }),
+    schema: RotationCorrectionOutputSchema,
     messages: prompt,
     // System messages in `messages` are hard-coded authored strings; safe to allow.
     allowSystemInMessages: true,
   });
 
-  const index = Number.parseInt(response.output.upright_image) - 1;
+  const index = Number.parseInt(response.object.upright_image) - 1;
 
   return {
     correctedImage: images[index],
@@ -902,7 +901,7 @@ export async function correctImagesOrientation({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateTextResult<any, any>;
+      response: GenerateObjectResult<any>;
     }
   > = {};
 
@@ -938,120 +937,6 @@ const AiGradingJobDataForSubmissionSchema = z.object({
   completion: AiGradingJobSchema.shape.completion,
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
-
-const AiGradingExplanationSchema = z.object({
-  explanation: z.string(),
-});
-
-/**
- * The persisted completion is a schemaless JSON blob whose shape depends on
- * which API/library produced it. We've used several over the lifetime of AI
- * grading, so we accept every shape we've ever stored. Each field is optional
- * because only one is present for a given completion (and for some time the
- * explanation wasn't persisted at all, so all of them may be absent).
- */
-const AiGradingCompletionSchema = z.object({
-  // OpenAI chat completions.
-  choices: z
-    .array(z.object({ message: z.object({ parsed: z.unknown().optional() }).optional() }))
-    .optional(),
-  // OpenAI responses API.
-  output_parsed: z.unknown().optional(),
-  // `ai` package `generateObject`.
-  object: z.unknown().optional(),
-  // `ai` package `generateText` with structured output. The result exposes the
-  // structured output via a non-enumerable `output` getter backed by an
-  // `_output` field, so only `_output` survives JSON serialization.
-  _output: z.unknown().optional(),
-});
-
-export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
-  const parsed = AiGradingCompletionSchema.safeParse(completion);
-  if (!parsed.success) return null;
-
-  const { choices, output_parsed, object, _output } = parsed.data;
-  const explanation = AiGradingExplanationSchema.safeParse(
-    // The 4 different formats
-    choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
-  );
-  if (!explanation.success) return null;
-
-  return explanation.data.explanation.trim() || null;
-}
-
-/**
- * Creates a language model middleware that repairs malformed JSON from Google Gemini models.
- *
- * The middleware intercepts the raw text output from the model and attempts to fix
- * unescaped backslashes in rubric item keys using `correctGeminiMalformedRubricGradingJson`.
- *
- * The repair function is destructive on valid JSON (it double-escapes backslashes),
- * so it only runs after a JSON parse failure.
- */
-export function createGeminiRepairMiddleware(): LanguageModelMiddleware {
-  return {
-    specificationVersion: 'v3',
-    wrapGenerate: async ({ doGenerate }) => {
-      const result = await doGenerate();
-      return {
-        ...result,
-        content: result.content.map((part) => {
-          if (part.type !== 'text') return part;
-          try {
-            JSON.parse(part.text);
-            return part;
-          } catch {
-            const repaired = correctGeminiMalformedRubricGradingJson(part.text);
-            return repaired ? { ...part, text: repaired } : part;
-          }
-        }),
-      };
-    },
-  };
-}
-
-/**
- * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
- *
- * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
- * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
- *
- * If a rubric item key contains escaped backslashes, Google Gemini generates
- * unescaped backslashes in the JSON response, leading to a JSON parsing error.
- *
- * Example: Rubric item key \\mathbb{x} gets generated as \mathbb{x}, which is invalid JSON since
- * it contains an unescaped backslash.
- *
- * This function escapes all backslashes of rubric item keys in the JSON response.
- *
- * @param rawResponseText - The raw AI grading response returned from the Gemini model.
- * - The response must be a JSON string containing a "rubric_items" key.
- * - The "rubric_items" key must be the last key in the JSON object.
- *
- * @returns The corrected JSON as a string, or null if it could not be corrected.
- */
-export function correctGeminiMalformedRubricGradingJson(rawResponseText: string): string | null {
-  const RUBRIC_ITEMS_KEY = '"rubric_items":';
-
-  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
-  if (startRubric === -1) return null;
-
-  // The rubric items object starts right after the "rubric_items": key.
-  const rubricItemsRaw = rawResponseText.slice(startRubric + RUBRIC_ITEMS_KEY.length).trim();
-
-  // Gemini sometimes returns unescaped backslashes in the rubric item keys.
-  // We need to escape them properly.
-  // This only changes the keys of rubricItemsRaw since its values are all booleans.
-  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
-
-  // All characters before the rubric items, including the "rubric_items": key.
-  const charactersBeforeRubricItemsObject = rawResponseText.slice(
-    0,
-    startRubric + RUBRIC_ITEMS_KEY.length,
-  );
-
-  return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
-}
 
 /**
  * Builds the `aiGradingInfo` displayed in the manual-grading instance question
@@ -1091,7 +976,44 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
+  // We're dealing with a schemaless JSON blob here. We'll be defensive and
+  // try to avoid errors when extracting the explanation. Note that for some
+  // time, the explanation wasn't included in the completion at all, so it
+  // may legitimately be missing.
+  //
+  // Over the lifetime of this feature, we've changed which APIs/libraries we
+  // use to generate the completion, so we need to handle all formats we've ever
+  // used for backwards-compatibility. Each one is documented below.
+  const explanation = run(() => {
+    const completion = aiGradingJobData.completion;
+    if (!completion) return null;
+
+    // OpenAI chat completion format
+    if (completion.choices) {
+      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // OpenAI response format
+    if (completion.output_parsed) {
+      const explanation = completion?.output_parsed?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    // `ai` package format
+    if (completion.object) {
+      const explanation = completion?.object?.explanation;
+      if (typeof explanation !== 'string') return null;
+
+      return explanation.trim() || null;
+    }
+
+    return null;
+  });
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
