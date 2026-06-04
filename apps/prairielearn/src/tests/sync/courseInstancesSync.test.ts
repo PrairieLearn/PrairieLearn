@@ -9,6 +9,7 @@ import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -71,6 +72,24 @@ describe('Course instance syncing', () => {
     await util.syncCourseData(courseDir);
 
     await findSyncedCourseInstance(courseInstanceId);
+  });
+
+  it('syncs a course instance whose JSON UUID uses uppercase hex', async () => {
+    const courseData = util.getCourseData();
+    const shortName = 'uppercaseUuid';
+    courseData.courseInstances[shortName] = {
+      ...makeCourseInstance(),
+      courseInstance: {
+        uuid: 'D4875187-B6B5-4DBC-80FA-CDBAA72CA458',
+        longName: 'Uppercase UUID instance',
+      },
+    };
+
+    const { syncResults } = await util.writeAndSyncCourseData(courseData);
+    assert.equal(syncResults.status, 'complete');
+
+    const synced = await findSyncedUndeletedCourseInstance(shortName);
+    assert.equal(synced.uuid, 'd4875187-b6b5-4dbc-80fa-cdbaa72ca458');
   });
 
   it('syncs access rules', async () => {
@@ -715,6 +734,7 @@ describe('Course instance syncing', () => {
       db: {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: Date | null;
+        self_enrollment_restrict_to_institution: boolean;
         self_enrollment_use_enrollment_code: boolean;
       } | null;
       errors: string[];
@@ -727,6 +747,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -740,6 +761,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -752,6 +774,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -761,6 +784,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -772,6 +796,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -783,6 +808,20 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
+          self_enrollment_use_enrollment_code: false,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: true,
+          restrictToInstitution: false,
+        },
+        db: {
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -802,6 +841,8 @@ describe('Course instance syncing', () => {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        // You can't configure selfEnrollment and allowAccess at the same time.
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = undefined;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -827,6 +868,8 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
           self_enrollment_enabled_before_date:
             syncedCourseInstance.self_enrollment_enabled_before_date,
+          self_enrollment_restrict_to_institution:
+            syncedCourseInstance.self_enrollment_restrict_to_institution,
           self_enrollment_use_enrollment_code:
             syncedCourseInstance.self_enrollment_use_enrollment_code,
         };
@@ -834,5 +877,52 @@ describe('Course instance syncing', () => {
         assert.deepEqual(result, db);
       });
     }
+  });
+
+  it('preserves student labels when course instance JSON becomes invalid', async () => {
+    const courseData = util.getCourseData();
+    const labelUuid = crypto.randomUUID();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+      { uuid: labelUuid, name: 'Section A', color: 'red1' },
+    ];
+    const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    const labelsBefore = await selectStudentLabelsInCourseInstance(syncedCourseInstance);
+    assert.lengthOf(labelsBefore, 1);
+    assert.equal(labelsBefore[0].name, 'Section A');
+
+    // Break the course instance JSON by removing the required longName field.
+    // @ts-expect-error intentionally breaking the type
+    delete courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.longName;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const syncedCourseInstanceAfter = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstanceAfter.sync_errors);
+
+    // Labels should still be present despite the sync error.
+    const labelsAfter = await selectStudentLabelsInCourseInstance(syncedCourseInstanceAfter);
+    assert.lengthOf(labelsAfter, 1);
+    assert.equal(labelsAfter[0].name, 'Section A');
+    assert.equal(labelsAfter[0].uuid, labelUuid);
+  });
+
+  it('records a warning if two student labels have the same name and deduplicates them', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+      { uuid: crypto.randomUUID(), name: 'Section A', color: 'red1' },
+      { uuid: crypto.randomUUID(), name: 'Section A', color: 'blue1' },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_warnings);
+    assert.match(syncedCourseInstance.sync_warnings, /Found duplicates in 'studentLabels'/);
+
+    const syncedLabels = await selectStudentLabelsInCourseInstance(syncedCourseInstance);
+    assert.lengthOf(syncedLabels, 1);
+    assert.equal(syncedLabels[0].name, 'Section A');
+    assert.equal(syncedLabels[0].color, 'blue1');
   });
 });

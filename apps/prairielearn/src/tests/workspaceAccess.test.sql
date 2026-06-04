@@ -10,7 +10,7 @@ WHERE
 INSERT INTO
   course_permissions (user_id, course_id, course_role) (
     SELECT
-      u.user_id,
+      u.id,
       1,
       'Owner'
     FROM

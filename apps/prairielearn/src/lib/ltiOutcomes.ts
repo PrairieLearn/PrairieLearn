@@ -1,6 +1,5 @@
 import * as crypto from 'node:crypto';
 
-import _ from 'lodash';
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
 import * as xml2js from 'xml2js';
@@ -125,21 +124,13 @@ export async function updateScore(assessment_instance_id: string) {
 
   // Inspect the XML result, log the action
   const result = await parser.parseStringPromise(await res.text());
-  // eslint-disable-next-line you-dont-need-lodash-underscore/get
-  const imsx_codeMajor = _.get(
-    result,
-    [
-      'imsx_POXEnvelopeResponse',
-      'imsx_POXHeader',
-      'imsx_POXResponseHeaderInfo',
-      'imsx_statusInfo',
-      'imsx_codeMajor',
-    ],
-    null,
-  );
+
+  const imsx_codeMajor =
+    result?.imsx_POXEnvelopeResponse?.imsx_POXHeader?.imsx_POXResponseHeaderInfo?.imsx_statusInfo
+      ?.imsx_codeMajor ?? null;
   if (imsx_codeMajor === 'success') {
     logger.info(
-      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
+      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${imsx_codeMajor}`,
     );
   } else {
     logger.info(

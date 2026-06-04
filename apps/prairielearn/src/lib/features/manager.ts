@@ -2,14 +2,21 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
+interface UnvalidatedFeatureContext {
+  institution_id?: string | null;
+  course_id?: string | null;
+  course_instance_id?: string | null;
+  user_id?: string | null;
+}
+
+const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'] as const;
 const DEFAULT_CONTEXT = {
   institution_id: null,
   course_id: null,
@@ -59,7 +66,7 @@ export class FeatureManager<FeatureName extends string> {
     this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
-  private validateFeature(name: FeatureName, context: FeatureContext) {
+  private validateFeature(name: FeatureName, context: UnvalidatedFeatureContext) {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
@@ -81,7 +88,7 @@ export class FeatureManager<FeatureName extends string> {
    * @param context A context to use when evaluating the feature.
    * @returns Whether or not the feature is enabled
    */
-  async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
+  async enabled(name: FeatureName, context: UnvalidatedFeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
     // Allow features to be overridden by `runWithOverrides`.
@@ -91,10 +98,7 @@ export class FeatureManager<FeatureName extends string> {
     // Allow global overrides, e.g. for tests.
     if (name in this.globalOverrides) return this.globalOverrides[name];
 
-    // Allow config to globally override a feature.
-    if (name in config.features) return config.features[name];
-
-    const featureIsEnabled = await queryOptionalRow(
+    const featureIsEnabled = await queryOptionalScalar(
       sql.is_feature_enabled,
       {
         name,
@@ -104,11 +108,16 @@ export class FeatureManager<FeatureName extends string> {
       z.boolean(),
     );
 
-    if (featureIsEnabled) return true;
+    // If the DB has a matching grant, use it (whether enabling or disabling).
+    if (featureIsEnabled != null) return featureIsEnabled;
+
+    // Allow config to globally enable or disable a feature. This acts as a
+    // default when no DB grant matches the given context.
+    if (name in config.features) return config.features[name];
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
-    if (config.devMode && 'course_id' in context) {
+    if (config.devMode && context.course_id != null) {
       const course = await selectCourseById(context.course_id);
       const devModeFeatures = course.options?.devModeFeatures;
 
@@ -141,10 +150,10 @@ export class FeatureManager<FeatureName extends string> {
       institution?: { id: string };
       course?: { id: string };
       course_instance?: { id: string };
-      authn_user?: { user_id: string };
+      authn_user?: { id: string };
     },
   ): Promise<boolean> {
-    const user_context = locals.authn_user && { user_id: locals.authn_user.user_id };
+    const user_context = locals.authn_user && { user_id: locals.authn_user.id };
     if (!locals.institution) {
       return this.enabled(name, user_context);
     } else if (!locals.course) {
@@ -238,7 +247,7 @@ export class FeatureManager<FeatureName extends string> {
     }
   }
 
-  validateContext(context: object): FeatureContext {
+  validateContext(context: UnvalidatedFeatureContext): FeatureContext {
     let hasAllParents = true;
     CONTEXT_HIERARCHY.forEach((key, index) => {
       const hasKey = !!context[key];

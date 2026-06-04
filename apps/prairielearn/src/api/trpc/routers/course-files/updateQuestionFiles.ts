@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
+
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionById } from '../../../../models/question.js';
@@ -17,7 +18,7 @@ export const updateQuestionFiles = privateProcedure
       question_id: IdSchema,
 
       // Question data.
-      files: z.record(z.string().nullable()),
+      files: z.record(z.string(), z.string().nullable()),
     }),
   )
   .output(

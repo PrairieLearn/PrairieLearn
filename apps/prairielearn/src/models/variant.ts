@@ -4,19 +4,19 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callRow,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
+  queryOptionalScalar,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
+import { selectCourseInstanceRole } from '../lib/authz-data.js';
 import {
   type Course,
-  EnumCourseInstanceRoleSchema,
-  IdSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -94,14 +94,14 @@ export async function selectVariantsByInstanceQuestion({
  * - For non-group work, a user is considered to own a variant if they are the
  *   user that created the variant, as tracked in `variants.user_id`.
  */
-export async function selectUserOwnsVariant({
+async function selectUserOwnsVariant({
   user_id,
   variant_id,
 }: {
   user_id: string;
   variant_id: string;
 }): Promise<boolean> {
-  return await queryRow(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
+  return await queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
 export async function selectAndAuthzVariant(options: {
@@ -109,6 +109,17 @@ export async function selectAndAuthzVariant(options: {
   variant_course: Course;
   question_id: string;
   course_instance_id?: string;
+  /**
+   * This parameter serves two purposes:
+   *
+   * - If provided, it's used as a safety check to ensure that the variant being accessed
+   *   belongs to the given instance question.
+   * - If not provided, it indicates that the variant is being accessed outside the
+   *   context of a specific instance question, which means that additional authorization
+   *   checks are necessary. Specifically, if not provided, we can't assume that the
+   *   caller has validated access to the enclosing assessment instance, so we perform
+   *   additional checks to ensure that the caller has permission to view student data.
+   */
   instance_question_id?: string;
   authz_data?: Record<string, any>;
   authn_user: User;
@@ -135,8 +146,8 @@ export async function selectAndAuthzVariant(options: {
     VariantSchema,
   );
 
-  function denyAccess(): never {
-    throw new AugmentedError('Access denied', {
+  function denyAccess(msg?: string): never {
+    throw new AugmentedError(msg ?? 'Access denied', {
       status: 403,
       data: options,
     });
@@ -179,7 +190,7 @@ export async function selectAndAuthzVariant(options: {
   // debugging?
   if ((variant_course.example_course || publicQuestionPreview) && !is_administrator) {
     const userOwnsVariant = await selectUserOwnsVariant({
-      user_id: user.user_id,
+      user_id: user.id,
       variant_id: variant.id,
     });
     if (!userOwnsVariant) {
@@ -201,7 +212,7 @@ export async function selectAndAuthzVariant(options: {
     // variant's course instance.
     let authnHasCourseInstancePermissionView =
       authz_data?.authn_has_course_instance_permission_view;
-    let hasCourseInstancePermissionView = authz_data?.has_course_permission_view;
+    let hasCourseInstancePermissionView = authz_data?.has_course_instance_permission_view;
 
     // If we're missing authz data, accessing the variant from a
     // non-course-instance route, or accessing the variant from a different
@@ -213,24 +224,25 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callRow(
-        'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
-      );
+      const authnUserCourseInstanceRole = await selectCourseInstanceRole({
+        userId: authn_user.id,
+        courseInstanceId: variant.course_instance_id,
+      });
 
-      const userPermissions = await callRow(
-        'authz_course_instance',
-        [user.user_id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
-      );
+      const userCourseInstanceRole = idsEqual(authn_user.id, user.id)
+        ? authnUserCourseInstanceRole
+        : await selectCourseInstanceRole({
+            userId: user.id,
+            courseInstanceId: variant.course_instance_id,
+          });
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        authnUserPermissions.course_instance_role,
+        authnUserCourseInstanceRole,
       ).has_course_instance_permission_view;
-      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        userPermissions.course_instance_role,
-      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView =
+        calculateCourseInstanceRolePermissions(
+          userCourseInstanceRole,
+        ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the
@@ -239,7 +251,7 @@ export async function selectAndAuthzVariant(options: {
       !is_administrator &&
       (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView)
     ) {
-      denyAccess();
+      denyAccess('Access denied (must have student data viewer permissions)');
     }
   }
 
@@ -252,7 +264,7 @@ export async function selectAndAuthzVariant(options: {
  * Assumes that the caller is already within a transaction.
  */
 export async function lockVariant({ variant_id }: { variant_id: string }) {
-  const locked = await queryOptionalRow(
+  const locked = await queryOptionalScalar(
     sql.select_and_lock_assessment_instance_or_variant,
     { variant_id },
     z.boolean(),

@@ -16,7 +16,7 @@ const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 
 export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
-  res.locals.news_item_notification_count = 0;
+  res.locals.lockdown_browser = false;
 
   if (req.method === 'OPTIONS') {
     // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -62,7 +62,7 @@ export default asyncHandler(async (req, res, next) => {
     // Enroll the load test user in the example course.
     const enrollment = await sqldb.queryOptionalRow(
       sql.enroll_user_in_example_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       EnrollmentSchema,
     );
 
@@ -73,8 +73,8 @@ export default asyncHandler(async (req, res, next) => {
         actionDetail: 'implicit_joined',
         rowId: enrollment.id,
         newRow: enrollment,
-        agentUserId: res.locals.user.user_id,
-        agentAuthnUserId: res.locals.authn_user.user_id,
+        agentUserId: res.locals.user.id,
+        agentAuthnUserId: res.locals.authn_user.id,
       });
     }
 
@@ -176,7 +176,14 @@ export default asyncHandler(async (req, res, next) => {
 
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
+    preserveLockdownBrowser: true,
   });
+
+  // Surface the LockDown Browser flag recorded on the session at PT->PL
+  // login so pages can gate LDB-specific UI: showing the navbar "End exam"
+  // control and hiding the file-picker form whose OS dialog would let
+  // students open desktop files.
+  res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
 
   next();
 });

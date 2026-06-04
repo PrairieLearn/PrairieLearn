@@ -7,27 +7,12 @@ FROM
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
 
--- BLOCK create_embedding_for_submission
-INSERT INTO
-  submission_grading_context_embeddings (
-    embedding,
-    submission_id,
-    submission_text,
-    assessment_question_id
-  )
-VALUES
-  (
-    $embedding,
-    $submission_id,
-    $submission_text,
-    $assessment_question_id
-  )
-RETURNING
-  *;
-
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  iq.*
+  iq.*,
+  -- Pseudo-random deterministic stable order of instance questions identical
+  -- to that used in the instructor assessment question manual grading page.
+  ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
@@ -44,7 +29,14 @@ WHERE
       iq.ai_instance_question_group_id IS NULL
       AND iq.manual_instance_question_group_id IS NULL
     )
-  );
+  )
+ORDER BY
+  -- Sorting by iq_stable_order makes AI grading look more organized by 
+  -- ensuring the submissions are graded in the same order they are 
+  -- presented to the instructor (if the instructor didn't apply a custom
+  -- filter or sort).
+  iq_stable_order,
+  iq.id;
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO
@@ -53,6 +45,7 @@ INSERT INTO
     job_sequence_id,
     prompt,
     completion,
+    rotation_correction_degrees,
     model,
     prompt_tokens,
     completion_tokens,
@@ -66,13 +59,31 @@ VALUES
     $job_sequence_id,
     $prompt::jsonb,
     $completion,
+    $rotation_correction_degrees,
     $model,
     $prompt_tokens,
     $completion_tokens,
     $cost,
     $course_id,
     $course_instance_id
-  );
+  )
+RETURNING
+  id;
+
+-- BLOCK select_has_prior_ai_grading_jobs
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      ai_grading_jobs AS agj
+      JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+      JOIN submissions AS s ON s.id = gj.submission_id
+      JOIN variants AS v ON v.id = s.variant_id
+      JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+  ) AS has_prior_ai_grading_jobs;
 
 -- BLOCK select_last_variant_and_submission
 SELECT
@@ -88,83 +99,6 @@ ORDER BY
   s.date DESC
 LIMIT
   1;
-
--- BLOCK select_closest_submission_info
-WITH
-  latest_submissions AS (
-    SELECT
-      s.id AS s_id,
-      iq.id AS iq_id,
-      iq.score_perc AS iq_score_perc,
-      s.feedback,
-      s.is_ai_graded,
-      s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
-      ROW_NUMBER() OVER (
-        PARTITION BY
-          s.variant_id
-        ORDER BY
-          s.date DESC
-      ) AS rn
-    FROM
-      instance_questions iq
-      JOIN variants v ON iq.id = v.instance_question_id
-      JOIN submissions s ON v.id = s.variant_id
-    WHERE
-      iq.assessment_question_id = $assessment_question_id
-      AND NOT iq.requires_manual_grading
-      AND iq.status != 'unanswered'
-      AND s.id != $submission_id
-  )
-SELECT
-  emb.submission_text,
-  ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
-  ls.iq_score_perc AS score_perc,
-  ls.feedback,
-  ls.iq_id AS instance_question_id
-FROM
-  latest_submissions ls
-  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
-WHERE
-  ls.rn = 1
-  AND NOT ls.is_ai_graded
-ORDER BY
-  embedding <=> $embedding
-LIMIT
-  $limit;
-
--- BLOCK select_rubric_for_grading
-SELECT
-  ri.*
-FROM
-  assessment_questions aq
-  JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
-WHERE
-  aq.id = $assessment_question_id
-  AND ri.deleted_at IS NULL
-ORDER BY
-  ri.number;
-
--- BLOCK select_last_submission_id
-SELECT
-  s.id
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
--- BLOCK select_embedding_for_submission
-SELECT
-  *
-FROM
-  submission_grading_context_embeddings AS emb
-WHERE
-  emb.submission_id = $submission_id;
 
 -- BLOCK delete_ai_grading_jobs
 WITH
@@ -282,9 +216,7 @@ WITH
       -- we may want to refactor `highest_submission_score` to only track auto points.
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
-      -- requires manual grading. This both helps ensure that it eventually gets graded, and
-      -- also ensures that this submission isn't erroneously picked up when we're looking for
-      -- similar submissions for RAG.
+      -- requires manual grading. This helps ensure that it eventually gets graded.
       requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
     FROM
       deleted_grading_jobs AS dgj
@@ -346,3 +278,48 @@ SET
   ai_grading_mode = NOT ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = $ai_grading_mode
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_last_selected_model
+UPDATE assessment_questions
+SET
+  ai_grading_last_selected_model = $model_id
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK select_ai_grading_job_data_for_submission
+SELECT
+  gj.manual_rubric_grading_id,
+  agj.prompt,
+  agj.completion,
+  agj.rotation_correction_degrees
+FROM
+  grading_jobs AS gj
+  LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
+WHERE
+  submission_id = $submission_id
+  AND grading_method = 'AI'
+  AND gj.deleted_at IS NULL
+ORDER BY
+  gj.date DESC
+LIMIT
+  1;
+
+-- BLOCK select_exists_manual_grading_job_for_submission
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      grading_jobs AS gj
+    WHERE
+      gj.submission_id = $submission_id
+      AND gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
+  );

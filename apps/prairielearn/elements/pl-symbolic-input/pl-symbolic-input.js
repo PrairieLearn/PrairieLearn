@@ -307,6 +307,47 @@
     },
   ];
 
+  const isSelected = (mf) => {
+    const firstSelection = mf.selection?.ranges?.[0];
+    return firstSelection && firstSelection[1] !== firstSelection[0];
+  };
+
+  const makeShortcutProxy = (proxiedObject, mf) => {
+    const shortcutProxyHandler = {
+      get(target, prop, receiver) {
+        let value = Reflect.get(target, prop, receiver);
+
+        if (value === null) {
+          return value;
+        }
+
+        if (typeof value === 'object') {
+          return wrapWithProxy(value);
+        }
+
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+
+        if (
+          value &&
+          typeof value === 'string' &&
+          isSelected(mf) &&
+          !value.includes('\\left(#@\\right)')
+        ) {
+          value = value.replace('#@', '\\left(#@\\right)');
+        }
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    };
+
+    function wrapWithProxy(target) {
+      return new Proxy(target, shortcutProxyHandler);
+    }
+
+    return wrapWithProxy(proxiedObject);
+  };
+
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
@@ -319,11 +360,21 @@
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
     const endMenuItems = mf.menuItems.filter((item) => standardMenuItems.has(item.id));
 
-    // If the allow-trig attribute is set, basic trig functions are added to the virtual keyboard
+    // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
+    const allowSets = mf.getAttribute('allow-sets');
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
+
+    const signKey = {
+      class: 'small',
+      latex: '\\mathrm{sign}',
+      insert: '\\operatorname{sign}\\left({#@}\\right)',
+    };
+
+    /** A key that is only present if `allowSets` */
+    const onlyIfSets = (key) => (allowSets ? [key] : []);
 
     mf.menuItems = [
       {
@@ -334,7 +385,8 @@
       {
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
-        onMenuSelect: () => mf.insert('{#@}^{#?}'),
+        onMenuSelect: () =>
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
       },
       {
         id: 'sqrt',
@@ -357,17 +409,24 @@
 
     const elementKeyboardLayout = {
       label: 'math',
+      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
+      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // stay reachable in the same general region of the keyboard.
       rows: [
         [
-          { class: 'small', latex: '{#@}^{#?}' },
+          ...onlyIfSets('[separator]'),
+          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy(
+            {
+              class: 'small',
+              latex: '{#@}^{2}',
+              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+            },
+            mf,
+          ),
           {
             class: 'small',
-            latex: '{#@}^{2}',
-            variants: [{ class: 'small', latex: '{#@}^{3}' }],
-          },
-          {
-            class: 'small',
-            latex: '\\frac{#@}{#0}',
+            latex: '\\frac{#@}{#?}',
             width: 1.3,
             variants: [{ class: 'small', latex: '\\frac{1}{#@}' }],
           },
@@ -377,22 +436,24 @@
           '9',
           '+',
           '[separator]',
-          'e',
+          allowSets ? makeShortcutProxy({ latex: '\\{ #? \\}', insert: '\\{{#@}\\}' }, mf) : 'e',
+          ...onlyIfSets(','),
           '\\infty',
           '\\pi',
         ],
         [
-          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}' },
+          ...onlyIfSets('[separator]'),
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
           logAsLn
             ? {
                 class: 'small',
                 latex: '\\ln',
-                insert: '\\ln({#0})',
+                insert: '\\operatorname{ln}\\left({#@}\\right)',
               }
             : {
                 class: 'small',
                 latex: '\\log',
-                insert: '\\log({#0})',
+                insert: '\\operatorname{log}\\left({#@}\\right)',
               },
           { class: 'small', latex: '!' },
           '[separator]',
@@ -401,47 +462,61 @@
           '6',
           '-',
           '[separator]',
-          { latex: 'x' },
-          { latex: 'y' },
+          allowSets ? '[' : 'x',
+          allowSets ? ']' : 'y',
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],
         [
-          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
-          { class: 'small', latex: '\\min', insert: '\\min({#0})' },
-          { class: 'small', latex: '\\max', insert: '\\max({#0})' },
+          ...onlyIfSets('[separator]'),
+          { class: 'small', latex: '|#@|', insert: '|{#@}|' },
+          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
+          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
           '[separator]',
           '1',
           '2',
           '3',
-          { latex: '\\times', insert: '\\cdot' },
+          makeShortcutProxy(
+            {
+              latex: '\\times',
+              insert: '{#@}\\cdot',
+            },
+            mf,
+          ),
           '[separator]',
           '(',
           ')',
-          {
-            class: 'small',
-            latex: '\\mathrm{sign}',
-            insert: '\\operatorname{sign}({#0})',
-          },
+          ...onlyIfSets(makeShortcutProxy({ latex: '\\cap', key: '&' }, mf)),
+          allowSets ? 'x' : signKey,
         ],
         [
+          ...onlyIfSets('[separator]'),
           allowTrig
             ? {
                 class: 'small',
                 latex: '\\sin',
 
-                insert: '\\sin({#0})',
+                insert: '\\operatorname{sin}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
-                  { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\csc',
+                    insert: '\\operatorname{csc}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arcsin',
+                    insert: '\\operatorname{arcsin}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{sinh}',
-                    insert: '\\operatorname{sinh}({#0})',
+                    insert: '\\operatorname{sinh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{asinh}',
-                    insert: '\\operatorname{asinh}({#0})',
+                    insert: '\\operatorname{asinh}\\left({#@}\\right)',
                   },
                 ],
               }
@@ -450,19 +525,27 @@
             ? {
                 class: 'small',
                 latex: '\\cos',
-                insert: '\\cos({#0})',
+                insert: '\\operatorname{cos}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
-                  { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\sec',
+                    insert: '\\operatorname{sec}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arccos',
+                    insert: '\\operatorname{arccos}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{cosh}',
-                    insert: '\\operatorname{cosh}({#0})',
+                    insert: '\\operatorname{cosh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{acosh}',
-                    insert: '\\operatorname{acosh}({#0})',
+                    insert: '\\operatorname{acosh}\\left({#@}\\right)',
                   },
                 ],
               }
@@ -471,74 +554,57 @@
             ? {
                 class: 'small',
                 latex: '\\tan',
-                insert: '\\tan({#0})',
+                insert: '\\operatorname{tan}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
-                  { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\cot',
+                    insert: '\\operatorname{cot}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arctan',
+                    insert: '\\operatorname{arctan}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{tanh}',
-                    insert: '\\operatorname{tanh}({#0})',
+                    insert: '\\operatorname{tanh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{atanh}',
-                    insert: '\\operatorname{atanh}({#0})',
+                    insert: '\\operatorname{atanh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{arctan2}',
-                    insert: '\\operatorname{arctan2}({#0})',
+                    insert: '\\operatorname{arctan2}\\left({#@}\\right)',
                   },
                 ],
               }
             : '[separator]',
           '[separator]',
-          { class: 'small', label: '0', width: 2 },
+          { latex: '0', width: 2 },
           '.',
           '/',
           '[separator]',
           { class: 'small hide-shift', label: '[left]' },
           { class: 'small hide-shift', label: '[right]' },
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
+          ...onlyIfSets(signKey), // sign shifted from above
         ],
       ],
     };
 
-    mf.addEventListener('focus', () => {
+    const updateKeyboardLayout = () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
-    });
+    };
+
+    mf.addEventListener('focus', updateKeyboardLayout);
+    mf.addEventListener('selection-change', updateKeyboardLayout);
 
     setUpSymbolicInputMacros(mf);
-
-    // Additional shortcuts for instant replacement inside the pl-symbolic-input box
-    mf.inlineShortcuts = {
-      '**': {
-        value: '{#@}^{#?}',
-      },
-      '*': {
-        value: '\\cdot',
-      },
-      '|': {
-        value: '|{#0}|',
-      },
-      // Prevent double | key presses being replaced by absabs
-      '||': {
-        value: '|{#0}|',
-      },
-      sqrt: {
-        value: '\\sqrt{#0}',
-      },
-      pi: {
-        value: '\\pi',
-      },
-      infty: {
-        value: '\\infty',
-      },
-      infinity: {
-        value: '\\infty',
-      },
-    };
 
     // Disable auto-complete suggestions for macros
     mf.popoverPolicy = 'off';
@@ -631,6 +697,7 @@
     const additionalFunctions = mf.getAttribute('custom-functions')?.split(',') ?? [];
 
     const customFunctions = new Set(additionalFunctions.concat(defaultFunctions));
+    const allowSets = mf.getAttribute('allow-sets');
 
     const macros = {};
     [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
@@ -638,12 +705,51 @@
       ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
     );
 
-    mf.macros = macros;
-
-    mf.onInlineShortcut = (mf, s) => {
-      if (customFunctions.has(s)) return `\\${s}({#0})`;
-      if (greekLetters.has(s) || greekLettersToUnicode.has(s)) return `\\${s}`;
-      return '';
+    // Additional shortcuts for instant replacement inside the pl-symbolic-input box
+    const inlineShortcuts = {
+      '**': {
+        value: '{#@}^{#?}',
+      },
+      '^': {
+        value: '{#@}^{#?}',
+      },
+      '*': {
+        value: '{#@}\\cdot',
+      },
+      '|': {
+        value: '|{#@}|',
+      },
+      sqrt: {
+        value: '\\sqrt{#@}',
+      },
+      pi: {
+        value: '\\pi',
+      },
+      infty: {
+        value: '\\infty',
+      },
+      infinity: {
+        value: '\\infty',
+      },
     };
+
+    if (allowSets) {
+      inlineShortcuts.cup = { value: '{#@}\\cup}' };
+      inlineShortcuts['\\cup'] = inlineShortcuts.cup;
+      inlineShortcuts.U = inlineShortcuts.cup;
+
+      inlineShortcuts.cap = { value: '{#@}\\cap' };
+      inlineShortcuts['\\cap'] = inlineShortcuts.cap;
+      inlineShortcuts['&'] = inlineShortcuts.cap;
+    }
+
+    const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
+
+    [...customFunctions].forEach((f) => (shortcutProxy[f] = `\\operatorname{${f}}`));
+    [...greekLettersToUnicode.keys()].forEach((l) => (shortcutProxy[l] = `\\${l}`));
+    [...greekLetters].forEach((l) => (shortcutProxy[l] = `\\${l}`));
+
+    mf.macros = macros;
+    mf.inlineShortcuts = shortcutProxy;
   }
 })();

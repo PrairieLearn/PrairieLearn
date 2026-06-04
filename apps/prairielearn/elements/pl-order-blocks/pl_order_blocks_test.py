@@ -1,6 +1,12 @@
+import importlib
+import random
+
 import lxml.html
 import pytest
 from order_blocks_options_parsing import OrderBlocksOptions
+
+pl_order_blocks = importlib.import_module("pl-order-blocks")
+shuffle_distractor_groups = pl_order_blocks.shuffle_distractor_groups
 
 
 def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
@@ -41,6 +47,8 @@ def assert_order_blocks_options(
         assert order_block_options.solution_header == options["solution-header"]
     if "partial-credit" in options:
         assert order_block_options.partial_credit.value == options["partial-credit"]
+    if "display-blocks" in options:
+        assert order_block_options.display_blocks.value == options["display-blocks"]
     if "solution-placement" in options:
         assert (
             order_block_options.solution_placement.value
@@ -67,6 +75,8 @@ def assert_answer_options(
     ):
         if "correct" in test_options:
             assert answer_options.correct == test_options["correct"]
+        if "initially-placed" in test_options:
+            assert answer_options.initially_placed == test_options["initially-placed"]
         if "ranking" in test_options:
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
@@ -275,6 +285,82 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
             {
                 "answers-name": "test",
                 "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "correct": False, "initially-placed": True},
+            ],
+            "Incorrect blocks cannot be initially placed.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "distractor-for": "1", "initially-placed": True},
+            ],
+            "A block with distractors cannot be initially placed.",
+        ),
+    ],
+)
+def test_initially_placed_validation_failure(
+    options: dict, answer_options_list: list[dict], error: str
+) -> None:
+    """Tests pl-answer initially-placed option failure"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options.validate()
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "initially-placed": True},
+                {"tag": "2", "correct": True, "initially-placed": True},
+                {"tag": "3", "correct": True, "initially-placed": False},
+                {"tag": "4", "correct": True, "initially-placed": False},
+                {"tag": "5", "correct": True, "initially-placed": True},
+                {"tag": "6", "correct": True, "initially-placed": False},
+                {"tag": "7", "correct": True, "initially-placed": True},
+                {"tag": "8", "correct": True, "initially-placed": False},
+            ],
+        ),
+    ],
+)
+def test_initially_placed_validation(
+    options: dict, answer_options_list: list[dict]
+) -> None:
+    """Tests valid pl-answer initially-placed option"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    assert_answer_options(order_blocks_options, answer_options_list)
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
                 "weight": 2,
                 "indentation": False,
                 "partial-credit": "lcs",
@@ -284,7 +370,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
         ),
     ],
 )
@@ -317,7 +403,7 @@ def test_valid_final_tag(
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2"},
             ],
-            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
         ),
     ],
 )
@@ -335,35 +421,88 @@ def test_final_tag_failure(
         order_blocks_options.validate()
 
 
+def test_shuffle_distractor_groups() -> None:
+    """Tests that shuffle_distractor_groups groups distractors with correct blocks
+    while preserving the relative order of correct blocks.
+    """
+    random.seed(42)
+
+    blocks = [
+        {"tag": "first", "distractor_for": None, "inner_html": "First"},
+        {"tag": "second", "distractor_for": None, "inner_html": "Second"},
+        {"tag": "d1", "distractor_for": "second", "inner_html": "Distractor 1"},
+        {"tag": "d2", "distractor_for": "second", "inner_html": "Distractor 2"},
+        {"tag": "third", "distractor_for": None, "inner_html": "Third"},
+    ]
+
+    result = pl_order_blocks.shuffle_distractor_groups(blocks)
+
+    # Correct blocks should maintain their relative order
+    correct_block_tags = [b["tag"] for b in result if b.get("distractor_for") is None]
+    assert correct_block_tags == ["first", "second", "third"]
+
+    # First block (no distractors) should remain first
+    assert result[0]["tag"] == "first"
+
+    # Second block and its distractors should be grouped together (positions 1-3)
+    second_group_tags = {b["tag"] for b in result[1:4]}
+    assert second_group_tags == {"second", "d1", "d2"}
+
+    # Third block should be last
+    assert result[4]["tag"] == "third"
+
+
 @pytest.mark.parametrize(
-    ("options", "answer_options_list", "error"),
+    ("options"),
+    [
+        {"answers-name": "test", "display-blocks": "vertical"},
+        {"answers-name": "test", "display-blocks": "inline-wrap"},
+        {"answers-name": "test", "display-blocks": "inline-nowrap"},
+        {"answers-name": "test", "display-blocks": "vertical", "indentation": True},
+    ],
+)
+def test_display_blocks_validation(options: dict) -> None:
+    """Tests valid pl-order-blocks display-blocks option validation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    order_blocks_options._validate_order_blocks_options()
+
+
+@pytest.mark.parametrize(
+    ("options", "error"),
     [
         (
             {
                 "answers-name": "test",
-                "grading-method": "dag",
-                "weight": 2,
-                "indentation": False,
-                "partial-credit": "lcs",
+                "display-blocks": "inline-wrap",
+                "indentation": True,
             },
-            [
-                {"tag": "1", "depends": r""},
-                {"tag": "2", "depends": r"1", "final": True},
-                {"tag": "3", "depends": r"1|2", "final": True},
-            ],
-            "Multiple 'final' attributes are not allowed.",
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
+        ),
+        (
+            {
+                "answers-name": "test",
+                "display-blocks": "inline-nowrap",
+                "indentation": True,
+            },
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
         ),
     ],
 )
-def test_multiple_final_tag_failure(
-    options: dict, answer_options_list: list[dict], error: str
-) -> None:
-    """Tests two final tags in pl-answer-tag while using multigraph features"""
-    tags_html = "\n".join(
-        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+def test_display_blocks_validation_failure(options: dict, error: str) -> None:
+    """Tests pl-order-blocks display-blocks option failure with indentation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
     )
-    question = build_tag("pl-order-blocks", options, tags_html)
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
     with pytest.raises(ValueError, match=error):
-        order_blocks_options.validate()
+        order_blocks_options._validate_order_blocks_options()

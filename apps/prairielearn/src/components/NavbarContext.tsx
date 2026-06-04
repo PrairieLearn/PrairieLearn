@@ -1,6 +1,9 @@
+import clsx from 'clsx';
+
 import { html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { type NavPage, type NavSubPage, type TabInfo } from './Navbar.types.js';
 
@@ -8,31 +11,28 @@ export function ContextNavigation({
   resLocals,
   navPage,
   navSubPage,
+  embedded = false,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
+  /**
+   * When true, the tabs render inline inside the shared navigation bar next to
+   * the assessment switcher.
+   */
+  embedded?: boolean;
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
+  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = getNavPageTabs();
   const navPageTabs = navPagesTabs[navPage];
 
   // Some navPages do not have tabs
   if (!navPageTabs) return '';
 
   return html`
-    <nav>
-      <ul
-        class="
-          nav 
-          nav-tabs 
-          pl-nav-tabs-bar 
-          pt-2
-          px-3 
-          bg-light
-        "
-      >
+    <nav class="${clsx(embedded && 'flex-grow-1 flex-shrink-0')}">
+      <ul class="${clsx('nav nav-tabs pl-nav-tabs-bar', !embedded && 'pt-2 px-3 bg-light')}">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
@@ -45,7 +45,7 @@ function NavbarTab({
   tabInfo,
 }: {
   navSubPage: NavSubPage;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   tabInfo: TabInfo;
 }) {
   const { urlPrefix } = resLocals;

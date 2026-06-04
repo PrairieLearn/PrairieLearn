@@ -1,12 +1,13 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function AuthPassword({
   resLocals,
   passwordInvalid,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   passwordInvalid: boolean;
 }) {
   return PageLayout({
@@ -34,7 +35,14 @@ export function AuthPassword({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <div class="mb-3">
               <label class="form-label" for="password">Password</label>
-              <input type="password" class="form-control" id="password" name="password" />
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                autocomplete="off"
+                required
+              />
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
           </form>

@@ -1,8 +1,9 @@
 import DragHandle from '@tiptap/extension-drag-handle-react';
 import { NodeSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
-import { useState } from 'preact/compat';
-import { OverlayTrigger, Popover } from 'react-bootstrap';
+import { useState } from 'react';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { panelMeta } from '../extensions/pl-panel.js';
 
@@ -53,17 +54,17 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
         placement="right"
         trigger="click"
         show={showMenu}
-        overlay={
-          <Popover>
-            <Popover.Header as="h3">Visibility</Popover.Header>
-            <Popover.Body>
+        popover={{
+          header: <h3>Visibility</h3>,
+          body: (
+            <>
               {/* TODO: Potentially improve the styling of this. */}
-              <div class="d-flex flex-column gap-2">
+              <div className="d-flex flex-column gap-2">
                 {Object.entries(panelMeta).map(([tag, meta]) => (
                   <button
                     key={tag}
                     type="button"
-                    class="btn btn-sm btn-light d-flex align-items-center gap-2"
+                    className="btn btn-sm btn-light d-flex align-items-center gap-2"
                     onClick={() => {
                       if (!isInsidePanel) setShowMenu(false);
                       if (lastPos === null) return;
@@ -74,13 +75,13 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                         .run();
                     }}
                   >
-                    <i class={`bi ${tagActiveMap[tag] ? 'bi-check-square' : 'bi-square'}`} />
+                    <i className={`bi ${tagActiveMap[tag] ? 'bi-check-square' : 'bi-square'}`} />
                     In {meta.name}
                   </button>
                 ))}
                 <button
                   type="button"
-                  class="btn btn-sm btn-light d-flex align-items-center gap-2"
+                  className="btn btn-sm btn-light d-flex align-items-center gap-2"
                   disabled={!isInsidePanel}
                   onClick={() => {
                     // TODO: there should be a better way than using .focus() here.
@@ -88,17 +89,17 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                     editor.chain().focus().togglePanelVisibility('always').run();
                   }}
                 >
-                  <i class={`bi ${!isInsidePanel ? 'bi-check-square' : 'bi-square'}`} />
+                  <i className={`bi ${!isInsidePanel ? 'bi-check-square' : 'bi-square'}`} />
                   Always
                 </button>
               </div>
-            </Popover.Body>
-          </Popover>
-        }
+            </>
+          ),
+        }}
         rootClose
         onToggle={(next) => setShowMenu(next)}
       >
-        <i class="bi bi-grip-vertical" />
+        <i className="bi bi-grip-vertical" />
       </OverlayTrigger>
     </DragHandle>
   );

@@ -1,13 +1,16 @@
 import asyncHandler from 'express-async-handler';
 
-import { getCourseInstanceContext } from '../lib/client/page-context.js';
+import { extractPageContext } from '../lib/client/page-context.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // The user will already be denied access if they are impersonating another user that is not enrolled in the course instance.
 
   // Check if the user needs an enrollment code to access the course instance.
-  const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+  const { course_instance: courseInstance } = extractPageContext(res.locals, {
+    pageType: 'courseInstance',
+    accessType: 'instructor',
+  });
 
   // Skip if user already has student access with enrollment
   if (res.locals.authz_data.authn_has_student_access_with_enrollment) {
@@ -54,18 +57,15 @@ export default asyncHandler(async (req, res, next) => {
 
   // Check if user is already enrolled or blocked
   const existingEnrollment = await selectOptionalEnrollmentByUserId({
-    userId: res.locals.authn_user.user_id,
-    requestedRole: 'Student',
+    userId: res.locals.authn_user.id,
+    requiredRole: ['Student'],
     authzData: res.locals.authz_data,
     courseInstance,
   });
 
-  // If user is enrolled and joined/invited/rejected/removed, let them through.
-  // This means that an invited/rejected user can skip the process of entering an enrollment code.
-  if (
-    existingEnrollment &&
-    ['joined', 'invited', 'removed', 'rejected'].includes(existingEnrollment.status)
-  ) {
+  // If user is enrolled and joined/invited/rejected, let them through.
+  // Removed users need to re-enter the enrollment code.
+  if (existingEnrollment && ['joined', 'invited', 'rejected'].includes(existingEnrollment.status)) {
     next();
     return;
   }

@@ -1,25 +1,23 @@
-import { renderHtml } from '@prairielearn/preact';
+import clsx from 'clsx';
 
-export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
+export function GitHubButton({
+  gitHubLink,
+  variant = 'light',
+}: {
+  gitHubLink: string | null;
+  variant?: 'light' | 'outline-secondary';
+}) {
   if (!gitHubLink) return null;
   return (
     <a
-      class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
+      className={clsx('btn btn-sm d-inline-flex align-items-center gap-2', `btn-${variant}`)}
       target="_blank"
       rel="noreferrer"
       aria-label="View on GitHub"
       href={gitHubLink}
     >
-      <i class="bi bi-github" />
-      <span class="d-none d-sm-inline">View on GitHub</span>
+      <i className="bi bi-github" />
+      <span className="d-none d-sm-inline">View on GitHub</span>
     </a>
   );
-}
-
-export function GitHubButtonHtml(gitHubLink: string | null) {
-  if (gitHubLink == null) {
-    return '';
-  }
-
-  return renderHtml(<GitHubButton gitHubLink={gitHubLink} />);
 }

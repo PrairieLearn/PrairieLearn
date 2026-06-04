@@ -333,6 +333,16 @@ def test_traverse_and_replace_angle_brackets() -> None:
     assert html == "<pre><code>&lt;div&gt;</code></pre>"
 
 
+def test_traverse_and_replace_escaped_entities() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        if e.tag == "pl-string":
+            return "<div>&amp;lt; &amp;langle;v, w&amp;rangle; &amp;gt;</div>"
+        return e
+
+    html = traverse_and_replace("<pl-string></pl-string>", replace)
+    assert html == "<div>&amp;lt; &amp;langle;v, w&amp;rangle; &amp;gt;</div>"
+
+
 def test_traverse_and_replace_trailing_entity() -> None:
     def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
         if e.tag == "div":
@@ -394,3 +404,27 @@ def test_traverse_and_replace_script_complex() -> None:
 
     html = traverse_and_replace(test_str, replace)
     assert html == test_str
+
+
+def test_traverse_and_replace_empty_at_end() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        if e.tag == "strong":
+            return ""
+        return e
+
+    # This is a reproduction of a bug found in https://github.com/PrairieLearn/PrairieLearn/issues/13427
+    html = traverse_and_replace("<div><strong>Hello!</strong></div>", replace)
+    assert html == "<div></div>"
+
+
+def test_traverse_and_replace_empty_multiple_levels() -> None:
+    def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
+        if e.tag == "strong":
+            return ""
+        return e
+
+    html = traverse_and_replace(
+        "<table><tbody><tr><td><strong>Hello!</strong></td></tr></tbody>\n</table>",
+        replace,
+    )
+    assert html == "<table><tbody><tr><td></td></tr></tbody>\n</table>"

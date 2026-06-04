@@ -35,7 +35,7 @@ In order for another course to use questions from your course into their assessm
 
 Questions can either be shared publicly so that anyone can preview the questions and use them in their course, or shared only to specific other courses using sharing sets.
 
-Any question that is marked for sharing will be considered and displayed as being published for free use under a Creative Commons license ([CC-BY-NC-ND](https://www.creativecommons.org/licenses/by-nc-nd/4.0/) for `"sharePublicly": true`, [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) for `"shareSourcePublicly": true`). This license is granted in addition to the [User Content License](https://www.prairielearn.com/legal/terms#3-user-content-license-grant) described by the PrairieLearn Terms of Service. We recommend adding an `authors` field to the [metadata](question/index.md#metadata-infojson) of shared questions to allow attribution of the original author(s).
+Any question that is marked for sharing will be considered and displayed as being published for free use under a Creative Commons license ([CC-BY-NC-ND](https://www.creativecommons.org/licenses/by-nc-nd/4.0/) for `"sharePublicly": true`, [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) for `"shareSourcePublicly": true`). This license is granted in addition to the [User Content License](https://www.prairielearn.com/legal/terms#3-user-content-license-grant) described by the PrairieLearn Terms of Service. We recommend adding an `authors` field to the [metadata](question/overview.md#metadata-infojson) of shared questions to allow attribution of the original author(s).
 
 ### Sharing sets
 

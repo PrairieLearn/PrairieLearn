@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
+
 import { QuestionAddEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionByUuid } from '../../../../models/question.js';
@@ -20,7 +21,7 @@ export const createQuestion = privateProcedure
       title: z.string().optional(),
       template_source: z.enum(['empty', 'example', 'course']).optional(),
       template_qid: z.string().optional(),
-      files: z.record(z.string()).optional(),
+      files: z.record(z.string(), z.string()).optional(),
       is_draft: z.boolean().optional(),
     }),
   )

@@ -33,14 +33,16 @@
                 name="{{name}}"
                 inputmode="text"
                 class="form-control pl-string-input-input pl-string-input-multiline"
-                {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
+                {{#parse_error}}{{#suffix}}aria-describedby="pl-string-input-{{uuid}}-error pl-string-input-{{uuid}}-suffix"{{/suffix}}{{/parse_error}}
+                {{#parse_error}}{{^suffix}}aria-describedby="pl-string-input-{{uuid}}-error"{{/suffix}}{{/parse_error}}
+                {{^parse_error}}{{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}{{/parse_error}}
                 cols="{{size}}"
                 rows="2"
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 placeholder="{{placeholder}}"
-                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
                 {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
@@ -65,21 +67,19 @@
                 {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
                 {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             />
-    {{/multiline}}
-    {{^multiline}}
         {{#suffix}}
         <span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>
         {{/suffix}}
     {{/multiline}}
     {{#show_info}}
         <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="String" data-bs-content="{{info}}" data-bs-placement="auto">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
     {{/show_info}}
 
     {{#correct}}
         <span class="input-group-text">
-            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         </span>
     {{/correct}}
     {{#partial}}
@@ -89,15 +89,15 @@
     {{/partial}}
     {{#incorrect}}
         <span class="input-group-text">
-            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         </span>
     {{/incorrect}}
     </span>
     {{#parse_error}}
-        <span class="invalid-feedback d-block">
+        <span id="pl-string-input-{{uuid}}-error" class="invalid-feedback d-block">
             <span class="badge text-bg-danger">
                 Invalid
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
             <a
                 class="link-primary"
@@ -122,10 +122,10 @@
 {{/question}}
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#a_sub}}<code class="user-output">{{a_sub}}</code>{{/a_sub}}
+    {{#a_sub}}<code>{{a_sub}}</code>{{/a_sub}}
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
@@ -158,17 +158,16 @@
             &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
             &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
         >
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
         {{/a_sub}}
     </span>
+    <div class="mt-1">
 {{/multiline}}
-
-{{#multiline}}<div class="mt-1">{{/multiline}}
 {{#parse_error}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
-            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
             class="link-primary"
@@ -190,7 +189,7 @@
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing input 
-            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
             class="link-primary"
@@ -228,28 +227,31 @@
     &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
     &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
 >
-    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
 {{/a_sub}}
 {{/multiline}}
 
 <span>
-{{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 </span>
 
-{{#multiline}}
-</span>
-{{/multiline}}
-
-{{#inline}}</span>{{/inline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#is_regex}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <span>Any answer matching the <a href="https://docs.python.org/3/howto/regex.html" target="_blank" rel="noreferrer">regular expression</a> <code>{{a_tru}}</code></span>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/is_regex}}
+{{^is_regex}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <code class="user-output">{{a_tru}}</code>
+    <code>{{a_tru}}</code>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
@@ -282,7 +284,7 @@
             &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
             &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
         >
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
     </span>
     {{#suffix}}
@@ -303,10 +305,9 @@
     &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
     &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
 >
-    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
 {{/multiline}}
-{{#multiline}}
-</span>
-{{/multiline}}
+{{/is_regex}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}

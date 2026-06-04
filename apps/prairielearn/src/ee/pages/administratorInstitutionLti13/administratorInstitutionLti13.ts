@@ -1,6 +1,5 @@
+import { sortBy } from 'es-toolkit';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 import jose from 'node-jose';
 import { z } from 'zod';
 
@@ -9,13 +8,14 @@ import { flash } from '@prairielearn/flash';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
+  queryOptionalScalar,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
 
@@ -35,7 +35,7 @@ const lti13_instance_defaults = {
 
 router.get(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
@@ -64,7 +64,7 @@ router.get(
       },
     ];
 
-    const platform_defaults = _.sortBy(
+    const platform_defaults = sortBy(
       [...platform_defaults_hardcoded, ...config.lti13InstancePlatforms],
       ['display_order', 'platform'],
     );
@@ -107,9 +107,9 @@ router.get(
 
 router.post(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'add_key') {
-      const keystoreJson = await queryOptionalRow(
+      const keystoreJson = await queryOptionalScalar(
         sql.select_keystore,
         {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -144,7 +144,7 @@ router.post(
       flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
-      const keystoreJson = await queryOptionalRow(
+      const keystoreJson = await queryOptionalScalar(
         sql.select_keystore,
         {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -194,7 +194,7 @@ router.post(
       flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
-      const new_li = await queryRow(
+      const new_li = await queryScalar(
         sql.insert_instance,
         {
           ...lti13_instance_defaults,
@@ -233,9 +233,7 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', 'Instance deleted.');
-      return res.redirect(
-        `${config.urlPrefix}/administrator/institution/${req.params.institution_id}/lti13`,
-      );
+      return res.redirect(`/pl/administrator/institution/${req.params.institution_id}/lti13`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

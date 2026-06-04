@@ -3,10 +3,10 @@ SELECT
   u.*
 FROM
   administrators
-  JOIN users AS u ON (u.user_id = administrators.user_id)
+  JOIN users AS u ON (u.id = administrators.user_id)
 ORDER BY
   u.uid,
-  u.user_id;
+  u.id;
 
 -- BLOCK delete_admin_by_user_id
 WITH
@@ -48,7 +48,7 @@ WITH
     INSERT INTO
       administrators (user_id)
     SELECT
-      user_id
+      id
     FROM
       users
     WHERE

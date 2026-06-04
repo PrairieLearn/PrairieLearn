@@ -1,11 +1,14 @@
 {
   "name": "@prairielearn/postgres-tools",
-  "version": "2.0.27",
+  "version": "3.0.7",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/postgres-tools"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "bin": {
     "pg-describe": "./dist/bin/pg-describe.js",
@@ -13,25 +16,25 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
     "async": "^3.2.6",
     "chalk": "^5.6.2",
-    "commander": "^14.0.2",
-    "diff": "^8.0.2",
-    "fs-extra": "^11.3.2",
-    "lodash": "^4.17.21",
+    "commander": "^15.0.0",
+    "diff": "^9.0.0",
+    "es-toolkit": "^1.47.0",
+    "fs-extra": "^11.3.5",
     "postgres-array": "^3.0.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/async": "^3.2.25",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.20",
-    "@types/node": "^22.19.0",
-    "typescript": "^5.9.3",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9"
   }
 }

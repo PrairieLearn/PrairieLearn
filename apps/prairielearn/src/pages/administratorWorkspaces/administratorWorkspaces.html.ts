@@ -1,23 +1,29 @@
 import { z } from 'zod';
 
+import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { IdSchema, WorkspaceHostSchema } from '../../lib/db-types.js';
+import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
-  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
-  time_in_state: z.string(),
+  state: WorkspaceSchema.shape.state,
+  time_in_state: IntervalSchema,
   question_name: z.string(),
   course_instance_name: z.string().nullable(),
   course_name: z.string(),
   institution_name: z.string(),
 });
 
+type WorkspaceState = z.infer<typeof WorkspaceWithContextSchema.shape.state>;
+type WorkspaceHostState = z.infer<typeof WorkspaceHostSchema.shape.state>;
+
 export const WorkspaceHostRowSchema = z.object({
   workspace_host: WorkspaceHostSchema,
-  workspace_host_time_in_state: z.string(),
+  workspace_host_time_in_state: IntervalSchema,
   workspaces: z.array(WorkspaceWithContextSchema),
 });
 type WorkspaceHostRow = z.infer<typeof WorkspaceHostRowSchema>;
@@ -29,13 +35,13 @@ export function AdministratorWorkspaces({
 }: {
   workspaceHostRows: WorkspaceHostRow[];
   workspaceLoadHostCapacity: number;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Workspaces',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'workspaces',
     },
@@ -86,9 +92,9 @@ export function AdministratorWorkspaces({
                     ${instanceId
                       ? html`<span class="text-muted me-2">(${instanceId})</span>`
                       : null}
-                    ${WorkspaceHostState({ state: workspaceHost.state })}
+                    ${WorkspaceHostStateBadge({ state: workspaceHost.state })}
                     <span class="badge text-bg-secondary">
-                      ${workspaceHostRow.workspace_host_time_in_state}
+                      ${formatInterval(workspaceHostRow.workspace_host_time_in_state)}
                     </span>
                   </div>
                   ${Capacity({
@@ -117,9 +123,9 @@ export function AdministratorWorkspaces({
                                   <span class="me-2" style="font-variant-numeric: tabular-nums;">
                                     ${workspace.id}
                                   </span>
-                                  ${WorkspaceState({ state: workspace.state })}
+                                  ${WorkspaceStateBadge({ state: workspace.state })}
                                   <span class="badge text-bg-secondary">
-                                    ${workspace.time_in_state}
+                                    ${formatInterval(workspace.time_in_state)}
                                   </span>
                                 </div>
                                 <div class="text-muted text-small">
@@ -168,12 +174,12 @@ function Capacity({ total, current }: { total: number; current: number }) {
   `;
 }
 
-function WorkspaceState({ state }) {
+function WorkspaceStateBadge({ state }: { state: WorkspaceState }) {
   const color = state === 'running' ? 'success' : 'secondary';
   return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }
 
-function WorkspaceHostState({ state }) {
+function WorkspaceHostStateBadge({ state }: { state: WorkspaceHostState }) {
   let color = 'secondary';
   switch (state) {
     case 'ready':

@@ -1,18 +1,20 @@
 export function PageFooter() {
   return (
-    <footer class="footer mt-auto py-3 bg-light border-top">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-6">
+    <footer className="footer py-3 bg-light border-top">
+      <div className="container">
+        <div className="row align-items-center">
+          <div className="col-6">
             <a
               href="https://prairielearn.com"
-              class="text-decoration-none me-3 page-footer-text"
+              className="text-decoration-none me-3 page-footer-text"
               aria-label="Company"
+              target="_blank"
+              rel="noreferrer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 479.42 100.57"
-                style="height: 30px; width: auto; color: inherit;"
+                style={{ height: '30px', width: 'auto', color: 'inherit' }}
               >
                 <polygon
                   fill="currentColor"
@@ -81,18 +83,22 @@ export function PageFooter() {
               </svg>
             </a>
           </div>
-          <div class="col-6 d-flex justify-content-end">
+          <div className="col-6 d-flex justify-content-end">
             <a
               href="https://prairielearn.com"
-              class="text-decoration-none me-3 page-footer-text d-none d-md-inline"
+              className="text-decoration-none me-3 page-footer-text d-none d-md-inline"
+              target="_blank"
+              rel="noreferrer"
             >
               Company
             </a>
             <a
               href="https://github.com/PrairieLearn/PrairieLearn"
-              class="text-decoration-none page-footer-text"
+              className="text-decoration-none page-footer-text"
+              target="_blank"
+              rel="noreferrer"
             >
-              <i class="fab fa-github" /> <span>GitHub</span>
+              <i className="fab fa-github" /> <span>GitHub</span>
             </a>
           </div>
         </div>

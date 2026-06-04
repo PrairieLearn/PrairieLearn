@@ -1,5 +1,97 @@
 # @prairielearn/compiled-assets
 
+## 4.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.1.4
+
+### Patch Changes
+
+- 54a4c6d: Use OS-assigned ports for esbuild development asset servers.
+- 382dbd8: Bump dependencies
+
+## 4.1.3
+
+### Patch Changes
+
+- d482019: Mark `fs/promises` and `module` as external in browser bundles to work around issues with `web-tree-sitter`.
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
+## 4.1.2
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 4.1.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 373afc1: Pin Express 4-era dependencies to current major versions
+- Updated dependencies [3c4799a]
+  - @prairielearn/html@5.0.2
+
+## 4.1.0
+
+### Minor Changes
+
+- a6b3d9d: Emit `sizes.json` with per-entry-point bundle sizes during build
+
+## 4.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/html@5.0.1
+
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/html@5.0.0
+
+## 3.3.3
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
+## 3.3.2
+
+### Patch Changes
+
+- efe7435: Add Total size columns to build stats that sum entry point sizes with their code-split chunks
+
+## 3.3.1
+
+### Patch Changes
+
+- 926403c: Upgrade `globby` to latest version
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/html@4.0.23
+
 ## 3.3.0
 
 ### Minor Changes

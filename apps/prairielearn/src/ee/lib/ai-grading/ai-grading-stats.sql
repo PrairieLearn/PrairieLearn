@@ -78,15 +78,15 @@ SELECT
   instance_question_id,
   COALESCE(u.name, u.uid) AS grader_name,
   COALESCE(
-    json_agg(to_jsonb(rgti)) FILTER (
+    jsonb_agg(to_jsonb(rgti)) FILTER (
       WHERE
         rgti.id IS NOT NULL
     ),
-    '[]'::json
+    '[]'::jsonb
   ) AS rubric_items
 FROM
   users AS u
-  JOIN grouped_grading_jobs AS ggj ON (u.user_id = ggj.graded_by)
+  JOIN grouped_grading_jobs AS ggj ON (u.id = ggj.graded_by)
   LEFT JOIN rubric_grading_to_items AS rgti ON (
     ggj.manual_rubric_grading_id = rgti.rubric_grading_id
   )

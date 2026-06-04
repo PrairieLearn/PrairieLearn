@@ -1,5 +1,73 @@
 # @prairielearn/cache
 
+## 2.1.12
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.1.11
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 2.1.10
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 2.1.9
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/logger@3.1.2
+  - @prairielearn/sentry@5.0.4
+
+## 2.1.8
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+  - @prairielearn/logger@3.1.1
+  - @prairielearn/sentry@5.0.2
+
+## 2.1.7
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/logger@3.0.1
+  - @prairielearn/sentry@5.0.1
+
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/logger@3.0.0
+  - @prairielearn/sentry@5.0.0
+
+## 2.1.5
+
+### Patch Changes
+
+- 99ff19f: Add missing `repository` field to `package.json`
+
+## 2.1.4
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/logger@2.0.25
+  - @prairielearn/sentry@4.0.9
+
 ## 2.1.3
 
 ### Patch Changes

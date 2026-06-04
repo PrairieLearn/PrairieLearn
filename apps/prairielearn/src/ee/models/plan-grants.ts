@@ -1,7 +1,7 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { type WithRequiredKeys } from '@prairielearn/utils';
 
 import { type EnumPlanGrantType, type PlanGrant, PlanGrantSchema } from '../../lib/db-types.js';
-import { type WithRequiredKeys } from '../../lib/types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -42,6 +42,7 @@ export async function ensurePlanGrant({
     },
     PlanGrantSchema,
   );
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
@@ -68,6 +69,7 @@ export async function updatePlanGrant({
     { id: plan_grant.id, type },
     PlanGrantSchema,
   );
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
@@ -94,6 +96,7 @@ export async function deletePlanGrant({
     { id: plan_grant.id },
     PlanGrantSchema,
   );
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',

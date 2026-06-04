@@ -1,8 +1,7 @@
 {
-  "uuid": "fcc5282c-a752-4146-9bd6-ee19aac53fc5",
   "name": "XC 101",
   "title": "Example Course",
-  "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
+  "comment": "Add additional assessment sets here. Default ones are listed here: https://docs.prairielearn.com/course/#assessment-sets.",
   "assessmentSets": [
     {
       "abbreviation": "W",

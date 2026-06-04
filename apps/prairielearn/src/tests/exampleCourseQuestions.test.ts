@@ -1,23 +1,15 @@
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import fg from 'fast-glob';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
-import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-
-const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
-
-locals.baseUrl = locals.siteUrl + '/pl';
-locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
-locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-locals.questionPreviewTabUrl = '/preview';
-locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
-locals.isStudentPage = false;
+import { withConfig } from './utils/config.js';
 
 const qidsExampleCourse = [
   'demo/calculation',
@@ -60,6 +52,11 @@ const templateQuestionQids: string[] = fg
   .map((p) => path.dirname(p));
 
 describe('Auto-test questions in exampleCourse', () => {
+  // TODO: Add a test that validates template question HTML with validateHTML()
+  // and asserts zero errors and warnings. This would catch issues like input
+  // elements nested inside panel elements. Blocked on adding more elements to
+  // SUPPORTED_ELEMENTS so that templates using e.g. pl-figure don't fail.
+
   it('has correct topic for all template questions', async () => {
     const questionsWithIncorrectTopics: string[] = [];
     for (const qid of templateQuestionQids) {
@@ -76,12 +73,18 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
-    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+    beforeAll(async () => {
+      await withConfig({ workersCount: os.cpus().length }, async () => {
+        await helperServer.before(EXAMPLE_COURSE_PATH)();
+      });
+    });
 
     afterAll(helperServer.after);
 
-    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
-      helperQuestion.autoTestQuestion(locals, qid),
-    );
+    [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) => {
+      it.concurrent(`auto-test ${qid}`, async () => {
+        await helperQuestion.autoTestQuestion({ qid });
+      });
+    });
   });
 });

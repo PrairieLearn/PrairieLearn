@@ -1,22 +1,22 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
   type InstanceLogEntry,
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
-  updateAssessmentInstancePoints,
-  updateAssessmentInstanceScore,
+  setAssessmentInstancePoints,
+  setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
@@ -30,12 +30,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const DateDurationResultSchema = z.object({
-  assessment_instance_date_formatted: z.string(),
-  assessment_instance_duration: z.string(),
-});
-
-function makeLogCsvFilename(locals) {
+function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -57,22 +52,13 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
       { assessment_instance_id: res.locals.assessment_instance.id },
       AssessmentInstanceStatsSchema,
     );
-
-    const dateDurationResult = await sqldb.queryRow(
-      sql.select_date_formatted_duration,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      DateDurationResultSchema,
-    );
-    const assessment_instance_date_formatted =
-      dateDurationResult.assessment_instance_date_formatted;
-    const assessment_instance_duration = dateDurationResult.assessment_instance_duration;
 
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions,
@@ -90,8 +76,6 @@ router.get(
         resLocals: res.locals,
         logCsvFilename,
         assessment_instance_stats,
-        assessment_instance_date_formatted,
-        assessment_instance_duration,
         instance_questions,
         assessmentInstanceLog,
       }),
@@ -105,7 +89,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
@@ -133,7 +117,7 @@ router.get(
             }
           }
           return [
-            record.date_iso8601,
+            formatDateISO(record.event_date, res.locals.course_instance.display_timezone),
             record.auth_user_uid,
             fingerprintNumbers.get(record.client_fingerprint?.id) ?? null,
             record.client_fingerprint?.ip_address ?? null,
@@ -161,42 +145,42 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
 
     if (req.body.__action === 'edit_total_points') {
-      await updateAssessmentInstancePoints(
+      await setAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
-      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
-        {
+      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore({
+        assessment: res.locals.assessment,
+        instance_question_id: req.body.instance_question_id,
+        submission_id: null,
+        check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
+        score: {
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
-      );
+        authn_user_id: res.locals.authn_user.id,
+      });
       if (modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,
@@ -212,7 +196,7 @@ router.post(
       await resetVariantsForInstanceQuestion({
         assessment_instance_id: res.locals.assessment_instance.id,
         unsafe_instance_question_id: req.body.unsafe_instance_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

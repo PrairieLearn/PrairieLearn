@@ -11,11 +11,13 @@ import {
   type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
+export const AssessmentRowSchema = AssessmentSchema.extend({
+  abbreviation: AssessmentSetSchema.shape.abbreviation,
+  name: AssessmentSetSchema.shape.name,
+  color: AssessmentSetSchema.shape.color,
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
   label: z.string(),
@@ -26,16 +28,16 @@ export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
   lti13_instances,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lti13_instances: Lti13Instance[];
 }): string {
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,
@@ -43,7 +45,7 @@ export function InstructorInstanceAdminLti13NoInstances({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Integrations with other learning systems</h1>
+          <h1>LMS connections</h1>
         </div>
         <div class="card-body">
           ${lti13_instances.length === 0
@@ -52,10 +54,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a
-                    target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
-                    rel="noreferrer"
+                  <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -74,7 +73,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                 <p>
                   <a
                     target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
                     rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?
@@ -97,7 +96,7 @@ export function InstructorInstanceAdminLti13({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'course-instance'>;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
@@ -107,11 +106,11 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'Integrations',
+    pageTitle: 'LMS connections',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'integrations',
+      subPage: 'lms_connections',
     },
     options: {
       fullWidth: true,
@@ -217,7 +216,7 @@ function LinkedAssessments({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lms_name: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
@@ -326,7 +325,7 @@ function LinkedAssessments({
                 <td class="align-middle">
                   <a href="${urlPrefix}/assessment/${row.id}/"
                     >${row.title}
-                    ${row.group_work
+                    ${row.team_work
                       ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                       : ''}</a
                   >

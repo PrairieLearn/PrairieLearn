@@ -1,34 +1,8 @@
-import { z } from 'zod';
-
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  SharingSetSchema,
-  SprocAssessmentsFormatForQuestionSchema,
-  TagSchema,
-  TopicSchema,
-} from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
-const QuestionsPageDataSchema = z.object({
-  id: z.string(),
-  qid: z.string(),
-  title: z.string(),
-  sync_errors: z.string().nullable().optional(),
-  sync_warnings: z.string().nullable().optional(),
-  grading_method: z.string(),
-  external_grading_image: z.string().nullable(),
-  workspace_image: z.string().nullable(),
-  display_type: z.string(),
-  open_issue_count: z.number().default(0),
-  topic: TopicSchema,
-  tags: z.array(TagSchema).nullable(),
-  share_publicly: z.boolean(),
-  share_source_publicly: z.boolean(),
-  sharing_sets: z.array(SharingSetSchema).nullable().optional(),
-  assessments: SprocAssessmentsFormatForQuestionSchema.nullable().optional(),
-});
-export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
+import { type QuestionsPageData, QuestionsPageDataSchema } from './questions.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -44,10 +18,9 @@ export async function selectQuestionsForCourse(
 
   const questions = rows.map((row) => ({
     ...row,
-    assessments:
-      row.assessments?.filter((assessment) =>
-        course_instance_ids.some((id) => idsEqual(id, assessment.course_instance_id)),
-      ) ?? null,
+    assessments: (row.assessments ?? []).filter((a) =>
+      course_instance_ids.some((id) => idsEqual(id, a.assessment.course_instance_id)),
+    ),
   }));
   return questions;
 }

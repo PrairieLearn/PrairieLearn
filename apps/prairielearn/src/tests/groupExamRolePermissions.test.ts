@@ -2,11 +2,11 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { AssessmentInstanceSchema, GroupRoleSchema, type User } from '../lib/db-types.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
@@ -89,7 +89,7 @@ async function updateGroupRoles(
 ): Promise<cheerio.CheerioAPI> {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
-  const userIds = studentUsers.map((user) => user.user_id);
+  const userIds = studentUsers.map((user) => user.id);
   for (const roleId of roleIds) {
     for (const userId of userIds) {
       const elementId = `#user_role_${roleId}-${userId}`;
@@ -112,9 +112,9 @@ async function updateGroupRoles(
   );
 
   // Grab IDs of checkboxes to construct update request
-  const checkedElementIds = {};
+  const checkedElementIds: Record<string, string> = {};
   for (let i = 0; i < checkedBoxes.length; i++) {
-    checkedElementIds[checkedBoxes[i.toString()].attribs.id] = 'on';
+    checkedElementIds[checkedBoxes[`${i}`].attribs.id] = 'on';
   }
   const res = await fetch(assessmentUrl, {
     method: 'POST',
@@ -133,7 +133,7 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const id = await queryRow(
+  const id = await queryScalar(
     sql.select_instance_questions,
     { assessment_instance_id: assessmentInstanceId, question_id: questionId },
     IdSchema,
@@ -147,7 +147,7 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentId = await queryRow(
+  const assessmentId = await queryScalar(
     sql.select_assessment,
     { assessment_tid: GROUP_WORK_EXAM_TID },
     IdSchema,
@@ -209,12 +209,11 @@ async function prepareGroup() {
     studentUsers[0],
     assessmentUrl,
     null,
-    '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -242,7 +241,7 @@ async function prepareGroup() {
     sql.select_all_assessment_instance,
     AssessmentInstanceSchema,
   );
-  assert.equal(assessmentInstanceResult.group_id, '1');
+  assert.equal(assessmentInstanceResult.team_id, '1');
   const assessmentInstanceId = assessmentInstanceResult.id;
 
   return {
@@ -262,7 +261,7 @@ async function prepareGroup() {
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
   describe('valid group role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
@@ -288,12 +287,11 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
       // The second and third questions should not be viewable
-      const lockedRows = $('tr [data-test-id="locked-instance-question-row"]');
+      const lockedRows = $('tr [data-testid="locked-instance-question-row"]');
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
@@ -411,7 +409,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
   });
 
   describe('invalid role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
@@ -442,13 +440,12 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,
@@ -475,7 +472,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[1],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
       );
       $ = assessmentInstanceSecondUserPage;
 
@@ -488,12 +484,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
 
       // Switch back to first user and assign a valid role config
       const { $: $assessmentInstanceFirstUserPage2, csrfToken: firstUserCsrfToken2 } =
-        await switchUserAndLoadAssessment(
-          studentUsers[0],
-          assessmentInstanceUrl,
-          null,
-          '#leaveGroupModal',
-        );
+        await switchUserAndLoadAssessment(studentUsers[0], assessmentInstanceUrl, null);
       $ = await updateGroupRoles(
         validRoleConfig,
         groupRoles,

@@ -1,11 +1,11 @@
 import { isValid, parseISO } from 'date-fns';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { clearCookie, setCookie } from '../../lib/cookie.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { CourseRolesSchema, InstructorEffectiveUser } from './instructorEffectiveUser.html.js';
 
@@ -14,13 +14,16 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const courseRoles = await queryRow(
       sql.select,
       {
         course_id: res.locals.course.id,
         authn_course_role: res.locals.authz_data.authn_course_role,
-        authn_course_instance_role: res.locals.authz_data.authn_course_instance_role || 'None',
+        authn_course_instance_role:
+          'authn_course_instance_role' in res.locals.authz_data
+            ? res.locals.authz_data.authn_course_instance_role
+            : 'None',
       },
       CourseRolesSchema,
     );
@@ -37,7 +40,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (req.body.__action === 'reset') {
       clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
       clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);

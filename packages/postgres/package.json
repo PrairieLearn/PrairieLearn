@@ -1,36 +1,38 @@
 {
   "name": "@prairielearn/postgres",
-  "version": "4.5.0",
+  "version": "6.0.5",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/postgres"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.20",
-    "@types/pg-cursor": "^2.7.2",
+    "debug": "^4.4.3",
+    "es-toolkit": "^1.47.0",
     "multipipe": "^4.0.0",
-    "pg": "^8.16.3",
-    "pg-cursor": "^2.15.3",
-    "pg-pool": "^3.10.1",
-    "pg-protocol": "^1.10.3",
-    "zod": "^3.25.76"
+    "pg": "^8.21.0",
+    "pg-cursor": "^2.20.0",
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/debug": "^4.1.13",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "@types/node": "^24.12.4",
+    "@types/pg": "^8.20.0",
+    "@types/pg-cursor": "^2.7.2",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }

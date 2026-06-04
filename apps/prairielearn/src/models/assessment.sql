@@ -1,3 +1,12 @@
+-- BLOCK lock_assessment_row
+SELECT
+  id
+FROM
+  assessments
+WHERE
+  id = $assessment_id
+FOR NO KEY UPDATE;
+
 -- BLOCK select_assessment_by_id
 SELECT
   *
@@ -16,13 +25,15 @@ WHERE
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;
 
--- BLOCK check_assessment_is_public
+-- BLOCK select_assessment_by_uuid
 SELECT
-  a.share_source_publicly
+  *
 FROM
-  assessments AS a
+  assessments
 WHERE
-  a.id = $assessment_id;
+  uuid = $uuid
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;
 
 -- BLOCK select_assessment_info_for_job
 SELECT
@@ -33,9 +44,29 @@ FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
   a.id = $assessment_id;
+
+-- BLOCK select_zone_id_for_instance_question
+SELECT
+  z.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  LEFT JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
+  LEFT JOIN zones AS z ON z.id = ag.zone_id
+WHERE
+  iq.id = $instance_question_id;
+
+-- BLOCK select_assessment_tools
+SELECT
+  *
+FROM
+  assessment_tools
+WHERE
+  zone_id = $zone_id
+  OR assessment_id = $assessment_id;
 
 -- BLOCK select_assessments_for_course_instance
 WITH
@@ -52,6 +83,23 @@ WITH
       AND i.open
     GROUP BY
       a.id
+  ),
+  manual_grading_count AS (
+    SELECT
+      aq.assessment_id,
+      count(*) AS ungraded_manual_grading_submission_count
+    FROM
+      assessments AS a
+      JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
+      JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+    WHERE
+      a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
+      AND aq.deleted_at IS NULL
+      AND iq.requires_manual_grading
+      AND iq.status != 'unanswered'
+    GROUP BY
+      aq.assessment_id
   )
 SELECT
   a.*,
@@ -88,12 +136,14 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  coalesce(ic.open_issue_count, 0) AS open_issue_count
+  coalesce(ic.open_issue_count, 0) AS open_issue_count,
+  coalesce(mgc.ungraded_manual_grading_submission_count, 0) AS ungraded_manual_grading_submission_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
+  LEFT JOIN manual_grading_count AS mgc ON (mgc.assessment_id = a.id)
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
   ci.id = $course_instance_id
@@ -112,3 +162,191 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
+
+-- BLOCK select_zone_tool_overrides
+SELECT
+  z.number AS zone_number,
+  at.tool,
+  at.enabled
+FROM
+  assessment_tools AS at
+  JOIN zones AS z ON (at.zone_id = z.id)
+WHERE
+  z.assessment_id = $assessment_id;
+
+-- BLOCK select_assessment_in_course
+SELECT
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  a.id = $assessment_id
+  AND ci.course_id = $course_id
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessments_referencing_questions
+SELECT DISTINCT
+  a.id AS assessment_id,
+  aset.abbreviation || a.number AS assessment_label,
+  aset.color AS assessment_color,
+  aset.abbreviation AS assessment_set_abbreviation,
+  aset.name AS assessment_set_name,
+  a.number AS assessment_number,
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  a.tid AS assessment_directory
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  aq.question_id = ANY ($question_ids::bigint[])
+  AND ci.course_id = $course_id
+  AND a.tid IS NOT NULL
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessment_referenced_question_counts
+SELECT
+  aq.assessment_id,
+  count(DISTINCT aq.question_id)::bigint AS referenced_count
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND aq.question_id = ANY ($question_ids::bigint[])
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+GROUP BY
+  aq.assessment_id;
+
+-- BLOCK select_assessment_zone_points_range
+WITH
+  -- For each alternative group, rank questions by max_points (best and worst).
+  -- When number_choose is set, only a subset of questions is selected.
+  alt_group_questions AS (
+    SELECT
+      ag.id AS ag_id,
+      ag.zone_id,
+      ag.number_choose,
+      aq.max_points,
+      row_number() OVER (
+        PARTITION BY
+          ag.id
+        ORDER BY
+          aq.max_points DESC
+      ) AS rank_desc,
+      row_number() OVER (
+        PARTITION BY
+          ag.id
+        ORDER BY
+          aq.max_points ASC
+      ) AS rank_asc
+    FROM
+      alternative_groups AS ag
+      JOIN assessment_questions AS aq ON (aq.alternative_group_id = ag.id)
+    WHERE
+      ag.zone_id IN (
+        SELECT
+          id
+        FROM
+          zones
+        WHERE
+          assessment_id = $assessment_id
+      )
+      AND aq.deleted_at IS NULL
+  ),
+  -- Sum the best-case and worst-case points per alternative group.
+  alt_group_totals AS (
+    SELECT
+      ag_id,
+      zone_id,
+      sum(max_points) FILTER (
+        WHERE
+          number_choose IS NULL
+          OR rank_desc <= number_choose
+      ) AS max_points,
+      sum(max_points) FILTER (
+        WHERE
+          number_choose IS NULL
+          OR rank_asc <= number_choose
+      ) AS min_points
+    FROM
+      alt_group_questions
+    GROUP BY
+      ag_id,
+      zone_id
+  ),
+  -- Within each zone, rank alternative group totals for best_questions / number_choose.
+  zone_blocks AS (
+    SELECT
+      agt.zone_id,
+      agt.max_points,
+      agt.min_points,
+      z.best_questions,
+      z.number_choose AS zone_number_choose,
+      z.max_points AS zone_max_points,
+      row_number() OVER (
+        PARTITION BY
+          agt.zone_id
+        ORDER BY
+          agt.max_points DESC
+      ) AS rank_best,
+      row_number() OVER (
+        PARTITION BY
+          agt.zone_id
+        ORDER BY
+          agt.min_points ASC
+      ) AS rank_worst
+    FROM
+      alt_group_totals AS agt
+      JOIN zones AS z ON (z.id = agt.zone_id)
+  ),
+  -- Compute per-zone best-case and worst-case totals.
+  zone_totals AS (
+    SELECT
+      zone_id,
+      zone_max_points,
+      sum(max_points) FILTER (
+        WHERE
+          coalesce(best_questions, zone_number_choose) IS NULL
+          OR rank_best <= coalesce(best_questions, zone_number_choose)
+      ) AS zone_max,
+      sum(min_points) FILTER (
+        WHERE
+          coalesce(best_questions, zone_number_choose) IS NULL
+          OR rank_worst <= coalesce(best_questions, zone_number_choose)
+      ) AS zone_min
+    FROM
+      zone_blocks
+    GROUP BY
+      zone_id,
+      zone_max_points
+  )
+SELECT
+  coalesce(
+    sum(
+      CASE
+        WHEN zone_max_points IS NOT NULL THEN LEAST(zone_max, zone_max_points)
+        ELSE zone_max
+      END
+    ),
+    0
+  ) AS max_total,
+  coalesce(
+    sum(
+      CASE
+        WHEN zone_max_points IS NOT NULL THEN LEAST(zone_min, zone_max_points)
+        ELSE zone_min
+      END
+    ),
+    0
+  ) AS min_total
+FROM
+  zone_totals;

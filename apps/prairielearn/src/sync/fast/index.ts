@@ -1,5 +1,4 @@
 import type { Course } from '../../lib/db-types.js';
-import { assertNever } from '../../lib/types.js';
 
 import { fastSyncQuestion } from './question.js';
 
@@ -72,11 +71,5 @@ export async function attemptFastSync(
   course: Course,
   strategy: FastSyncStrategy,
 ): Promise<boolean> {
-  switch (strategy.type) {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    case 'Question':
-      return fastSyncQuestion(course, strategy.pathPrefix);
-    default:
-      assertNever(strategy.type);
-  }
+  return fastSyncQuestion(course, strategy.pathPrefix);
 }

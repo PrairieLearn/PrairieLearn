@@ -15,14 +15,13 @@ export * from './infoCourseInstance.js';
 export * from './infoElementCore.js';
 export * from './infoElementCourse.js';
 export * from './infoElementExtension.js';
-export * from './infoNewsItem.js';
 export * from './infoQuestion.js';
 export * from './questionOptionsCalculation.js';
 export * from './questionOptionsCheckbox.js';
 export * from './questionOptionsFile.js';
 export * from './questionOptionsMultipleChoice.js';
 export * from './questionOptionsMultipleTrueFalse.js';
-export * from './questionOptionsv3.js';
+export * from './accessControl.js';
 export * from './comment.js';
 
 // Defines the JSON schemas for the Zod schemas, used by ajv-based validation

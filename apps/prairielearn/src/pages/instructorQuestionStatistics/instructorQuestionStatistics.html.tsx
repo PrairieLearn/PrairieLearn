@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
@@ -12,12 +12,12 @@ import {
   AssessmentSetSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -43,7 +43,7 @@ export function InstructorQuestionStatistics({
 }: {
   questionStatsCsvFilename: string;
   rows: AssessmentQuestionStatsRow[];
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instructor-question'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
 
@@ -57,19 +57,10 @@ export function InstructorQuestionStatistics({
     },
     options: {
       fullWidth: true,
-      pageNote: resLocals.question.qid,
+      pageNote: resLocals.question.qid!,
     },
     headContent: compiledScriptTag('instructorQuestionStatisticsClient.ts'),
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Detailed assessment statistics for question ${resLocals.question.qid}</h1>
@@ -87,7 +78,7 @@ export function InstructorQuestionStatistics({
                 ${Object.values(STAT_DESCRIPTIONS).map((stat) => {
                   return html`
                     <th class="text-center" title="${stat.description}">
-                      ${unsafeHtml(stat.title)}
+                      ${renderHtml(stat.title)}
                     </th>
                   `;
                 })}
@@ -287,7 +278,7 @@ export function InstructorQuestionStatistics({
               ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                 return html`
                   <li>
-                    <strong> ${unsafeHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
+                    <strong> ${renderHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
                     ${STAT_DESCRIPTIONS[stat].description}
                   </li>
                 `;

@@ -1,0 +1,41 @@
+{
+  "name": "@prairielearn/react",
+  "version": "2.1.2",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/react"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./server": "./dist/server.js",
+    "./hydrated-component": "./dist/hydrated-component/index.js"
+  },
+  "scripts": {
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/compiled-assets": "workspace:^",
+    "@prairielearn/error": "workspace:^",
+    "@prairielearn/html": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "clsx": "^2.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "selector-observer": "^2.1.6",
+    "superjson": "^2.2.6"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta"
+  }
+}

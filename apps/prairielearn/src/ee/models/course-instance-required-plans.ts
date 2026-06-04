@@ -1,6 +1,7 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { CourseInstanceRequiredPlanSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseInstanceRequiredPlanSchema } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 import { type PlanName } from '../lib/billing/plans-types.js';
 
@@ -21,6 +22,7 @@ export async function insertCourseInstanceRequiredPlan(
     { course_instance_id, plan_name: plan },
     CourseInstanceRequiredPlanWithContextSchema,
   );
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'course_instance_required_plans',
@@ -47,6 +49,7 @@ export async function deleteCourseInstanceRequiredPlan(
     },
     CourseInstanceRequiredPlanWithContextSchema,
   );
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'course_instance_required_plans',

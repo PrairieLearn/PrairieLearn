@@ -28,14 +28,8 @@ WHERE
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
-  CASE
-    WHEN d.start_date IS NULL THEN '—'
-    ELSE format_date_full_compact (d.start_date, ci.display_timezone)
-  END AS formatted_start_date,
-  CASE
-    WHEN d.end_date IS NULL THEN '—'
-    ELSE format_date_full_compact (d.end_date, ci.display_timezone)
-  END AS formatted_end_date,
+  d.start_date,
+  d.end_date,
   COALESCE(
     $is_administrator
     OR ia.id IS NOT NULL
@@ -49,7 +43,7 @@ SELECT
     FALSE
   ) AS has_course_instance_permission_edit
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN institution_administrators AS ia ON (
     ia.institution_id = i.id
@@ -69,8 +63,9 @@ FROM
   ),
   LATERAL (
     SELECT
-      min(ar.start_date) AS start_date,
-      max(ar.end_date) AS end_date
+      -- Use new publishing dates if available, otherwise fall back to legacy access rules
+      COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+      COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE
@@ -101,7 +96,7 @@ SELECT
 FROM
   course_instance_permissions AS cip
   JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
-  JOIN users AS u ON (u.user_id = cp.user_id)
+  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;

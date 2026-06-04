@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
-import _ from 'lodash';
+import { groupBy } from 'es-toolkit';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -67,16 +67,6 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
     },
     {
-      name: 'sendExternalGraderStats',
-      module: await import('./sendExternalGraderStats.js'),
-      intervalSec: 'daily',
-    },
-    {
-      name: 'sendExternalGraderDeadLetters',
-      module: await import('./sendExternalGraderDeadLetters.js'),
-      intervalSec: 'daily',
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
@@ -115,6 +105,14 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
   ];
+
+  if (config.newsFeedUrl) {
+    jobs.push({
+      name: 'fetchNewsItems',
+      module: await import('./fetchNewsItems.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
+    });
+  }
 
   if (isEnterprise()) {
     jobs.push(
@@ -165,7 +163,7 @@ export async function init() {
     jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
   );
 
-  const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
+  const jobsByPeriodSec = groupBy(jobs, (jobs) => jobs.intervalSec);
   for (const [intervalSec, jobsList] of Object.entries(jobsByPeriodSec)) {
     const intervalSecNum = Number.parseInt(intervalSec);
     if (intervalSec === 'daily') {
@@ -286,7 +284,7 @@ async function runJobs(jobsList: CronJob[]) {
         try {
           await tryJobWithLock(job, cronUuid);
           span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err) {
+        } catch (err: any) {
           debug(`runJobs(): error running ${job.name}: ${err}`);
           logger.error(`cron: ${job.name} failure: ` + String(err), {
             message: err.message,
@@ -328,7 +326,7 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
   const lockName = 'cron:' + job.name;
   const didLock = await namedLocks.doWithLock(
     lockName,
-    { onNotAcquired: () => false },
+    { onNotAcquired: () => false, autoRenew: true },
     async () => {
       debug(`tryJobWithLock(): ${job.name}: acquired lock`);
       logger.verbose('cron: ' + job.name + ' acquired lock', { cronUuid });

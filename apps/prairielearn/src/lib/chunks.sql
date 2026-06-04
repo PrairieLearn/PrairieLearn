@@ -26,7 +26,7 @@ SELECT
   a.tid AS assessment_name,
   ci.short_name AS course_instance_name
 FROM
-  JSON_ARRAY_ELEMENTS($chunks_arr::json) AS chunks_arr
+  JSONB_ARRAY_ELEMENTS($chunks_arr::jsonb) AS chunks_arr
   -- Note that we specifically use a LEFT JOIN here - this is what allows the
   -- caller to differentiate between a chunk that exists and one that does not.
   -- Chunks that don't exist will have a NULL id, but they'll still contain
@@ -65,7 +65,7 @@ FROM
 SELECT
   c.path
 FROM
-  pl_courses AS c
+  courses AS c
 WHERE
   c.id = $course_id;
 
@@ -130,7 +130,7 @@ SELECT
   a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid
 FROM
-  JSON_ARRAY_ELEMENTS($chunks) AS chunk (json)
+  JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
   LEFT JOIN questions AS q ON (
     q.qid = (chunk ->> 'questionName')
     AND q.deleted_at IS NULL
@@ -170,7 +170,7 @@ WITH
       a.id AS assessment_id,
       (cm ->> 'uuid')::uuid AS uuid
     FROM
-      JSON_ARRAY_ELEMENTS($chunks) AS cm
+      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS cm
       LEFT JOIN questions AS q ON (
         q.qid = (cm ->> 'questionName')
         AND q.course_id = $course_id
@@ -254,3 +254,26 @@ WHERE
     FROM
       chunks_to_delete
   );
+
+-- BLOCK select_active_assessment_ids_by_tid
+SELECT
+  ci.short_name AS course_instance_name,
+  a.tid AS assessment_name,
+  a.id AS assessment_id
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL;
+
+-- BLOCK select_active_course_instance_ids
+SELECT
+  ci.short_name AS course_instance_name,
+  ci.id AS course_instance_id
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;

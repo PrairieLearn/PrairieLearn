@@ -170,7 +170,7 @@ def test_solve_dag() -> None:
         assert len(solution) == grade_dag(solution, depends_graph, group_belonging)[0]
 
 
-problem_4_final = "6"
+problem_4_final = ["6"]
 problem_4_valid_1: Multigraph = {
     "1": [],
     "2": ["1"],
@@ -182,19 +182,26 @@ problem_4_valid_1: Multigraph = {
 
 problem_4_orderings = []
 
-problem_5_final = "3"
+problem_5_final = ["3"]
 problem_5_invalid_1: Multigraph = {
     "1": [["2"], []],
     "2": ["1"],
     "3": [["2"], ["1"]],
 }
 
-problem_6_final = "4"
-problem_6_valid_2: Multigraph = {
+problem_6_final = ["4"]
+problem_6_valid: Multigraph = {
     "1": [["3"], []],
     "2": [["3"], []],
     "3": [],
     "4": [["2"], ["1"]],
+}
+
+problem_7_final = ["2", "3"]
+problem_7_valid: Multigraph = {
+    "1": [],
+    "2": ["1"],
+    "3": ["1"],
 }
 
 
@@ -212,9 +219,18 @@ def test_solve_multigraph() -> None:
     ):
         solve_multigraph(problem_5_invalid_1, problem_5_final)
 
-    problem_7_solutions = solve_multigraph(problem_6_valid_2, problem_6_final)
+    problem_6_solutions = solve_multigraph(problem_6_valid, problem_6_final)
+    for solution in problem_6_solutions:
+        assert (
+            len(solution)
+            == grade_multigraph(solution, problem_6_valid, problem_6_final)[0]
+        )
+
+    # test multiple final tags
+    problem_7_solutions = solve_multigraph(problem_7_valid, problem_7_final)
+    assert len(problem_7_solutions) == 2
     for solution in problem_7_solutions:
         assert (
             len(solution)
-            == grade_multigraph(solution, problem_6_valid_2, problem_6_final)[0]
+            == grade_multigraph(solution, problem_7_valid, problem_7_final)[0]
         )

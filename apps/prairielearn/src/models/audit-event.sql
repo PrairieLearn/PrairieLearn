@@ -33,12 +33,24 @@ WHERE
 ORDER BY
   date DESC;
 
+-- BLOCK select_audit_events_by_institution_id_table_names
+SELECT
+  *
+FROM
+  audit_events
+WHERE
+  institution_id = $institution_id
+  AND table_name = ANY ($table_names::text[])
+ORDER BY
+  date DESC,
+  id DESC;
+
 -- BLOCK insert_audit_event
 WITH
   assessment_instance_meta AS (
     SELECT
       id,
-      group_id,
+      team_id,
       assessment_id
     FROM
       assessment_instances
@@ -56,26 +68,26 @@ WITH
       id = $enrollment_id
       AND id IS NOT NULL
   ),
-  group_meta AS (
+  team_meta AS (
     SELECT
       id,
       (
         SELECT
           assessment_id
         FROM
-          group_configs
+          team_configs
         WHERE
-          id = g.group_config_id
+          id = g.team_config_id
       ) AS assessment_id,
       course_instance_id
     FROM
-      groups AS g
+      teams AS g
     WHERE
       id = coalesce(
-        $group_id,
+        $team_id,
         (
           SELECT
-            group_id
+            team_id
           FROM
             assessment_instance_meta
         )
@@ -117,7 +129,7 @@ WITH
           SELECT
             assessment_id
           FROM
-            group_meta
+            team_meta
         )
       )
       AND id IS NOT NULL
@@ -141,7 +153,7 @@ WITH
           SELECT
             course_instance_id
           FROM
-            group_meta
+            team_meta
         ),
         (
           SELECT
@@ -157,7 +169,7 @@ WITH
       id,
       institution_id
     FROM
-      pl_courses
+      courses
     WHERE
       id = coalesce(
         $course_id,
@@ -206,7 +218,7 @@ INSERT INTO
     assessment_id,
     assessment_instance_id,
     assessment_question_id,
-    group_id
+    team_id
   )
 SELECT
   $action,
@@ -231,7 +243,7 @@ SELECT
     $assessment_instance_id
   ) AS assessment_instance_id,
   assessment_question_meta.id AS assessment_question_id,
-  group_meta.id AS group_id
+  team_meta.id AS team_id
 FROM
   (
     SELECT
@@ -244,6 +256,6 @@ FROM
   LEFT JOIN assessment_meta ON (TRUE)
   LEFT JOIN assessment_instance_meta ON (TRUE)
   LEFT JOIN assessment_question_meta ON (TRUE)
-  LEFT JOIN group_meta ON (TRUE)
+  LEFT JOIN team_meta ON (TRUE)
 RETURNING
   *;

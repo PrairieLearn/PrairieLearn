@@ -10,8 +10,15 @@ jobs:
   upgrade-containers:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up timestamp
         id: get-timestamp
@@ -22,8 +29,9 @@ jobs:
           find . -name 'Dockerfile' -exec sed -i "s/ARG CACHEBUST=.*/ARG CACHEBUST=${{ steps.get-timestamp.outputs.timestamp }}/" {} \;
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1
         with:
+          token: ${{ steps.generate-token.outputs.token }}
           branch: upgrade-containers-${{ steps.get-timestamp.outputs.timestamp }}
           title: 'Upgrade Docker containers'
           commit-message: 'Bump CACHEBUST value of containers'

@@ -1,5 +1,67 @@
 # @prairielearn/session
 
+## 4.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- e4a5a84: Persist regenerated sessions to the store immediately, mirroring `loadSession()`'s behavior for new sessions. This ensures the new session ID is available to other queries within the same request after `req.session.regenerate()`.
+
+## 4.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
+## 4.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 373afc1: Pin Express 4-era dependencies to current major versions
+
+## 4.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 3.0.26
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 3.0.25
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 3.0.24
 
 ### Patch Changes

@@ -7,17 +7,17 @@ import oauthSignature from 'oauth-signature';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
+import * as authnLib from '../../lib/authn.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import {
-  IdSchema,
   LtiCredentialSchema,
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
-import { selectUserById } from '../../models/user.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -116,7 +116,7 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userId = await sqldb.callRow(
+    const userId = await sqldb.callScalar(
       'users_select_or_insert_lti',
       [
         authUid,
@@ -133,11 +133,10 @@ router.post(
     // checking authorization so that user information is available for any
     // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
     // redirects to a payment page).
-    req.session.user_id = userId;
-    req.session.authn_provider_name = 'LTI';
-
-    // Check if the user would have access to the course instance.
-    const user = await selectUserById(userId);
+    const { user } = await authnLib.loadUser(req, res, {
+      user_id: userId,
+      provider: 'LTI',
+    });
     const { authzData, institution, course, courseInstance } =
       await constructCourseOrInstanceContext({
         user,
@@ -154,13 +153,13 @@ router.post(
 
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution,
         course,
         courseInstance,
         actionDetail: 'implicit_joined',
         authzData,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
       });
     }
 
@@ -195,7 +194,7 @@ router.post(
     } else {
       // No linked assessment
 
-      const isInstructor = await sqldb.callRow(
+      const { is_instructor: isInstructor } = await sqldb.callRow(
         'users_is_instructor_in_course_instance',
         [userId, ltiResult.course_instance_id],
         SprocUsersIsInstructorInCourseInstanceSchema,

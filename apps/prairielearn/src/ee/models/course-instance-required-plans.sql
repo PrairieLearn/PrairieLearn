@@ -18,7 +18,7 @@ FROM
   JOIN course_instances AS ci ON (
     ci.id = new_course_instance_required_plans.course_instance_id
   )
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id);
 
 -- BLOCK delete_required_plan_for_course_instance
@@ -40,5 +40,5 @@ FROM
   JOIN course_instances AS ci ON (
     ci.id = deleted_course_instance_required_plans.course_instance_id
   )
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id);

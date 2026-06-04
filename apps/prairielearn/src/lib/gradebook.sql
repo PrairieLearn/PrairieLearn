@@ -3,7 +3,9 @@ SELECT
   to_jsonb(a.*) AS assessment,
   to_jsonb(ai.*) AS assessment_instance,
   to_jsonb(aset.*) AS assessment_set,
-  aa.show_closed_assessment_score
+  aa.show_closed_assessment_score,
+  a.modern_access_control,
+  a.id AS assessment_id
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -14,12 +16,12 @@ WHERE
   ci.id = $course_instance_id
   AND (
     ai.user_id = $user_id
-    OR ai.group_id IN (
+    OR ai.team_id IN (
       SELECT
         g.id
       FROM
-        groups g
-        JOIN group_users AS gu ON g.id = gu.group_id
+        teams AS g
+        JOIN team_users AS gu ON g.id = gu.team_id
       WHERE
         g.deleted_at IS NULL
         AND gu.user_id = $user_id

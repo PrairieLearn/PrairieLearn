@@ -1,20 +1,76 @@
+const TAB_SPACES = 4;
+const CODE_TEXT_SELECTOR =
+  '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre';
+
+function computeScaledIndent(container, list) {
+  const codeText = container.querySelector(CODE_TEXT_SELECTOR);
+  if (!codeText) return TAB_SPACES;
+  const listFontSize = Number.parseFloat(getComputedStyle(list).fontSize) || 0;
+  const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || listFontSize;
+  if (listFontSize <= 0) return TAB_SPACES;
+  return (TAB_SPACES * codeFontSize) / listFontSize;
+}
+
+function setContainerIndentScale(container, list) {
+  const scaledTabSpaces = computeScaledIndent(container, list);
+  container.style.setProperty('--pl-order-block-indent-ch', String(scaledTabSpaces));
+  return scaledTabSpaces;
+}
+
+$(function () {
+  document.querySelectorAll('.pl-order-blocks-answer-container').forEach((container) => {
+    const list = container.querySelector('.list-group');
+    if (list) {
+      setContainerIndentScale(container, list);
+    }
+  });
+});
+
 window.PLOrderBlocks = function (uuid, options) {
-  const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
-  // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  const optionsList = $(optionsElementId)[0];
+  const dropzoneList = $(dropzoneElementId)[0];
+  const dropzonePaddingLeft = Number.parseFloat(getComputedStyle(dropzoneList).paddingLeft) || 0;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+  const isTouchDevice =
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const scaledTabSpaces = setContainerIndentScale(fullContainer, dropzoneList);
+  const tabWidth = measureTabWidth();
+
+  function measureTabWidth() {
+    const probe = document.createElement('span');
+    probe.style.width = scaledTabSpaces + 'ch';
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    dropzoneList.append(probe);
+    const width = probe.getBoundingClientRect().width;
+    probe.remove();
+    return width;
+  }
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
-
-    blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
+    let blockNum = 0;
+    blocks.forEach((block) => {
+      block.setAttribute('tabindex', '-1');
+      if (enableIndentation) {
+        const existingIndent = getIndentation(block);
+        setIndentation(block, existingIndent);
+      }
+      block.setAttribute('id', uuid + '-' + blockNum);
+      blockNum += 1;
+      block.setAttribute('role', 'option');
+      block.setAttribute('aria-roledescription', 'Block');
+      block.setAttribute('aria-selected', false);
+      initializeBlockEvents(block);
+    });
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
-
-    blocks.forEach((block) => initializeBlockEvents(block));
   }
 
   function inDropzone(block) {
@@ -23,41 +79,44 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Number.parseInt(block.getAttribute('data-indent-depth') || '0') || 0;
   }
 
   function setIndentation(block, indentation) {
-    if (indentation >= 0 && indentation <= maxIndent) {
-      block.style.marginLeft = indentation * TABWIDTH + 'px';
+    const clamped = Math.max(0, Math.min(indentation, maxIndent));
+    block.setAttribute('data-indent-depth', clamped.toString());
+    block.style.marginLeft = clamped * scaledTabSpaces + 'ch';
+    if (inDropzone(block)) {
+      block.setAttribute('aria-description', 'indentation depth ' + clamped);
+    } else {
+      block.removeAttribute('aria-description');
     }
   }
 
   function initializeBlockEvents(block) {
-    function removeSelectedAttribute() {
-      block.classList.remove('pl-order-blocks-selected');
+    function deselectBlock() {
+      block.setAttribute('aria-selected', false);
     }
 
     function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
       // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
       // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
-      block.removeEventListener('blur', removeSelectedAttribute);
+      block.removeEventListener('blur', deselectBlock);
       handle();
       ev.preventDefault();
-      block.addEventListener('blur', removeSelectedAttribute);
       correctPairing(block);
       if (focus) {
         block.focus();
       }
+      block.addEventListener('blur', deselectBlock);
       setAnswer();
     }
 
     function handleKeyPress(ev) {
-      const optionsBlocks = Array.from($(optionsElementId)[0].querySelectorAll('.pl-order-block'));
-      const dropzoneBlocks = Array.from(
-        $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
-      );
-      if (!block.classList.contains('pl-order-blocks-selected')) {
+      const optionsBlocks = Array.from(optionsList.querySelectorAll('.pl-order-block'));
+      const dropzoneBlocks = Array.from(dropzoneList.querySelectorAll('.pl-order-block'));
+      if (block.getAttribute('aria-selected') !== 'true') {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
@@ -95,7 +154,7 @@ window.PLOrderBlocks = function (uuid, options) {
         switch (ev.key) {
           case ' ': // Space key
           case 'Enter':
-            handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
+            handleKey(ev, block, () => block.setAttribute('aria-selected', true));
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
@@ -132,27 +191,36 @@ window.PLOrderBlocks = function (uuid, options) {
           case 'ArrowLeft':
             handleKey(ev, block, () => {
               if (inDropzone(block)) {
-                const currentIndent = getIndentation(block);
-                if (currentIndent > 0) {
-                  setIndentation(block, getIndentation(block) - 1);
-                } else {
-                  $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
-                  correctPairing(block);
+                const level = getIndentation(block);
+                if (level === 0) {
+                  optionsList.append(block);
+                  return;
                 }
+                setIndentation(block, level - 1);
               }
             });
             break;
           case 'ArrowRight':
             handleKey(ev, block, () => {
               if (!inDropzone(block)) {
-                $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
+                // Moving to the answer area
+                dropzoneList.append(block);
+                if (enableIndentation) {
+                  // when inserting a block, default to the same indentation level as the previous block
+                  if (block.previousElementSibling) {
+                    setIndentation(block, getIndentation(block.previousElementSibling));
+                  } else {
+                    setIndentation(block, 0);
+                  }
+                }
               } else if (enableIndentation) {
+                // Already in answer area
                 setIndentation(block, getIndentation(block) + 1);
               }
             });
             break;
           case 'Escape':
-            handleKey(ev, block, removeSelectedAttribute);
+            handleKey(ev, block, deselectBlock);
             break;
         }
       }
@@ -185,17 +253,16 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setAnswer() {
-    const answerObjs = $(dropzoneElementId).children();
+    const answerObjs = dropzoneList.children;
     const studentAnswers = [];
     for (const answerObj of answerObjs) {
-      if (!$(answerObj).hasClass('info-fixed')) {
+      if (!answerObj.classList.contains('info-fixed')) {
         const answerText = answerObj.getAttribute('string');
         const answerUuid = answerObj.getAttribute('uuid');
         const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         let answerIndent = null;
         if (enableIndentation) {
-          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
-          answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
+          answerIndent = getIndentation(answerObj);
         }
 
         studentAnswers.push({
@@ -212,24 +279,27 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function calculateIndent(ui, parent) {
-    if (!parent[0].classList.contains('dropzone') || !enableIndentation) {
+    const parentEl = parent[0];
+    if (!parentEl.classList.contains('dropzone') || !enableIndentation) {
       // don't indent on option panel or solution panel with indents explicitly disabled
       return 0;
     }
 
-    let leftDiff = ui.position.left - parent.position().left;
-    leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
-    const currentIndent = ui.item[0].style.marginLeft;
-    if (currentIndent !== '') {
-      leftDiff += Number.parseInt(currentIndent);
+    if (tabWidth <= 0) return 0;
+
+    let indent;
+    if (dragStartedInDropzone) {
+      // item's data-indent-depth is unchanged during drag; only the placeholder is updated
+      const originalLeft = ui.originalPosition?.left ?? ui.position.left;
+      const indentDelta = (ui.position.left - originalLeft) / tabWidth;
+      indent = getIndentation(ui.item[0]) + Math.round(indentDelta);
+    } else {
+      indent = Math.round(
+        (ui.position.left - parent.position().left - dropzonePaddingLeft) / tabWidth,
+      );
     }
 
-    // limit leftDiff to be in within the bounds of the drag and drop box
-    // that is, at least indented 0 times, or at most indented by MAX_INDENT times
-    leftDiff = Math.min(leftDiff, TABWIDTH * maxIndent);
-    leftDiff = Math.max(leftDiff, 0);
-
-    return leftDiff;
+    return indent;
   }
 
   function getOrCreateIndicator(uuid, createAt) {
@@ -244,16 +314,16 @@ window.PLOrderBlocks = function (uuid, options) {
       if (createAt) {
         createAt.before(indicator);
       } else {
-        $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
+        optionsList.append(indicator);
       }
     }
     return indicator;
   }
 
   function placePairingIndicators() {
-    const answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    const answerObjs = Array.from(optionsList.getElementsByClassName('pl-order-block'));
     const allAns = answerObjs.concat(
-      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
+      Array.from(dropzoneList.getElementsByClassName('pl-order-block')),
     );
 
     const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
@@ -291,58 +361,128 @@ window.PLOrderBlocks = function (uuid, options) {
     }
   }
 
-  function drawIndentLocationLines(dropzoneElementId) {
-    $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
+  function drawIndentLocationLines() {
+    dropzoneList.style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
-    $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
-    $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
-      { length: maxIndent + 1 },
-      (_, index) => {
-        return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
-      },
-    ).join(', ');
+    dropzoneList.style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
+    dropzoneList.style.backgroundPosition = Array.from({ length: maxIndent + 1 }, (_, index) => {
+      return `calc(${dropzonePaddingLeft}px + ${scaledTabSpaces * index}ch) 0`;
+    }).join(', ');
   }
 
+  // Marks content areas that can scroll with 'is-scrollable' class
+  // We want the user to be able to scroll these areas without triggering drag-and-drop.
+  function markScrollableContent(container) {
+    container.querySelectorAll('.pl-order-block-content').forEach((el) => {
+      // For code blocks, check the inner scroll container. Otherwise, check the element itself.
+      const scrollTarget = el.querySelector('.pl-code > div') || el;
+      const canScrollX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
+
+      // Vertical overflow is hidden, so only horizontal scrolling should suppress drag.
+      el.classList.toggle('is-scrollable', canScrollX);
+    });
+  }
+
+  let dragStartedInDropzone = false;
   const sortables = optionsElementId + ', ' + dropzoneElementId;
-  $(sortables).sortable({
+  const baseCancel = 'input,textarea,button,select,option,a';
+  const sortableOpts = {
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
-    cancel: 'input,textarea,button,select,option,a',
+    cancel:
+      baseCancel +
+      ', .pl-order-block-content.is-scrollable, .pl-order-block-content.is-scrollable *',
     connectWith: sortables,
+    cursor: 'grabbing',
     placeholder: 'ui-state-highlight',
     create() {
       placePairingIndicators();
       setAnswer();
       if (enableIndentation) {
-        drawIndentLocationLines(dropzoneElementId);
+        drawIndentLocationLines();
       }
+      markScrollableContent(fullContainer);
     },
-    sort(event, ui) {
+    start(_event, ui) {
+      dragStartedInDropzone = inDropzone(ui.item[0]);
+    },
+    sort(_event, ui) {
       // update the location of the placeholder as the item is dragged
       const placeholder = ui.placeholder;
-      const leftDiff = calculateIndent(ui, placeholder.parent());
-      placeholder[0].style.marginLeft = leftDiff + 'px';
+      const indentation = calculateIndent(ui, placeholder.parent());
       placeholder[0].style.height = ui.item[0].style.height;
+      setIndentation(placeholder[0], indentation);
 
       // Sets the width of the placeholder to match the width of the block being dragged
       if (options.inline) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
     },
-    stop(event, ui) {
+    stop(_event, ui) {
       // when the user stops interacting with the list
-      const leftDiff = calculateIndent(ui, ui.item.parent());
-      ui.item[0].style.marginLeft = leftDiff + 'px';
+      const indentation = calculateIndent(ui, ui.item.parent());
+      setIndentation(ui.item[0], indentation);
+      dragStartedInDropzone = false;
       setAnswer();
-
       correctPairing(ui.item[0]);
+      markScrollableContent(fullContainer);
     },
-  });
-  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
+  };
 
-  if (enableIndentation) {
-    $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
+  $(sortables).sortable(sortableOpts);
+  const resize = new ResizeObserver(() => {
+    markScrollableContent(fullContainer);
+  });
+
+  fullContainer.querySelectorAll('.pl-order-block-content').forEach((el) => {
+    resize.observe(el);
+  });
+
+  if (window.MathJax?.typesetPromise) {
+    window.MathJax.typesetPromise([fullContainer]).then(() => {
+      markScrollableContent(fullContainer);
+    });
   }
+
+  // If a user is on a touch device, we need to distinguish between
+  // touch events that should trigger scrolling vs dragging.
+  let gateDragVsScroll = null;
+
+  if (isTouchDevice) {
+    gateDragVsScroll = (e) => {
+      // Only care about touches inside a block's content area
+      const content = e.target.closest('.pl-order-block-content');
+      if (!content) return;
+
+      if (content.classList.contains('is-scrollable')) {
+        // Block drag-and-drop when the user is trying to scroll
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    };
+
+    // Pointer events for hybrid devices
+    // Prevent drag-and-drop from interfering with scrolling
+    fullContainer.addEventListener('pointerdown', gateDragVsScroll, {
+      capture: true,
+      passive: true,
+    });
+
+    // Touch devices
+    // Prevent drag-and-drop from interfering with scrolling
+    fullContainer.addEventListener('touchstart', gateDragVsScroll, {
+      capture: true,
+      passive: true,
+    });
+
+    // Mouse events (for hybrid devices that support both touch and mouse)
+    // Apply same gating logic to mouse interactions
+    fullContainer.addEventListener('mousedown', gateDragVsScroll, {
+      capture: true,
+    });
+  }
+
+  initializeKeyboardHandling();
 };

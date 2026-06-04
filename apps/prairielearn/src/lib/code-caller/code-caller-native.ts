@@ -5,13 +5,10 @@ import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
-import fs from 'fs-extra';
 
-import { run } from '@prairielearn/run';
-import { withResolvers } from '@prairielearn/utils';
+import { assertNever, withResolvers } from '@prairielearn/utils';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
-import { assertNever } from '../types.js';
 
 import {
   type CallType,
@@ -20,6 +17,7 @@ import {
   FunctionMissingError,
   type PrepareForCourseOptions,
 } from './code-caller-shared.js';
+import { getPythonPath } from './python-path.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
   stdio: [Writable, Readable, Readable, Readable, Readable];
@@ -46,7 +44,6 @@ interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
-  pythonVenvSearchPaths: string[];
   errorLogger: (msg: string, data?: any) => void;
 }
 
@@ -63,6 +60,7 @@ export interface ErrorData {
   outputStderr: string;
   outputBoth: string;
   outputData: string;
+  outputRestart: string;
   stack: string;
   lastCallData: any;
 }
@@ -116,15 +114,7 @@ export class CodeCallerNative implements CodeCaller {
    * cannot be async.
    */
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
-    const pythonExecutable = await run(async () => {
-      for (const p of options.pythonVenvSearchPaths) {
-        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
-        if (await fs.pathExists(venvPython)) return venvPython;
-      }
-
-      // Assume we're using the system Python.
-      return 'python3.10';
-    });
+    const pythonExecutable = await getPythonPath();
 
     const codeCaller = new CodeCallerNative({
       pythonExecutable,
@@ -544,11 +534,24 @@ export class CodeCallerNative implements CodeCaller {
   _restartTimeout() {
     this.debug('enter _restartTimeout()');
     this._checkState([RESTARTING]);
-    this.timeoutID = null;
-    const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
-    this.child?.kill('SIGTERM');
-    this.state = EXITING;
-    this._callCallback(err);
+    // Defer the kill via setImmediate so any fd 4 data already buffered in
+    // the kernel is delivered first. Per Node's docs, setImmediate "schedules
+    // the 'immediate' execution of the callback after I/O events' callbacks",
+    // which lets _handleStdio4Data transition us out of RESTARTING before
+    // this runs. Without the deferral, the timer can race ahead of the I/O
+    // callback and kill a worker that had already restarted cleanly.
+    // https://nodejs.org/api/timers.html#setimmediatecallback-args
+    setImmediate(() => {
+      // The intervening poll phase may have transitioned us out of RESTARTING — e.g.
+      // _handleStdio4Data finishing the restart, or follow-up code starting
+      // a new call.
+      if (this.state !== RESTARTING) return;
+      const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
+      this.timeoutID = null;
+      this.child?.kill('SIGTERM');
+      this.state = EXITING;
+      this._callCallback(err);
+    });
     this.debug('exit _restartTimeout()');
   }
 
@@ -579,7 +582,7 @@ export class CodeCallerNative implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputData.join(''));
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerNative JSON: ' + e.message);
     }
     if (err) {
@@ -647,6 +650,7 @@ export class CodeCallerNative implements CodeCaller {
       outputStderr: this.outputStderr.join(''),
       outputBoth: this.outputBoth.join(''),
       outputData: this.outputData.join(''),
+      outputRestart: this.outputRestart,
       stack: errForStack.stack ?? '',
       lastCallData: this.lastCallData,
     };

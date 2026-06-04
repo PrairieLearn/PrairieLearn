@@ -53,7 +53,7 @@ describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
 
   describe('A student user with no access to course instance', function () {
     it('should not have access to assessments page with no access rule', async () => {
-      const courseInstanceId = await sqldb.queryRow(
+      const courseInstanceId = await sqldb.queryScalar(
         sql.insert_course_instance,
         { enrollment_code: await uniqueEnrollmentCode() },
         IdSchema,

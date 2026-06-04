@@ -33,14 +33,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v4 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -54,9 +54,13 @@ jobs:
           CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
+          # The SHA of the previous branch tip before this push. Used to diff
+          # against on master so that we catch all changes when the merge queue
+          # pushes multiple commits in a single ref update.
+          DIFF_BASE: ${{ github.event.before || '' }}
 
       - name: Upload metadata
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
@@ -76,10 +80,10 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v4 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -89,7 +93,7 @@ jobs:
 
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}

@@ -1,5 +1,5 @@
 import parsePostgresInterval from 'postgres-interval';
-import { type ZodTypeAny, z } from 'zod';
+import { type ZodType, z } from 'zod';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -11,7 +11,7 @@ const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 /**
  * A schema type on which `.optional()` cannot be called.
  */
-type NoOptional<S extends ZodTypeAny> = S & {
+type NoOptional<S extends ZodType> = S & {
   optional: never;
 };
 
@@ -19,7 +19,7 @@ type NoOptional<S extends ZodTypeAny> = S & {
  * Wrap any Zod schema so that calling `.optional()` is illegal in TypeScript.
  * Runtime behavior is untouched.
  */
-function required<S extends ZodTypeAny>(schema: S): NoOptional<S> {
+function required<S extends ZodType>(schema: S): NoOptional<S> {
   return schema as unknown as NoOptional<S>;
 }
 
@@ -51,8 +51,8 @@ export const BooleanFromCheckboxSchema = required(
  * The `refine` step is important to ensure that the thing we've coerced to a
  * string is actually a number. If it's not, we want to fail quickly.
  */
-export const IdSchema = z
-  .string({ coerce: true })
+export const IdSchema = z.coerce
+  .string()
   .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
 
 /**
@@ -131,6 +131,32 @@ export const DateFromISOString = z
   .transform((s) => new Date(s));
 
 /**
+ * A Zod schema for a datetime-local input value.
+ *
+ * Accepts a string in the format "YYYY-MM-DDTHH:MM" or "YYYY-MM-DDTHH:MM:SS"
+ * as produced by `<input type="datetime-local">` elements.
+ *
+ * Validates the format and returns it as a string.
+ */
+export const DatetimeLocalStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, {
+    message: 'must be a valid datetime-local string (YYYY-MM-DDTHH:MM or YYYY-MM-DDTHH:MM:SS)',
+  })
+  // Append `:00` seconds if omitted (Chrome bug workaround).
+  // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+  // https://issues.chromium.org/issues/41159420
+  .transform((s) => (s.length === 16 ? `${s}:00` : s))
+  .transform((s, ctx) => {
+    const date = new Date(s);
+    if (Number.isNaN(date.getTime())) {
+      ctx.addIssue({ code: 'custom', message: 'must be a valid date' });
+      return z.NEVER;
+    }
+    return s;
+  });
+
+/**
  * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
  * This is useful for form number inputs that are not required but we do not want to
  * use an empty string to compute values.
@@ -175,3 +201,48 @@ export const ArrayFromCheckboxSchema = z
       return [s];
     }
   });
+
+/**
+ * Creates a Zod schema that parses a string of UIDs separated by whitespace,
+ * commas, or semicolons into an array of unique, trimmed UIDs.
+ *
+ * @param limit - The maximum number of UIDs allowed. Defaults to 1000.
+ * @returns A Zod schema that parses and validates the UID string.
+ */
+export function UniqueUidsFromStringSchema(limit = 1000) {
+  const emailSchema = z.email();
+
+  return z.string().transform((uidsString, ctx) => {
+    const uids = new Set(
+      uidsString
+        .split(/[\s,;]+/)
+        .map((uid) => uid.trim())
+        .filter(Boolean),
+    );
+
+    if (uids.size > limit) {
+      ctx.addIssue({
+        code: 'too_big',
+        maximum: limit,
+        origin: 'set',
+        inclusive: true,
+        message: `Cannot provide more than ${limit} UIDs at a time`,
+      });
+      return z.NEVER;
+    }
+
+    if (uids.size === 0) {
+      ctx.addIssue({ code: 'custom', message: 'At least one UID is required' });
+      return z.NEVER;
+    }
+
+    for (const uid of uids) {
+      const result = emailSchema.safeParse(uid);
+      if (!result.success) {
+        ctx.addIssue({ code: 'custom', message: `Invalid UID format: ${uid}` });
+      }
+    }
+
+    return Array.from(uids);
+  });
+}

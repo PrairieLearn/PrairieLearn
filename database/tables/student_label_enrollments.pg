@@ -1,0 +1,13 @@
+columns
+    enrollment_id: bigint not null
+    id: bigint not null default nextval('student_label_enrollments_id_seq'::regclass)
+    student_label_id: bigint not null
+
+indexes
+    student_label_enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    student_label_enrollments_enrollment_id_student_label_id_key: UNIQUE (enrollment_id, student_label_id) USING btree (enrollment_id, student_label_id)
+    student_label_enrollments_student_label_id_key: USING btree (student_label_id)
+
+foreign-key constraints
+    student_label_enrollments_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    student_label_enrollments_student_label_id_fkey: FOREIGN KEY (student_label_id) REFERENCES student_labels(id) ON UPDATE CASCADE ON DELETE CASCADE

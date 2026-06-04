@@ -1,38 +1,42 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "3.3.0",
+  "version": "4.1.6",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/compiled-assets"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "bin": "dist/cli.js",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "commander": "^14.0.2",
-    "esbuild": "^0.25.11",
-    "express-static-gzip": "^2.2.0",
-    "fs-extra": "^11.3.2",
-    "globby": "^15.0.0",
+    "commander": "^15.0.0",
+    "esbuild": "^0.28.0",
+    "express-static-gzip": "^2.2.0 <3",
+    "fs-extra": "^11.3.5",
+    "globby": "^16.2.0",
     "pretty-bytes": "^7.1.0",
     "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "express": "^4.21.2",
-    "get-port": "^7.1.0",
+    "@types/express": "^4.17.25 <5",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "express": "^4.22.1 <5",
+    "get-port": "^7.2.0",
     "node-fetch": "^3.3.2",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.1.7"
   }
 }

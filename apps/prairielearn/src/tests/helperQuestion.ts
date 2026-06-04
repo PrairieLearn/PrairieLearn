@@ -1,12 +1,17 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import * as cheerio from 'cheerio';
-import fetch, { FormData } from 'node-fetch';
+import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
+import { config } from '../lib/config.js';
 import {
   AssessmentInstanceSchema,
   InstanceQuestionSchema,
@@ -16,11 +21,16 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
+import { startTestQuestion } from '../lib/question-testing.js';
+import { selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
+
+import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export function waitForJobSequence(locals: Record<string, any>) {
+function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
@@ -53,13 +63,21 @@ export function waitForJobSequence(locals: Record<string, any>) {
   });
 }
 
-export function getInstanceQuestion(locals: Record<string, any>) {
+export function getInstanceQuestion(
+  locals: Record<string, any>,
+  { errorExpected = false }: { errorExpected?: boolean } = {},
+) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-      const response = await fetch(questionUrl);
+      const response = await run(async () => {
+        if (errorExpected) {
+          return await withoutLogging(() => fetch(questionUrl));
+        }
+        return await fetch(questionUrl);
+      });
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
@@ -182,6 +200,9 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
+        const href = elemList.attr('href');
+        assert.isString(href);
+        assert.match(href, /\/preview\/$/);
       } else {
         assert.lengthOf(elemList, 0);
       }
@@ -251,7 +272,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
     });
     it('should select the assessment_instance duration from the DB if student page', async function () {
       if (locals.isStudentPage) {
-        locals.assessment_instance_duration = await sqldb.queryRow(
+        locals.assessment_instance_duration = await sqldb.queryScalar(
           sql.select_assessment_instance_durations,
           z.number(),
         );
@@ -457,7 +478,7 @@ export function checkAssessmentScore(locals: Record<string, any>) {
 export function checkQuestionFeedback(locals: Record<string, any>) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
-      locals.question_feedback = await sqldb.queryRow(
+      locals.question_feedback = await sqldb.queryScalar(
         sql.select_question_feedback,
         {
           assessment_instance_id: locals.assessment_instance.id,
@@ -476,232 +497,114 @@ export function checkQuestionFeedback(locals: Record<string, any>) {
 }
 
 export function regradeAssessment(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentRegrading URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentRegradingUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/regrading';
-      const response = await fetch(locals.instructorAssessmentRegradingUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#regrade-all-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentRegrading URL for regrading', function () {
-    it('should succeed', async function () {
-      assert(locals.instructorAssessmentRegradingUrl);
-      const response = await fetch(locals.instructorAssessmentRegradingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'regrade_all',
-          __csrf_token: locals.__csrf_token,
-        }),
+  describe('regrade all assessment instances', function () {
+    it('should start a regrade job', async function () {
+      const courseInstanceId = locals.courseInstanceBaseUrl.split('/course_instance/')[1];
+      const csrfToken = generatePrefixCsrfToken(
+        {
+          url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId: locals.assessment_id }),
+          authn_user_id: '1',
+        },
+        config.secretKey,
+      );
+      const trpcClient = createAssessmentTrpcClient({
+        csrfToken,
+        courseInstanceId,
+        assessmentId: locals.assessment_id,
+        urlBase: locals.siteUrl,
       });
-      assert.equal(response.status, 200);
+      const { jobSequenceId } = await trpcClient.assessmentInstances.regrade.mutate({
+        assessmentInstanceIds: null,
+      });
+      assert.isString(jobSequenceId);
     });
   });
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
-    it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$('#upload-instance-question-scores-form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
+/**
+ * The exam tests act as the default authenticated user (id 1) on course
+ * instance 1, mirroring `instructorStudentsLabels.test.ts`.
+ */
+function createAssessmentUploadClient(locals: Record<string, any>) {
+  const courseInstanceId = '1';
+  const assessmentId = String(locals.assessment_id);
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId }), authn_user_id: '1' },
+    config.secretKey,
+  );
+  return createAssessmentTrpcClient({
+    csrfToken,
+    courseInstanceId,
+    assessmentId,
+    urlBase: `http://localhost:${config.serverPort}`,
   });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
+}
+
+function csvUploadFormData(locals: Record<string, any>) {
+  const formData = new FormData();
+  formData.append(
+    'file',
+    new File([Buffer.from(locals.csvData)], 'data.csv', { type: 'text/csv' }),
+  );
+  return formData;
+}
+
+export function uploadInstanceQuestionScores(locals: Record<string, any>) {
+  describe('upload question scores via tRPC', function () {
     it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_instance_question_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.instanceQuestionScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);
 }
 
 export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentUploads URL', function () {
+  describe('upload total scores via tRPC', function () {
     it('should succeed', async function () {
-      locals.instructorAssessmentUploadsUrl =
-        locals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        locals.assessment_id +
-        '/uploads';
-      const response = await fetch(locals.instructorAssessmentUploadsUrl);
-      assert.equal(response.status, 200);
-      const page = await response.text();
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
-      assert(locals.$);
-      const elemList = locals.$(
-        '#upload-assessment-instance-scores-form input[name="__csrf_token"]',
-      );
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-  });
-  describe('POST to instructorAssessmentUploads URL for upload', function () {
-    it('should succeed', async function () {
-      const formData = new FormData();
-      formData.append('__action', 'upload_assessment_instance_scores');
-      formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
-      const response = await fetch(locals.instructorAssessmentUploadsUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      assert.equal(response.status, 200);
+      const client = createAssessmentUploadClient(locals);
+      await client.assessmentUploads.assessmentInstanceScores.mutate(csvUploadFormData(locals));
     });
   });
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(locals: Record<string, any>, qid: string) {
-  describe('auto-testing question ' + qid, function () {
-    describe('the setup', function () {
-      it('should find the question in the database', async function () {
-        locals.question = await selectQuestionByQid({ qid, course_id: '1' });
-      });
-      it('should be a Freeform question', function () {
-        assert.equal(locals.question?.type, 'Freeform');
-      });
-      it('should have submission data', function () {
-        locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
-        locals.postAction = 'grade';
-      });
-    });
-    getInstanceQuestion(locals);
-    describe('the question variant', function () {
-      it('should produce no issues', async function () {
-        const result = await sqldb.queryRows(
-          sql.select_issues_for_last_variant,
-          z.object({
-            ...IssueSchema.shape,
-            ...VariantSchema.shape,
-          }),
-        );
-        assert.equal(
-          result.length,
-          0,
-          `found ${result.length} issues (expected zero issues):\n` +
-            JSON.stringify(result, null, '    '),
-        );
-      });
-    });
-    describe('GET to instructor question settings URL', function () {
-      it('should load successfully', async function () {
-        assert(locals.question);
-        const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
-        const response = await fetch(questionUrl);
-        assert.equal(response.status, 200);
-        const page = await response.text();
-        locals.$ = cheerio.load(page);
-      });
-      it('should have a CSRF token', function () {
-        assert(locals.$);
-        const elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
-      });
-    });
-    describe('the test job sequence', function () {
-      it('should start with POST to instructor question settings URL for test_once', async function () {
-        assert(locals.question);
-        assert(locals.__csrf_token);
-        const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
-        const response = await fetch(questionUrl, {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'test_once',
-            __csrf_token: locals.__csrf_token,
-          }),
-        });
-        assert.equal(response.status, 200);
-      });
-      it('should have an id', async function () {
-        const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
-        locals.job_sequence_id = jobSequence.id;
-      });
-      it('should complete', async function () {
-        do {
-          await sleep(10);
-          locals.job_sequence = await sqldb.queryRow(
-            sql.select_job_sequence,
-            { job_sequence_id: locals.job_sequence_id },
-            JobSequenceSchema,
-          );
-        } while (locals.job_sequence.status === 'Running');
-      });
-      it('should be successful and produce no issues', async function () {
-        assert(locals.job_sequence);
-        const issues = await sqldb.queryRows(
-          sql.select_issues_for_last_variant,
-          z.object({
-            ...IssueSchema.shape,
-            ...VariantSchema.shape,
-          }),
-        );
+export async function autoTestQuestion({ qid }: { qid: string }): Promise<void> {
+  const question = await selectQuestionByQid({ qid, course_id: '1' });
+  assert.equal(question.type, 'Freeform');
 
-        // To aid in debugging, if the job failed, we'll fetch the logs from
-        // all child jobs and print them out. We'll also log any issues. We
-        // do this before making assertions to ensure that they're printed.
-        if (locals.job_sequence.status !== 'Success') {
-          console.log(locals.job_sequence);
-          const result = await sqldb.queryRows(
-            sql.select_jobs,
-            { job_sequence_id: locals.job_sequence_id },
-            JobSchema,
-          );
-          console.log(result);
-        }
-        if (issues.length > 0) {
-          console.log(issues);
-        }
-
-        assert.equal(locals.job_sequence.status, 'Success');
-        assert.lengthOf(issues, 0);
-      });
-    });
+  const course = await selectCourseById('1');
+  const jobSequenceId = await startTestQuestion({
+    count: 1,
+    showDetails: true,
+    question,
+    course_instance: null,
+    course,
+    user_id: '1',
+    authn_user_id: '1',
   });
+  const jobSequence = await helperServer.waitForJobSequence(jobSequenceId);
+
+  const testIssues = await sqldb.queryRows(
+    sql.select_issues_for_question,
+    { question_id: question.id },
+    IssueSchema,
+  );
+
+  if (jobSequence.status !== 'Success') {
+    console.log(jobSequence);
+    const jobs = await sqldb.queryRows(
+      sql.select_jobs,
+      { job_sequence_id: jobSequenceId },
+      JobSchema,
+    );
+    console.log(jobs);
+  }
+  if (testIssues.length > 0) console.log(testIssues);
+
+  assert.equal(jobSequence.status, 'Success', `[${qid}] job sequence did not succeed`);
+  assert.lengthOf(testIssues, 0, `[${qid}] test_once produced ${testIssues.length} issues`);
 }
 
 export async function checkNoIssuesForLastVariantAsync() {

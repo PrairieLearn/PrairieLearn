@@ -2,13 +2,27 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
+import {
+  CourseInstancePageAuthzDataSchema,
+  CoursePageAuthzDataSchema,
+} from '../lib/authz-data-lib.js';
+import { extractPageContext } from '../lib/client/page-context.js';
+import { isTrpcRequest } from '../lib/trpc.js';
 
-import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
+import {
+  AuthzAccessMismatch,
+  type CheckablePermissionKeys,
+  getErrorExplanation,
+} from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
+
+const REQUIRED_PERMISSIONS: CheckablePermissionKeys[] = [
+  'has_course_permission_preview',
+  'has_course_instance_permission_view',
+];
 
 export async function authzHasCoursePreviewOrInstanceView(
   req: Request,
@@ -31,7 +45,7 @@ export async function authzHasCoursePreviewOrInstanceView(
     // This is a dumb hack to work around the fact that this function is called from
     // the `authzWorkspace` middleware. That middleware is mounted on the container
     // proxy paths, but our CSRF middleware intentionally doesn't run there. The
-    // `getPageContext` function requires a CSRF token to be present, so we can't
+    // `extractPageContext` function requires a CSRF token to be present, so we can't
     // safely call it without one.
     //
     // If a CSRF token is not present, we fall through to the error below.
@@ -43,7 +57,20 @@ export async function authzHasCoursePreviewOrInstanceView(
       return { type: 'redirect', url: redirectUrl };
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
+
+    // This middleware runs on both course-only and course-instance routes.
+    // The upstream `authzCourseOrInstance` middleware only populates CI authz
+    // fields on `res.locals.authz_data` when `course_instance_id` is in the
+    // route params, so we use that param to pick the matching schema.
+    const authzSchema = req.params.course_instance_id
+      ? CourseInstancePageAuthzDataSchema
+      : CoursePageAuthzDataSchema;
+    const authzData = authzSchema.parse(res.locals.authz_data);
     return {
       type: 'body',
       html: PageLayout({
@@ -56,13 +83,11 @@ export async function authzHasCoursePreviewOrInstanceView(
         content: (
           <Hydrate>
             <AuthzAccessMismatch
-              oneOfPermissionKeys={[
-                'has_course_permission_preview',
-                'has_course_instance_permission_view',
-              ]}
-              authzData={pageContext.authz_data}
+              errorExplanation={getErrorExplanation(REQUIRED_PERMISSIONS)}
+              oneOfPermissionKeys={REQUIRED_PERMISSIONS}
+              authzData={authzData}
               authnUser={pageContext.authn_user}
-              authzUser={pageContext.authz_data.user}
+              authzUser={authzData.user}
             />
           </Hydrate>
         ),
@@ -79,6 +104,9 @@ export async function authzHasCoursePreviewOrInstanceView(
 export default asyncHandler(async (req, res, next) => {
   const result = await authzHasCoursePreviewOrInstanceView(req, res);
   if (result.type === 'body') {
+    if (isTrpcRequest(req)) {
+      throw new error.HttpStatusError(403, getErrorExplanation(REQUIRED_PERMISSIONS));
+    }
     res.status(403).send(result.html);
   } else if (result.type === 'redirect') {
     res.redirect(result.url);

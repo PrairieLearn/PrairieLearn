@@ -58,7 +58,9 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `args` (optional, default none): command line arguments to pass to the Docker image. It may be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
-  - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
+  - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). By default, PrairieLearn includes the following environment variables in all workspaces:
+    - `WORKSPACE_BASE_URL`: the base URL for the workspace container, which can be used to construct URLs for API requests to the workspace container.
+    - `WORKSPACE_NETWORKING_DISABLED`: set when the workspace has networking disabled. This can be used to conditionally enable or disable features in the workspace based on its ability to access the internet.
 
 #### `info.json` for ungraded workspace
 
@@ -106,9 +108,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     },
     "gradingMethod": "External",
     "externalGradingOptions": {
-        "enabled": true,
         "image": "...",
-        "entrypoint": "...",
         "timeout": 20
     }
 }
@@ -150,9 +150,9 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 ## Creating files in the workspace home directory
 
-Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/index.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
+Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/overview.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/index.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. Files in `workspaceTemplates/` will preserve their execute permissions (e.g., if you `chmod +x script.sh` in your course repository, it will remain executable in the workspace). For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/overview.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. Files in `workspaceTemplates/` will preserve their execute permissions (e.g., if you `chmod +x script.sh` in your course repository, it will remain executable in the workspace). For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
 
 ```txt
 # ...
@@ -226,7 +226,7 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 - Dynamic content from `_workspace_files` has the highest precedence;
 
-- Files in the `workspaceTemplate/` directory are considered next;
+- Files in the `workspaceTemplates/` directory are considered next;
 
 - Files in the `workspace/` directory are considered last.
 
@@ -234,15 +234,14 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 PrairieLearn provides and maintains the following workspace images:
 
-- [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
 - [`prairielearn/workspace-jupyterlab-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-base/): JupyterLab without any additions (used to build the Python and R workspaces below)
-- [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.12
-- [`prairielearn/workspace-jupyterlab-r`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-r/): JupyterLab with R 4.4
-- [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
+- [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.13
+- [`prairielearn/workspace-jupyterlab-r`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-r/): JupyterLab with R 4.5
+- [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.5
 - [`prairielearn/workspace-vscode-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-base/): Basic VS Code without any additions (used to build the C/C++ and Python workspaces below)
 - [`prairielearn/workspace-vscode-cpp`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-cpp/): VS Code with C/C++ (using `gcc` and `g++`)
 - [`prairielearn/workspace-vscode-java`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-java/): VS Code with Java 21
-- [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.12
+- [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.13
 - [`prairielearn/workspace-xtermjs`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
 ## Custom workspace images

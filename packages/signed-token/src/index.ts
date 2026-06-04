@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 import base64url from 'base64url';
 import debugfn from 'debug';
-import _ from 'lodash';
+import { isEqual } from 'es-toolkit';
 
 const debug = debugfn('prairielearn:csrf');
 const sep = '.';
@@ -118,6 +118,72 @@ export function checkSignedToken(
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
   debug(`checkSignedToken(): tokenData = ${JSON.stringify(tokenData)}`);
   if (tokenData == null) return false;
-  if (!_.isEqual(data, tokenData)) return false;
+  if (!isEqual(data, tokenData)) return false;
+  return true;
+}
+
+/**
+ * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
+ * This is useful for tRPC and similar APIs where a single token should be valid
+ * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
+ * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`).
+ */
+export function generatePrefixCsrfToken(
+  data: { url: string; authn_user_id: string },
+  secretKey: string,
+) {
+  return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
+}
+
+/**
+ * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
+ * request URL for validation to succeed.
+ *
+ * @param token - The CSRF token to validate
+ * @param requestData - The request URL and authenticated user ID
+ * @param requestData.url - The request URL to validate against
+ * @param requestData.authn_user_id - The authenticated user ID to validate against
+ * @param secretKey - The secret key used for signing
+ * @param options - Optional settings like maxAge
+ * @returns true if the token is valid, false otherwise
+ */
+export function checkSignedTokenPrefix(
+  token: string,
+  requestData: { url: string; authn_user_id: string },
+  secretKey: string,
+  options: CheckOptions = {},
+): boolean {
+  debug(`checkSignedTokenPrefix(): token = ${token}`);
+  debug(`checkSignedTokenPrefix(): requestData = ${JSON.stringify(requestData)}`);
+
+  const tokenData = getCheckedSignedTokenData(token, secretKey, options);
+  if (tokenData == null) return false;
+
+  // Verify this is a prefix token (prevents token type confusion)
+  if (tokenData.type !== 'prefix') {
+    debug('checkSignedTokenPrefix(): FAIL - token type is not prefix');
+    return false;
+  }
+
+  // Verify user ID matches exactly
+  if (tokenData.authn_user_id !== requestData.authn_user_id) {
+    debug('checkSignedTokenPrefix(): FAIL - authn_user_id mismatch');
+    return false;
+  }
+
+  // Verify the request URL starts with the token's prefix URL.
+  // We treat the prefix as implicitly ending with a trailing slash, so
+  // `/test` matches `/test`, `/test/`, and `/test/nested`, but NOT `/testy`.
+  const prefixUrl = tokenData.url;
+  const requestUrl = requestData.url;
+  const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+  if (requestUrl !== prefixUrl && !requestUrl.startsWith(normalizedPrefix)) {
+    debug(
+      `checkSignedTokenPrefix(): FAIL - URL prefix mismatch: ${requestUrl} does not start with ${prefixUrl}`,
+    );
+    return false;
+  }
+
+  debug('checkSignedTokenPrefix(): SUCCESS');
   return true;
 }

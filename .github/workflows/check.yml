@@ -8,6 +8,7 @@ on:
       - '**-code-freeze'
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
@@ -27,11 +28,30 @@ jobs:
   check-js:
     name: JavaScript
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
 
       - name: Install additional dependencies
         run: |-
@@ -40,15 +60,20 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
         run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -57,43 +82,64 @@ jobs:
 
       - name: Build all code
         run: make build
-      - name: Set up Prettier and ESLint cache
-        uses: actions/cache@v4
+
+      - name: Report bundle sizes
+        uses: ./packages/actions-report-bundle-sizes
+        with:
+          sizes-path: apps/prairielearn/public/build/sizes.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+          report-path: ${{ runner.temp }}/bundle-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-report-bundle-sizes
+          path: ${{ runner.temp }}/bundle-sizes-section.md
+          retention-days: 1
+
+      - name: Restore lint caches
+        uses: actions/cache@v5
         with:
           path: |
-            node_modules/.cache/prettier/.prettier-cache
             .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
+            node_modules/.cache/prettier
+          key: >-
+            lint-${{ runner.os }}-${{ hashFiles(
+              'yarn.lock',
+              'Makefile',
+              'eslint.config.mjs',
+              'packages/eslint-config/**',
+              'packages/eslint-plugin-prairielearn/**',
+              '.prettierrc.json',
+              '.prettierignore'
+            ) }}
 
       - name: Run the JavaScript linter
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
         run: make lint-js-cached
+      - name: Run the Mustache linter
+        run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
 
       - name: Check dependency structure
-        run: make check-dependencies
+        run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that all packages exist on npm
+        run: make check-npm-packages
+      - name: Check badge color contrast
+        run: make check-badge-contrast
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for contrib
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
-      - name: Start Postgres
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-
-          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
-          fsync = off
-          full_page_writes = off
-          synchronous_commit = off
-          EOF
-
-          sudo systemctl restart postgresql.service
       # We must migrate our database before we can typecheck the SQL.
       - name: Run the SQL typechecker
         run: |
@@ -123,8 +169,13 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          show-progress: false
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
       - name: Install OS packages
         run: |-
           sudo apt-get update
@@ -138,19 +189,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
       - name: Install all Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
@@ -172,21 +225,30 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.1
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   check-other:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          show-progress: false
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint
+
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
 
       - name: Install OS packages
         run: |-
@@ -196,7 +258,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -204,6 +266,8 @@ jobs:
           cache-dependency-glob: 'pyproject.toml'
           cache-suffix: 'dev'
       - name: Install Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps-dev
 
       - name: Run the Dockerfile linter

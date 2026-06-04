@@ -1,0 +1,1 @@
+This question demonstrates a single correct answer with a large pool of distractors. `number-answers="4"` displays the correct answer plus three randomly selected distractors, so each student sees a different set of wrong answers.

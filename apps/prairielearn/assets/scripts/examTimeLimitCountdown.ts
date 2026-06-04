@@ -1,7 +1,7 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { saveQuestionFormData } from './lib/confirmOnUnload.js';
+import { skipNextFormConfirmation } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 
 function showWarningPopup(id: string, message: string) {
@@ -62,8 +62,6 @@ onDocumentReady(() => {
       if (countdown) countdown.innerHTML = 'expired';
       // if viewing exam as a different effective user, do not trigger time limit finish
       if (timeLimitData.canTriggerFinish) {
-        // do not trigger unsaved warning dialog
-        saveQuestionFormData(document.querySelector('form.question-form'));
         const form = parseHTMLElement<HTMLFormElement>(
           document,
           html`<form method="POST">
@@ -72,6 +70,7 @@ onDocumentReady(() => {
           </form>`,
         );
         document.body.append(form);
+        skipNextFormConfirmation();
         form.submit();
       }
     },

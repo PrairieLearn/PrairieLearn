@@ -7,11 +7,11 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { type Result, withBrand } from '@prairielearn/utils';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
   type ConstructedCourseOrInstanceSuccessContext,
-  type CourseOrInstanceContextData,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
@@ -22,20 +22,14 @@ import {
 } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import {
-  type EnumCourseInstanceRole,
-  type EnumCourseRole,
-  InstitutionSchema,
-  UserSchema,
-} from '../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { type Result, withBrand } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface Override {
+export interface Override {
   name: string;
   value: string;
   cookie: string;
@@ -173,7 +167,7 @@ function canBecomeEffectiveUser({
       // authenticated user, since an instructor may want to view their course
       // as a student without enrolling in their own course.
       hasFailedCheck:
-        !idsEqual(effectiveAuthzData.user.user_id, authnAuthzData.user.user_id) &&
+        !idsEqual(effectiveAuthzData.user.id, authnAuthzData.user.id) &&
         !effectiveAuthzData.has_course_permission_preview &&
         !effectiveAuthzData.has_course_instance_permission_view &&
         !effectiveAuthzData.has_student_access_with_enrollment &&
@@ -295,19 +289,17 @@ type SelectUser = z.infer<typeof SelectUserSchema>;
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: CourseOrInstanceContextData['mode'];
-  authn_mode_reason: CourseOrInstanceContextData['mode_reason'];
+  authn_mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
+  authn_course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   authn_has_course_permission_preview: boolean;
   authn_has_course_permission_view: boolean;
   authn_has_course_permission_edit: boolean;
   authn_has_course_permission_own: boolean;
   user: ResLocalsAuthnUser['authn_user'];
-  mode: CourseOrInstanceContextData['mode'];
-  mode_reason: CourseOrInstanceContextData['mode_reason'];
+  mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
+  course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
   has_course_permission_edit: boolean;
@@ -315,33 +307,45 @@ interface ResLocalsCourseAuthz {
   overrides: Override[];
 }
 
-interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
+export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
+  authn_course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
-  authn_has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
-  authn_has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
-  course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
+  authn_has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
+  authn_has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   has_course_instance_permission_view: boolean;
   has_course_instance_permission_edit: boolean;
-  has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
-  has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
+  has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean | null;
 }
 
 export interface ResLocalsCourse {
-  course: CourseOrInstanceContextData['course'];
-  institution: CourseOrInstanceContextData['institution'];
+  course: ConstructedCourseOrInstanceSuccessContext['course'];
+  institution: ConstructedCourseOrInstanceSuccessContext['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
-  has_enhanced_navigation: boolean;
   question_sharing_enabled: boolean;
+  is_administrator: boolean;
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<CourseOrInstanceContextData['course_instance']>;
+  course_instance: NonNullable<ConstructedCourseOrInstanceSuccessContext['courseInstance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }
@@ -414,8 +418,14 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // If this is an example course, only allow overrides if the user is an administrator.
-  if (authnCourse.example_course && !res.locals.is_administrator && overrides.length > 0) {
+  // If we're working with an example course, only allow changing the effective
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (
+    authnCourse.example_course &&
+    !res.locals.is_administrator &&
+    !config.devMode &&
+    overrides.length > 0
+  ) {
     clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
@@ -430,7 +440,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  const req_date = run(() => {
+  const req_date = run<Date>(() => {
     if (req.cookies.pl2_requested_date) {
       const req_date = parseISO(req.cookies.pl2_requested_date);
       if (!isValid(req_date)) {
@@ -555,18 +565,17 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          course_role: 'None' as EnumCourseRole,
+          course_role: 'None',
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
             ? {
-                course_instance_role: 'None' as EnumCourseInstanceRole,
+                course_instance_role: 'None',
                 has_student_access: false,
                 has_student_access_with_enrollment: false,
                 ...calculateCourseInstanceRolePermissions('None'),
               }
             : {}),
           mode: authnAuthzData.mode,
-          mode_reason: authnAuthzData.mode_reason,
         }),
         course: authnCourse,
         institution: authnInstitution,
@@ -581,7 +590,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       // important because we no longer automatically enroll instructors in their
       // own course instances when they view them.
       if (
-        idsEqual(effectiveAuthResult.user.user_id, authnAuthzData.user.user_id) &&
+        idsEqual(effectiveAuthResult.user.id, authnAuthzData.user.id) &&
         !effectiveAuthResult.has_course_instance_permission_view &&
         !effectiveAuthResult.has_course_permission_view
       ) {
@@ -620,7 +629,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Authn user data
     authn_user: authnAuthzData.user,
     authn_mode: authnAuthzData.mode,
-    authn_mode_reason: authnAuthzData.mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: authnAuthzData.course_role,
     authn_has_course_permission_preview: authnAuthzData.has_course_permission_preview,
@@ -644,7 +652,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Effective user data
     user: effectiveAuthzData.user,
     mode: effectiveAuthzData.mode,
-    mode_reason: effectiveAuthzData.mode_reason,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
     course_role: effectiveAuthzData.course_role,
     has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,
@@ -677,7 +684,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = authnCourse;
   res.locals.institution = authnInstitution;
   res.locals.user = effectiveAuthzData.user;
-  res.locals.course_instance = authnCourseInstance;
+  if (authnCourseInstance) {
+    res.locals.course_instance = authnCourseInstance;
+  }
 
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -687,10 +696,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     course: res.locals.course,
   });
 
-  res.locals.has_enhanced_navigation = !(await features.enabledFromLocals(
-    'legacy-navigation',
-    res.locals,
-  ));
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,

@@ -90,7 +90,7 @@ def my_cool_function():
 
 ### Extension Dependencies
 
-Similar to how questions and elements may require client-side assets (as described in the [element developer guide](devElements.md#element-dependencies)), extensions may also require client-side JavaScript and CSS. The different properties are summarized here. Note that script dependencies may be set as either static or dynamic dependencies, while styles may only be set as static dependencies.
+Similar to how questions and elements may require client-side assets (as described in the [element developer guide](./devElements.md#element-dependencies)), extensions may also require client-side JavaScript and CSS. The different properties are summarized here. Note that script dependencies may be set as either static or dynamic dependencies, while styles may only be set as static dependencies.
 
 | Property                   | Description                                                                                                                                     |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -102,6 +102,10 @@ Similar to how questions and elements may require client-side assets (as describ
 | `clientFilesCourseScripts` | The scripts required by this extension relative to `[course directory]/clientFilesCourse`.                                                      |
 
 Note that any element extension assets declared in `dependencies` will always be loaded, regardless of whether their Python controller was loaded or not. As such, it is recommended that, when suitable, extensions make use of `dynamicDependencies` to load scripts only when necessary, based on the context/usage of the element.
+
+!!! warning
+
+    Keep in mind that node module dependencies should be avoided, as they may be updated without warning, which in some cases may break your extension. More information can be found in the [element developer guide](./devElements.md#using-node-dependencies-in-element-code).
 
 ### Other Client Files
 

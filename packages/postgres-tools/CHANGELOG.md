@@ -1,5 +1,88 @@
 # @prairielearn/postgres-tools
 
+## 3.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [e80a5a5]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/postgres@6.0.2
+
+## 3.0.4
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+- Updated dependencies [144cd19]
+  - @prairielearn/postgres@6.0.1
+
+## 3.0.3
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+- Updated dependencies [b7885cd]
+- Updated dependencies [2f9d39b]
+  - @prairielearn/postgres@6.0.0
+
+## 3.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/postgres@5.0.2
+
+## 3.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+- Updated dependencies [f929a68]
+  - @prairielearn/postgres@5.0.1
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/postgres@5.0.0
+
+## 2.0.29
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/postgres@4.5.2
+
+## 2.0.28
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/postgres@4.5.1
+
 ## 2.0.27
 
 ### Patch Changes

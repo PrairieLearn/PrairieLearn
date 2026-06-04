@@ -5,9 +5,11 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -15,12 +17,9 @@ import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
   type Course,
-  IdSchema,
   InstanceQuestionSchema,
-  IntervalSchema,
   type Question,
   QuestionSchema,
-  SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -30,6 +29,7 @@ import * as externalGrader from './externalGrader.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
@@ -58,7 +58,7 @@ type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
     user_id: string;
   };
 
-export async function insertSubmission({
+async function insertSubmission({
   submitted_answer,
   raw_submitted_answer,
   format_errors,
@@ -126,13 +126,13 @@ export async function insertSubmission({
       });
     }
 
-    const delta = await sqldb.queryOptionalRow(
+    const delta = await sqldb.queryOptionalScalar(
       sql.select_and_update_last_access,
-      { user_id: variant.user_id, group_id: variant.group_id },
+      { user_id: variant.user_id, group_id: variant.team_id },
       IntervalSchema.nullable(),
     );
 
-    const submission_id = await sqldb.queryRow(
+    const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
       {
         variant_id,
@@ -155,15 +155,19 @@ export async function insertSubmission({
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
-    if (variant.assessment_instance_id != null) {
-      await sqldb.execute(sql.update_instance_question_post_submission, {
-        instance_question_id: variant.instance_question_id,
-        assessment_instance_id: variant.assessment_instance_id,
-        delta,
-        status: gradable ? 'saved' : 'invalid',
-        requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
-      });
-      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+    if (variant.instance_question_id != null) {
+      const instanceQuestion = await sqldb.queryRow(
+        sql.update_instance_question_post_submission,
+        {
+          instance_question_id: variant.instance_question_id,
+          assessment_instance_id: variant.assessment_instance_id,
+          delta,
+          status: gradable ? 'saved' : 'invalid',
+          requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+        },
+        InstanceQuestionSchema,
+      );
+      await updateInstanceQuestionStats({ instanceQuestion });
     }
 
     return { submission_id, variant };
@@ -193,7 +197,7 @@ export async function saveSubmission(
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
-    const workspace_id = await sqldb.queryOptionalRow(
+    const workspace_id = await sqldb.queryOptionalScalar(
       sql.select_workspace_id,
       { variant_id: submission.variant_id },
       IdSchema,
@@ -243,6 +247,11 @@ export async function saveSubmission(
     variant,
     question,
     question_course,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -378,13 +387,11 @@ export async function gradeVariant({
   );
   if (submission == null) return;
 
-  if (!ignoreGradeRateLimit) {
-    const resultNextAllowed = await sqldb.callRow(
-      'instance_questions_next_allowed_grade',
-      [variant.instance_question_id],
-      SprocInstanceQuestionsNextAllowedGradeSchema,
-    );
-    if (resultNextAllowed.allow_grade_left_ms > 0) return;
+  if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
+    const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
+      instanceQuestionId: variant.instance_question_id,
+    });
+    if (nextGradingAllowedMs > 0) return;
   }
 
   const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
@@ -416,6 +423,11 @@ export async function gradeVariant({
       variant,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
@@ -452,7 +464,7 @@ export async function gradeVariant({
     // LTI updates.
     if (!grading_job_post_update.gradable) return;
 
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_submission,
       { submission_id: submission.id },
       IdSchema.nullable(),

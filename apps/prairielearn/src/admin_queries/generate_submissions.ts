@@ -87,18 +87,18 @@ export default async function ({
       question_course,
     }: InstanceQuestionQuery): Promise<ResultRow> => {
       // Select an existing open variant, or create a new one if none exists.
-      const variant = await ensureVariant(
-        question.id,
-        instance_question.id,
-        user.user_id, // user_id
-        user.user_id, // authn_user_id
-        courseInstance,
-        assessmentCourse,
+      const variant = await ensureVariant({
+        question_id: question.id,
+        instance_question_id: instance_question.id,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: courseInstance,
+        variant_course: assessmentCourse,
         question_course,
-        { variant_seed: null },
-        true, // require_open
-        null, // client_fingerprint_id
-      );
+        options: { variant_seed: null },
+        require_open: true,
+        client_fingerprint_id: null,
+      });
 
       const currentTestType =
         test_type === 'random'
@@ -110,16 +110,16 @@ export default async function ({
         question,
         assessmentCourse,
         currentTestType,
-        user.user_id,
-        user.user_id,
+        user.id,
+        user.id,
       );
       const { submission_id } = hasFatalIssue
         ? { submission_id: null } // If there is a fatal issue on test, we don't save the submission.
         : await saveSubmission(
             {
               ...data,
-              auth_user_id: user.user_id,
-              user_id: user.user_id,
+              auth_user_id: user.id,
+              user_id: user.id,
               variant_id: variant.id,
               submitted_answer: data.raw_submitted_answer,
               credit: 100,
@@ -131,7 +131,7 @@ export default async function ({
 
       return {
         course_instance_id: assessment.course_instance_id,
-        course_instance: courseInstance.short_name ?? '',
+        course_instance: courseInstance.short_name,
         assessment_id: assessment.id,
         assessment: assessment.tid ?? assessment.id,
         assessment_instance_id: instance_question.assessment_instance_id,

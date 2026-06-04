@@ -38,6 +38,7 @@ export const ColorJsonSchema = z
   .describe('A color name.');
 
 export type ColorJson = z.infer<typeof ColorJsonSchema>;
+
 export const TopicJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -47,7 +48,6 @@ export const TopicJsonSchema = z
   })
   .describe("A single topic, can represent a unit of learning (e.g. 'vectors').");
 
-export type TopicJson = z.infer<typeof TopicJsonSchema>;
 export type TopicJsonInput = z.input<typeof TopicJsonSchema>;
 
 export const TagJsonSchema = z
@@ -86,7 +86,7 @@ export const AssessmentSetJsonSchema = z
 export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
 export type AssessmentSetJsonInput = z.input<typeof AssessmentSetJsonSchema>;
 
-export const CourseOptionsJsonSchema = z
+const CourseOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
@@ -102,11 +102,15 @@ export const CourseOptionsJsonSchema = z
       ])
       .describe('Feature flags to enable/disable in development mode.')
       .optional(),
+    questionsReceiveUserData: z
+      .boolean()
+      .describe(
+        'If true, server.py receives the variant owner\'s identity (UID, UIN, name) and group data (if applicable) via `data["options"]["user"]` and `data["options"]["group"]`. The user value is null for group variants. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. This JSON setting is honored only in development mode. In production, configure this on the course settings page; sync reports a warning if the JSON value differs from the production setting.',
+      )
+      .optional(),
   })
   .strict()
   .describe('Options for this course.');
-
-export type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 
 export const CourseJsonSchema = z
   .object({
@@ -114,7 +118,8 @@ export const CourseJsonSchema = z
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+      .describe('[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).')
+      .optional(),
     name: z.string().describe("The course name (e.g., 'TAM 212')."),
     title: z.string().describe("The course title (e.g., 'Introductory Dynamics')."),
     timezone: z
@@ -149,7 +154,7 @@ export const CourseJsonSchema = z
           })
           .describe('A sharing set description.'),
       )
-      .describe('Sharing sets')
+      .describe('Sharing sets.')
       .optional(),
   })
   .strict()

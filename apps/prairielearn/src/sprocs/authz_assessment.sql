@@ -15,7 +15,9 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules jsonb       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT show_before_release boolean, -- Always false for the legacy path; the modern path overrides this.
+        OUT access_timeline jsonb    -- Always empty for the legacy path; the modern path populates this.
     )
 AS $$
 DECLARE
@@ -28,10 +30,9 @@ BEGIN
         check_assessment_access(
             assessment_id,
             (authz_data->>'mode')::enum_mode,
-            (authz_data->>'mode_reason')::enum_mode_reason,
             (authz_data->>'course_role')::enum_course_role,
             (authz_data->>'course_instance_role')::enum_course_instance_role,
-            (authz_data->'user'->>'user_id')::bigint,
+            (authz_data->'user'->>'id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
             display_timezone
@@ -95,5 +96,7 @@ BEGIN
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     active := user_result.active;
     next_active_time := user_result.next_active_time;
+    show_before_release := false;
+    access_timeline := '[]'::jsonb;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

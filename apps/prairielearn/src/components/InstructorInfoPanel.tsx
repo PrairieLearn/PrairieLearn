@@ -1,16 +1,14 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { DateFromISOString, IntervalSchema } from '@prairielearn/zod';
 
-import { config } from '../lib/config.js';
 import {
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
-  DateFromISOString,
   type Group,
   type InstanceQuestion,
-  IntervalSchema,
   type Question,
   type User,
   type Variant,
@@ -124,16 +122,19 @@ function InstanceUserInfo({
   return html`
     <div>
       <details>
+        <summary>
+          <h3 class="card-title ${instance_group != null ? 'h5' : 'd-inline-block h5 mb-0'}">
+            ${instance_group != null ? 'Group details' : 'Student details'}
+          </h3>
+        </summary>
         ${instance_group != null
           ? html`
-              <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap">
                 <div class="pe-1">${instance_group.name}</div>
                 <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
-              <summary><h3 class="card-title d-inline-block h5 mb-0">Student details</h3></summary>
               <div class="d-flex flex-wrap mt-2">
                 <div class="pe-1">${instance_user?.name}</div>
                 <div class="pe-1">${instance_user?.uid}</div>
@@ -161,12 +162,12 @@ function QuestionInfo({
 }) {
   if (question == null || variant == null) return '';
 
-  const questionPreviewUrl = `${config.urlPrefix}/${
+  const questionPreviewUrl = `/pl/${
     course_instance != null
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
-  const publicPreviewUrl = `${config.urlPrefix}/public/course/${question.course_id}/question/${question.id}/preview`;
+  const publicPreviewUrl = `/pl/public/course/${question.course_id}/question/${question.id}/preview`;
 
   // We don't show the sharing name in the QID if the question is not shared
   // publicly for importing, such as if only `share_source_publicly` is set.
@@ -207,10 +208,14 @@ function QuestionInfo({
           </div>
         `
       : ''}
-    <div class="d-flex flex-wrap">
-      <div class="pe-1">Title:</div>
-      <div>${question.title}</div>
-    </div>
+    ${question.title?.trim()
+      ? html`
+          <div class="d-flex flex-wrap">
+            <div class="pe-1">Title:</div>
+            <div>${question.title}</div>
+          </div>
+        `
+      : ''}
   `;
 }
 
@@ -267,7 +272,7 @@ function AssessmentInstanceInfo({
 }) {
   if (assessment == null || assessment_instance == null) return '';
 
-  const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
+  const instructorUrlPrefix = `/pl/course_instance/${assessment.course_instance_id}/instructor`;
 
   // Some legacy queries still return the duration and date as a string, so parse them before formatting
   const duration =
@@ -282,7 +287,7 @@ function AssessmentInstanceInfo({
   return html`
     <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
-      <div class="pe-1">AID:</div>
+      <div class="pe-1">Assessment:</div>
       <div>
         <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>
@@ -325,7 +330,7 @@ function ManualGradingInfo({
     return '';
   }
 
-  const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
+  const manualGradingUrl = `/pl/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
     <h3 class="card-title h5">Manual grading</h3>

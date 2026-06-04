@@ -51,20 +51,28 @@ ADD UNIQUE (assessment_id, number);
 
 This is a collection of how to sequence some common migrations. Bullet points are ordered in sequential time order -- e.g. the first bullet point should have a timestamp before the second bullet point.
 
+**General note:** When validating constraints on multiple tables/columns, always use a **separate migration for each validation**. `VALIDATE CONSTRAINT` and `ALTER COLUMN ... SET NOT NULL` take `ACCESS EXCLUSIVE` locks, so batching them into a single transaction will hold locks on all tables simultaneously and block reads/writes for the duration.
+
+**General note on backfills:** Before enqueueing a batched migration to backfill a column, all running application code must already be writing correct values to that column. Otherwise, during a rolling deploy, an un-deployed server can insert a new row with the column's default (incorrect) value _after_ the backfill has already processed that range, leaving a permanently-wrong row that the backfill will never revisit. This means the PR that adds the column and updates write paths must be **fully deployed** before the PR that enqueues the backfill is merged.
+
 ### Add column with default value
 
 - Use a **single migration**
 
 ### Add column with backfill and no constraints
 
-- First PR: add the new column
-- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- First PR: add the column and update writes
+  - Add the new column with a default value
+  - Update all write paths (sync code, inserts, etc.) to compute and write the correct value for new rows
+- Second PR: enqueue a batched migration to backfill the column with appropriate values for existing rows
 - Third PR: finalize the batched migration
 
 ### Add column with backfill and constraints
 
-- First PR: add the column without the constraints
-- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- First PR: add the column and update writes
+  - Add the column without the constraints, with a default value
+  - Update all write paths to compute and write the correct value for new rows
+- Second PR: enqueue a batched migration to backfill the column with appropriate values for existing rows
 - Third PR: finalize and add constraints
   - Finalize the batched migration
   - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
@@ -72,7 +80,7 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 ### Rename column with a default value, no data preservation
 
-If you have no meaningful reads/writes to the old column, you can combie the first and second PRs into a single PR.
+If you have no meaningful reads/writes to the old column, you can combine the first and second PRs into a single PR.
 
 - First PR: Add new column
   - Add new column with default value
@@ -107,3 +115,35 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 - Fifth PR: Fully remove the old column
   - Remove the old column from the database
   - Remove the old column from the zod schema
+
+### Make nullable column non-nullable
+
+- First PR: Eliminate all write paths that insert NULL
+  - Update application code to avoid writing explicit NULL values (e.g. add `.default(false)` to the relevant Zod schema)
+
+- Second PR: Backfill existing NULL values
+  - Enqueue a batched migration to update all NULL rows to the desired default
+
+- Third PR: Add `NOT NULL` constraint
+  - Finalize the batched migration
+  - Add `NOT NULL` constraint to the column
+  - Consider dropping `DEFAULT` on the column if all writes should explicitly provide the value
+  - Update the Zod schema in `db-types.ts` to remove `.nullable()`
+
+### Drop column
+
+If you have no meaningful reads from the old column, you can combine the first and second PRs into a single PR.
+
+- First PR: Remove reads from the column
+  - Update all code to not read from the column
+
+- Second PR: Remove writes to the column
+  - Update all code to not write to the column
+  - Mark the column in the zod schema as `z.unknown()`
+
+- Third PR: Finalize
+  - Remove the column from the database
+
+### Drop sproc
+
+No database migrations are needed to drop a sproc. Just delete the file from the `sprocs/` directory (and entry in `sprocs/index.ts`) and commit the change.

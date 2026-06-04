@@ -6,14 +6,14 @@ columns
     implicit: boolean not null default false
     json_comment: jsonb
     name: text not null
-    number: integer
+    number: integer not null
 
 indexes
     topics_pkey: PRIMARY KEY (id) USING btree (id)
     topics_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
 
 foreign-key constraints
-    topics_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    topics_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     questions: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL

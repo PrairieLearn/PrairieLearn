@@ -1,18 +1,26 @@
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { setAssessmentInstancePoints, setAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { type Assessment, IdSchema } from './db-types.js';
+import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/** The subset of an uploaded file that the CSV upload functions need. */
+export interface UploadedCsvFile {
+  buffer: Buffer;
+  originalname: string;
+  size: number;
+}
 
 /**
  * Update question instance scores from a CSV file.
@@ -26,7 +34,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  */
 export async function uploadInstanceQuestionScores(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -39,23 +47,17 @@ export async function uploadInstanceQuestionScores(
   );
 
   const serverJob = await createServerJob({
+    type: 'upload_instance_question_scores',
+    description: 'Upload question scores for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_instance_question_scores',
-    description: 'Upload question scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
     job.info('Uploading question scores for ' + assessment_label);
-
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
 
     let successCount = 0;
     let errorCount = 0;
@@ -77,42 +79,18 @@ export async function uploadInstanceQuestionScores(
       },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        try {
-          if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
-            successCount++;
-            const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
-            if (output == null) {
-              output = msg;
-            } else {
-              output += '\n' + msg;
-            }
-          } else {
-            skippedCount++;
-            // NO OUTPUT
-          }
-        } catch (err) {
-          errorCount++;
-          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+    for await (const { info, record } of csvParser) {
+      try {
+        if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
+          successCount++;
+          job.verbose(`Processed CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        } else {
+          skippedCount++;
+          // NO OUTPUT
         }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output ?? '');
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+      } catch (err: any) {
+        errorCount++;
+        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`);
       }
     }
 
@@ -124,6 +102,10 @@ export async function uploadInstanceQuestionScores(
     }
     if (skippedCount !== 0) {
       job.warn(`${skippedCount} questions were skipped, with no score/feedback values to update`);
+    }
+    if (errorCount > 0 && successCount === 0) {
+      // Mark the job as failed if there were no successful updates and at least one error
+      job.fail('No question scores were updated due to errors in the CSV file');
     }
   });
 
@@ -142,7 +124,7 @@ export async function uploadInstanceQuestionScores(
  */
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -153,23 +135,17 @@ export async function uploadAssessmentInstanceScores(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'upload_assessment_instance_scores',
+    description: 'Upload total scores for ' + assessment_label,
+    authnUserId: authn_user_id,
+    userId: user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_assessment_instance_scores',
-    description: 'Upload total scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.verbose('Uploading total scores for ' + assessment_label);
-
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
+    job.info('Uploading total scores for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
@@ -180,44 +156,28 @@ export async function uploadAssessmentInstanceScores(
       { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        const msg = `Processing CSV line ${info.lines}: ${JSON.stringify(record)}`;
-        if (output == null) {
-          output = msg;
-        } else {
-          output += '\n' + msg;
-        }
-        try {
-          await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
-          successCount++;
-        } catch (err) {
-          errorCount++;
-          const msg = String(err);
-          output += '\n' + msg;
-        }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output);
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+    for await (const { info, record } of csvParser) {
+      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      try {
+        await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        job.error(String(err));
       }
     }
 
     if (errorCount === 0) {
-      job.verbose(
+      job.info(
         `Successfully updated scores for ${successCount} assessment instances, with no errors`,
       );
     } else {
-      job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+      job.info(`Successfully updated scores for ${successCount} assessment instances`);
       job.error(`Error updating ${errorCount} assessment instances`);
+      if (successCount === 0) {
+        // Mark the job as failed if there were no successful updates and at least one error
+        job.fail('No assessment instance scores were updated due to errors in the CSV file');
+      }
     }
   });
 
@@ -286,6 +246,16 @@ async function updateInstanceQuestionFromCsvRow(
 ): Promise<boolean> {
   const uid_or_group = record.group_name ?? record.uid;
 
+  // For the QID, accept either the raw QID or the sharing QID format. If the
+  // QID starts with "@", treat it as a sharing QID and split it into
+  // sharing_name and qid components. Otherwise, treat the entire QID as the raw
+  // qid and set sharing_name to null (so it's not enforced).
+  const [sharing_name, ...splitQid] =
+    typeof record.qid === 'string' && record.qid.startsWith('@')
+      ? record.qid.slice(1).split('/')
+      : [null, [record.qid]];
+  const qid = typeof record.qid === 'string' ? splitQid.join('/') : null;
+
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
@@ -294,12 +264,14 @@ async function updateInstanceQuestionFromCsvRow(
         submission_id: record.submission_id,
         uid_or_group,
         ai_number: record.instance,
-        qid: record.qid,
+        qid,
+        sharing_name,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
+        sharing_name: z.string().nullable(),
         qid: z.string(),
       }),
     );
@@ -314,9 +286,16 @@ async function updateInstanceQuestionFromCsvRow(
         `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
-    if (record.qid !== null && submission_data.qid !== record.qid) {
+
+    if (record.qid !== null && submission_data.qid !== qid) {
       throw new Error(
         `Found submission with id=${record.submission_id}, but QID does not match ${record.qid}.`,
+      );
+    }
+
+    if (sharing_name !== null && submission_data.sharing_name !== sharing_name) {
+      throw new Error(
+        `Found submission with id=${record.submission_id}, but sharing name does not match ${record.sharing_name}.`,
       );
     }
 
@@ -331,14 +310,14 @@ async function updateInstanceQuestionFromCsvRow(
       partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
-      await manualGrading.updateInstanceQuestionScore(
+      await manualGrading.updateInstanceQuestionScore({
         assessment,
-        submission_data.instance_question_id,
-        submission_data.submission_id,
-        null, // check_modified_at
-        new_score,
+        instance_question_id: submission_data.instance_question_id,
+        submission_id: submission_data.submission_id,
+        check_modified_at: null,
+        score: new_score,
         authn_user_id,
-      );
+      });
       return true;
     } else {
       return false;
@@ -350,7 +329,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   if (record.uid != null) {
     return {
       id: record.uid,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
@@ -363,7 +342,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   } else if (record.group_name != null) {
     return {
       id: record.group_name,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_group,
         {
           assessment_id,
@@ -395,9 +374,9 @@ async function updateAssessmentInstanceFromCsvRow(
     const scorePerc = validateNumericColumn(record, 'score_perc');
     const points = validateNumericColumn(record, 'points');
     if (scorePerc != null) {
-      await updateAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
+      await setAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
     } else if (points != null) {
-      await updateAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
+      await setAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }

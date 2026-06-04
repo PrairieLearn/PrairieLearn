@@ -2,16 +2,68 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { SubmissionSchema } from '../lib/db-types.js';
+import { SubmissionSchema, type Variant } from '../lib/db-types.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
+import type { AttachFileLocals, DownloadAttachedFileLocals } from './helperAttachFiles.js';
 import * as helperExam from './helperExam.js';
+import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
+const locals = {} as AttachFileLocals &
+  DownloadAttachedFileLocals & {
+    assessmentInstanceUrl: string;
+    shouldHaveButtons: string[];
+    postAction: string;
+    question: TestExamQuestion & {
+      /**
+       * Saved variant data for this question. This is stored per-question rather than
+       * on `locals` directly because partial credit tests iterate over multiple questions,
+       * storing and restoring variants independently. If stored on `locals.savedVariant`,
+       * each subsequent question's store would overwrite the previous one, causing the
+       * wrong variant to be restored later.
+       */
+      savedVariant?: Variant;
+      /** Saved CSRF token for this question. */
+      questionSavedCsrfToken?: string;
+    };
+    expectedResult: {
+      submission_score?: number | null;
+      submission_correct?: boolean | null;
+      instance_question_points?: number;
+      instance_question_score_perc?: number;
+      instance_question_auto_points?: number;
+      instance_question_manual_points?: number;
+      assessment_instance_points?: number;
+      assessment_instance_score_perc?: number;
+      instance_question_stats?: {
+        first_submission_score: number | null;
+        last_submission_score: number | null;
+        submission_score_array: (number | null)[];
+        incremental_submission_score_array: (number | null)[];
+        incremental_submission_points_array: (number | null)[];
+      };
+    };
+    questionBaseUrl: string;
+    variant: Variant;
+    savedVariant: Variant;
+    getSubmittedAnswer: (variant: any) => object;
+    csvData: string;
+    expectedFeedback: {
+      submission_id: string | null;
+      qid: string;
+      feedback: { manual?: string; msg?: string } | null;
+    };
+    questionSavedCsrfToken: string;
+    submission_id_for_feedback: string;
+    submission_id_preserve0: string;
+    submission_id_preserve1: string;
+    submission_id_preserveN: string;
+    totalPoints: number;
+  };
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -133,9 +185,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: null,
         last_submission_score: null,
-        submission_score_array: [null],
-        incremental_submission_score_array: [null],
-        incremental_submission_points_array: [null],
+        submission_score_array: [],
+        incremental_submission_score_array: [],
+        incremental_submission_points_array: [],
       },
     },
     { qid: 'partialCredit1', action: 'store', score: 0, sub_points: 0 },
@@ -147,9 +199,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.24,
         last_submission_score: 0.24,
-        submission_score_array: [null, 0.24],
-        incremental_submission_score_array: [null, 0.24],
-        incremental_submission_points_array: [null, 19 * 0.24],
+        submission_score_array: [0.24],
+        incremental_submission_score_array: [0.24],
+        incremental_submission_points_array: [19 * 0.24],
       },
     },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
@@ -180,9 +232,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0,
-        submission_score_array: [0, null],
-        incremental_submission_score_array: [0, null],
-        incremental_submission_points_array: [0, null],
+        submission_score_array: [0],
+        incremental_submission_score_array: [0],
+        incremental_submission_points_array: [0],
       },
     },
     {
@@ -193,9 +245,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.14,
-        submission_score_array: [0, null, 0.14],
-        incremental_submission_score_array: [0, null, 0.14],
-        incremental_submission_points_array: [0, null, 7 * 0.14],
+        submission_score_array: [0, 0.14],
+        incremental_submission_score_array: [0, 0.14],
+        incremental_submission_points_array: [0, 7 * 0.14],
       },
     },
     {
@@ -206,9 +258,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.08,
-        submission_score_array: [0, null, 0.14, 0.08],
-        incremental_submission_score_array: [0, null, 0.14, 0],
-        incremental_submission_points_array: [0, null, 7 * 0.14, 0],
+        submission_score_array: [0, 0.14, 0.08],
+        incremental_submission_score_array: [0, 0.14, 0],
+        incremental_submission_points_array: [0, 7 * 0.14, 0],
       },
     },
     {
@@ -219,9 +271,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.08,
-        submission_score_array: [0, null, 0.14, 0.08, null],
-        incremental_submission_score_array: [0, null, 0.14, 0, null],
-        incremental_submission_points_array: [0, null, 7 * 0.14, 0, null],
+        submission_score_array: [0, 0.14, 0.08],
+        incremental_submission_score_array: [0, 0.14, 0],
+        incremental_submission_points_array: [0, 7 * 0.14, 0],
       },
     },
     { qid: 'partialCredit2', action: 'store', score: 0, sub_points: 0 },
@@ -233,9 +285,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.27,
-        submission_score_array: [0, null, 0.14, 0.08, null, 0.27],
-        incremental_submission_score_array: [0, null, 0.14, 0, null, 0.27 - 0.14],
-        incremental_submission_points_array: [0, null, 7 * 0.14, 0, null, 3 * (0.27 - 0.14)],
+        submission_score_array: [0, 0.14, 0.08, 0.27],
+        incremental_submission_score_array: [0, 0.14, 0, 0.27 - 0.14],
+        incremental_submission_points_array: [0, 7 * 0.14, 0, 3 * (0.27 - 0.14)],
       },
     },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
@@ -253,9 +305,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: null,
         last_submission_score: null,
-        submission_score_array: [null],
-        incremental_submission_score_array: [null],
-        incremental_submission_points_array: [null],
+        submission_score_array: [],
+        incremental_submission_score_array: [],
+        incremental_submission_points_array: [],
       },
     },
     {
@@ -266,9 +318,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.63,
-        submission_score_array: [null, 0.63],
-        incremental_submission_score_array: [null, 0.63],
-        incremental_submission_points_array: [null, 13 * 0.63],
+        submission_score_array: [0.63],
+        incremental_submission_score_array: [0.63],
+        incremental_submission_points_array: [13 * 0.63],
       },
     },
     {
@@ -279,9 +331,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.63,
-        submission_score_array: [null, 0.63, 0.63],
-        incremental_submission_score_array: [null, 0.63, 0],
-        incremental_submission_points_array: [null, 13 * 0.63, 0],
+        submission_score_array: [0.63, 0.63],
+        incremental_submission_score_array: [0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, 0],
       },
     },
     {
@@ -292,9 +344,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.64,
-        submission_score_array: [null, 0.63, 0.63, 0.64],
-        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63],
-        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63)],
+        submission_score_array: [0.63, 0.63, 0.64],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63],
+        incremental_submission_points_array: [13 * 0.63, 0, 8 * (0.64 - 0.63)],
       },
     },
     {
@@ -305,9 +357,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.64,
-        submission_score_array: [null, 0.63, 0.63, 0.64, null],
-        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null],
-        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63), null],
+        submission_score_array: [0.63, 0.63, 0.64],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63],
+        incremental_submission_points_array: [13 * 0.63, 0, 8 * (0.64 - 0.63)],
       },
     },
     {
@@ -318,9 +370,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.07,
-        submission_score_array: [null, 0.63, 0.63, 0.64, null, 0.07],
-        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null, 0],
-        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63), null, 0],
+        submission_score_array: [0.63, 0.63, 0.64, 0.07],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, 0, 8 * (0.64 - 0.63), 0],
       },
     },
     { qid: 'partialCredit3', action: 'store', score: 0, sub_points: 0 },
@@ -332,14 +384,12 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.97,
-        submission_score_array: [null, 0.63, 0.63, 0.64, null, 0.07, 0.97],
-        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null, 0, 0.97 - 0.64],
+        submission_score_array: [0.63, 0.63, 0.64, 0.07, 0.97],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63, 0, 0.97 - 0.64],
         incremental_submission_points_array: [
-          null,
           13 * 0.63,
           0,
           8 * (0.64 - 0.63),
-          null,
           0,
           0.1 * (0.97 - 0.64),
         ],
@@ -363,9 +413,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: null,
         last_submission_score: null,
-        submission_score_array: [null],
-        incremental_submission_score_array: [null],
-        incremental_submission_points_array: [null],
+        submission_score_array: [],
+        incremental_submission_score_array: [],
+        incremental_submission_points_array: [],
       },
     },
     { qid: 'partialCredit2', action: 'store', score: 0, sub_points: 0 },
@@ -391,9 +441,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.63,
-        submission_score_array: [0.63, null],
-        incremental_submission_score_array: [0.63, null],
-        incremental_submission_points_array: [13 * 0.63, null],
+        submission_score_array: [0.63],
+        incremental_submission_score_array: [0.63],
+        incremental_submission_points_array: [13 * 0.63],
       },
     },
     {
@@ -404,9 +454,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0,
-        submission_score_array: [null, 0],
-        incremental_submission_score_array: [null, 0],
-        incremental_submission_points_array: [null, 0],
+        submission_score_array: [0],
+        incremental_submission_score_array: [0],
+        incremental_submission_points_array: [0],
       },
     },
     {
@@ -417,9 +467,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: null,
         last_submission_score: null,
-        submission_score_array: [null],
-        incremental_submission_score_array: [null],
-        incremental_submission_points_array: [null],
+        submission_score_array: [],
+        incremental_submission_score_array: [],
+        incremental_submission_points_array: [],
       },
     },
     {
@@ -430,9 +480,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.63,
-        submission_score_array: [0.63, null, 0.63],
-        incremental_submission_score_array: [0.63, null, 0],
-        incremental_submission_points_array: [13 * 0.63, null, 0],
+        submission_score_array: [0.63, 0.63],
+        incremental_submission_score_array: [0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, 0],
       },
     },
     {
@@ -443,9 +493,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.14,
-        submission_score_array: [null, 0, 0.14],
-        incremental_submission_score_array: [null, 0, 0.14],
-        incremental_submission_points_array: [null, 0, 7 * 0.14],
+        submission_score_array: [0, 0.14],
+        incremental_submission_score_array: [0, 0.14],
+        incremental_submission_points_array: [0, 7 * 0.14],
       },
     },
     {
@@ -456,9 +506,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.14,
-        submission_score_array: [null, 0, 0.14, null],
-        incremental_submission_score_array: [null, 0, 0.14, null],
-        incremental_submission_points_array: [null, 0, 7 * 0.14, null],
+        submission_score_array: [0, 0.14],
+        incremental_submission_score_array: [0, 0.14],
+        incremental_submission_points_array: [0, 7 * 0.14],
       },
     },
     {
@@ -469,9 +519,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.63,
-        submission_score_array: [0.63, null, 0.63, null],
-        incremental_submission_score_array: [0.63, null, 0, null],
-        incremental_submission_points_array: [13 * 0.63, null, 0, null],
+        submission_score_array: [0.63, 0.63],
+        incremental_submission_score_array: [0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, 0],
       },
     },
     {
@@ -482,9 +532,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.24,
         last_submission_score: 0.24,
-        submission_score_array: [null, 0.24],
-        incremental_submission_score_array: [null, 0.24],
-        incremental_submission_points_array: [null, 19 * 0.24],
+        submission_score_array: [0.24],
+        incremental_submission_score_array: [0.24],
+        incremental_submission_points_array: [19 * 0.24],
       },
     },
     {
@@ -495,9 +545,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.64,
-        submission_score_array: [0.63, null, 0.63, null, 0.64],
-        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63],
-        incremental_submission_points_array: [13 * 0.63, null, 0, null, 8 * (0.64 - 0.63)],
+        submission_score_array: [0.63, 0.63, 0.64],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63],
+        incremental_submission_points_array: [13 * 0.63, 0, 8 * (0.64 - 0.63)],
       },
     },
     { qid: 'partialCredit3', action: 'store', score: 0, sub_points: 0 },
@@ -509,9 +559,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.07,
-        submission_score_array: [0.63, null, 0.63, null, 0.64, 0.07],
-        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63, 0],
-        incremental_submission_points_array: [13 * 0.63, null, 0, null, 8 * (0.64 - 0.63), 0],
+        submission_score_array: [0.63, 0.63, 0.64, 0.07],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, 0, 8 * (0.64 - 0.63), 0],
       },
     },
     {
@@ -528,9 +578,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.08,
-        submission_score_array: [null, 0, 0.14, null, 0.08],
-        incremental_submission_score_array: [null, 0, 0.14, null, 0],
-        incremental_submission_points_array: [null, 0, 7 * 0.14, null, 0],
+        submission_score_array: [0, 0.14, 0.08],
+        incremental_submission_score_array: [0, 0.14, 0],
+        incremental_submission_points_array: [0, 7 * 0.14, 0],
       },
     },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
@@ -542,13 +592,11 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0.63,
         last_submission_score: 0.97,
-        submission_score_array: [0.63, null, 0.63, null, 0.64, 0.07, 0.97],
-        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63, 0, 0.97 - 0.64],
+        submission_score_array: [0.63, 0.63, 0.64, 0.07, 0.97],
+        incremental_submission_score_array: [0.63, 0, 0.64 - 0.63, 0, 0.97 - 0.64],
         incremental_submission_points_array: [
           13 * 0.63,
-          null,
           0,
-          null,
           8 * (0.64 - 0.63),
           0,
           0.1 * (0.97 - 0.64),
@@ -563,9 +611,9 @@ const partialCreditTests = [
       stats: {
         first_submission_score: 0,
         last_submission_score: 0.27,
-        submission_score_array: [null, 0, 0.14, null, 0.08, 0.27],
-        incremental_submission_score_array: [null, 0, 0.14, null, 0, 0.27 - 0.14],
-        incremental_submission_points_array: [null, 0, 7 * 0.14, null, 0, 3 * (0.27 - 0.14)],
+        submission_score_array: [0, 0.14, 0.08, 0.27],
+        incremental_submission_score_array: [0, 0.14, 0, 0.27 - 0.14],
+        incremental_submission_points_array: [0, 7 * 0.14, 0, 3 * (0.27 - 0.14)],
       },
     },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
@@ -851,7 +899,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 0);
       });
     });
-    helperQuestion.getInstanceQuestion(locals);
+    helperQuestion.getInstanceQuestion(locals, { errorExpected: true });
     describe('access the question', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
@@ -864,7 +912,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 1);
       });
     });
-    helperQuestion.getInstanceQuestion(locals);
+    helperQuestion.getInstanceQuestion(locals, { errorExpected: true });
     describe('access the question again', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
@@ -1794,7 +1842,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
               }
               locals.postAction = questionTest.action;
               locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions[questionTest.qid];
-              locals.question.points += questionTest.sub_points;
+              locals.question.points! += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               locals.expectedResult = {
                 submission_score: questionTest.action === 'save' ? null : questionTest.score / 100,
@@ -1802,7 +1850,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
                   questionTest.action === 'save' ? null : questionTest.score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
-                  (locals.question.points / locals.question.maxPoints) * 100,
+                  (locals.question.points! / locals.question.maxPoints) * 100,
                 instance_question_auto_points: locals.question.points,
                 instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
@@ -1829,8 +1877,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);
@@ -1838,8 +1886,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);

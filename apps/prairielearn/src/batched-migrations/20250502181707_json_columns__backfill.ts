@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import { queryRow, queryRows } from '@prairielearn/postgres';
+import { queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { type Course, CourseSchema } from '../lib/db-types.js';
 import { createServerJob } from '../lib/server-jobs.js';
@@ -11,7 +11,10 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryRow('SELECT MAX(id) as max from pl_courses;', z.string().nullable());
+    const result = await queryScalar(
+      'SELECT MAX(id) as max from pl_courses;',
+      z.string().nullable(),
+    );
     return {
       min: 1n,
       max: result,
@@ -37,13 +40,13 @@ export default makeBatchedMigration({
  */
 export async function syncCourse(course: Course) {
   const serverJob = await createServerJob({
-    courseId: course.id,
     type: 'sync',
     description: 'Sync from disk',
     // Since this is a sync performed by the system, don't associate any user
     // with it.
-    userId: undefined,
-    authnUserId: undefined,
+    userId: null,
+    authnUserId: null,
+    courseId: course.id,
   });
 
   // We use `executeUnsafe` to ensure that any errors bubble up and mark the
@@ -59,7 +62,7 @@ export async function syncCourse(course: Course) {
       },
       async () => {
         job.info('Sync git repository to database');
-        await syncDiskToSqlWithLock(course.id, course.path, job);
+        await syncDiskToSqlWithLock(course, job);
       },
     );
   });

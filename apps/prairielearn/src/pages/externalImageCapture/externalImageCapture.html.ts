@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function ExternalImageCapture({
   variantId,
@@ -10,7 +11,7 @@ export function ExternalImageCapture({
 }: {
   variantId: string;
   fileName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -23,6 +24,7 @@ export function ExternalImageCapture({
     content: html`
       <form
         id="external-image-capture-form"
+        method="POST"
         hx-post
         hx-trigger="submit"
         hx-swap="none"
@@ -53,12 +55,19 @@ export function ExternalImageCapture({
           </h1>
           <p>You should now see your captured image on the assessment page.</p>
         </div>
-        <div id="external-image-capture-failed-container" class="d-none">
+        <div id="external-image-capture-connection-failed-container" class="d-none">
+          <h1 class="d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle-fill text-danger me-2"></i>
+            Connection failed
+          </h1>
+          <p>Unable to connect to the server. Please try again.</p>
+        </div>
+        <div id="external-image-capture-upload-failed-container" class="d-none">
           <h1 class="d-flex align-items-center gap-2">
             <i class="bi bi-x-circle-fill text-danger me-2"></i>
             Upload failed
           </h1>
-          <p>An error occured during the submission of your file.</p>
+          <p>An error occurred during the submission of your file.</p>
         </div>
         <div id="external-image-capture-form-container" class="d-none pb-4">
           <div id="form-items">

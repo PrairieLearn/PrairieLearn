@@ -337,10 +337,14 @@ a.badge {
 
 /** override bootstrap's code styles with a github-like style */
 code {
+  border-radius: 6px;
+}
+code,
+.user-output,
+.user-output-invalid {
   color: var(--bs-body-color);
   background: var(--bs-secondary-bg);
   padding: 0.2em 0.4em;
-  border-radius: 6px;
 }
 
 /** However, don't use those styles for code tags in pre tags. */
@@ -351,25 +355,14 @@ pre code {
   border-radius: 0;
 }
 
+/** These additional styles are kept for compatibility reasons. */
 .user-output,
 .user-output-invalid {
   display: inline;
   font-size: 14px;
   white-space: pre;
-  color: #444;
-  background: #f0f0f0;
-
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 2px;
-  padding-right: 2px;
-
-  border-radius: 2px;
-  border-color: #ccc;
-  border-width: 1px;
-  border-style: solid;
-
   line-height: 28px;
+  border-radius: 2px;
 }
 
 .user-output-invalid {
@@ -419,32 +412,6 @@ small .user-output-invalid {
   outline-offset: -2px !important;
 }
 
-/* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
-.table > :not(caption) > * > .sticky-column {
-  position: sticky;
-  left: 0;
-  background-color: var(--bs-body-bg);
-  background-clip: padding-box;
-  box-shadow: inset -1px 0 #dee2e6;
-}
-
-.table.table-hover > tbody > tr:hover > td.sticky-column {
-  color: var(--bs-table-hover-color);
-  /* This must be opaque, to ensure the cell shows on top of others.
-     TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
-  background-color: #efefef;
-}
-
-/* This class is used in pages with bootstrap-table. Since these pages include the navigation in the toolbar, some padding is necessary. */
-.fixed-table-toolbar {
-  padding: 0 1em 0 1em;
-}
-
-.fixed-table-toolbar div.pagination,
-.fixed-table-toolbar div.pagination-detail {
-  margin: 0 1em 0 0 !important;
-}
-
 /** Provide a higher-contrast focus indicator for tom-select dropdowns */
 .ts-dropdown .active {
   outline: 2px solid var(--bs-primary);
@@ -478,4 +445,8 @@ input.form-check-input {
 input.form-check-input:disabled {
   --bs-border-color: #aaaaaa;
   --bs-form-check-bg: var(--bs-secondary-bg);
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
 }

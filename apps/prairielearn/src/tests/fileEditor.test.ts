@@ -4,12 +4,13 @@ import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
+import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
@@ -18,22 +19,23 @@ import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
-let page, elemList;
+let page: string;
+let elemList: cheerio.Cheerio<Element>;
 
 // Uses course within tests/testFileEditor
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-// Set up temporary writeable directories for course content
-const baseDir = tmp.dirSync().name;
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseDevDir = path.join(baseDir, 'courseDev');
-const courseDir = courseLiveDir;
+let courseRepo: CourseRepoFixture;
 
 const courseInstancePath = path.join('courseInstances', 'Fa18');
 const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
@@ -112,14 +114,11 @@ const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/se
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assessmentSettingsUrl = assessmentUrl + '/settings';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl =
@@ -132,12 +131,6 @@ const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('inf
 
 const findEditUrlData = [
   {
-    name: 'assessment',
-    selector: '[data-testid="edit-assessment-configuration-link"]',
-    url: assessmentSettingsUrl,
-    expectedEditUrl: assessmentEditUrl,
-  },
-  {
     name: 'course admin via course instance',
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseInstanceCourseAdminSettingsUrl,
@@ -148,18 +141,6 @@ const findEditUrlData = [
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
-  },
-  {
-    name: 'instance admin',
-    selector: '[data-testid="edit-course-instance-configuration-link"]',
-    url: courseInstanceInstanceAdminSettingsUrl,
-    expectedEditUrl: courseInstanceInstanceAdminEditUrl,
-  },
-  {
-    name: 'question',
-    selector: '[data-testid="edit-question-configuration-link"]',
-    url: courseInstanceQuestionSettingsUrl,
-    expectedEditUrl: courseInstanceQuestionJsonEditUrl,
   },
 ];
 
@@ -259,21 +240,11 @@ const verifyFileData = [
 describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
-      await createCourseFiles();
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
-    afterAll(async () => {
-      await deleteCourseFiles();
-    });
-
-    beforeAll(helperServer.before(courseDir));
     afterAll(helperServer.after);
-
-    beforeAll(async () => {
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir,
-        course_repository: courseOriginDir,
-      });
-    });
 
     describe('the locals object', function () {
       it('should be cleared', function () {
@@ -321,50 +292,52 @@ describe('test file editor', { timeout: 20_000 }, function () {
   });
 });
 
-function badGet(url, expected_status, should_parse) {
+function badGet(url: string, expected_status: number, should_parse: boolean) {
   describe('GET to edit url with bad path', function () {
     it(`should load with status ${expected_status}`, async () => {
       // `fetch()` pre-normalizes the URL, which means we can't use it to test
       // path traversal attacks. In this specific case, we'll use `http.request()`
       // directly to avoid this normalization.
-      const res = await new Promise<{ status: number; text: () => Promise<string> }>(
-        (resolve, reject) => {
-          // We deliberately use the deprecated `node:url#parse()` instead of
-          // `new URL()` to avoid path normalization.
-          const parsedUrl = nodeUrl.parse(url);
-          const req = http.request(
-            {
-              hostname: 'localhost',
-              port: config.serverPort,
-              path: parsedUrl.path,
-              method: 'GET',
-            },
-            (res) => {
-              let data = '';
+      await withoutLogging(async () => {
+        const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+          (resolve, reject) => {
+            // We deliberately use the deprecated `node:url#parse()` instead of
+            // `new URL()` to avoid path normalization.
+            const parsedUrl = nodeUrl.parse(url);
+            const req = http.request(
+              {
+                hostname: 'localhost',
+                port: config.serverPort,
+                path: parsedUrl.path,
+                method: 'GET',
+              },
+              (res) => {
+                let data = '';
 
-              res.on('data', (chunk) => {
-                data += chunk;
-              });
-
-              res.on('end', () => {
-                resolve({
-                  status: res.statusCode ?? 500,
-                  text: () => Promise.resolve(data),
+                res.on('data', (chunk) => {
+                  data += chunk;
                 });
-              });
-            },
-          );
 
-          req.on('error', (err) => {
-            reject(err);
-          });
+                res.on('end', () => {
+                  resolve({
+                    status: res.statusCode ?? 500,
+                    text: () => Promise.resolve(data),
+                  });
+                });
+              },
+            );
 
-          req.end();
-        },
-      );
+            req.on('error', (err) => {
+              reject(err);
+            });
 
-      assert.equal(res.status, expected_status);
-      page = await res.text();
+            req.end();
+          },
+        );
+
+        assert.equal(res.status, expected_status);
+        page = await res.text();
+      });
     });
     if (should_parse) {
       it('should parse', function () {
@@ -378,50 +351,13 @@ function badGet(url, expected_status, should_parse) {
   });
 }
 
-async function createCourseFiles() {
-  await deleteCourseFiles();
-  // Ensure that the default branch is master, regardless of how git
-  // is configured on the host machine.
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-  await execa('git', ['add', '-A'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['push'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
-  });
-}
-
-async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
-}
-
 function editPost(
-  action,
-  fileEditContents,
-  url,
-  expectedToFindResults,
-  expectedToFindChoice,
-  expectedDiskContents,
+  action: string,
+  fileEditContents: string,
+  url: string,
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDiskContents: string | null,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', async () => {
@@ -451,11 +387,11 @@ function editPost(
   });
 }
 
-function jsonToContents(json) {
+function jsonToContents(json: Record<string, any>) {
   return JSON.stringify(json, null, 4) + '\n';
 }
 
-function findEditUrl(name, selector, url, expectedEditUrl) {
+function findEditUrl(name: string, selector: string, url: string, expectedEditUrl: string) {
   describe(`GET to ${name}`, function () {
     it('should load successfully', async () => {
       const res = await fetch(url);
@@ -476,10 +412,10 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
 }
 
 function verifyEdit(
-  expectedToFindResults,
-  expectedToFindChoice,
-  expectedDraftContents,
-  expectedDiskContents,
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDraftContents: string,
+  expectedDiskContents: string | null,
 ) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
@@ -501,7 +437,7 @@ function verifyEdit(
     const fileContents = b64DecodeUnicode(editor.data('contents'));
     assert.strictEqual(fileContents, expectedDraftContents);
   });
-  it(`should have results of save and sync - ${expectedToFindResults}`, function () {
+  it(`should have save results - ${expectedToFindResults}`, function () {
     elemList = locals.$('form[name="editor-form"] #job-sequence-results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);
@@ -522,11 +458,11 @@ function verifyEdit(
 }
 
 function editGet(
-  url,
-  expectedToFindResults,
-  expectedToFindChoice,
-  expectedDraftContents,
-  expectedDiskContents,
+  url: string,
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDraftContents: string,
+  expectedDiskContents: string | null,
 ) {
   describe('GET to edit url', function () {
     it('should load successfully', async () => {
@@ -546,7 +482,15 @@ function editGet(
   });
 }
 
-function doEdits(data) {
+function doEdits(data: {
+  url: string;
+  path: string;
+  contentsA: string;
+  contentsB: string;
+  contentsC: string;
+  contentsX: string;
+  isJson: boolean;
+}) {
   describe(`edit ${data.path}`, function () {
     // "live" is a clone of origin (this is what's on the production server)
     // "dev" is a clone of origin (this is what's on someone's laptop)
@@ -659,88 +603,94 @@ function doEdits(data) {
   });
 }
 
-function writeAndCommitFileInLive(fileName, fileContents) {
+function writeAndCommitFileInLive(fileName: string, fileContents: string) {
   describe(`commit a change to ${fileName} by exec`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir,
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseLiveDir,
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
   });
 }
 
-function pullAndVerifyFileInDev(fileName, fileContents) {
+function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should match contents', function () {
-      assert.strictEqual(readFileSync(path.join(courseDevDir, fileName), 'utf-8'), fileContents);
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'),
+        fileContents,
+      );
     });
   });
 }
 
-function pullAndVerifyFileNotInDev(fileName) {
+function pullAndVerifyFileNotInDev(fileName: string) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should not exist', async () => {
-      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
+      assert.isFalse(await fs.pathExists(path.join(courseRepo.courseDevDir, fileName)));
     });
   });
 }
 
-function writeAndPushFileInDev(fileName, fileContents) {
+function writeAndPushFileInDev(fileName: string, fileContents: string) {
   describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseDevDir, fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseDevDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should push', async () => {
       await execa('git', ['push'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
   });
 }
 
-function waitForJobSequence(locals, expectedResult: 'Success' | 'Error') {
+function waitForJobSequence(
+  locals: { job_sequence_id?: string },
+  expectedResult: 'Success' | 'Error',
+) {
   describe('The job sequence', function () {
     it('should have an id', async () => {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
       locals.job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
-      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id, expectedResult);
+      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id!, expectedResult);
     });
   });
 }

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "2.5.1",
+  "version": "2.7.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -9,17 +9,17 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "csv-stringify": "^6.6.0",
+    "csv-stringify": "^6.7.0",
     "js-base64": "^3.7.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.9.3"
+    "@typescript/native-preview": "beta"
   },
   "sideEffects": false
 }

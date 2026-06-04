@@ -18,6 +18,8 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionCaller,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -112,7 +114,7 @@ async function callFunction<Data>(
       // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
-  } catch (err) {
+  } catch (err: any) {
     err.fatal = true;
     return {
       // We don't have any useful data to return. We'll just lie to the type checker.
@@ -126,6 +128,8 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  _preferences: Record<string, string | number | boolean>,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
 }
@@ -135,6 +139,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return await callFunction<GradeResultData>('grade', question_course, question, {
     submission,
@@ -145,15 +150,18 @@ export async function grade(
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-export async function render(
-  _renderSelection: RenderSelection,
-  _variant: Variant,
-  _question: Question,
-  _submission: Submission | null,
-  submissions: Submission[],
-  _course: Course,
-  _locals: Record<string, any>,
-): QuestionServerReturnValue<RenderResultData> {
+export async function render({
+  submissions,
+}: {
+  renderSelection: RenderSelection;
+  variant: Variant;
+  question: Question;
+  submission: Submission | null;
+  submissions: Submission[];
+  course: Course;
+  locals: QuestionRenderRequiredLocals;
+  caller: QuestionCaller;
+}): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',
@@ -167,6 +175,7 @@ export async function prepare(
   _question: Question,
   _course: Course,
   variant: PrepareVariant,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -181,6 +190,7 @@ export async function parse(
   variant: Variant,
   _question: Question,
   _course: Course,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   const data = {
     params: variant.params ?? {},

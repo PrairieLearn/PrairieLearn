@@ -93,16 +93,16 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 Create new questions using some of the elements discussed today:
 
-`pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793641/preview)
+`pl-matrix-component-input` [documentation](../elements/pl-matrix-component-input.md) and [example](https://us.prairielearn.com/pl/course/108/question/1793641/preview)
 
-`pl-matrix-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/611932/preview)
+`pl-matrix-input` [documentation](../elements/pl-matrix-input.md) and [example](https://us.prairielearn.com/pl/course/108/question/611932/preview)
 
-`pl-matrix-latex` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-latex-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793638/preview)
+`pl-matrix-latex` [documentation](../elements/pl-matrix-latex.md) and [example](https://us.prairielearn.com/pl/course/108/question/1793638/preview)
 
-`pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
+`pl-variable-output` [documentation](../elements/pl-variable-output.md) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
 
-`pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element) and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
+`pl-python-variable` [documentation](../elements/pl-python-variable.md) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
 
-`pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793642/preview)
+`pl-string-input` [documentation](../elements/pl-string-input.md) and [example](https://us.prairielearn.com/pl/course/108/question/1793642/preview)
 
-`pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://us.prairielearn.com/pl/course/108/question/7911589/preview)
+`pl-overlay` [documentation](../elements/pl-overlay.md) and [example](https://us.prairielearn.com/pl/course/108/question/7911589/preview)

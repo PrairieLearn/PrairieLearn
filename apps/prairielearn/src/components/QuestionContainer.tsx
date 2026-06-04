@@ -1,22 +1,30 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { formatDate } from '@prairielearn/formatter';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import type {
+  CounterClockwiseRotationDegrees,
+  InstanceQuestionAIGradingInfo,
+} from '../ee/lib/ai-grading/types.js';
+import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
+  Course,
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
-  Issue,
   Question,
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
+import type { IssueRenderData } from '../lib/question-render.types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +45,7 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -53,10 +61,11 @@ export function QuestionContainer({
     variant,
     variantToken,
     questionJsonBase64,
+    course,
     course_instance,
     authz_data,
     is_administrator,
-    showTrueAnswer,
+    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
@@ -73,7 +82,9 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${issues.map((issue: IssueRenderData) =>
+        IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
+      )}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -94,28 +105,32 @@ export function QuestionContainer({
         // it here to avoid confusion.
         questionRenderContext !== 'ai_grading'
           ? html`
-              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
             `
           : ''
       }
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.explanation
-        ? AIGradingExplanation({
-            explanation: aiGradingInfo.explanation,
-          })
-        : ''}
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
-        ? AIGradingPrompt({
-            prompt: aiGradingInfo.prompt,
-          })
+      ${['instructor', 'manual_grading'].includes(questionContext)
+        ? html`
+            <div class="js-ai-grading-explanation-slot">
+              ${aiGradingInfo
+                ? AIGradingExplanation({
+                    explanation: aiGradingInfo.explanation,
+                    hasImage: aiGradingInfo.hasImage,
+                    rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+                  })
+                : ''}
+            </div>
+            <div class="js-ai-grading-prompt-slot">
+              ${aiGradingInfo?.prompt ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }) : ''}
+            </div>
+          `
         : ''}
       ${submissions.length > 0
         ? html`
@@ -159,12 +174,12 @@ export function QuestionContainer({
               : ''}
           `
         : ''}
+      ${CopyQuestionModal({ resLocals, questionCopyTargets })}
     </div>
-    ${CopyQuestionModal({ resLocals, questionCopyTargets })}
   `;
 }
 
-function AIGradingPrompt({ prompt }: { prompt: string }) {
+export function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -193,9 +208,24 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+export function AIGradingExplanation({
+  explanation,
+  hasImage,
+  rotationCorrectionDegrees,
+}: {
+  explanation: string | null;
+  hasImage: boolean;
+  rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
+}) {
+  const rotationCorrectionApplied =
+    rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
+
   return html`
-    <div class="card mb-3 grading-block">
+    <div
+      id="ai-grading-explanation"
+      class="card mb-3 grading-block"
+      style="scroll-margin-top: 10px;"
+    >
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
@@ -216,27 +246,56 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+          ${hasImage && rotationCorrectionApplied
+            ? html`<div class="alert alert-warning mb-3" role="alert">
+                <p>
+                  One or more images were uploaded in a rotated state by the student (this was an
+                  error by the student). The system corrected their rotation prior to AI grading.
+                </p>
+                <div class="card table-responsive mb-0" style="max-width: 800px;">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="text-nowrap">Filename</th>
+                        <th class="text-nowrap">Correction (counterclockwise)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${Object.entries(rotationCorrectionDegrees).map(
+                        ([filename, degrees]) => html`
+                          <tr>
+                            <td class="text-nowrap"><code>${filename}</code></td>
+                            <td>${degrees}&deg;</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`
+            : ''}
+          ${explanation
+            ? html`
+                <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}
+</pre>
+              `
+            : ''}
         </div>
       </div>
     </div>
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
+  course,
   course_instance,
   authz_data,
   is_administrator,
 }: {
-  issue: Issue & {
-    user_name: User['name'];
-    user_email: User['email'];
-    user_uid: User['uid'];
-    formatted_date: string;
-  };
+  issue: IssueRenderData;
+  course: Course;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -317,7 +376,12 @@ export function IssuePanel({
             </tr>
             <tr>
               <th>Date:</th>
-              <td>${issue.formatted_date}</td>
+              <td>
+                ${formatDate(
+                  issue.date!,
+                  course_instance?.display_timezone ?? course.display_timezone,
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -330,7 +394,7 @@ export function IssuePanel({
                 ? html`
                     <p><strong>Console log:</strong></p>
                     <pre class="bg-dark text-white rounded p-3">
-${issue.system_data.courseErrData.outputBoth}</pre
+${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     >
                   `
                 : ''}
@@ -389,13 +453,17 @@ export function QuestionTitle({
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}) {
+}): HtmlValue {
+  const hasTitle = !!question.title?.trim();
+
   if (questionContext === 'student_homework') {
-    return `${questionNumber}. ${question.title}`;
+    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   } else if (questionContext === 'student_exam') {
-    return `Question ${questionNumber}: ${question.title}`;
+    return hasTitle
+      ? `Question ${questionNumber}: ${question.title}`
+      : `Question ${questionNumber}`;
   } else {
-    return question.title;
+    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
 }
 
@@ -413,10 +481,11 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  instance_question: InstanceQuestion | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
+  allowGradeLeftMs: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -488,6 +557,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
+    allowGradeLeftMs,
     group_config,
     group_info,
     group_role_permissions,
@@ -500,7 +570,7 @@ export function QuestionFooterContent({
     }
 
     if (authz_result?.authorized_edit === false) {
-      return html`<div class="alert alert-warning mt-2" role="alert">
+      return html`<div class="alert alert-warning mb-0" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
         answers, to submit answers for grading, or to try a new variant of this same question.
       </div>`;
@@ -581,14 +651,19 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                  <a
+                    href="${newVariantUrl}"
+                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                  >
                     New variant
                   </a>
                 `
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info.previous_variants?.some(
+                        (variant: SimpleVariantWithScore) => variant.open,
+                      )
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -630,9 +705,8 @@ export function QuestionFooterContent({
       ${SubmitRateFooter({
         questionContext,
         showGradeButton,
-        disableGradeButton,
         assessment_question,
-        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+        allowGradeLeftMs,
       })}
     `;
   });
@@ -643,13 +717,11 @@ export function QuestionFooterContent({
 function SubmitRateFooter({
   questionContext,
   showGradeButton,
-  disableGradeButton,
   assessment_question,
   allowGradeLeftMs,
 }: {
   questionContext: QuestionContext;
   showGradeButton: boolean;
-  disableGradeButton: boolean;
   assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
@@ -672,7 +744,7 @@ function SubmitRateFooter({
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${disableGradeButton
+          ${allowGradeLeftMs > 0
             ? html`
                 <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
@@ -778,7 +850,7 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -884,7 +956,7 @@ function SubmissionList({
   submissionCount,
   renderSubmissionSearchParams,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
@@ -900,7 +972,8 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance?.id,
+      course_instance: resLocals.course_instance,
+      course: resLocals.course,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,
@@ -916,7 +989,7 @@ function CopyQuestionModal({
   resLocals,
 }: {
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { question, course } = resLocals;
   if (questionCopyTargets == null) return '';

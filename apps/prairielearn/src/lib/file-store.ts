@@ -6,11 +6,12 @@ import { type Stream } from 'stream';
 import debugfn from 'debug';
 
 import * as sqldb from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
-import { type File, FileSchema, IdSchema } from './db-types.js';
-import { assertNever } from './types.js';
+import { type File, FileSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -19,6 +20,14 @@ const StorageTypes = Object.freeze({
   S3: 'S3',
   FileSystem: 'FileSystem',
 });
+
+export function getFileStoreS3Bucket(): string {
+  if (config.fileStoreS3Bucket === null) {
+    throw new Error('fileStoreS3Bucket must be configured to use S3 file storage');
+  }
+
+  return config.fileStoreS3Bucket;
+}
 
 interface UploadFileOptions {
   /** The display_filename of the file. */
@@ -75,7 +84,7 @@ export async function uploadFile({
     // use a UUIDv4 as the filename for S3
     storage_filename = crypto.randomUUID();
 
-    const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
+    const res = await uploadToS3(getFileStoreS3Bucket(), storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
     // Make a filename to store the file. We use a UUIDv4 as the filename,
@@ -97,7 +106,7 @@ export async function uploadFile({
     throw new Error(`Unknown storage type: ${storage_type}`);
   }
 
-  const file_id = await sqldb.queryRow(
+  const file_id = await sqldb.queryScalar(
     sql.insert_file,
     {
       display_filename,
@@ -192,10 +201,11 @@ export async function getFile(
       };
     }
     case StorageTypes.S3: {
+      const fileStoreS3Bucket = getFileStoreS3Bucket();
       const contents =
         data_type === 'buffer'
-          ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
-          : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
+          ? await getFromS3(fileStoreS3Bucket, file.storage_filename, true)
+          : await getFromS3(fileStoreS3Bucket, file.storage_filename, false);
 
       return {
         contents,

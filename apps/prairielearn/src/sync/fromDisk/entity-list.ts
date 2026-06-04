@@ -1,12 +1,11 @@
-import _ from 'lodash';
+import { isEqual, pick } from 'es-toolkit';
 
 interface NamedEntity {
   name: string;
 }
 
 type ExistingEntity<Entity> = Entity & {
-  /** TODO: make non-nullable once we make this non-null in the database schemas. */
-  number: number | null;
+  number: number;
   implicit: boolean;
 };
 
@@ -62,10 +61,10 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   entitiesToDelete: string[];
 } {
   const fullComparisonProperties = [
-    'name',
-    'number',
-    'implicit',
-    'comment',
+    'name' as keyof Entity,
+    'number' as keyof Entity,
+    'implicit' as keyof Entity,
+    'comment' as keyof Entity,
     ...comparisonProperties,
   ];
 
@@ -128,9 +127,9 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
     if (!existingEntity) {
       entitiesToCreate.set(name, entity);
     } else if (
-      !_.isEqual(
-        _.pick(existingEntity, fullComparisonProperties),
-        _.pick(entity, fullComparisonProperties),
+      !isEqual(
+        pick(existingEntity, fullComparisonProperties),
+        pick(entity, fullComparisonProperties),
       )
     ) {
       // We'll only update the entity if it has changed.

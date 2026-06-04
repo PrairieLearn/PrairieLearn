@@ -9,14 +9,13 @@ import json
 import numbers
 import re
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, assert_never, cast, overload
 
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import sympy
-from typing_extensions import assert_never
 
 from prairielearn.html_utils import escape_invalid_string
 from prairielearn.misc_utils import full_unidecode
@@ -142,6 +141,7 @@ def to_json(
     | non-complex ndarray | `ndarray` | assumes each element can be json serialized |
     | complex ndarray | `complex_ndarray` | |
     | `sympy.Expr` | `sympy` | any scalar SymPy expression |
+    | `sympy.Set` | `sympy` | SymPy sets such as `FiniteSet` and `Interval` |
     | `sympy.Matrix` | `sympy_matrix` | |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
@@ -173,7 +173,7 @@ def to_json(
         ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
     """
     if np_encoding_version not in {1, 2}:
-        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+        raise ValueError(f"Invalid np_encoding {np_encoding_version}, must be 1 or 2.")
 
     if np_encoding_version == 2 and isinstance(v, np.number):
         return {
@@ -182,7 +182,7 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+    if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
@@ -190,9 +190,11 @@ def to_json(
         elif np.iscomplexobj(v):
             return {
                 "_type": "complex_ndarray",
-                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
+                "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
+    elif isinstance(v, sympy.Set):
+        return sympy_to_json(v, allow_sets=True)
     elif isinstance(v, sympy.Expr):
         return sympy_to_json(v)
     elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
@@ -953,7 +955,8 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np.array2string(A, formatter=formatter)
+        np
+        .array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()

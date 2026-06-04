@@ -1,5 +1,60 @@
 # @prairielearn/browser-utils
 
+## 2.7.2
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
+## 2.7.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+  - @prairielearn/html@5.0.2
+
+## 2.7.0
+
+### Minor Changes
+
+- ad329f9: Add `executeScripts` helper to re-execute script tags after innerHTML insertion
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
+## 2.6.3
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/html@5.0.1
+
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/html@5.0.0
+
+## 2.6.1
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
+## 2.6.0
+
+### Minor Changes
+
+- f7d6b62: Export `FocusTrap` type
+
 ## 2.5.1
 
 ### Patch Changes

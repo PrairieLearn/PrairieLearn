@@ -1,21 +1,24 @@
 {
   "name": "@prairielearn/session",
-  "version": "3.0.24",
+  "version": "4.0.7",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/session"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@types/express": "^4.17.25",
-    "cookie": "^0.7.2",
+    "@types/express": "^4.17.25 <5",
+    "cookie": "^0.7.2 <1",
     "cookie-signature": "^1.2.2",
     "express-async-handler": "^1.2.0",
     "on-headers": "^1.1.0",
@@ -24,21 +27,17 @@
   "devDependencies": {
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/cookie": "^0.6.0",
+    "@types/cookie": "^0.6.0 <1",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^22.19.0",
-    "@types/node-fetch": "^2.6.13",
+    "@types/node": "^24.12.4",
     "@types/on-headers": "^1.0.4",
-    "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
-    "@vitest/coverage-v8": "^4.0.7",
-    "express": "^4.21.2",
-    "fetch-cookie": "^3.1.0",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "express": "^4.22.1 <5",
+    "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^2.7.2",
-    "source-map-support": "^0.5.21",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "set-cookie-parser": "^3.1.0",
+    "vitest": "^4.1.7"
   }
 }

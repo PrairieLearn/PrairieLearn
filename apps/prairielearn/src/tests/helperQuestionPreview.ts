@@ -1,3 +1,5 @@
+import type * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 
@@ -27,7 +29,17 @@ export function testQuestionPreviews(
   addNumbers: QuestionInfo,
   addVectors: QuestionInfo,
 ) {
-  const locals: any = previewPageInfo;
+  const locals = previewPageInfo as QuestionPreviewPageInfo & {
+    question: QuestionInfo;
+    shouldHaveButtons: string[];
+    postAction: string;
+    expectedResult: {
+      submission_score: number | null;
+      submission_correct: boolean | null;
+    };
+    getSubmittedAnswer: (variant: any) => object;
+    $: cheerio.CheerioAPI;
+  };
   describe('1. submit correct answer to question addVectors', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
@@ -186,12 +198,12 @@ export function testFileDownloads(
     });
     helperQuestion.getInstanceQuestion(locals);
     describe('downloading course text file', function () {
-      let elemList;
+      let elemList: cheerio.Cheerio<Element>;
       it('should contain a link to clientFilesCourse/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesCourse"]');
         assert.lengthOf(elemList, 1);
       });
-      let page;
+      let page: string;
       it('should download something with the link to clientFilesCourse/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
         const res = await fetch(fileUrl);
@@ -209,7 +221,8 @@ export function testFileDownloads(
       });
     });
     describe('downloading question text files', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: string;
       it('should contain a force-download link to clientFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
@@ -224,7 +237,9 @@ export function testFileDownloads(
         assert.equal(page, 'This data is specific to the question.');
       });
       it('should contain a new tab link to clientFilesQuestion/data.txt', function () {
-        elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
+        elemList = locals.$(
+          'a[href*="clientFilesQuestion/data.txt"][target="_blank"]:not([download])',
+        );
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the new tab link to clientFilesQuestion/data.txt', async () => {
@@ -232,13 +247,24 @@ export function testFileDownloads(
         const res = await fetch(fileUrl);
         assert.equal(res.status, 200);
         page = await res.text();
-      });
-      it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
+      });
+      it('should contain a new tab link to name&gt;"weird.txt with properly escaped URL and label', function () {
+        elemList = locals.$('a[href*="name%26gt%3B%22weird.txt"][target="_blank"]:not([download])');
+        assert.lengthOf(elemList, 1);
+        assert.equal(elemList.text().trim(), 'name&gt;"weird.txt');
+      });
+      it('should download something with the new tab link to name&gt;"weird.txt', async () => {
+        const fileUrl = locals.siteUrl + elemList[0].attribs.href;
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
+        assert.equal(page.trim(), 'If you see this, it worked.');
       });
     });
     describe('downloading dynamic text file', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: string;
       it('should contain a link to generatedFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
@@ -254,7 +280,8 @@ export function testFileDownloads(
       });
     });
     describe('downloading dynamic image file', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: ArrayBuffer;
       it('should contain a link to generatedFilesQuestion/figure.png', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);

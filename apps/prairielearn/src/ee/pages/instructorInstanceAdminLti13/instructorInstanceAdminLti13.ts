@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -14,12 +13,15 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../../components/InsufficientCoursePermissionsCard.js';
+import { getCourseOwners } from '../../../lib/course.js';
 import {
   AssessmentSchema,
   Lti13AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
@@ -48,9 +50,27 @@ router.get(
   '/:unsafe_lti13_course_instance_id?',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_edit'],
-    unauthorizedUsers: 'block',
+    unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'lms_connections',
+          },
+          courseOwners,
+          pageTitle: 'LMS connections',
+          requiredPermissions: 'Student Data Editor',
+        }),
+      );
+      return;
+    }
+
     const instances = await queryRows(
       sql.select_combined_lti13_instances,
       { course_instance_id: res.locals.course_instance.id },
@@ -95,7 +115,7 @@ router.get(
     if ('lineitems' in req.query) {
       try {
         res.end(LineitemsInputs(await getLineitems(instance)));
-      } catch (error) {
+      } catch (error: any) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
         logger.error('LineitemsInputs error', error);
       }
@@ -106,8 +126,6 @@ router.get(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
       AssessmentRowSchema,
@@ -133,7 +151,7 @@ router.get(
 
 router.post(
   '/:unsafe_lti13_course_instance_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -150,8 +168,8 @@ router.post(
     const serverJobOptions = {
       courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
-      userId: res.locals.user.user_id,
-      authnUserId: res.locals.authn_user.user_id,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authn_user.id,
       type: 'lti13',
       description: 'Some LTI operation',
     };
@@ -166,8 +184,9 @@ router.post(
           },
           Lti13CourseInstanceSchema,
         );
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',
           action: 'delete',
           institution_id: res.locals.institution.id,
@@ -296,7 +315,7 @@ router.post(
 
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
-          course_instance: res.locals.course_instance,
+          courseInstance: res.locals.course_instance,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

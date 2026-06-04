@@ -1,0 +1,15 @@
+name: 'Report bundle sizes'
+description: 'Report bundle size changes for PRs and update the baseline on master pushes'
+inputs:
+  sizes-path:
+    description: 'Path to the sizes.json file produced by the build'
+    required: true
+  token:
+    description: 'GitHub token for baseline branch operations'
+    required: true
+  report-path:
+    description: 'Path to write the report markdown (for workflow_run comment posting)'
+    required: false
+runs:
+  using: 'node24'
+  main: 'dist/index.js'

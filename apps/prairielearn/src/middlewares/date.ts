@@ -2,6 +2,11 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { config } from '../lib/config.js';
 
+export interface ResLocalsDate {
+  req_date: Date;
+  true_req_date: Date;
+}
+
 export default function (req: Request, res: Response, next: NextFunction) {
   res.locals.req_date = new Date();
   res.locals.true_req_date = res.locals.req_date;

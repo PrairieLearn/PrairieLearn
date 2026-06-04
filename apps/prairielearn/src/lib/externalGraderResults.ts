@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { S3 } from '@aws-sdk/client-s3';
 import {
   DeleteMessageCommand,
-  GetQueueUrlCommand,
   ReceiveMessageCommand,
   type ReceiveMessageResult,
   SQSClient,
@@ -15,13 +14,15 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { withResolvers } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
-import { GradingJobSchema, IdSchema } from './db-types.js';
+import { GradingJobSchema } from './db-types.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
 import { gradingJobStatusUpdated } from './externalGradingSocket.js';
+import { getQueueUrl } from './sqs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -33,7 +34,7 @@ export async function init() {
   if (!config.externalGradingUseAws) return;
 
   const sqs = new SQSClient(makeAwsClientConfig());
-  const queueUrl = await loadQueueUrl(sqs);
+  const queueUrl = await getQueueUrl(sqs, config.externalGradingResultsQueueName);
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
@@ -57,9 +58,15 @@ export async function init() {
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
             }),
+            { abortSignal: abortController.signal },
           );
           messages = data.Messages;
         } catch (err) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
+          if (abortController.signal.aborted) {
+            processingFinished.resolve(null);
+            return;
+          }
           logger.error('Error receiving messages from SQS', err);
           Sentry.captureException(err);
           continue;
@@ -110,26 +117,6 @@ export async function stop() {
   await processingFinished.promise;
 }
 
-/**
- * @returns The URL of the results queue.
- */
-async function loadQueueUrl(sqs: SQSClient): Promise<string> {
-  logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
-  );
-  const data = await sqs.send(
-    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName }),
-  );
-  const queueUrl = data.QueueUrl;
-  if (!queueUrl) {
-    throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
-  }
-  logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`,
-  );
-  return queueUrl;
-}
-
 async function processMessage(data: {
   jobId: string;
   event: string;
@@ -158,7 +145,7 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
+    const details = await sqldb.queryOptionalRow(
       sql.get_job_details,
       { grading_job_id: jobId },
       z.object({
@@ -166,6 +153,21 @@ async function processMessage(data: {
         s3_root_key: GradingJobSchema.shape.s3_root_key,
       }),
     );
+
+    if (!details) {
+      // The grading job may have already been hard deleted; in that case,
+      // we can just ignore the result.
+
+      // Grading jobs are hard deleted when an instructor deletes
+      // an assessment instance: either individually, or in bulk,
+      // or because they regenerated their own assessment instance.
+
+      // The ON DELETE CASCADE chain is:
+      // assessment_instances → instance_questions → variants → submissions → grading_jobs
+      return;
+    }
+
+    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = details;
 
     if (!s3Bucket || !s3RootKey) {
       throw new error.HttpStatusError(

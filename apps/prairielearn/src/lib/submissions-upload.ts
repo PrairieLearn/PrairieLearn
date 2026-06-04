@@ -7,10 +7,11 @@ import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { truncate } from '@prairielearn/sanitize';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
@@ -22,11 +23,11 @@ import {
   type Assessment,
   AssessmentQuestionSchema,
   type Group,
-  IdSchema,
   RubricItemSchema,
 } from './db-types.js';
 import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
+import type { UploadedCsvFile } from './score-upload.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -34,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const ZodStringToJson = z.preprocess((val) => {
   if (val === '' || val == null) return {};
   return JSON.parse(String(val));
-}, z.record(z.any()).nullable());
+}, z.record(z.string(), z.any()).nullable());
 
 const BaseSubmissionCsvRowSchema = z.object({
   'Assessment instance': z.coerce.number().int(),
@@ -56,6 +57,7 @@ const BaseSubmissionCsvRowSchema = z.object({
   Feedback: ZodStringToJson,
   'Rubric Grading': ZodStringToJson,
   'Auto points': z.coerce.number().optional(),
+  'Manual points': z.coerce.number().optional(),
 });
 
 const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
@@ -90,7 +92,7 @@ function makeDedupedInserter<T>() {
  */
 export async function uploadSubmissions(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -102,23 +104,23 @@ export async function uploadSubmissions(
   const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
+    type: 'upload_submissions',
+    description: 'Upload submissions CSV for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_submissions',
-    description: 'Upload submissions CSV for ' + assessment_label,
   });
 
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
-    await ensureEnrollment({
-      userId: user.user_id,
+    await ensureUncheckedEnrollment({
+      userId: user.id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'System',
+      requiredRole: ['System'],
     });
     return user;
   });
@@ -183,11 +185,11 @@ export async function uploadSubmissions(
         if (isGroupWork === null) {
           isGroupWork = 'Group name' in record && !('UID' in record);
 
-          if (isGroupWork && !assessment.group_work) {
+          if (isGroupWork && !assessment.team_work) {
             throw new Error(
               'Group work CSV detected, but assessment does not have group work enabled',
             );
-          } else if (!isGroupWork && assessment.group_work) {
+          } else if (!isGroupWork && assessment.team_work) {
             throw new Error('Individual work CSV detected, but assessment has group work enabled');
           }
         }
@@ -207,7 +209,7 @@ export async function uploadSubmissions(
         const entity = await run(async () => {
           if ('UID' in row) {
             const user = await ensureAndEnrollUser(row.UID);
-            return { type: 'user' as const, user_id: user.user_id };
+            return { type: 'user' as const, user_id: user.id };
           } else {
             // Create users for all group members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
@@ -225,21 +227,21 @@ export async function uploadSubmissions(
               });
             });
 
-            return { type: 'group' as const, group_id: group.id, users };
+            return { type: 'group' as const, team_id: group.id, users };
           }
         });
 
         // Insert assessment instance (for user or group)
-        const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
+        const entityKey = entity.type === 'user' ? entity.user_id : entity.team_id;
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_assessment_instance,
               {
                 assessment_id: assessment.id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -249,7 +251,7 @@ export async function uploadSubmissions(
         const instance_question_id = await getOrInsertInstanceQuestion(
           [assessment_instance_id, question.id],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_instance_question,
               {
                 assessment_instance_id,
@@ -263,7 +265,7 @@ export async function uploadSubmissions(
         const variant_id = await getOrInsertVariant(
           [assessment_instance_id, question.id, row.Variant.toString()],
           async () =>
-            await sqldb.queryRow(
+            await sqldb.queryScalar(
               sql.insert_variant,
               {
                 course_id,
@@ -272,9 +274,9 @@ export async function uploadSubmissions(
                 question_id: question.id,
                 // For group work, arbitrarily use the first user's ID as the authn_user_id.
                 // This value doesn't really matter, especially in dev mode.
-                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This
@@ -288,7 +290,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        const submission_id = await sqldb.queryRow(
+        const submission_id = await sqldb.queryScalar(
           sql.insert_submission,
           {
             variant_id,
@@ -301,7 +303,7 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
-        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] = null;
 
         if (assessmentQuestion.manual_rubric_id) {
           const rubric_items = await sqldb.queryRows(
@@ -338,12 +340,12 @@ export async function uploadSubmissions(
           };
         }
 
-        await updateInstanceQuestionScore(
+        await updateInstanceQuestionScore({
           assessment,
           instance_question_id,
           submission_id,
-          null,
-          {
+          check_modified_at: null,
+          score: {
             manual_score_perc: null,
             manual_points: run(() => {
               if (assessmentQuestion.manual_rubric_id) {
@@ -358,7 +360,7 @@ export async function uploadSubmissions(
             manual_rubric_data,
           },
           authn_user_id,
-        );
+        });
 
         successCount++;
       } catch (err) {
@@ -368,7 +370,7 @@ export async function uploadSubmissions(
         );
         if (err instanceof z.ZodError) {
           job.error(
-            `Validation Error: ${err.errors
+            `Validation Error: ${err.issues
               .map((e) => `${e.path.join('.')}: ${e.message}`)
               .join(', ')}`,
           );

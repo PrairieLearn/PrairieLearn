@@ -1,13 +1,12 @@
 from enum import Enum
 from random import choice
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
 from pint import UnitRegistry, errors
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -40,6 +39,7 @@ MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
 CUSTOM_FORMAT_DEFAULT = None
 SHOW_SCORE_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
@@ -86,6 +86,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "magnitude-partial-credit",
         "allow-feedback",
         "show-score",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -189,6 +190,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     partial_scores = data["partial_scores"].get(name, {})
     score = partial_scores.get("score")
 

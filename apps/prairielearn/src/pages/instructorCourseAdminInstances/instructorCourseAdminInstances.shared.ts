@@ -1,0 +1,17 @@
+import z from 'zod';
+
+import { DateFromISOString } from '@prairielearn/zod';
+
+import { RawStaffCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
+
+export const InstructorCourseAdminInstanceRowSchema = RawStaffCourseInstanceSchema.extend({
+  end_date: DateFromISOString.nullable(),
+  start_date: DateFromISOString.nullable(),
+  has_course_instance_permission_view: z.boolean(),
+  has_course_instance_permission_edit: z.boolean(),
+  enrollment_count: z.number(),
+});
+
+export type InstructorCourseAdminInstanceRow = z.infer<
+  typeof InstructorCourseAdminInstanceRowSchema
+>;

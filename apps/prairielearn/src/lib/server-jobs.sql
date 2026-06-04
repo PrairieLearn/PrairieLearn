@@ -1,13 +1,17 @@
+-- BLOCK course_advisory_lock
+-- Use an advisory lock to prevent race conditions when computing the next
+-- job sequence number. We use the course_id as the lock key, with a fixed
+-- namespace (1) to avoid collisions with other advisory locks. For NULL
+-- course_id, we use 0 as the key.
+--
+-- Note that the two-argument form here uses integers, not bigints, so this
+-- will cause problems if we ever have course IDs outside the range of an
+-- integer. In practice, this is highly unlikely to be a problem.
+SELECT
+  pg_advisory_xact_lock(1, coalesce($course_id::integer, 0));
+
 -- BLOCK insert_job_sequence
 WITH
-  max_over_job_sequences_with_same_course AS (
-    SELECT
-      coalesce(max(js.number) + 1, 1) AS new_number
-    FROM
-      job_sequences AS js
-    WHERE
-      js.course_id IS NOT DISTINCT FROM $course_id
-  ),
   new_job_sequence AS (
     INSERT INTO
       job_sequences (
@@ -15,6 +19,7 @@ WITH
         course_instance_id,
         course_request_id,
         assessment_id,
+        assessment_question_id,
         number,
         user_id,
         authn_user_id,
@@ -27,14 +32,17 @@ WITH
       $course_instance_id,
       $course_request_id,
       $assessment_id,
-      new_number,
+      $assessment_question_id,
+      coalesce(max(js.number) + 1, 1),
       $user_id,
       $authn_user_id,
       $type,
       $description,
       FALSE
     FROM
-      max_over_job_sequences_with_same_course
+      job_sequences AS js
+    WHERE
+      js.course_id IS NOT DISTINCT FROM $course_id
     RETURNING
       id
   ),
@@ -45,6 +53,7 @@ WITH
         course_instance_id,
         course_request_id,
         assessment_id,
+        assessment_question_id,
         job_sequence_id,
         number_in_sequence,
         last_in_sequence,
@@ -59,6 +68,7 @@ WITH
       $course_instance_id,
       $course_request_id,
       $assessment_id,
+      $assessment_question_id,
       new_job_sequence.id,
       1,
       TRUE,
@@ -79,26 +89,83 @@ FROM
   new_job_sequence,
   new_job;
 
+-- BLOCK stop_job_sequence
+UPDATE job_sequences
+SET
+  status = 'Stopping',
+  stop_requested_by_authn_user_id = $authn_user_id
+WHERE
+  id = $job_sequence_id
+  AND status = 'Running'
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_ongoing_job_sequences
+SELECT
+  id
+FROM
+  job_sequences
+WHERE
+  status IN ('Running', 'Stopping')
+  AND (
+    $type::text IS NULL
+    OR type = $type::text
+  )
+  AND (
+    $assessment_question_id::bigint IS NULL
+    OR assessment_question_id = $assessment_question_id::bigint
+  );
+
+-- BLOCK select_job_sequence_status
+SELECT
+  status
+FROM
+  job_sequences
+WHERE
+  id = $job_sequence_id;
+
 -- BLOCK update_job_on_finish
+-- Atomically project 'Stopping' → 'Stopped' on a successful finish so a
+-- concurrent stop click can't be overwritten by Success.
 WITH
   updated_job AS (
     UPDATE jobs AS j
     SET
       finish_date = CURRENT_TIMESTAMP,
-      status = $status::enum_job_status,
+      status = CASE
+        WHEN js.status = 'Stopping'::enum_job_status
+        AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+        ELSE $status::enum_job_status
+      END,
       output = $output,
       data = $data::jsonb
+    FROM
+      job_sequences AS js
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status
+      AND js.id = $job_sequence_id
   )
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = $status::enum_job_status
+  status = CASE
+    WHEN js.status = 'Stopping'::enum_job_status
+    AND $status::enum_job_status = 'Success'::enum_job_status THEN 'Stopped'::enum_job_status
+    ELSE $status::enum_job_status
+  END
 WHERE
   js.id = $job_sequence_id
-  AND js.status = 'Running'::enum_job_status;
+  AND js.status IN (
+    'Running'::enum_job_status,
+    'Stopping'::enum_job_status
+  );
 
 -- BLOCK select_job_output
 SELECT
@@ -166,7 +233,12 @@ FROM
   job_sequence_updates AS j
 WHERE
   js.id = j.job_sequence_id
-  AND j.update_job_sequence;
+  AND j.update_job_sequence
+  -- Don't overwrite a sequence that already reached a terminal state via
+  -- another path. Without this guard, an orchestrator that landed the
+  -- sequence in Stopped before the inner job naturally settled could see
+  -- the abandoned-job sweeper overwrite Stopped with Error.
+  AND js.status NOT IN ('Stopped', 'Success', 'Error');
 
 -- BLOCK select_abandoned_jobs
 SELECT
@@ -183,10 +255,12 @@ WHERE
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
 SET
-  status = 'Error',
+  -- Abandoned workers always land Error so failures aren't masked.
+  -- Cancellation intent stays recorded on stop_requested_by_authn_user_id.
+  status = 'Error'::enum_job_status,
   finish_date = CURRENT_TIMESTAMP
 WHERE
-  js.status = 'Running'
+  js.status IN ('Running', 'Stopping')
   AND age (js.start_date) > interval '1 hours'
   AND (
     (
@@ -221,8 +295,8 @@ WITH
       authn_u.uid AS authn_user_uid
     FROM
       jobs AS j
-      LEFT JOIN users AS u ON (u.user_id = j.user_id)
-      LEFT JOIN users AS authn_u ON (authn_u.user_id = j.authn_user_id)
+      LEFT JOIN users AS u ON (u.id = j.user_id)
+      LEFT JOIN users AS authn_u ON (authn_u.id = j.authn_user_id)
     WHERE
       j.job_sequence_id = $job_sequence_id
       AND j.course_id IS NOT DISTINCT FROM $course_id
@@ -252,8 +326,8 @@ SELECT
   aggregated_member_jobs.*
 FROM
   job_sequences AS js
-  LEFT JOIN users AS u ON (u.user_id = js.user_id)
-  LEFT JOIN users AS authn_u ON (authn_u.user_id = js.authn_user_id),
+  LEFT JOIN users AS u ON (u.id = js.user_id)
+  LEFT JOIN users AS authn_u ON (authn_u.id = js.authn_user_id),
   aggregated_member_jobs
 WHERE
   js.id = $job_sequence_id

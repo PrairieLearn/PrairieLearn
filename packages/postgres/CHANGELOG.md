@@ -1,5 +1,83 @@
 # @prairielearn/postgres
 
+## 6.0.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 6.0.4
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 6.0.3
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 6.0.2
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
+## 6.0.1
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 6.0.0
+
+### Major Changes
+
+- b7885cd: Remove deprecated untyped SQL exports: `queryAsync`, `queryOneRowAsync`, `queryZeroOrOneRowAsync`, `callAsync`, `callOneRowAsync`, `callZeroOrOneRowAsync`
+- 2f9d39b: Require `z.object(...)` schemas in query functions (`queryRow`, `queryRows`, `queryOptionalRow`, `callRow`, `callRows`, `callOptionalRow`, `queryCursor`). Branded object schemas (via `.brand()`) are also accepted. Remove implicit single-column flattening behavior where single-column query results were automatically unwrapped. Add explicit scalar query functions (`queryScalar`, `queryScalars`, `queryOptionalScalar`, `callScalar`, `callScalars`, `callOptionalScalar`) for single-column queries that accept any Zod schema and validate the column value directly.
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 5.0.3
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
+## 5.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 5.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
+## 5.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 4.5.2
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 4.5.1
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 4.5.0
 
 ### Minor Changes

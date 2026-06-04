@@ -26,14 +26,10 @@ function hasUserAcceptedTerms(user: User): boolean {
  * @param ip The IP address of the request
  * @returns Whether the user should be redirected to the terms acceptance page
  */
-export async function shouldRedirectToTermsPage(user: User, ip: string | undefined) {
+async function shouldRedirectToTermsPage(user: User, ip: string | undefined) {
   if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
-  const { mode } = await ipToMode({
-    ip,
-    date: new Date(),
-    authn_user_id: user.user_id,
-  });
+  const mode = await ipToMode({ ip, date: new Date(), authn_user_id: user.id });
   return mode === 'Public';
 }
 
@@ -43,7 +39,7 @@ export async function shouldRedirectToTermsPage(user: User, ip: string | undefin
  * redirected to the terms page. After accepting the terms, the user will be
  * redirected back to the original URL.
  */
-export function redirectToTermsPage(res: Response, redirectUrl?: string): void {
+function redirectToTermsPage(res: Response, redirectUrl?: string): void {
   if (redirectUrl) {
     setCookie(res, ['pl_pre_terms_url', 'pl2_pre_terms_url'], redirectUrl, {
       maxAge: 1000 * 60 * 60,

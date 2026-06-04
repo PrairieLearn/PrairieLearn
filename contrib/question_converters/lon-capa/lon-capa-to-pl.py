@@ -200,10 +200,6 @@ def generate_server_py(script, question_dir):
         out_file.write("\n" + tab + "return data\n")
 
 
-# def translate_res(str):
-#     return str.replace('res/', '<%= clientFilesQuestion %>/')
-
-
 # read the .problem file and try to generate 'question.html' and 'server.py'
 def generate_pl_question(question_dir, xml_filename):
     xml_str = read_xml_from_file_and_remove_ampersands(xml_filename)

@@ -14,7 +14,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     let courses = await selectCoursesWithStaffAccess({
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       is_administrator: res.locals.is_administrator,
     });
 
@@ -30,7 +30,6 @@ router.get(
       NavbarCourseSwitcher({
         courses,
         current_course_id: req.params.course_id,
-        plainUrlPrefix: res.locals.plainUrlPrefix,
       }),
     );
   }),

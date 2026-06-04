@@ -77,8 +77,8 @@ describe('LTI', { timeout: 20_000 }, function () {
       // The user should be enrolled as a student in the course instance.
       const enrollment = await selectOptionalEnrollmentByUserId({
         courseInstance: await selectCourseInstanceById('1'),
-        userId: user.user_id,
-        requestedRole: 'System',
+        userId: user.id,
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isOk(enrollment);

@@ -1,49 +1,50 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "3.1.0",
+  "version": "4.0.10",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/opentelemetry"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.14.0",
-    "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/core": "^2.2.0",
-    "@opentelemetry/exporter-metrics-otlp-grpc": "^0.208.0",
-    "@opentelemetry/exporter-trace-otlp-grpc": "^0.208.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.208.0",
-    "@opentelemetry/instrumentation": "^0.208.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.64.0",
-    "@opentelemetry/instrumentation-connect": "^0.52.0",
-    "@opentelemetry/instrumentation-dns": "^0.52.0",
-    "@opentelemetry/instrumentation-express": "^0.57.0",
-    "@opentelemetry/instrumentation-http": "^0.208.0",
-    "@opentelemetry/instrumentation-ioredis": "^0.56.0",
-    "@opentelemetry/instrumentation-pg": "^0.61.0",
-    "@opentelemetry/instrumentation-redis": "^0.57.0",
-    "@opentelemetry/resource-detector-aws": "^2.8.0",
-    "@opentelemetry/resources": "^2.2.0",
-    "@opentelemetry/sdk-metrics": "^2.2.0",
-    "@opentelemetry/sdk-node": "^0.208.0",
-    "@opentelemetry/sdk-trace-base": "^2.2.0",
-    "@opentelemetry/sdk-trace-node": "^2.2.0",
-    "@opentelemetry/semantic-conventions": "^1.38.0"
+    "@grpc/grpc-js": "^1.14.4",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/core": "^2.7.1",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "^0.218.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.218.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.73.0",
+    "@opentelemetry/instrumentation-connect": "^0.61.0",
+    "@opentelemetry/instrumentation-dns": "^0.61.0",
+    "@opentelemetry/instrumentation-express": "^0.66.0",
+    "@opentelemetry/instrumentation-http": "^0.218.0",
+    "@opentelemetry/instrumentation-ioredis": "^0.66.0",
+    "@opentelemetry/instrumentation-pg": "^0.70.0",
+    "@opentelemetry/instrumentation-redis": "^0.66.0",
+    "@opentelemetry/resource-detector-aws": "^2.18.0",
+    "@opentelemetry/resources": "^2.7.1",
+    "@opentelemetry/sdk-metrics": "^2.7.1",
+    "@opentelemetry/sdk-node": "^0.218.0",
+    "@opentelemetry/sdk-trace-base": "^2.7.1",
+    "@opentelemetry/sdk-trace-node": "^2.7.1",
+    "@opentelemetry/semantic-conventions": "^1.41.1"
   },
   "devDependencies": {
-    "@opentelemetry/context-async-hooks": "^2.2.0",
+    "@opentelemetry/context-async-hooks": "^2.7.1",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }

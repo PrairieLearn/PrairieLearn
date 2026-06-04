@@ -6,7 +6,6 @@ columns
     directory: text
     draft: boolean not null default false
     external_grading_enable_networking: boolean
-    external_grading_enabled: boolean default false
     external_grading_entrypoint: text
     external_grading_environment: jsonb not null default '{}'::jsonb
     external_grading_files: text[] default ARRAY[]::text[]
@@ -20,6 +19,7 @@ columns
     number: integer
     options: jsonb
     partial_credit: boolean default true
+    preferences_schema: jsonb
     qid: text
     share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false
@@ -44,18 +44,18 @@ columns
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
-    questions_course_id_number_nondeleted_key: UNIQUE USING btree (course_id, uuid) WHERE deleted_at IS NULL
     questions_course_id_uuid_key: UNIQUE USING btree (course_id, uuid)
     questions_course_id_publicly_shared_idx: USING btree (course_id) WHERE deleted_at IS NULL AND (share_publicly = true OR share_source_publicly = true)
     questions_template_directory_idx: USING btree (template_directory)
     questions_topic_id_idx: USING btree (topic_id)
 
 foreign-key constraints
-    questions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    questions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     questions_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
     questions_topic_id_fkey: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    ai_question_generation_messages: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_prompts: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     chunks: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

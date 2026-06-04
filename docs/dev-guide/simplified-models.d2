@@ -27,7 +27,7 @@ classes: {
 
 # Node definitions with classes
 users: {class: admin}
-pl_courses: {class: admin}
+courses: {class: admin}
 course_instances: {class: instructor}
 questions: {class: instructor}
 assessments: {class: instructor}
@@ -38,8 +38,8 @@ variants: {class: student}
 submissions: {class: student}
 
 # Connections
-course_instances -> pl_courses
-questions -> pl_courses
+course_instances -> courses
+questions -> courses
 assessment_instances -> users
 assessment_instances -> assessments
 assessments -> course_instances

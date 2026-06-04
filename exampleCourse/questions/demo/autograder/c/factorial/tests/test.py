@@ -33,8 +33,9 @@ def find_function_call(node, function_name):
 def find_loop(node):
     return find_node(
         node,
-        lambda n: n.kind
-        in (CursorKind.FOR_STMT, CursorKind.WHILE_STMT, CursorKind.DO_STMT),
+        lambda n: (
+            n.kind in (CursorKind.FOR_STMT, CursorKind.WHILE_STMT, CursorKind.DO_STMT)
+        ),
     )
 
 

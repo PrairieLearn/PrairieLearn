@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { ColorJsonSchema } from './infoCourse.js';
+
+export const MAX_STUDENT_LABEL_NAME_LENGTH = 255;
+export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 100;
 
 const AccessRuleJsonSchema = z
   .object({
@@ -24,8 +28,6 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
-
 const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
@@ -47,7 +49,24 @@ const PublishingJsonSchema = z.object({
     .optional(),
 });
 
-export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
+export const StudentLabelJsonSchema = z
+  .object({
+    uuid: z
+      .string()
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .describe('Unique identifier (UUID v4).'),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_STUDENT_LABEL_NAME_LENGTH)
+      .describe('The name of the student label.'),
+    color: ColorJsonSchema,
+  })
+  .strict()
+  .describe('A single student label, can represent a collection of students (e.g. "Section A").');
+
+export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -95,15 +114,13 @@ export const CourseInstanceJsonSchema = z
           .optional()
           .default(false),
       })
-      .optional()
-      .default({}),
+      .prefault({}),
     hideInEnrollPage: z
       .boolean()
       .describe(
-        'If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.',
+        'DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.',
       )
-      .optional()
-      .default(false),
+      .optional(),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
     publishing: PublishingJsonSchema.optional(),
     allowAccess: AllowAccessJsonSchema.optional(),
@@ -121,6 +138,11 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
+    studentLabels: z
+      .array(StudentLabelJsonSchema)
+      .max(MAX_STUDENT_LABELS_PER_COURSE_INSTANCE)
+      .describe('Student labels.')
+      .optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');

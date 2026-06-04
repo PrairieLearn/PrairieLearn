@@ -1,82 +1,116 @@
-/* eslint-disable react-hooks/rules-of-hooks */
+import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
 import type { Config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
+import { type FeatureName, features } from '../../lib/features/index.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
+import { syncCourse } from '../helperCourse.js';
+
+import { setupWorkerServer } from './serverUtils.js';
 
 export { expect } from '@playwright/test';
 
 interface TestFixtures {
   /** Override baseURL to be the worker-specific URL */
   baseURL: string;
+  /** Enables a feature flag for the duration of the test, disabling it in teardown if it wasn't already enabled. */
+  enableFeatureFlag: (name: FeatureName) => Promise<void>;
 }
 
 interface WorkerFixtures {
   workerPort: number;
+  /** Path to the temporary writable copy of testCourse */
+  testCoursePath: string;
+  /** The default QA 101 / Sp15 course instance */
+  courseInstance: CourseInstance;
 }
 
-const BASE_PORT = 3014;
-
 /**
- * Worker-scoped fixture that configures Playwright tests to use worker-specific ports.
- * Each Playwright worker gets its own server instance with its own isolated database.
+ * Creates a Playwright test instance with worker-specific server fixtures.
  *
- * The server auto-starts when TEST_WORKER_INDEX is set (see server.ts).
- * The TEST_WORKER_INDEX environment variable is used to determine which database
- * to use for this worker, ensuring test isolation across parallel workers.
+ * Each Playwright worker gets its own server instance with its own isolated database
+ * and a separate writable copy of testCourse.
  *
  * See https://playwright.dev/docs/test-fixtures#automatic-fixtures and
  * https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
  */
-export const test = base.extend<TestFixtures, WorkerFixtures>({
-  workerPort: [
+export function createTest(configOverrides?: Partial<Config>) {
+  return base.extend<TestFixtures, WorkerFixtures>({
+    testCoursePath: [
+      // eslint-disable-next-line no-empty-pattern
+      async ({}, use) => {
+        const tempDir = await tmp.dir({ unsafeCleanup: true });
+        const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
+        await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
+
+        // The file editor requires git
+        execSync('git init -b master', { cwd: tempTestCoursePath });
+        execSync('git add -A', { cwd: tempTestCoursePath });
+        execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
+        execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
+        execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
+
+        await use(tempTestCoursePath);
+
+        await tempDir.cleanup();
+      },
+      { scope: 'worker' },
+    ],
+
+    workerPort: [
+      async ({ testCoursePath }, use, workerInfo) => {
+        await setupWorkerServer(workerInfo, use, {
+          courseDirs: [testCoursePath],
+          configOverrides,
+        });
+      },
+      { scope: 'worker' },
+    ],
+
+    courseInstance: [
+      async ({ testCoursePath, workerPort: _workerPort }, use) => {
+        await syncCourse(testCoursePath);
+
+        const course = await selectCourseByShortName('QA 101');
+        const courseInstance = await selectCourseInstanceByShortName({
+          course,
+          shortName: 'Sp15',
+        });
+
+        await use(courseInstance);
+      },
+      { scope: 'worker' },
+    ],
+
     // eslint-disable-next-line no-empty-pattern
-    async ({}, use, workerInfo) => {
-      // Pick a unique port based on the worker index.
-      const port = BASE_PORT + workerInfo.workerIndex + 1;
+    enableFeatureFlag: async ({}, use) => {
+      const flagsToDisable: FeatureName[] = [];
 
-      // Initialize the database with the test utils.
-      const { setupDatabases, after: destroyDatabases } = await import('../helperDb.js');
-      const setupResults = await setupDatabases({ configurePool: false });
+      await use(async (name: FeatureName) => {
+        const wasEnabled = await features.enabled(name);
+        await features.enable(name);
+        if (!wasEnabled) {
+          flagsToDisable.push(name);
+        }
+      });
 
-      await tmp.withFile(
-        async (tmpFile) => {
-          // Construct a test-specific config and write it to disk.
-          const config: Partial<Config> = {
-            serverPort: String(port),
-            postgresqlUser: setupResults.user,
-            postgresqlDatabase: setupResults.database,
-            postgresqlHost: setupResults.host,
-          };
-          await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
-
-          process.env.NODE_ENV = 'test';
-          process.env.PL_CONFIG_PATH = tmpFile.path;
-          process.env.PL_START_SERVER = 'true';
-
-          // This import implicitly starts the server
-          const { close } = await import('../../server.js');
-
-          try {
-            await use(port);
-          } finally {
-            // Clean up the server
-            await close();
-
-            // Tear down the testing database.
-            await destroyDatabases();
-          }
-        },
-        { postfix: 'config.json' },
-      );
+      for (const name of flagsToDisable) {
+        await features.disable(name);
+      }
     },
-    { scope: 'worker' },
-  ],
 
-  // Override baseURL to use the worker-specific port
-  baseURL: async ({ workerPort }, use) => {
-    await use(`http://localhost:${workerPort}`);
-  },
-});
+    // Override baseURL to use the worker-specific port
+    baseURL: async ({ workerPort }, use) => {
+      await use(`http://localhost:${workerPort}`);
+    },
+  });
+}
+
+export const test = createTest();

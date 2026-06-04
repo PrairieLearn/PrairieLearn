@@ -1,5 +1,59 @@
 # @prairielearn/html
 
+## 5.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 5.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 5.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 5.0.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
+## 5.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 5.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 5.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 4.0.24
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 4.0.23
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 4.0.22
 
 ### Patch Changes

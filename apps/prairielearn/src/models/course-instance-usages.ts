@@ -23,12 +23,13 @@
  * `duration` for compute usage.
  */
 
-import type { LanguageModelUsage } from 'ai';
+import type { GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { calculateResponseCost } from '../lib/ai.js';
-import type { config } from '../lib/config.js';
+import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
+import { calculateResponseCost } from '../lib/ai-util.js';
+import type { Config, config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -71,25 +72,92 @@ export async function updateCourseInstanceUsagesForGradingJob({
  * Update the course instance usages for an AI question generation prompt.
  *
  * @param param
- * @param param.promptId The ID of the AI question generation prompt.
+ * @param param.courseId The ID of the course.
  * @param param.authnUserId The ID of the user who generated the prompt.
- * @param param.model The OpenAI model used for the prompt.
- * @param param.usage The usage object returned by the OpenAI API.
+ * @param param.model The model used for the prompt.
+ * @param param.usage The usage object returned by the model provider's API.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
-  promptId,
+  courseId,
   authnUserId,
   model,
   usage,
 }: {
-  promptId: string;
+  courseId: string;
   authnUserId: string;
   model: keyof (typeof config)['costPerMillionTokens'];
   usage: LanguageModelUsage | undefined;
 }) {
   await execute(sql.update_course_instance_usages_for_ai_question_generation, {
-    prompt_id: promptId,
+    course_id: courseId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: calculateResponseCost({ model, usage }),
+  });
+}
+
+/**
+ * Update the course instance usages for AI grading.
+ *
+ * @param param
+ * @param param.courseInstanceId The ID of the course instance associated with the AI grading.
+ * @param param.authnUserId The ID of the user who initiated the grading.
+ * @param param.costAiGrading The total cost of the AI grading responses.
+ */
+async function updateCourseInstanceUsagesForAiGrading({
+  courseInstanceId,
+  authnUserId,
+  costAiGrading,
+}: {
+  courseInstanceId: string;
+  authnUserId: string;
+  costAiGrading: number;
+}) {
+  await execute(sql.update_course_instance_usages_for_ai_grading, {
+    course_instance_id: courseInstanceId,
+    authn_user_id: authnUserId,
+    cost_ai_grading: costAiGrading,
+  });
+}
+
+export async function updateCourseInstanceUsagesForAiGradingResponses({
+  courseInstanceId,
+  authnUserId,
+  model,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+}: {
+  courseInstanceId: string;
+  authnUserId: string;
+  model: keyof Config['costPerMillionTokens'];
+  gradingResponseWithRotationIssue?: GenerateTextResult<any, any>;
+  rotationCorrections?: Record<
+    string,
+    {
+      degreesRotated: CounterClockwiseRotationDegrees;
+      response: GenerateTextResult<any, any>;
+    }
+  >;
+  finalGradingResponse: GenerateTextResult<any, any>;
+}) {
+  const responses = [
+    ...(gradingResponseWithRotationIssue ? [gradingResponseWithRotationIssue] : []),
+    ...(rotationCorrections
+      ? Object.values(rotationCorrections).map((correction) => correction.response)
+      : []),
+    finalGradingResponse,
+  ];
+
+  // A single upsert per grading operation avoids repeatedly contending on the
+  // same daily usage row when a submission generates multiple AI responses.
+  const costAiGrading = responses.reduce(
+    (total, response) => total + calculateResponseCost({ model, usage: response.usage }),
+    0,
+  );
+
+  await updateCourseInstanceUsagesForAiGrading({
+    courseInstanceId,
+    authnUserId,
+    costAiGrading,
   });
 }

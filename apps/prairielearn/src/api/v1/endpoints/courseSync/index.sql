@@ -10,4 +10,4 @@ FROM
 WHERE
   course_id = $course_id
   AND job_sequence_id = $job_sequence_id
-  AND type = 'sync'
+  AND type = 'sync';

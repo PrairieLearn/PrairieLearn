@@ -1,5 +1,65 @@
 # @prairielearn/node-metrics
 
+## 3.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- cde69c1: Upgrade all JavaScript dependencies
+
+## 3.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.0.13
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 2.0.12
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 2.0.11
 
 ### Patch Changes

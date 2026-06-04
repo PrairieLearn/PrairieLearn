@@ -1,12 +1,13 @@
 import assert from 'node:assert';
 
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
 import {
@@ -18,7 +19,6 @@ import { config } from './config.js';
 import {
   CourseSchema,
   GradingJobSchema,
-  IdSchema,
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,
@@ -53,6 +53,7 @@ export function init(): void {
 }
 
 export async function beginGradingJob(grading_job_id: string): Promise<void> {
+  // This function should only be called for questions with a grading method of "External".
   assert(grader, 'External grader not initialized');
 
   const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
@@ -60,28 +61,6 @@ export async function beginGradingJob(grading_job_id: string): Promise<void> {
     { grading_job_id },
     GradingJobInfoSchema,
   );
-
-  if (!question.external_grading_enabled) {
-    logger.verbose('External grading disabled for job id: ' + grading_job.id);
-
-    // Make the grade 0
-    const ret = {
-      gradingId: grading_job.id,
-      grading: {
-        score: 0,
-        feedback: {
-          results: { succeeded: true, gradable: false },
-          message: 'External grading is not enabled :(',
-        },
-      },
-    };
-
-    // Send the grade out for processing and display
-    processGradingResult(ret).catch((err) =>
-      logger.error(`Error processing results for grading job ${grading_job.id}`, err),
-    );
-    return;
-  }
 
   logger.verbose(`Submitting external grading job ${grading_job.id}.`);
 
@@ -247,7 +226,7 @@ export async function processGradingResult(content: any): Promise<void> {
       await updateCourseInstanceUsagesForGradingJob({ grading_job_id: content.gradingId });
     }
 
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },
       IdSchema,

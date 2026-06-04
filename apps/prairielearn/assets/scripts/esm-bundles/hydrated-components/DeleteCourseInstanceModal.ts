@@ -1,4 +1,4 @@
-import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
+import { registerHydratedComponent } from '@prairielearn/react/hydrated-component';
 
 import { DeleteCourseInstanceModal } from '../../../../src/components/DeleteCourseInstanceModal.js';
 

@@ -1,16 +1,16 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
-import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectAllNewsItems, setNewsItemHidden } from '../../models/news-items.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
@@ -18,14 +18,15 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
-    res.send(AdministratorSettings({ resLocals: res.locals }));
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const newsItems = await selectAllNewsItems();
+    res.send(AdministratorSettings({ resLocals: res.locals, newsItems }));
   }),
 );
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'invalidate_question_cache') {
@@ -33,7 +34,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string: string = req.body.course_ids || '';
-      const authn_user_id: string = res.locals.authn_user.user_id;
+      const authn_user_id: string = res.locals.authn_user.id;
 
       let course_ids: string[];
       try {
@@ -61,8 +62,8 @@ router.post(
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(
-        openai.textEmbeddingModel('text-embedding-3-small'),
-        res.locals.authn_user.user_id,
+        openai.embeddingModel('text-embedding-3-small'),
+        res.locals.authn_user.id,
       );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
@@ -81,16 +82,23 @@ router.post(
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
-      const { benchmarkAiQuestionGeneration } = await import(
-        '../../ee/lib/ai-question-generation-benchmark.js'
-      );
+      const { benchmarkAiQuestionGeneration } =
+        await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),
         evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'sync_news_feed') {
+      const { fetchAndCacheNewsItems } = await import('../../lib/news-feed.js');
+      await fetchAndCacheNewsItems();
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'hide_news_item') {
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), true);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'unhide_news_item') {
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), false);
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

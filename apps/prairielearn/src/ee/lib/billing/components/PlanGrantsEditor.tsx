@@ -8,10 +8,12 @@ export function PlanGrantsEditor({
   planGrants,
   csrfToken,
   excludedPlanNames,
+  disabled = false,
 }: {
   planGrants: PlanGrant[];
   csrfToken: string;
   excludedPlanNames: PlanName[];
+  disabled?: boolean;
 }) {
   return html`
     <form method="POST">
@@ -34,6 +36,7 @@ export function PlanGrantsEditor({
                   type="checkbox"
                   name="plan_${planName}"
                   ${hasPlanGrant ? 'checked' : ''}
+                  ${disabled ? 'disabled' : ''}
                   value="1"
                   id="plan_${planName}"
                 />
@@ -54,7 +57,7 @@ export function PlanGrantsEditor({
               <select
                 class="form-select w-auto js-plan-type"
                 name="plan_${planName}_grant_type"
-                ${!hasPlanGrant ? 'disabled' : null}
+                ${disabled || !hasPlanGrant ? 'disabled' : null}
               >
                 <option value="trial" ${planGrantType === 'trial' ? 'selected' : null}>
                   trial
@@ -71,10 +74,14 @@ export function PlanGrantsEditor({
           `;
         })}
       </ul>
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" name="__action" value="update_plans" class="btn btn-primary">
-        Save
-      </button>
+      ${disabled
+        ? ''
+        : html`
+            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+            <button type="submit" name="__action" value="update_plans" class="btn btn-primary">
+              Save
+            </button>
+          `}
     </form>
   `;
 }

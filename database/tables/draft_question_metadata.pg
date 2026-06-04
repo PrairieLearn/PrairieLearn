@@ -11,6 +11,6 @@ indexes
     draft_question_metadata_question_id_idx: USING btree (question_id)
 
 foreign-key constraints
-    draft_question_metadata_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    draft_question_metadata_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     draft_question_metadata_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
-    draft_question_metadata_updated_by_fkey: FOREIGN KEY (updated_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    draft_question_metadata_updated_by_fkey: FOREIGN KEY (updated_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL

@@ -9,7 +9,7 @@ import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
@@ -75,10 +75,10 @@ describe(
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
-      await ensureEnrollment({
-        userId: user.user_id,
+      await ensureUncheckedEnrollment({
+        userId: user.id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
@@ -184,7 +184,7 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
       const questionWithVariantPath = response.$('a:contains("Question 1")').attr('href');
       const questionWithoutVariantPath = response.$('a:contains("Question 2")').attr('href');
-      const questionWithWorkspace = response.$('a:contains("Question 7")').attr('href');
+      const questionWithWorkspace = response.$('a:contains("Question 6")').attr('href');
       context.examQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
       context.examQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
       context.examQuestionWithWorkspaceUrl = `${context.siteUrl}${questionWithWorkspace}`;
@@ -212,7 +212,7 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      context.numberOfVariants = await sqldb.queryRow(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
@@ -343,7 +343,7 @@ describe(
     });
 
     test.sequential('ensure that no new variants have been created', async () => {
-      const countVariantsResult = await sqldb.queryRow(
+      const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
@@ -436,7 +436,7 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      context.numberOfVariants = await sqldb.queryRow(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
@@ -445,7 +445,7 @@ describe(
     });
 
     test.sequential('access the homework when it is no longer active', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         headers,
@@ -486,7 +486,7 @@ describe(
     );
 
     test.sequential('ensure that no new variants have been created', async () => {
-      const countVariantsResult = await sqldb.queryRow(
+      const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
@@ -494,35 +494,15 @@ describe(
       assert.equal(countVariantsResult, context.numberOfVariants);
     });
 
-    test.sequential(
-      'access the homework when active and showClosedAssessment are false, but the homework will be active later',
-      async () => {
-        headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
+    test.sequential('access the homework during the late 75% credit window', async () => {
+      headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
-
-        const msg = response.$('[data-testid="assessment-closed-message"]');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
-
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
-
-    test.sequential(
-      'access the homework when an active and a non-active access rule are both satisfied, and both have nonzero credit',
-      async () => {
-        headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
-
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
-      },
-    );
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+      assert.match(response.$('body').text(), /Available credit:\s+75%/);
+    });
 
     test.sequential(
       'access the homework when active and showClosedAssessment are false, and the homework will never be active again',
@@ -543,7 +523,7 @@ describe(
     );
 
     test.sequential('submit an answer to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -561,7 +541,7 @@ describe(
     test.sequential(
       'check that no credit is received for an answer submitted when active is false',
       async () => {
-        const points = await sqldb.queryRow(
+        const points = await sqldb.queryScalar(
           sql.read_assessment_instance_points,
           { assessment_id: context.hwId },
           z.number(),
@@ -586,7 +566,7 @@ describe(
     );
 
     test.sequential('try to attach a file to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -614,7 +594,7 @@ describe(
     });
 
     test.sequential('try to attach a file to the assessment when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         method: 'POST',
@@ -646,7 +626,7 @@ describe(
     );
 
     test.sequential('try to attach text to a question when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
         method: 'POST',
@@ -674,7 +654,7 @@ describe(
     });
 
     test.sequential('try to attach text to the assessment when active is false', async () => {
-      headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
         method: 'POST',
@@ -691,7 +671,7 @@ describe(
     });
 
     test.sequential('check that no files or text were attached', async () => {
-      const numberOfFiles = await sqldb.queryRow(
+      const numberOfFiles = await sqldb.queryScalar(
         sql.get_attached_files,
         { assessment_id: context.hwId },
         z.number(),

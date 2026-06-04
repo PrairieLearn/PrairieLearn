@@ -6,6 +6,11 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
+import {
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
@@ -14,24 +19,33 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { User } from '../../lib/db-types.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
+import type { AssessmentTool, User } from '../../lib/db-types.js';
+import { getRoleNamesForUser } from '../../lib/groups.shared.js';
+import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function StudentInstanceQuestion({
   resLocals,
+  renderState,
   userCanDeleteAssessmentInstance,
   assignedGrader,
   lastGrader,
   questionCopyTargets,
+  enabledTools = [],
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instance-question'>;
+  renderState: ResLocalsInstanceQuestionRender | null;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
+  enabledTools?: AssessmentTool[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
+  // TODO: support more tools
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const hasCalculator = enabledTools.some((t) => t.tool === 'calculator');
 
   return PageLayout({
     resLocals,
@@ -41,7 +55,11 @@ export function StudentInstanceQuestion({
       page: 'assessment_instance',
     },
     headContent: html`
-      ${compiledScriptTag('question.ts')}
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
+      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
       ${resLocals.assessment.type === 'Exam'
         ? html`
             ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -59,11 +77,11 @@ export function StudentInstanceQuestion({
             )}
           `
         : ''}
-      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
-      ${resLocals.variant == null
+      ${renderState?.variant == null
         ? ''
         : html`
             ${resLocals.question.type !== 'Freeform'
@@ -74,17 +92,32 @@ export function StudentInstanceQuestion({
                   <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
                 `
               : ''}
-            ${unsafeHtml(resLocals.extraHeadersHtml)}
+            ${unsafeHtml(renderState.extraHeadersHtml)}
           `}
     `,
-    preContent: userCanDeleteAssessmentInstance
-      ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-      : undefined,
+    preContent: html`
+      ${userCanDeleteAssessmentInstance
+        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+        : ''}
+    `,
+    postContent: hasCalculator
+      ? CalculatorDrawer({
+          storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
+        })
+      : '',
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${resLocals.variant == null
+          ${resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
+            ? html`
+                <div class="alert alert-warning">
+                  This question is read-only because you advanced past a lockpoint. You can review
+                  your previous submissions but cannot make new ones.
+                </div>
+              `
+            : ''}
+          ${renderState?.variant == null
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
@@ -102,7 +135,12 @@ export function StudentInstanceQuestion({
                   </div>
                 </div>
               `
-            : QuestionContainer({ resLocals, questionContext, questionCopyTargets })}
+            : QuestionContainer({
+                resLocals,
+                questionContext,
+                questionCopyTargets,
+                showFooter: resLocals.assessment_instance.open ?? false,
+              })}
         </div>
 
         <div class="col-lg-3 col-sm-12">
@@ -157,17 +195,17 @@ export function StudentInstanceQuestion({
             question: resLocals.question,
             assessment_instance: resLocals.assessment_instance,
             instance_question_info: resLocals.instance_question_info,
-            variant: resLocals.variant,
+            variant: renderState?.variant ?? undefined,
             authz_result: resLocals.authz_result,
             csrfToken: resLocals.__csrf_token,
-            urlPrefix: resLocals.urlPrefix,
+            allowGradeLeftMs: renderState?.allowGradeLeftMs ?? 0,
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,
-            prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question?.id,
-            nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question?.id,
-            sequenceLocked:
-              resLocals.instance_question_info.next_instance_question?.sequence_locked,
+            prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question.id,
+            nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question.id,
+            nextQuestionAccessMode:
+              resLocals.instance_question_info.next_instance_question.question_access_mode,
             prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
             nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
             advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
@@ -182,10 +220,12 @@ export function StudentInstanceQuestion({
                 courseInstanceId: resLocals.course_instance.id,
                 assessment_instance: resLocals.assessment_instance,
                 authz_result: resLocals.authz_result,
-                variantId: resLocals.variant?.id,
+                variantId: renderState?.variant.id,
                 csrfToken: resLocals.__csrf_token,
+                lockdownBrowser: resLocals.lockdown_browser,
               })
             : ''}
+          ${hasCalculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,
@@ -195,12 +235,12 @@ export function StudentInstanceQuestion({
             assignedGrader,
             lastGrader,
             question: resLocals.question,
-            variant: resLocals.variant,
+            variant: renderState?.variant ?? undefined,
             instance_group: resLocals.instance_group,
             instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
-            question_is_shared: resLocals.question_is_shared,
+            question_is_shared: renderState?.question_is_shared ?? false,
             questionContext:
               resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
             csrfToken: resLocals.__csrf_token,

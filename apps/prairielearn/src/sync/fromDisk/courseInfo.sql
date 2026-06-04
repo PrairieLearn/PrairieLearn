@@ -1,5 +1,5 @@
 -- BLOCK update_course
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   short_name = $short_name,
   title = $title,
@@ -9,6 +9,10 @@ SET
   END,
   example_course = $example_course,
   options = $options,
+  questions_receive_user_data = COALESCE(
+    $questions_receive_user_data::boolean,
+    questions_receive_user_data
+  ),
   json_comment = $comment::jsonb,
   sync_errors = NULL,
   sync_warnings = $sync_warnings
@@ -18,7 +22,7 @@ RETURNING
   c.*;
 
 -- BLOCK update_course_errors
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   sync_errors = $sync_errors,
   sync_warnings = $sync_warnings

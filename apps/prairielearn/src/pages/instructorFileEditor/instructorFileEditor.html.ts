@@ -6,7 +6,9 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
+import type { FileMetadata } from '../../lib/editorUtil.shared.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -16,8 +18,8 @@ export interface FileEditorData {
   aceMode: string;
   diskContents: string;
   diskHash: string;
-  sync_errors: string | null;
-  sync_warnings: string | null;
+  fileMetadata?: FileMetadata;
+  lintHtmlMustache: boolean;
 }
 
 export interface DraftEdit {
@@ -36,7 +38,7 @@ export function InstructorFileEditor({
   paths,
   draftEdit,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   editorData: FileEditorData;
   paths: InstructorFilePaths;
   draftEdit: DraftEdit | null;
@@ -59,10 +61,25 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
+      ${editorData.lintHtmlMustache
+        ? html`
+            <meta
+              name="htmlmustache-runtime-wasm"
+              content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+            />
+            <meta
+              name="htmlmustache-grammar-wasm"
+              content="${nodeModulesAssetPath(
+                '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+              )}"
+            />
+            ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+          `
+        : ''}
       ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
-      ${editorData.sync_errors
+      ${editorData.fileMetadata?.syncErrors
         ? html`
             <div class="alert alert-danger" role="alert">
               <h2 class="h5 alert-heading">Sync error</h2>
@@ -74,11 +91,11 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiToHtml(editorData.sync_errors))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncErrors))}</code></pre>
             </div>
           `
         : ''}
-      ${editorData.sync_warnings
+      ${editorData.fileMetadata?.syncWarnings
         ? html`
             <div class="alert alert-warning" role="alert">
               <h2 class="h5 alert-heading">Sync warning</h2>
@@ -90,7 +107,7 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiToHtml(editorData.sync_warnings))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncWarnings))}</code></pre>
             </div>
           `
         : ''}
@@ -146,6 +163,14 @@ export function InstructorFileEditor({
                       </button>
                     `
                   : ''}
+                ${editorData.lintHtmlMustache
+                  ? html`
+                      <button type="button" class="btn btn-light btn-sm js-reformat-html-mustache">
+                        <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                        Reformat
+                      </button>
+                    `
+                  : ''}
                 <button
                   id="file-editor-save-button"
                   name="__action"
@@ -154,7 +179,7 @@ export function InstructorFileEditor({
                   disabled
                 >
                   <i class="fas fa-save" aria-hidden="true"></i>
-                  Save and sync
+                  Save
                 </button>
               </div>
             </div>
@@ -162,8 +187,8 @@ export function InstructorFileEditor({
           <div class="collapse" id="help">
             <div class="card-body">
               You are editing the file <code>${editorData.normalizedFileName}</code>. To save
-              changes, click <strong>Save and sync</strong> or use
-              <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
+              changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or
+              <strong>Cmd-S</strong> (Mac).
               ${config.fileEditorUseGit
                 ? html`
                     Doing so will write your changes to disk, will push them to the remote GitHub
@@ -193,7 +218,7 @@ export function InstructorFileEditor({
                             ? draftEdit.didSync
                               ? 'File was both saved and synced successfully.'
                               : 'File was saved, but failed to sync.'
-                            : 'Failed to save and sync file.'}
+                            : 'Failed to save file.'}
                         </div>
                         ${draftEdit.jobSequence != null
                           ? html`
@@ -243,10 +268,10 @@ export function InstructorFileEditor({
                         : 'Both you and another user made changes to this file.'}
                       You may choose either to continue editing your draft or to discard your
                       changes. In particular, if you click
-                      <strong>Choose my version</strong> and then click
-                      <strong>Save and sync</strong>, you will overwrite the version of this file
-                      that is on disk. If you instead click <strong>Choose their version</strong>,
-                      any changes you have made to this file will be lost.
+                      <strong>Choose my version</strong> and then click <strong>Save</strong>, you
+                      will overwrite the version of this file that is on disk. If you instead click
+                      <strong>Choose their version</strong>, any changes you have made to this file
+                      will be lost.
                       <button
                         type="button"
                         class="btn-close"
@@ -264,6 +289,10 @@ export function InstructorFileEditor({
               data-contents="${draftEdit?.contents ?? editorData.diskContents}"
               data-ace-mode="${editorData.aceMode}"
               data-read-only="${!!draftEdit?.alertChoice}"
+              data-file-metadata="${editorData.fileMetadata
+                ? JSON.stringify(editorData.fileMetadata)
+                : ''}"
+              data-lint-html-mustache="${editorData.lintHtmlMustache}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice
@@ -305,6 +334,29 @@ export function InstructorFileEditor({
                         ></button>
                       </div>
                     </div>
+                    ${editorData.lintHtmlMustache
+                      ? html`
+                          <div
+                            id="js-html-mustache-reformat-error"
+                            class="toast hide text-bg-danger border-0"
+                            role="alert"
+                            aria-live="assertive"
+                            aria-atomic="true"
+                          >
+                            <div class="d-flex">
+                              <div class="toast-body">
+                                Error reformatting file. Please check the syntax.
+                              </div>
+                              <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"
+                              ></button>
+                            </div>
+                          </div>
+                        `
+                      : ''}
                   </div>
                 </div>
               </div>
@@ -316,6 +368,9 @@ export function InstructorFileEditor({
                     class="col js-version-choice-content"
                     data-contents="${editorData.diskContents}"
                     data-ace-mode="${editorData.aceMode}"
+                    data-file-metadata="${editorData.fileMetadata
+                      ? JSON.stringify(editorData.fileMetadata)
+                      : ''}"
                   >
                     <div class="card p-0">
                       <div class="card-header text-center">
@@ -338,6 +393,50 @@ export function InstructorFileEditor({
           </div>
         </div>
       </form>
+
+      ${SaveConfirmationModal()}
     `,
   });
+}
+
+function SaveConfirmationModal() {
+  return html`
+    <div
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      id="save-confirmation-modal"
+      aria-labelledby="save-confirmation-modal-title"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4" id="save-confirmation-modal-title">Confirm save</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <!-- Content will be dynamically updated by JavaScript -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="cancel-save-button"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="confirm-save-button">
+              Confirm save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }

@@ -9,13 +9,14 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
+import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -48,22 +49,18 @@ router.post(
 
 router.get(
   '/',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
-
-    // The `questionRenderContext` flag will be respected by the rendering process.
-    if (aiGradingPreviewEnabled) {
-      res.locals.questionRenderContext = 'ai_grading';
-    } else if (manualGradingPreviewEnabled) {
-      res.locals.questionRenderContext = 'manual_grading';
-    }
+    const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
+      if (req.query.manual_grading_preview === 'true') return 'manual_grading';
+      if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
+      return undefined;
+    });
 
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals, { questionRenderContext });
     await logPageView('instructorQuestionPreview', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
@@ -112,11 +109,10 @@ router.get(
     });
 
     // These will be passed back when submissions are rendered asynchronously.
-    // We treat these as mutually exclusive.
     const renderSubmissionSearchParams = new URLSearchParams();
-    if (manualGradingPreviewEnabled) {
+    if (questionRenderContext === 'manual_grading') {
       renderSubmissionSearchParams.set('manual_grading_preview', 'true');
-    } else if (aiGradingPreviewEnabled) {
+    } else if (questionRenderContext === 'ai_grading') {
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
@@ -144,9 +140,8 @@ router.get(
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
-        manualGradingPreviewEnabled,
+        questionRenderContext,
         manualGradingPreviewUrl,
-        aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
         readmeHtml,
@@ -164,15 +159,16 @@ router.get(
 
     // As with the normal route, we need to respect the `manual_grading_preview`
     // and the `ai_grading_preview` flags.
-    const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
-    const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
+    const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
+      if (req.query.manual_grading_preview === 'true') return 'manual_grading';
+      if (aiGradingEnabled && req.query.ai_grading_preview === 'true') return 'ai_grading';
+      return undefined;
+    });
 
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
       question_id: res.locals.question.id,
-      // TODO: The types are wrong for typedAsyncHandler. See https://github.com/PrairieLearn/PrairieLearn/pull/12620
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       course_instance_id: res.locals.course_instance?.id,
       authz_data: res.locals.authz_data,
       authn_user: res.locals.authn_user,
@@ -182,17 +178,15 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: null,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
-      questionRenderContext: run(() => {
-        if (manualGradingPreviewEnabled) return 'manual_grading';
-        if (aiGradingPreviewEnabled) return 'ai_grading';
-        return undefined;
-      }),
+      questionRenderContext,
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // Score panels are never rendered on the instructor question preview page.

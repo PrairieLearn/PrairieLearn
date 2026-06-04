@@ -1,10 +1,3 @@
--- BLOCK update_course_repo
-UPDATE pl_courses
-SET
-  repository = $repo
-WHERE
-  id = 1;
-
 -- BLOCK select_assessment_by_id
 SELECT
   a.*,
@@ -16,3 +9,11 @@ FROM
   JOIN assessment_modules AS am ON a.assessment_module_id = am.id
 WHERE
   a.id = $id;
+
+-- BLOCK update_questions_sharing_private
+UPDATE questions
+SET
+  share_publicly = FALSE,
+  share_source_publicly = FALSE
+WHERE
+  course_id = $course_id;

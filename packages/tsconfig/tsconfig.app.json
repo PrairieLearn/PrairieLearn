@@ -3,9 +3,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
-    "useUnknownInCatchVariables": false,
     "noUnusedLocals": true,
-    "noImplicitAny": false,
 
     // Support native ESM
     "esModuleInterop": true,

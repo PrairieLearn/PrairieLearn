@@ -2,43 +2,160 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id;
 
--- BLOCK select_course_by_instance_id
+-- BLOCK select_course_by_id_for_update
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id
+FOR UPDATE;
+
+-- BLOCK select_course_by_short_name
 SELECT
   c.*
 FROM
-  course_instances AS ci
-  JOIN pl_courses AS c ON ci.course_id = c.id
+  courses AS c
 WHERE
-  ci.id = $course_instance_id;
+  c.short_name = $short_name
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_course_by_github_repository
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.repository ILIKE '%' || $owner || '/' || $repo_name || '%' ESCAPE '\'
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_course_by_path
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.path = $path
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK check_course_title_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.title) = LOWER($title)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK check_course_short_name_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.short_name) = LOWER($short_name)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
 
 -- BLOCK update_course_commit_hash
-UPDATE pl_courses
+UPDATE courses
 SET
   commit_hash = $commit_hash
 WHERE
   id = $course_id;
 
--- BLOCK select_courses_with_staff_access
+-- BLOCK select_all_courses
 SELECT
-  c.*,
-  to_jsonb(permissions_course) AS permissions_course
+  c.*
 FROM
-  pl_courses AS c
-  JOIN authz_course ($user_id, c.id) AS permissions_course ON TRUE
+  courses AS c
 WHERE
   c.deleted_at IS NULL
-  -- returns a list of courses that are either example courses or are courses
-  -- in which the user has a non-None course role.
-  -- If the user is an administrator, return all courses.
-  AND (
-    (permissions_course ->> 'course_role')::enum_course_role > 'None'
-    OR c.example_course IS TRUE
-    OR $is_administrator IS TRUE
+ORDER BY
+  c.short_name,
+  c.title,
+  c.id;
+
+-- BLOCK select_courses_with_staff_access
+WITH
+  courses_with_permissions AS (
+    (
+      -- Courses where the user itself is part of staff with a non-None role
+      SELECT
+        cp.course_id,
+        cp.course_role
+      FROM
+        course_permissions AS cp
+      WHERE
+        cp.user_id = $user_id
+        AND cp.course_role > 'None'
+    )
+    UNION ALL
+    (
+      -- If the user is an institution administrator, they get Owner access to all courses in the institution
+      SELECT
+        c.id AS course_id,
+        'Owner'::enum_course_role AS course_role
+      FROM
+        institution_administrators AS ia
+        JOIN courses AS c ON (c.institution_id = ia.institution_id)
+      WHERE
+        ia.user_id = $user_id
+        AND c.deleted_at IS NULL
+    )
+    UNION ALL
+    (
+      -- All users have access to the example course with at least the Viewer role
+      SELECT
+        c.id AS course_id,
+        'Viewer'::enum_course_role AS course_role
+      FROM
+        courses AS c
+      WHERE
+        c.example_course IS TRUE
+    )
+  ),
+  highest_role AS (
+    -- In case of multiple permissions for the same course, take the highest role
+    SELECT
+      course_id,
+      MAX(course_role::enum_course_role) AS course_role
+    FROM
+      courses_with_permissions
+    GROUP BY
+      course_id
   )
+SELECT
+  to_jsonb(c.*) AS course,
+  hr.course_role
+FROM
+  highest_role AS hr
+  JOIN courses AS c ON (c.id = hr.course_id)
+WHERE
+  c.deleted_at IS NULL
 ORDER BY
   c.short_name,
   c.title,
@@ -50,7 +167,7 @@ WITH
     SELECT
       c.*
     FROM
-      pl_courses AS c
+      courses AS c
     WHERE
       path = $path
     ORDER BY
@@ -60,9 +177,17 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      pl_courses AS c (path, display_timezone, institution_id)
+      courses AS c (
+        path,
+        branch,
+        repository,
+        display_timezone,
+        institution_id
+      )
     SELECT
       $path,
+      $branch,
+      $repository,
       i.display_timezone,
       i.id
     FROM
@@ -89,17 +214,18 @@ FROM
   inserted_course;
 
 -- BLOCK delete_course
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   deleted_at = current_timestamp
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
 -- BLOCK insert_course
 INSERT INTO
-  pl_courses AS c (
+  courses AS c (
     short_name,
     title,
     display_timezone,
@@ -115,7 +241,7 @@ VALUES
     $title,
     $display_timezone,
     $path,
-    $repository,
+    NULLIF($repository, ''),
     $branch,
     $institution_id,
     TRUE
@@ -124,23 +250,135 @@ RETURNING
   *;
 
 -- BLOCK update_course_show_getting_started
-UPDATE pl_courses
+UPDATE courses
 SET
   show_getting_started = $show_getting_started
 WHERE
   id = $course_id;
 
+-- BLOCK update_course_questions_receive_user_data
+UPDATE courses
+SET
+  questions_receive_user_data = $questions_receive_user_data
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
 -- BLOCK update_course_sharing_name
-UPDATE pl_courses
+UPDATE courses
 SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_sharing_token
+SELECT
+  *
+FROM
+  courses
+WHERE
+  sharing_token = $sharing_token
+  AND deleted_at IS NULL;
+
+-- BLOCK update_course_column_short_name
+UPDATE courses
+SET
+  short_name = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_title
+UPDATE courses
+SET
+  title = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_display_timezone
+UPDATE courses
+SET
+  display_timezone = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_path
+UPDATE courses
+SET
+  path = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_repository
+UPDATE courses
+SET
+  repository = NULLIF($value, '')
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_branch
+UPDATE courses
+SET
+  branch = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_institution_id
+UPDATE courses
+SET
+  institution_id = $value::bigint
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
 -- BLOCK find_courses_by_sharing_names
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   sharing_name = ANY ($sharing_names::text[]);
+
+-- BLOCK select_shared_question_exists
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      (
+        q.share_publicly
+        OR q.share_source_publicly
+      )
+      AND course_id = $course_id
+    UNION
+    SELECT
+      1
+    FROM
+      sharing_sets AS ss
+      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
+      JOIN questions AS q ON q.id = ssq.question_id
+    WHERE
+      ss.course_id = $course_id
+  );

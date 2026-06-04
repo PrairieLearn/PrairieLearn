@@ -1,6 +1,8 @@
 # Course configuration
 
-**NOTE:** Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
@@ -28,14 +30,14 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](../question/index.md) for more information.
-2. See the [course instance documentation](../courseInstance.md) for more information.
+1. See the [questions documentation](../question/overview.md) for more information.
+2. See the [course instance documentation](../courseInstance/index.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
-- See [HTML element list](../elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
+- See [HTML element list](../elements/index.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
 
 - See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
@@ -45,7 +47,6 @@ This file specifies basic information about the course:
 
 ```json title="infoCourse.json"
 {
-  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
   "assessmentSets": [],
@@ -60,7 +61,6 @@ This file specifies basic information about the course:
 
     ```json title="infoCourse.json"
     {
-      "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
       "name": "TAM 212",
       "title": "Introductory Dynamics",
       "assessmentSets": [
@@ -268,7 +268,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance/index.md#assessment-page-organization) for more details.
 
 ## Topics
 
@@ -367,7 +367,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/index.md), or the [sharing documentation](../contentSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/overview.md), or the [sharing documentation](../contentSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -407,6 +407,24 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
+## Exposing user data to `server.py`
+
+By default, question `server.py` code does not receive identifying information about users or groups. A course can opt in so that `server.py` receives the identity (UID, UIN, name) of the user who owns an individual variant through `data["options"]["user"]`, and group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-user-and-group-identity) for the exact shape and access patterns.
+
+To enable this for a course, on the course settings page, check "Allow questions to access user identity".
+
+If you are running in development mode, you can also add the following to `infoCourse.json`:
+
+```json title="infoCourse.json"
+{
+  "options": {
+    "questionsReceiveUserData": true
+  }
+}
+```
+
+The JSON value is only used in development mode. For questions imported from another course (via public sharing or a sharing set), `server.py` never receives user data, regardless of either course's settings.
+
 ## Comments in JSON files
 
 You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:
@@ -428,7 +446,9 @@ You can add comments to JSON files using the `"comment"` key on any object. You 
 
 Comments can be strings, arrays, or JSON objects, but for most uses strings are recommended.
 
-**Warning:** if you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
+??? warning "Warning"
+
+    If you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
 
 ## Colors
 
@@ -439,6 +459,10 @@ The possible colors for assessment sets, topic, and tags are:
 ## Course staff
 
 Access permissions for course staff can be configured on the "Staff" tab. Course staff permissions are separated into _course content roles_ and _student data roles_. These can be mixed and matched arbitrarily, so any combination is possible.
+
+!!! note
+
+    Course content and student data access roles do not affect access to the course's Git repository. To change repository permissions, visit the GitHub access settings page for the course. If you require access to the Git repository, please contact the owner of that repository. If you are an owner and do not have GitHub access, contact us on [Slack](https://prairielearn.slack.com) in `#pl-help`.
 
 ### Course content access roles
 

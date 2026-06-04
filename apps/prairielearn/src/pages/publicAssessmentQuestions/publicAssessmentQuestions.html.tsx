@@ -1,5 +1,5 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
@@ -9,8 +9,9 @@ import {
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -20,7 +21,7 @@ export function PublicAssessmentQuestions({
   course_instance_id,
   questions,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   assessment: Assessment;
   assessment_set: AssessmentSet;
   course: Course;
@@ -35,42 +36,29 @@ export function PublicAssessmentQuestions({
       page: 'public_assessment',
       subPage: 'questions',
     },
-    content: course.sharing_name
-      ? html`
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${assessment_set.name} ${assessment.number}: Questions
-            </div>
-            ${AssessmentQuestionsTable({
-              questions,
-              urlPrefix: resLocals.urlPrefix,
-              course_id: course.id,
-              course_instance_id,
-              course,
-            })}
-          </div>
-        `
-      : html`
-          <p>
-            This course doesn't have a sharing name. If you are an Owner of this course, please
-            choose a sharing name on the
-            <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
-              >course sharing settings page</a
-            >.
-          </p>
-        `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          ${assessment_set.name} ${assessment.number}: Questions
+        </div>
+        ${AssessmentQuestionsTable({
+          questions,
+          course_id: course.id,
+          course_instance_id,
+          course,
+        })}
+      </div>
+    `,
   });
 }
 
 function AssessmentQuestionsTable({
   questions,
-  urlPrefix,
   course_id,
   course_instance_id,
   course,
 }: {
   questions: StaffAssessmentQuestionRow[];
-  urlPrefix: string;
   course_id: string;
   course_instance_id: string;
   course: Course;
@@ -96,15 +84,16 @@ function AssessmentQuestionsTable({
               )}
               <tr>
                 <td>
-                  <a
-                    href="${urlPrefix}/public/course/${course_id}/question/${question.question
-                      .id}/preview"
-                  >
+                  <a href="/pl/public/course/${course_id}/question/${question.question.id}/preview">
                     ${renderHtml(
                       <AssessmentQuestionNumber
-                        alternativeGroup={question.alternative_group}
-                        alternativeGroupSize={question.alternative_group_size}
-                        assessmentQuestion={question.assessment_question}
+                        questionNumber={question.alternative_pool.number}
+                        alternativeNumber={
+                          question.alternative_pool_size > 1
+                            ? question.assessment_question.number_in_alternative_group
+                            : undefined
+                        }
+                        className="me-2"
                       />,
                     )}${question.question.title}
                   </a>
@@ -121,7 +110,6 @@ function AssessmentQuestionsTable({
                             color: assessment.assessment_set_color,
                             label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
                           },
-                          plainUrlPrefix: urlPrefix,
                           courseInstanceId: course_instance_id,
                           publicURL: true,
                         });

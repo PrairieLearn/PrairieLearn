@@ -2,13 +2,9 @@ import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../../lib/db-types.js';
-import {
-  type QuestionJson,
-  defaultExternalGradingOptions,
-  defaultWorkspaceOptions,
-} from '../../schemas/index.js';
+import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { isDraftQid } from '../question.js';
@@ -28,8 +24,7 @@ export function getParamsForQuestion(qid: string, q: QuestionJson | null | undef
   }
 
   const workspaceOptions = q.workspaceOptions ?? defaultWorkspaceOptions;
-  const externalGradingOptions = q.externalGradingOptions ?? defaultExternalGradingOptions;
-  let external_grading_entrypoint = externalGradingOptions.entrypoint;
+  let external_grading_entrypoint = q.externalGradingOptions?.entrypoint;
   if (Array.isArray(external_grading_entrypoint)) {
     external_grading_entrypoint = shlex.join(external_grading_entrypoint);
   }
@@ -50,14 +45,13 @@ export function getParamsForQuestion(qid: string, q: QuestionJson | null | undef
     single_variant: q.singleVariant,
     show_correct_answer: q.showCorrectAnswer,
     comment: q.comment,
-    external_grading_enabled: externalGradingOptions.enabled,
-    external_grading_image: externalGradingOptions.image,
-    external_grading_files: externalGradingOptions.serverFilesCourse,
+    external_grading_image: q.externalGradingOptions?.image,
+    external_grading_files: q.externalGradingOptions?.serverFilesCourse ?? [],
     external_grading_entrypoint,
-    external_grading_timeout: externalGradingOptions.timeout,
-    external_grading_enable_networking: externalGradingOptions.enableNetworking,
-    external_grading_environment: externalGradingOptions.environment,
-    external_grading_comment: externalGradingOptions.comment,
+    external_grading_timeout: q.externalGradingOptions?.timeout,
+    external_grading_enable_networking: q.externalGradingOptions?.enableNetworking ?? false,
+    external_grading_environment: q.externalGradingOptions?.environment ?? {},
+    external_grading_comment: q.externalGradingOptions?.comment,
     dependencies: q.dependencies,
     workspace_image: workspaceOptions.image,
     workspace_port: workspaceOptions.port,
@@ -70,6 +64,7 @@ export function getParamsForQuestion(qid: string, q: QuestionJson | null | undef
     workspace_comment: workspaceOptions.comment,
     share_publicly: q.sharePublicly,
     share_source_publicly: q.shareSourcePublicly,
+    preferences_schema: q.preferences,
   };
 }
 
@@ -87,7 +82,7 @@ export async function sync(
     ]);
   });
 
-  const result = await sqldb.callRow(
+  const result = await sqldb.callScalar(
     'sync_questions',
     [questionParams, courseId],
     z.record(z.string(), IdSchema),

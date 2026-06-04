@@ -1,19 +1,22 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
+import { ManualGradingBadgeHtml } from '../../components/ManualGradingBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -26,16 +29,18 @@ export function InstructorAssessments({
   assessmentSets,
   assessmentModules,
   assessmentsGroupBy,
+  qtiImportEnabled,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
   csvFilename: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
+  qtiImportEnabled: boolean;
 }) {
-  const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
+  const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -56,28 +61,41 @@ export function InstructorAssessments({
       )}
     `,
     content: html`
-      ${renderHtml(
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={authz_data}
-          courseInstance={resLocals.course_instance}
-          course={course}
-          urlPrefix={urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
+          ${authz_data.has_course_permission_edit &&
+          !course.example_course &&
+          (rows.length > 0 || qtiImportEnabled)
             ? html`
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light ms-auto"
-                  data-bs-toggle="modal"
-                  data-bs-target="#createAssessmentModal"
-                >
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add assessment</span>
-                </button>
+                <div class="d-flex gap-2 ms-auto">
+                  ${qtiImportEnabled
+                    ? html`
+                        <a
+                          href="${urlPrefix}/instance_admin/qti_import"
+                          class="btn btn-sm btn-light"
+                          aria-label="Import content"
+                        >
+                          <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Import content</span>
+                        </a>
+                      `
+                    : ''}
+                  ${rows.length > 0
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-light"
+                          data-bs-toggle="modal"
+                          data-bs-target="#createAssessmentModal"
+                          aria-label="Add assessment"
+                        >
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Add assessment</span>
+                        </button>
+                      `
+                    : ''}
+                </div>
               `
             : ''}
         </div>
@@ -89,7 +107,7 @@ export function InstructorAssessments({
                     <tr>
                       <th style="width: 1%"><span class="visually-hidden">Label</span></th>
                       <th><span class="visually-hidden">Title</span></th>
-                      <th>AID</th>
+                      <th>Short name</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
                       <th class="text-center">Mean Score</th>
@@ -104,8 +122,10 @@ export function InstructorAssessments({
                               <tr>
                                 <th colspan="7" scope="row">
                                   ${assessmentsGroupBy === 'Set'
-                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
-                                    : AssessmentModuleHeading({
+                                    ? AssessmentSetHeadingHtml({
+                                        assessment_set: row.assessment_set,
+                                      })
+                                    : AssessmentModuleHeadingHtml({
                                         assessment_module: row.assessment_module,
                                       })}
                                 </th>
@@ -132,14 +152,19 @@ export function InstructorAssessments({
                                 : ''}
                             <a href="${urlPrefix}/assessment/${row.id}/">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
                             ${IssueBadgeHtml({
                               count: row.open_issue_count,
-                              urlPrefix,
+                              courseInstanceId: course_instance.id,
                               issueAid: row.tid,
+                            })}
+                            ${ManualGradingBadgeHtml({
+                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
+                              courseInstanceId: course_instance.id,
+                              assessmentId: row.id,
                             })}
                           </td>
 
@@ -170,7 +195,7 @@ export function InstructorAssessments({
                 <p>
                   Learn more in the
                   <a
-                    href="https://prairielearn.readthedocs.io/en/latest/assessment/"
+                    href="https://docs.prairielearn.com/assessment/overview/"
                     target="_blank"
                     rel="noreferrer"
                     >assessments documentation</a
@@ -275,6 +300,9 @@ function CreateAssessmentModal({
     id: 'createAssessmentModal',
     title: 'Create assessment',
     formMethod: 'POST',
+    // TODO: if/when this page is converted to React, use `validateShortName`
+    // from `../../lib/short-name.js` with react-hook-form to provide more specific
+    // validation feedback (e.g., "cannot start with a slash").
     body: html`
       <div class="mb-3">
         <label class="form-label" for="title">Title</label>
@@ -291,19 +319,18 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="aid">Assessment identifier (AID)</label>
+        <label class="form-label" for="aid">Short name</label>
         <input
           type="text"
           class="form-control"
           id="aid"
           name="aid"
           required
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
-          A short unique identifier for this assessment, such as "exam1-functions" or
-          "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
+          ${renderHtml(<AssessmentShortNameDescription />)}
         </small>
       </div>
       <div class="mb-3">
@@ -313,7 +340,10 @@ function CreateAssessmentModal({
           <option value="Exam">Exam</option>
         </select>
         <small id="type_help" class="form-text text-muted">
-          The type of the assessment. This can be either Homework or Exam.
+          The type of the assessment. This can be either
+          <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
+            Homework or Exam</a
+          >.
         </small>
       </div>
       <div class="mb-3">

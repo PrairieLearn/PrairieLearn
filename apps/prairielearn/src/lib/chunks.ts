@@ -14,6 +14,8 @@ import z from 'zod';
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
@@ -27,7 +29,6 @@ import {
   ChunkSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
 } from './db-types.js';
 import { DefaultMap } from './default-map.js';
@@ -112,7 +113,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string;
 }
 
-export interface QuestionChunk {
+interface QuestionChunk {
   type: 'question';
   questionId: string;
 }
@@ -178,7 +179,7 @@ const DatabaseChunkSchema = z.intersection(
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-export type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
+type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
 
 const RawCourseChunkSchema = z.object({
   ...ChunkSchema.shape,
@@ -187,9 +188,8 @@ const RawCourseChunkSchema = z.object({
   assessment_uuid: AssessmentSchema.shape.uuid,
   assessment_name: AssessmentSchema.shape.tid,
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
+  course_instance_name: CourseInstanceSchema.shape.short_name.nullable(),
 });
-export type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
 
 interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;
@@ -209,7 +209,7 @@ interface CourseChunks {
  * Constructs a {@link ChunkMetadata} object from the given {@link DatabaseChunk}
  * object.
  */
-export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetadata {
+function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetadata {
   switch (chunk.type) {
     case 'elements':
     case 'elementExtensions':
@@ -252,7 +252,7 @@ export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetad
 /**
  * Returns the path for a given chunk relative to the course's root directory.
  */
-export function pathForChunk(chunkMetadata: ChunkMetadata): string {
+function pathForChunk(chunkMetadata: ChunkMetadata): string {
   switch (chunkMetadata.type) {
     case 'elements':
     case 'elementExtensions':
@@ -454,7 +454,7 @@ export function identifyChunksFromChangedFiles(
 /**
  * Returns all the chunks the are currently stored for the given course.
  */
-export async function getAllChunksForCourse(courseId: string) {
+async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
     sql.select_course_chunks,
     { course_id: courseId },
@@ -479,7 +479,7 @@ interface ChunksDiff {
  * Given a course ID, computes a list of all chunks that need to be
  * (re)generated.
  */
-export async function diffChunks({
+async function diffChunks({
   coursePath,
   courseId,
   courseData,
@@ -501,7 +501,33 @@ export async function diffChunks({
     questions: new Set(),
   };
 
+  // Track the entity IDs currently referenced by existing chunks, keyed by their
+  // human-readable names. This allows us to detect when a chunk exists for a
+  // given name but points at an old (now-deleted) DB row, e.g. after a UUID change.
+  const existingCourseInstanceIdByName = new Map<string, string | null>();
+  const existingAssessmentIdByCourseInstance = new Map<string, Map<string, string | null>>();
+
   rawCourseChunks.forEach((courseChunk) => {
+    // First, populate the auxiliary maps.
+    if (courseChunk.type === 'clientFilesCourseInstance' && courseChunk.course_instance_name) {
+      existingCourseInstanceIdByName.set(
+        courseChunk.course_instance_name,
+        courseChunk.course_instance_id ?? null,
+      );
+    } else if (courseChunk.type === 'clientFilesAssessment') {
+      const ciName = courseChunk.course_instance_name;
+      const assessName = courseChunk.assessment_name;
+      if (ciName && assessName) {
+        let assessMap = existingAssessmentIdByCourseInstance.get(ciName);
+        if (!assessMap) {
+          assessMap = new Map();
+          existingAssessmentIdByCourseInstance.set(ciName, assessMap);
+        }
+        assessMap.set(assessName, courseChunk.assessment_id ?? null);
+      }
+    }
+
+    // Next, process the chunk by its type.
     switch (courseChunk.type) {
       case 'elements':
       case 'elementExtensions':
@@ -575,7 +601,37 @@ export async function diffChunks({
     }
   });
 
-  // Next: course instances and their assessments
+  // Preload active (current) DB IDs so we can detect mismatches while iterating
+  // over course instances and assessments. This allows us to handle UUID changes.
+  const activeCourseInstances = await sqldb.queryRows(
+    sql.select_active_course_instance_ids,
+    { course_id: courseId },
+    z.object({ course_instance_name: z.string(), course_instance_id: z.string() }),
+  );
+  const activeCiIdByName = new Map(
+    activeCourseInstances.map((r) => [r.course_instance_name, r.course_instance_id]),
+  );
+
+  const activeAssessments = await sqldb.queryRows(
+    sql.select_active_assessment_ids_by_tid,
+    { course_id: courseId },
+    z.object({
+      course_instance_name: z.string(),
+      assessment_name: z.string(),
+      assessment_id: z.string(),
+    }),
+  );
+  const activeAssessmentIdByCourseInstance = new Map<string, Map<string, string>>();
+  activeAssessments.forEach((r) => {
+    let assessMap = activeAssessmentIdByCourseInstance.get(r.course_instance_name);
+    if (!assessMap) {
+      assessMap = new Map();
+      activeAssessmentIdByCourseInstance.set(r.course_instance_name, assessMap);
+    }
+    assessMap.set(r.assessment_name, r.assessment_id);
+  });
+
+  // Next: course instances and their assessments.
   await async.each(
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
@@ -583,10 +639,18 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
+      const existingCourseInstanceId = existingCourseInstanceIdByName.get(ciid) ?? null;
+      const activeCourseInstanceId = activeCiIdByName.get(ciid) ?? null;
+      const courseInstanceIdMismatch =
+        !!activeCourseInstanceId && activeCourseInstanceId !== existingCourseInstanceId;
+      const existingCourseInstanceChunk =
+        existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
+
+      const changedCourseInstanceChunk =
+        changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance ||
-          changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance)
+        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -605,10 +669,18 @@ export async function diffChunks({
             'clientFilesAssessment',
           ),
         );
+        const existingAssessmentId =
+          existingAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const activeAssessmentId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const assessmentIdMismatch =
+          !!activeAssessmentId && activeAssessmentId !== existingAssessmentId;
+        const hasExistingAssessment =
+          existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
+        const hasChangedAssessment =
+          changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ||
-            changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid))
+          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -719,7 +791,7 @@ export async function createAndUploadChunks(
  * Deletes the specified chunks from the database. Note that they are not
  * deleted from S3 at this time.
  */
-export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
+async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
   if (chunksToDelete.length === 0) {
     // Avoid a round-trip to the DB if there's nothing to delete.
     return;
@@ -752,7 +824,7 @@ export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetada
  *
  * @param courseId The ID of the course in question
  */
-export function getChunksDirectoriesForCourseId(courseId: string) {
+function getChunksDirectoriesForCourseId(courseId: string) {
   const baseDirectory = path.join(config.chunksConsumerDirectory, `course-${courseId}`);
   return {
     base: baseDirectory,
@@ -796,6 +868,7 @@ interface UpdateChunksForCourseOptions {
   courseData: CourseData;
   oldHash?: string | null;
   newHash?: string | null;
+  changedFiles?: string[];
 }
 
 export async function updateChunksForCourse({
@@ -804,17 +877,25 @@ export async function updateChunksForCourse({
   courseData,
   oldHash,
   newHash,
+  changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  let changedFiles: string[] = [];
-  if (oldHash && newHash) {
-    changedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
-  }
+  const resolvedChangedFiles = await run(async () => {
+    if (changedFiles && (oldHash || newHash)) {
+      throw new Error('cannot specify changedFiles with oldHash or newHash');
+    }
+
+    if (changedFiles) return changedFiles;
+
+    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
+
+    return [];
+  });
 
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles,
+    changedFiles: resolvedChangedFiles,
   });
 
   await createAndUploadChunks(coursePath, courseId, updatedChunks);
@@ -828,10 +909,10 @@ export async function updateChunksForCourse({
  */
 export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
   const serverJob = await createServerJob({
-    userId: authn_user_id,
-    authnUserId: authn_user_id,
     type: 'generate_all_chunks',
     description: 'Generate all chunks for a list of courses',
+    userId: authn_user_id,
+    authnUserId: authn_user_id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -849,7 +930,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold('Looking up course directory'));
-  let courseDir = await sqldb.queryRow(
+  let courseDir = await sqldb.queryScalar(
     sql.select_course_dir,
     { course_id },
     CourseSchema.shape.path,
@@ -930,7 +1011,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     if (linkString === relativeUnpackPath) {
       chunkExists = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     // If we encounter an EINVAL error, chances are that we're trying to `readlink`
     // on a directory. This can occur if a question is renamed to a parent directory,
     // e.g. renamed from `foo/bar/baz` to `foo/bar`. In this case, we should remove
@@ -989,7 +1070,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       } else if (!stat.isDirectory()) {
         throw new Error(`${parentPath} exists but is not a directory`);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
     }
   }
@@ -1114,7 +1195,7 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  const questionIds = await sqldb.queryRows(
+  const questionIds = await sqldb.queryScalars(
     sql.select_template_question_ids,
     { question_id: question.id },
     IdSchema,

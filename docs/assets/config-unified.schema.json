@@ -312,8 +312,7 @@
             }
           }
         }
-      ],
-      "default": false
+      ]
     },
     "namedLocksRenewIntervalMs": {
       "type": "number",
@@ -340,14 +339,6 @@
       "type": "string",
       "default": "master"
     },
-    "urlPrefix": {
-      "type": "string",
-      "default": "/pl"
-    },
-    "homeUrl": {
-      "type": "string",
-      "default": "/"
-    },
     "assetsPrefix": {
       "type": "string",
       "default": "/assets"
@@ -358,7 +349,7 @@
     },
     "nonVolatileRedisUrl": {
       "type": ["string", "null"],
-      "default": null
+      "default": "redis://localhost:6379"
     },
     "logFilename": {
       "type": "string",
@@ -470,17 +461,13 @@
       "default": 1000
     },
     "fileStoreS3Bucket": {
-      "type": "string",
+      "type": ["string", "null"],
       "default": "file-store"
     },
     "fileStoreStorageTypeDefault": {
       "type": "string",
       "enum": ["S3", "FileSystem"],
       "default": "S3"
-    },
-    "initNewsItems": {
-      "type": "boolean",
-      "default": true
     },
     "cronActive": {
       "type": "boolean",
@@ -566,6 +553,10 @@
       "type": "number",
       "default": 600
     },
+    "cronIntervalFetchNewsItemsSec": {
+      "type": "number",
+      "default": 300
+    },
     "cronDailySec": {
       "type": "number",
       "default": 28800
@@ -589,6 +580,11 @@
     "secretKey": {
       "type": "string",
       "default": "THIS_IS_THE_SECRET_KEY"
+    },
+    "databaseEncryptionKey": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "default": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     "secretSlackOpsBotEndpoint": {
       "type": ["string", "null"],
@@ -617,6 +613,10 @@
     "githubMachineTeam": {
       "type": "string",
       "default": "machine"
+    },
+    "githubMachineUser": {
+      "type": ["string", "null"],
+      "default": null
     },
     "gitSshCommand": {
       "type": ["string", "null"],
@@ -904,7 +904,7 @@
     "nonVolatileCacheType": {
       "type": "string",
       "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "redis"
     },
     "questionRenderCacheTtlSec": {
       "type": "number",
@@ -1086,9 +1086,9 @@
       "type": "boolean",
       "default": false
     },
-    "prairieTestAuthSecret": {
+    "prairieTestSharedAuthSecret": {
       "type": "string",
-      "default": "THIS_SHOULD_MATCH_THE_PT_KEY"
+      "default": "CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET"
     },
     "openTelemetryEnabled": {
       "type": "boolean",
@@ -1139,18 +1139,6 @@
       "type": ["string", "null"],
       "default": "prairielearn-dev"
     },
-    "titleOverride": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterText": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterTextHref": {
-      "type": ["string", "null"],
-      "default": null
-    },
     "announcementHtml": {
       "type": ["string", "null"],
       "default": null
@@ -1174,10 +1162,6 @@
     "serverJobsAbandonedTimeoutSec": {
       "type": "number",
       "default": 30
-    },
-    "courseRequestAutoApprovalEnabled": {
-      "type": "boolean",
-      "default": false
     },
     "devMode": {
       "type": "boolean",
@@ -1263,6 +1247,14 @@
       },
       "default": {}
     },
+    "stripeAiGradingCreditsProductId": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "stripeAiGradingCreditsRefundsEnabled": {
+      "type": "boolean",
+      "default": false
+    },
     "aiGradingOpenAiApiKey": {
       "type": ["string", "null"],
       "default": null
@@ -1279,9 +1271,112 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingGoogleApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "aiGradingAnthropicApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
+    "aiGradingInfrastructureFeePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.2
+    },
+    "aiGradingCreditPoolLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["add", "deduct", "setTransferable", "setNonTransferable"],
+      "properties": {
+        "add": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        },
+        "deduct": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        },
+        "setTransferable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        },
+        "setNonTransferable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minMilliDollars", "maxMilliDollars"],
+          "properties": {
+            "minMilliDollars": {
+              "type": "integer"
+            },
+            "maxMilliDollars": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "default": {
+        "add": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "deduct": {
+          "minMilliDollars": 10,
+          "maxMilliDollars": 10000000
+        },
+        "setTransferable": {
+          "minMilliDollars": -1000000000,
+          "maxMilliDollars": 1000000000
+        },
+        "setNonTransferable": {
+          "minMilliDollars": 0,
+          "maxMilliDollars": 1000000000
+        }
+      }
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
+    },
+    "administratorOpenAiApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "administratorOpenAiOrganization": {
+      "type": ["string", "null"],
+      "default": null
     },
     "requireTermsAcceptance": {
       "type": "boolean",
@@ -1333,22 +1428,42 @@
       "type": ["string", "null"],
       "default": null
     },
-    "pythonVenvSearchPaths": {
+    "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedBlogUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedCategories": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "default": [".venv"]
+      "default": []
     },
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-4o-2024-11-20"],
+      "required": [
+        "gpt-4o-2024-11-20",
+        "gpt-5-2025-08-07",
+        "gpt-5.2-2025-12-11",
+        "gpt-5.4-mini-2026-03-17",
+        "gpt-5.4-2026-03-05",
+        "gemini-3.5-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.1-pro-preview",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-6",
+        "claude-opus-4-7"
+      ],
       "properties": {
-        "gpt-5-2025-08-07": {
+        "gpt-4o-2024-11-20": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["input", "cachedInput", "output"],
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
           "properties": {
             "input": {
               "type": "number",
@@ -1358,36 +1473,319 @@
               "type": "number",
               "minimum": 0
             },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
             "output": {
               "type": "number",
               "minimum": 0
             }
           }
         },
-        "gpt-5-mini-2025-08-07": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        "gpt-5-2025-08-07": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
         },
-        "gpt-4o-2024-11-20": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        "gpt-5.2-2025-12-11": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gpt-5.4-mini-2026-03-17": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gpt-5.4-2026-03-05": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gemini-3.5-flash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gemini-3-flash-preview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gemini-3.1-pro-preview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "claude-haiku-4-5": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "claude-sonnet-4-6": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "claude-opus-4-7": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "cacheWrite", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cacheWrite": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
         }
       },
       "default": {
-        "gpt-5-2025-08-07": {
-          "input": 1.25,
-          "cachedInput": 0.125,
-          "output": 10
-        },
-        "gpt-5-mini-2025-08-07": {
-          "input": 0.25,
-          "cachedInput": 0.025,
-          "output": 2
-        },
         "gpt-4o-2024-11-20": {
           "input": 2.5,
           "cachedInput": 1.25,
+          "cacheWrite": 0,
           "output": 10
+        },
+        "gpt-5-2025-08-07": {
+          "input": 1.25,
+          "cachedInput": 0.125,
+          "cacheWrite": 0,
+          "output": 10
+        },
+        "gpt-5.2-2025-12-11": {
+          "input": 1.75,
+          "cachedInput": 0.175,
+          "cacheWrite": 0,
+          "output": 14
+        },
+        "gpt-5.4-mini-2026-03-17": {
+          "input": 0.75,
+          "cachedInput": 0.075,
+          "cacheWrite": 0,
+          "output": 4.5
+        },
+        "gpt-5.4-2026-03-05": {
+          "input": 2.5,
+          "cachedInput": 0.25,
+          "cacheWrite": 0,
+          "output": 15
+        },
+        "gemini-3.5-flash": {
+          "input": 1.5,
+          "cachedInput": 0.15,
+          "cacheWrite": 0,
+          "output": 9
+        },
+        "gemini-3-flash-preview": {
+          "input": 0.5,
+          "cachedInput": 0.05,
+          "cacheWrite": 0,
+          "output": 3
+        },
+        "gemini-3.1-pro-preview": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "cacheWrite": 0,
+          "output": 12
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cachedInput": 0.1,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        "claude-sonnet-4-6": {
+          "input": 3,
+          "cachedInput": 0.3,
+          "cacheWrite": 3.75,
+          "output": 15
+        },
+        "claude-opus-4-7": {
+          "input": 5,
+          "cachedInput": 0.5,
+          "cacheWrite": 6.25,
+          "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }

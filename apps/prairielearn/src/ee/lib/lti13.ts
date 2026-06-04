@@ -1,9 +1,9 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
+import { get } from 'es-toolkit/compat';
 import type { Request } from 'express';
 import * as jose from 'jose';
-import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
 import * as client from 'openid-client';
 import { z } from 'zod';
@@ -16,14 +16,13 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
   type CourseInstance,
-  DateFromISOString,
-  IdSchema,
   Lti13CourseInstanceSchema,
   type Lti13Instance,
   Lti13InstanceSchema,
@@ -32,8 +31,6 @@ import {
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
-
-import { getInstitutionAuthenticationProviders } from './institution.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -51,7 +48,7 @@ export const Lti13CombinedInstanceSchema = z.object({
 });
 export type Lti13CombinedInstance = z.infer<typeof Lti13CombinedInstanceSchema>;
 
-export const LineitemSchema = z.object({
+const LineitemSchema = z.object({
   id: z.string(),
   label: z.string(),
   scoreMaximum: z.number(),
@@ -68,14 +65,14 @@ export const LineitemSchema = z.object({
     })
     .optional(),
 });
-export type Lineitem = z.infer<typeof LineitemSchema>;
+type Lineitem = z.infer<typeof LineitemSchema>;
 
-export const LineitemsSchema = z.array(LineitemSchema);
+const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ClaimBaseSchema = z.object({
+const Lti13ClaimBaseSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
@@ -157,41 +154,37 @@ export const Lti13ClaimBaseSchema = z.object({
 });
 
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
-    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-      id: z.string(),
-      description: z.string().nullish(),
-      title: z.string().nullish(),
-    }),
+const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+    id: z.string(),
+    description: z.string().nullish(),
+    title: z.string().nullish(),
   }),
-);
+});
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
-export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
-    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
-      deep_link_return_url: z.string(),
-      accept_types: z.string().array(),
-      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
-      accept_media_types: z.string().optional(),
-      accept_multiple: z.boolean().optional(),
-      accept_lineitem: z.boolean().optional(),
-      auto_create: z.boolean().optional(),
-      title: z.string().optional(),
-      text: z.string().optional(),
-      data: z.any().optional(),
-    }),
+const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+  'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+    deep_link_return_url: z.string(),
+    accept_types: z.string().array(),
+    accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+    accept_media_types: z.string().optional(),
+    accept_multiple: z.boolean().optional(),
+    accept_lineitem: z.boolean().optional(),
+    auto_create: z.boolean().optional(),
+    title: z.string().optional(),
+    text: z.string().optional(),
+    data: z.any().optional(),
   }),
-);
+});
 
 export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
   [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
 );
-export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
+type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
@@ -229,6 +222,7 @@ export async function getOpenidClientConfig(
 
   // Only for testing
   if (config.devMode) {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     client.allowInsecureRequests(openidClientConfig);
   }
 
@@ -243,7 +237,7 @@ export class Lti13Claim {
   constructor(req: Request) {
     try {
       this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
-    } catch (err) {
+    } catch (err: any) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
         status: 403,
@@ -357,11 +351,10 @@ export class Lti13Claim {
     return role_instructor;
   }
 
-  get(property: _.PropertyPath): any {
+  get(property: Parameters<typeof get>[1]): any {
     this.assertValid();
-    // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-    // eslint-disable-next-line you-dont-need-lodash-underscore/get
-    return _.get(this.claims, property);
+    // Uses es-toolkit's get to expand path representation in text to the object, like 'a[0].b.c'
+    return get(this.claims, property);
   }
 
   /**
@@ -372,23 +365,6 @@ export class Lti13Claim {
     delete this.req.session.lti13_claims;
     delete this.req.session.authn_lti13_instance_id;
   }
-}
-
-export async function validateLti13CourseInstance(
-  resLocals: Record<string, any>,
-): Promise<boolean> {
-  const hasLti13CourseInstance = await queryRow(
-    sql.select_ci_validation,
-    { course_instance_id: resLocals.course_instance.id },
-    z.boolean(),
-  );
-
-  if (!hasLti13CourseInstance) {
-    return false;
-  }
-
-  const instAuthProviders = await getInstitutionAuthenticationProviders(resLocals.institution.id);
-  return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
 
 export async function getAccessToken(lti13_instance_id: string) {
@@ -466,7 +442,7 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
   return lineitems.flat();
 }
 
-export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
+async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
   const fetchRes = await fetchRetry(lineitem_id_url, {
     method: 'GET',
@@ -574,7 +550,7 @@ export async function unlinkAssessment(
   });
 }
 
-export async function linkAssessment(
+async function linkAssessment(
   lti13_course_instance_id: string,
   unsafe_assessment_id: string | number,
   lineitem: Lineitem,
@@ -607,11 +583,11 @@ export async function linkAssessment(
 export function findValueByKey(obj: unknown, targetKey: string): unknown {
   if (typeof obj !== 'object' || obj === null) return undefined;
   if (Object.hasOwn(obj, targetKey)) {
-    return obj[targetKey];
+    return (obj as Record<string, unknown>)[targetKey];
   }
   for (const key in obj) {
-    if (typeof obj[key] === 'object') {
-      const result = findValueByKey(obj[key], targetKey);
+    if (typeof (obj as Record<string, unknown>)[key] === 'object') {
+      const result = findValueByKey((obj as Record<string, unknown>)[key], targetKey);
       if (result !== undefined) {
         return result;
       }
@@ -672,7 +648,7 @@ export async function fetchRetry(
         body: resString,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
     if (
@@ -729,7 +705,8 @@ export async function fetchRetryPaginated(
 }
 
 // https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service
-export const Lti13ScoreSchema = z.object({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const Lti13ScoreSchema = z.object({
   scoreGiven: z.number(),
   scoreMaximum: z.number(),
   userId: z.string(),
@@ -745,7 +722,7 @@ export const Lti13ScoreSchema = z.object({
     .optional(),
   comment: z.string().optional(),
 });
-export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
+type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
@@ -835,8 +812,11 @@ class Lti13ContextMembership {
     if (user.lti13_sub !== null) {
       return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
-    for (const match of ['uid', 'email']) {
-      const memberResults = this.#membershipsByEmail[user[match]];
+    for (const match of ['uid', 'email'] as const) {
+      const key = user[match];
+      if (key == null) continue;
+
+      const memberResults = this.#membershipsByEmail[key];
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
@@ -853,12 +833,12 @@ class Lti13ContextMembership {
 }
 
 export async function updateLti13Scores({
-  course_instance,
+  courseInstance,
   unsafe_assessment_id,
   instance,
   job,
 }: {
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -892,8 +872,8 @@ export async function updateLti13Scores({
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance,
-    minimal_role: 'Student Data Viewer',
+    courseInstance,
+    minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 
@@ -968,7 +948,7 @@ export async function updateLti13Scores({
         body: JSON.stringify(score),
       });
       counts.success++;
-    } catch (error) {
+    } catch (error: any) {
       counts.error++;
       job.warn(`\t${error.message}`);
       if (error instanceof AugmentedError && error.data.body) {

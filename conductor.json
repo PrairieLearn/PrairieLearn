@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "./scripts/conductor-setup.sh",
+    "run": "make dev"
+  }
+}

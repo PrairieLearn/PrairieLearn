@@ -1,5 +1,5 @@
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { JSX } from 'preact/jsx-runtime';
+import type { ReactNode } from 'react';
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ export const QueryClientProviderDebug = ({
   isDevMode,
 }: {
   client: QueryClient;
-  children: JSX.Element;
+  children: ReactNode;
   isDevMode?: boolean;
 }) => {
   if (typeof window !== 'undefined' && isDevMode) {
