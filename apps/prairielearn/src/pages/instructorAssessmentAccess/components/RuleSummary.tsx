@@ -26,8 +26,7 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_PATTERN } from './validation.js';
 
 function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
@@ -598,6 +597,16 @@ function generateOverrideFieldItems(
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
+  const appliesToError = formErrors?.appliesTo?.root?.message;
+
+  if (appliesToError) {
+    items.push({
+      label: 'Applies to',
+      value:
+        rule.appliesTo.targetType === 'student_label' ? 'Students by label' : 'Specific students',
+      error: appliesToError,
+    });
+  }
 
   if (overriddenFields.has('release')) {
     // A null/empty release date means "not released" (resolver returns active: false).

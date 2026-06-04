@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldArrayWithId,
@@ -165,16 +165,8 @@ function DeadlineArrayInput({
   const { errors } = useFormState();
 
   const deadlinesStringified = stableStringify(deadlines);
-  // Store constraint values in refs so the validate function (which is captured
-  // once by register()) always reads current values instead of stale closures.
-  const dueDateRef = useRef(validationDueDate ?? dueDate);
-  const releaseDateRef = useRef(validationReleaseDate ?? releaseDate);
-  const deadlinesRef = useRef(deadlines);
-  const dueCreditRef = useRef(dueCredit);
-  dueDateRef.current = validationDueDate ?? dueDate;
-  releaseDateRef.current = validationReleaseDate ?? releaseDate;
-  deadlinesRef.current = deadlines;
-  dueCreditRef.current = dueCredit;
+  const effectiveValidationDueDate = validationDueDate ?? dueDate;
+  const effectiveValidationReleaseDate = validationReleaseDate ?? releaseDate;
 
   // Re-validate all deadline dates and credits when the number of deadlines
   // changes (handles append and remove) or when external constraints change.
@@ -190,9 +182,9 @@ function DeadlineArrayInput({
   }, [
     deadlineFields.length,
     deadlinesStringified,
-    dueDate,
+    effectiveValidationDueDate,
     dueCredit,
-    releaseDate,
+    effectiveValidationReleaseDate,
     fieldArrayName,
     trigger,
   ]);
@@ -242,75 +234,6 @@ function DeadlineArrayInput({
         />
       </>
     );
-  };
-
-  // Read from refs to avoid stale closures — register() captures the validate
-  // function once, but these constraint values change over the form's lifetime.
-  const validateDate = (value: string, index: number) => {
-    if (!value) return 'Date is required';
-
-    const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
-    if (!currentDueDate && !isEarly) {
-      return 'Late deadlines require a due date';
-    }
-
-    const deadlineDate = new Date(value);
-    const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
-    const currentDeadlines = deadlinesRef.current;
-
-    for (let i = 0; i < currentDeadlines.length; i++) {
-      if (i !== index && currentDeadlines[i]?.date === value) {
-        return 'Duplicate deadline date';
-      }
-    }
-
-    if (isEarly) {
-      if (currentDueDate && deadlineDate > currentDueDate) {
-        return 'Early deadline must be on or before the due date';
-      }
-      if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after the previous deadline';
-        }
-      }
-      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Early deadline must be after the release date';
-      }
-    } else {
-      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Late deadline must be after the release date';
-      }
-      if (currentDueDate && deadlineDate < currentDueDate) {
-        return 'Late deadline must be on or after the due date';
-      }
-      if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after the previous deadline';
-        }
-      }
-    }
-
-    return true;
-  };
-
-  const validateCredit = (value: number, index: number) => {
-    if (Number.isNaN(value)) return 'Credit is required';
-    if (!Number.isFinite(value)) return 'Credit must be a finite number';
-    if (!Number.isInteger(value)) return 'Credit must be an integer';
-    if (isEarly) {
-      if (value < 0 || value > 200) return 'Credit must be 0-200%';
-      if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
-    } else if (value < 0 || value >= 100) {
-      return 'Credit after the due date must be 0-99%';
-    }
-    const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {
-      return 'Credit must be less than previous deadline';
-    }
-    if (!isEarly && index === 0 && value >= dueCreditRef.current) {
-      return 'Credit must be less than due credit';
-    }
-    return true;
   };
 
   const addDeadline = () => {
@@ -376,9 +299,7 @@ function DeadlineArrayInput({
                 }
                 placeholder="Deadline Date"
                 disabled={!ruleEditable}
-                {...register(`${fieldArrayName}.${index}.date`, {
-                  validate: (value) => validateDate(value, index),
-                })}
+                {...register(`${fieldArrayName}.${index}.date`)}
               />
             </div>
             <div className="d-flex gap-2 align-items-center">
@@ -414,7 +335,6 @@ function DeadlineArrayInput({
                   disabled={!ruleEditable}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
-                    validate: (value) => validateCredit(value, index),
                   })}
                 />
                 <InputGroup.Text>%</InputGroup.Text>

@@ -37,10 +37,6 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       current.filter((f) => f !== fieldName),
       { shouldDirty: true, shouldValidate: true },
     );
-    // Clear errors on the field and its sub-paths. Re-running the
-    // validator is unnecessary: validateActiveOverrideField short-circuits
-    // once the field is no longer in overriddenFields, so it cannot
-    // re-add an error.
     clearErrors(getOverrideFieldPaths(index, fieldName));
   }, [index, fieldName, setValue, getValues, clearErrors]);
 

@@ -75,11 +75,6 @@ export function DefaultDateControlForm({
                   });
                 }
               } else {
-                // Clear errors on fields whose UI is about to unmount.
-                // Their useController validators stay registered (default
-                // shouldUnregister: false) so the existing error stays in
-                // formState.errors and blocks saving, even though the
-                // user can no longer see or edit the offending input.
                 clearErrors([
                   'defaultRule.release',
                   'defaultRule.due',

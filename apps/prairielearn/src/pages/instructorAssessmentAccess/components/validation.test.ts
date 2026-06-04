@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
+  MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../../schemas/accessControl.js';
+
 import type { AccessControlFormData, OverrideData } from './types.js';
-import { getGlobalDateValidationErrors } from './validation.js';
+import {
+  getAccessControlFormValidationErrors,
+  getGlobalDateValidationErrors,
+} from './validation.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
@@ -263,5 +273,174 @@ describe('getGlobalDateValidationErrors', () => {
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
+  });
+});
+
+describe('getAccessControlFormValidationErrors', () => {
+  it('validates default rule fields independently of mounted editors', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([makeOverride()], {
+        prairieTestExams: [
+          {
+            examUuid: '',
+            readOnly: false,
+            afterCompleteQuestionsHidden: false,
+            afterCompleteScoreHidden: false,
+          },
+        ],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.prairieTestExams.0.examUuid',
+      message: 'Exam UUID is required',
+    });
+  });
+
+  it('does not validate hidden default after-complete date inputs without a completion mechanism', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([], {
+        dateControlEnabled: false,
+        due: { date: null, credit: null, customCredit: false },
+        questionVisibility: { hidden: true, visibleFromDate: '' },
+        scoreVisibility: { hidden: true, visibleFromDate: '' },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(
+      errors.find(
+        (e) =>
+          e.path === 'defaultRule.questionVisibility.visibleFromDate' ||
+          e.path === 'defaultRule.scoreVisibility.visibleFromDate',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('ignores invalid values for inactive override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: [],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors.find((e) => e.path.startsWith('overrides.0.'))).toBeUndefined();
+  });
+
+  it('validates invalid values for active override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: ['durationMinutes', 'password'],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.durationMinutes',
+      message: 'Duration must be at least 1 minute',
+    });
+    expect(errors).toContainEqual({
+      path: 'overrides.0.password',
+      message: 'Password is required',
+    });
+  });
+
+  it('validates the maximum number of student-label overrides', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData(
+        Array.from({ length: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1 }, () => makeOverride()),
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.root',
+      message: `At most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label overrides are allowed. Remove 1 student-label override before saving.`,
+    });
+  });
+
+  it('validates the maximum number of enrollment rules', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData(
+        Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1 }, () =>
+          makeOverride({
+            appliesTo: {
+              targetType: 'enrollment',
+              enrollments: [],
+              studentLabels: [],
+            },
+          }),
+        ),
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.root',
+      message: `At most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific overrides are allowed. Remove 1 student-specific override before saving.`,
+    });
+  });
+
+  it('validates the maximum number of student labels per override', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          appliesTo: {
+            targetType: 'student_label',
+            enrollments: [],
+            studentLabels: Array.from(
+              { length: MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE + 1 },
+              (_, i) => ({
+                studentLabelId: String(i),
+                name: `Section ${i}`,
+              }),
+            ),
+          },
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.appliesTo.root',
+      message: `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`,
+    });
+  });
+
+  it('validates the maximum number of students per enrollment override', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          appliesTo: {
+            targetType: 'enrollment',
+            enrollments: Array.from(
+              { length: MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE + 1 },
+              (_, i) => ({
+                enrollmentId: String(i),
+                uid: `student${i}`,
+                name: `Student ${i}`,
+              }),
+            ),
+            studentLabels: [],
+          },
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.appliesTo.root',
+      message: `At most ${MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE} students can be selected.`,
+    });
   });
 });

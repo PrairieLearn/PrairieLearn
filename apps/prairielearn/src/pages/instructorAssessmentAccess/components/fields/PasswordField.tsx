@@ -7,7 +7,6 @@ import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
-import { validateActiveOverrideField } from '../overrideFields.js';
 import type { AccessControlFormData } from '../types.js';
 
 function PasswordToggle({
@@ -44,7 +43,7 @@ function PasswordDetails({
 }) {
   const ruleEditable = useAccessControlRuleEditable();
   const [showPassword, setShowPassword] = useState(false);
-  const isInvalid = error !== undefined;
+  const isInvalid = !!error;
   const errorId = `${idPrefix}-password-error`;
 
   return (
@@ -92,21 +91,12 @@ function PasswordDetails({
   );
 }
 
-function validatePassword(value: string | null): string | true {
-  if (value === '') return 'Password is required';
-  if (value !== null && value.length > MAX_ACCESS_CONTROL_PASSWORD_LENGTH) {
-    return `Password must be at most ${MAX_ACCESS_CONTROL_PASSWORD_LENGTH} characters`;
-  }
-  return true;
-}
-
 export function DefaultPasswordField() {
   const {
     field,
     fieldState: { error },
   } = useController<AccessControlFormData, 'defaultRule.password'>({
     name: 'defaultRule.password',
-    rules: { validate: validatePassword },
   });
 
   return (
@@ -132,9 +122,6 @@ export function OverridePasswordField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.password`>({
     name: `overrides.${index}.password`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'password', validatePassword),
-    },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');
