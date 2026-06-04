@@ -41,11 +41,11 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{block_scroll}} {{dropzone_layout}}" {{#parse-error}}aria-invalid="true" aria-errormessage="pl-order-blocks-{{uuid}}-error"{{/parse-error}}>
+        <div class="pl-order-blocks-container form-control {{#parse-error}}has-validation is-invalid{{/parse-error}} {{block_layout}} {{block_scroll}} {{dropzone_layout}}">
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">
                     {{solution-header}}
-                    {{^parse-error}}
+                    {{#submission_was_graded}}
                         {{#correct}}
                             <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
                         {{/correct}}
@@ -55,10 +55,10 @@ $(function() {
                         {{#incorrect}}
                             <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
                         {{/incorrect}}
-                    {{/parse-error}}
+                    {{/submission_was_graded}}
                 </span>
             </div>
-            <ul id="order-blocks-dropzone-{{uuid}}" role="listbox" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone" aria-label="Answer Area">
+            <ul id="order-blocks-dropzone-{{uuid}}" role="listbox" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone" aria-label="Answer Area" {{#parse-error}}aria-invalid="true" aria-errormessage="pl-order-blocks-{{uuid}}-error"{{/parse-error}}>
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch);"
@@ -81,6 +81,7 @@ $(function() {
             </ul>
         </div>
 
+    {{! TODO: this invalid-feedback block is duplicated in the submission panel below; extract into a shared chevron partial if elements adopt partials. }}
     {{#parse-error}}
         <span id="pl-order-blocks-{{uuid}}-error" class="invalid-feedback d-block">
             <span class="badge text-bg-danger">

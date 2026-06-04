@@ -357,6 +357,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             raise ValueError(
                 f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
             ) from exc
+    submission_was_graded = score is not None
     uuid = pl.get_uuid()
 
     if data["panel"] == "question":
@@ -410,6 +411,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "question": True,
             "parse-error": data["format_errors"].get(answer_name, None),
+            "submission_was_graded": submission_was_graded,
             "answer_name": answer_name,
             "source-header": order_blocks_options.source_header,
             "solution-header": order_blocks_options.solution_header,
@@ -448,7 +450,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         feedback = (
             data["partial_scores"].get(answer_name, {"score": None}).get("feedback", "")
         )
-        submission_was_graded = score is not None
 
         student_submission = [
             {
