@@ -91,11 +91,13 @@
         {{/incorrect}}
     </span>
     {{#formula_editor}}
-    <span
-        id="pl-symbolic-input-client-error-{{name}}"
-        class="invalid-feedback d-none"
-        aria-live="polite"
-    ></span>
+    {{^parse_error}}
+        <span
+            id="pl-symbolic-input-client-error-{{name}}"
+            class="invalid-feedback d-block invisible"
+            aria-live="polite"
+        >&nbsp;</span>
+    {{/parse_error}}
     {{/formula_editor}}
     {{#parse_error}}
         <span class="invalid-feedback d-block">
