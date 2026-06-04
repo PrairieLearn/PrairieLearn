@@ -108,7 +108,9 @@ export async function readZipEntryText(
   if (size > maxBytes) throw new Error(`Entry is too large to buffer: ${entryName}`);
 
   const data = await entry.getData(new TextWriter());
-  if (data.length > maxBytes) throw new Error(`Entry is too large to buffer: ${entryName}`);
+  if (new TextEncoder().encode(data).byteLength > maxBytes) {
+    throw new Error(`Entry is too large to buffer: ${entryName}`);
+  }
   return data;
 }
 

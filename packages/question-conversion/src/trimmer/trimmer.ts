@@ -221,15 +221,17 @@ export async function trimQtiArchive(
   inputName = 'archive.zip',
 ): Promise<QtiArchiveTrimResult> {
   const analysis = await analyzeQtiArchive(input, inputName);
-  const blob = await createTrimmedQtiArchive(analysis);
-  await analysis.archive.close();
-
-  return {
-    ...analysis,
-    blob,
-    outputEntryCount: analysis.keptPaths.size,
-    renamedTitles: analysis.titleReport.renames,
-  };
+  try {
+    const blob = await createTrimmedQtiArchive(analysis);
+    return {
+      ...analysis,
+      blob,
+      outputEntryCount: analysis.keptPaths.size,
+      renamedTitles: analysis.titleReport.renames,
+    };
+  } finally {
+    await analysis.archive.close();
+  }
 }
 
 export async function createTrimmedQtiArchive(analysis: QtiArchiveAnalysis): Promise<Blob> {
