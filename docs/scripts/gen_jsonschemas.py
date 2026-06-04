@@ -19,6 +19,9 @@ def _collapse_scalar_union(obj: dict[str, Any]) -> dict[str, Any]:
     ``type: [X, ...]`` form. Zod 4 emits every union (including nullables) as
     ``anyOf``, which jsonschema2md would otherwise expand into a verbose nested
     list instead of an inline "string or null".
+    
+    If the following issue is ever addressed, drop this manual adjustment:
+    https://github.com/colinhacks/zod/issues/6047
     """
     for keyword in ("anyOf", "oneOf"):
         branches = obj.get(keyword)
