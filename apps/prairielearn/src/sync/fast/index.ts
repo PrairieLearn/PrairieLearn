@@ -71,5 +71,10 @@ export async function attemptFastSync(
   course: Course,
   strategy: FastSyncStrategy,
 ): Promise<boolean> {
-  return fastSyncQuestion(course, strategy.pathPrefix);
+  switch (strategy.type) {
+    // Keep this switch so future fast-sync strategies have an obvious extension point.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    case 'Question':
+      return fastSyncQuestion(course, strategy.pathPrefix);
+  }
 }
