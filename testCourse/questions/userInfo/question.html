@@ -1,17 +1,18 @@
 <pl-question-panel>
   <p>
-    This question shows the viewing user's identity, which the course exposes to questions via
-    <code>data['options']['user']</code>. The same data is available in <code>server.py</code>.
+    This question shows the variant owner's identity from <code>options.user</code>. The same data
+    is available in <code>server.py</code> as <code>data['options']['user']</code>; group variants
+    receive no user identity.
   </p>
   <p>
     See the
-    <a href="https://docs.prairielearn.com/question/server/#accessing-the-viewing-users-identity">
-      documentation on exposing user identity </a
+    <a href="https://docs.prairielearn.com/question/server/#accessing-user-and-group-identity">
+      documentation on user and group identity </a
     >for details.
   </p>
 
   {{#options.user}}
-    <h2>Viewing user</h2>
+    <h2>Variant owner</h2>
     <ul>
       <li>uid: <code>{{options.user.uid}}</code></li>
       <li>name: <code>{{options.user.name}}</code></li>
@@ -21,8 +22,8 @@
 
   {{^options.user}}
     <p>
-      No user data is available for this question. The course has not opted in, or this question was
-      imported from another course via sharing.
+      No user data is available for this question. Either the course has not opted in, this is a
+      group variant, or this question was imported from another course via sharing.
     </p>
   {{/options.user}}
 
