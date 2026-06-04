@@ -604,8 +604,7 @@
 
     if (!errorEl) return;
     errorEl.textContent = message;
-    errorEl.classList.remove('d-none');
-    errorEl.classList.add('d-block');
+    errorEl.classList.remove('invisible');
   }
 
   /**
@@ -626,9 +625,8 @@
     setCustomValidity(inputEl, '');
 
     if (!errorEl) return;
-    errorEl.textContent = '';
-    errorEl.classList.add('d-none');
-    errorEl.classList.remove('d-block');
+    errorEl.textContent = '\u00a0'; // NBSP to preserve element height
+    errorEl.classList.add('invisible');
   }
 
   /**
