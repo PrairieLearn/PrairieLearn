@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type ReactNode, type SubmitEvent, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -75,7 +75,7 @@ function DraftFileUploadForm({
   });
   const hasError = submitError != null || reservedReason != null;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (file == null || uploadMutation.isPending || reservedReason != null) return;
     uploadMutation.mutate(file);
@@ -172,7 +172,7 @@ function DraftFileRenameForm({
   const showValidationError = showValidation && validationError != null;
   const hasError = submitError != null || showValidationError;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (renameMutation.isPending) return;
 
@@ -248,7 +248,7 @@ function DraftFileDeleteForm({
   const deleteMutation = useMutation({ mutationFn: onSubmit });
   const error = getAppError<AiDraftFilesError['Delete']>(deleteMutation.error);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (deleteMutation.isPending) return;
     deleteMutation.mutate();
