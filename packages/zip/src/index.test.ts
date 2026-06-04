@@ -30,19 +30,12 @@ async function buildZip(
   await pipeline(archive, createWriteStream(destPath));
 }
 
-async function buildSymlinkZip(destPath: string): Promise<void> {
-  const archive = archiver('zip');
-  archive.symlink('link.txt', 'target.txt');
-  void archive.finalize();
-  await pipeline(archive, createWriteStream(destPath));
-}
-
 describe('extractZipArchive', () => {
   it('extracts a valid zip archive', async () => {
     await withTempDir(async (tempDir) => {
       const zipPath = path.join(tempDir, 'valid.zip');
       const outputDir = path.join(tempDir, 'output');
-      await buildZip(zipPath, [{ name: 'quiz/assessment.xml', content: '<questestinterop />' }]);
+      await buildZip(zipPath, [{ name: 'documents/readme.txt', content: 'hello' }]);
 
       await extractZipArchive({
         archivePath: zipPath,
@@ -51,8 +44,8 @@ describe('extractZipArchive', () => {
         maxExtractedBytes: 1024,
       });
 
-      expect(await readFile(path.join(outputDir, 'quiz', 'assessment.xml'), 'utf-8')).toBe(
-        '<questestinterop />',
+      expect(await readFile(path.join(outputDir, 'documents', 'readme.txt'), 'utf-8')).toBe(
+        'hello',
       );
     });
   });
@@ -72,7 +65,7 @@ describe('extractZipArchive', () => {
         }),
       ).rejects.toMatchObject({
         code: 'max_extracted_bytes_exceeded',
-        details: { actual: 1024, limit: 100 },
+        message: 'Archive expands to more than 100 bytes.',
       });
     });
   });
@@ -96,7 +89,7 @@ describe('extractZipArchive', () => {
         }),
       ).rejects.toMatchObject({
         code: 'max_entries_exceeded',
-        details: { actual: 3, limit: 2 },
+        message: 'Archive contains more than 2 entries.',
       });
     });
   });
@@ -120,7 +113,7 @@ describe('extractZipArchive', () => {
         }),
       ).rejects.toMatchObject({
         code: 'max_entries_exceeded',
-        details: { actual: 3, limit: 2 },
+        message: 'Archive contains more than 2 entries.',
       });
     });
   });
@@ -129,7 +122,10 @@ describe('extractZipArchive', () => {
     await withTempDir(async (tempDir) => {
       const zipPath = path.join(tempDir, 'symlink.zip');
       const outputDir = path.join(tempDir, 'output');
-      await buildSymlinkZip(zipPath);
+      const archive = archiver('zip');
+      archive.symlink('link.txt', 'target.txt');
+      void archive.finalize();
+      await pipeline(archive, createWriteStream(zipPath));
 
       await expect(
         extractZipArchive({
@@ -140,7 +136,7 @@ describe('extractZipArchive', () => {
         }),
       ).rejects.toMatchObject({
         code: 'symlink_entry',
-        details: { entryPath: 'link.txt' },
+        message: 'Archive contains a symbolic link.',
       });
     });
   });
@@ -155,6 +151,7 @@ describe('extractZipArchive', () => {
         extractZipArchive({
           archivePath: zipPath,
           destinationDir: outputDir,
+          maxEntries: null,
           maxExtractedBytes: 100,
         }),
       ).rejects.toBeInstanceOf(ZipArchiveValidationError);

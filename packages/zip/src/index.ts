@@ -9,33 +9,21 @@ export type ZipArchiveValidationErrorCode =
   | 'max_extracted_bytes_exceeded'
   | 'symlink_entry';
 
-export interface ZipArchiveValidationErrorDetails {
-  actual?: number;
-  entryPath?: string;
-  limit?: number;
-}
-
 export class ZipArchiveValidationError extends Error {
   code: ZipArchiveValidationErrorCode;
-  details: ZipArchiveValidationErrorDetails;
 
-  constructor(
-    code: ZipArchiveValidationErrorCode,
-    message: string,
-    details: ZipArchiveValidationErrorDetails = {},
-  ) {
+  constructor(code: ZipArchiveValidationErrorCode, message: string) {
     super(message);
     this.name = 'ZipArchiveValidationError';
     this.code = code;
-    this.details = details;
   }
 }
 
 export interface ExtractZipArchiveOptions {
   archivePath: string;
   destinationDir: string;
-  maxEntries?: number;
-  maxExtractedBytes?: number;
+  maxEntries: number | null;
+  maxExtractedBytes: number | null;
 }
 
 function isSymlinkEntry({ externalFileAttributes }: yauzl.Entry): boolean {
@@ -64,13 +52,12 @@ export async function extractZipArchive({
   maxEntries,
   maxExtractedBytes,
 }: ExtractZipArchiveOptions): Promise<void> {
-  if (maxEntries !== undefined) {
+  if (maxEntries !== null) {
     const entryCount = await readArchiveEntryCount(archivePath);
     if (entryCount > maxEntries) {
       throw new ZipArchiveValidationError(
         'max_entries_exceeded',
         `Archive contains more than ${maxEntries} entries.`,
-        { actual: entryCount, limit: maxEntries },
       );
     }
   }
@@ -80,19 +67,16 @@ export async function extractZipArchive({
     dir: path.resolve(destinationDir),
     onEntry(entry) {
       if (isSymlinkEntry(entry)) {
-        throw new ZipArchiveValidationError('symlink_entry', 'Archive contains a symbolic link.', {
-          entryPath: entry.fileName,
-        });
+        throw new ZipArchiveValidationError('symlink_entry', 'Archive contains a symbolic link.');
       }
 
-      if (maxExtractedBytes === undefined) return;
+      if (maxExtractedBytes === null) return;
 
       declaredExtractedBytes += entry.uncompressedSize;
       if (declaredExtractedBytes > maxExtractedBytes) {
         throw new ZipArchiveValidationError(
           'max_extracted_bytes_exceeded',
           `Archive expands to more than ${maxExtractedBytes} bytes.`,
-          { actual: declaredExtractedBytes, limit: maxExtractedBytes },
         );
       }
     },

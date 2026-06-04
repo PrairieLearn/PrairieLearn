@@ -59,9 +59,6 @@ import {
 
 const router = Router();
 
-const QTI_IMPORT_MAX_ARCHIVE_ENTRIES = 10_000;
-const QTI_IMPORT_MAX_EXTRACTED_BYTES = 500 * 1024 * 1024;
-
 const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
   let uploadDir: string | undefined;
   const qtiImportUpload = multer({
@@ -209,13 +206,13 @@ router.post(
         await extractZipArchive({
           archivePath: file.path,
           destinationDir: tempDir,
-          maxEntries: QTI_IMPORT_MAX_ARCHIVE_ENTRIES,
-          maxExtractedBytes: QTI_IMPORT_MAX_EXTRACTED_BYTES,
+          maxEntries: 10_000,
+          maxExtractedBytes: 500 * 1024 * 1024,
         });
       } catch (err) {
         const message =
           err instanceof ZipArchiveValidationError
-            ? qtiArchiveValidationMessage(err)
+            ? err.message
             : 'The uploaded archive is invalid or corrupt';
         throw new HttpStatusError(400, message, { cause: err });
       }
@@ -342,24 +339,6 @@ type ConvertEntryResult =
 interface SerializedEntryResult {
   result: StoredSerializedConversionResult;
   webResourcesDir: string;
-}
-
-function archiveLimitMessage(maxExtractedBytes: number): string {
-  const maxSizeLabel = filesize(maxExtractedBytes, { round: 0, standard: 'jedec' });
-  return `The uploaded archive exceeds the ${maxSizeLabel} expanded file size limit.`;
-}
-
-function qtiArchiveValidationMessage(error: ZipArchiveValidationError): string {
-  switch (error.code) {
-    case 'max_entries_exceeded':
-      return `The uploaded archive contains more than ${
-        error.details.limit ?? QTI_IMPORT_MAX_ARCHIVE_ENTRIES
-      } entries.`;
-    case 'max_extracted_bytes_exceeded':
-      return archiveLimitMessage(error.details.limit ?? QTI_IMPORT_MAX_EXTRACTED_BYTES);
-    case 'symlink_entry':
-      return 'The uploaded archive contains a symbolic link.';
-  }
 }
 
 async function findQtiEntries(contentDir: string): Promise<QtiFileEntry[]> {
