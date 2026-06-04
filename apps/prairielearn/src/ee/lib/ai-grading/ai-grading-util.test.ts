@@ -1,8 +1,11 @@
 import assert from 'node:assert';
 
-import { wrapLanguageModel } from 'ai';
+import { Output, generateText, wrapLanguageModel } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+
+import { sanitizeObject } from '@prairielearn/sanitize';
 
 import { type RubricItem } from '../../../lib/db-types.js';
 
@@ -246,24 +249,81 @@ describe('parseAiRubricItems', () => {
 });
 
 describe('extractAiGradingExplanationFromCompletion', () => {
-  it('reads generateText explanations from runtime and serialized result shapes', () => {
+  it('reads the explanation from each persisted completion format', () => {
+    // OpenAI chat completions.
     expect(
       extractAiGradingExplanationFromCompletion({
-        output: { explanation: ' runtime explanation ' },
+        choices: [{ message: { parsed: { explanation: ' from choices ' } } }],
       }),
-    ).toBe('runtime explanation');
+    ).toBe('from choices');
 
+    // OpenAI responses API.
     expect(
       extractAiGradingExplanationFromCompletion({
-        _output: { explanation: ' serialized explanation ' },
+        output_parsed: { explanation: ' from output_parsed ' },
       }),
-    ).toBe('serialized explanation');
+    ).toBe('from output_parsed');
+
+    // `ai` package `generateObject`.
+    expect(
+      extractAiGradingExplanationFromCompletion({ object: { explanation: ' from object ' } }),
+    ).toBe('from object');
+
+    // `ai` package `generateText` with structured output.
+    expect(
+      extractAiGradingExplanationFromCompletion({ _output: { explanation: ' from _output ' } }),
+    ).toBe('from _output');
   });
 
   it('returns null for missing or blank explanations', () => {
-    expect(extractAiGradingExplanationFromCompletion({ _output: { explanation: ' ' } })).toBeNull();
+    expect(
+      extractAiGradingExplanationFromCompletion({ _output: { explanation: '   ' } }),
+    ).toBeNull();
     expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion({})).toBeNull();
     expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
+  });
+
+  // Regression test: a `generateText` result exposes its structured output via a
+  // non-enumerable `output` getter backed by an `_output` field. Persisting the
+  // result with `sanitizeObject` (which copies only own enumerable properties)
+  // drops the getter, so the explanation must be recovered from `_output`. A
+  // previous version read `output` and silently lost the explanation.
+  it('extracts the explanation from a serialized generateText result', async () => {
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [
+          { type: 'text', text: JSON.stringify({ explanation: 'graded via generateText' }) },
+        ],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+
+    const result = await generateText({
+      model,
+      output: Output.object({ schema: z.object({ explanation: z.string() }) }),
+      prompt: 'grade this',
+    });
+
+    const completion = sanitizeObject(result);
+
+    // The structured output is reachable at runtime via the `output` getter, but
+    // only `_output` survives serialization.
+    expect(result.output).toEqual({ explanation: 'graded via generateText' });
+    expect(completion).not.toHaveProperty('output');
+    expect(completion).toHaveProperty('_output');
+
+    expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
   });
 });
 

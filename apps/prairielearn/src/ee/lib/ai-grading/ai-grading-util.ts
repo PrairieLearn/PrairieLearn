@@ -943,61 +943,40 @@ const AiGradingExplanationSchema = z.object({
   explanation: z.string(),
 });
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function extractTrimmedAiGradingExplanation(value: unknown): string | null {
-  const parsed = AiGradingExplanationSchema.safeParse(value);
-  if (!parsed.success) return null;
-
-  return parsed.data.explanation.trim() || null;
-}
+/**
+ * The persisted completion is a schemaless JSON blob whose shape depends on
+ * which API/library produced it. We've used several over the lifetime of AI
+ * grading, so we accept every shape we've ever stored. Each field is optional
+ * because only one is present for a given completion (and for some time the
+ * explanation wasn't persisted at all, so all of them may be absent).
+ */
+const AiGradingCompletionSchema = z.object({
+  // OpenAI chat completions.
+  choices: z
+    .array(z.object({ message: z.object({ parsed: z.unknown().optional() }).optional() }))
+    .optional(),
+  // OpenAI responses API.
+  output_parsed: z.unknown().optional(),
+  // `ai` package `generateObject`.
+  object: z.unknown().optional(),
+  // `ai` package `generateText` with structured output. The result exposes the
+  // structured output via a non-enumerable `output` getter backed by an
+  // `_output` field, so only `_output` survives JSON serialization.
+  _output: z.unknown().optional(),
+});
 
 export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
-  if (!isRecord(completion)) return null;
+  const parsed = AiGradingCompletionSchema.safeParse(completion);
+  if (!parsed.success) return null;
 
-  // OpenAI chat completion format
-  if ('choices' in completion) {
-    const parsed = z
-      .object({
-        choices: z.array(
-          z.object({
-            message: z.object({
-              parsed: z.unknown(),
-            }),
-          }),
-        ),
-      })
-      .safeParse(completion);
+  const { choices, output_parsed, object, _output } = parsed.data;
+  const explanation = AiGradingExplanationSchema.safeParse(
+    // The 4 different formats
+    choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
+  );
+  if (!explanation.success) return null;
 
-    return extractTrimmedAiGradingExplanation(
-      parsed.success ? parsed.data.choices[0]?.message.parsed : null,
-    );
-  }
-
-  // OpenAI response format
-  if ('output_parsed' in completion) {
-    return extractTrimmedAiGradingExplanation(completion.output_parsed);
-  }
-
-  // `ai` package format
-  if ('object' in completion) {
-    return extractTrimmedAiGradingExplanation(completion.object);
-  }
-
-  // `ai` package `generateText` with structured output format
-  if ('output' in completion) {
-    return extractTrimmedAiGradingExplanation(completion.output);
-  }
-
-  // Serialized `generateText` results store the non-enumerable `output` getter
-  // under the backing `_output` property.
-  if ('_output' in completion) {
-    return extractTrimmedAiGradingExplanation(completion._output);
-  }
-
-  return null;
+  return explanation.data.explanation.trim() || null;
 }
 
 /**
@@ -1112,18 +1091,7 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  // We're dealing with a schemaless JSON blob here. We'll be defensive and
-  // try to avoid errors when extracting the explanation. Note that for some
-  // time, the explanation wasn't included in the completion at all, so it
-  // may legitimately be missing.
-  //
-  // Over the lifetime of this feature, we've changed which APIs/libraries we
-  // use to generate the completion, so we need to handle all formats we've ever
-  // used for backwards-compatibility. Each one is documented below.
-  const explanation = run(() => {
-    const completion = aiGradingJobData.completion;
-    return extractAiGradingExplanationFromCompletion(completion);
-  });
+  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
