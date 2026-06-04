@@ -19,11 +19,10 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   AssessmentToolSchema,
+  GroupConfigSchema,
   type GroupRole,
   GroupRoleSchema,
   QuestionSchema,
-  TeamConfigSchema,
-  TeamRoleSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -1357,8 +1356,8 @@ describe('Assessment syncing', () => {
 
   it('still validates when groups.minMembers is 0', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
@@ -1373,11 +1372,11 @@ describe('Assessment syncing', () => {
         canSubmit: [],
       },
     };
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsMinZero'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupMinZero'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsMinZero');
+    const syncedAssessment = await findSyncedAssessment('groupMinZero');
     assert.isNotOk(syncedAssessment.sync_errors);
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
@@ -4529,26 +4528,26 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsAssessment'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] = assessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsAssessment');
+    const syncedAssessment = await findSyncedAssessment('groupAssessment');
     assert.isNull(syncedAssessment.sync_errors);
 
-    // Verify team config was synced
-    const teamConfigs = await util.dumpTableWithSchema('team_configs', TeamConfigSchema);
-    const teamConfig = teamConfigs.find((tc) => tc.assessment_id === syncedAssessment.id);
-    assert.isOk(teamConfig);
-    assert.equal(teamConfig.minimum, 2);
-    assert.equal(teamConfig.maximum, 5);
-    assert.equal(teamConfig.student_authz_create, true);
-    assert.equal(teamConfig.student_authz_join, true);
-    assert.equal(teamConfig.student_authz_leave, false);
-    assert.equal(teamConfig.student_authz_choose_name, true);
+    // Verify group config was synced
+    const groupConfigs = await util.dumpTableWithSchema('team_configs', GroupConfigSchema);
+    const groupConfig = groupConfigs.find((gc) => gc.assessment_id === syncedAssessment.id);
+    assert.isOk(groupConfig);
+    assert.equal(groupConfig.minimum, 2);
+    assert.equal(groupConfig.maximum, 5);
+    assert.equal(groupConfig.student_authz_create, true);
+    assert.equal(groupConfig.student_authz_join, true);
+    assert.equal(groupConfig.student_authz_leave, false);
+    assert.equal(groupConfig.student_authz_choose_name, true);
 
-    // Verify team roles were synced
-    const teamRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
-    const assessmentRoles = teamRoles.filter((r) => r.assessment_id === syncedAssessment.id);
+    // Verify group roles were synced
+    const groupRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const assessmentRoles = groupRoles.filter((r) => r.assessment_id === syncedAssessment.id);
     assert.equal(assessmentRoles.length, 3);
 
     const managerRole = assessmentRoles.find((r) => r.role_name === 'Manager');
@@ -4564,8 +4563,8 @@ describe('Assessment syncing', () => {
 
   it('cascades groups.rolePermissions to zones and questions when not overridden', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
@@ -4575,7 +4574,7 @@ describe('Assessment syncing', () => {
         canSubmit: ['Recorder'], // Assessment-level default
       },
     };
-    teamAssessment.zones?.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       // No canView/canSubmit specified - should inherit from assessment
       questions: [
@@ -4586,18 +4585,18 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamCascadeAssessment'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupCascadeAssessment'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
 
     // Get synced data
-    const syncedData = await getSyncedAssessmentData('teamCascadeAssessment');
+    const syncedData = await getSyncedAssessmentData('groupCascadeAssessment');
     const assessmentQuestion = syncedData.assessment_questions[0];
     assert.isDefined(assessmentQuestion);
 
-    // Check team roles were created
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    // Check group roles were created
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     const manager = syncedRoles.find((role) => role.role_name === 'Manager');
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -4620,7 +4619,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(managerPermission);
     assert.isTrue(
       managerPermission.can_view,
-      'Manager should inherit can_view from teams.rolePermissions',
+      'Manager should inherit can_view from groups.rolePermissions',
     );
     assert.isFalse(managerPermission.can_submit, 'Manager should not have can_submit');
 
@@ -4628,11 +4627,11 @@ describe('Assessment syncing', () => {
     assert.isDefined(recorderPermission);
     assert.isTrue(
       recorderPermission.can_view,
-      'Recorder should inherit can_view from teams.rolePermissions',
+      'Recorder should inherit can_view from groups.rolePermissions',
     );
     assert.isTrue(
       recorderPermission.can_submit,
-      'Recorder should inherit can_submit from teams.rolePermissions',
+      'Recorder should inherit can_submit from groups.rolePermissions',
     );
 
     // Contributor should have neither (not in canView or canSubmit)

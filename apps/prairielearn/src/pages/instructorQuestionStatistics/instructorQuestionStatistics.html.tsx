@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -77,7 +78,7 @@ export function InstructorQuestionStatistics({
                 ${Object.values(STAT_DESCRIPTIONS).map((stat) => {
                   return html`
                     <th class="text-center" title="${stat.description}">
-                      ${unsafeHtml(stat.title)}
+                      ${renderHtml(stat.title)}
                     </th>
                   `;
                 })}
@@ -277,7 +278,7 @@ export function InstructorQuestionStatistics({
               ${Object.keys(STAT_DESCRIPTIONS).map((stat) => {
                 return html`
                   <li>
-                    <strong> ${unsafeHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
+                    <strong> ${renderHtml(STAT_DESCRIPTIONS[stat].title)}: </strong>
                     ${STAT_DESCRIPTIONS[stat].description}
                   </li>
                 `;

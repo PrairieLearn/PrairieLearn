@@ -8,7 +8,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
   selectInstitutionSettings,
-  updateInstitutionCourseRequestMessage,
+  updateInstitutionSetting,
 } from '../../../models/institution-settings.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 
@@ -56,31 +56,31 @@ router.post(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    if (req.body.__action === 'update_course_request_message') {
-      const newMessage =
-        typeof req.body.course_request_message === 'string' &&
-        req.body.course_request_message.trim().length > 0
-          ? req.body.course_request_message
-          : null;
-
-      if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
-        throw new HttpStatusError(
-          400,
-          `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
-        );
-      }
-
-      await updateInstitutionCourseRequestMessage({
-        institution_id: institution.id,
-        course_request_message: newMessage,
-        authn_user_id: res.locals.authn_user.id,
-      });
-
-      flash('success', 'Successfully updated the course request message.');
-      res.redirect(req.originalUrl);
-    } else {
+    if (req.body.__action !== 'update_course_request_message') {
       throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
+
+    const newMessage =
+      typeof req.body.course_request_message === 'string' &&
+      req.body.course_request_message.trim().length > 0
+        ? req.body.course_request_message
+        : null;
+    if (newMessage !== null && newMessage.length > COURSE_REQUEST_MESSAGE_MAX_LENGTH) {
+      throw new HttpStatusError(
+        400,
+        `The course request message must be at most ${COURSE_REQUEST_MESSAGE_MAX_LENGTH} characters.`,
+      );
+    }
+
+    await updateInstitutionSetting({
+      institution_id: institution.id,
+      field: 'course_request_message',
+      value: newMessage,
+      authn_user_id: res.locals.authn_user.id,
+    });
+
+    flash('success', 'Successfully updated the course request message.');
+    res.redirect(req.originalUrl);
   }),
 );
 

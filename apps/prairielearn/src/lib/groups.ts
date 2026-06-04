@@ -65,9 +65,17 @@ export async function getGroupId(assessmentId: string, userId: string): Promise<
   );
 }
 
+export async function selectOptionalGroupById(group_id: string): Promise<Group | null> {
+  return await sqldb.queryOptionalRow(sql.select_group, { group_id }, GroupSchema);
+}
+
+export async function selectGroupMembers(group_id: string): Promise<User[]> {
+  return await sqldb.queryRows(sql.select_group_members, { group_id }, UserSchema);
+}
+
 export async function getGroupInfo(group_id: string, groupConfig: GroupConfig): Promise<GroupInfo> {
   const group = await sqldb.queryRow(sql.select_group, { group_id }, GroupSchema);
-  const groupMembers = await sqldb.queryRows(sql.select_group_members, { group_id }, UserSchema);
+  const groupMembers = await selectGroupMembers(group_id);
 
   const needSize = (groupConfig.minimum ?? 0) - groupMembers.length;
   const groupInfo: GroupInfo = {
@@ -504,7 +512,7 @@ export async function leaveGroup(
           authn_user_id: authnUserId,
         });
 
-        // teams with low enough size should only use required roles
+        // groups with low enough size should only use required roles
         const minRolesToFill = sum(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0) ?? [],
         );

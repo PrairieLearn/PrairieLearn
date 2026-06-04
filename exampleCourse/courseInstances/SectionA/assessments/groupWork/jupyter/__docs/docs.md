@@ -10,7 +10,7 @@ Research shows that collaborative learning can increase student persistence, imp
 
 ### Group formation
 
-PrairieLearn provides the option for instructors to pre-arrange teams, or for students to create their own teams. For pre-assigned groups, instructors can select one of the following options:
+PrairieLearn provides the option for instructors to pre-arrange groups, or for students to create their own groups. For pre-assigned groups, instructors can select one of the following options:
 
 - upload a CSV file with the group information
 - let PrairieLearn assign students to groups at random, given a mininum and maximum group sizes
@@ -19,9 +19,9 @@ Instructors can also let students self-assign to groups. This can be especially 
 
 For self-assignment, a student will create a group providing a group name. This student will receive a "join code" that can be used by others that want to join the group. Once the group reaches the minimum size, students are able to start the assessment. Every member of the group will have access to the same question variants, and consequently will also share the same grade.
 
-### Facilitating collaboration among teams
+### Facilitating collaboration among groups
 
-The simple creation of students' teams will rarely guarantee that students will work collaboratively. However, successful and productive collaborations can be greatly improved by careful design of the task, assignment of team roles and the use of available technologies to both promote collaborations among students and support the instructors implementing these activities.
+The simple creation of students' groups will rarely guarantee that students will work collaboratively. However, successful and productive collaborations can be greatly improved by careful design of the task, assignment of group roles and the use of available technologies to both promote collaborations among students and support the instructors implementing these activities.
 
 Assessments that are based on higher level skills such as _Analyze_, _Evaluate_ and _Create_ from the [Bloom's Taxonomy](https://en.wikipedia.org/wiki/Bloom's_taxonomy) produce more opportunities for students' interactions, where they can learn from each other. Low level skills which require students to remember simple concepts, or apply simple calculations will emphasize the existence of domineering leaders and free loaders. When designing group tasks, we focus on questions that produce discussions and decision-making.
 
