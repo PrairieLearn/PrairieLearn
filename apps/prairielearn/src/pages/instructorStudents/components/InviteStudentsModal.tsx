@@ -49,7 +49,7 @@ export function InviteStudentsModal({
       return 'At least one UID is required';
     }
 
-    const invalidUids = uids.filter((uid) => !z.string().email().safeParse(uid).success);
+    const invalidUids = uids.filter((uid) => !z.email().safeParse(uid).success);
 
     if (invalidUids.length > 0) {
       return `The following UIDs were invalid: "${invalidUids.join('", "')}"`;

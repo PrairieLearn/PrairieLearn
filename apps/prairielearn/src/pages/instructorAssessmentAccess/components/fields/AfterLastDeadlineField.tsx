@@ -240,7 +240,6 @@ function AfterLastDeadlineInput({
                 placeholder="0"
                 isInvalid={!!creditError}
                 disabled={!ruleEditable}
-                onWheel={({ currentTarget }) => currentTarget.blur()}
                 {...register(creditFieldPath, {
                   shouldUnregister: true,
                   valueAsNumber: true,

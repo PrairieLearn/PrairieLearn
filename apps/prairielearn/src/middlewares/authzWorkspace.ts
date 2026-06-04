@@ -7,6 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { UserSchema } from '../lib/db-types.js';
 import { getModeForRequest } from '../lib/exam-mode.js';
+import { features } from '../lib/features/index.js';
 import { isEnterprise } from '../lib/license.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById } from '../models/question.js';
@@ -52,6 +53,21 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       res.locals.course = await selectCourseById(result.course_id);
       res.locals.user = UserSchema.parse(res.locals.authn_user);
       res.locals.question = await selectQuestionById(result.question_id);
+
+      const questionSharingEnabled = await features.enabled('question-sharing', {
+        institution_id: res.locals.course.institution_id,
+        course_id: res.locals.course.id,
+      });
+
+      if (
+        !questionSharingEnabled ||
+        (!res.locals.course.sharing_name && !res.locals.course.example_course) ||
+        res.locals.question.deleted_at != null ||
+        !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
+        res.locals.course.id !== res.locals.question.course_id
+      ) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
     } else if (result.course_instance_id) {
       req.params.course_instance_id = result.course_instance_id;
       await authzCourseOrInstance(req, res);

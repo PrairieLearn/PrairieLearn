@@ -40,7 +40,7 @@ interface InstructorInstanceAdminSettingsProps {
   isAdministrator: boolean;
   nonPublicAssessmentsInCourseInstance: { id: string; tid: string }[];
   questionSharingEnabled: boolean;
-  enhancedAccessControlEnabled: boolean;
+  accessControlMigrationNeeded: boolean;
 }
 
 export function InstructorInstanceAdminSettings({
@@ -84,7 +84,7 @@ function InstructorInstanceAdminSettingsInner({
   isAdministrator,
   nonPublicAssessmentsInCourseInstance,
   questionSharingEnabled,
-  enhancedAccessControlEnabled,
+  accessControlMigrationNeeded,
 }: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
@@ -130,7 +130,7 @@ function InstructorInstanceAdminSettingsInner({
         courseShortName={course.short_name}
         courseInstance={courseInstance}
         isAdministrator={isAdministrator}
-        enhancedAccessControlEnabled={enhancedAccessControlEnabled}
+        accessControlMigrationNeeded={accessControlMigrationNeeded}
         onHide={() => setShowCopyModal(false)}
       />
       <form
