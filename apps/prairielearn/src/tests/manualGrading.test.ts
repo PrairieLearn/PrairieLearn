@@ -561,7 +561,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         const badge = row.find('[data-testid="manual-grading-badge"]');
         assert.equal(badge.length, 1);
         assert.include(badge.attr('href'), '/manual_grading');
-        assert.equal(badge.attr('aria-label'), '1 ungraded');
+        assert.equal(badge.attr('aria-label'), '1 submission requires manual grading');
         assert.include(badge.text(), '1');
       });
     });

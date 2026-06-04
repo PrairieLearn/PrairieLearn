@@ -87,7 +87,7 @@ WITH
   manual_grading_count AS (
     SELECT
       aq.assessment_id,
-      count(*) AS num_instance_questions_to_grade
+      count(*) AS ungraded_manual_grading_submission_count
     FROM
       assessments AS a
       JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
@@ -137,7 +137,7 @@ SELECT
     ) IS NULL
   ) AS start_new_assessment_group,
   coalesce(ic.open_issue_count, 0) AS open_issue_count,
-  coalesce(mgc.num_instance_questions_to_grade, 0) AS num_instance_questions_to_grade
+  coalesce(mgc.ungraded_manual_grading_submission_count, 0) AS ungraded_manual_grading_submission_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
