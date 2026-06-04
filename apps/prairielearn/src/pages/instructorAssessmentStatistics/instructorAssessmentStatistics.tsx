@@ -1,6 +1,8 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 
-import { stringify } from '@prairielearn/csv';
+import { stringify, stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import {
   MINUTE_IN_MILLISECONDS,
@@ -9,12 +11,20 @@ import {
 } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
-import { updateAssessmentStatistics } from '../../lib/assessment.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import {
+  updateAssessmentQuestionStatsForAssessment,
+  updateAssessmentStatistics,
+} from '../../lib/assessment.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
+  type AssessmentQuestionStatsRow,
+  AssessmentQuestionStatsRowSchema,
   AssessmentScoreHistogramByDateSchema,
   type Filenames,
   InstructorAssessmentStatistics,
@@ -36,6 +46,7 @@ function getFilenames(locals: ResLocalsForPage<'assessment'>): Filenames {
     scoreStatsCsvFilename: prefix + 'score_stats.csv',
     durationStatsCsvFilename: prefix + 'duration_stats.csv',
     statsByDateCsvFilename: prefix + 'scores_by_date.csv',
+    questionStatsCsvFilename: prefix + 'question_stats.csv',
   };
 }
 
@@ -50,6 +61,7 @@ router.get(
       { assessment_id: res.locals.assessment.id },
       AssessmentSchema,
     );
+    res.locals.assessment = assessment;
 
     const assessmentScoreHistogramByDate = await sqldb.queryRows(
       sql.assessment_score_histogram_by_date,
@@ -63,13 +75,43 @@ router.get(
       UserScoreSchema,
     );
 
+    const rows = await sqldb.queryRows(
+      sql.questions,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentQuestionStatsRowSchema,
+    );
+
+    const filenames = getFilenames(res.locals);
+
     res.send(
-      InstructorAssessmentStatistics({
+      PageLayout({
         resLocals: res.locals,
-        assessment,
-        assessmentScoreHistogramByDate,
-        userScores,
-        filenames: getFilenames(res.locals),
+        pageTitle: 'Assessment Statistics',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'statistics',
+        },
+        options: {
+          fullWidth: true,
+        },
+        headContent: compiledScriptTag('instructorAssessmentStatisticsClient.ts'),
+        content: (
+          <InstructorAssessmentStatistics
+            assessment={assessment}
+            courseInstance={res.locals.course_instance}
+            assessmentSet={res.locals.assessment_set}
+            hasCoursePermissionEdit={res.locals.authz_data.has_course_permission_edit}
+            hasCourseInstancePermissionEdit={
+              res.locals.authz_data.has_course_instance_permission_edit
+            }
+            csrfToken={res.locals.__csrf_token}
+            assessmentScoreHistogramByDate={assessmentScoreHistogramByDate}
+            userScores={userScores}
+            rows={rows}
+            filenames={filenames}
+          />
+        ),
       }),
     );
   }),
@@ -224,8 +266,61 @@ router.get(
           ...scoresByDay.map((day) => formatDateYMD(day.date, 'UTC')),
         ],
       }).pipe(res);
+    } else if (req.params.filename === filenames.questionStatsCsvFilename) {
+      const cursor = await sqldb.queryCursor(
+        sql.questions,
+        { assessment_id: res.locals.assessment.id },
+        AssessmentQuestionStatsRowSchema,
+      );
+
+      const stringifier = stringifyStream<AssessmentQuestionStatsRow>({
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Assessment',
+          'Question number',
+          'QID',
+          'Question title',
+          'Question topic',
+          'Question tags',
+          ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
+        ],
+        transform(record) {
+          return [
+            record.course_short_name,
+            record.course_instance_short_name,
+            record.assessment_label,
+            record.assessment_question_number,
+            record.qid,
+            record.question_title,
+            record.topic.name,
+            record.question_tags,
+            ...Object.values(STAT_DESCRIPTIONS).map((d) => record[d.field]),
+          ];
+        },
+      });
+
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifier, res);
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
+    }
+  }),
+);
+
+router.post(
+  '/',
+  typedAsyncHandler<'assessment'>(async (req, res) => {
+    // The action "refresh_stats" (from the button "Recalculate") does not
+    // change student data. Statistics *should* be recalculated automatically,
+    // e.g., every time this page is loaded, but until then we will let anyone who
+    // can view the page post this action and trigger a recalculation.
+    if (req.body.__action === 'refresh_stats') {
+      await updateAssessmentQuestionStatsForAssessment(res.locals.assessment.id);
+      res.redirect(req.originalUrl);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -1,5 +1,6 @@
 columns
     course_request_message: text
+    github_course_owner: text
     institution_id: bigint not null
 
 indexes

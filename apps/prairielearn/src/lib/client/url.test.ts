@@ -1,6 +1,10 @@
 import { assert, describe, it } from 'vitest';
 
-import { getAssessmentQuestionEditorUrl, getCourseAdminQuestionsUrl } from './url.js';
+import {
+  getAssessmentLogsUrl,
+  getAssessmentQuestionEditorUrl,
+  getCourseAdminQuestionsUrl,
+} from './url.js';
 
 describe('URL helpers', () => {
   it('links to the assessment editor entry for a QID', () => {
@@ -75,6 +79,13 @@ describe('URL helpers', () => {
         filter: { type: 'workspace_image', value: 'prairielearn/workspace-jupyter:latest' },
       }),
       '/pl/course_instance/2/instructor/course_admin/questions?wsImage=prairielearn%2Fworkspace-jupyter%3Alatest',
+    );
+  });
+
+  it('links to the assessment logs filtered by category', () => {
+    assert.equal(
+      getAssessmentLogsUrl({ courseInstanceId: '1', assessmentId: '2', category: 'upload' }),
+      '/pl/course_instance/1/instructor/assessment/2/logs?category=upload',
     );
   });
 

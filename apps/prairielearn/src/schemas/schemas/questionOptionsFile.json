@@ -6,7 +6,6 @@
   "additionalProperties": false,
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "fileName": {

@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -20,7 +19,11 @@ import {
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
-import { type AccessControlSyncInput, syncAllAccessControl } from './fromDisk/accessControl.js';
+import {
+  type AccessControlSyncInput,
+  syncAccessControl,
+  validateAccessControl,
+} from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
@@ -190,6 +193,22 @@ export async function syncDiskToSqlWithLock(
       });
     });
 
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
+    if (enhancedAccessControlEnabled) {
+      await timed('Validated access control', async () => {
+        await async.eachLimit(
+          Object.entries(courseData.courseInstances),
+          3,
+          async ([ciid, { assessments }]) => {
+            await validateAccessControl(courseInstanceIds[ciid], assessments);
+          },
+        );
+      });
+    }
+
     await timed('Synced sharing sets', () =>
       syncSharingSets.sync(course.id, courseData, questionIds),
     );
@@ -198,10 +217,6 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(course.id, courseData),
     );
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: course.institution_id,
-      course_id: course.id,
-    });
     await timed('Synced all assessments', async () => {
       // Ensure that a single course with a ton of course instances can't
       // monopolize the database connection pool.
@@ -228,28 +243,13 @@ export async function syncDiskToSqlWithLock(
                 const assessmentId = idMap[tid];
                 if (!assessmentId) continue;
 
-                const accessControlRules = assessment.data?.accessControl;
                 if (infofile.hasErrors(assessment)) {
                   continue;
                 }
-                if (!accessControlRules) {
-                  inputs.push({ assessmentId, rules: [] });
-                } else {
-                  inputs.push({ assessmentId, rules: accessControlRules });
-                }
+                inputs.push({ assessmentId, rules: assessment.data?.accessControl ?? [] });
               }
 
-              await runInTransactionAsync(async () => {
-                const validationErrors = await syncAllAccessControl(courseInstanceId, inputs);
-                for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
-                  const assessmentId = idMap[tid];
-                  if (!assessmentId) continue;
-                  const error = validationErrors.get(assessmentId);
-                  if (error) {
-                    infofile.addError(assessment, error);
-                  }
-                }
-              });
+              await syncAccessControl(courseInstanceId, inputs);
             });
           }
         },

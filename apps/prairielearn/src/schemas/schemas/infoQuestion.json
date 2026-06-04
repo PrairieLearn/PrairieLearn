@@ -7,7 +7,6 @@
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
@@ -127,7 +126,6 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "enabled": {
@@ -188,7 +186,6 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "coreStyles": {
@@ -267,7 +264,6 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "image": {

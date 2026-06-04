@@ -4,7 +4,14 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert, describe, expect, it } from 'vitest';
 
-import { deduplicateIdenticalQuestions, serializeClientFiles } from './instructorQtiImport.js';
+import type { ConversionResult } from '@prairielearn/question-conversion';
+
+import {
+  countDeduplicatedQuestionBankQuestions,
+  deduplicateIdenticalQuestions,
+  serializeClientFiles,
+  serializeConversionResult,
+} from './instructorQtiImport.js';
 import type { StoredSerializedConversionResult } from './instructorQtiImport.types.js';
 
 function makeQuestions(directoryPrefix: string, questionSourceId: string, questionHtml: string) {
@@ -96,6 +103,33 @@ function makeResult({
   };
 }
 
+function makeConversionResult({
+  sourceType,
+  directoryName,
+}: {
+  sourceType: 'assessment' | 'question-bank';
+  directoryName: string;
+}): ConversionResult {
+  return {
+    sourceId: directoryName,
+    assessmentTitle: directoryName,
+    sourceType,
+    assessment: {
+      directoryName,
+      infoJson: {
+        uuid: `${directoryName}-uuid`,
+        type: 'Homework',
+        title: directoryName,
+        set: 'Homework',
+        number: '1',
+        zones: [],
+      },
+    },
+    questions: [],
+    warnings: [],
+  };
+}
+
 describe('serializeClientFiles', () => {
   it('encodes buffer content as base64', async () => {
     const files = new Map<string, Buffer | string>([['image.png', Buffer.from('fake png data')]]);
@@ -111,6 +145,40 @@ describe('serializeClientFiles', () => {
       const files = new Map<string, Buffer | string>([['asset.png', 'asset.png']]);
       const { files: result } = await serializeClientFiles(files, tempDir);
       expect(result['asset.png']).toBe(Buffer.from('fake asset content').toString('base64'));
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('falls back to HTML-decoded paths when reading string content', async () => {
+    const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
+    try {
+      await fs.outputFile(path.join(tempDir, 'TemplateINC&CF.jpg'), 'fake asset content');
+
+      const files = new Map<string, Buffer | string>([
+        ['TemplateINC&CF.jpg', 'TemplateINC&amp;CF.jpg?canvas_download=1'],
+      ]);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
+      expect(result['TemplateINC&CF.jpg']).toBe(
+        Buffer.from('fake asset content').toString('base64'),
+      );
+      expect(missingFiles).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('falls back to URL-decoded paths when reading string content', async () => {
+    const { path: tempDir, cleanup } = await tmp.dir({ unsafeCleanup: true });
+    try {
+      await fs.outputFile(path.join(tempDir, 'Quiz Files/asset 1.png'), 'fake asset content');
+
+      const files = new Map<string, Buffer | string>([
+        ['asset 1.png', 'Quiz%20Files/asset%201.png?canvas_download=1'],
+      ]);
+      const { files: result, missingFiles } = await serializeClientFiles(files, tempDir);
+      expect(result['asset 1.png']).toBe(Buffer.from('fake asset content').toString('base64'));
+      expect(missingFiles).toEqual([]);
     } finally {
       await cleanup();
     }
@@ -138,6 +206,36 @@ describe('serializeClientFiles', () => {
     } finally {
       await cleanup();
     }
+  });
+});
+
+describe('serializeConversionResult', () => {
+  it('uses the unique container slug for assessment directory names', async () => {
+    const { result } = await serializeConversionResult(
+      makeConversionResult({
+        sourceType: 'assessment',
+        directoryName: 'defaultwebctcategory',
+      }),
+      'defaultwebctcategory-2',
+      '/nonexistent',
+    );
+
+    assert(result.sourceType === 'assessment');
+    expect(result.assessment.directoryName).toBe('defaultwebctcategory-2');
+  });
+
+  it('uses the unique container slug for question bank directory names', async () => {
+    const { result } = await serializeConversionResult(
+      makeConversionResult({
+        sourceType: 'question-bank',
+        directoryName: 'unfiled-questions',
+      }),
+      'unfiled-questions-2',
+      '/nonexistent',
+    );
+
+    assert(result.sourceType === 'question-bank');
+    expect(result.directoryName).toBe('unfiled-questions-2');
   });
 });
 
@@ -187,5 +285,45 @@ describe('deduplicateIdenticalQuestions', () => {
     assert(results[0].sourceType === 'assessment');
     expect(results[0].assessment.infoJson.zones[0].questions[0].id).toBe('imported/bank-1/q1');
     expect(results[1].questions[0].directoryName).toBe('imported/bank-1/q1');
+  });
+});
+
+describe('countDeduplicatedQuestionBankQuestions', () => {
+  it('counts unique questions that appeared in multiple question banks', () => {
+    const results = [
+      makeResult({
+        directoryPrefix: 'bank-1',
+        sourceType: 'question-bank',
+        sourceId: 'bank-1',
+        questionSourceId: 'bank-1-copy',
+      }),
+      makeResult({
+        directoryPrefix: 'bank-2',
+        sourceType: 'question-bank',
+        sourceId: 'bank-2',
+        questionSourceId: 'bank-2-copy',
+      }),
+    ];
+
+    expect(countDeduplicatedQuestionBankQuestions(results)).toBe(1);
+  });
+
+  it('does not count identical questions outside multiple question banks', () => {
+    const results = [
+      makeResult({
+        directoryPrefix: 'quiz-1',
+        sourceType: 'assessment',
+        sourceId: 'quiz-1',
+        questionSourceId: 'quiz-copy',
+      }),
+      makeResult({
+        directoryPrefix: 'bank-1',
+        sourceType: 'question-bank',
+        sourceId: 'bank-1',
+        questionSourceId: 'bank-copy',
+      }),
+    ];
+
+    expect(countDeduplicatedQuestionBankQuestions(results)).toBe(0);
   });
 });

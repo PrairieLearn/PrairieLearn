@@ -42,7 +42,6 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'qrcode-svg',
   'socket.io-client',
   'ace-builds',
-  'bootstrap-table',
   'bootstrap',
   'jquery',
   'mathlive',

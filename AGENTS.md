@@ -66,7 +66,7 @@ Linting:
 Formatting:
 
 - Individual files: `yarn prettier --write path/to/file.ts`
-- All files: `make format-js`
+- All files: `make fix-js`
 
 ### Python
 
@@ -83,7 +83,7 @@ Linting:
 Formatting:
 
 - Individual files: `uv run ruff format path/to/file.py`
-- All files: `make format-python`
+- All files: `make fix-python`
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 

@@ -312,8 +312,11 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({
         question,
         course,
+        variant_course: course,
         variant_seed: null,
         preferences,
+        effective_user_id: null,
+        group_id: null,
       });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
@@ -333,6 +336,11 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
           null,
         ),
       };
+      const caller = {
+        userId: null,
+        groupId: null,
+        variantCourse: course,
+      };
       const {
         courseIssues: renderIssues,
         data: { questionHtml },
@@ -348,6 +356,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         submissions: [],
         course,
         locals,
+        caller,
       });
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
@@ -365,7 +374,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
       const {
         data: { raw_submitted_answer },
-      } = await questionModule.test(variant, question, course, 'correct');
+      } = await questionModule.test(variant, question, course, 'correct', caller);
 
       const parseResult = await questionModule.parse(
         {
@@ -376,6 +385,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
 
@@ -391,6 +401,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        caller,
       );
 
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via grade+render, add more checks.
