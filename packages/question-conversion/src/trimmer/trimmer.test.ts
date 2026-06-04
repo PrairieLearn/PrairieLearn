@@ -45,6 +45,56 @@ describe('QTI archive trimming', () => {
     expect(after.titleReport.duplicateSlugs).toHaveLength(0);
   });
 
+  it('discovers QTI entries without a manifest', async () => {
+    const zip = new ZipWriter(new BlobWriter('application/zip'));
+    await zip.add('quiz.xml', new TextReader(assessmentStubXml('q1', 'No Manifest Quiz')));
+    await zip.add('bank.xml.qti', new TextReader(bankXml('b1', 'Loose Bank')));
+    await zip.add('not-qti.xml', new TextReader('<html><body>Not QTI</body></html>'));
+    const input = await zip.close();
+
+    const analysis = await analyzeQtiArchive(input, 'no-manifest.zip');
+    expect(analysis.hasManifest).toBe(false);
+    expect(analysis.qtiEntries).toHaveLength(2);
+    const paths = analysis.qtiEntries.map((e) => e.qtiPath).sort();
+    expect(paths).toEqual(['bank.xml.qti', 'quiz.xml']);
+    expect(analysis.qtiEntries.every((e) => e.source === 'scan')).toBe(true);
+  });
+
+  it('avoids slug collisions when renamed title matches an existing entry', async () => {
+    const zip = new ZipWriter(new BlobWriter('application/zip'));
+    await zip.add('bank-a.xml.qti', new TextReader(bankXml('a', 'Shared Bank')));
+    await zip.add('bank-b.xml.qti', new TextReader(bankXml('b', 'Shared Bank')));
+    await zip.add('bank-c.xml.qti', new TextReader(bankXml('c', 'Shared Bank (2)')));
+    const input = await zip.close();
+
+    const analysis = await analyzeQtiArchive(input, 'collisions.zip');
+    expect(analysis.titleReport.duplicateSlugs.length).toBeGreaterThan(0);
+
+    const result = await trimQtiArchive(input, 'collisions.zip');
+    const output = new Uint8Array(await result.blob.arrayBuffer());
+    const after = await analyzeQtiArchive(output, 'collisions-out.zip');
+    expect(after.titleReport.duplicateSlugs).toHaveLength(0);
+  });
+
+  it('reports missing local asset references as warnings', async () => {
+    const zip = new ZipWriter(new BlobWriter('application/zip'));
+    const qtiXml =
+      '<questestinterop><assessment ident="q1" title="Quiz"><section ident="s1"><item ident="i1" title="Q"><presentation><material><mattext texttype="text/html">&lt;img src="$IMS-CC-FILEBASE$/missing-image.png"&gt;</mattext></material></presentation></item></section></assessment></questestinterop>';
+    await zip.add('quiz.xml', new TextReader(qtiXml));
+    const input = await zip.close();
+
+    const analysis = await analyzeQtiArchive(input, 'missing-asset.zip');
+    expect(analysis.localAssets.missing).toContain('missing-image.png');
+    expect(analysis.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'missing-local-asset',
+          message: expect.stringContaining('missing-image.png'),
+        }),
+      ]),
+    );
+  });
+
   it('handles course exports wrapped in a single top-level directory', async () => {
     const input = await buildFixture('course-export/');
 
