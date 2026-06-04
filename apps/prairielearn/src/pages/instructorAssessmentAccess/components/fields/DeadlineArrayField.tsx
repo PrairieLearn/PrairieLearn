@@ -168,10 +168,9 @@ function DeadlineArrayInput({
   const effectiveValidationDueDate = validationDueDate ?? dueDate;
   const effectiveValidationReleaseDate = validationReleaseDate ?? releaseDate;
 
-  // Re-validate all deadline dates and credits when the number of deadlines
-  // changes (handles append and remove) or when external constraints change.
-  // Without this, react-hook-form won't run validators on newly appended fields
-  // or re-check existing fields against updated constraints.
+  // Re-run resolver validation for all deadline dates and credits when the
+  // number of deadlines changes (handles append and remove) or when external
+  // constraints change.
   useEffect(() => {
     if (deadlineFields.length > 0) {
       for (let i = 0; i < deadlineFields.length; i++) {
