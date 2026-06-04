@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { type ExecutorResults, handleInput } from '../executor-lib.js';
 import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
 /**
  * Smoke tests for the executor image. This code path is similar to the
@@ -10,14 +11,10 @@ import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
  *
  * TODO: consider creating `CodeCallerContainer` and interacting via that path.
  *
- * The critical test is `pl-stdlib-import-test`, which imports non-preloaded
- * stdlib modules after privilege drop. This catches the exact class of failure
- * from https://github.com/PrairieLearn/PrairieLearn/issues/14197 where the
- * Python stdlib at /root/.local/share/uv/python/ became inaccessible after
- * dropping privileges on Ubuntu (where /root is mode 700). The zygote
- * preloads many stdlib modules transitively, so most element code works even
- * when the stdlib path is inaccessible — only imports of non-preloaded
- * modules reveal the problem.
+ * Elements are chosen specifically because they import third-party packages
+ * NOT in the zygote pre-load list. This is the exact
+ * class of failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197 where lazy imports failed because the
+ * Python installation was inaccessible after dropping privileges.
  *
  * These tests are designed to run inside the prairielearn/executor Docker
  * container where the `executor` user exists and `dropPrivileges` works.
@@ -45,15 +42,6 @@ describe('executor smoke tests', () => {
   });
 
   const testCases = [
-    {
-      element: 'pl-stdlib-import-test',
-      note: 'non-preloaded stdlib (plistlib, tomllib)',
-      html: '<pl-stdlib-import-test />',
-      data: { params: {} },
-      extraAssertions: (result: ExecutorResults) => {
-        expect(result.data.params.stdlib_accessible).toBe(true);
-      },
-    },
     {
       element: 'pl-checkbox',
       note: 'pre-loaded modules only',
@@ -102,4 +90,15 @@ describe('executor smoke tests', () => {
       extraAssertions?.(result);
     },
   );
+
+  it('generates question that imports non-preloaded stdlib modules', async () => {
+    const testCoursePath = `${REPOSITORY_ROOT_PATH}/testCourse`;
+    await codeCaller.prepareForCourse({ coursePath: testCoursePath, forbiddenModules: [] });
+
+    const { result } = await codeCaller.call('question', 'stdlibImport', 'server', 'generate', [
+      { params: {}, correct_answers: {}, answers_names: {} },
+    ]);
+
+    expect(result.params.stdlib_accessible).toBe(true);
+  });
 });

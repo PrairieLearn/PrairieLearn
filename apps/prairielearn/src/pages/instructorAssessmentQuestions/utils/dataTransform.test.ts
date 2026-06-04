@@ -92,6 +92,22 @@ describe('serializeZonesForJson', () => {
       }
     }
   });
+
+  it('preserves lockpoint when serializing zones', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Lockpoint zone',
+        lockpoint: true,
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    assert.equal(serialized[0].lockpoint, true);
+
+    const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
+    assert.equal(reparsed[0].lockpoint, true);
+  });
 });
 
 describe('addTrackingIds', () => {
@@ -99,6 +115,7 @@ describe('addTrackingIds', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         title: 'Zone 1',
+        lockpoint: false,
         canSubmit: [],
         canView: [],
         questions: [
@@ -129,6 +146,7 @@ describe('addTrackingIds', () => {
   it('generates unique trackingIds for each element', () => {
     const zones: ZoneAssessmentJson[] = [
       {
+        lockpoint: false,
         canSubmit: [],
         canView: [],
         questions: [
@@ -156,6 +174,7 @@ describe('stripTrackingIds', () => {
       {
         trackingId: 'zone-tracking-id' as ZoneAssessmentForm['trackingId'],
         title: 'Zone 1',
+        lockpoint: false,
         canSubmit: [],
         canView: [],
         questions: [
@@ -194,6 +213,7 @@ describe('stripTrackingIds', () => {
       {
         trackingId: 'zone-tracking-id' as ZoneAssessmentForm['trackingId'],
         title: 'My Zone',
+        lockpoint: false,
         maxPoints: 100,
         canSubmit: [],
         canView: [],

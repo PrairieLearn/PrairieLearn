@@ -12,6 +12,7 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  EnumQuestionAccessModeSchema,
   FileSchema,
   type GroupConfig,
   GroupSchema,
@@ -39,11 +40,11 @@ const InstanceQuestionInfoSchema = z.object({
   }),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
-    sequence_locked: z.boolean().nullable(),
+    question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   }),
   question_number: z.string(),
   advance_score_perc: z.number().nullable(),
-  sequence_locked: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   instructor_question_number: z.string(),
 });
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;

@@ -135,7 +135,10 @@ export function InstructorAssessmentAccess({
         <div class="card-footer">
           <small>
             Instructions on how to change the access rules can be found in the
-            <a href="https://docs.prairielearn.com/accessControl/" target="_blank" rel="noreferrer"
+            <a
+              href="https://docs.prairielearn.com/assessment/accessControl/"
+              target="_blank"
+              rel="noreferrer"
               >PrairieLearn documentation</a
             >. Note that changing time limit rules does not affect assessments in progress; to
             change the time limit for these exams please visit the

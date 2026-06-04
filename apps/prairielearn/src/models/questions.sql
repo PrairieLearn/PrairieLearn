@@ -67,7 +67,9 @@ SELECT
               'abbreviation',
               aset.abbreviation,
               'color',
-              aset.color
+              aset.color,
+              'name',
+              aset.name
             )
           )
           ORDER BY

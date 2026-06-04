@@ -24,6 +24,7 @@ class SourceBlocksOrderType(Enum):
     RANDOM = "random"
     ALPHABETIZED = "alphabetized"
     ORDERED = "ordered"
+    RANDOM_SECTIONS = "random-sections"
 
 
 class DistractorOrderType(Enum):

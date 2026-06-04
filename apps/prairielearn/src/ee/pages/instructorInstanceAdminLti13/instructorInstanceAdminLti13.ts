@@ -13,6 +13,8 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../../components/InsufficientCoursePermissionsCard.js';
+import { getCourseOwners } from '../../../lib/course.js';
 import {
   AssessmentSchema,
   Lti13AssessmentSchema,
@@ -48,9 +50,27 @@ router.get(
   '/:unsafe_lti13_course_instance_id?',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_edit'],
-    unauthorizedUsers: 'block',
+    unauthorizedUsers: 'passthrough',
   }),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'integrations',
+          },
+          courseOwners,
+          pageTitle: 'Integrations',
+          requiredPermissions: 'Student Data Editor',
+        }),
+      );
+      return;
+    }
+
     const instances = await queryRows(
       sql.select_combined_lti13_instances,
       { course_instance_id: res.locals.course_instance.id },

@@ -236,23 +236,6 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
-/* Allows for conditional behaviour based on the status of a collapsed component */
-.show-hide-btn .show-when-collapsed {
-  display: none;
-}
-
-.show-hide-btn.collapsed .show-when-collapsed {
-  display: inline;
-}
-
-.show-hide-btn .show-when-expanded {
-  display: inline;
-}
-
-.show-hide-btn.collapsed .show-when-expanded {
-  display: none;
-}
-
 /* Button in submission header context prepends "hide" or "show" automatically */
 .collapsible-card-header .expand-icon {
   transition: transform 400ms;

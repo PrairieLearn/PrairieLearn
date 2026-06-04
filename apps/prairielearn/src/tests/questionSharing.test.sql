@@ -32,3 +32,11 @@ FROM
 WHERE
   tid = $tid
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK set_question_deleted_at
+UPDATE questions
+SET
+  deleted_at = $deleted_at::timestamptz
+WHERE
+  course_id = $course_id
+  AND qid = $qid;

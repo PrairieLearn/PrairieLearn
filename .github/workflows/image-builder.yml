@@ -60,7 +60,7 @@ jobs:
           DIFF_BASE: ${{ github.event.before || '' }}
 
       - name: Upload metadata
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
@@ -93,7 +93,7 @@ jobs:
 
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}

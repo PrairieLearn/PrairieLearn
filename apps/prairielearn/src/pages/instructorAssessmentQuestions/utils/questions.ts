@@ -1,4 +1,4 @@
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js';
@@ -70,6 +70,7 @@ export function buildHierarchicalAssessment(
       maxPoints: row.zone.max_points ?? undefined,
       numberChoose: row.zone.number_choose ?? undefined,
       bestQuestions: row.zone.best_questions ?? undefined,
+      lockpoint: row.zone.lockpoint,
       questions: [],
       advanceScorePerc: row.zone.advance_score_perc ?? undefined,
       gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,

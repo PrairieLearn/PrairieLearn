@@ -79,8 +79,8 @@ async function openInviteModal(page: Page) {
 }
 
 test.describe('Bulk invite students', () => {
-  test.beforeAll(async () => {
-    await syncCourse();
+  test.beforeAll(async ({ testCoursePath }) => {
+    await syncCourse(testCoursePath);
     await createTestData();
   });
 

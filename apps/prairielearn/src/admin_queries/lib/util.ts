@@ -4,7 +4,7 @@ import * as path from 'path';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { queryAsync } from '@prairielearn/postgres';
+import { defaultPool } from '@prairielearn/postgres';
 
 export const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
@@ -35,8 +35,8 @@ export async function runLegacySqlAdminQuery(
   const sql = await readFile(new URL(metaUrl.replace(/\.[jt]s$/, '.sql')).pathname, {
     encoding: 'utf8',
   });
-  // @ts-expect-error We wanted to discourage the use of queryAsync, but it is still needed here.
-  const result = await queryAsync(sql, params);
+  // We wanted to discourage the use of queryAsync, but it is still needed here.
+  const result = await defaultPool.queryAsync(sql, params);
   return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }
 

@@ -2,16 +2,16 @@
 @import '../../../../node_modules/bootstrap/scss/variables';
 @import '../../../../node_modules/bootstrap/scss/mixins';
 
-// We reuse Bootstrap's `button-variant` mixin to generate appropriate hover
-// styles. Crucially, this will ensure that appropriate color contrast is
-// maintained.
-//
-// As with normal buttons (see `local.css`), we also include an outline with
-// `:focus-visible` to ensure that the focus state has sufficient contrast,
-// no matter the background color on which the button is situated.
+// Custom color classes used for badges, clickable badge-buttons, and other
+// colored UI elements throughout PrairieLearn.
 //
 // Install `sass` with `npm install -g sass`.
-// Run `sass --sourcemap=none colors.scss colors.css` to compile this file.
+// Run `sass --no-source-map colors.scss colors.css` to compile this file.
+// Make sure to re-format with Prettier after regenerating `colors.css`.
+//
+// When changing colors, also update:
+//   - apps/prairielearn/python/prairielearn/colors.py (Python color lookup)
+//   - docs/course/colors.html (documentation color swatches)
 
 $custom-colors: (
   'red1': #ffccbc,
@@ -46,22 +46,16 @@ $custom-colors: (
   'gray3': #505050,
 );
 
-$color-contrast-overrides: (
-  // Override foreground colors for specific entries in `$custom-colors` when
-  // the automatically generated `color-contrast()` value isn't desirable.
-  // Keys must match the color names above; anything not listed falls back to
-  // the contrast function.
-  'turquoise3': #fff,
-  'green3': #fff,
-  'yellow3': #fff
-);
-
 :root {
   @each $color, $value in $custom-colors {
     --color-#{$color}: #{$value};
   }
 }
 
+// Clickable badge buttons: sized like badges with hover/focus/active states.
+// Each `.btn.btn-badge.color-*` sets CSS custom properties for its colors;
+// the shared state logic here reads those properties, avoiding repetitive
+// per-color CSS for every pseudo-class.
 .btn.btn-badge {
   --bs-badge-padding-x: #{$badge-padding-x};
   --bs-badge-padding-y: #{$badge-padding-y};
@@ -75,44 +69,89 @@ $color-contrast-overrides: (
   line-height: 1;
   border-radius: var(--bs-badge-border-radius);
 
-  // Ensures consistent sizing with badges, which don't have a border.
-  border: none;
+  color: var(--pl-badge-text);
+  background-color: var(--pl-badge-bg);
+  border-color: var(--pl-badge-border);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--pl-badge-bg), black 7%);
+    border-color: color-mix(in srgb, var(--pl-badge-border), black 12%);
+  }
+
+  &:active,
+  &.active {
+    background-color: color-mix(in srgb, var(--pl-badge-bg), black 14%);
+    border-color: color-mix(in srgb, var(--pl-badge-border), black 22%);
+  }
+
+  &:disabled,
+  &.disabled {
+    background-color: var(--pl-badge-bg);
+    border-color: var(--pl-badge-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pl-badge-text);
+    outline-offset: 1px;
+  }
+}
+
+// Converts a Sass color to a hex string with rounded RGB channels.
+// Modern Dart Sass outputs fractional `rgb()` values from color functions;
+// this forces clean hex codes like `#c73000` in the compiled CSS.
+@function _hex-byte($n) {
+  $hex: '0123456789abcdef';
+  $n: round($n);
+  @return str-slice($hex, floor($n / 16) + 1, floor($n / 16) + 1) +
+    str-slice($hex, ($n % 16) + 1, ($n % 16) + 1);
+}
+
+@function to-hex($c) {
+  @return unquote('#' + _hex-byte(red($c)) + _hex-byte(green($c)) + _hex-byte(blue($c)));
+}
+
+// Returns a text color derived from `$base` that is dark enough for
+// sufficient contrast against the badge background `$bg`.
+// Uses Bootstrap's `contrast-ratio()` to ensure WCAG AA compliance (4.5:1).
+@function badge-text-color($base, $bg) {
+  @each $amount in -55%, -65%, -75%, -85%, -95% {
+    $candidate: scale-color($base, $lightness: $amount);
+    @if contrast-ratio($candidate, $bg) >= 4.5 {
+      @return $candidate;
+    }
+  }
+  // Last resort: near-black will always have sufficient contrast.
+  @return #1a1a1a;
 }
 
 @each $color, $value in $custom-colors {
-  $has-override: map-has-key($color-contrast-overrides, $color);
-  $text-color: if(
-    $has-override,
-    map-get($color-contrast-overrides, $color),
-    color-contrast($value)
-  );
+  // GitHub-style badge colors: light tinted background, saturated border & text.
+  // `scale-color` adjusts lightness *relative* to the current value, so darker
+  // colors (level 3) produce noticeably darker badge backgrounds than lighter
+  // colors (level 1), preserving the visual progression between levels.
+  // The border is derived from the background with a fixed lightness offset.
+  // Hover/active states are derived at runtime via `color-mix()` in the shared
+  // `.btn.btn-badge` rule, so only 3 custom properties are needed per color.
+  $badge-bg: scale-color($value, $lightness: 70%);
+  $badge-border: adjust-color($badge-bg, $lightness: -14%);
+  $badge-text: badge-text-color($value, $badge-bg);
 
-  .color-#{$color} {
-    color: $text-color;
-    background-color: $value;
+  // Convert computed colors to hex for clean CSS output.
+  $badge-bg: to-hex($badge-bg);
+  $badge-border: to-hex($badge-border);
+  $badge-text: to-hex($badge-text);
+
+  // Badge: GitHub-style with light bg, saturated border & text.
+  .badge.color-#{$color} {
+    color: $badge-text;
+    background-color: $badge-bg;
+    border: 1px solid $badge-border;
   }
 
-  .btn.color-#{$color} {
-    // Ensure button foregrounds (default, hover, active, disabled) respect the
-    // same override/fallback color.
-    @if $has-override {
-      @include button-variant(
-        $value,
-        $value,
-        $color: $text-color,
-        $hover-color: $text-color,
-        $active-color: $text-color,
-        $disabled-color: $text-color
-      );
-    } @else {
-      @include button-variant($value, $value);
-    }
-  }
-
-  .btn.color-#{$color}:focus:focus-visible {
-    outline-style: solid !important;
-    outline-color: var(--bs-btn-hover-color);
-    outline-width: 2px !important;
-    outline-offset: -2px !important;
+  // Badge button colors: set custom properties read by `.btn.btn-badge` above.
+  .btn.btn-badge.color-#{$color} {
+    --pl-badge-text: #{$badge-text};
+    --pl-badge-bg: #{$badge-bg};
+    --pl-badge-border: #{$badge-border};
   }
 }

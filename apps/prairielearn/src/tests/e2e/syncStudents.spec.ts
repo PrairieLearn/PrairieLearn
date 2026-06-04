@@ -76,8 +76,8 @@ async function createTestData() {
 }
 
 test.describe('Sync students', () => {
-  test.beforeAll(async () => {
-    await syncCourse();
+  test.beforeAll(async ({ testCoursePath }) => {
+    await syncCourse(testCoursePath);
     await createTestData();
   });
 

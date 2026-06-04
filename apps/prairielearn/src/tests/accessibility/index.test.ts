@@ -93,6 +93,9 @@ async function checkPage(url: string) {
       // instead of colspan). HTML is case-insensitive, so we accept both.
       'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
+      // The assessment password page uses autocomplete="off" because the input
+      // is for a proctor-provided password, not a user account password.
+      'autocomplete-password': 'off',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
       deprecated: ['error', { exclude: ['tt'] }],

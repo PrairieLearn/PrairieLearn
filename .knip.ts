@@ -97,7 +97,6 @@ const config: KnipConfig = {
         'src/question-servers/calculation-worker.ts',
       ],
       ignore: [
-        'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
         // We have lots of aliases in this file
         'src/lib/client/safe-db-types.ts',
