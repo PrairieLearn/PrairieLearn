@@ -11,7 +11,6 @@ in the zygote preload list.
 # These stdlib modules are NOT imported by the zygote or its transitive
 # dependencies, so they must be loaded from disk after privilege drop.
 import plistlib  # noqa: F401
-
 import tomllib  # noqa: F401
 
 
