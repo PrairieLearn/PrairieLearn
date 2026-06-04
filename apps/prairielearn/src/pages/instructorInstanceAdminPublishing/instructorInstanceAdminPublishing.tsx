@@ -429,7 +429,7 @@ router.post(
       return;
     } else if (req.body.__action === 'edit_extension') {
       const EmailsSchema = z
-        .array(z.string().trim().pipe(z.email('Invalid email format')))
+        .array(z.string().trim().pipe(z.email('Invalid UID format')))
         .min(1, 'At least one UID is required');
       const EditExtensionSchema = z.object({
         __action: z.literal('edit_extension'),
