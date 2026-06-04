@@ -22,6 +22,7 @@ export interface ZipArchive {
   entries: ZipEntrySummary[];
   entryMap: Map<string, ZipEntrySummary>;
   entryFiles: Map<string, FileEntry>;
+  close(): Promise<void>;
 }
 
 export type ZipInput = Blob | ArrayBuffer | ArrayBufferView;
@@ -71,6 +72,7 @@ export async function loadZipArchive(
     entries,
     entryMap: new Map(entries.map((entry) => [entry.name, entry])),
     entryFiles,
+    close: () => reader.close(),
   };
 }
 
@@ -106,6 +108,7 @@ export async function readZipEntryText(
   if (size > maxBytes) throw new Error(`Entry is too large to buffer: ${entryName}`);
 
   const data = await entry.getData(new TextWriter());
+  if (data.length > maxBytes) throw new Error(`Entry is too large to buffer: ${entryName}`);
   return data;
 }
 

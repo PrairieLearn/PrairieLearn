@@ -1,5 +1,7 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
+import { slugify } from '../utils/slugify.js';
+
 import {
   type ZipArchive,
   type ZipInput,
@@ -10,10 +12,16 @@ import {
 } from './zip.js';
 
 const TEXT_ENTRY_RE = /\.(?:xml|qti|html|txt)$/i;
-const QTI_ENTRY_RE = /(?:^|\/)(?:assessment_qti\.xml|[^/]+\.xml\.qti|[^/]+\.xml)$/i;
+/**
+ * Matches filenames that could plausibly be QTI XML (used only as a pre-filter; actual
+ *  QTI detection checks file contents for `<questestinterop>`).
+ */
+const CANDIDATE_QTI_RE = /(?:^|\/)(?:assessment_qti\.xml|[^/]+\.xml\.qti|[^/]+\.xml)$/i;
 const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
 const IMS_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'<>\r\n]+)/g;
+const MAX_QTI_SCAN_BYTES = 8 * 1024 * 1024;
 
+// These instances are stateless — safe to reuse across calls.
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
@@ -214,6 +222,7 @@ export async function trimQtiArchive(
 ): Promise<QtiArchiveTrimResult> {
   const analysis = await analyzeQtiArchive(input, inputName);
   const blob = await createTrimmedQtiArchive(analysis);
+  await analysis.archive.close();
 
   return {
     ...analysis,
@@ -371,8 +380,8 @@ async function discoverQtiEntriesWithoutManifest(
 ): Promise<QtiArchiveEntry[]> {
   const entries: QtiArchiveEntry[] = [];
   for (const name of [...entryMap.keys()].sort()) {
-    if (!QTI_ENTRY_RE.test(name) || NON_QTI_XML_FILES.has(basename(name))) continue;
-    const sample = await readZipEntryText(archive, name, 8 * 1024 * 1024);
+    if (!CANDIDATE_QTI_RE.test(name) || NON_QTI_XML_FILES.has(basename(name))) continue;
+    const sample = await readZipEntryText(archive, name, MAX_QTI_SCAN_BYTES);
     if (!sample.includes('<questestinterop') && !sample.includes(':questestinterop')) continue;
     if (!sample.includes('<assessment') && !sample.includes('<objectbank')) continue;
     entries.push({
@@ -757,17 +766,6 @@ function dirname(name: string): string {
 function basename(name: string): string {
   const index = name.lastIndexOf('/');
   return index === -1 ? name : name.slice(index + 1);
-}
-
-export function slugify(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .trim()
-      .replaceAll(/[^a-z0-9]+/g, '-')
-      .replaceAll(/-+/g, '-')
-      .replaceAll(/^-|-$/g, '') || 'untitled'
-  );
 }
 
 function encodePath(value: string): string {

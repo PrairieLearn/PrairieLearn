@@ -2,7 +2,6 @@ export {
   analyzeQtiArchive,
   createTrimmedQtiArchive,
   defaultTrimmedQtiArchiveName,
-  slugify,
   summarizeQtiArchiveAnalysis,
   trimQtiArchive,
   type QtiArchiveAnalysis,
