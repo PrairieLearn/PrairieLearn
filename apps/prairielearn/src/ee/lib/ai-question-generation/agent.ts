@@ -70,9 +70,13 @@ import { getAiQuestionGenerationStreamContext } from './redis.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 interface QuestionGenerationUIMessageMetadata {
-  job_sequence_id: string | null;
-  status: EnumAiQuestionGenerationMessageStatus;
+  job_sequence_id?: string | null;
+  status?: EnumAiQuestionGenerationMessageStatus;
   include_in_context?: boolean;
+  /** Display name of the user who sent the message. Null for assistant messages. */
+  user_name?: string | null;
+  /** ISO timestamp of when the message was sent. */
+  created_at?: string;
 }
 
 const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
