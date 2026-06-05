@@ -181,6 +181,11 @@ export async function init() {
     sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,
+    // In dev mode, resolve workspace packages to their source files so that
+    // changes are picked up without a separate build step. This mirrors the
+    // `@prairielearn/source` condition used by Vite for server-side rendering,
+    // keeping the client hydration bundle in sync with the server-rendered HTML.
+    conditions: ['@prairielearn/source'],
   });
 
   initialized = true;

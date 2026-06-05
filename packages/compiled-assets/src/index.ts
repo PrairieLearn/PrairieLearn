@@ -13,6 +13,7 @@ const DEFAULT_OPTIONS = {
   sourceDirectory: './assets',
   buildDirectory: './public/build',
   publicPath: '/build/',
+  conditions: [] as string[],
 };
 
 export type AssetsManifest = Record<
@@ -36,6 +37,10 @@ export interface CompiledAssetsOptions {
   buildDirectory?: string;
   /** The path that assets will be served from, e.g. `/build/`. */
   publicPath?: string;
+  /**
+   * Additional package.json export conditions to apply.
+   */
+  conditions?: string[];
 }
 
 let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
@@ -105,6 +110,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      conditions: options.conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     esbuildServer = await serveEsbuildContext(esbuildContext);
@@ -136,6 +142,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      conditions: options.conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);
