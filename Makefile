@@ -55,7 +55,7 @@ dev-vite: start-support python-deps
 dev-bun: python-deps
 	@pnpm --filter @prairielearn/prairielearn dev:bun
 dev-workspace-host: start-support
-	@pnpm --filter @prairielearn/grader-host dev
+	@pnpm --filter @prairielearn/workspace-host dev
 dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
