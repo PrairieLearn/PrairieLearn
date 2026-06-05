@@ -174,15 +174,6 @@ async function setAceEditorContent(page: Page, content: string) {
   }, content);
 }
 
-async function getAceEditorContent(page: Page): Promise<string> {
-  await waitForAceReady(page);
-  return page.evaluate(() => {
-    const el = document.querySelector<HTMLElement>('.ace_editor');
-    if (!el) throw new Error('Ace editor element not found');
-    return (window as unknown as AceWindow).ace.edit(el).getValue();
-  });
-}
-
 async function captureHome(page: Page) {
   console.log('Home page');
   await page.goto('/');
@@ -374,7 +365,9 @@ async function captureAssessmentFlow(
   await page.waitForLoadState('networkidle');
   await seedModernAssessmentAccessViaUI(page, courseInstanceUrl, assessmentId, displayTimezone);
 
-  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`);
+  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.getByRole('heading', { name: 'Defaults' }).waitFor();
   await page.getByRole('button', { name: 'Clear' }).waitFor();
   const accessCardBottom = await page.evaluate(() => {
@@ -406,29 +399,27 @@ async function seedModernAssessmentAccessViaUI(
   assessmentId: string,
   displayTimezone: string,
 ) {
-  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/file_view`);
-  await page.getByText('infoAssessment.json').waitFor();
-  await page.locator('a[href*="file_edit"][href$="infoAssessment.json"]').click();
-  await page.waitForURL(/\/file_edit\/.*infoAssessment\.json/);
-  const current = await getAceEditorContent(page);
-  const json = JSON.parse(current);
-  delete json.allowAccess;
-  json.accessControl = [
-    {
-      beforeRelease: { listed: true },
-      dateControl: {
-        release: { date: screenshotDate(displayTimezone, 2, '20:00:00') },
-        due: { date: screenshotDate(displayTimezone, 7, '20:00:00') },
-      },
-      afterComplete: {
-        questions: { hidden: false },
-        score: { hidden: false },
-      },
-    },
-  ];
-  await setAceEditorContent(page, JSON.stringify(json, null, 2) + '\n');
+  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+
+  const dateControl = page.getByLabel('Date control');
+  await dateControl.check();
+  await page.getByLabel('Scheduled for release').check();
+  await page.getByLabel('Release date').fill(screenshotDate(displayTimezone, 2, '20:00'));
+  await page.getByLabel('Due on date').check();
+  await page
+    .getByLabel('Due date', { exact: true })
+    .fill(screenshotDate(displayTimezone, 7, '20:00'));
+  await page.getByLabel('List before release').check();
+  await page.getByRole('button', { name: 'Question visibility', exact: true }).click();
+  await page.getByRole('option', { name: 'Show questions after completion' }).click();
+
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.waitForLoadState('networkidle');
+  await page.getByText('Access control updated successfully.').waitFor();
 }
 
 async function captureStudentView(page: Page) {
