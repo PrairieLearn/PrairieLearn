@@ -78,7 +78,7 @@ jobs:
           METADATA_DIR: ${{ runner.temp }}/image-metadata
           OUTPUT_PATH: ${{ runner.temp }}/image-sizes.json
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
