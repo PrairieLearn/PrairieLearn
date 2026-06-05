@@ -411,7 +411,7 @@ function GradebookTable({
             <NumericInputColumnFilter column={header.column} />
           ),
         ]),
-      )
+      ),
     };
   }, [courseAssessments, studentLabels, studentLabelsById]);
 
