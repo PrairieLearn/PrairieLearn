@@ -15,6 +15,12 @@
     "question-convert": "./dist/bin/convert.js"
   },
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "@prairielearn/source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsgo",
     "dev": "tsgo --watch --preserveWatchOutput",
