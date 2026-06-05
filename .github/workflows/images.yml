@@ -85,7 +85,7 @@ jobs:
           node-version: '24'
 
       - name: Install Node dependencies
-        run: pnpm install
+        run: pnpm --filter @prairielearn/actions-report-image-sizes... install
 
       - name: Build
         run: pnpm build
