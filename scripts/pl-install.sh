@@ -76,7 +76,10 @@ env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
 # Install Python outside of /root/ so it remains accessible after the
 # executor's privilege drop to a non-root user (see #14197).
-# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /opt/uv/python/*/bin/python3.13
+# UV_PYTHON_BIN_DIR adds a versioned symlink to the PATH, and the venv links
+# straight to the install dir:
+#   /usr/local/bin/python3.13     -> /opt/uv/python/*/bin/python3.13
+#   /PrairieLearn/.venv/bin/python -> /opt/uv/python/*/bin/python3.13
 UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
 
 # Clear various caches to minimize the final image size.

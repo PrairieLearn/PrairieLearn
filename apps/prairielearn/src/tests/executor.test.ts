@@ -11,11 +11,6 @@ import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
  *
  * TODO: consider creating `CodeCallerContainer` and interacting via that path.
  *
- * Elements are chosen specifically because they import third-party packages
- * NOT in the zygote pre-load list. This is the exact
- * class of failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197 where lazy imports failed because the
- * Python installation was inaccessible after dropping privileges.
- *
  * These tests are designed to run inside the prairielearn/executor Docker
  * container where the `executor` user exists and `dropPrivileges` works.
  */
@@ -41,6 +36,11 @@ describe('executor smoke tests', () => {
     codeCaller.done();
   });
 
+  // These elements are chosen specifically because they import third-party
+  // packages NOT in the zygote pre-load list. This is the exact class of
+  // failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197
+  // where lazy imports failed because the Python installation was inaccessible
+  // after dropping privileges.
   const testCases = [
     {
       element: 'pl-checkbox',
