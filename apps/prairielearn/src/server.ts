@@ -2626,7 +2626,10 @@ if (shouldStartServer) {
   // may come from another process, but we also send it to ourselves if
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
-  process.once('SIGTERM', async () => {
+  //
+  // SIGINT (Ctrl+C) is used to quit during local development; we handle it the
+  // same way so the server shuts down gracefully instead of being hard-killed.
+  const handleShutdownSignal = async () => {
     // In test environments, the entire process group receives SIGTERM, which
     // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
     // These unhandled 'error' events on ClientRequest objects would crash the
@@ -2698,7 +2701,9 @@ if (shouldStartServer) {
     } finally {
       process.exit(0);
     }
-  });
+  };
+  process.once('SIGTERM', handleShutdownSignal);
+  process.once('SIGINT', handleShutdownSignal);
 
   setServerState('initialized');
   logger.info('PrairieLearn server ready, press Control-C to quit');
