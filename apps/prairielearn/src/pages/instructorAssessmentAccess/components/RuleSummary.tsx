@@ -26,8 +26,7 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_PATTERN } from './validation.js';
 
 function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
