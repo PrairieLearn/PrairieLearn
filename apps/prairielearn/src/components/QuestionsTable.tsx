@@ -326,19 +326,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       return null;
     }
 
-    if (addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
-      // Special case: we have two feature-flagged buttons, we don't want to show a
-      // dropdown if only a single button is available.
-      //
-      // TODO: once QTI importing is unflagged, remove this branch.
-      return (
-        <a className="btn btn-sm btn-light" href={addQuestionUrl}>
-          <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-          Create new question
-        </a>
-      );
-    }
-
     return (
       <DropdownButton as={ButtonGroup} title="Add questions" size="sm" variant="light">
         {addQuestionUrl && (
