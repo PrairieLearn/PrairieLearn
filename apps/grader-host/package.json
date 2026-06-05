@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsgo && tscp",
     "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
-    "dev:no-watch": "tsx src/index.ts",
+    "dev:no-watch": "tsx --conditions=@prairielearn/source src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run --coverage"
   },

@@ -11,9 +11,18 @@
     "node": ">=24.0.0"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./server": "./dist/server.js",
-    "./hydrated-component": "./dist/hydrated-component/index.js"
+    ".": {
+      "@prairielearn/source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "@prairielearn/source": "./src/server.tsx",
+      "default": "./dist/server.js"
+    },
+    "./hydrated-component": {
+      "@prairielearn/source": "./src/hydrated-component/index.tsx",
+      "default": "./dist/hydrated-component/index.js"
+    }
   },
   "scripts": {
     "build": "tsgo",

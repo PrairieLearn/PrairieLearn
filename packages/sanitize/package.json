@@ -11,6 +11,12 @@
     "node": ">=24.0.0"
   },
   "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "@prairielearn/source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsgo",
     "dev": "tsgo --watch --preserveWatchOutput",
