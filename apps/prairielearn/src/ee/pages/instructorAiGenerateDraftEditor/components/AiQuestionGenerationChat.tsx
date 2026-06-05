@@ -316,10 +316,11 @@ function ScrollToBottomButton({
 const noopSubscribe = () => () => {};
 
 /**
- * Renders a message's timestamp in the viewer's local timezone. The server can't
- * know the viewer's timezone, so we render nothing during SSR and the initial
- * hydration pass, then render the formatted time once on the client. This avoids
- * a hydration mismatch without an effect.
+ * Renders a message's timestamp in the viewer's local timezone, with a leading
+ * separator. The server can't know the viewer's timezone, so we render nothing
+ * during SSR and the initial hydration pass, then render once on the client.
+ * This avoids a hydration mismatch without an effect, and keeps the separator
+ * from dangling while the timestamp is absent.
  */
 function MessageTimestamp({ createdAt }: { createdAt: string }) {
   const isClient = useSyncExternalStore(
@@ -337,7 +338,12 @@ function MessageTimestamp({ createdAt }: { createdAt: string }) {
     minute: '2-digit',
   }).format(new Date(createdAt));
 
-  return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>;
+  return (
+    <>
+      <span aria-hidden="true">&middot;</span>
+      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
+    </>
+  );
 }
 
 function Message({
