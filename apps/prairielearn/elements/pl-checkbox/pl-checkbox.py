@@ -158,9 +158,7 @@ def generate_insert_text(
         num_correct=num_correct, show_number_correct=show_number_correct
     )
 
-    show_min_select = (
-        has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
-    )
+    show_min_select = has_min_select_attrib
     show_max_select = (
         has_max_select_attrib and max_options_to_select != num_display_answers
     )
@@ -183,7 +181,7 @@ def generate_insert_text(
         else:
             insert_text = f" at most <b>{max_options_to_select}</b> options"
     else:
-        insert_text = " at least 1 option"
+        insert_text = " at least <b>1</b> option"
 
     if allow_blank:
         insert_text += " (you may also skip this question by leaving it blank)."

@@ -54,7 +54,21 @@ class HelpTextTestCase(NamedTuple):
 @pytest.mark.parametrize(
     "case",
     [
-        # Min select only
+        # Min select only, value of 1
+        HelpTextTestCase(
+            num_correct=3,
+            num_display=5,
+            show_num=False,
+            detailed=False,
+            has_min=True,
+            has_max=False,
+            min_val=1,
+            max_val=5,
+            allow_blank=False,
+            expected=" at least <b>1</b> option.",
+            id="min_select_only_1",
+        ),
+        # Min select only, value above 1
         HelpTextTestCase(
             num_correct=3,
             num_display=5,
@@ -68,7 +82,21 @@ class HelpTextTestCase(NamedTuple):
             expected=" at least <b>2</b> options.",
             id="min_select_only",
         ),
-        # Max select only
+        # Max select only, value of 1
+        HelpTextTestCase(
+            num_correct=2,
+            num_display=5,
+            show_num=False,
+            detailed=False,
+            has_min=False,
+            has_max=True,
+            min_val=1,
+            max_val=1,
+            allow_blank=False,
+            expected=" at most <b>1</b> option.",
+            id="max_select_only_1",
+        ),
+        # Max select only, value above 1
         HelpTextTestCase(
             num_correct=2,
             num_display=5,
@@ -96,7 +124,21 @@ class HelpTextTestCase(NamedTuple):
             expected=" between <b>2</b> and <b>4</b> options.",
             id="min_and_max_different",
         ),
-        # Min and max same
+        # Min and max same, value of 1
+        HelpTextTestCase(
+            num_correct=3,
+            num_display=5,
+            show_num=False,
+            detailed=False,
+            has_min=True,
+            has_max=True,
+            min_val=1,
+            max_val=1,
+            allow_blank=False,
+            expected=" exactly <b>1</b> option.",
+            id="min_and_max_same_1",
+        ),
+        # Min and max same, value above 1
         HelpTextTestCase(
             num_correct=3,
             num_display=5,
@@ -110,7 +152,7 @@ class HelpTextTestCase(NamedTuple):
             expected=" exactly <b>3</b> options.",
             id="min_and_max_same",
         ),
-        # Detailed help text
+        # Detailed help text, min and max different
         HelpTextTestCase(
             num_correct=3,
             num_display=5,
@@ -124,6 +166,21 @@ class HelpTextTestCase(NamedTuple):
             expected=" between <b>1</b> and <b>4</b> options.",
             id="detailed_help_different",
         ),
+        # Detailed help text, min and max both 1
+        HelpTextTestCase(
+            num_correct=2,
+            num_display=5,
+            show_num=False,
+            detailed=True,
+            has_min=False,
+            has_max=False,
+            min_val=1,
+            max_val=1,
+            allow_blank=False,
+            expected=" exactly <b>1</b> option.",
+            id="detailed_help_same_1",
+        ),
+        # Detailed help text, min and max same and above 1
         HelpTextTestCase(
             num_correct=2,
             num_display=5,
@@ -137,7 +194,7 @@ class HelpTextTestCase(NamedTuple):
             expected=" exactly <b>2</b> options.",
             id="detailed_help_same",
         ),
-        # Combined with show number correct
+        # Detailed help text combined with show number correct
         HelpTextTestCase(
             num_correct=3,
             num_display=5,
