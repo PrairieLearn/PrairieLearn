@@ -1,6 +1,8 @@
-import type { Header } from '@tanstack/react-table';
-
-import { MultiSelectColumnFilter, NumericInputColumnFilter } from '@prairielearn/ui';
+import {
+  type ColumnFilter,
+  MultiSelectColumnFilter,
+  NumericInputColumnFilter,
+} from '@prairielearn/ui';
 
 import {
   GRADING_STATUS_VALUES,
@@ -15,7 +17,7 @@ export function createColumnFilters({
   allGraders: string[];
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
-}): Record<string, (props: { header: Header<InstanceQuestionRow, unknown> }) => React.ReactNode> {
+}) {
   return {
     requires_manual_grading: ({ header }) => (
       <MultiSelectColumnFilter
@@ -51,5 +53,5 @@ export function createColumnFilters({
         allColumnValues={allAiAgreementItems.map((item) => item.description)}
       />
     ),
-  };
+  } satisfies Record<string, ColumnFilter<InstanceQuestionRow>>;
 }

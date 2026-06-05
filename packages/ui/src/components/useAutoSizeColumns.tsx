@@ -1,14 +1,9 @@
-import {
-  type Column,
-  type ColumnSizingState,
-  type Header,
-  type Table,
-  flexRender,
-} from '@tanstack/react-table';
-import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type Column, type ColumnSizingState, type Table, flexRender } from '@tanstack/react-table';
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
 
+import { type ColumnFilter } from './TanstackTable.js';
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
 function HiddenMeasurementHeader<TData>({
@@ -18,7 +13,7 @@ function HiddenMeasurementHeader<TData>({
 }: {
   table: Table<TData>;
   columnsToMeasure: { id: string }[];
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>;
+  filters?: Record<string, ColumnFilter<TData>>;
 }) {
   const headerGroups = table.getHeaderGroups();
   const leafHeaderGroup = headerGroups[headerGroups.length - 1];
@@ -123,7 +118,7 @@ function HiddenMeasurementCells<TData>({
 export function useAutoSizeColumns<TData>(
   table: Table<TData>,
   tableRef: RefObject<HTMLDivElement | null>,
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>,
+  filters?: Record<string, ColumnFilter<TData>>,
 ): boolean {
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
   const measurementRootRef = useRef<Root | null>(null);
