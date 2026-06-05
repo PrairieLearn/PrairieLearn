@@ -462,7 +462,6 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
-    await features.enable('qti-content-import');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
