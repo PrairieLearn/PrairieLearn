@@ -1,4 +1,4 @@
-FROM node:26-bookworm
+FROM node:26-trixie
 ARG CACHEBUST=2026-05-15-14-49-21
 
 RUN apt-get update \
