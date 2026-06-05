@@ -78,19 +78,17 @@ jobs:
           METADATA_DIR: ${{ runner.temp }}/image-metadata
           OUTPUT_PATH: ${{ runner.temp }}/image-sizes.json
 
+      - uses: pnpm/action-setup@v4
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
 
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
-
       - name: Install Node dependencies
-        run: yarn workspaces focus @prairielearn/actions-report-image-sizes
+        run: pnpm --filter @prairielearn/actions-report-image-sizes... install
 
       - name: Build
-        run: yarn build
+        run: pnpm build
         working-directory: packages/actions-report-image-sizes
 
       - name: Report image sizes
