@@ -1,0 +1,5 @@
+allowBuilds:
+  node-pty: true
+
+# Delay newly published npm packages for 3 days.
+minimumReleaseAge: 4320
