@@ -45,7 +45,8 @@ git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 24
-npm install yarn@latest -g
+# Pinned to the packageManager version in package.json.
+npm install -g pnpm@11.5.0
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
@@ -77,8 +78,13 @@ cd /
 curl -fLO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /root/.local/share/uv/python/*/bin/python3.13
-UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
+# Install Python outside of /root/ so it remains accessible after the
+# executor's privilege drop to a non-root user (see #14197).
+# UV_PYTHON_BIN_DIR adds a versioned symlink to the PATH, and the venv links
+# straight to the install dir:
+#   /usr/local/bin/python3.13     -> /opt/uv/python/*/bin/python3.13
+#   /PrairieLearn/.venv/bin/python -> /opt/uv/python/*/bin/python3.13
+UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
 
 # Clear various caches to minimize the final image size.
 apt-get clean

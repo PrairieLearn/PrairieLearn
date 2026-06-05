@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useRef } from 'react';
+import { type ChangeEvent, useEffect } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import {
   get,
@@ -125,9 +125,6 @@ export function PrairieTestControlForm() {
   const watchedExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
     name: 'defaultRule.prairieTestExams',
   });
-  const examsRef = useRef(watchedExams);
-  examsRef.current = watchedExams;
-
   const watchedExamUuids = watchedExams.map((exam) => exam.examUuid).join('\0');
   const addExamDisabled = examFields.length >= MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS;
   const addExamDisabledTitle = addExamDisabled
@@ -180,22 +177,7 @@ export function PrairieTestControlForm() {
               defaultValue=""
               disabled={!ruleEditable}
               placeholder="e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c"
-              {...register(`defaultRule.prairieTestExams.${index}.examUuid`, {
-                required: 'Exam UUID is required',
-                pattern: {
-                  value: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-                  message: 'Invalid UUID format',
-                },
-                validate: (value) => {
-                  const currentExams = examsRef.current;
-                  for (let i = 0; i < currentExams.length; i++) {
-                    if (i !== index && currentExams[i]?.examUuid === value) {
-                      return 'Duplicate exam UUID';
-                    }
-                  }
-                  return true;
-                },
-              })}
+              {...register(`defaultRule.prairieTestExams.${index}.examUuid`)}
             />
             {getExamUuidError(index) && (
               <Form.Text
