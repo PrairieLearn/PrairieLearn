@@ -408,6 +408,10 @@ async function createQuestionGenerationAgent({
         ...QUESTION_GENERATION_TOOLS.writeFile,
         execute: ({ path, content }) => {
           files[path] = content;
+          // TODO: see the following issue and PR. If they're ever resolved,
+          // we can consider removing this return value.
+          // https://github.com/vercel/ai/issues/15854
+          // https://github.com/vercel/ai/pull/15855
           return { success: true };
         },
       }),

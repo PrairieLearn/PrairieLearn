@@ -186,6 +186,14 @@ router.get(
         // persisted without an `output` field. Zod 4's `validateUIMessages()`
         // rejects an `output-available` tool part that lacks `output`, so
         // backfill a null output for these older parts.
+        //
+        // TODO: see the following issue and PR. If they're ever resolved,
+        // we can consider removing this workaround. Specifically, we'll need
+        // the AI SDK to be able to gracefully handle message parts that were
+        // persisted without an explicit `output` property.
+        //
+        // https://github.com/vercel/ai/issues/15854
+        // https://github.com/vercel/ai/pull/15855
         return message.parts.map((part) =>
           part?.state === 'output-available' && !('output' in part)
             ? { ...part, output: null }
