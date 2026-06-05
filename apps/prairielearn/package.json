@@ -10,7 +10,7 @@
     "build": "tsgo --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
     "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
     "dev:bun": "bun --conditions=@prairielearn/source --watch src/server.ts",
-    "dev:no-watch": "tsx --conditions=@prairielearn/source --tsconfig src/tsconfig.json src/server.ts",
+    "dev:no-watch": "tsx --conditions=@prairielearn/source --tsconfig src/tsconfig.dev.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
