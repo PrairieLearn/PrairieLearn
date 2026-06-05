@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
-    "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
+    "dev": "nodemon --exec \"tsx --conditions=@prairielearn/source --tsconfig src/tsconfig.dev.json src/server.ts\" -- || true",
     "dev:bun": "bun --conditions=@prairielearn/source --watch src/server.ts",
     "dev:no-watch": "tsx --conditions=@prairielearn/source --tsconfig src/tsconfig.dev.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
