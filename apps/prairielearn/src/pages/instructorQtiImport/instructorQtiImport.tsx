@@ -9,7 +9,6 @@ import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
-import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -31,6 +30,7 @@ import {
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/utils/zip';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
@@ -203,12 +203,18 @@ router.post(
         if (!file.path) {
           throw new Error('Uploaded archive was not written to disk');
         }
-        const directory = await unzipper.Open.file(file.path);
-        await directory.extract({ path: tempDir });
-      } catch (err) {
-        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt', {
-          cause: err,
+        await extractZipArchive({
+          archivePath: file.path,
+          destinationDir: tempDir,
+          maxEntries: 10_000,
+          maxExtractedBytes: 500 * 1024 * 1024,
         });
+      } catch (err) {
+        const message =
+          err instanceof ZipArchiveValidationError
+            ? err.message
+            : 'The uploaded archive is invalid or corrupt';
+        throw new HttpStatusError(400, message, { cause: err });
       }
 
       // Find QTI content files from the manifest. If the archive has a

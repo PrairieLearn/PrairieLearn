@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 import { ColorJsonSchema } from './infoCourse.js';
 
+export const MAX_STUDENT_LABEL_NAME_LENGTH = 255;
 export const MAX_STUDENT_LABELS_PER_COURSE_INSTANCE = 100;
 
 const AccessRuleJsonSchema = z
@@ -10,7 +11,7 @@ const AccessRuleJsonSchema = z
     comment: CommentJsonSchema.optional(),
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
-      .describe('DEPRECATED -- do not use.')
+      .meta({ deprecated: true })
       .optional(),
     uids: z
       .array(z.string())
@@ -54,7 +55,12 @@ export const StudentLabelJsonSchema = z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
-    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_STUDENT_LABEL_NAME_LENGTH)
+      .describe('The name of the student label.'),
     color: ColorJsonSchema,
   })
   .strict()
@@ -70,14 +76,14 @@ export const CourseInstanceJsonSchema = z
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     longName: z.string().describe("The long name of this course instance (e.g., 'Spring 2015')."),
-    shortName: z.string().describe('DEPRECATED -- do not use.').optional(),
+    shortName: z.string().meta({ deprecated: true }).optional(),
     timezone: z
       .string()
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
       .optional(),
-    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
+    allowIssueReporting: z.boolean().meta({ deprecated: true }).optional(),
     selfEnrollment: z
       .object({
         enabled: z
@@ -108,15 +114,13 @@ export const CourseInstanceJsonSchema = z
           .optional()
           .default(false),
       })
-      .optional()
-      .default({}),
+      .prefault({}),
     hideInEnrollPage: z
       .boolean()
-      .describe(
-        'DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.',
-      )
+      .describe('The enrollment listing page has been removed. This setting is no longer used.')
+      .meta({ deprecated: true })
       .optional(),
-    userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
+    userRoles: z.object({}).catchall(z.any()).meta({ deprecated: true }).optional(),
     publishing: PublishingJsonSchema.optional(),
     allowAccess: AllowAccessJsonSchema.optional(),
     groupAssessmentsBy: z
@@ -140,7 +144,8 @@ export const CourseInstanceJsonSchema = z
       .optional(),
   })
   .strict()
-  .describe('The specification file for a course instance.');
+  .describe('The specification file for a course instance.')
+  .meta({ title: 'Course instance information' });
 
 export type CourseInstanceJson = z.infer<typeof CourseInstanceJsonSchema>;
 export type CourseInstanceJsonInput = z.input<typeof CourseInstanceJsonSchema>;

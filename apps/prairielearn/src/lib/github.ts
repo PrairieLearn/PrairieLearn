@@ -16,37 +16,179 @@ import { type Course, type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
-import { type ServerJob, createServerJob } from './server-jobs.js';
+import { type ServerJob, type ServerJobLogger, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-/*
-  Required configuration options to get this working:
-  - config.githubClientToken
-  - config.githubCourseOwner
-  - config.githubMachineTeam
-*/
 
 /**
  * Creates an octokit client from the client token specified in the config.
  */
-function getGithubClient() {
+function getGithubClient(): Octokit | null {
   if (config.githubClientToken === null) {
     return null;
   }
   return new Octokit({ auth: config.githubClientToken });
 }
 
+/*
+  Required configuration options to get this working:
+  - config.githubClientToken
+  - config.githubCourseOwner (platform default; institutions may override)
+  - config.githubMachineTeam
+  - config.githubMachineUser (required to validate org access)
+*/
+
+type GithubOrgAccessFailureReason =
+  | 'no_client'
+  | 'no_machine_user'
+  | 'org_unreachable'
+  | 'not_a_member'
+  | 'pending_invitation'
+  | 'cannot_create_private_repositories';
+
+type GithubOrgAccessResult = { ok: true } | { ok: false; reason: GithubOrgAccessFailureReason };
+
 /**
- * Checks whether a repository already exists on GitHub.
+ * Returns true when `value` refers to the same GitHub org as `config.githubCourseOwner`.
+ * GitHub org names are case-insensitive.
  */
-export async function checkGithubRepositoryExists(repoName: string): Promise<boolean> {
+function isPlatformDefaultOrg(value: string): boolean {
+  return value.toLowerCase() === config.githubCourseOwner.toLowerCase();
+}
+
+function membersCanCreatePrivateRepositories(org: {
+  members_can_create_private_repositories?: boolean;
+  members_allowed_repository_creation_type?: string;
+  members_can_create_repositories?: boolean | null;
+}): boolean {
+  if (org.members_can_create_private_repositories !== undefined) {
+    return org.members_can_create_private_repositories;
+  }
+
+  if (org.members_allowed_repository_creation_type !== undefined) {
+    return (
+      org.members_allowed_repository_creation_type === 'all' ||
+      org.members_allowed_repository_creation_type === 'private'
+    );
+  }
+
+  if (org.members_can_create_repositories === false) {
+    return false;
+  }
+
+  return true;
+}
+
+function membershipCanCreatePrivateRepositories(
+  role: 'admin' | 'member' | 'billing_manager',
+  org: Parameters<typeof membersCanCreatePrivateRepositories>[0],
+): boolean {
+  if (role === 'admin') return true;
+  if (role !== 'member') return false;
+  return membersCanCreatePrivateRepositories(org);
+}
+
+/**
+ * Verifies that the PrairieLearn machine account can create private repos in the given GitHub org.
+ * Calls `GET /orgs/{org}` and `GET /orgs/{org}/memberships/{username}`. Membership in
+ * `'pending'` state (i.e., an unaccepted invitation) is reported separately so callers
+ * can surface a more actionable message.
+ *
+ * Unexpected errors (5xx, network) are re-thrown so callers can surface them as server
+ * errors instead of persisting an unverified value.
+ */
+export async function checkGithubOrgAccess(
+  client: Octokit | null,
+  org: string,
+): Promise<GithubOrgAccessResult> {
+  if (client === null) return { ok: false, reason: 'no_client' };
+  if (config.githubMachineUser === null) return { ok: false, reason: 'no_machine_user' };
+
+  let orgData: Awaited<ReturnType<Octokit['orgs']['get']>>['data'];
+  try {
+    orgData = (await client.orgs.get({ org })).data;
+  } catch (err: any) {
+    if (err.status === 404 || err.status === 403) {
+      return { ok: false, reason: 'org_unreachable' };
+    }
+    throw err;
+  }
+
+  try {
+    const response = await client.orgs.getMembershipForUser({
+      org,
+      username: config.githubMachineUser,
+    });
+    if (response.data.state === 'pending') {
+      return { ok: false, reason: 'pending_invitation' };
+    }
+    if (!membershipCanCreatePrivateRepositories(response.data.role, orgData)) {
+      return { ok: false, reason: 'cannot_create_private_repositories' };
+    }
+  } catch (err: any) {
+    // 403 from this endpoint means the machine user can't read its own
+    // membership in `org`, which from our perspective is indistinguishable
+    // from not being a member.
+    if (err.status === 404 || err.status === 403) {
+      return { ok: false, reason: 'not_a_member' };
+    }
+    throw err;
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Human-readable message for a failed `checkGithubOrgAccess` result. Suitable for
+ * surfacing to admins/instructors via flash messages or tRPC errors.
+ */
+function githubOrgAccessErrorMessage(
+  result: Extract<GithubOrgAccessResult, { ok: false }>,
+  org: string,
+): string {
+  switch (result.reason) {
+    case 'no_client':
+      return 'GitHub integration is not configured on this server.';
+    case 'no_machine_user':
+      return 'GitHub machine user is not configured; cannot validate org access.';
+    case 'org_unreachable':
+      return `Could not access GitHub organization '${org}'. Confirm the org exists and the machine account has been invited.`;
+    case 'pending_invitation':
+      return `The PrairieLearn machine account has not yet accepted the invitation to '${org}'. Accept the invitation and try again.`;
+    case 'not_a_member':
+      return `The PrairieLearn machine account is not a member of '${org}'. Add the account to the org and try again.`;
+    case 'cannot_create_private_repositories':
+      return `The PrairieLearn machine account cannot create private repositories in '${org}'. Make the account an org owner or allow members to create private repositories, then try again.`;
+  }
+}
+
+/**
+ * Validates that an org is usable as a course owner: either it matches the platform
+ * default (in which case no GitHub API call is made), or the machine account has
+ * verified access to it.
+ */
+export async function validateGithubCourseOwner(
+  org: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (isPlatformDefaultOrg(org)) return { ok: true };
+  const access = await checkGithubOrgAccess(getGithubClient(), org);
+  if (access.ok) return { ok: true };
+  return { ok: false, message: githubOrgAccessErrorMessage(access, org) };
+}
+
+/**
+ * Checks whether a repository already exists on GitHub in the given org.
+ */
+export async function checkGithubRepositoryExists(
+  repoName: string,
+  owner: string,
+): Promise<boolean> {
   const client = getGithubClient();
   if (client === null) return false;
 
   try {
     const response = await client.repos.get({
-      owner: config.githubCourseOwner,
+      owner,
       repo: repoName,
     });
     // If the repository was renamed, GitHub returns a 301 redirect which
@@ -64,12 +206,10 @@ export async function checkGithubRepositoryExists(repoName: string): Promise<boo
 
 /**
  * Creates a new, empty repository.
- * @param client Octokit client
- * @param repo Name of the new repository to create
  */
-async function createEmptyRepository(client: Octokit, repo: string) {
+async function createEmptyRepository(client: Octokit, owner: string, repo: string) {
   await client.repos.createInOrg({
-    org: config.githubCourseOwner,
+    org: owner,
     name: repo,
     private: true,
   });
@@ -77,17 +217,19 @@ async function createEmptyRepository(client: Octokit, repo: string) {
 
 /**
  * Adds a file's contents in a repository.
- * @param client Octokit client
- * @param repo Repository to set file contents in
- * @param path Path to the file, relative from the root of the repository.
- * @param contents Raw contents of the file, stored as a string.
  */
-async function addFileToRepo(client: Octokit, repo: string, path: string, contents: string) {
+async function addFileToRepo(
+  client: Octokit,
+  owner: string,
+  repo: string,
+  path: string,
+  contents: string,
+) {
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await client.repos.createOrUpdateFileContents({
-        owner: config.githubCourseOwner,
+        owner,
         repo,
         path,
         message: `Update ${path}`,
@@ -109,20 +251,17 @@ async function addFileToRepo(client: Octokit, repo: string, path: string, conten
 
 /**
  * Add a team to a specific repository.
- * @param client Octokit client
- * @param repo Repository to update
- * @param team Team to add
- * @param permission String permission to give to the team
  */
 async function addTeamToRepo(
   client: Octokit,
+  owner: string,
   repo: string,
   team: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
-    owner: config.githubCourseOwner,
-    org: config.githubCourseOwner,
+    owner,
+    org: owner,
     repo,
     team_slug: team,
     permission,
@@ -131,23 +270,41 @@ async function addTeamToRepo(
 
 /**
  * Invites a user to a specific repository.
- * @param client Octokit client
- * @param repo Repository to update
- * @param username Username to add
- * @param permission String permission to give to the user
  */
 async function addUserToRepo(
   client: Octokit,
+  owner: string,
   repo: string,
   username: string,
   permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
 ) {
   await client.repos.addCollaborator({
-    owner: config.githubCourseOwner,
+    owner,
     repo,
     username,
     permission,
   });
+}
+
+export async function addMachineAccessToRepo(
+  client: Octokit,
+  owner: string,
+  repo: string,
+  job: ServerJobLogger,
+) {
+  if (isPlatformDefaultOrg(owner)) {
+    job.info('Adding machine team to repo');
+    await addTeamToRepo(client, owner, repo, config.githubMachineTeam, 'admin');
+    job.info(`Added team ${config.githubMachineTeam} as administrator of repo ${repo}`);
+  } else {
+    if (config.githubMachineUser === null) {
+      throw new Error('GitHub machine user is not configured; cannot grant repository access.');
+    }
+
+    job.info('Adding machine user to repo');
+    await addUserToRepo(client, owner, repo, config.githubMachineUser, 'admin');
+    job.info(`Added user ${config.githubMachineUser} as administrator of repo ${repo}`);
+  }
 }
 
 /**
@@ -159,6 +316,7 @@ async function addUserToRepo(
  * @param options.display_timezone - The display timezone of the course.
  * @param options.path - The path of the course.
  * @param options.repo_short_name - The short name of the repository.
+ * @param options.github_course_owner - The GitHub org that will own the new repository.
  * @param options.github_user - The GitHub username of the instructor.
  * @param options.course_request_id - The course request ID.
  * @param authn_user Authenticated user that is creating the course.
@@ -171,11 +329,14 @@ export async function createCourseRepoJob(
     display_timezone: string;
     path: string;
     repo_short_name: string;
+    github_course_owner: string;
     github_user: string | null;
     course_request_id: string;
   },
   authn_user: User,
 ) {
+  const owner = options.github_course_owner;
+
   const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
     if (client === null) {
@@ -190,8 +351,8 @@ export async function createCourseRepoJob(
 
     // Create an empty repository for the course
     job.info('Creating empty repository');
-    await createEmptyRepository(client, options.repo_short_name);
-    job.info(`Created repository ${options.repo_short_name}`);
+    await createEmptyRepository(client, owner, options.repo_short_name);
+    job.info(`Created repository ${owner}/${options.repo_short_name}`);
 
     job.info('Creating infoCourse.json based on template');
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
@@ -205,20 +366,20 @@ export async function createCourseRepoJob(
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
-    await addFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents);
+    await addFileToRepo(client, owner, options.repo_short_name, 'infoCourse.json', newContents);
     job.info('Uploaded new infoCourse.json file');
 
     // Copy the template .gitignore file
     job.info('Copying .gitignore file');
     const gitignorePath = path.join(TEMPLATE_COURSE_PATH, '.gitignore');
     const gitignoreContents = await fs.readFile(gitignorePath, 'utf-8');
-    await addFileToRepo(client, options.repo_short_name, '.gitignore', gitignoreContents);
+    await addFileToRepo(client, owner, options.repo_short_name, '.gitignore', gitignoreContents);
     job.info('Uploaded new .gitignore file');
 
     job.info('Copying README.md file');
     const readmePath = path.join(TEMPLATE_COURSE_PATH, 'README.md');
     const readmeContents = await fs.readFile(readmePath, 'utf-8');
-    await addFileToRepo(client, options.repo_short_name, 'README.md', readmeContents);
+    await addFileToRepo(client, owner, options.repo_short_name, 'README.md', readmeContents);
     job.info('Uploaded new README.md file');
 
     // Find main branch (which is the only branch in the new repo).
@@ -227,7 +388,7 @@ export async function createCourseRepoJob(
 
     const branches = (
       await client.repos.listBranches({
-        owner: config.githubCourseOwner,
+        owner,
         repo: options.repo_short_name,
       })
     ).data;
@@ -238,16 +399,12 @@ export async function createCourseRepoJob(
     job.info(`Main branch for new repository: "${branch}"`);
 
     // Add machine and instructor to the repo
-    job.info('Adding machine team to repo');
-    await addTeamToRepo(client, options.repo_short_name, config.githubMachineTeam, 'admin');
-    job.info(
-      `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
-    );
+    await addMachineAccessToRepo(client, owner, options.repo_short_name, job);
 
     if (options.github_user) {
       job.info('Adding instructor to repo');
       try {
-        await addUserToRepo(client, options.repo_short_name, options.github_user, 'admin');
+        await addUserToRepo(client, owner, options.repo_short_name, options.github_user, 'admin');
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );
@@ -258,7 +415,7 @@ export async function createCourseRepoJob(
 
     // Insert the course into the courses table
     job.info('Adding course to database');
-    const repository = `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`;
+    const repository = `git@github.com:${owner}/${options.repo_short_name}.git`;
     const inserted_course = await insertCourse({
       institution_id: options.institution_id,
       short_name: options.short_name,

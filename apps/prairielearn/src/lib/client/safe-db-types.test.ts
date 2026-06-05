@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  AdminInstitutionSchema,
+  AdminInstitutionWithSettingsSchema,
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
   StaffAlternativePoolSchema,
@@ -460,6 +462,26 @@ const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
   short_name: 'TI',
 };
 
+const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
+  course_instance_enrollment_limit: 100,
+  default_authn_provider_id: null,
+  display_timezone: 'UTC',
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+  uid_regexp: null,
+  yearly_enrollment_limit: 1000,
+};
+
+const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
+  institution: minimalAdminInstitution,
+  institution_settings: {
+    course_request_message: null,
+    github_course_owner: 'PrairieLearn',
+    institution_id: '1',
+  },
+};
+
 const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
   assessment_id: '2',
   assessment_question_id: null,
@@ -752,6 +774,16 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffInstitution);
+  });
+
+  it('parses valid AdminInstitution without institution settings fields', () => {
+    const parsed = AdminInstitutionSchema.parse(minimalAdminInstitution);
+    expect(parsed).toMatchObject(minimalAdminInstitution);
+  });
+
+  it('parses valid AdminInstitutionWithSettings with GitHub course owner', () => {
+    const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
+    expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
   });
 
   it('parses valid StaffJobSequence and drops extra fields', () => {

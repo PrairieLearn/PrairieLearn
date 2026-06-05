@@ -29,7 +29,7 @@ export function AssessmentNavigation({
   embedded?: boolean;
 }) {
   return html`
-    <div class="${clsx(!embedded && 'bg-light pt-2 px-3')}" style="min-width: 0;">
+    <div class="${clsx('assessment-switcher-wrapper', !embedded && 'bg-light pt-2 px-3')}">
       <button
         type="button"
         class="btn btn-ghost text-start assessment-switcher-button"

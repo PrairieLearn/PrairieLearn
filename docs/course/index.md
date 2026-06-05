@@ -409,7 +409,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Exposing user data to `server.py`
 
-By default, questions cannot see who is working on them. A course can opt in to passing the identity (uid, uin, name) of the student who owns the variant into `server.py` through `data["options"]["user"]`, and the group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-user-and-group-identity) for the exact shape and access patterns.
+By default, question `server.py` code does not receive identifying information about users or groups. A course can opt in so that `server.py` receives the identity (UID, UIN, name) of the user who owns an individual variant through `data["options"]["user"]`, and group membership through `data["options"]["group"]` on group assessments. See the [`server.py` documentation](../question/server.md#accessing-user-and-group-identity) for the exact shape and access patterns.
 
 To enable this for a course, on the course settings page, check "Allow questions to access user identity".
 
@@ -423,7 +423,7 @@ If you are running in development mode, you can also add the following to `infoC
 }
 ```
 
-The JSON value is only used in development mode. Questions imported from another course (via public sharing or a sharing set) never receive user data, regardless of either course's settings.
+The JSON value is only used in development mode. For questions imported from another course (via public sharing or a sharing set), `server.py` never receives user data, regardless of either course's settings.
 
 ## Comments in JSON files
 
