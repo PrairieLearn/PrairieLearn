@@ -182,7 +182,15 @@ router.get(
         if (message.parts.length === 0) {
           return [{ type: 'text', text: '' }];
         }
-        return message.parts;
+        // Tool calls whose tool returned nothing (e.g. legacy `writeFile`) were
+        // persisted without an `output` field. Zod 4's `validateUIMessages()`
+        // rejects an `output-available` tool part that lacks `output`, so
+        // backfill a null output for these older parts.
+        return message.parts.map((part) =>
+          part?.state === 'output-available' && !('output' in part)
+            ? { ...part, output: null }
+            : part,
+        );
       });
 
       return {

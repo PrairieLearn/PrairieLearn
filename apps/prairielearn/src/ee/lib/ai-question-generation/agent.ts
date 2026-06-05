@@ -89,6 +89,7 @@ const QUESTION_GENERATION_TOOLS = {
       path: z.enum(['question.html', 'server.py']),
       content: z.string(),
     }),
+    outputSchema: z.object({ success: z.boolean() }),
   }),
   getElementDocumentation: tool({
     inputSchema: z.object({
@@ -407,6 +408,7 @@ async function createQuestionGenerationAgent({
         ...QUESTION_GENERATION_TOOLS.writeFile,
         execute: ({ path, content }) => {
           files[path] = content;
+          return { success: true };
         },
       }),
       getElementDocumentation: tool({
