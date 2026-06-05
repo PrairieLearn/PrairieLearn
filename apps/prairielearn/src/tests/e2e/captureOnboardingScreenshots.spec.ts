@@ -7,7 +7,7 @@
  * reuse the e2e worker server, dev DB, writable testCourse copy, and `page`
  * fixture instead of redefining all of that.
  *
- * Usage: `yarn capture-onboarding-screenshots`
+ * Usage: `pnpm capture-onboarding-screenshots`
  */
 
 import fs from 'node:fs';

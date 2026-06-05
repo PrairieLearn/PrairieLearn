@@ -4,7 +4,7 @@ Internal package that converts questions from interchange formats into PrairieLe
 
 ## CLI
 
-The `question-convert` binary is exposed via `package.json#bin`. Build the package once (`yarn workspace @prairielearn/question-conversion build`), then run:
+The `question-convert` binary is exposed via `package.json#bin`. Build the package once (`pnpm --filter @prairielearn/question-conversion build`), then run:
 
 ```text
 question-convert <input> --course <dir> --course-instance <name> [flags]
