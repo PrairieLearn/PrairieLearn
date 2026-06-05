@@ -1,0 +1,42 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+overrides:
+  '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
+  '@sa11y/common>axe-core': ^4
+  '@sa11y/format>axe-core': ^4
+  '@typescript/native-preview': beta
+  'linkinator>marked': ^18
+  'markdownlint-cli2>smol-toml': ^1
+  'notebookjs>jsdom': '*'
+  'typescript-cp>tar': '*'
+
+# Delay newly published npm packages for 3 days.
+minimumReleaseAge: 4320
+
+allowBuilds:
+  '@datadog/pprof': false
+  '@parcel/watcher': false
+  '@prairielearn/bind-mount': true
+  '@prairielearn/tree-sitter-htmlmustache': false
+  core-js: false
+  cpu-features: false
+  dtrace-provider: false
+  esbuild: false
+  protobufjs: false
+  sharp: false
+  ssh2: false
+  unrs-resolver: false
+
+supportedArchitectures:
+  # @postgres-language-server/cli currently tags its glibc Linux binaries with
+  # libc=gnu; include it so the CLI installs a binary on Debian/Ubuntu. See:
+  # https://github.com/supabase-community/postgres-language-server/issues/756
+  # https://github.com/supabase-community/postgres-language-server/pull/757
+  libc:
+    - current
+    - gnu
+
+minimumReleaseAgeExclude:
+  - '@prairielearn/tree-sitter-htmlmustache@1.4.3'

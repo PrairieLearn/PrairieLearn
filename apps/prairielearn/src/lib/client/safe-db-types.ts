@@ -15,7 +15,7 @@
  * you should use the branded schema for type safety.
  */
 
-import { type z } from 'zod';
+import { z } from 'zod';
 
 import {
   AccessTokenSchema as RawAccessTokenSchema,
@@ -36,6 +36,7 @@ import {
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
+  InstitutionSettingsSchema as RawInstitutionSettingsSchema,
   JobSequenceSchema as RawJobSequenceSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
@@ -44,7 +45,7 @@ import {
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
-  TeamSchema as RawTeamSchema,
+  GroupSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
@@ -289,7 +290,6 @@ export const RawStudentCourseSchema = RawStaffCourseSchema.pick({
   example_course: true,
   id: true,
   institution_id: true,
-  options: true,
   short_name: true,
   template_course: true,
   title: true,
@@ -429,6 +429,25 @@ export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
 });
 export const AdminInstitutionSchema = RawAdminInstitutionSchema.brand<'AdminInstitution'>();
 export type AdminInstitution = z.infer<typeof AdminInstitutionSchema>;
+
+export const RawAdminInstitutionSettingsSchema = RawInstitutionSettingsSchema.pick({
+  course_request_message: true,
+  github_course_owner: true,
+  institution_id: true,
+});
+export const AdminInstitutionSettingsSchema =
+  RawAdminInstitutionSettingsSchema.brand<'AdminInstitutionSettings'>();
+export type AdminInstitutionSettings = z.infer<typeof AdminInstitutionSettingsSchema>;
+
+// An admin institution paired with its institution_settings, as returned by
+// `selectAllInstitutionsWithSettings`. Keeping the institution and its
+// settings as distinct fields lets the institution stay a branded
+// `AdminInstitution` rather than a flattened look-alike.
+export const AdminInstitutionWithSettingsSchema = z.object({
+  institution: AdminInstitutionSchema,
+  institution_settings: AdminInstitutionSettingsSchema.nullable(),
+});
+export type AdminInstitutionWithSettings = z.infer<typeof AdminInstitutionWithSettingsSchema>;
 
 export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
   default_authn_provider_id: true,

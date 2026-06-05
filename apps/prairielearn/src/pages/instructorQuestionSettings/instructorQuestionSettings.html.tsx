@@ -575,8 +575,6 @@ export const InstructorQuestionSettingsForm = ({
                     aria-invalid={!!errors.workspace_port || undefined}
                     defaultValue={defaultValues.workspace_port}
                     aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
-                    // Disable default behavior of incrementing/decrementing the value when scrolling
-                    onWheel={(e) => e.currentTarget.blur()}
                     {...register('workspace_port', {
                       required: 'Port is required for workspace',
                       validate: (value) => {
@@ -846,8 +844,6 @@ export const InstructorQuestionSettingsForm = ({
                     aria-errormessage={
                       errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
                     }
-                    // Disable default behavior of incrementing/decrementing the value when scrolling
-                    onWheel={(e) => e.currentTarget.blur()}
                     {...register('external_grading_timeout', {
                       setValueAs: coerceToNumber,
                       min: {

@@ -50,7 +50,6 @@ export function InstanceSelectionToolbar({
   onActionSuccess: (message: string) => void;
 }) {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
-  // The assessment logs page is added in a separate PR; this route resolves once it merges.
   const logsUrl = getAssessmentLogsUrl({ courseInstanceId, assessmentId });
   const isAllInstancesTarget = selectedRows.length === 0;
   const targetRows = isAllInstancesTarget ? allRows : selectedRows;

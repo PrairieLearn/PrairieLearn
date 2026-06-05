@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "5.0.7",
+  "version": "5.0.8",
   "type": "module",
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
     "@prairielearn/postgres": "workspace:^",
     "fs-extra": "^11.3.5",
     "serialize-error": "^13.0.1",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

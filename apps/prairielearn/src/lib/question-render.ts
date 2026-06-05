@@ -151,7 +151,7 @@ async function render({
     course: question_course,
     locals,
     caller: {
-      effectiveUserId: user.id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
