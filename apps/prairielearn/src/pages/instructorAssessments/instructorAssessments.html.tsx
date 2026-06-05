@@ -7,6 +7,7 @@ import { run } from '@prairielearn/run';
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
+import { ManualGradingBadgeHtml } from '../../components/ManualGradingBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -159,6 +160,11 @@ export function InstructorAssessments({
                               count: row.open_issue_count,
                               courseInstanceId: course_instance.id,
                               issueAid: row.tid,
+                            })}
+                            ${ManualGradingBadgeHtml({
+                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
+                              courseInstanceId: course_instance.id,
+                              assessmentId: row.id,
                             })}
                           </td>
 

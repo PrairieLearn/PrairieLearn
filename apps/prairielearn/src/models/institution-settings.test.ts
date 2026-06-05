@@ -4,13 +4,13 @@ import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectAuditEventsByInstitutionId } from './audit-event.js';
-import { updateInstitutionCourseRequestMessage } from './institution-settings.js';
+import { updateInstitutionSetting } from './institution-settings.js';
 
 describe('institution-settings model', () => {
   beforeAll(helperDb.before);
   afterAll(helperDb.after);
 
-  describe('updateInstitutionCourseRequestMessage', () => {
+  describe('updateInstitutionSetting', () => {
     it('updates the message and records audit events', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const user = await getOrCreateUser({
@@ -20,15 +20,17 @@ describe('institution-settings model', () => {
           email: 'institution-settings@example.com',
         });
 
-        const insertedSettings = await updateInstitutionCourseRequestMessage({
+        const insertedSettings = await updateInstitutionSetting({
           institution_id: '1',
-          course_request_message: 'Initial course request message',
+          field: 'course_request_message',
+          value: 'Initial course request message',
           authn_user_id: user.id,
         });
 
-        const updatedSettings = await updateInstitutionCourseRequestMessage({
+        const updatedSettings = await updateInstitutionSetting({
           institution_id: '1',
-          course_request_message: 'Updated course request message',
+          field: 'course_request_message',
+          value: 'Updated course request message',
           authn_user_id: user.id,
         });
 

@@ -835,7 +835,6 @@ export async function generate(
       question,
       course,
       caller,
-      persistsSharedState: true,
     });
 
     const data = {
@@ -883,7 +882,6 @@ export async function prepare(
       question,
       course,
       caller,
-      persistsSharedState: true,
     });
 
     const data = {
@@ -1150,7 +1148,6 @@ export async function render({
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
     const htmls = {
       extraHeadersHtml: '',
@@ -1571,7 +1568,6 @@ export async function file(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {
@@ -1635,7 +1631,6 @@ export async function parse(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {
@@ -1700,7 +1695,6 @@ export async function grade(
       question,
       course: question_course,
       caller,
-      persistsSharedState: false,
     });
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
@@ -1770,7 +1764,6 @@ export async function test(
       question,
       course,
       caller,
-      persistsSharedState: false,
     });
 
     const data = {
@@ -1876,6 +1869,15 @@ async function getCacheKey(
         // We deliberately exclude large user-controlled objects from the cache key.
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
+        //
+        // `data.options` is kept because `options.user` / `options.group` can change
+        // without bumping `modified_at`, so they must stay in the key:
+        //   1. the course toggles `questions_receive_user_data`
+        //   2. a user is renamed (uid/uin/name)
+        //   3. group membership or a member's name changes
+        //
+        // `options.user` is the variant owner (not the viewer); on group variants
+        // it is null and `group.members` is ordered deterministically.
         omit(data, [
           'params',
           'correct_answers',

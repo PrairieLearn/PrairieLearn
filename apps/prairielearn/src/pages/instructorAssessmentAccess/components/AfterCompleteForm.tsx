@@ -6,7 +6,6 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import { validateActiveOverrideField } from './overrideFields.js';
 import {
   type AccessControlFormData,
   type QuestionVisibilityValue,
@@ -14,6 +13,7 @@ import {
   defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
+import { DATE_REQUIRED_MESSAGE, isDateFieldEmpty } from './validation.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -75,19 +75,6 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   if (!value.hidden) return 'show_score';
   if (value.visibleFromDate === undefined) return 'hide_score_forever';
   return 'hide_score_until_date';
-}
-
-const DATE_REQUIRED_MESSAGE = 'Date is required';
-
-function isDateFieldEmpty(value: string | undefined): boolean {
-  return value !== undefined && !value;
-}
-
-function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  if (isDateFieldEmpty(value.visibleUntilDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
 }
 
 function QuestionVisibilityInput({
@@ -272,12 +259,6 @@ function QuestionVisibilityInput({
   );
 }
 
-function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function ScoreVisibilityInput({
   value,
   onChange,
@@ -425,13 +406,12 @@ export function DefaultAfterCompleteForm({
   const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
     {
       name: 'defaultRule.questionVisibility',
-      rules: { validate: validateQuestionVisibility },
     },
   );
 
   const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
     name: 'defaultRule.scoreVisibility',
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
@@ -512,6 +492,7 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
     name: 'defaultRule.questionVisibility',
   });
@@ -537,8 +518,6 @@ export function OverrideAfterCompleteForm({
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
 
-  const { clearErrors } = useFormContext<AccessControlFormData>();
-
   const {
     isOverridden: qvOverridden,
     addOverride: addQvOverride,
@@ -555,22 +534,13 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'questionVisibility', (value) =>
-        validateQuestionVisibility(value),
-      ),
-    },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'scoreVisibility', (value) =>
-        validateScoreVisibility(value),
-      ),
-    },
+    rules: { deps: qvField.name },
   });
 
   return (
@@ -582,8 +552,12 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
+            void trigger(svField.name);
           }}
-          onRemoveOverride={removeQvOverride}
+          onRemoveOverride={() => {
+            removeQvOverride();
+            void trigger(svField.name);
+          }}
         >
           <QuestionVisibilityInput
             value={qvField.value}
@@ -603,10 +577,11 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
+            void trigger(qvField.name);
           }}
           onRemoveOverride={() => {
             removeSvOverride();
-            clearErrors(`overrides.${index}.questionVisibility`);
+            void trigger(qvField.name);
           }}
         >
           <ScoreVisibilityInput

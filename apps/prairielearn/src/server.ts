@@ -219,10 +219,6 @@ export async function initExpress(): Promise<Express> {
     },
   });
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
-    upload.single('file'),
-  );
-  app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     upload.single('file'),
   );
@@ -371,15 +367,30 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
+  /**
+   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
+   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
+   * parsers don't parse multipart, but they still set `req.body = {}`, which
+   * makes tRPC's Express adapter stringify that empty object instead of reading
+   * the multipart stream. We skip them so the raw body reaches its real consumer.
+   */
+  function isMultipartRequest(req: Request) {
+    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
+  }
+
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON
     bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
   });
-  app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
+  app.use((req, res, next) => {
+    if (isMultipartRequest(req)) return next();
+    bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
+  });
   app.use(cookieParser());
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
@@ -941,24 +952,13 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/logs',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'uploads';
+        res.locals.navSubPage = 'settings';
         next();
       },
-      (await import('./pages/instructorAssessmentUploads/instructorAssessmentUploads.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'regrading';
-        next();
-      },
-      (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
-        .default,
+      (await import('./pages/instructorAssessmentLogs/instructorAssessmentLogs.js')).default,
     ],
   );
   app.use(

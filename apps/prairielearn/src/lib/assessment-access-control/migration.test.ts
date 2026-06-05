@@ -702,6 +702,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'visibility-only inactive rule reports one completion mechanism error',
+      rules: [
+        {
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+          active: false,
+        },
+      ],
+      expected: {
+        accessControl: null,
+        errors: [
+          'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
+        ],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'separate reveal dates for questions and scores',
       rules: [
         {
@@ -1095,6 +1113,29 @@ describe('migrateAllowAccess', () => {
         },
         errors: [],
         notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'duplicate prairietest exam rules are collapsed',
+      rules: [
+        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+      ],
+      expected: {
+        accessControl: {
+          integrations: {
+            prairieTest: {
+              exams: [
+                { examUuid: '11111111-1111-1111-1111-111111111111' },
+                { examUuid: '22222222-2222-2222-2222-222222222222' },
+              ],
+            },
+          },
+        },
+        errors: [],
+        notes: ['1 duplicate PrairieTest exam rule collapsed during migration.'],
         hasUidRules: false,
       },
     },

@@ -1,180 +1,208 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "postgresqlUser": {
-      "type": "string",
-      "default": "postgres"
+      "default": "postgres",
+      "type": "string"
     },
     "postgresqlPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "postgresqlDatabase": {
-      "type": "string",
-      "default": "postgres"
+      "default": "postgres",
+      "type": "string"
     },
     "postgresqlHost": {
-      "type": "string",
-      "default": "localhost"
+      "default": "localhost",
+      "type": "string"
     },
     "postgresqlPoolSize": {
-      "type": "number",
-      "default": 100
+      "default": 100,
+      "type": "number"
     },
     "postgresqlIdleTimeoutMillis": {
-      "type": "number",
-      "default": 30000
+      "default": 30000,
+      "type": "number"
     },
     "cacheType": {
+      "default": "none",
       "type": "string",
-      "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "enum": ["none", "redis", "memory"]
     },
     "cacheKeyPrefix": {
-      "type": "string",
-      "default": "workspace-host-cache:"
+      "default": "workspace-host-cache:",
+      "type": "string"
     },
     "redisUrl": {
-      "type": "string",
-      "default": "redis://localhost:6379/"
+      "default": "redis://localhost:6379/",
+      "type": "string"
     },
     "runningInEc2": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "cacheImageRegistry": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "awsRegion": {
-      "type": "string",
-      "default": "us-east-2"
+      "default": "us-east-2",
+      "type": "string"
     },
     "instanceId": {
-      "type": "string",
-      "default": "server"
+      "default": "server",
+      "type": "string"
     },
     "hostname": {
-      "type": "string",
-      "default": "localhost"
+      "default": "localhost",
+      "type": "string"
     },
     "sentryDsn": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryEnvironment": {
-      "type": "string",
-      "default": "development"
+      "default": "development",
+      "type": "string"
     },
     "workspaceDevHostInstanceId": {
-      "type": "string",
-      "default": "devWSHost1"
+      "default": "devWSHost1",
+      "type": "string"
     },
     "workspaceDevHostHostname": {
-      "type": "string",
-      "default": "localhost"
+      "default": "localhost",
+      "type": "string"
     },
     "workspaceDevContainerHostname": {
-      "type": "string",
-      "default": "host.docker.internal"
+      "default": "host.docker.internal",
+      "type": "string"
     },
     "workspaceHostPort": {
-      "type": "number",
-      "default": 8081
+      "default": 8081,
+      "type": "number"
     },
     "workspaceHostPruneContainersSec": {
-      "type": "number",
-      "default": 60
+      "default": 60,
+      "type": "number"
     },
     "workspaceHostMinPortRange": {
-      "type": "number",
-      "default": 1024
+      "default": 1024,
+      "type": "number"
     },
     "workspaceHostMaxPortRange": {
-      "type": "number",
-      "default": 45000
+      "default": 45000,
+      "type": "number"
     },
     "workspaceHostMaxPortAllocationAttempts": {
-      "type": "number",
-      "default": 0
+      "default": 0,
+      "type": "number"
     },
     "workspacePullImagesFromDockerHub": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
     },
     "workspacePercentMessageRateLimitSec": {
-      "type": "number",
-      "default": 1
+      "default": 1,
+      "type": "number"
     },
     "workspaceSupportNoInternet": {
-      "type": "boolean",
-      "default": false
+      "default": false,
+      "type": "boolean"
     },
     "workspaceHostHomeDirRoot": {
-      "type": "string",
-      "default": "/jobs/workspaces"
+      "default": "/jobs/workspaces",
+      "type": "string"
     },
     "workspaceJobsDirectoryOwnerUid": {
-      "type": "number",
-      "default": 0
+      "default": 0,
+      "type": "number"
     },
     "workspaceJobsDirectoryOwnerGid": {
-      "type": "number",
-      "default": 0
+      "default": 0,
+      "type": "number"
     },
     "workspaceDockerMemory": {
-      "type": "number",
-      "default": 1073741824
+      "default": 1073741824,
+      "type": "number"
     },
     "workspaceDockerMemorySwap": {
-      "type": "number",
-      "default": 1073741824
+      "default": 1073741824,
+      "type": "number"
     },
     "workspaceDockerKernelMemory": {
-      "type": "number",
-      "default": 536870912
+      "default": 536870912,
+      "type": "number"
     },
     "workspaceDockerDiskQuota": {
-      "type": "number",
-      "default": 1073741824
+      "default": 1073741824,
+      "type": "number"
     },
     "workspaceDockerCpuPeriod": {
-      "type": "number",
-      "default": 100000
+      "default": 100000,
+      "type": "number"
     },
     "workspaceDockerCpuQuota": {
-      "type": "number",
-      "default": 90000
+      "default": 90000,
+      "type": "number"
     },
     "workspaceDockerPidsLimit": {
-      "type": "number",
-      "default": 1024
+      "default": 1024,
+      "type": "number"
     },
     "workspaceMaxGradedFilesCount": {
-      "type": "number",
-      "default": 100
+      "default": 100,
+      "type": "number"
     },
     "workspaceMaxGradedFilesSize": {
-      "type": "number",
-      "default": 104857600
+      "default": 104857600,
+      "type": "number"
     },
     "workspaceLogsS3Bucket": {
-      "type": ["string", "null"],
-      "default": "workspace-logs"
+      "default": "workspace-logs",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceStartTimeoutSec": {
-      "type": "number",
-      "default": 30
+      "default": 30,
+      "type": "number"
     },
     "workspaceHealthCheckIntervalSec": {
-      "type": "number",
-      "default": 1
+      "default": 1,
+      "type": "number"
     },
     "workspaceHealthCheckTimeoutSec": {
-      "type": "number",
-      "default": 10
+      "default": 10,
+      "type": "number"
     }
-  }
+  },
+  "additionalProperties": false
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type GenerateObjectResult, type ModelMessage, generateObject } from 'ai';
+import { type GenerateTextResult, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -74,16 +74,16 @@ const sql = loadSqlEquiv(import.meta.url);
 
 type AiGradingResponsesForPersistence = {
   model_id: AiGradingModelId;
-  finalGradingResponse: GenerateObjectResult<any>;
+  finalGradingResponse: GenerateTextResult<any, any>;
 } & (
   | {
       rotationCorrectionApplied: true;
-      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateObjectResult<any>;
+          response: GenerateTextResult<any, any>;
         }
       >;
     }
@@ -577,7 +577,7 @@ export async function aiGrade({
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const aiCaller = {
-        effectiveUserId: variant.user_id,
+        userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: course,
       };
@@ -734,8 +734,8 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const RubricImageGradingResultSchema = RubricGradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+        const RubricImageGradingResultSchema = RubricGradingResultSchema.extend(
+          HandwritingOrientationsOutputSchema.shape,
         );
 
         const {
@@ -752,9 +752,9 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateObject({
+              finalGradingResponse: await generateText({
                 model,
-                schema: RubricGradingResultSchema,
+                output: Output.object({ schema: RubricGradingResultSchema }),
                 messages: input,
                 // The AI grading prompts in `generatePrompt` (ai-grading-util.ts)
                 // intentionally interleave `role: 'system'` and `role: 'user'`
@@ -770,9 +770,9 @@ export async function aiGrade({
             };
           }
 
-          const initialResponse = await generateObject({
+          const initialResponse = await generateText({
             model,
-            schema: RubricImageGradingResultSchema,
+            output: Output.object({ schema: RubricImageGradingResultSchema }),
             messages: input,
             // System messages in `messages` are hard-coded authored strings; safe to allow.
             allowSystemInMessages: true,
@@ -782,7 +782,7 @@ export async function aiGrade({
           });
 
           if (
-            initialResponse.object.handwriting_orientations.every(
+            initialResponse.output.handwriting_orientations.every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
@@ -821,9 +821,9 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateObject({
+          const finalResponse = await generateText({
             model,
-            schema: RubricImageGradingResultSchema,
+            output: Output.object({ schema: RubricImageGradingResultSchema }),
             messages: input,
             // System messages in `messages` are hard-coded authored strings; safe to allow.
             allowSystemInMessages: true,
@@ -873,10 +873,10 @@ export async function aiGrade({
           }
         }
 
-        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
           parseAiRubricItems({
-            ai_rubric_items: finalGradingResponse.object.rubric_items,
+            ai_rubric_items: finalGradingResponse.output.rubric_items,
             rubric_items,
           });
         if (unrecognizedKeys.length > 0) {
@@ -984,8 +984,8 @@ export async function aiGrade({
             ),
         });
 
-        const ImageGradingResultSchema = GradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+        const ImageGradingResultSchema = GradingResultSchema.extend(
+          HandwritingOrientationsOutputSchema.shape,
         );
 
         const {
@@ -1002,9 +1002,9 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateObject({
+              finalGradingResponse: await generateText({
                 model,
-                schema: GradingResultSchema,
+                output: Output.object({ schema: GradingResultSchema }),
                 messages: input,
                 // System messages in `messages` are hard-coded authored strings; safe to allow.
                 allowSystemInMessages: true,
@@ -1016,9 +1016,9 @@ export async function aiGrade({
             };
           }
 
-          const initialResponse = await generateObject({
+          const initialResponse = await generateText({
             model,
-            schema: ImageGradingResultSchema,
+            output: Output.object({ schema: ImageGradingResultSchema }),
             messages: input,
             // System messages in `messages` are hard-coded authored strings; safe to allow.
             allowSystemInMessages: true,
@@ -1028,7 +1028,7 @@ export async function aiGrade({
           });
 
           if (
-            initialResponse.object.handwriting_orientations.every(
+            initialResponse.output.handwriting_orientations.every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
@@ -1056,9 +1056,9 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateObject({
+          const finalResponse = await generateText({
             model,
-            schema: ImageGradingResultSchema,
+            output: Output.object({ schema: ImageGradingResultSchema }),
             messages: input,
             // System messages in `messages` are hard-coded authored strings; safe to allow.
             allowSystemInMessages: true,
@@ -1108,8 +1108,8 @@ export async function aiGrade({
           }
         }
 
-        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
-        const score = finalGradingResponse.object.score;
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
+        const score = finalGradingResponse.output.score;
         const responsesForPersistence: AiGradingResponsesForPersistence = rotationCorrectionApplied
           ? {
               model_id,
@@ -1130,7 +1130,7 @@ export async function aiGrade({
         const deductedCost = await run(async () => {
           if (shouldUpdateScore) {
             // Requires grading: update instance question score
-            const feedback = finalGradingResponse.object.feedback;
+            const feedback = finalGradingResponse.output.feedback;
             return await finalizeAiGradingPersistence({
               createGradingJob: async () =>
                 await updateInstanceQuestionScoreForAiGrading({
@@ -1172,7 +1172,7 @@ export async function aiGrade({
           num_items_incurred_cost += 1;
         }
 
-        logger.info(`AI score: ${finalGradingResponse.object.score}`);
+        logger.info(`AI score: ${finalGradingResponse.output.score}`);
       }
 
       return true;
