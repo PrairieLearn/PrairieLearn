@@ -4,7 +4,7 @@ ARG CACHEBUST=2026-05-15-14-49-21
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends emacs-nox vim tmux \
-    && npm install -g pnpm@^10.33.0 \
+    && npm install -g pnpm@11.5.0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 COPY src /xterm
