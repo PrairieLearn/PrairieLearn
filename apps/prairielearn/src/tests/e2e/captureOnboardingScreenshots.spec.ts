@@ -88,7 +88,17 @@ async function stripDevModeArtifacts(page: Page) {
 }
 
 async function shoot(page: Page, name: string, opts: ShootOpts = {}) {
+  const viewport = page.viewportSize();
+  if (viewport) {
+    await page.mouse.move(viewport.width - 1, viewport.height - 1);
+  }
   await stripDevModeArtifacts(page);
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  await page.waitForTimeout(200);
   const filePath = opts.filePath ?? path.join(OUT_DIR, `${name}.png`);
   if (opts.locator) {
     await opts.locator.screenshot({ path: filePath });
@@ -366,6 +376,7 @@ async function captureAssessmentFlow(
 
   await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`);
   await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+  await page.getByRole('button', { name: 'Clear' }).waitFor();
   const accessCardBottom = await page.evaluate(() => {
     const emptyOverrides = Array.from(document.querySelectorAll<HTMLElement>('main div')).find(
       (el) => el.textContent.trim() === 'No overrides configured.',
