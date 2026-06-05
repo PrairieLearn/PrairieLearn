@@ -54,6 +54,20 @@ class HelpTextTestCase(NamedTuple):
 @pytest.mark.parametrize(
     "case",
     [
+        # allow_blank
+        HelpTextTestCase(
+            num_correct=3,
+            num_display=5,
+            show_num=False,
+            detailed=False,
+            has_min=False,
+            has_max=False,
+            min_val=1,
+            max_val=5,
+            allow_blank=True,
+            expected=" all possible options that apply (you may also skip this question by leaving it blank).",
+            id="allow_blank",
+        ),
         # Min select only, value of 1
         HelpTextTestCase(
             num_correct=3,
@@ -193,6 +207,20 @@ class HelpTextTestCase(NamedTuple):
             allow_blank=False,
             expected=" exactly <b>2</b> options.",
             id="detailed_help_same",
+        ),
+        # Detailed help text combined with allow blank
+        HelpTextTestCase(
+            num_correct=3,
+            num_display=5,
+            show_num=False,
+            detailed=True,
+            has_min=False,
+            has_max=False,
+            min_val=2,
+            max_val=4,
+            allow_blank=True,
+            expected=" between <b>2</b> and <b>4</b> options (you may also skip this question by leaving it blank).",
+            id="detailed_with_allow_blank",
         ),
         # Detailed help text combined with show number correct
         HelpTextTestCase(

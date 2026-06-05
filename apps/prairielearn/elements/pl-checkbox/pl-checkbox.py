@@ -181,7 +181,7 @@ def generate_insert_text(
         else:
             insert_text = f" at most <b>{max_options_to_select}</b> options"
     else:
-        insert_text = " at least <b>1</b> option"
+        insert_text = " all possible options that apply"
 
     if allow_blank:
         insert_text += " (you may also skip this question by leaving it blank)."
@@ -622,19 +622,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 show_number_correct=show_number_correct,
             )
 
-            show_min_select = (
-                has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
-            )
-            show_max_select = (
-                has_max_select_attrib and max_options_to_select != num_display_answers
-            )
-            if detailed_help_text or show_min_select or show_max_select:
-                helptext = (
-                    f'<small class="form-text text-muted">Select {insert_text}</small>'
-                )
-            else:
-                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
+            helptext = f'<small class="form-text text-muted">Select {insert_text}{number_correct_text}</small>'
 
             grading_info = generate_grading_text(
                 insert_text=insert_text,
