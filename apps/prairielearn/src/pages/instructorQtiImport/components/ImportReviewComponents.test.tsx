@@ -63,6 +63,8 @@ describe('QuestionBankDeduplicationWarning', () => {
       <QuestionBankDeduplicationWarning deduplicatedQuestionCount={2} />,
     );
 
+    expect(html).toContain('alert-info');
+    expect(html).toContain('bi-info-circle-fill');
     expect(html).toContain('2 questions appeared in multiple question banks');
     expect(html).toContain('will only be imported once');
   });

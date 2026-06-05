@@ -101,9 +101,9 @@ export function QuestionBankDeduplicationWarning({
   if (deduplicatedQuestionCount === 0) return null;
 
   return (
-    <Alert variant="warning" className="mb-3">
+    <Alert variant="info" className="mb-3">
       <div className="d-flex align-items-start gap-2">
-        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+        <i className="bi bi-info-circle-fill mt-1" aria-hidden="true" />
         <div>
           <strong>Duplicate question bank questions were deduplicated</strong>
           <p className="mb-0 mt-1">
@@ -154,6 +154,50 @@ export function NonRubricWarnings({
           );
         })}
       </ul>
+    </Alert>
+  );
+}
+
+export function findDuplicateQuestionTitles(
+  questions: SerializedQuestionOutput[],
+  questionOverrides: Map<string, QuestionOverrides>,
+): string[] {
+  const titleCounts = new Map<string, number>();
+  for (const question of questions) {
+    const override = questionOverrides.get(question.directoryName);
+    if (override?.included === false) continue;
+
+    const title = (override?.title ?? question.infoJson.title).trim();
+    if (title === '') continue;
+
+    titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
+  }
+
+  return [...titleCounts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([title]) => title);
+}
+
+export function DuplicateQuestionTitleWarning({
+  duplicateTitles,
+}: {
+  duplicateTitles: string[];
+}) {
+  if (duplicateTitles.length === 0) return null;
+
+  return (
+    <Alert variant="warning" className="mb-2">
+      <div className="d-flex align-items-start gap-2">
+        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
+        <div>
+          {duplicateTitles.map((title) => (
+            <p key={title} className="mb-0">
+              We detected several questions named &ldquo;{title}&rdquo;. We recommend you add
+              meaningful names to these questions to find and edit them more easily in PrairieLearn.
+            </p>
+          ))}
+        </div>
+      </div>
     </Alert>
   );
 }
@@ -552,6 +596,10 @@ export function AssessmentQuestionsSection({
     () => buildQuestionWarningsByDirectoryName(questions, warnings),
     [questions, warnings],
   );
+  const duplicateQuestionTitles = useMemo(
+    () => findDuplicateQuestionTitles(questions, questionOverrides),
+    [questions, questionOverrides],
+  );
   const conflictCount = conflictingQuestions.length;
 
   const setAllConflictStrategy = (strategy: CollisionStrategy) => {
@@ -585,6 +633,8 @@ export function AssessmentQuestionsSection({
           </Button>
         </div>
       )}
+
+      <DuplicateQuestionTitleWarning duplicateTitles={duplicateQuestionTitles} />
 
       <details>
         <summary>Questions ({questions.length})</summary>
