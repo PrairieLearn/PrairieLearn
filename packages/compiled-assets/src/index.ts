@@ -42,9 +42,8 @@ export interface CompiledAssetsOptions {
   conditions?: string[];
 }
 
-// `conditions` is intentionally left unset by default: passing `[]` to esbuild
-// counts as configuring custom conditions and suppresses its automatic `module`
-// condition.
+// `conditions` is intentionally left unset by default so that esbuild keeps all
+// of its automatically-included conditions.
 let options: Required<Omit<CompiledAssetsOptions, 'conditions'>> &
   Pick<CompiledAssetsOptions, 'conditions'> = { ...DEFAULT_OPTIONS };
 
@@ -84,6 +83,11 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     options.publicPath += '/';
   }
 
+  // Re-add the module condition if any custom conditions are set
+  const conditions = options.conditions
+    ? [...options.conditions.filter((condition) => condition !== 'module'), 'module']
+    : undefined;
+
   if (options.dev) {
     // Use esbuild's asset server in development.
     //
@@ -113,7 +117,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
-      conditions: options.conditions,
+      conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     esbuildServer = await serveEsbuildContext(esbuildContext);
@@ -145,7 +149,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
-      conditions: options.conditions,
+      conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);
