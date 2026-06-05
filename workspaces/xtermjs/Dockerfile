@@ -9,7 +9,7 @@ RUN apt-get update \
 COPY src /xterm
 
 WORKDIR /xterm
-RUN npm install -g yarn@latest && yarn install --frozen-lockfile && yarn cache clean
+RUN npm install -g yarn@1.22.22 && yarn install --frozen-lockfile && yarn cache clean
 
 RUN useradd -m student
 ENTRYPOINT ["node", "server.js", "-w", "/home/student"]
