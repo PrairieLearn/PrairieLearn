@@ -198,25 +198,13 @@ Set the point value if you want, then click **Save**.
 
 ## 8. Configure assessment access rules
 
-Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` block:
+Open the assessment's **Access** tab. In **Defaults**, click **Edit**. In **Date control**, choose **Scheduled for release**, set the release date/time when students may start, choose **Due on date**, set the due date/time, and keep the due-date credit at 100%. Click **Save**.
 
-```json title="infoAssessment.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2025-09-01T20:00:00",
-      "endDate": "2025-09-06T20:00:00",
-      "credit": 100
-    }
-  ]
-}
-```
+The **Access** tab summarizes the release window and due-date credit:
 
-Click **Save**. The **Access** tab summarizes the rules:
+![Assessment Access tab showing modern access control defaults](screenshots/12-assessment-access.png)
 
-![Assessment Access tab showing the access rule table](screenshots/12-assessment-access.png)
-
-For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [assessment access control](../assessment/accessControl.md).
+For late credit, time limits, student-specific overrides, exam mode, and PrairieTest integration, see [assessment access control](../assessment/accessControlModern.md).
 
 ## 9. Preview as a student
 
