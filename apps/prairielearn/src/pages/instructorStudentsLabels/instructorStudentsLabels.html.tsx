@@ -5,6 +5,7 @@ import { Alert } from 'react-bootstrap';
 import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';
 
@@ -48,6 +49,7 @@ function StudentLabelsCard({
   });
 
   const labels = data.labels;
+  const atStudentLabelLimit = labels.length >= MAX_STUDENT_LABELS_PER_COURSE_INSTANCE;
   const [origHashOverride, setOrigHashOverride] = useState<string | null>(null);
   const origHash = origHashOverride ?? data.origHash ?? initialOrigHash;
 
@@ -95,7 +97,7 @@ function StudentLabelsCard({
             <button
               type="button"
               className="btn btn-outline-primary btn-sm text-nowrap"
-              disabled={origHash === null}
+              disabled={origHash === null || atStudentLabelLimit}
               onClick={() => editModal.showWithData({ type: 'add', origHash })}
             >
               Add label
@@ -127,6 +129,13 @@ function StudentLabelsCard({
           You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
           not exist.
         </div>
+      )}
+
+      {canEdit && atStudentLabelLimit && (
+        <Alert variant="info">
+          This course instance has reached the limit of {MAX_STUDENT_LABELS_PER_COURSE_INSTANCE}{' '}
+          student labels. Existing labels can still be edited or deleted.
+        </Alert>
       )}
 
       {labels.length === 0 ? (

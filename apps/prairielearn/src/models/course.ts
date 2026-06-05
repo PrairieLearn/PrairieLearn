@@ -22,7 +22,9 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
+import { parseGithubRepository } from '../lib/github-utils.js';
 
+import { insertAuditEvent } from './audit-event.js';
 import { insertAuditLog } from './audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -53,16 +55,30 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
-export async function selectOptionalCourseByRepositoryName(
-  repoName: string,
-): Promise<Course | null> {
-  // Escape SQL LIKE wildcards so they are matched literally.
+export async function selectOptionalCourseByGithubRepository({
+  owner,
+  repoName,
+}: {
+  owner: string;
+  repoName: string;
+}): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally in the loose match.
+  const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  return await queryOptionalRow(
-    sql.select_course_by_repository_name,
-    { repo_name: escapedRepoName },
+  const candidates = await queryRows(
+    sql.select_course_by_github_repository,
+    { owner: escapedOwner, repo_name: escapedRepoName },
     CourseSchema,
   );
+  const match = candidates.find((c) => {
+    const parsed = c.repository ? parseGithubRepository(c.repository) : null;
+    if (parsed === null) return false;
+    return (
+      parsed.owner.toLowerCase() === owner.toLowerCase() &&
+      parsed.repo.toLowerCase() === repoName.toLowerCase()
+    );
+  });
+  return match ?? null;
 }
 
 export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
@@ -291,6 +307,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
@@ -332,6 +349,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
@@ -380,6 +398,7 @@ export async function updateCourseColumn({
       { course_id: courseId, value },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id: authnUserId,
       action: 'update',
@@ -409,6 +428,53 @@ export async function updateCourseShowGettingStarted({
   await execute(sql.update_course_show_getting_started, {
     course_id,
     show_getting_started,
+  });
+}
+
+/**
+ * Update the `questions_receive_user_data` column for a course, and record an
+ * audit event in the same transaction.
+ */
+export async function updateCourseQuestionsReceiveUserData({
+  course_id,
+  questions_receive_user_data,
+  authn_user_id,
+  user_id,
+  old_questions_receive_user_data,
+}: {
+  course_id: string;
+  questions_receive_user_data: boolean;
+  authn_user_id: string;
+  user_id: string;
+  /**
+   * The value observed before this save began. A sync triggered by saving
+   * `infoCourse.json` may have already written the column in dev mode, so we
+   * compare against this rather than a fresh read to detect the real change.
+   */
+  old_questions_receive_user_data: boolean;
+}): Promise<Course> {
+  if (old_questions_receive_user_data === questions_receive_user_data) {
+    return await selectCourseById(course_id);
+  }
+  return await runInTransactionAsync(async () => {
+    const newCourse = await queryRow(
+      sql.update_course_questions_receive_user_data,
+      { course_id, questions_receive_user_data },
+      CourseSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'courses',
+      action: 'update',
+      actionDetail: 'questions_receive_user_data',
+      rowId: course_id,
+      agentAuthnUserId: authn_user_id,
+      agentUserId: user_id,
+      courseId: course_id,
+      institutionId: newCourse.institution_id,
+      oldRow: { questions_receive_user_data: old_questions_receive_user_data },
+      newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
+    });
+    return newCourse;
   });
 }
 

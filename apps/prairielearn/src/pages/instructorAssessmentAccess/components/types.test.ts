@@ -6,6 +6,7 @@ import {
   type OverrideData,
   formDataToJson,
   jsonToDefaultRuleFormData,
+  jsonToOverrideFormData,
 } from './types.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
@@ -227,6 +228,28 @@ describe('formDataToJson', () => {
     expect(overrideJson.enrollments).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
     ]);
+    expect(overrideJson.labels).toBeUndefined();
+  });
+
+  it('round-trips enrollment appliesTo with no selected students', () => {
+    const formData = jsonToOverrideFormData(
+      {
+        id: '1',
+        ruleType: 'enrollment',
+        enrollments: [],
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.appliesTo).toEqual({
+      targetType: 'enrollment',
+      enrollments: [],
+      studentLabels: [],
+    });
+
+    const overrideJson = formDataToJson(buildFormData(formData))[1];
+    expect(overrideJson.ruleType).toBe('enrollment');
+    expect(overrideJson.enrollments).toEqual([]);
     expect(overrideJson.labels).toBeUndefined();
   });
 
