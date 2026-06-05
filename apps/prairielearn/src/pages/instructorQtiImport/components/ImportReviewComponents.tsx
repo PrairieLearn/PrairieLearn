@@ -119,12 +119,16 @@ export function QuestionBankDeduplicationWarning({
 export function NonRubricWarnings({
   warnings,
   questions,
+  questionOverrides = new Map(),
 }: {
   warnings: SerializedConversionResult['warnings'];
   questions: SerializedQuestionOutput[];
+  questionOverrides?: Map<string, QuestionOverrides>;
 }) {
   const filtered = warnings.filter((w) => !isRubricWarning(w.message));
-  if (filtered.length === 0) return null;
+  const duplicateQuestionTitles = findDuplicateQuestionTitles(questions, questionOverrides);
+  if (filtered.length === 0 && duplicateQuestionTitles.length === 0) return null;
+
   const hasRemoteImageUrlWarning = filtered.some((w) => w.message === REMOTE_IMAGE_URL_WARNING);
   const individualWarnings = uniqueWarnings(
     filtered.filter((w) => w.message !== REMOTE_IMAGE_URL_WARNING),
@@ -145,6 +149,7 @@ export function NonRubricWarnings({
         {hasRemoteImageUrlWarning && (
           <li key="remote-image-url-warning">{REMOTE_IMAGE_URL_SUMMARY}</li>
         )}
+        <DuplicateQuestionTitleWarningListItem duplicateTitles={duplicateQuestionTitles} />
         {individualWarnings.map((w) => {
           const q = questionById.get(w.questionId);
           return (
@@ -173,32 +178,22 @@ export function findDuplicateQuestionTitles(
     titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
   }
 
-  return [...titleCounts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([title]) => title);
+  return [...titleCounts.entries()].filter(([, count]) => count > 1).map(([title]) => title);
 }
 
-export function DuplicateQuestionTitleWarning({
-  duplicateTitles,
-}: {
-  duplicateTitles: string[];
-}) {
+function DuplicateQuestionTitleWarningListItem({ duplicateTitles }: { duplicateTitles: string[] }) {
   if (duplicateTitles.length === 0) return null;
 
-  return (
-    <Alert variant="warning" className="mb-2">
-      <div className="d-flex align-items-start gap-2">
-        <i className="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true" />
-        <div>
-          {duplicateTitles.map((title) => (
-            <p key={title} className="mb-0">
-              We detected several questions named &ldquo;{title}&rdquo;. We recommend you add
-              meaningful names to these questions to find and edit them more easily in PrairieLearn.
-            </p>
-          ))}
-        </div>
-      </div>
-    </Alert>
+  return duplicateTitles.length === 1 ? (
+    <li key="duplicate-question-title">
+      We detected several questions named &ldquo;{duplicateTitles[0]}&rdquo;. We recommend you add
+      meaningful names to these questions to find and edit them more easily in PrairieLearn.
+    </li>
+  ) : (
+    <li key="duplicate-question-titles">
+      We detected several questions with the same names. We recommend you add meaningful names to
+      these questions to find and edit them more easily in PrairieLearn.
+    </li>
   );
 }
 
@@ -596,10 +591,6 @@ export function AssessmentQuestionsSection({
     () => buildQuestionWarningsByDirectoryName(questions, warnings),
     [questions, warnings],
   );
-  const duplicateQuestionTitles = useMemo(
-    () => findDuplicateQuestionTitles(questions, questionOverrides),
-    [questions, questionOverrides],
-  );
   const conflictCount = conflictingQuestions.length;
 
   const setAllConflictStrategy = (strategy: CollisionStrategy) => {
@@ -633,8 +624,6 @@ export function AssessmentQuestionsSection({
           </Button>
         </div>
       )}
-
-      <DuplicateQuestionTitleWarning duplicateTitles={duplicateQuestionTitles} />
 
       <details>
         <summary>Questions ({questions.length})</summary>

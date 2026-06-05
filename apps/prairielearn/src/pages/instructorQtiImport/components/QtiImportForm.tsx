@@ -771,7 +771,11 @@ export function QtiImportForm({
             </div>
           )}
 
-          <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
+          <NonRubricWarnings
+            warnings={result.warnings}
+            questions={result.questions}
+            questionOverrides={questionOverrides}
+          />
 
           <AssessmentQuestionsSection
             questions={result.questions}

@@ -101,6 +101,7 @@ Other LMS platforms may have similar export features. Look for "QTI export" or "
    - The number of assessments, question banks, questions, and referenced assets that can be imported.
    - Access rules, rubrics, videos, unsupported content, or parse warnings that will not be imported.
    - Warnings for unresolved question bank references or remote image URLs, plus an informational note for question bank questions that were deduplicated.
+   - Warnings for repeated question names that should be renamed before import.
 5. In the **Assessments** section, choose which assessments to import. For each assessment, you can edit the **title**, **type** (Homework or Exam), **set**, and **number**.
 6. In the **Question banks** section, choose which question banks to import as standalone PrairieLearn questions.
 7. Expand the **Questions** section on any assessment or question bank to review individual questions. For each question, you can:
