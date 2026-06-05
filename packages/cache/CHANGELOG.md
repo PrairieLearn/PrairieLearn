@@ -1,5 +1,11 @@
 # @prairielearn/cache
 
+## 2.1.13
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
 ## 2.1.12
 
 ### Patch Changes
