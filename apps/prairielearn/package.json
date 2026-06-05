@@ -332,6 +332,10 @@
     "vitest": "^4.1.7"
   },
   "nodemonConfig": {
+    "watch": [
+      ".",
+      "../../packages/*/src"
+    ],
     "ignore": [
       "assets/*",
       "elements/*",
