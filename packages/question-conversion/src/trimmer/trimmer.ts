@@ -373,7 +373,7 @@ async function discoverQtiEntries(
     used.add(name);
   }
 
-  return entries;
+  return entries.length > 0 ? entries : discoverQtiEntriesWithoutManifest(archive, entryMap);
 }
 
 async function discoverQtiEntriesWithoutManifest(

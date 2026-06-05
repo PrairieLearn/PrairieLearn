@@ -60,6 +60,27 @@ describe('QTI archive trimming', () => {
     expect(analysis.qtiEntries.every((e) => e.source === 'scan')).toBe(true);
   });
 
+  it('falls back to scanning when the manifest has no QTI resources', async () => {
+    const zip = new ZipWriter(new BlobWriter('application/zip'));
+    await zip.add('imsmanifest.xml', new TextReader(emptyManifestXml()));
+    await zip.add('quiz.xml', new TextReader(assessmentStubXml('q1', 'Loose Quiz')));
+    await zip.add('not-qti.xml', new TextReader('<html><body>Not QTI</body></html>'));
+    const input = await zip.close();
+
+    const analysis = await analyzeQtiArchive(input, 'manifest-with-loose-qti.imscc');
+    expect(analysis.hasManifest).toBe(true);
+    expect(analysis.qtiEntries).toHaveLength(1);
+    expect(analysis.qtiEntries[0]).toMatchObject({ qtiPath: 'quiz.xml', source: 'scan' });
+
+    const result = await trimQtiArchive(input, 'manifest-with-loose-qti.imscc');
+    const output = new Uint8Array(await result.blob.arrayBuffer());
+    const outputArchive = await loadZipArchive(output, 'output.imscc');
+    const entries = listZipEntries(outputArchive).map((entry) => entry.name);
+    expect(entries).toContain('imsmanifest.xml');
+    expect(entries).toContain('quiz.xml');
+    expect(entries).not.toContain('not-qti.xml');
+  });
+
   it('avoids slug collisions when renamed title matches an existing entry', async () => {
     const zip = new ZipWriter(new BlobWriter('application/zip'));
     await zip.add('bank-a.xml.qti', new TextReader(bankXml('a', 'Shared Bank')));
@@ -177,6 +198,17 @@ function manifestXml(): string {
     </resource>
     <resource identifier="unused_page" type="webcontent" href="wiki_content/page.html">
       <file href="wiki_content/page.html"/>
+    </resource>
+  </resources>
+</manifest>`;
+}
+
+function emptyManifestXml(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="m1" xmlns="http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1">
+  <resources>
+    <resource identifier="page" type="webcontent" href="not-qti.xml">
+      <file href="not-qti.xml"/>
     </resource>
   </resources>
 </manifest>`;
