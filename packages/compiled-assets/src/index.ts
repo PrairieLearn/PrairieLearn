@@ -13,7 +13,6 @@ const DEFAULT_OPTIONS = {
   sourceDirectory: './assets',
   buildDirectory: './public/build',
   publicPath: '/build/',
-  conditions: [] as string[],
 };
 
 export type AssetsManifest = Record<
@@ -43,7 +42,11 @@ export interface CompiledAssetsOptions {
   conditions?: string[];
 }
 
-let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
+// `conditions` is intentionally left unset by default: passing `[]` to esbuild
+// counts as configuring custom conditions and suppresses its automatic `module`
+// condition.
+let options: Required<Omit<CompiledAssetsOptions, 'conditions'>> &
+  Pick<CompiledAssetsOptions, 'conditions'> = { ...DEFAULT_OPTIONS };
 
 let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
