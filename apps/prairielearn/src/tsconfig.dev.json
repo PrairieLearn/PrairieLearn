@@ -1,0 +1,6 @@
+{
+  // tsx uses a single process-wide tsconfig gated by `include`; without the package glob, package `.tsx` files fall back
+  // to esbuild's default (classic) JSX and throw "React is not defined" at runtime.
+  "extends": "./tsconfig.json",
+  "include": ["**/*", "../../../packages/*/src/**/*"]
+}
