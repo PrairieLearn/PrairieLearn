@@ -16,6 +16,7 @@ import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
+  type ColumnFilter,
   type ColumnFilterEntry,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
@@ -375,9 +376,7 @@ function GradebookTable({
     }
   };
 
-  const filters = useMemo<
-    Record<string, (props: { header: Header<GradebookRow, unknown> }) => React.ReactNode>
-  >(() => {
+  const filters = useMemo<Record<string, ColumnFilter<GradebookRow>>>(() => {
     return {
       role: ({ header }) => (
         <MultiSelectColumnFilter

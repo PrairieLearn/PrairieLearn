@@ -1,7 +1,8 @@
-import { type Header, createColumnHelper } from '@tanstack/react-table';
+import { createColumnHelper } from '@tanstack/react-table';
 
 import { run } from '@prairielearn/run';
 import {
+  type ColumnFilter,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
   applyMultiSelectFilter,
@@ -425,10 +426,7 @@ export function createQuestionsTableFilters({
     return map;
   });
 
-  const filterMap: Record<
-    string,
-    (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
-  > = {
+  const filterMap: Record<string, ColumnFilter<SafeQuestionsPageData>> = {
     topic: ({ header }) => (
       <MultiSelectColumnFilter
         column={header.column}

@@ -81,10 +81,13 @@ const DefaultEmptyState = (
   <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
 
+/** Renders the filter control in a column header. */
+export type ColumnFilter<TData> = (props: { header: Header<TData, unknown> }) => ReactNode;
+
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
   title: string;
-  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
+  filters?: Record<string, ColumnFilter<RowDataModel>>;
   rowHeight?: number;
   noResultsState?: ReactNode;
   emptyState?: ReactNode;

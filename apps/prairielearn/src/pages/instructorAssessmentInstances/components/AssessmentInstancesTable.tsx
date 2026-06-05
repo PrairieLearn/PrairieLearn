@@ -4,7 +4,6 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type FilterFn,
-  type Header,
   type RowSelectionState,
   type SortingState,
   type Table,
@@ -15,10 +14,11 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
-import { type ReactNode, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 
 import {
+  type ColumnFilter,
   type ColumnFilterEntry,
   IndeterminateCheckbox,
   MultiSelectColumnFilter,
@@ -558,10 +558,7 @@ export function AssessmentInstancesTable({
   );
 
   const filters = useMemo(() => {
-    const map: Record<
-      string,
-      (props: { header: Header<AssessmentInstanceRow, unknown> }) => ReactNode
-    > = {
+    const map: Record<string, ColumnFilter<AssessmentInstanceRow>> = {
       [roleColumnId]: ({ header }) => (
         <MultiSelectColumnFilter column={header.column} allColumnValues={ROLE_VALUES} />
       ),
