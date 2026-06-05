@@ -5,7 +5,7 @@
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
- * Usage: `yarn capture-access-control-screenshots`
+ * Usage: `pnpm capture-access-control-screenshots`
  */
 
 import fs from 'node:fs';
