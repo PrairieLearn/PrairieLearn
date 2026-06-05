@@ -5,7 +5,7 @@
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
- * Usage: `yarn capture-access-control-screenshots`
+ * Usage: `pnpm capture-access-control-screenshots`
  */
 
 import fs from 'node:fs';
@@ -19,7 +19,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import type { Assessment, CourseInstance } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import { syncEnrollmentAccessControl } from '../../models/assessment-access-control-rules.js';
+import { replaceEnrollmentAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   generateAndEnrollUsers,
@@ -233,26 +233,26 @@ async function seedRealisticOverrides({
     authzData,
   });
 
-  await syncEnrollmentAccessControl(
-    assessment,
-    formJsonToEnrollmentRuleData({
-      dateControl: {
-        release: { date: screenshotDate(displayTimezone, 2, '09:00:00') },
-        durationMinutes: 90,
-      },
-    }),
-    enrollments.slice(4, 7).map((e) => e.id),
-  );
-  await syncEnrollmentAccessControl(
-    assessment,
-    formJsonToEnrollmentRuleData({
-      dateControl: {
-        due: { date: screenshotDate(displayTimezone, 21, '23:59:59') },
-        durationMinutes: 75,
-      },
-    }),
-    enrollments.slice(7, 10).map((e) => e.id),
-  );
+  await replaceEnrollmentAccessControlRules(assessment, [
+    {
+      ruleData: formJsonToEnrollmentRuleData({
+        dateControl: {
+          release: { date: screenshotDate(displayTimezone, 2, '09:00:00') },
+          durationMinutes: 90,
+        },
+      }),
+      enrollmentIds: enrollments.slice(4, 7).map((e) => e.id),
+    },
+    {
+      ruleData: formJsonToEnrollmentRuleData({
+        dateControl: {
+          due: { date: screenshotDate(displayTimezone, 21, '23:59:59') },
+          durationMinutes: 75,
+        },
+      }),
+      enrollmentIds: enrollments.slice(7, 10).map((e) => e.id),
+    },
+  ]);
 
   // Sort by UID before zipping with display names so the override card lists
   // the same names in the same order as the UI, which renders enrollment

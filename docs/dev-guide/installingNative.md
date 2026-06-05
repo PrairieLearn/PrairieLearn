@@ -7,7 +7,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
 - Install the prerequisites:
   - [Git](https://git-scm.com)
   - [Node.js 24](https://nodejs.org)
-  - [Yarn](https://yarnpkg.com)
+  - [pnpm](https://pnpm.io)
   - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
   - [PostgreSQL 17](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
@@ -57,10 +57,10 @@ Most of these prerequisites can be installed using the package manager of your O
     nvm install 24
     ```
 
-    Enable `corepack` to make `yarn` available:
+    Install pnpm:
 
     ```sh
-    corepack enable
+    npm install -g pnpm
     ```
 
     d2 can be installed through the install script:
@@ -103,10 +103,10 @@ Most of these prerequisites can be installed using the package manager of your O
     brew link postgresql@17
     ```
 
-    Enable `corepack` to make `yarn` available:
+    Install pnpm:
 
     ```sh
-    corepack enable
+    npm install -g pnpm
     ```
 
 - Clone the latest code:
@@ -132,7 +132,7 @@ Most of these prerequisites can be installed using the package manager of your O
   The above command installs everything. Alternatively, you can run each step individually:
 
   ```sh
-  yarn
+  pnpm install
   make build
   make python-deps
   make e2e-deps

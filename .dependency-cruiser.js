@@ -69,7 +69,7 @@ module.exports = {
       from: {
         path: '(src)',
         pathNot: [
-          '.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$',
+          '.(spec|test).(js|jsx|mjs|cjs|ts|tsx|ls|coffee|litcoffee|coffee.md)$',
           'src/tests/',
           'src/ee/tests/',
           '[.]d[.]ts$',
@@ -81,7 +81,6 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '[.]yarn/' },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {
       exportsFields: ['exports'],

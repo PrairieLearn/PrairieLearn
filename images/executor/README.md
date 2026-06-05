@@ -68,7 +68,7 @@ To run locally, first build both images (see above), then:
 
 ```sh
 docker run --rm prairielearn/executor:latest \
-  yarn workspace @prairielearn/prairielearn run test:executor-smoke-test
+  pnpm --filter @prairielearn/prairielearn test:executor-smoke-test
 ```
 
 ## Debugging

@@ -1,5 +1,17 @@
 # @prairielearn/utils
 
+## 3.2.0
+
+### Minor Changes
+
+- fdfca12: Add a Node-only `@prairielearn/utils/zip` subpath for zip extraction with entry-count, expanded-size, and symlink validation.
+
+## 3.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.1.5
 
 ### Patch Changes

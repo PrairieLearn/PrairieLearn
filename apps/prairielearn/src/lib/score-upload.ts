@@ -15,6 +15,13 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/** The subset of an uploaded file that the CSV upload functions need. */
+export interface UploadedCsvFile {
+  buffer: Buffer;
+  originalname: string;
+  size: number;
+}
+
 /**
  * Update question instance scores from a CSV file.
  *
@@ -27,7 +34,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  */
 export async function uploadInstanceQuestionScores(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -117,7 +124,7 @@ export async function uploadInstanceQuestionScores(
  */
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {

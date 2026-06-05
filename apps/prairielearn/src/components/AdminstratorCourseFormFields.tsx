@@ -71,6 +71,7 @@ export function AdministratorCourseFormFields({
   aiSecretsConfigured,
   autoFilledInstitutionId,
   repositoryRequired,
+  onInstitutionChange,
 }: {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
@@ -80,6 +81,7 @@ export function AdministratorCourseFormFields({
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
   repositoryRequired: boolean;
+  onInstitutionChange?: (institution: AdminInstitution) => void;
 }) {
   const trpc = useTRPC();
   const {
@@ -186,6 +188,7 @@ export function AdministratorCourseFormFields({
               const selected = institutions.find((i) => i.id === e.target.value);
               if (selected) {
                 setValue('display_timezone', selected.display_timezone);
+                onInstitutionChange?.(selected);
               }
             },
           })}

@@ -18,11 +18,16 @@ export type NumericColumnFilterValue =
  *
  * @param params
  * @param params.column - The TanStack Table column object
+ * @param params.unit - Optional unit label shown in the filter (e.g. "minutes") to
+ * clarify what the entered numbers represent. The column's `filterFn` is
+ * responsible for interpreting values in this unit.
  */
 export function NumericInputColumnFilter<TData, TValue>({
   column,
+  unit,
 }: {
   column: Column<TData, TValue>;
+  unit?: string;
 }) {
   const columnId = column.id;
   const value = (column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
@@ -66,8 +71,12 @@ export function NumericInputColumnFilter<TData, TValue>({
       <Dropdown.Menu className="p-0">
         <div className="p-3" style={{ minWidth: '240px' }}>
           <div className="d-flex align-items-center justify-content-between mb-2">
-            <label className="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
+            <label
+              className="form-label fw-semibold mb-0 text-nowrap"
+              id={`${columnId}-filter-label`}
+            >
               {label}
+              {unit ? <span className="fw-normal text-muted"> (in {unit})</span> : null}
             </label>
             <button
               type="button"
