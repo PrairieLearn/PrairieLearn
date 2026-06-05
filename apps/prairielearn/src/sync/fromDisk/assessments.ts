@@ -588,6 +588,33 @@ export async function sync(
 }
 
 /**
+ * A {@link syncSingleAssessment} faithfully reproduces a full sync only when the
+ * assessment references local questions and supplies no question preferences. A
+ * full sync resolves shared (`@`) references and validates preferences against
+ * each question's schema (`validateAssessmentSharedQuestions` +
+ * `preValidateAssessmentPreferences`); the single-assessment path does neither —
+ * it looks up local questions only and skips preference validation. So an
+ * assessment that uses either must fall back to a full sync, or it would get a
+ * null `question_id` for the shared reference and silently miss preference errors.
+ */
+function needsFullSyncValidation(assessment: AssessmentJson): boolean {
+  const hasPreferences = (preferences: QuestionPreferences | undefined) =>
+    preferences != null && Object.keys(preferences).length > 0;
+
+  for (const zone of assessment.zones) {
+    for (const question of zone.questions) {
+      if (question.id?.startsWith('@') || hasPreferences(question.preferences)) return true;
+      for (const alternative of question.alternatives ?? []) {
+        if (alternative.id.startsWith('@') || hasPreferences(alternative.preferences)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Fast-syncs a single assessment from disk without disturbing its siblings (via
  * the `partial_sync` mode of the `sync_assessments` sproc). Used by the graph
  * fast-sync engine when an assessment's JSON changed, or when a question it
@@ -596,7 +623,8 @@ export async function sync(
  * Cross-entity validation (`validateAssessment`) is intentionally skipped here:
  * the assessment was valid at its last full sync, and the edits that trigger a
  * single-assessment re-sync don't invalidate it. Cases that might (e.g. a
- * referenced question being deleted) are handled by falling back to a full sync.
+ * referenced question being deleted, a shared question, or supplied preferences)
+ * are handled by falling back to a full sync.
  *
  * Returns `false` if the assessment can't be fast-synced; the caller should then
  * fall back to a full sync.
@@ -632,7 +660,11 @@ export async function syncSingleAssessment({
     tolerateMissing: false,
   });
   // Missing/invalid JSON (e.g. a deleted assessment) can't be fast-synced.
-  if (!infoFile?.uuid || infofile.hasErrors(infoFile)) return false;
+  if (!infoFile?.uuid || infofile.hasErrors(infoFile) || !infoFile.data) return false;
+
+  // Shared questions and supplied preferences need the full sync's cross-entity
+  // validation, which this path skips.
+  if (needsFullSyncValidation(infoFile.data)) return false;
 
   const questionRows = await sqldb.queryRows(
     sql.select_question_ids,

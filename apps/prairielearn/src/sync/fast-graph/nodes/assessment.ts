@@ -1,9 +1,9 @@
 import type { ChangedFiles } from '../../../lib/chunks.js';
 import type { Course } from '../../../lib/db-types.js';
 import { syncSingleAssessment } from '../../fromDisk/assessments.js';
-import type { DirtyNode, MatchResult, SyncNode, SyncOutcome } from '../engine.js';
+import type { MatchResult, SyncNode, SyncOutcome } from '../engine.js';
 
-interface AssessmentPayload {
+export interface AssessmentPayload {
   courseInstanceShortName: string;
   tid: string;
 }
@@ -30,7 +30,11 @@ function assessmentFromInfoPath(file: string): AssessmentPayload | null {
  */
 export const assessmentNode: SyncNode = {
   type: 'Assessment',
-  topoRank: 20,
+
+  key(payload): string {
+    const { courseInstanceShortName, tid } = payload as AssessmentPayload;
+    return `${courseInstanceShortName}/${tid}`;
+  },
 
   async match(_course: Course, changed: ChangedFiles): Promise<MatchResult> {
     // A modified `infoAssessment.json` marks its assessment dirty (covers direct
@@ -45,7 +49,7 @@ export const assessmentNode: SyncNode = {
         dirty.set(`${assessment.courseInstanceShortName}/${assessment.tid}`, assessment);
       }
     }
-    if (dirty.size === 0) return { nodes: [], claimedFiles: [] };
+    if (dirty.size === 0) return { payloads: [], claimedFiles: [] };
 
     // Claim every changed file inside a dirty assessment's directory.
     const allPaths = [
@@ -61,18 +65,11 @@ export const assessmentNode: SyncNode = {
       }
     }
 
-    return {
-      nodes: [...dirty.entries()].map(([key, payload]) => ({ type: 'Assessment', key, payload })),
-      claimedFiles,
-    };
+    return { payloads: [...dirty.values()], claimedFiles };
   },
 
-  async dependents(_course: Course, _nodes: DirtyNode[]): Promise<DirtyNode[]> {
-    return [];
-  },
-
-  async sync(course: Course, node: DirtyNode): Promise<SyncOutcome> {
-    const { courseInstanceShortName, tid } = node.payload as AssessmentPayload;
+  async sync(course: Course, payload: unknown): Promise<SyncOutcome> {
+    const { courseInstanceShortName, tid } = payload as AssessmentPayload;
     const ok = await syncSingleAssessment({ course, courseInstanceShortName, tid });
     return ok ? { status: 'ok' } : { status: 'fallback' };
   },

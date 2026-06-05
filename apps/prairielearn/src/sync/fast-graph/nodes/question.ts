@@ -1,15 +1,10 @@
 import type { ChangedFiles } from '../../../lib/chunks.js';
 import type { Course } from '../../../lib/db-types.js';
-import { selectAssessmentsReferencingQuestions } from '../../../models/assessment.js';
 import { getFastSyncStrategy } from '../../fast/index.js';
-import {
-  selectMatchingQuestion,
-  syncQuestionJson,
-  syncQuestionRename,
-} from '../../fast/question.js';
-import type { DirtyNode, MatchResult, SyncNode, SyncOutcome } from '../engine.js';
+import { syncQuestionJson, syncQuestionRename } from '../../fast/question.js';
+import type { MatchResult, SyncNode, SyncOutcome } from '../engine.js';
 
-type QuestionPayload =
+export type QuestionPayload =
   | { kind: 'upsert'; pathPrefix: string }
   | { kind: 'rename'; oldQid: string; newQid: string };
 
@@ -26,27 +21,29 @@ const isUnder = (file: string, dir: string) => file === dir || file.startsWith(`
 
 /**
  * Question node. Handles both upserts (create/update from changed files) and
- * renames (a moved `info.json`). For any change it ripples to the assessments
- * that reference the question; the engine re-syncs each from disk, which is how
- * a grading-method change or a rename's rewritten assessment JSON gets applied.
+ * renames (a moved `info.json`). Each `sync` re-derives the question from disk;
+ * the Question → Assessment edge (declared in the graph) ripples a change to the
+ * assessments that reference it, so a grading-method change or a rename's
+ * rewritten assessment JSON gets applied without this node knowing about
+ * assessments at all.
  */
 export const questionNode: SyncNode = {
   type: 'Question',
-  topoRank: 10,
+
+  key(payload): string {
+    const data = payload as QuestionPayload;
+    return data.kind === 'upsert' ? `upsert ${data.pathPrefix}` : `rename ${data.newQid}`;
+  },
 
   async match(_course: Course, changed: ChangedFiles): Promise<MatchResult> {
-    const nodes: DirtyNode[] = [];
+    const payloads: QuestionPayload[] = [];
     const claimedFiles: string[] = [];
 
     // Upserts: added/modified/deleted files under a single question.
     const upsertFiles = [...changed.modified, ...changed.deleted];
     const strategy = getFastSyncStrategy(upsertFiles);
     if (strategy?.type === 'Question') {
-      nodes.push({
-        type: 'Question',
-        key: `upsert ${strategy.pathPrefix}`,
-        payload: { kind: 'upsert', pathPrefix: strategy.pathPrefix },
-      });
+      payloads.push({ kind: 'upsert', pathPrefix: strategy.pathPrefix });
       claimedFiles.push(...upsertFiles);
     }
 
@@ -57,11 +54,7 @@ export const questionNode: SyncNode = {
       return oldQid !== null && newQid !== null ? [{ oldQid, newQid }] : [];
     });
     for (const { oldQid, newQid } of renames) {
-      nodes.push({
-        type: 'Question',
-        key: `rename ${newQid}`,
-        payload: { kind: 'rename', oldQid, newQid },
-      });
+      payloads.push({ kind: 'rename', oldQid, newQid });
     }
     // Claim every renamed file that belongs to a renamed question.
     for (const { from, to } of changed.renamed) {
@@ -72,42 +65,15 @@ export const questionNode: SyncNode = {
       if (belongs) claimedFiles.push(from, to);
     }
 
-    return { nodes, claimedFiles };
+    return { payloads, claimedFiles };
   },
 
-  async dependents(course: Course, nodes: DirtyNode[]): Promise<DirtyNode[]> {
-    // Resolve each dirty question to its id (by its *current* QID), then mark
-    // the assessments that reference it dirty so they get re-synced from disk.
-    const questionIds: string[] = [];
-    for (const node of nodes) {
-      const payload = node.payload as QuestionPayload;
-      const currentPrefix =
-        payload.kind === 'upsert' ? payload.pathPrefix : `questions/${payload.oldQid}`;
-      const question = await selectMatchingQuestion(currentPrefix);
-      if (question?.id) questionIds.push(question.id);
-    }
-    if (questionIds.length === 0) return [];
-
-    const assessments = await selectAssessmentsReferencingQuestions({
-      course_id: course.id,
-      question_ids: questionIds,
-    });
-    return assessments.map((a) => ({
-      type: 'Assessment',
-      key: `${a.course_instance_short_name}/${a.assessment_directory}`,
-      payload: {
-        courseInstanceShortName: a.course_instance_short_name,
-        tid: a.assessment_directory,
-      },
-    }));
-  },
-
-  async sync(course: Course, node: DirtyNode): Promise<SyncOutcome> {
-    const payload = node.payload as QuestionPayload;
+  async sync(course: Course, payload: unknown): Promise<SyncOutcome> {
+    const data = payload as QuestionPayload;
     const question =
-      payload.kind === 'upsert'
-        ? await syncQuestionJson(course, payload.pathPrefix)
-        : await syncQuestionRename(course, payload.oldQid, payload.newQid);
+      data.kind === 'upsert'
+        ? await syncQuestionJson(course, data.pathPrefix)
+        : await syncQuestionRename(course, data.oldQid, data.newQid);
     if (!question) return { status: 'fallback' };
 
     return {

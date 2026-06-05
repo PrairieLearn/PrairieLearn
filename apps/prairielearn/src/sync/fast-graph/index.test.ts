@@ -88,6 +88,21 @@ describe('graph fast sync', () => {
     assert.equal(after[0].max_auto_points, 15);
   });
 
+  it('falls back when an assessment supplies question preferences', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+    const course = await selectCourseById(syncResults.courseId);
+
+    // The single-assessment path doesn't validate preferences against the
+    // question's schema, so an assessment that supplies them must full-sync.
+    const assessment =
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID];
+    assessment.zones![0].questions[0].alternatives![0].preferences = { num: 5 };
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const result = await attemptGraphFastSync(course, onlyModified([ASSESSMENT_INFO]));
+    assert.isFalse(result.ok);
+  });
+
   it('fast-syncs a question rename, preserving the question row', async () => {
     const { syncResults } = await util.createAndSyncCourseData();
     const course = await selectCourseById(syncResults.courseId);
