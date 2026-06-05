@@ -185,6 +185,8 @@ export async function init() {
     // changes are picked up without a separate build step. This mirrors the
     // `@prairielearn/source` condition used by Vite for server-side rendering,
     // keeping the client hydration bundle in sync with the server-rendered HTML.
+    //
+    // This setting only matters in dev mode. In production, we serve prebuilt assets.
     conditions: ['@prairielearn/source'],
   });
 
