@@ -170,6 +170,11 @@ export interface QtiArchiveSummary {
   renamedTitles: TitleRename[];
 }
 
+/**
+ * Read-only analysis pass over a QTI archive: discovers the set of archive
+ * entries that should survive trimming (`keptPaths`) so that
+ * `createTrimmedQtiArchive` can produce the trimmed output.
+ */
 export async function analyzeQtiArchive(
   input: ZipInput,
   inputName = 'archive.zip',
@@ -377,6 +382,12 @@ async function discoverQtiEntries(
   return entries.length > 0 ? entries : discoverQtiEntriesWithoutManifest(archive, entryMap);
 }
 
+/**
+ * Fallback discovery for archives that either lack an `imsmanifest.xml` entirely
+ * or whose manifest yields zero QTI entries (e.g. some Respondus exports). Scans
+ * every XML file in the archive for `<questestinterop>` content to find QTI items
+ * that aren't declared in the manifest.
+ */
 async function discoverQtiEntriesWithoutManifest(
   archive: ZipArchive,
   entryMap: Map<string, unknown>,
@@ -609,6 +620,7 @@ async function buildTextRewrites(analysis: QtiArchiveAnalysis): Promise<Map<stri
   return rewritten;
 }
 
+/** Rebuild the manifest XML, stripping resources and org items that were trimmed. */
 function rewriteManifest(analysis: QtiArchiveAnalysis): string {
   const manifest = structuredClone(analysis.manifestObject ?? {});
   const keepIds = analysis.manifestKeepIds;
