@@ -197,7 +197,7 @@ export async function analyzeQtiArchive(
 
   const localAssets = await findLocalAssets(archive, entryMap, textEntries);
   const titleReport = await analyzeTitleCollisions(archive, qtiEntries);
-  const keptPaths = computeKeptPaths(manifest, qtiEntries, localAssets);
+  const keptPaths = computeKeptPaths(entryMap, manifest, qtiEntries, localAssets);
 
   return {
     inputName,
@@ -506,6 +506,7 @@ async function analyzeTitleCollisions(
 }
 
 function computeKeptPaths(
+  entryMap: Map<string, unknown>,
   manifest: ManifestAnalysis | null,
   qtiEntries: QtiArchiveEntry[],
   localAssets: LocalAssets,
@@ -524,6 +525,9 @@ function computeKeptPaths(
   for (const asset of localAssets.found) kept.add(asset);
 
   if (manifest) {
+    const rubricsPath = resolveManifestEntryPath(manifest, 'course_settings/rubrics.xml');
+    if (entryMap.has(rubricsPath)) kept.add(rubricsPath);
+
     const keepIds = new Set<string>();
     const localAssetSet = new Set(localAssets.found);
 

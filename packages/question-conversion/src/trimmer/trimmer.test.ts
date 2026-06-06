@@ -28,6 +28,7 @@ describe('QTI archive trimming', () => {
     expect(entries).toContain('imsmanifest.xml');
     expect(entries).toContain('quiz1/assessment_qti.xml');
     expect(entries).toContain('quiz1/assessment_meta.xml');
+    expect(entries).toContain('course_settings/rubrics.xml');
     expect(entries).toContain('non_cc_assessments/quiz1.xml.qti');
     expect(entries).toContain('non_cc_assessments/bank1.xml.qti');
     expect(entries).toContain('non_cc_assessments/bank2.xml.qti');
@@ -152,6 +153,7 @@ describe('QTI archive trimming', () => {
     expect(entries).toContain('course-export/imsmanifest.xml');
     expect(entries).toContain('course-export/quiz1/assessment_qti.xml');
     expect(entries).toContain('course-export/quiz1/assessment_meta.xml');
+    expect(entries).toContain('course-export/course_settings/rubrics.xml');
     expect(entries).toContain('course-export/non_cc_assessments/quiz1.xml.qti');
     expect(entries).toContain('course-export/non_cc_assessments/bank1.xml.qti');
     expect(entries).toContain('course-export/web_resources/Uploaded Media/diagram.png');
@@ -177,6 +179,7 @@ async function buildFixture(prefix = ''): Promise<Blob> {
     `${prefix}quiz1/assessment_meta.xml`,
     new TextReader('<quiz><title>Quiz One</title></quiz>'),
   );
+  await zip.add(`${prefix}course_settings/rubrics.xml`, new TextReader('<rubrics/>'));
   await zip.add(`${prefix}non_cc_assessments/quiz1.xml.qti`, new TextReader(assessmentFullXml()));
   await zip.add(
     `${prefix}non_cc_assessments/bank1.xml.qti`,
