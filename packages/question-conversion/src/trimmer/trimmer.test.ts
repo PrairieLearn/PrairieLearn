@@ -116,6 +116,29 @@ describe('QTI archive trimming', () => {
     );
   });
 
+  it('strips query strings and fragments when matching local assets', async () => {
+    const zip = new ZipWriter(new BlobWriter('application/zip'));
+    const qtiXml =
+      '<questestinterop><assessment ident="q1" title="Quiz"><section ident="s1"><item ident="i1" title="Q"><presentation><material><mattext texttype="text/html">&lt;img src="$IMS-CC-FILEBASE$/Uploaded%20Media/diagram.png?ver=1#fragment"&gt;</mattext></material></presentation></item></section></assessment></questestinterop>';
+    await zip.add('quiz.xml', new TextReader(qtiXml));
+    await zip.add('web_resources/Uploaded Media/diagram.png', new TextReader('png'));
+    const input = await zip.close();
+
+    const result = await trimQtiArchive(input, 'asset-query.zip');
+    expect(result.localAssets.found).toEqual(['web_resources/Uploaded Media/diagram.png']);
+    expect(result.localAssets.missing).toEqual([]);
+
+    const output = new Uint8Array(await result.blob.arrayBuffer());
+    const outputArchive = await loadZipArchive(output, 'output.imscc');
+    const entries = listZipEntries(outputArchive).map((entry) => entry.name);
+    expect(entries).toContain('web_resources/Uploaded Media/diagram.png');
+
+    const quiz = await readZipEntryText(outputArchive, 'quiz.xml');
+    expect(quiz).toMatch(/\$IMS-CC-FILEBASE\$\/Uploaded%20Media\/diagram\.png/);
+    expect(quiz).not.toContain('?ver=1');
+    expect(quiz).not.toContain('#fragment');
+  });
+
   it('handles course exports wrapped in a single top-level directory', async () => {
     const input = await buildFixture('course-export/');
 

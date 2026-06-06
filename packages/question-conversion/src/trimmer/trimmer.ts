@@ -1,5 +1,6 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
+import { normalizeImsFilePath } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 
 import {
@@ -418,7 +419,7 @@ async function findLocalAssets(
     for (const match of text.matchAll(IMS_FILEBASE_RE)) {
       const rawPath = decodeXml(match[1]).trim();
       if (rawPath.startsWith('@X@')) continue;
-      const decodedPath = decodeURIComponentSafe(rawPath);
+      const decodedPath = normalizeImsFilePath(rawPath);
       const candidates = [
         decodedPath,
         `web_resources/${decodedPath}`,
@@ -786,14 +787,6 @@ function basename(name: string): string {
 
 function encodePath(value: string): string {
   return value.split('/').map(encodeURIComponent).join('/');
-}
-
-function decodeURIComponentSafe(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 function decodeXml(value: string): string {
