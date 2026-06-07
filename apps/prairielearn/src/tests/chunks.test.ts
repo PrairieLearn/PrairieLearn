@@ -25,6 +25,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const COURSE: courseDB.CourseData = {
   course: makeInfoFile(),
+  courseElements: {},
   questions: {
     'simple-question': makeInfoFile(),
     'complex/question': makeInfoFile(),

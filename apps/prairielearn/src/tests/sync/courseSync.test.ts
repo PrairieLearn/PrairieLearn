@@ -1,9 +1,13 @@
+import * as path from 'path';
+
+import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectOrInsertCourseByPath } from '../../models/course.js';
+import { writeErrorsAndWarningsForCourseData } from '../../sync/course-db.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
@@ -140,6 +144,36 @@ describe('Course syncing', () => {
       comment: 'Course comment',
       comment2: 'Course comment 2',
     });
+  });
+
+  it('records an error for invalid course element info files', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const elementDir = path.join(courseDir, 'elements', 'invalid-element');
+    await fs.ensureDir(elementDir);
+    await fs.writeJSON(path.join(elementDir, 'info.json'), {
+      controller: 42,
+    });
+
+    const syncResults = await util.syncCourseData(courseDir);
+
+    assert.equal(syncResults.status, 'complete');
+    if (syncResults.status !== 'complete') return;
+    assert.isTrue(syncResults.hadJsonErrors);
+
+    const invalidElement = syncResults.courseData.courseElements['invalid-element'];
+    assert.isDefined(invalidElement);
+    const errors = invalidElement.errors.join('\n');
+    assert.match(errors, /controller/);
+    assert.notMatch(errors, /UUID is missing/);
+
+    const output: string[] = [];
+    writeErrorsAndWarningsForCourseData(syncResults.courseId, syncResults.courseData, (line = '') =>
+      output.push(line),
+    );
+    const renderedOutput = output.join('\n');
+    assert.match(renderedOutput, /elements\/invalid-element\/info\.json/);
+    assert.match(renderedOutput, /controller/);
   });
 
   it('forbids sharing settings when sharing is not enabled', async () => {

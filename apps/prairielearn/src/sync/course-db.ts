@@ -26,6 +26,7 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
+  type ElementCourseJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -199,6 +200,7 @@ export interface CourseInstanceData {
 
 export interface CourseData {
   course: InfoFile<CourseJson>;
+  courseElements: Record<string, InfoFile<ElementCourseJson>>;
   questions: Record<string, InfoFile<QuestionJson>>;
   courseInstances: Record<string, CourseInstanceData>;
 }
@@ -223,6 +225,7 @@ export async function loadFullCourse(
     });
   });
 
+  const courseElements = await loadCourseElements({ coursePath });
   const questions = await loadQuestions({ coursePath, sharingEnabled });
   const tagsInUse = new Set<string>();
 
@@ -298,7 +301,7 @@ export async function loadFullCourse(
     sharingEnabled,
   });
 
-  const courseData = { course, questions, courseInstances };
+  const courseData = { course, courseElements, questions, courseInstances };
 
   // These checks are done regardless of whether sharing is enabled or not,
   // since they primarily check for the correctness of sharing attributes. If a
@@ -344,6 +347,10 @@ export function writeErrorsAndWarningsForCourseData(
   writeLine: (line?: string) => void,
 ): void {
   writeErrorsAndWarningsForInfoFileIfNeeded('infoCourse.json', courseData.course, writeLine);
+  Object.entries(courseData.courseElements).forEach(([elementName, element]) => {
+    const elementPath = path.posix.join('elements', elementName, 'info.json');
+    writeErrorsAndWarningsForInfoFileIfNeeded(elementPath, element, writeLine);
+  });
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     const questionPath = path.posix.join('questions', qid, 'info.json');
     writeErrorsAndWarningsForInfoFileIfNeeded(questionPath, question, writeLine);
@@ -370,6 +377,7 @@ export function writeErrorsAndWarningsForCourseData(
 
 export function courseDataHasErrors(courseData: CourseData): boolean {
   if (infofile.hasErrors(courseData.course)) return true;
+  if (Object.values(courseData.courseElements).some(infofile.hasErrors)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrors)) return true;
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
@@ -384,6 +392,7 @@ export function courseDataHasErrors(courseData: CourseData): boolean {
 
 export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
   if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
+  if (Object.values(courseData.courseElements).some(infofile.hasErrorsOrWarnings)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
@@ -406,14 +415,18 @@ export async function loadInfoFile<T = { uuid: string }>({
   filePath,
   schema,
   tolerateMissing = false,
+  requireUuid,
 }: {
   coursePath: string;
   filePath: string;
   schema?: JSONSchemaType<T>;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
+  /** Whether or not the file must contain a UUID */
+  requireUuid?: boolean;
 }): Promise<InfoFile<T> | null> {
   const absolutePath = path.join(coursePath, filePath);
+  const shouldRequireUuid = requireUuid ?? filePath !== 'infoCourse.json';
   let contents: string;
   try {
     // fs-extra uses graceful-fs, which in turn will enqueue open operations.
@@ -458,7 +471,7 @@ export async function loadInfoFile<T = { uuid: string }>({
     // the future, once we're confident that most courses have removed the UUID
     // from infoCourse.json, we can add a warning for unnecessary UUIDs in that
     // file. Also, see https://github.com/PrairieLearn/PrairieLearn/issues/13709
-    if (filePath !== 'infoCourse.json') {
+    if (shouldRequireUuid) {
       if (!json.uuid) {
         return infofile.makeError('UUID is missing');
       }
@@ -506,7 +519,7 @@ export async function loadInfoFile<T = { uuid: string }>({
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
-    if (filePath !== 'infoCourse.json') {
+    if (shouldRequireUuid) {
       // The document was still valid JSON, but we may still be able to
       // extract a UUID from the raw files contents with a regex.
       const match = (contents || '').match(FILE_UUID_REGEX);
@@ -712,6 +725,7 @@ async function loadAndValidateJson<T extends ZodType>({
   zodSchema,
   validate,
   tolerateMissing,
+  requireUuid,
 }: {
   coursePath: string;
   filePath: string;
@@ -719,6 +733,8 @@ async function loadAndValidateJson<T extends ZodType>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
+  /** Whether or not the file must contain a UUID */
+  requireUuid?: boolean;
   validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
@@ -726,6 +742,7 @@ async function loadAndValidateJson<T extends ZodType>({
     filePath,
     schema,
     tolerateMissing,
+    requireUuid,
   });
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
@@ -772,6 +789,7 @@ async function loadInfoForDirectory<T extends ZodType>({
   zodSchema,
   validate,
   recursive = false,
+  requireUuid,
 }: {
   /** The path of the course being synced */
   coursePath: string;
@@ -784,6 +802,8 @@ async function loadInfoForDirectory<T extends ZodType>({
   validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
+  /** Whether or not the info files must contain UUIDs */
+  requireUuid?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
   // Recursive lookup might not be enabled for some info types - if it's
   // disabled, we'll still utilize the same recursive function, but the
@@ -808,6 +828,7 @@ async function loadInfoForDirectory<T extends ZodType>({
         // If we aren't operating in recursive mode, we want to ensure
         // that missing files are correctly reflected as errors.
         tolerateMissing: recursive,
+        requireUuid,
       });
       if (info) {
         infoFiles[path.join(relativeDir, dir)] = info;
@@ -1823,6 +1844,25 @@ function validateCourseInstance({
   }
 
   return { warnings, errors };
+}
+
+/**
+ * Loads all course element info files in a course directory.
+ */
+async function loadCourseElements({
+  coursePath,
+}: {
+  coursePath: string;
+}): Promise<Record<string, InfoFile<ElementCourseJson>>> {
+  return await loadInfoForDirectory({
+    coursePath,
+    directory: 'elements',
+    infoFilename: 'info.json',
+    schema: schemas.ajvSchemas.infoElementCourse,
+    zodSchema: schemas.ElementCourseJsonSchema,
+    validate: () => ({ warnings: [], errors: [] }),
+    requireUuid: false,
+  });
 }
 
 /**
