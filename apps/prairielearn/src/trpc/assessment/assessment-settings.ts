@@ -412,6 +412,8 @@ const updateAssessment = t.procedure
       // have those tools configured.
       if (tool in assessmentInfo.tools || enabled) {
         assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
+      }
+    }
     if (
       locals.question_sharing_enabled &&
       input.share_source_publicly &&
