@@ -292,6 +292,7 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
@@ -338,6 +339,7 @@ router.get(
         res.status(403).send(
           StudentInstanceQuestion({
             resLocals: res.locals,
+            renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
           }),
@@ -350,7 +352,8 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+
+    const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
@@ -398,6 +401,7 @@ router.get(
     res.send(
       StudentInstanceQuestion({
         resLocals: res.locals,
+        renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,

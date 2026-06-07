@@ -8,6 +8,7 @@ function makeAssessment(questions: IRQuestion[], meta?: IRAssessmentMeta): IRAss
   return {
     sourceId: 'test-assessment',
     title: 'Test Assessment',
+    sourceType: 'assessment',
     questions,
     meta,
   };
@@ -95,7 +96,7 @@ describe('PLEmitter', () => {
     const result = emitter.emit(makeAssessment([q]));
     assert.equal(
       result.questions[0].questionHtml,
-      '<pl-question-panel>\n<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n</pl-question-panel>\n',
+      '<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
     );
     assert.isUndefined(result.questions[0].serverPy);
   });
@@ -111,14 +112,24 @@ describe('PLEmitter', () => {
         ],
       },
     });
-    const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
-    assert.include(html, 'answers-name="capital1"');
-    assert.include(html, 'answers-name="capital2"');
-    // Both inputs should be inside pl-question-panel, not below it
-    const panelEnd = html.indexOf('</pl-question-panel>');
-    assert.isAbove(html.indexOf('answers-name="capital1"'), 0);
-    assert.isBelow(html.indexOf('answers-name="capital1"'), panelEnd);
-    assert.isBelow(html.indexOf('answers-name="capital2"'), panelEnd);
+    assert.equal(
+      emitter.emit(makeAssessment([q])).questions[0].questionHtml,
+      '<p>Colombia: <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>, Estonia: <pl-string-input answers-name="capital2" correct-answer="tallinn" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
+    );
+  });
+
+  it('wraps non-input paragraphs in pl-question-panel for fill-in-blanks', () => {
+    const q = makeQuestion({
+      promptHtml: '<p>Fill in the blanks below.</p>\n<p>The capital is [capital1].</p>',
+      body: {
+        type: 'fill-in-blanks',
+        blanks: [{ id: 'capital1', correctText: 'bogota', ignoreCase: true }],
+      },
+    });
+    assert.equal(
+      emitter.emit(makeAssessment([q])).questions[0].questionHtml,
+      '<pl-question-panel>\n<p>Fill in the blanks below.</p>\n</pl-question-panel>\n\n<p>The capital is <pl-string-input answers-name="capital1" correct-answer="bogota" remove-leading-trailing="true" ignore-case="true"></pl-string-input>.</p>\n',
+    );
   });
 
   describe('feedback rendering', () => {
@@ -514,6 +525,60 @@ describe('PLEmitter', () => {
     });
   });
 
+  describe('builtin-grading="false" on multiple-choice', () => {
+    it('emits builtin-grading="false" when no choice is correct', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'Red', correct: false },
+            { id: 'b', html: 'Blue', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+    });
+
+    it('does not emit builtin-grading when a correct choice exists', () => {
+      const q = makeQuestion();
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.notInclude(html, 'builtin-grading');
+    });
+
+    it('emits builtin-grading="false" on dropdown when no choice is correct', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          display: 'dropdown',
+          choices: [
+            { id: 'a', html: 'Maybe', correct: false },
+            { id: 'b', html: 'Perhaps', correct: false },
+          ],
+        },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+      assert.include(html, 'display="dropdown"');
+    });
+
+    it('suppresses feedback attributes when builtin-grading="false"', () => {
+      const q = makeQuestion({
+        body: {
+          type: 'multiple-choice',
+          choices: [
+            { id: 'a', html: 'Red', correct: false },
+            { id: 'b', html: 'Blue', correct: false },
+          ],
+        },
+        feedback: { perAnswer: { Red: 'Interesting!', Blue: 'Cool!' } },
+      });
+      const html = emitter.emit(makeAssessment([q])).questions[0].questionHtml;
+      assert.include(html, 'builtin-grading="false"');
+      assert.notInclude(html, 'feedback=');
+    });
+  });
+
   describe('inferSetAndNumber from title', () => {
     it('infers Midterm set', () => {
       const assessment = { ...makeAssessment([makeQuestion()]), title: 'Midterm 2' };
@@ -599,6 +664,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Zoned Assessment',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Part 1', questions: [q] }],
       };
@@ -877,6 +943,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Quiz',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Random Pool', questions: [q], numberChoose: 1 }],
       };
@@ -889,6 +956,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Quiz',
+        sourceType: 'assessment',
         questions: [q],
         zones: [{ title: 'Part 1', questions: [q] }],
       };
@@ -954,6 +1022,7 @@ describe('PLEmitter', () => {
       const assessment: IRAssessment = {
         sourceId: 'a1',
         title: 'Test',
+        sourceType: 'assessment',
         questions: [bad, good],
         zones: [{ title: 'Part 1', questions: [bad, good] }],
       };

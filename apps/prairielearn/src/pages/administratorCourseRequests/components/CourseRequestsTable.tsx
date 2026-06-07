@@ -15,7 +15,10 @@ import {
 } from '../../../components/AdminstratorCourseFormFields.js';
 import { JobStatus } from '../../../components/JobStatus.js';
 import { type AppError, getAppError } from '../../../lib/client/errors.js';
-import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
+import {
+  type AdminInstitution,
+  type AdminInstitutionWithSettings,
+} from '../../../lib/client/safe-db-types.js';
 import {
   getAdministratorCourseRequestsUrl,
   getAdministratorJobSequenceUrl,
@@ -27,6 +30,7 @@ import type { AdminCourseRequestError } from '../../../trpc/administrator/course
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
+  github_course_owner: string;
 }
 
 export function CourseRequestsTable({
@@ -34,13 +38,15 @@ export function CourseRequestsTable({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   showAll,
   aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   showAll: boolean;
   aiSecretsConfigured: boolean;
 }) {
@@ -101,6 +107,7 @@ export function CourseRequestsTable({
         institutions={institutions}
         availableTimezones={availableTimezones}
         coursesRoot={coursesRoot}
+        defaultGithubCourseOwner={defaultGithubCourseOwner}
         aiSecretsConfigured={aiSecretsConfigured}
       />
     </div>
@@ -284,11 +291,13 @@ function CourseRequestApproveModal({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   aiSecretsConfigured,
 }: ReturnType<typeof useModalState<CourseRequestRow>> & {
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   aiSecretsConfigured: boolean;
 }) {
   return (
@@ -300,6 +309,7 @@ function CourseRequestApproveModal({
           institutions={institutions}
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
+          defaultGithubCourseOwner={defaultGithubCourseOwner}
           aiSecretsConfigured={aiSecretsConfigured}
           onCancel={onHide}
         />
@@ -313,13 +323,15 @@ function CourseRequestApproveModalContent({
   institutions,
   availableTimezones,
   coursesRoot,
+  defaultGithubCourseOwner,
   aiSecretsConfigured,
   onCancel,
 }: {
   request: CourseRequestRow;
-  institutions: AdminInstitution[];
+  institutions: AdminInstitutionWithSettings[];
   availableTimezones: Timezone[];
   coursesRoot: string;
+  defaultGithubCourseOwner: string;
   aiSecretsConfigured: boolean;
   onCancel: () => void;
 }) {
@@ -327,13 +339,18 @@ function CourseRequestApproveModalContent({
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
   const appError = getAppError<AdminCourseRequestError['CreateCourse']>(mutation.error);
 
-  const userInstitution = institutions.find((i) => i.id === request.user_institution_id);
+  const adminInstitutions = institutions.map((i) => i.institution);
+  const userRow = institutions.find((i) => i.institution.id === request.user_institution_id);
+  const userInstitution = userRow?.institution;
   const isDefaultInstitution = userInstitution?.short_name === 'Default';
   const autoFilledInstitutionId =
     userInstitution && !isDefaultInstitution ? userInstitution.id : null;
   const defaultInstitutionId = autoFilledInstitutionId ?? '';
   const defaultTimezone =
     userInstitution && autoFilledInstitutionId ? userInstitution.display_timezone : '';
+  const initialGithubCourseOwner =
+    (autoFilledInstitutionId && userRow?.institution_settings?.github_course_owner) ||
+    defaultGithubCourseOwner;
 
   const repoName = buildRepoShortName(null, request.short_name);
   const path = coursesRoot + '/' + repoName;
@@ -348,16 +365,27 @@ function CourseRequestApproveModalContent({
       path,
       repository_short_name: repoName,
       github_user: request.github_user ?? '',
+      github_course_owner: initialGithubCourseOwner,
     },
   });
 
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    setValue,
+    formState: { isSubmitting, dirtyFields, errors },
   } = methods;
   const institutionId = methods.watch('institution_id');
-  const prefixState = useInstitutionPrefix(institutionId, institutions);
+  const prefixState = useInstitutionPrefix(institutionId, adminInstitutions);
+
+  const handleInstitutionChange = (institution: AdminInstitution) => {
+    if (dirtyFields.github_course_owner) return;
+    const row = institutions.find((i) => i.institution.id === institution.id);
+    setValue(
+      'github_course_owner',
+      row?.institution_settings?.github_course_owner ?? defaultGithubCourseOwner,
+    );
+  };
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -369,6 +397,7 @@ function CourseRequestApproveModalContent({
         displayTimezone: data.display_timezone,
         path: data.path,
         repoShortName: data.repository_short_name,
+        githubCourseOwner: data.github_course_owner.trim(),
         githubUser: data.github_user,
       },
       {
@@ -535,14 +564,47 @@ function CourseRequestApproveModalContent({
             </div>
           </div>
           <AdministratorCourseFormFields
-            institutions={institutions}
+            institutions={adminInstitutions}
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             prefixState={prefixState}
             emailDomain={request.work_email?.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
+            repositoryRequired={true}
+            onInstitutionChange={handleInstitutionChange}
           />
+          <div className="mb-3">
+            <label className="form-label" htmlFor="courseRequestAddInputGithubCourseOwner">
+              GitHub organization
+            </label>
+            <input
+              type="text"
+              className={clsx('form-control', errors.github_course_owner && 'is-invalid')}
+              id="courseRequestAddInputGithubCourseOwner"
+              defaultValue={initialGithubCourseOwner}
+              aria-invalid={errors.github_course_owner ? true : undefined}
+              aria-errormessage={
+                errors.github_course_owner
+                  ? 'courseRequestAddInputGithubCourseOwner-error'
+                  : undefined
+              }
+              aria-describedby="courseRequestAddInputGithubCourseOwnerHelp"
+              {...register('github_course_owner', {
+                required: 'GitHub organization is required',
+                validate: (value) => value.trim().length > 0 || 'GitHub organization is required',
+              })}
+            />
+            {errors.github_course_owner && (
+              <div id="courseRequestAddInputGithubCourseOwner-error" className="invalid-feedback">
+                {errors.github_course_owner.message}
+              </div>
+            )}
+            <small id="courseRequestAddInputGithubCourseOwnerHelp" className="form-text text-muted">
+              The repository will be created in this GitHub organization. Pre-filled from the
+              selected institution's default; can be overridden for this course.
+            </small>
+          </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
               GitHub username
@@ -635,7 +697,7 @@ function CourseRequestDenyForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['Deny']>(mutation.error);
 
   return (
     <>
@@ -710,7 +772,7 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
-  const appError = getAppError<Record<string, never>>(mutation.error);
+  const appError = getAppError<AdminCourseRequestError['UpdateNote']>(mutation.error);
 
   const {
     register,

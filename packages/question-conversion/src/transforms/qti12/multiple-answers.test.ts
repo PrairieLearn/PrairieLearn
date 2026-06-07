@@ -59,6 +59,6 @@ describe('multipleAnswersHandler', () => {
     const result = multipleAnswersHandler.transform(item);
     assert.equal(result.gradingMethod, 'Manual');
     assert.isArray(result.warnings);
-    assert.match(result.warnings![0], /manually-graded/);
+    assert.match(result.warnings![0], /No correct answer found/);
   });
 });

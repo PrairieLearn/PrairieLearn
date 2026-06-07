@@ -1,1 +1,1 @@
-export { QTI12AssessmentParser } from './qti12-assessment-parser.js';
+export { QTI12ItemContainerParser } from './qti12-item-container-parser.js';

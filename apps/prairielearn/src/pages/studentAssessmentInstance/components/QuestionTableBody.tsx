@@ -48,8 +48,9 @@ export function QuestionTableBody({
   let previousZoneHadInfo = false;
 
   return rows.map((row) => {
-    const zoneHasInfo =
-      row.zone.title != null || row.zone.max_points != null || row.zone.best_questions != null;
+    const showBestQuestions =
+      row.zone.best_questions != null && row.zone.best_questions < row.zone_question_count;
+    const zoneHasInfo = row.zone.title != null || row.zone.max_points != null || showBestQuestions;
 
     // Show zone info if this zone has info, or if the previous zone
     // had info (blank zone info to visually separate).
@@ -86,7 +87,7 @@ export function QuestionTableBody({
                               content: `Of the points that you are awarded for answering these ${row.zone_question_count} questions, at most ${row.zone.max_points} will count toward your total points.`,
                             })
                           : ''}
-                        ${row.zone.best_questions != null
+                        ${showBestQuestions
                           ? ZoneInfoPopover({
                               label:
                                 row.zone.title || row.zone.max_points != null

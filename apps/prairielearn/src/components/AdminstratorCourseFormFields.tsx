@@ -70,6 +70,8 @@ export function AdministratorCourseFormFields({
   emailDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
+  repositoryRequired,
+  onInstitutionChange,
 }: {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
@@ -78,6 +80,8 @@ export function AdministratorCourseFormFields({
   emailDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
+  repositoryRequired: boolean;
+  onInstitutionChange?: (institution: AdminInstitution) => void;
 }) {
   const trpc = useTRPC();
   const {
@@ -184,6 +188,7 @@ export function AdministratorCourseFormFields({
               const selected = institutions.find((i) => i.id === e.target.value);
               if (selected) {
                 setValue('display_timezone', selected.display_timezone);
+                onInstitutionChange?.(selected);
               }
             },
           })}
@@ -311,7 +316,9 @@ export function AdministratorCourseFormFields({
             aria-errormessage={
               errors.repository_short_name ? 'courseFormRepositoryName-error' : undefined
             }
-            {...register('repository_short_name', { required: 'Enter a repository name' })}
+            {...register('repository_short_name', {
+              required: repositoryRequired && 'Enter a repository name',
+            })}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger

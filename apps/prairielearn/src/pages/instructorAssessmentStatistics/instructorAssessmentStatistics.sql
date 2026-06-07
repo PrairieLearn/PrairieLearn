@@ -6,23 +6,6 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_duration_stats
-SELECT
-  format_interval (duration_stat_median) AS median_formatted,
-  format_interval (duration_stat_min) AS min_formatted,
-  format_interval (duration_stat_max) AS max_formatted,
-  format_interval (duration_stat_mean) AS mean_formatted,
-  DATE_PART('epoch', duration_stat_median) / 60 AS median_minutes,
-  DATE_PART('epoch', duration_stat_min) / 60 AS min_minutes,
-  DATE_PART('epoch', duration_stat_max) / 60 AS max_minutes,
-  DATE_PART('epoch', duration_stat_mean) / 60 AS mean_minutes,
-  duration_stat_thresholds AS thresholds,
-  duration_stat_hist AS hist
-FROM
-  assessments
-WHERE
-  id = $assessment_id;
-
 -- BLOCK assessment_score_histogram_by_date
 WITH
   assessment_instances_by_user_and_date AS (
@@ -52,7 +35,6 @@ WITH
   )
 SELECT
   ai_by_user_and_date.date,
-  to_char(ai_by_user_and_date.date, 'DD Mon') AS date_formatted,
   count(score_perc)::integer AS number,
   avg(score_perc) AS mean_score_perc,
   histogram (score_perc, 0, 100, 10)
@@ -66,7 +48,7 @@ ORDER BY
 -- BLOCK user_scores
 SELECT
   ai.score_perc,
-  DATE_PART('epoch', ai.duration) AS duration_secs
+  ai.duration
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -79,3 +61,65 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id);
+
+-- BLOCK questions
+SELECT
+  c.short_name AS course_short_name,
+  ci.short_name AS course_instance_short_name,
+  (aset.abbreviation || a.number) AS assessment_label,
+  aq.*,
+  q.qid,
+  q.title AS question_title,
+  row_to_json(top) AS topic,
+  (
+    SELECT
+      COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
+    FROM
+      question_tags AS qt
+      JOIN tags AS tg ON (tg.id = qt.tag_id)
+    WHERE
+      q.id = qt.question_id
+  ) AS question_tags,
+  admin_assessment_question_number (aq.id) AS assessment_question_number,
+  ag.number AS alternative_pool_number,
+  (
+    count(*) OVER (
+      PARTITION BY
+        ag.number
+    )
+  )::integer AS alternative_pool_size,
+  z.title AS zone_title,
+  (
+    lag(z.id) OVER (
+      PARTITION BY
+        z.id
+      ORDER BY
+        aq.number
+    ) IS NULL
+  ) AS start_new_zone,
+  (
+    lag(ag.id) OVER (
+      PARTITION BY
+        ag.id
+      ORDER BY
+        aq.number
+    ) IS NULL
+  ) AS start_new_alternative_pool
+FROM
+  assessment_questions AS aq
+  JOIN questions AS q ON (q.id = aq.question_id)
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
+  JOIN topics AS top ON (top.id = q.topic_id)
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  a.id = $assessment_id
+  AND aq.deleted_at IS NULL
+  AND q.deleted_at IS NULL
+ORDER BY
+  z.number,
+  z.id,
+  aq.number;

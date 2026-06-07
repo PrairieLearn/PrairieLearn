@@ -1,13 +1,3 @@
--- BLOCK check_belongs
-SELECT
-  ai.id
-FROM
-  assessment_instances AS ai
-  JOIN assessments AS a ON (a.id = ai.assessment_id)
-WHERE
-  ai.id = $assessment_instance_id
-  AND a.id = $assessment_id;
-
 -- BLOCK insert_assessment_instance
 WITH
   latest_assessment_instance AS (
@@ -401,7 +391,11 @@ FROM
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
-  AND ai.open;
+  AND ai.open
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR ai.id = ANY ($assessment_instance_ids::bigint[])
+  );
 
 -- BLOCK close_assessment_instance
 WITH
@@ -1319,23 +1313,7 @@ WITH
         asl.id AS log_id,
         asl.client_fingerprint_id,
         CASE
-          WHEN asl.open THEN jsonb_build_object(
-            'date_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_date_full_compact (asl.date_limit, ci.display_timezone)
-            END,
-            'time_limit',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - ai.date)
-            END,
-            'remaining_time',
-            CASE
-              WHEN asl.date_limit IS NULL THEN 'Unlimited'
-              ELSE format_interval (asl.date_limit - asl.date)
-            END
-          )
+          WHEN asl.open THEN jsonb_build_object('date_limit', asl.date_limit)
           ELSE NULL::jsonb
         END AS data
       FROM
@@ -1365,10 +1343,7 @@ WITH
         NULL::integer AS submission_id,
         asl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
-        jsonb_build_object(
-          'time_limit',
-          format_interval (asl.date_limit - ai.date)
-        ) AS data
+        jsonb_build_object('date_limit', asl.date_limit) AS data
       FROM
         assessment_state_logs AS asl
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
@@ -1532,10 +1507,10 @@ SELECT
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
   NULL AS client_fingerprint_number,
-  format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
-  format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
-  qd.instructor_question_number
+  qd.instructor_question_number,
+  ai.date AS assessment_instance_date,
+  ci.display_timezone
 FROM
   event_log AS el
   LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)
@@ -1869,6 +1844,10 @@ WITH
     DELETE FROM assessment_instances AS ai
     WHERE
       ai.assessment_id = $assessment_id
+      AND (
+        $assessment_instance_ids::bigint[] IS NULL
+        OR ai.id = ANY ($assessment_instance_ids::bigint[])
+      )
     RETURNING
       ai.*
   )

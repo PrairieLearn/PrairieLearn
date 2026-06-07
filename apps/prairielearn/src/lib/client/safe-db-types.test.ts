@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  AdminInstitutionSchema,
+  AdminInstitutionWithSettingsSchema,
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
   StaffAlternativePoolSchema,
@@ -16,6 +18,7 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
+  StaffJobSequenceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -460,6 +463,45 @@ const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
   short_name: 'TI',
 };
 
+const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
+  course_instance_enrollment_limit: 100,
+  default_authn_provider_id: null,
+  display_timezone: 'UTC',
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+  uid_regexp: null,
+  yearly_enrollment_limit: 1000,
+};
+
+const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
+  institution: minimalAdminInstitution,
+  institution_settings: {
+    course_request_message: null,
+    github_course_owner: 'PrairieLearn',
+    institution_id: '1',
+  },
+};
+
+const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
+  assessment_id: '2',
+  assessment_question_id: null,
+  authn_user_id: '4',
+  course_id: '1',
+  course_instance_id: '3',
+  course_request_id: null,
+  description: 'Regrade assessment',
+  finish_date: null,
+  id: '12',
+  legacy: false,
+  number: 1,
+  start_date: new Date(),
+  status: 'Success',
+  stop_requested_by_authn_user_id: null,
+  type: 'regrade_assessment',
+  user_id: '4',
+};
+
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
   course_id: '1',
@@ -733,6 +775,22 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffInstitution);
+  });
+
+  it('parses valid AdminInstitution without institution settings fields', () => {
+    const parsed = AdminInstitutionSchema.parse(minimalAdminInstitution);
+    expect(parsed).toMatchObject(minimalAdminInstitution);
+  });
+
+  it('parses valid AdminInstitutionWithSettings with GitHub course owner', () => {
+    const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
+    expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
+  });
+
+  it('parses valid StaffJobSequence and drops extra fields', () => {
+    const parsed = StaffJobSequenceSchema.parse({ ...minimalStaffJobSequence, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffJobSequence);
   });
 
   it('parses valid StaffQuestion and drops extra fields', () => {

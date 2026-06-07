@@ -174,6 +174,13 @@ function isBooleanTrue(val: string): boolean {
 }
 
 /**
+ * Checks if the given attribute value is a boolean `false` value.
+ */
+function isBooleanFalse(val: string): boolean {
+  return BOOLEAN_FALSE_VALUES.includes(val.trim());
+}
+
+/**
  * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
@@ -229,6 +236,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
   let usedAllOfTheAboveFeedback = false;
   let usedNoneOfTheAboveFeedback = false;
   let usedSize = false;
+  const disabledBuiltinGrading =
+    'attrs' in ast &&
+    ast.attrs.some((attr) => attr.name === 'builtin-grading' && isBooleanFalse(attr.value));
   const optionsOfTheAbove = ['false', 'random', 'correct', 'incorrect'];
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -239,6 +249,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
           usedAnswersName = true;
           break;
         case 'weight':
+          if (disabledBuiltinGrading) {
+            errors.push('pl-multiple-choice: weight cannot be used when builtin-grading is false.');
+          }
           assertInt('pl-multiple-choice', key, val, errors);
           break;
         case 'display':
@@ -260,9 +273,16 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
           );
           break;
         case 'hide-letter-keys':
-        case 'hide-score-badge':
         case 'fixed-order':
         case 'inline':
+          assertBool('pl-multiple-choice', key, val, errors);
+          break;
+        case 'hide-score-badge':
+          if (disabledBuiltinGrading) {
+            errors.push(
+              'pl-multiple-choice: hide-score-badge cannot be used when builtin-grading is false.',
+            );
+          }
           assertBool('pl-multiple-choice', key, val, errors);
           break;
         case 'placeholder':
@@ -272,14 +292,28 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
         case 'external-json-incorrect-key':
           break;
         case 'all-of-the-above':
-          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          if (optionsOfTheAbove.includes(val) && val !== 'false') {
+          if (disabledBuiltinGrading) {
+            assertBool('pl-multiple-choice', key, val, errors);
+          } else {
+            assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
+          }
+          if (
+            (disabledBuiltinGrading && isBooleanTrue(val)) ||
+            (!disabledBuiltinGrading && optionsOfTheAbove.includes(val) && val !== 'false')
+          ) {
             usedAllOfTheAbove = true;
           }
           break;
         case 'none-of-the-above':
-          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          if (optionsOfTheAbove.includes(val) && val !== 'false') {
+          if (disabledBuiltinGrading) {
+            assertBool('pl-multiple-choice', key, val, errors);
+          } else {
+            assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
+          }
+          if (
+            (disabledBuiltinGrading && isBooleanTrue(val)) ||
+            (!disabledBuiltinGrading && optionsOfTheAbove.includes(val) && val !== 'false')
+          ) {
             usedNoneOfTheAbove = true;
           }
           break;
@@ -290,6 +324,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
           usedNoneOfTheAboveFeedback = true;
           break;
         case 'allow-blank':
+          assertBool('pl-multiple-choice', key, val, errors);
+          break;
+        case 'builtin-grading':
           assertBool('pl-multiple-choice', key, val, errors);
           break;
         case 'size':
@@ -323,7 +360,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
     for (const child of ast.childNodes) {
       if ('tagName' in child && child.tagName) {
         if (child.tagName === 'pl-answer') {
-          errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+          errorsChildren = errorsChildren.concat(
+            checkAnswerMultipleChoice(child, disabledBuiltinGrading),
+          );
         } else {
           errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
         }
@@ -617,7 +656,10 @@ function checkNumberInput(ast: DocumentFragment | ChildNode): ValidationResult {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
+function checkAnswerMultipleChoice(
+  ast: DocumentFragment | ChildNode,
+  disabledBuiltinGrading: boolean,
+): string[] {
   const errors: string[] = [];
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -626,8 +668,18 @@ function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] 
           assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
           break;
         case 'feedback':
+          if (disabledBuiltinGrading) {
+            errors.push(
+              'pl-answer (for pl-multiple-choice): feedback cannot be used when builtin-grading is false.',
+            );
+          }
           break;
         case 'score':
+          if (disabledBuiltinGrading) {
+            errors.push(
+              'pl-answer (for pl-multiple-choice): score cannot be used when builtin-grading is false.',
+            );
+          }
           assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
           break;
         default:
@@ -684,6 +736,9 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
           break;
         case 'correct-answer':
           usedCorrectAnswer = true;
+          break;
+        case 'correct-answer-format':
+          assertInChoices('pl-string-input', key, val, ['exact', 'regex'], errors);
           break;
         case 'label':
         case 'aria-label':

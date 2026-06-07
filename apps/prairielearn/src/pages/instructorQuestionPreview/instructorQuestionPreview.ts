@@ -16,6 +16,7 @@ import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
+import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -48,7 +49,7 @@ router.post(
 
 router.get(
   '/',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const questionRenderContext: 'manual_grading' | 'ai_grading' | undefined = run(() => {
       if (req.query.manual_grading_preview === 'true') return 'manual_grading';
@@ -177,6 +178,7 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: null,
       variant,

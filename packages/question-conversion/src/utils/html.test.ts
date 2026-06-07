@@ -20,7 +20,7 @@ describe('extractInlineImages', () => {
     assert.equal(result.files.size, 1);
     const [filename] = [...result.files.keys()];
     assert.match(filename, /^inline-[0-9a-f]{16}\.png$/);
-    assert.equal(result.html, `<img src="clientFilesQuestion/${filename}">`);
+    assert.equal(result.html, `<img src="{{ options.client_files_question_url }}/${filename}">`);
   });
 
   it('returns unchanged HTML when no data URIs', () => {
@@ -47,9 +47,9 @@ describe('rewriteImagesAsPlFigure', () => {
     );
   });
 
-  it('strips clientFilesQuestion/ prefix and sets directory attribute', () => {
+  it('strips the Mustache clientFilesQuestion URL prefix and sets directory attribute', () => {
     assert.equal(
-      rewriteImagesAsPlFigure('<img src="clientFilesQuestion/image.png">'),
+      rewriteImagesAsPlFigure('<img src="{{ options.client_files_question_url }}/image.png">'),
       '<pl-figure file-name="image.png" directory="clientFilesQuestion"></pl-figure>',
     );
   });
@@ -57,7 +57,7 @@ describe('rewriteImagesAsPlFigure', () => {
   it('preserves alt and width attributes, drops height', () => {
     assert.equal(
       rewriteImagesAsPlFigure(
-        '<img src="clientFilesQuestion/img.png" alt="A diagram" width="300" height="200">',
+        '<img src="{{ options.client_files_question_url }}/img.png" alt="A diagram" width="300" height="200">',
       ),
       '<pl-figure file-name="img.png" directory="clientFilesQuestion" alt="A diagram" width="300"></pl-figure>',
     );
@@ -65,7 +65,9 @@ describe('rewriteImagesAsPlFigure', () => {
 
   it('decodes attribute entities before re-escaping pl-figure attributes', () => {
     assert.equal(
-      rewriteImagesAsPlFigure('<img src="clientFilesQuestion/foo&amp;bar.png" alt="A &amp; B">'),
+      rewriteImagesAsPlFigure(
+        '<img src="{{ options.client_files_question_url }}/foo&amp;bar.png" alt="A &amp; B">',
+      ),
       '<pl-figure file-name="foo&amp;bar.png" directory="clientFilesQuestion" alt="A &amp; B"></pl-figure>',
     );
   });
@@ -89,6 +91,11 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
+  it('leaves malformed remote URLs as <img>', () => {
+    const html = '<img src="://example.com/img.png">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
+  });
+
   it('leaves data: URLs as <img>', () => {
     const html = '<img src="data:image/png;base64,AAAA">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
@@ -101,11 +108,84 @@ describe('rewriteImagesAsPlFigure', () => {
 });
 
 describe('resolveImsFileRefs', () => {
-  it('rewrites $IMS-CC-FILEBASE$ to clientFilesQuestion path', () => {
+  it('rewrites $IMS-CC-FILEBASE$ to the Mustache clientFilesQuestion URL', () => {
     const html = '<img src="$IMS-CC-FILEBASE$/Quiz%20Files/image.png">';
     const result = resolveImsFileRefs(html);
-    assert.equal(result.html, '<img src="clientFilesQuestion/image.png">');
+    assert.equal(result.html, '<img src="{{ options.client_files_question_url }}/image.png">');
     assert.equal(result.fileRefs.get('image.png'), 'Quiz Files/image.png');
+    assert.deepEqual(result.skippedFiles, []);
+  });
+
+  it('decodes HTML entities and strips Canvas download query parameters from file references', () => {
+    const html = '<img src="$IMS-CC-FILEBASE$/TemplateINC&amp;CF.jpg?canvas_download=1">';
+    const result = resolveImsFileRefs(html);
+    assert.equal(
+      result.html,
+      '<img src="{{ options.client_files_question_url }}/TemplateINC&amp;CF.jpg">',
+    );
+    assert.equal(result.fileRefs.get('TemplateINC&CF.jpg'), 'TemplateINC&CF.jpg');
+  });
+
+  it('comments out tags that reference excluded extensions', () => {
+    const html = '<a href="$IMS-CC-FILEBASE$/media/clip.mp4">Watch</a>';
+    const result = resolveImsFileRefs(html, new Set(['.mp4']));
+    assert.equal(
+      result.html,
+      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<a href="{{ options.client_files_question_url }}/clip.mp4">Watch</a>\n' +
+        '-->',
+    );
+    assert.equal(result.fileRefs.size, 0);
+    assert.deepEqual(result.skippedFiles, ['media/clip.mp4']);
+  });
+
+  it('comments out self-closing tags that reference excluded extensions', () => {
+    const html = '<video src="$IMS-CC-FILEBASE$/clip.webm" />';
+    const result = resolveImsFileRefs(html, new Set(['.webm']));
+    assert.equal(
+      result.html,
+      '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.webm" />\n' +
+        '-->',
+    );
+    assert.deepEqual(result.skippedFiles, ['clip.webm']);
+  });
+
+  it('matches extension case-insensitively', () => {
+    const html = '<a href="$IMS-CC-FILEBASE$/clip.MP4">Watch</a>';
+    const result = resolveImsFileRefs(html, new Set(['.mp4']));
+    assert.deepEqual(result.skippedFiles, ['clip.MP4']);
+    assert.equal(result.fileRefs.size, 0);
+  });
+
+  it('leaves non-excluded references intact alongside excluded ones', () => {
+    const html =
+      '<img src="$IMS-CC-FILEBASE$/image.png"><a href="$IMS-CC-FILEBASE$/clip.mp4">Watch</a>';
+    const result = resolveImsFileRefs(html, new Set(['.mp4']));
+    assert.include(result.html, '<img src="{{ options.client_files_question_url }}/image.png">');
+    assert.include(result.html, '<!-- TODO: Re-host this file');
+    assert.include(
+      result.html,
+      '<a href="{{ options.client_files_question_url }}/clip.mp4">Watch</a>',
+    );
+    assert.equal(result.fileRefs.get('image.png'), 'image.png');
+    assert.deepEqual(result.skippedFiles, ['clip.mp4']);
+  });
+
+  it('only wraps the inner excluded tag when a container has its own non-excluded ref', () => {
+    const html =
+      '<div data-bg="$IMS-CC-FILEBASE$/bg.png"><video src="$IMS-CC-FILEBASE$/clip.mp4"></video><p>Prompt</p></div>';
+    const result = resolveImsFileRefs(html, new Set(['.mp4']));
+    assert.equal(
+      result.html,
+      '<div data-bg="{{ options.client_files_question_url }}/bg.png">' +
+        '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.mp4"></video>\n' +
+        '-->' +
+        '<p>Prompt</p></div>',
+    );
+    assert.equal(result.fileRefs.get('bg.png'), 'bg.png');
+    assert.deepEqual(result.skippedFiles, ['clip.mp4']);
   });
 });
 
@@ -208,11 +288,31 @@ describe('rewritePreAsPlCode', () => {
     const html = '<p>No code here</p>';
     assert.equal(await rewritePreAsPlCode(html), html);
   });
+
+  it('strips <span> and <br> tags from code content', async () => {
+    const input =
+      '<pre><span>for (int i = 0; i &lt;= n; i++)<br></span><span>  // body<br></span></pre>';
+    const result = await rewritePreAsPlCode(input);
+    assert.include(result, '<pl-code');
+    assert.notInclude(result, '<span>');
+    assert.notInclude(result, '<br>');
+    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, '  // body\n');
+  });
 });
 
 describe('cleanQuestionHtml', () => {
   it('strips wrapping div', () => {
     assert.equal(cleanQuestionHtml('<div><p>Hello</p></div>'), '<p>Hello</p>');
+  });
+
+  it('strips wrapping div with attributes', () => {
+    assert.equal(cleanQuestionHtml('<div class="prompt"><p>Hello</p></div>'), '<p>Hello</p>');
+  });
+
+  it('preserves sibling divs instead of stripping the first open and last close', () => {
+    const html = '<div>First</div><div><div>Second</div></div>';
+    assert.equal(cleanQuestionHtml(html), html);
   });
 
   it('preserves content without wrapping div', () => {

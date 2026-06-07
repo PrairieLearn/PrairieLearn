@@ -6,10 +6,14 @@ import {
 } from '../../schemas/accessControl.js';
 
 import {
+  type AccessControlValidationRule,
   validateAccessControlRules,
+  validateAfterCompleteCrossFieldIssues,
+  validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
+  validateGlobalStructuralDependencyIssues,
   validateRule,
-  validateRuleCreditMonotonicity,
+  validateRuleCreditOrdering,
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
@@ -21,7 +25,7 @@ describe('Valid configs', () => {
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
             { date: '2024-03-20T23:59:00', credit: 110 },
@@ -43,7 +47,7 @@ describe('Valid configs', () => {
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           durationMinutes: 60,
         },
         afterComplete: {
@@ -93,10 +97,10 @@ describe('Valid configs', () => {
     // Example 5: Extended time override
     [
       {
-        // Main rule (no targets)
+        // Default rule (no targets)
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           durationMinutes: 60,
         },
       },
@@ -114,7 +118,7 @@ describe('Valid configs', () => {
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
         integrations: {
           prairieTest: {
@@ -129,7 +133,7 @@ describe('Valid configs', () => {
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
         afterComplete: {
           questions: {
@@ -146,7 +150,7 @@ describe('Valid configs', () => {
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
         afterComplete: {
           score: {
@@ -181,9 +185,9 @@ describe('Valid configs', () => {
   });
 });
 
-describe('Main rule requirement', () => {
-  it('should fail validation when no main rule exists', () => {
-    const rulesWithoutMain: AccessControlJsonInput[] = [
+describe('Default rule requirement', () => {
+  it('should fail validation when no default rule exists', () => {
+    const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
         labels: ['student1'],
         dateControl: {
@@ -198,12 +202,12 @@ describe('Main rule requirement', () => {
       },
     ];
 
-    const parsedRules = rulesWithoutMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithoutDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when no main rule exists');
+    assert.isTrue(result.errors.length > 0, 'Expected error when no default rule exists');
     assert.isTrue(
       result.errors.includes(
         'No defaults found. The first element of accessControl must apply to everyone.',
@@ -212,28 +216,28 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should fail validation when multiple main rules exist', () => {
-    const rulesWithMultipleMain: AccessControlJsonInput[] = [
+  it('should fail validation when multiple default rules exist', () => {
+    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
       },
       {
         dateControl: {
           release: { date: '2024-03-15T00:01:00' },
-          dueDate: '2024-03-22T23:59:00',
+          due: { date: '2024-03-22T23:59:00' },
         },
       },
     ];
 
-    const parsedRules = rulesWithMultipleMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple main rules exist');
+    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
     assert.isTrue(
       result.errors.includes(
         'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
@@ -242,22 +246,22 @@ describe('Main rule requirement', () => {
     );
   });
 
-  it('should pass validation with exactly one main rule', () => {
-    const rulesWithOneMain: AccessControlJsonInput[] = [
+  it('should pass validation with exactly one default rule', () => {
+    const rulesWithOneDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
       },
     ];
 
-    const parsedRules = rulesWithOneMain.map((rule) => AccessControlJsonSchema.parse(rule));
+    const parsedRules = rulesWithOneDefault.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({
       rules: parsedRules,
     });
 
-    assert.equal(result.errors.length, 0, 'Should have no errors with one main rule');
+    assert.equal(result.errors.length, 0, 'Should have no errors with one default rule');
   });
 
   it('should fail validation when an override specifies beforeRelease', () => {
@@ -266,14 +270,14 @@ describe('Main rule requirement', () => {
         beforeRelease: { listed: false },
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
         },
       },
       {
         labels: ['student1'],
         beforeRelease: { listed: true },
         dateControl: {
-          dueDate: '2024-03-22T23:59:00',
+          due: { date: '2024-03-22T23:59:00' },
         },
       },
     ];
@@ -295,7 +299,7 @@ describe('Date fields without seconds', () => {
     const ruleWithDateWithoutSeconds: AccessControlJsonInput = {
       dateControl: {
         release: { date: '2024-03-14T00:01' }, // No seconds
-        dueDate: '2024-03-21T23:59', // No seconds
+        due: { date: '2024-03-21T23:59' }, // No seconds
         earlyDeadlines: [{ date: '2024-03-17T23:59', credit: 120 }],
         lateDeadlines: [{ date: '2024-03-23T23:59', credit: 80 }],
       },
@@ -310,7 +314,7 @@ describe('Date fields without seconds', () => {
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithoutSeconds);
 
     assert.equal(parsed.dateControl?.release?.date, '2024-03-14T00:01:00');
-    assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
+    assert.equal(parsed.dateControl?.due?.date, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
     assert.equal(parsed.afterComplete?.questions?.visibleFromDate, '2024-03-25T12:00:00');
@@ -325,14 +329,14 @@ describe('Date fields without seconds', () => {
     const ruleWithDateWithSeconds: AccessControlJsonInput = {
       dateControl: {
         release: { date: '2024-03-14T00:01:00' }, // With seconds
-        dueDate: '2024-03-21T23:59:00', // With seconds
+        due: { date: '2024-03-21T23:59:00' }, // With seconds
       },
     };
 
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithSeconds);
 
     assert.equal(parsed.dateControl?.release?.date, '2024-03-14T00:01:00');
-    assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
+    assert.equal(parsed.dateControl?.due?.date, '2024-03-21T23:59:00');
 
     const result = validateAccessControlRules({
       rules: [parsed],
@@ -508,7 +512,10 @@ describe('Date ordering validation', () => {
     {
       label: 'release date after due date',
       config: {
-        dateControl: { release: { date: '2024-03-25T00:00:00' }, dueDate: '2024-03-20T00:00:00' },
+        dateControl: {
+          release: { date: '2024-03-25T00:00:00' },
+          due: { date: '2024-03-20T00:00:00' },
+        },
       },
       errorMatch: 'Release date must be before due date.',
     },
@@ -516,7 +523,7 @@ describe('Date ordering validation', () => {
       label: 'early deadline after due date',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           earlyDeadlines: [{ date: '2024-03-25T00:00:00', credit: 120 }],
         },
       },
@@ -536,7 +543,7 @@ describe('Date ordering validation', () => {
       label: 'late deadline before due date',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-18T00:00:00', credit: 80 }],
         },
       },
@@ -593,7 +600,7 @@ describe('Date ordering validation', () => {
       label: 'visibleFromDate before last late deadline for questions',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
         afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-23T00:00:00' } },
@@ -603,7 +610,7 @@ describe('Date ordering validation', () => {
     {
       label: 'visibleFromDate before due date (no late deadlines) for questions',
       config: {
-        dateControl: { dueDate: '2024-03-20T00:00:00' },
+        dateControl: { due: { date: '2024-03-20T00:00:00' } },
         afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-19T00:00:00' } },
       },
       errorMatch: 'Show questions again date must be after the last deadline.',
@@ -612,7 +619,7 @@ describe('Date ordering validation', () => {
       label: 'visibleFromDate before last deadline for score',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
         afterComplete: { score: { hidden: true, visibleFromDate: '2024-03-22T00:00:00' } },
@@ -630,7 +637,7 @@ describe('Date ordering validation', () => {
       label: 'early deadline equal to due date',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           earlyDeadlines: [{ date: '2024-03-20T00:00:00', credit: 120 }],
         },
       },
@@ -639,7 +646,7 @@ describe('Date ordering validation', () => {
       label: 'late deadline equal to due date',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-20T00:00:00', credit: 80 }],
         },
       },
@@ -648,7 +655,7 @@ describe('Date ordering validation', () => {
       label: 'visibleFromDate after last deadline for questions',
       config: {
         dateControl: {
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
         afterComplete: { questions: { hidden: true, visibleFromDate: '2024-03-26T00:00:00' } },
@@ -657,7 +664,7 @@ describe('Date ordering validation', () => {
     {
       label: 'visibleFromDate after last deadline for score',
       config: {
-        dateControl: { dueDate: '2024-03-20T00:00:00' },
+        dateControl: { due: { date: '2024-03-20T00:00:00' } },
         afterComplete: { score: { hidden: true, visibleFromDate: '2024-03-21T00:00:00' } },
       },
     },
@@ -682,7 +689,7 @@ describe('Date ordering validation', () => {
       config: {
         dateControl: {
           release: { date: '2024-03-10T00:00:00' },
-          dueDate: '2024-03-20T00:00:00',
+          due: { date: '2024-03-20T00:00:00' },
           earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 120 }],
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
@@ -694,18 +701,8 @@ describe('Date ordering validation', () => {
   });
 });
 
-describe('Credit monotonicity validation', () => {
+describe('Credit ordering validation', () => {
   it.each([
-    {
-      label: 'early deadline credit at 80% (below 101%)',
-      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 80 }] } },
-      errorMatch: 'Early deadline credit must be between 101% and 200%, got 80%.',
-    },
-    {
-      label: 'early deadline credit at 100% (below 101%)',
-      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] } },
-      errorMatch: 'Early deadline credit must be between 101% and 200%, got 100%.',
-    },
     {
       label: 'increasing early deadline credits',
       config: {
@@ -716,12 +713,7 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'Early deadline credits must be monotonically decreasing.',
-    },
-    {
-      label: 'late deadline credit at 100% (above 99%)',
-      config: { dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] } },
-      errorMatch: 'Late deadline credit must be between 0% and 99%, got 100%.',
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
       label: 'increasing late deadline credits',
@@ -733,13 +725,22 @@ describe('Credit monotonicity validation', () => {
           ],
         },
       },
-      errorMatch: 'Late deadline credits must be monotonically decreasing.',
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'early deadline credit equal to implicit due credit',
+      config: {
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }],
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
       label: 'afterLastDeadline credit exceeding last late deadline',
       config: {
         dateControl: {
-          dueDate: '2024-03-21T00:00:00',
+          due: { date: '2024-03-21T00:00:00' },
           lateDeadlines: [
             { date: '2024-03-25T00:00:00', credit: 80 },
             { date: '2024-03-28T00:00:00', credit: 50 },
@@ -747,27 +748,59 @@ describe('Credit monotonicity validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 60 },
         },
       },
-      errorMatch:
-        "After-last-deadline credit (60%) must not exceed the preceding deadline's credit (50%).",
+      errorMatch: 'Deadline credits must strictly decrease over time.',
     },
     {
-      label: 'afterLastDeadline credit exceeding 100 when no late deadlines',
+      label: 'afterLastDeadline credit equal to last late deadline',
       config: {
         dateControl: {
-          dueDate: '2024-03-21T00:00:00',
-          afterLastDeadline: { allowSubmissions: true, credit: 110 },
+          due: { date: '2024-03-21T00:00:00' },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 50 },
         },
       },
-      errorMatch:
-        "After-last-deadline credit (110%) must not exceed the preceding deadline's credit (100%).",
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'late deadline credit equal to custom due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
+        },
+      },
+      errorMatch: 'Deadline credits must strictly decrease over time.',
+    },
+    {
+      label: 'late deadline credit at 100% under bonus due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+        },
+      },
+      errorMatch: 'Credit after the due date must be less than 100%.',
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    const errors = validateRuleCreditMonotonicity(rule);
+    const errors = validateRuleCreditOrdering(rule);
     assert.isTrue(errors.includes(errorMatch));
   });
 
   it.each([
+    {
+      label: 'early deadline credit above default due credit',
+      config: { dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 110 }] } },
+    },
+    {
+      label: 'late deadline credit below 100% under bonus due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 99 }],
+        },
+      },
+    },
     {
       label: 'valid decreasing early + late credits',
       config: {
@@ -784,12 +817,11 @@ describe('Credit monotonicity validation', () => {
       },
     },
     {
-      label: 'afterLastDeadline credit equal to last late deadline',
+      label: 'late deadline credit just below custom due credit',
       config: {
         dateControl: {
-          dueDate: '2024-03-21T00:00:00',
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-          afterLastDeadline: { allowSubmissions: true, credit: 50 },
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 79 }],
         },
       },
     },
@@ -797,7 +829,7 @@ describe('Credit monotonicity validation', () => {
       label: 'afterLastDeadline credit less than last late deadline',
       config: {
         dateControl: {
-          dueDate: '2024-03-21T00:00:00',
+          due: { date: '2024-03-21T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
           afterLastDeadline: { allowSubmissions: true, credit: 30 },
         },
@@ -807,7 +839,7 @@ describe('Credit monotonicity validation', () => {
       label: 'afterLastDeadline without credit (practice mode)',
       config: {
         dateControl: {
-          dueDate: '2024-03-21T00:00:00',
+          due: { date: '2024-03-21T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
           afterLastDeadline: { allowSubmissions: true },
         },
@@ -819,7 +851,7 @@ describe('Credit monotonicity validation', () => {
     },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    assert.deepEqual(validateRuleCreditMonotonicity(rule), []);
+    assert.deepEqual(validateRuleCreditOrdering(rule), []);
   });
 });
 
@@ -849,6 +881,22 @@ describe('Empty accessControl array', () => {
         'No defaults found. The first element of accessControl must apply to everyone.',
       ),
     );
+  });
+
+  it('allows inert student-label rules with no labels by default', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: [],
+          dateControl: {
+            durationMinutes: 90,
+          },
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.errors, []);
   });
 });
 
@@ -907,7 +955,7 @@ describe('Global temporal validation', () => {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
             release: { date: '2024-04-07T00:00:00' },
-            dueDate: '2024-04-08T00:00:00',
+            due: { date: '2024-04-08T00:00:00' },
           },
         }),
         targetType: 'none',
@@ -917,7 +965,7 @@ describe('Global temporal validation', () => {
         rule: AccessControlJsonSchema.parse({
           labels: ['Section A'],
           dateControl: {
-            dueDate: null,
+            due: { date: null },
           },
         }),
         targetType: 'student_label',
@@ -944,7 +992,7 @@ describe('Global temporal validation', () => {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
             release: { date: '2024-04-07T00:00:00' },
-            dueDate: '2024-04-10T00:00:00',
+            due: { date: '2024-04-10T00:00:00' },
           },
         }),
         targetType: 'none',
@@ -971,7 +1019,7 @@ describe('Global temporal validation', () => {
         rule: AccessControlJsonSchema.parse({
           dateControl: {
             release: { date: '2024-04-07T00:00:00' },
-            dueDate: '2024-04-10T00:00:00',
+            due: { date: '2024-04-10T00:00:00' },
           },
         }),
         targetType: 'none',
@@ -1001,11 +1049,143 @@ describe('Global temporal validation', () => {
   });
 });
 
+describe('Global credit validation', () => {
+  const validationRule = (
+    rule: AccessControlJsonInput,
+    ruleIndex: number,
+  ): AccessControlValidationRule => ({
+    rule: AccessControlJsonSchema.parse(rule),
+    targetType: ruleIndex === 0 ? 'none' : 'student_label',
+    ruleIndex,
+  });
+
+  const messagesFor = (...rules: AccessControlJsonInput[]) =>
+    validateGlobalCreditConsistencyIssues(
+      rules.map((rule, ruleIndex) => validationRule(rule, ruleIndex)),
+    ).map((issue) => issue.message);
+
+  it('rejects override late deadline credit equal to inherited due credit', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 80 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+  });
+
+  it('uses inherited default due credit to reject override early deadlines', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 90 }],
+        },
+      },
+    );
+
+    assert.isTrue(
+      messages.includes('Early deadlines are not allowed when due date credit is below 100%.'),
+    );
+  });
+
+  it('rejects an override late deadline credit above 100% when inherited due credit is higher', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 110 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 105 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Credit after the due date must be less than 100%.'));
+  });
+
+  it('rejects override early deadline credit equal to an implicit inherited due credit', () => {
+    const messages = messagesFor(
+      {},
+      {
+        labels: ['Section A'],
+        dateControl: {
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 100 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+  });
+
+  it('does not check enrollment rules against unrelated student-label overrides', () => {
+    const issues = validateGlobalCreditConsistencyIssues([
+      validationRule({ dateControl: { due: { date: '2024-04-10T00:00:00', credit: 110 } } }, 0),
+      validationRule(
+        {
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-04-10T00:00:00', credit: 80 },
+          },
+        },
+        1,
+      ),
+      {
+        rule: AccessControlJsonSchema.parse({
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 99 }],
+          },
+        }),
+        targetType: 'enrollment',
+        ruleIndex: 2,
+      },
+    ]);
+
+    assert.deepEqual(issues, []);
+  });
+
+  it('rejects afterLastDeadline credit equal to an inherited late deadline', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00' },
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 50 }],
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 50 },
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+  });
+});
+
 describe('Duplicate detection', () => {
   it('should reject duplicate PrairieTest exam UUIDs', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
       },
       integrations: {
         prairieTest: {
@@ -1026,6 +1206,7 @@ describe('Duplicate detection', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
       },
       integrations: {
         prairieTest: {
@@ -1046,7 +1227,7 @@ describe('Duplicate detection', () => {
       config: {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
             { date: '2024-03-17T23:59:00', credit: 110 },
@@ -1060,7 +1241,7 @@ describe('Duplicate detection', () => {
       config: {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           lateDeadlines: [
             { date: '2024-03-25T23:59:00', credit: 80 },
             { date: '2024-03-25T23:59:00', credit: 50 },
@@ -1079,7 +1260,7 @@ describe('Duplicate detection', () => {
       AccessControlJsonSchema.parse({
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
-          dueDate: '2024-03-21T23:59:00',
+          due: { date: '2024-03-21T23:59:00' },
           earlyDeadlines: [
             { date: '2024-03-17T23:59:00', credit: 120 },
             { date: '2024-03-17T23:59:00', credit: 110 },
@@ -1097,7 +1278,7 @@ describe('afterLastDeadline validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
         afterLastDeadline: {
           allowSubmissions: false,
         },
@@ -1111,7 +1292,7 @@ describe('afterLastDeadline validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
         afterLastDeadline: {
           allowSubmissions: true,
         },
@@ -1125,7 +1306,7 @@ describe('afterLastDeadline validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
         afterLastDeadline: {
           allowSubmissions: true,
           credit: 50,
@@ -1140,7 +1321,7 @@ describe('afterLastDeadline validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
         afterLastDeadline: {
           allowSubmissions: false,
           credit: 50,
@@ -1170,9 +1351,10 @@ describe('afterComplete override validation', () => {
 });
 
 describe('Structural field dependency validation', () => {
-  it('should accept early deadlines without a due date', () => {
+  it('should accept early deadlines with an explicit null due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
+        due: { date: null },
         earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 120 }],
       },
     });
@@ -1184,9 +1366,10 @@ describe('Structural field dependency validation', () => {
     assert.deepEqual(issues, []);
   });
 
-  it('should reject late deadlines without a due date', () => {
+  it('should reject late deadlines with an explicit null due date', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
+        due: { date: null },
         lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
       },
     });
@@ -1198,8 +1381,11 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject after-complete dates without any deadline', () => {
+  it('should reject after-complete dates when dateControl exists but has no deadlines', () => {
     const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+      },
       afterComplete: {
         questions: {
           hidden: true,
@@ -1237,8 +1423,9 @@ describe('Structural field dependency validation', () => {
 
   it.each([
     {
-      label: 'after-complete boolean fields without deadlines',
+      label: 'after-complete boolean fields with dateControl but no deadlines',
       config: {
+        dateControl: { release: { date: '2024-03-14T00:01:00' } },
         afterComplete: {
           questions: { hidden: true },
           score: { hidden: true },
@@ -1273,6 +1460,15 @@ describe('Structural field dependency validation', () => {
         },
       },
     },
+    {
+      label: 'early deadlines when custom due credit is at least 100%',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 120 }],
+        },
+      },
+    },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const issues = validateRuleStructuralDependencyIssues({
@@ -1281,6 +1477,25 @@ describe('Structural field dependency validation', () => {
       ruleIndex: 0,
     });
     assert.deepEqual(issues, []);
+  });
+
+  it('should reject early deadlines when due credit is below 100%', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: '2024-03-21T00:00:00', credit: 80 },
+        earlyDeadlines: [{ date: '2024-03-10T00:00:00', credit: 110 }],
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some(
+        (i) => i.message === 'Early deadlines are not allowed when due date credit is below 100%.',
+      ),
+    );
   });
 
   it('should surface structural errors through validateAccessControlRules', () => {
@@ -1296,7 +1511,7 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
   });
 
-  it('should allow overrides to inherit due date from main rule', () => {
+  it('should allow overrides to inherit due date from default rule', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
@@ -1315,7 +1530,7 @@ describe('Structural field dependency validation', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
-        dueDate: null,
+        due: { date: null },
         lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
       },
     });
@@ -1326,6 +1541,260 @@ describe('Structural field dependency validation', () => {
     });
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
+
+  it('should reject afterLastDeadline practice mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should accept afterLastDeadline no_submissions mode with an explicit null due date', () => {
+    const rule = AccessControlJsonSchema.parse({
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: false },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.deepEqual(issues, []);
+  });
+
+  it('should reject overrides that explicitly clear due date with afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        due: { date: null },
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.isTrue(
+      issues.some((i) => i.message === 'After-last-deadline behavior requires a due date.'),
+    );
+  });
+
+  it('should allow overrides to inherit due date for afterLastDeadline practice mode', () => {
+    const rule = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateRuleStructuralDependencyIssues({
+      rule,
+      targetType: 'student_label',
+      ruleIndex: 1,
+    });
+    assert.deepEqual(issues, []);
+  });
+});
+
+describe('Global structural dependency validation', () => {
+  it('flags override late deadlines when default has no due and override does not override due', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.ruleIndex === 1 &&
+          i.message === 'Late deadlines require a due date on at least one rule.',
+      ),
+    );
+  });
+
+  it('accepts override late deadlines when default has a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: '2024-03-21T23:59:00' },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('accepts override late deadlines when the override sets its own due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        due: { date: '2024-03-21T23:59:00' },
+        lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('flags afterLastDeadline practice mode when no rule has a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: true },
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.isTrue(
+      issues.some(
+        (i) =>
+          i.ruleIndex === 1 &&
+          i.message === 'After-last-deadline behavior requires a due date on at least one rule.',
+      ),
+    );
+  });
+
+  it('does not flag afterLastDeadline no_submissions mode without a due date', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        afterLastDeadline: { allowSubmissions: false },
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('does not flag rules without late deadlines or afterLastDeadline', () => {
+    const defaultRule = AccessControlJsonSchema.parse({
+      dateControl: {
+        release: { date: '2024-03-14T00:01:00' },
+        due: { date: null },
+      },
+    });
+    const override = AccessControlJsonSchema.parse({
+      labels: ['Section A'],
+      dateControl: {
+        password: 'secret',
+      },
+    });
+    const issues = validateGlobalStructuralDependencyIssues([
+      { rule: defaultRule, targetType: 'none', ruleIndex: 0 },
+      { rule: override, targetType: 'student_label', ruleIndex: 1 },
+    ]);
+    assert.deepEqual(issues, []);
+  });
+
+  it('surfaces through validateAccessControlRules end-to-end', () => {
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: null },
+        },
+      }),
+      AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(
+      result.errors.includes('Late deadlines require a due date on at least one rule.'),
+    );
+  });
+
+  it('does not duplicate when an override explicitly clears its own due date', () => {
+    // The per-rule validator already flags an override with `due: { date: null }`
+    // and lateDeadlines/afterLastDeadline. The global check should defer to it
+    // rather than emit a second error at the same path.
+    const rules = [
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: null },
+        },
+      }),
+      AccessControlJsonSchema.parse({
+        labels: ['Section A'],
+        dateControl: {
+          due: { date: null },
+          lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
+          afterLastDeadline: { allowSubmissions: true },
+        },
+      }),
+    ];
+    const result = validateAccessControlRules({ rules });
+    assert.isTrue(result.errors.includes('Late deadlines require a due date.'));
+    assert.isTrue(result.errors.includes('After-last-deadline behavior requires a due date.'));
+    assert.isFalse(
+      result.errors.includes('Late deadlines require a due date on at least one rule.'),
+    );
+    assert.isFalse(
+      result.errors.includes(
+        'After-last-deadline behavior requires a due date on at least one rule.',
+      ),
+    );
+  });
 });
 
 describe('AccessControlJsonSchema nullable override fields', () => {
@@ -1333,7 +1802,7 @@ describe('AccessControlJsonSchema nullable override fields', () => {
     const result = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: null,
+        due: { date: null },
         earlyDeadlines: null,
         lateDeadlines: null,
         afterLastDeadline: { allowSubmissions: true },
@@ -1385,7 +1854,7 @@ describe('afterComplete hidden/visibility validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
-        dueDate: '2024-03-21T23:59:00',
+        due: { date: '2024-03-21T23:59:00' },
       },
       afterComplete: {
         questions: {
@@ -1411,5 +1880,649 @@ describe('afterComplete hidden/visibility validation', () => {
     assert.isTrue(
       errors.some((e) => e.includes('afterComplete.score cannot have visibleFromDate')),
     );
+  });
+});
+
+describe('afterComplete cross-field validation', () => {
+  interface ExpectedIssue {
+    ruleIndex: number;
+    message: RegExp;
+  }
+
+  function buildRules(jsons: AccessControlJsonInput[]): AccessControlValidationRule[] {
+    return jsons.map((json, ruleIndex) => ({
+      rule: AccessControlJsonSchema.parse(json),
+      targetType: ruleIndex === 0 ? 'none' : 'student_label',
+      ruleIndex,
+    }));
+  }
+
+  it.each([
+    {
+      label: 'empty rule list',
+      rules: [],
+      issues: [],
+    },
+    {
+      label: 'default rule with all-default visibility',
+      rules: [{}],
+      issues: [],
+    },
+    {
+      label: 'default rule: score hidden but questions visible',
+      rules: [{ afterComplete: { questions: { hidden: false }, score: { hidden: true } } }],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score cannot be hidden after completion while questions are visible/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: questions reveal but score never becomes visible',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: score reveals after questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'default rule: score reveals on the same date questions do (boundary)',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score conflicts with inherited questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override-questions earlier than inherited score',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-06T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override-questions later than inherited score',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-12T00:00:00' } },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score earlier than inherited questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both consistent',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-18T00:00:00' },
+          },
+        },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-both with score reveal after questions',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-09T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-20T00:00:00' },
+          },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'override flips questions visible while inheriting hidden-forever score',
+      rules: [
+        { afterComplete: { score: { hidden: true } } },
+        { labels: ['A'], afterComplete: { questions: { hidden: false } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score cannot be hidden after completion while questions are visible/,
+        },
+      ],
+    },
+    {
+      // afterComplete.questions is inherited as a whole object, not
+      // field-by-field: an override that sets questions without dates does
+      // NOT inherit the default's visibleFromDate, so the override's
+      // effective questions has no reveal date and no conflict.
+      label: 'override replaces questions wholesale (does not inherit visibleFromDate)',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true },
+          },
+        },
+        { labels: ['A'], afterComplete: { questions: { hidden: true } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'override-score hidden forever with both effectively hidden forever',
+      rules: [
+        { afterComplete: { questions: { hidden: true } } },
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [],
+    },
+    {
+      label: 'override-score hidden forever conflicts with inherited questions reveal date',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        { labels: ['A'], afterComplete: { score: { hidden: true } } },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message:
+            /Questions cannot become visible after completion while the score remains hidden/,
+        },
+      ],
+    },
+    {
+      label: 'override that does not touch afterComplete inherits a conflict on both rules',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          },
+        },
+        { labels: ['A'] },
+      ],
+      issues: [
+        {
+          ruleIndex: 0,
+          message: /score must become visible on or before the question reveal date/,
+        },
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+    {
+      label: 'multiple overrides report independently',
+      rules: [
+        {
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+            score: { hidden: true, visibleFromDate: '2024-04-10T00:00:00' },
+          },
+        },
+        {
+          labels: ['A'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' } },
+        },
+        {
+          labels: ['B'],
+          afterComplete: { score: { hidden: true, visibleFromDate: '2024-04-08T00:00:00' } },
+        },
+        {
+          labels: ['C'],
+          afterComplete: { questions: { hidden: true, visibleFromDate: '2024-04-05T00:00:00' } },
+        },
+      ],
+      issues: [
+        {
+          ruleIndex: 1,
+          message: /score must become visible on or before the question reveal date/,
+        },
+        {
+          ruleIndex: 3,
+          message: /score must become visible on or before the question reveal date/,
+        },
+      ],
+    },
+  ] satisfies { label: string; rules: AccessControlJsonInput[]; issues: ExpectedIssue[] }[])(
+    '$label',
+    ({ rules, issues: expectedIssues }) => {
+      const actualIssues = validateAfterCompleteCrossFieldIssues(buildRules(rules));
+      assert.lengthOf(actualIssues, expectedIssues.length);
+      for (const expected of expectedIssues) {
+        const issue = actualIssues.find((i) => i.ruleIndex === expected.ruleIndex);
+        assert.isDefined(issue);
+        assert.deepEqual(issue.path, ['afterComplete', 'questions']);
+        assert.match(issue.message, expected.message);
+      }
+    },
+  );
+});
+
+describe('Global afterComplete validation', () => {
+  const completionMechanismMessage =
+    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
+
+  it('does not duplicate direct afterComplete cross-field errors', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: true, visibleFromDate: '2024-03-25T00:00:00' },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+
+    const matches = result.errors.filter((e) =>
+      e.includes('Questions cannot become visible after completion while the score remains hidden'),
+    );
+    assert.lengthOf(matches, 1);
+  });
+
+  it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete with score hidden on main rule without dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          afterComplete: {
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          integrations: {
+            prairieTest: {
+              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            },
+          },
+          afterComplete: {
+            questions: { hidden: true },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on overrides when main rule has dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          integrations: {
+            prairieTest: {
+              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: {
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override that has its own dateControl', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on main rule when dateControl has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+          afterComplete: {
+            questions: { hidden: true },
+            score: { hidden: true },
+          },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on main rule with durationMinutes', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on overrides when default rule has no completion mechanism', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it("rejects afterComplete on an override that explicitly clears the default's only completion mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it("accepts an override that clears the default's due when the default still provides another mechanism", () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+            durationMinutes: 60,
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when only another override has dateControl', () => {
+    // Globally we count any rule's mechanism, since overrides stack at runtime
+    // and the contributing rule may apply to the same student.
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: {
+            due: { date: '2024-03-21T23:59:00' },
+          },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: {
+            questions: { hidden: false },
+          },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('accepts afterComplete on an override when another override provides duration', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isFalse(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only globally-available mechanism (duration)', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({
+          dateControl: { durationMinutes: 60 },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { durationMinutes: null },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
+  });
+
+  it('rejects afterComplete on an override that clears the only global mechanism contributed by another override', () => {
+    const result = validateAccessControlRules({
+      rules: [
+        AccessControlJsonSchema.parse({}),
+        AccessControlJsonSchema.parse({
+          labels: ['Section A'],
+          dateControl: { due: { date: '2024-03-21T23:59:00' } },
+        }),
+        AccessControlJsonSchema.parse({
+          labels: ['Section B'],
+          dateControl: { due: { date: null } },
+          afterComplete: { questions: { hidden: true } },
+        }),
+      ],
+    });
+    assert.isTrue(result.errors.includes(completionMechanismMessage));
   });
 });

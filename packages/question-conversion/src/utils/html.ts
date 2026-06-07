@@ -10,11 +10,17 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
   ModelOperations: typeof ModelOperationsType;
 };
 
+/**
+ * Mustache URL prefix recommended by PrairieLearn for referencing files in `clientFilesQuestion/`.
+ * See https://docs.prairielearn.com/clientServerFiles/.
+ */
+const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+
 const DATA_URI_RE = /src=(["'])data:(?<mime>image\/[a-zA-Z0-9.+-]+);base64,(?<data>[^"']+)\1/g;
 
 /**
- * Extract inline base64 data URI images from HTML, replacing them with
- * local file references in clientFilesQuestion/.
+ * Extract inline base64 data URI images from HTML, replacing them with references to the
+ * question's clientFilesQuestion URL via the Mustache prefix.
  *
  * Returns the rewritten HTML and a map of filename → Buffer.
  */
@@ -30,7 +36,7 @@ export function extractInlineImages(html: string): {
     const digest = crypto.createHash('sha256').update(imgBytes).digest('hex').slice(0, 16);
     const filename = `inline-${digest}.${ext}`;
     files.set(filename, imgBytes);
-    return `src=${quote}clientFilesQuestion/${filename}${quote}`;
+    return `src=${quote}${CLIENT_FILES_QUESTION_URL}/${filename}${quote}`;
   });
 
   return { html: rewritten, files };
@@ -38,21 +44,22 @@ export function extractInlineImages(html: string): {
 
 const IMG_TAG_RE = /<img\b[^>]*>/gi;
 const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
-const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
- * For images already pointing into clientFilesQuestion/ the directory attribute
- * is set explicitly and the prefix is stripped from file-name. Other relative
- * paths are passed through as file-name without a directory attribute. Images
- * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are
- * left as <img> since pl-figure resolves file-name against a local course
- * directory and cannot host remote resources. The alt and width attributes are
- * preserved; all others (style, class, etc.) are dropped since pl-figure
- * handles its own layout.
+ * For images pointing into the question's clientFilesQuestion directory via the
+ * Mustache prefix, the directory attribute is set explicitly and the prefix is
+ * stripped from file-name. Other relative paths are passed through as file-name
+ * without a directory attribute. Images with absolute URLs (http://, https://,
+ * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
+ * file-name against a local course directory and cannot host remote resources.
+ * The alt and width attributes are preserved; all others (style, class, etc.)
+ * are dropped since pl-figure handles its own layout.
  */
 export function rewriteImagesAsPlFigure(html: string): string {
+  const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
   return html.replaceAll(IMG_TAG_RE, (tag) => {
     const attrs: Record<string, string> = {};
     for (const m of tag.matchAll(ATTR_RE)) {
@@ -64,9 +71,9 @@ export function rewriteImagesAsPlFigure(html: string): string {
 
     const parts: string[] = [];
 
-    if (src.startsWith('clientFilesQuestion/')) {
+    if (src.startsWith(mustachePrefix)) {
       parts.push(
-        `file-name="${he.escape(src.slice('clientFilesQuestion/'.length))}"`,
+        `file-name="${he.escape(src.slice(mustachePrefix.length))}"`,
         'directory="clientFilesQuestion"',
       );
     } else {
@@ -82,38 +89,118 @@ export function rewriteImagesAsPlFigure(html: string): string {
 
 const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
 
+// Tag-aware matcher so a tag referencing an excluded file can be wrapped as a whole.
+// Alternations: open+close tag pair | self-closing/void tag | bare URL fallback.
+const IMS_REF_OR_TAG_RE =
+  /<(\w[\w-]*)\b[^>]*\$IMS-CC-FILEBASE\$[^>]*>[\s\S]*?<\/\1>|<\w[\w-]*\b[^>]*\$IMS-CC-FILEBASE\$[^>]*\/?>|\$IMS-CC-FILEBASE\$\/[^"'\s]+/gi;
+
+interface ResolveImsFileRefsResult {
+  /** Rewritten HTML with IMS file references changed to PrairieLearn clientFilesQuestion URLs. */
+  html: string;
+  /**
+   * Files to copy into clientFilesQuestion, keyed by generated filename.
+   * Values are decoded source paths from the QTI export, relative to the export's web_resources
+   * directory.
+   */
+  fileRefs: Map<string, string>;
+  /**
+   * Decoded source paths that matched an excluded extension and were intentionally omitted from
+   * `fileRefs`.
+   */
+  skippedFiles: string[];
+}
+
 /**
  * Resolve $IMS-CC-FILEBASE$ references in HTML for PrairieLearn output.
  *
- * Rewrites src="$IMS-CC-FILEBASE$/path/img.png" to:
- * src="clientFilesQuestion/img.png"
+ * Rewrites `src="$IMS-CC-FILEBASE$/path/img.png"` to
+ * `src="{{ options.client_files_question_url }}/img.png"` — the PrairieLearn-recommended
+ * Mustache URL pattern for files in the question's clientFilesQuestion directory.
  *
- * Returns the rewritten HTML and a map of { filename → original decoded relative path }
- * so the caller can locate and copy the source files.
+ * When `excludeExtensions` is provided, a tag that references a file with an excluded
+ * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
+ * the path is readable), and the file is omitted from `fileRefs`.
  */
-export function resolveImsFileRefs(html: string): {
-  html: string;
-  fileRefs: Map<string, string>;
-} {
-  const fileRefs = new Map<string, string>();
+export function resolveImsFileRefs(
+  html: string,
+  excludeExtensions?: Set<string>,
+): ResolveImsFileRefsResult {
+  // Dedup index over all references (including excluded ones) so two files with the same basename
+  // resolve to the same generated filename whether or not they're skipped.
+  const pathByFilename = new Map<string, string>();
+  const skippedSourcePaths = new Set<string>();
 
-  const rewritten = html.replaceAll(IMS_CC_FILEBASE_RE, (_match, rawPath: string) => {
-    const decodedPath = decodeURIComponent(rawPath);
+  function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
+    const decodedPath = normalizeImsFilePath(rawPath);
     const base = decodedPath.split('/').pop() ?? decodedPath;
     const dot = base.lastIndexOf('.');
     const stem = dot !== -1 ? base.slice(0, dot) : base;
     const ext = dot !== -1 ? base.slice(dot) : '';
     let filename = base;
     let suffix = 1;
-    while (fileRefs.has(filename) && fileRefs.get(filename) !== decodedPath) {
+    while (pathByFilename.has(filename) && pathByFilename.get(filename) !== decodedPath) {
       filename = `${stem}-${suffix}${ext}`;
       suffix += 1;
     }
-    fileRefs.set(filename, decodedPath);
-    return `clientFilesQuestion/${filename}`;
-  });
+    pathByFilename.set(filename, decodedPath);
+    const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
+    if (excluded) skippedSourcePaths.add(decodedPath);
+    return { filename, excluded };
+  }
 
-  return { html: rewritten, fileRefs };
+  function processMatch(match: string, _name: string, offset: number, full: string): string {
+    // Bare URL fallback (no enclosing tag): rewrite in place.
+    if (!match.startsWith('<')) {
+      const rawPath = match.slice('$IMS-CC-FILEBASE$/'.length);
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(rewriteUrl(rawPath).filename)}`;
+    }
+    // Tag match. Only treat the open tag's own attributes as triggering the wrap — refs in the
+    // body belong to nested tags and will get their own decision via recursion.
+    const closeBracket = match.indexOf('>') + 1;
+    const openTag = match.slice(0, closeBracket);
+    const tail = match.slice(closeBracket);
+    let openExcluded = false;
+    const openRewritten = openTag.replaceAll(IMS_CC_FILEBASE_RE, (_, rawPath: string) => {
+      const { filename, excluded } = rewriteUrl(rawPath);
+      if (excluded) openExcluded = true;
+      return `${CLIENT_FILES_QUESTION_URL}/${he.escape(filename)}`;
+    });
+    const tailRewritten = tail.replaceAll(IMS_REF_OR_TAG_RE, processMatch);
+    const rewritten = openRewritten + tailRewritten;
+    if (!openExcluded) return rewritten;
+    // Don't nest comments if the tag is already inside one.
+    const before = full.slice(0, offset);
+    if (before.lastIndexOf('<!--') > before.lastIndexOf('-->')) return rewritten;
+    return `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${rewritten}\n-->`;
+  }
+
+  const rewrittenHtml = html.replaceAll(IMS_REF_OR_TAG_RE, processMatch);
+
+  const fileRefs = new Map<string, string>();
+  for (const [filename, path] of pathByFilename) {
+    if (!skippedSourcePaths.has(path)) fileRefs.set(filename, path);
+  }
+
+  return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
+}
+
+/**
+ * Normalize an IMS/Canvas file reference to the on-disk filename: strip any
+ * `?query`/`#fragment`, then URL- and HTML-decode. This is the canonical form
+ * stored in `fileRefs`; consumers that read the referenced asset back off disk
+ * must resolve against this same normalization.
+ */
+export function normalizeImsFilePath(rawPath: string): string {
+  const pathWithoutQuery = rawPath.replace(/[?#].*$/, '');
+  return he.decode(safeDecodeURIComponent(pathWithoutQuery));
+}
+
+export function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
@@ -254,14 +341,18 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
           }
         }
 
+        // Strip HTML tags before decoding entities so that decoded `<` in
+        // code (e.g. `&lt;=`) isn't mistaken for a tag boundary.
+        const plainCode = he.decode(stripHtmlFromCode(codeContent));
+
         if (!language) {
-          language = await detectCodeLanguage(he.decode(codeContent));
+          language = await detectCodeLanguage(plainCode);
         }
         const langAttr = language ? ` language="${language}"` : '';
         return {
           start,
           end,
-          replacement: `<pl-code${langAttr}>\n${he.decode(codeContent)}</pl-code>`,
+          replacement: `<pl-code${langAttr}>\n${plainCode}</pl-code>`,
         };
       })(),
     );
@@ -277,19 +368,43 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
   return result.replaceAll(P_WRAPPING_PL_CODE_RE, '$1');
 }
 
+/**
+ * Strip Canvas wrapper tags from code content. Converts `<br>` to newlines and
+ * removes known inline/block wrapper tags that Canvas adds inside `<pre>` blocks
+ * for styling. Only targets specific tag names to avoid stripping legitimate
+ * angle-bracket content (e.g. generics, comparisons) that might not be
+ * entity-encoded.
+ */
+function stripHtmlFromCode(code: string): string {
+  return code
+    .replaceAll(/<br\s*\/?>/gi, '\n')
+    .replaceAll(/<\/?(?:span|div|font|b|i|u|em|strong|sub|sup|a|p|code)(?:\s[^>]*)?\/?>/gi, '');
+}
+
 const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
 
 /**
  * Clean up question HTML for PrairieLearn output.
- * Strips wrapping <div> tags that Canvas often adds.
+ * Strips a single wrapping <div> tag that Canvas often adds.
  */
 export function cleanQuestionHtml(html: string): string {
   let cleaned = html.trim();
-  // Remove single wrapping <div>...</div>
-  const divWrapRe = /^<div>\s*([\s\S]*?)\s*<\/div>$/i;
-  const divMatch = divWrapRe.exec(cleaned);
-  if (divMatch) {
-    cleaned = divMatch[1].trim();
+  const divOpenMatch = /^<div(?:\s[^>]*)?>/i.exec(cleaned);
+  if (!divOpenMatch) return cleaned;
+
+  const divTagRe = /<\/?div(?:\s[^>]*)?>/gi;
+  let depth = 0;
+  let match: RegExpExecArray | null;
+  while ((match = divTagRe.exec(cleaned)) !== null) {
+    const isClose = /^<\//.test(match[0]);
+    depth += isClose ? -1 : 1;
+
+    if (depth === 0) {
+      if (divTagRe.lastIndex === cleaned.length) {
+        cleaned = cleaned.slice(divOpenMatch[0].length, match.index).trim();
+      }
+      break;
+    }
   }
   return cleaned;
 }

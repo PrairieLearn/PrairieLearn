@@ -88,7 +88,6 @@ const SubmissionInfoSchema = z.object({
   course_instance: CourseInstanceSchema.nullable(),
   variant_course: CourseSchema,
   question_course: CourseSchema,
-  formatted_date: z.string(),
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
@@ -151,6 +150,11 @@ async function render({
     submissions,
     course: question_course,
     locals,
+    caller: {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   });
 
   const studentMessage = 'Error rendering question';
@@ -729,6 +733,7 @@ export async function getAndRenderVariant(
  */
 export async function renderPanelsForSubmission({
   unsafe_submission_id,
+  course,
   question,
   instance_question,
   variant,
@@ -743,6 +748,7 @@ export async function renderPanelsForSubmission({
   authz_result,
 }: {
   unsafe_submission_id: string;
+  course: Course;
   question: Question;
   instance_question: InstanceQuestion | null;
   variant: Variant;
@@ -781,7 +787,6 @@ export async function renderPanelsForSubmission({
     submission_index,
     submission_count,
     grading_job,
-    formatted_date,
     user_uid,
     question_number,
     group_config,
@@ -861,11 +866,11 @@ export async function renderPanelsForSubmission({
         variant_id: variant.id,
         assessment_question,
         instance_question,
-        course_instance_id: course_instance?.id,
+        course,
+        course_instance,
         submission: {
           ...submission,
           grading_job,
-          formatted_date,
           user_uid,
           submission_number: submission_index,
         },

@@ -1,7 +1,7 @@
 import type {
-  IRAssessment,
   IRAssessmentMeta,
   IRFeedback,
+  IRItemContainer,
   IRQuestion,
   IRZone,
 } from '../types/ir.js';
@@ -29,15 +29,15 @@ export class PLEmitter implements OutputEmitter {
     this.registry = registry ?? createPLBodyRegistry();
   }
 
-  emit(assessment: IRAssessment, options?: EmitOptions): ConversionResult {
+  emit(itemContainer: IRItemContainer, options?: EmitOptions): ConversionResult {
     const questions: PLQuestionOutput[] = [];
-    const warnings: ConversionWarning[] = [...(assessment.parseWarnings ?? [])];
+    const warnings: ConversionWarning[] = [...(itemContainer.parseWarnings ?? [])];
     const usedDirNames = new Map<string, number>();
 
-    for (let i = 0; i < assessment.questions.length; i++) {
-      const question = assessment.questions[i];
+    for (let i = 0; i < itemContainer.questions.length; i++) {
+      const question = itemContainer.questions[i];
       try {
-        questions.push(this.emitQuestion(question, i, assessment, usedDirNames, options));
+        questions.push(this.emitQuestion(question, i, itemContainer, usedDirNames, options));
       } catch (err) {
         warnings.push({
           questionId: question.sourceId,
@@ -46,30 +46,49 @@ export class PLEmitter implements OutputEmitter {
       }
     }
 
-    if (assessment.rubric) {
+    if (itemContainer.rubric) {
       warnings.push({
-        questionId: assessment.rubric.id,
-        message: `Rubric "${assessment.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
+        questionId: itemContainer.rubric.id,
+        message: `Rubric "${itemContainer.rubric.title}" was found but PrairieLearn does not support file-based rubrics — configure it manually in the manual grading interface.`,
         level: 'info',
       });
     }
 
-    const assessmentOutput = this.emitAssessment(assessment, questions, options);
+    const assessmentOutput = this.emitAssessment(itemContainer, questions, options);
 
-    return { assessmentTitle: assessment.title, assessment: assessmentOutput, questions, warnings };
+    if (itemContainer.sourceType === 'question-bank') {
+      return {
+        sourceId: itemContainer.sourceId,
+        assessmentTitle: itemContainer.title,
+        sourceType: 'question-bank',
+        assessment: assessmentOutput,
+        questions,
+        warnings,
+      };
+    }
+
+    return {
+      sourceId: itemContainer.sourceId,
+      assessmentTitle: itemContainer.title,
+      sourceType: 'assessment',
+      unresolvedSourceBankRefs: itemContainer.unresolvedSourceBankRefs,
+      assessment: assessmentOutput,
+      questions,
+      warnings,
+    };
   }
 
   private emitAssessment(
-    assessment: IRAssessment,
+    itemContainer: IRItemContainer,
     questions: PLQuestionOutput[],
     options?: EmitOptions,
   ): PLAssessmentOutput {
-    const meta = assessment.meta;
+    const meta = itemContainer.meta;
     const assessmentType = meta?.assessmentType ?? 'Homework';
-    const directoryName = slugify(assessment.title);
+    const directoryName = slugify(itemContainer.title);
     const prefix = options?.questionIdPrefix ?? '';
 
-    const uuid = stableUuid(assessment.sourceId, 'assessment');
+    const uuid = stableUuid(itemContainer.sourceId, 'assessment');
 
     // Build lookups keyed by sourceId from the actually-emitted questions.
     // Using sourceId (not index) avoids misalignment when some questions fail to emit.
@@ -77,13 +96,14 @@ export class PLEmitter implements OutputEmitter {
       questions.map((q) => [q.sourceId, q.directoryName]),
     );
     const questionBySourceId = new Map<string, IRQuestion>(
-      assessment.questions.map((q) => [q.sourceId, q]),
+      itemContainer.questions.map((q) => [q.sourceId, q]),
     );
 
     // Build zones
     const zones: PLAssessmentZone[] = [];
-    if (assessment.zones && assessment.zones.length > 0) {
-      for (const zone of assessment.zones) {
+    const assessmentZones = itemContainer.zones;
+    if (assessmentZones && assessmentZones.length > 0) {
+      for (const zone of assessmentZones) {
         const zoneQuestions = this.buildZoneQuestions(zone, questionDirBySourceId, prefix);
         if (zoneQuestions.length > 0) {
           zones.push({
@@ -112,12 +132,12 @@ export class PLEmitter implements OutputEmitter {
     const allowAccess = this.buildAllowAccess(meta, assessmentType);
 
     // Determine set and number from title
-    const { set, number } = this.inferSetAndNumber(assessment.title, assessmentType);
+    const { set, number } = this.inferSetAndNumber(itemContainer.title, assessmentType);
 
     const infoJson: PLAssessmentInfoJson = {
       uuid,
       type: assessmentType,
-      title: assessment.title,
+      title: itemContainer.title,
       set,
       number,
       allowAccess,
@@ -212,15 +232,16 @@ export class PLEmitter implements OutputEmitter {
   private emitQuestion(
     question: IRQuestion,
     index: number,
-    assessment: IRAssessment,
+    itemContainer: IRItemContainer,
     usedDirNames: Map<string, number>,
     options?: EmitOptions,
   ): PLQuestionOutput {
     const directoryName = this.makeDirectoryName(question.title, index, usedDirNames);
-    const topic = options?.topic ?? question.metadata?.['topic'] ?? assessment.title ?? 'Imported';
+    const topic =
+      options?.topic ?? question.metadata?.['topic'] ?? itemContainer.title ?? 'Imported';
     const tags = options?.tags ?? ['imported', 'qti'];
 
-    const uuid = stableUuid(options?.uuidNamespace ?? assessment.sourceId, question.sourceId);
+    const uuid = stableUuid(options?.uuidNamespace ?? itemContainer.sourceId, question.sourceId);
 
     const infoJson: PLQuestionInfoJson = {
       uuid,
@@ -243,6 +264,7 @@ export class PLEmitter implements OutputEmitter {
       questionHtml,
       serverPy: serverPy || undefined,
       clientFiles,
+      skippedFiles: question.skippedFiles ?? [],
     };
   }
 
@@ -270,7 +292,9 @@ export class PLEmitter implements OutputEmitter {
       promptHtml = handler.transformPrompt(promptHtml, question.body);
     }
 
-    const parts: string[] = ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
+    const parts: string[] = handler.inlineInputs
+      ? wrapInlineInputPrompt(promptHtml)
+      : ['<pl-question-panel>', promptHtml, '</pl-question-panel>', ''];
 
     // Checkbox per-answer feedback is concatenated in grade() so all selected answers' messages
     // show together — PL only surfaces one feedback attribute per element, so don't put them in HTML.
@@ -315,18 +339,60 @@ export class PLEmitter implements OutputEmitter {
   }
 
   private collectClientFiles(question: IRQuestion): Map<string, Buffer | string> {
-    const files = new Map<string, Buffer | string>();
+    const clientFiles = new Map<string, Buffer | string>();
     for (const [filename, asset] of question.assets) {
       if (asset.type === 'base64') {
-        files.set(filename, Buffer.from(asset.value, 'base64'));
+        clientFiles.set(filename, Buffer.from(asset.value, 'base64'));
       } else if (asset.type === 'file-path') {
         // Store the relative path; the CLI resolves it against web_resources/ at write time
-        files.set(filename, asset.value);
+        clientFiles.set(filename, asset.value);
       }
     }
-    return files;
+    return clientFiles;
   }
 }
+
+/**
+ * Split transformed prompt HTML into top-level blocks and wrap non-input
+ * blocks in `<pl-question-panel>`.  Blocks that contain a PL input element
+ * (e.g. `<pl-string-input>`) are emitted bare.
+ */
+function wrapInlineInputPrompt(html: string): string[] {
+  // Split between adjacent top-level block elements. The lookbehind matches
+  // after a closing block tag; the lookahead matches the start of the next tag.
+  // Whitespace between them is consumed so it doesn't become a stray text node.
+  const blocks = html.split(
+    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\s*(?=<)/,
+  );
+
+  const parts: string[] = [];
+  let panel: string[] = [];
+
+  function flushPanel() {
+    if (panel.length > 0) {
+      parts.push('<pl-question-panel>', ...panel, '</pl-question-panel>', '');
+      panel = [];
+    }
+  }
+
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+    if (PL_INPUT_RE.test(block)) {
+      flushPanel();
+      parts.push(block);
+    } else {
+      panel.push(block);
+    }
+  }
+  flushPanel();
+
+  // Trailing empty string so parts.join('\n') ends with a newline.
+  parts.push('');
+  return parts;
+}
+
+const PL_INPUT_RE =
+  /<pl-(?:big-o-input|checkbox|excalidraw|image-capture|integer-input|matching|matrix-component-input|matrix-input|multiple-choice|number-input|order-blocks|rich-text-editor|string-input|symbolic-input|units-input|file-upload)\b/;
 
 /** Render the grade(data) function for types with only global correct/incorrect feedback. */
 function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {

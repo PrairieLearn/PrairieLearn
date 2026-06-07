@@ -9,7 +9,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';

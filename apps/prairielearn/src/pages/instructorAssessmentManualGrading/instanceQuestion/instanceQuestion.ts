@@ -6,33 +6,34 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
+import { AIGradingExplanation, AIGradingPrompt } from '../../../components/QuestionContainer.js';
+import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
+import { computeAiGradingRelativeCosts } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  containsImageCapture,
-  selectLastSubmissionId,
-  selectRubricGradingItems,
+  buildAiGradingInfo,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import type {
-  InstanceQuestionAIGradingInfo,
-  InstanceQuestionAIGradingInfoBase,
-} from '../../../ee/lib/ai-grading/types.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroup,
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
+import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -48,9 +49,19 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+async function computeUseInstanceQuestionGroups(resLocals: Record<string, any>): Promise<boolean> {
+  const groupingAvailable =
+    (await features.enabledFromLocals('ai-submission-grouping', resLocals)) &&
+    resLocals.assessment_question.ai_grading_mode;
+  if (!groupingAvailable) return false;
+  return await selectAssessmentQuestionHasInstanceQuestionGroups({
+    assessmentQuestionId: resLocals.assessment_question.id,
+  });
+}
+
 async function prepareLocalsForRender(
   query: Record<string, any>,
-  resLocals: ResLocalsForPage<'instructor-instance-question'>,
+  resLocals: ResLocalsForPage<'instructor-instance-question'> & ResLocalsInstanceQuestionRender,
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
@@ -87,10 +98,58 @@ async function prepareLocalsForRender(
 
   const graders = await selectCourseInstanceGraderStaff({
     courseInstance: resLocals.course_instance,
-    authzData: resLocals.authz_data,
-    requiredRole: ['Student Data Viewer'],
   });
   return { resLocals, conflict_grading_job, graders };
+}
+
+/**
+ * Loads the data shared by the main instance-question page render and the
+ * `/grading_rubric_panels` partial render: feature-flag state, submission
+ * grouping context, AI grading info, and the latest human grader.
+ */
+async function loadSharedInstanceQuestionData(
+  resLocals: ResLocalsForPage<'instructor-instance-question'> & ResLocalsInstanceQuestionRender,
+) {
+  const aiGradingEnabled = await features.enabledFromLocals('ai-grading', resLocals);
+  const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+    'ai-submission-grouping',
+    resLocals,
+  );
+  const aiGradingMode = aiGradingEnabled && resLocals.assessment_question.ai_grading_mode;
+
+  const instance_question = resLocals.instance_question;
+  const instanceQuestionGroup = await run(async () => {
+    if (!aiSubmissionGroupingEnabled) return null;
+    if (instance_question.manual_instance_question_group_id) {
+      return await selectInstanceQuestionGroup(instance_question.manual_instance_question_group_id);
+    } else if (instance_question.ai_instance_question_group_id) {
+      return await selectInstanceQuestionGroup(instance_question.ai_instance_question_group_id);
+    }
+    return null;
+  });
+
+  const instanceQuestionGroups = aiSubmissionGroupingEnabled
+    ? await selectInstanceQuestionGroups({
+        assessmentQuestionId: resLocals.assessment_question.id,
+      })
+    : [];
+
+  const lastHumanGraderRow = resLocals.instance_question.last_grader
+    ? await sqldb.queryOptionalRow(
+        sql.select_last_manual_grader_for_instance_question,
+        { instance_question_id: resLocals.instance_question.id },
+        z.object({ grader_name: z.string() }),
+      )
+    : null;
+
+  return {
+    aiGradingEnabled,
+    aiSubmissionGroupingEnabled,
+    aiGradingMode,
+    instanceQuestionGroup,
+    instanceQuestionGroups,
+    lastHumanGraderName: lastHumanGraderRow?.grader_name ?? null,
+  };
 }
 
 router.get(
@@ -99,200 +158,109 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
-    const assignedGrader = res.locals.instance_question.assigned_grader
-      ? await selectUserById(res.locals.instance_question.assigned_grader)
-      : null;
-    const lastGrader = res.locals.instance_question.last_grader
-      ? await selectUserById(res.locals.instance_question.last_grader)
-      : null;
+  typedAsyncHandler<'instructor-instance-question', ResLocalsInstanceQuestionRender>(
+    async (req, res) => {
+      const assignedGrader = res.locals.instance_question.assigned_grader
+        ? await selectUserById(res.locals.instance_question.assigned_grader)
+        : null;
+      // `last_grader` records whoever last graded — manual or AI. When it's
+      // null nobody has graded, so we can skip the "last manual grader" lookup
+      // entirely (the query filters by grading_method = 'Manual').
+      const lastGrader = res.locals.instance_question.last_grader
+        ? await selectUserById(res.locals.instance_question.last_grader)
+        : null;
 
-    const instance_question = res.locals.instance_question;
+      const shared = await loadSharedInstanceQuestionData(res.locals);
+      const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
-      'ai-submission-grouping',
-      res.locals,
-    );
+      const aiGradingInfo = shared.aiGradingEnabled
+        ? ((await buildAiGradingInfo({
+            submission_id: res.locals.submission!.id,
+            submissionHtmls: localsForRender.resLocals.submissionHtmls,
+          })) ?? undefined)
+        : undefined;
 
-    const instanceQuestionGroup = await run(async () => {
-      if (!aiSubmissionGroupingEnabled) return null;
-      if (instance_question.manual_instance_question_group_id) {
-        return await selectInstanceQuestionGroup(
-          instance_question.manual_instance_question_group_id,
-        );
-      } else if (instance_question.ai_instance_question_group_id) {
-        return await selectInstanceQuestionGroup(instance_question.ai_instance_question_group_id);
-      }
-      return null;
-    });
+      req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+      req.session.show_submissions_assigned_to_me_only =
+        req.session.show_submissions_assigned_to_me_only ?? true;
 
-    const instanceQuestionGroups = aiSubmissionGroupingEnabled
-      ? await selectInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        })
-      : [];
-
-    /**
-     * Contains the prompt and selected rubric items of the AI grader.
-     * If the submission was not graded by AI, this will be undefined.
-     */
-    let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
-
-    const localsForRender = await prepareLocalsForRender(req.query, res.locals);
-
-    if (aiGradingEnabled) {
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const ai_grading_job_data = await sqldb.queryOptionalRow(
-        sql.select_ai_grading_job_data_for_submission,
-        {
-          submission_id,
-        },
-        z.object({
-          id: GradingJobSchema.shape.id,
-          manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
-          prompt: AiGradingJobSchema.shape.prompt,
-          completion: AiGradingJobSchema.shape.completion,
-          rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
-        }),
+      const submissionCredits = await sqldb.queryScalars(
+        sql.select_submission_credit_values,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        z.number(),
       );
 
-      if (ai_grading_job_data) {
-        const promptForGradingJob = ai_grading_job_data.prompt;
-        const selectedRubricItems = await selectRubricGradingItems(
-          ai_grading_job_data.manual_rubric_grading_id,
+      const instanceQuestionAiGradeProps = await run(async () => {
+        if (!shared.aiGradingMode) return null;
+
+        const trpcCsrfToken = generatePrefixCsrfToken(
+          {
+            url: getAssessmentQuestionTrpcUrl({
+              courseInstanceId: res.locals.course_instance.id,
+              assessmentId: res.locals.assessment.id,
+              assessmentQuestionId: res.locals.assessment_question.id,
+            }),
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
         );
 
-        /** The submission was also manually graded if a manual grading job exists for it.*/
-        const submissionManuallyGraded =
-          (await sqldb.queryOptionalScalar(
-            sql.select_exists_manual_grading_job_for_submission,
-            { submission_id },
-            z.boolean(),
-          )) ?? false;
-
-        const formattedPrompt =
-          promptForGradingJob !== null
-            ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
-                .replaceAll('\\n', '\n')
-                .trimStart()
-            : '';
-
-        // We're dealing with a schemaless JSON blob here. We'll be defensive and
-        // try to avoid errors when extracting the explanation. Note that for some
-        // time, the explanation wasn't included in the completion at all, so it
-        // may legitimately be missing.
-        //
-        // Over the lifetime of this feature, we've changed which APIs/libraries we
-        // use to generate the completion, so we need to handle all formats we've ever
-        // used for backwards-compatibility. Each one is documented below.
-        const explanation = run(() => {
-          const completion = ai_grading_job_data.completion;
-          if (!completion) return null;
-
-          // OpenAI chat completion format
-          if (completion.choices) {
-            const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          // OpenAI response format
-          if (completion.output_parsed) {
-            const explanation = completion?.output_parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          // `ai` package format
-          if (completion.object) {
-            const explanation = completion?.object?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          return null;
+        const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
+          assessment_question_id: res.locals.assessment_question.id,
+          type: 'ai_grading',
         });
 
-        const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
-        const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
-        const validatedDegrees = parsed.success ? parsed.data : {};
-        const rotationCorrectionDegrees = Object.fromEntries(
-          Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
-        );
+        const initialOngoingJobSequenceTokens = ongoingJobSequenceIds.reduce<
+          Record<string, string>
+        >((acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
+          return acc;
+        }, {});
 
-        const hasPersistedRotationCorrectionData =
-          correctedDegrees != null &&
-          typeof correctedDegrees === 'object' &&
-          Object.keys(correctedDegrees).length > 0;
-
-        const hasImage = run(() => {
-          // Use persisted rotation metadata to infer image context. This preserves
-          // historical AI grading context even if the current rendered HTML no
-          // longer includes image-capture markers.
-          if (hasPersistedRotationCorrectionData) return true;
-          if (localsForRender.resLocals.submissionHtmls.length > 0) {
-            return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
-          }
-          return false;
-        });
-
-        const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
-          submissionManuallyGraded,
-          prompt: formattedPrompt,
-          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-          explanation,
+        return {
+          courseInstanceId: res.locals.course_instance.id,
+          assessmentId: res.locals.assessment.id,
+          assessmentQuestionId: res.locals.assessment_question.id,
+          instanceQuestionId: res.locals.instance_question.id,
+          trpcCsrfToken,
+          isDevMode: process.env.NODE_ENV === 'development',
+          hasRubric: res.locals.assessment_question.manual_rubric_id != null,
+          useCustomApiKeys: res.locals.course_instance.ai_grading_use_custom_api_keys,
+          aiGradingSettingsUrl: getAiGradingSettingsUrl(res.locals.course_instance.id),
+          availableAiGradingProviders: await getAvailableAiGradingProviders(
+            res.locals.course_instance,
+          ),
+          aiGradingRelativeCosts: computeAiGradingRelativeCosts(config.costPerMillionTokens),
+          aiGradingLastSelectedModel:
+            res.locals.assessment_question.ai_grading_last_selected_model ?? null,
+          initialOngoingJobSequenceTokens,
+          hasCourseInstancePermissionEdit:
+            res.locals.authz_data.has_course_instance_permission_edit,
         };
+      });
 
-        if (hasImage) {
-          aiGradingInfo = {
-            ...aiGradingInfoBase,
-            hasImage: true,
-            rotationCorrectionDegrees,
-          };
-        } else {
-          aiGradingInfo = {
-            ...aiGradingInfoBase,
-            hasImage: false,
-            rotationCorrectionDegrees: null,
-          };
-        }
-      }
-    }
-
-    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-    req.session.show_submissions_assigned_to_me_only =
-      req.session.show_submissions_assigned_to_me_only ?? true;
-
-    const submissionCredits = await sqldb.queryScalars(
-      sql.select_submission_credit_values,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      z.number(),
-    );
-
-    res.send(
-      InstanceQuestionPage({
-        ...localsForRender,
-        assignedGrader,
-        lastGrader,
-        selectedInstanceQuestionGroup: instanceQuestionGroup,
-        instanceQuestionGroups,
-        aiGradingEnabled,
-        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
-        aiGradingInfo,
-        aiGradingStats:
-          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+      res.send(
+        InstanceQuestionPage({
+          ...localsForRender,
+          assignedGrader,
+          lastGrader,
+          lastHumanGraderName: shared.lastHumanGraderName,
+          selectedInstanceQuestionGroup: shared.instanceQuestionGroup,
+          instanceQuestionGroups: shared.instanceQuestionGroups,
+          aiGradingEnabled: shared.aiGradingEnabled,
+          aiGradingMode: shared.aiGradingMode,
+          aiGradingInfo,
+          aiGradingStats: shared.aiGradingMode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        skipGradedSubmissions: req.session.skip_graded_submissions,
-        showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
-        submissionCredits,
-      }),
-    );
-  }),
+          skipGradedSubmissions: req.session.skip_graded_submissions,
+          showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
+          submissionCredits,
+          instanceQuestionAiGradeProps,
+        }),
+      );
+    },
+  ),
 );
 
 router.put(
@@ -334,6 +302,7 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
@@ -355,49 +324,83 @@ router.get(
 
 router.get(
   '/grading_rubric_panels',
-  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
-    try {
-      const locals = await prepareLocalsForRender({}, res.locals);
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question: res.locals.assessment_question,
-      });
-      const gradingPanel = GradingPanel({
-        ...locals,
-        context: 'main',
-      }).toString();
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+  typedAsyncHandler<'instructor-instance-question', ResLocalsInstanceQuestionRender>(
+    async (req, res) => {
+      try {
+        const shared = await loadSharedInstanceQuestionData(res.locals);
+        const locals = await prepareLocalsForRender({}, res.locals);
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: res.locals.assessment_question,
+        });
 
-      // `prepareLocalsForRender` guarantees a submission exists.
-      const submission = res.locals.submission!;
-      const panels = await renderPanelsForSubmission({
-        unsafe_submission_id: submission.id,
-        question: res.locals.question,
-        instance_question: res.locals.instance_question,
-        variant: res.locals.variant,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        urlPrefix: res.locals.urlPrefix,
-        questionContext: 'manual_grading',
-        questionRenderContext: 'manual_grading',
-        authorizedEdit: false,
-        renderScorePanels: false,
-        groupRolePermissions: null,
-      });
+        // `prepareLocalsForRender` guarantees a submission exists.
+        const submission = res.locals.submission!;
+        const panels = await renderPanelsForSubmission({
+          unsafe_submission_id: submission.id,
+          course: res.locals.course,
+          question: res.locals.question,
+          instance_question: res.locals.instance_question,
+          variant: res.locals.variant,
+          user: res.locals.user,
+          authn_user: res.locals.authn_user,
+          urlPrefix: res.locals.urlPrefix,
+          questionContext: 'manual_grading',
+          questionRenderContext: 'manual_grading',
+          authorizedEdit: false,
+          renderScorePanels: false,
+          groupRolePermissions: null,
+        });
 
-      res.json({
-        gradingPanel,
-        rubric_data,
-        submissionPanel: panels.submissionPanel,
-        submissionId: submission.id,
-        aiGradingStats:
-          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+        const aiGradingInfo = shared.aiGradingEnabled
+          ? ((await buildAiGradingInfo({
+              submission_id: submission.id,
+              submissionHtmls: res.locals.submissionHtmls,
+            })) ?? undefined)
+          : undefined;
+
+        const gradingPanel = GradingPanel({
+          ...locals,
+          context: 'main',
+          aiGradingInfo,
+          aiGradingMode: shared.aiGradingMode,
+          selectedInstanceQuestionGroup: shared.instanceQuestionGroup,
+          showInstanceQuestionGroup:
+            shared.instanceQuestionGroups.length > 0 && shared.aiGradingMode,
+          instanceQuestionGroups: shared.instanceQuestionGroups,
+          skip_graded_submissions: req.session.skip_graded_submissions ?? true,
+          show_submissions_assigned_to_me_only:
+            req.session.show_submissions_assigned_to_me_only ?? true,
+          gradedByHumanName: shared.lastHumanGraderName,
+        }).toString();
+
+        const aiGradingExplanation = aiGradingInfo
+          ? AIGradingExplanation({
+              explanation: aiGradingInfo.explanation,
+              hasImage: aiGradingInfo.hasImage,
+              rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+            }).toString()
+          : '';
+
+        const aiGradingPrompt = aiGradingInfo?.prompt
+          ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }).toString()
+          : '';
+
+        res.json({
+          gradingPanel,
+          aiGradingExplanation,
+          aiGradingPrompt,
+          rubric_data,
+          submissionPanel: panels.submissionPanel,
+          submissionId: submission.id,
+          aiGradingStats: shared.aiGradingMode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-      });
-    } catch (err) {
-      res.send({ err: String(err) });
-    }
-  }),
+        });
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
+    },
+  ),
 );
 
 const PostBodySchema = z.union([
@@ -523,17 +526,7 @@ router.post(
         });
       }
 
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -551,17 +544,7 @@ router.post(
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -717,13 +700,11 @@ router.post(
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
           courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
-          requiredRole: ['Student Data Editor'],
         });
         if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
-            'Assigned grader does not have Student Data Editor permission',
+            'The assigned grader does not have student data editor permissions.',
           );
         }
       }
@@ -733,21 +714,7 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
-      req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-      req.session.show_submissions_assigned_to_me_only =
-        req.session.show_submissions_assigned_to_me_only ?? true;
-
-      const use_instance_question_groups = await run(async () => {
-        const groupingAvailable =
-          (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
-          res.locals.assessment_question.ai_grading_mode;
-        if (!groupingAvailable) {
-          return false;
-        }
-        return await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        });
-      });
+      const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;

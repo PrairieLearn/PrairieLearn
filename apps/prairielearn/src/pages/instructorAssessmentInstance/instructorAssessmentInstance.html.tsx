@@ -1,7 +1,7 @@
 import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
-import { formatDate } from '@prairielearn/formatter';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
@@ -76,16 +76,12 @@ export function InstructorAssessmentInstance({
   resLocals,
   logCsvFilename,
   assessment_instance_stats,
-  assessment_instance_date_formatted,
-  assessment_instance_duration,
   instance_questions,
   assessmentInstanceLog,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
-  assessment_instance_date_formatted: string;
-  assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
@@ -296,11 +292,16 @@ export function InstructorAssessmentInstance({
               </tr>
               <tr>
                 <th>Date started</th>
-                <td colspan="2">${assessment_instance_date_formatted}</td>
+                <td colspan="2">
+                  ${formatDate(
+                    resLocals.assessment_instance.date!,
+                    resLocals.course_instance.display_timezone,
+                  )}
+                </td>
               </tr>
               <tr>
                 <th>Duration</th>
-                <td colspan="2">${assessment_instance_duration}</td>
+                <td colspan="2">${formatInterval(resLocals.assessment_instance.duration ?? 0)}</td>
               </tr>
             </tbody>
           </table>
@@ -656,7 +657,9 @@ export function InstructorAssessmentInstance({
               ${assessmentInstanceLog.map((row, index) => {
                 return html`
                   <tr>
-                    <td class="text-nowrap">${row.formatted_date}</td>
+                    <td class="text-nowrap">
+                      ${formatDate(row.event_date, resLocals.course_instance.display_timezone)}
+                    </td>
                     <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                     ${resLocals.instance_user
                       ? row.client_fingerprint && row.client_fingerprint_number !== null

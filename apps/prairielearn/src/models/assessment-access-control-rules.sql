@@ -102,9 +102,39 @@ ORDER BY
   END,
   aacr.number;
 
+-- BLOCK count_enrollment_access_control_rules
+SELECT
+  count(*)::integer
+FROM
+  assessment_access_control_rules
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment';
+
+-- BLOCK select_prairietest_exam_metadata_by_uuids
+SELECT DISTINCT
+  u::text AS uuid,
+  pt_x.id::text AS pt_exam_id,
+  pt_x.name AS pt_exam_name,
+  pt_c.id::text AS pt_course_id,
+  pt_c.name AS pt_course_name
+FROM
+  unnest($exam_uuids::uuid[]) AS u
+  LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = u)
+  LEFT JOIN pt_courses AS pt_c ON (pt_c.id = pt_x.course_id);
+
 -- BLOCK delete_enrollment_rules_by_ids
 DELETE FROM assessment_access_control_rules
 WHERE
   id = ANY ($ids::bigint[])
   AND target_type = 'enrollment'
   AND assessment_id = $assessment_id;
+
+-- BLOCK move_enrollment_rules_to_temporary_numbers
+UPDATE assessment_access_control_rules
+SET
+  number = - number
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment'
+  AND number > 0;

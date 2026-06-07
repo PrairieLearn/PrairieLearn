@@ -1,21 +1,36 @@
 import { z } from 'zod';
 
 /**
- * Runtime version of date control fields. Top-level date columns use `Date`
- * objects (they come from the database as Date). Deadline entry dates remain
- * as strings since they are stored as JSON strings in JSONB columns.
+ * In-memory representation of date control fields. Top-level date fields are
+ * `Date`; deadline entry dates stay as strings since they're stored as JSON
+ * strings inside JSONB columns.
  */
 export interface RuntimeDateControl {
   release?: { date: Date };
-  dueDate?: Date | null;
+  due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
+  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null } | null;
   durationMinutes?: number | null;
   password?: string | null;
 }
 
+/**
+ * Discriminator for which structural slot a segment fills:
+ * - `beforeRelease`: pre-release segment (always entries[0])
+ * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
+ * - `afterLastDeadline`: trailing segment when at least one deadline exists; credit/submittable come from `afterLastDeadline`
+ * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
+ */
+const AccessTimelineEntryKindSchema = z.enum([
+  'beforeRelease',
+  'deadline',
+  'afterLastDeadline',
+  'noDeadline',
+]);
+
 export const AccessTimelineEntrySchema = z.object({
+  kind: AccessTimelineEntryKindSchema,
   credit: z.number(),
   startDate: z.date().nullable(),
   endDate: z.date().nullable(),
@@ -23,6 +38,8 @@ export const AccessTimelineEntrySchema = z.object({
   current: z.boolean(),
   /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
+  /** False when the student has no access at all (afterLastDeadline omitted). Distinct from `submittable: false` which still allows viewing. */
+  accessible: z.boolean(),
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
@@ -32,16 +49,23 @@ interface Deadline {
 }
 
 /**
- * Each returned entry is a point in time where credit changes: the credit
- * applies when the submission time is strictly less than `date`. The due
- * date is included as a 100%-credit deadline. Deadlines sharing a timestamp
- * are collapsed to one entry (insertion order early → due → late wins).
+ * Each returned entry is a point where credit changes: the credit applies for
+ * submissions strictly before `date`. The due date is included as a deadline
+ * with `dueCredit`. Deadlines sharing a timestamp are collapsed to one
+ * (insertion order early → due → late wins).
+ *
+ * Validation normally rejects deadline credits that would cross the due-date
+ * credit on the wrong side of the due date. The floor/cap below keeps each
+ * deadline's credit on the correct side of `dueCredit` when stacked overrides
+ * still produce a crossed shape; `buildAccessTimeline` then enforces a
+ * non-increasing credit timeline across all segments as a final backstop.
  */
-export function buildDeadlines(
+function buildDeadlines(
   dateControl: RuntimeDateControl,
   releaseDate: Date,
   dueDate: Date | null,
 ): Deadline[] {
+  const dueCredit = dateControl.due?.credit ?? 100;
   const deadlines: Deadline[] = [];
 
   if (dateControl.earlyDeadlines) {
@@ -49,20 +73,25 @@ export function buildDeadlines(
       const entryDate = new Date(entry.date);
       if (entryDate <= releaseDate) continue;
       if (dueDate && entryDate > dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
+      deadlines.push({ date: entryDate, credit: Math.max(entry.credit, dueCredit) });
     }
   }
 
   if (dueDate) {
-    deadlines.push({ date: dueDate, credit: 100 });
+    deadlines.push({ date: dueDate, credit: dueCredit });
   }
 
   if (dateControl.lateDeadlines) {
     for (const entry of dateControl.lateDeadlines) {
       const entryDate = new Date(entry.date);
       if (entryDate <= releaseDate) continue;
+      // Drop (don't clamp) any late deadline that falls before the effective
+      // due date. This is intentional: an override that pushes the due date
+      // later can leave a previously-valid late deadline sitting before the
+      // new due, and we treat that as the override having superseded it
+      // rather than silently shifting the deadline forward.
       if (dueDate && entryDate < dueDate) continue;
-      deadlines.push({ date: entryDate, credit: entry.credit });
+      deadlines.push({ date: entryDate, credit: Math.min(entry.credit, dueCredit) });
     }
   }
 
@@ -83,10 +112,17 @@ export function buildDeadlines(
 }
 
 /**
- * Builds an access timeline for display. Each entry is a contiguous period
- * [startDate, endDate) with a credit value. A before-release entry
- * (startDate: null) is prepended when `date` precedes the release date, and
- * an after-last-deadline entry (endDate: null) is always appended.
+ * Builds a contiguous, ordered timeline of credit segments, tagging the
+ * segment containing `date` with `current: true`. Returns `[]` when the date
+ * control has no usable access path (no release configured, or due date
+ * on/before release date). Otherwise:
+ *
+ * - Index 0 is always the pre-release segment `[null, releaseDate)`.
+ * - Middle segments are bounded by adjacent deadlines.
+ * - The final segment is `[lastDeadline, null)`. Its credit/submittable depend
+ *   on `afterLastDeadline`, except when `due: { date: null }` is set —
+ *   that "indefinite due" case shadows `afterLastDeadline` and applies
+ *   `dueCredit` (default 100%) forever, with submissions allowed.
  */
 export function buildAccessTimeline(
   dateControl: RuntimeDateControl | undefined,
@@ -95,55 +131,81 @@ export function buildAccessTimeline(
   if (!dateControl?.release) return [];
 
   const releaseDate = dateControl.release.date;
-  const dueDate = dateControl.dueDate ?? null;
+  const dueDate = dateControl.due?.date ?? null;
+  const dueCredit = dateControl.due?.credit ?? 100;
+  const dueIsIndefinite = dateControl.due !== undefined && dueDate === null;
 
   if (dueDate && dueDate <= releaseDate) return [];
 
+  const isCurrent = (startDate: Date | null, endDate: Date | null) =>
+    (startDate === null || date >= startDate) && (endDate === null || date < endDate);
+
   const deadlines = buildDeadlines(dateControl, releaseDate, dueDate);
-
-  if (deadlines.length === 0) {
-    return [
-      {
-        credit: 100,
-        startDate: releaseDate,
-        endDate: null,
-        current: date >= releaseDate,
-        submittable: true,
-      },
-    ];
-  }
-
-  const segments: AccessTimelineEntry[] = [];
-
-  if (date < releaseDate) {
-    segments.push({
-      credit: 0,
+  const entries: AccessTimelineEntry[] = [
+    {
+      kind: 'beforeRelease',
       startDate: null,
       endDate: releaseDate,
-      current: true,
+      credit: 0,
+      current: isCurrent(null, releaseDate),
       submittable: false,
-    });
-  }
+      accessible: true,
+    },
+  ];
 
-  let segmentStart = releaseDate;
+  let segStart = releaseDate;
   for (const deadline of deadlines) {
-    segments.push({
-      credit: deadline.credit,
-      startDate: segmentStart,
+    entries.push({
+      kind: 'deadline',
+      startDate: segStart,
       endDate: deadline.date,
-      current: date >= segmentStart && date < deadline.date,
+      credit: deadline.credit,
+      current: isCurrent(segStart, deadline.date),
       submittable: true,
+      accessible: true,
     });
-    segmentStart = deadline.date;
+    segStart = deadline.date;
   }
 
-  segments.push({
-    credit: dateControl.afterLastDeadline?.credit ?? 0,
-    startDate: segmentStart,
-    endDate: null,
-    current: date >= segmentStart,
-    submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
-  });
+  if (dueIsIndefinite || deadlines.length === 0) {
+    entries.push({
+      kind: 'noDeadline',
+      startDate: segStart,
+      endDate: null,
+      credit: dueIsIndefinite ? dueCredit : 100,
+      current: isCurrent(segStart, null),
+      submittable: true,
+      accessible: true,
+    });
+  } else {
+    // `afterLastDeadline` absent (undefined) or explicitly null = no access.
+    // `{ allowSubmissions: false }` = view-only (accessible but not submittable).
+    const ald = dateControl.afterLastDeadline;
+    const hasAccess = ald != null;
+    entries.push({
+      kind: 'afterLastDeadline',
+      startDate: segStart,
+      endDate: null,
+      credit: hasAccess ? (ald.credit ?? 0) : 0,
+      current: isCurrent(segStart, null),
+      submittable: hasAccess && ald.allowSubmissions === true,
+      accessible: hasAccess,
+    });
+  }
 
-  return segments;
+  // Floor each post-release segment's credit to its predecessor so a stacked
+  // override that leaves credit climbing — non-decreasing early deadlines,
+  // non-decreasing late deadlines, an afterLastDeadline above the last late
+  // — still produces a non-increasing timeline. Validation prevents these
+  // shapes per-rule and against defaults; this is a defensive backstop for
+  // multi-override merges that the validator deliberately doesn't model.
+  // beforeRelease (index 0, credit 0) is excluded so the first real segment
+  // isn't clamped to 0.
+  for (let i = 2; i < entries.length; i++) {
+    if (entries[i].credit > entries[i - 1].credit) {
+      entries[i] = { ...entries[i], credit: entries[i - 1].credit };
+    }
+  }
+
+  return entries;
 }

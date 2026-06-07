@@ -15,7 +15,7 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAssessments } from '../models/assessment.js';
+import { selectAssessments, selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -23,10 +23,12 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import { type AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
+import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
@@ -41,10 +43,14 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
+import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
+import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
+import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
+import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -85,9 +91,43 @@ async function syncCourseFromDisk(
 
   await updateCourseCommitHash(course);
 
+  // JSON errors mean individual entities failed to sync (e.g., a question has
+  // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
+  // on `job.data` before throwing so the file editor can distinguish this
+  // from a hard failure.
   if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+    job.data.hadJsonErrors = true;
+    throw new Error('One or more JSON files contained errors and were unable to be synced.');
   }
+}
+
+/**
+ * The outcome of a "save and sync" edit, derived from the flags that
+ * {@link Editor.executeWithServerJob} records on `job.data`.
+ *
+ * A save-and-sync writes the file to disk (and pushes to git in production),
+ * then syncs the entire course from disk to the database:
+ *
+ * - `save_failed`: the write/push failed; nothing reached the database.
+ * - `sync_failed`: the save succeeded but the sync hard-failed.
+ * - `sync_json_errors`: the save succeeded and the sync ran to completion, but
+ *   one or more entities had invalid JSON. {@link syncCourseFromDisk} sets
+ *   `hadJsonErrors` and throws, so `syncSucceeded` is never set in this case.
+ * - `success`: the save and sync both completed cleanly.
+ */
+export type EditOutcome = 'save_failed' | 'sync_failed' | 'sync_json_errors' | 'success';
+
+/**
+ * Interpret the flags an edit job records on `job.data` into a single outcome.
+ * This is the canonical reading of that (otherwise untyped) blob; pages that
+ * render edit results should dispatch on the returned value rather than
+ * re-deriving the meaning of the individual flags.
+ */
+export function classifyEditOutcome(data: Record<string, unknown>): EditOutcome {
+  if (!data.saveSucceeded) return 'save_failed';
+  if (data.hadJsonErrors) return 'sync_json_errors';
+  if (!data.syncSucceeded) return 'sync_failed';
+  return 'success';
 }
 
 async function cleanAndResetRepository(
@@ -103,19 +143,6 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
-}
-
-export function computeFileContentHash(contents: string): string {
-  return sha256(b64EncodeUnicode(contents)).toString();
-}
-
-export async function getOriginalHash(path: string) {
-  try {
-    return computeFileContentHash(await fs.readFile(path, 'utf8'));
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
 }
 
 interface BaseEditorOptions<ResLocals = object> {
@@ -482,11 +509,20 @@ function validateQidNesting(newQid: string, existingQids: string[], skipQid?: st
 export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
+  private tid_new?: string;
+  private title_new?: string;
+  private number_new?: string;
+  private set_new?: string;
 
   public readonly uuid: string;
 
   constructor(
-    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }>,
+    params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
+      tid_new?: string;
+      title_new?: string;
+      number_new?: string;
+      set_new?: string;
+    },
   ) {
     const { course_instance, assessment } = params.locals;
 
@@ -497,6 +533,10 @@ export class AssessmentCopyEditor extends Editor {
 
     this.assessment = assessment;
     this.course_instance = course_instance;
+    this.tid_new = params.tid_new;
+    this.title_new = params.title_new;
+    this.number_new = params.number_new;
+    this.set_new = params.set_new;
 
     this.uuid = crypto.randomUUID();
   }
@@ -513,22 +553,29 @@ export class AssessmentCopyEditor extends Editor {
       'assessments',
     );
 
-    debug('Get all existing long names');
-    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
-    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    let tid: string;
+    let assessmentTitle: string;
+    if (this.tid_new !== undefined && this.title_new !== undefined) {
+      tid = this.tid_new;
+      assessmentTitle = this.title_new;
+    } else {
+      debug('Get all existing long names');
+      const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+      const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
-    debug('Get all existing short names');
-    const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+      debug('Get all existing short names');
+      const oldNamesShort = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
-    debug('Generate TID and Title');
-    const names = getNamesForCopy(
-      this.assessment.tid,
-      oldNamesShort,
-      this.assessment.title,
-      oldNamesLong,
-    );
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+      debug('Generate TID and Title');
+      const names = getNamesForCopy(
+        this.assessment.tid,
+        oldNamesShort,
+        this.assessment.title,
+        oldNamesLong,
+      );
+      tid = names.shortName;
+      assessmentTitle = names.longName;
+    }
     const assessmentPath = path.join(assessmentsPath, tid);
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
@@ -545,6 +592,12 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
+    if (this.number_new) {
+      infoJson.number = this.number_new;
+    }
+    if (this.set_new) {
+      infoJson.set = this.set_new;
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
@@ -1521,21 +1574,55 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
+    const pathsToAdd: string[] = [];
+    const qidsToRemove = qidsToRemoveForQuestions(this.questions);
+
+    // Assessment files are rewritten under this course's repository path, so
+    // shared-question references from other courses must be ignored here.
+    const referencingAssessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: this.questions.map((q) => q.id),
+    });
+
+    for (const referenced of referencingAssessments) {
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        referenced.course_instance_short_name,
+        'assessments',
+        referenced.assessment_directory,
+        'infoAssessment.json',
+      );
+      let formattedJson: string;
+      try {
+        const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+        const { assessment: updatedInfoJson } = removeQidsFromAssessment(infoJson, qidsToRemove);
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      } catch (err) {
+        if (err instanceof AugmentedError) throw err;
+        throw new AugmentedError(`Unable to rewrite ${infoPath} while deleting questions.`, {
+          cause: err,
+        });
+      }
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+
     for (const question of this.questions) {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      const questionPath = path.join(this.course.path, 'questions', question.qid);
+      await fs.remove(questionPath);
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
+      pathsToAdd.push(questionPath);
     }
 
     return {
-      pathsToAdd: this.questions.flatMap((question) =>
-        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
-      ),
+      pathsToAdd,
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`
@@ -1587,25 +1674,22 @@ export class QuestionRenameEditor extends Editor {
 
     pathsToAdd.push(oldPath, newPath);
 
-    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_question,
-      { question_id: this.question.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
+    debug(
+      `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
     );
+    const assessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: [this.question.id],
+    });
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
-        assessment.course_instance_directory,
+        assessment.course_instance_short_name,
         'assessments',
         assessment.assessment_directory,
         'infoAssessment.json',
@@ -1613,30 +1697,19 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+      const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false as boolean;
-      infoJson.zones?.forEach((zone: any) => {
-        zone.questions?.forEach((question: any) => {
-          if (question.alternatives) {
-            question.alternatives?.forEach((alternative: any) => {
-              if (alternative.id === this.question.qid) {
-                alternative.id = this.qid_new;
-                found = true;
-              }
-            });
-          } else if (question.id === this.question.qid) {
-            question.id = this.qid_new;
-            found = true;
-          }
-        });
-      });
-      if (!found) {
-        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+      const { assessment: updatedInfoJson, renamedCount } = renameQidInAssessment(
+        infoJson,
+        existingQid,
+        this.qid_new,
+      );
+      if (renamedCount === 0) {
+        logger.info(`Should have but did not find ${existingQid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
       await fs.writeFile(infoPath, formattedJson);
     }
 
@@ -2497,3 +2570,367 @@ export class MultiEditor extends Editor {
 }
 
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
+
+/** A single question to import, with all file contents as serialized data. */
+export interface QtiImportQuestionData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  questionHtml: string;
+  serverPy?: string;
+  /** Map of filename -> base64-encoded content. */
+  clientFiles: Record<string, string>;
+  /** Whether this question should overwrite an existing question directory. */
+  overwrite?: boolean;
+}
+
+/** A single assessment to import, including its questions. */
+export interface QtiImportAssessmentData {
+  directoryName: string;
+  infoJson: Record<string, unknown>;
+  questions: QtiImportQuestionData[];
+}
+
+export class QtiImportEditor extends Editor {
+  private course_instance: CourseInstance;
+  private assessments: QtiImportAssessmentData[];
+  private questions: QtiImportQuestionData[];
+
+  constructor(
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
+      assessments: QtiImportAssessmentData[];
+      questions?: QtiImportQuestionData[];
+    },
+  ) {
+    const { course_instance } = params.locals;
+    super({
+      ...params,
+      description: `${course_instance.short_name}: Import QTI content`,
+    });
+    this.course_instance = course_instance;
+    this.assessments = params.assessments;
+    this.questions = params.questions ?? [];
+  }
+
+  async write() {
+    assert(this.course_instance.short_name, 'course_instance.short_name is required');
+
+    // If the course instance is publicly shared, imported assessments and
+    // questions must also be marked as shared to avoid a sync error.
+    const ciConfigPath = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'infoCourseInstance.json',
+    );
+    let shareSourcePublicly = false;
+    try {
+      const ciConfig = JSON.parse(await fs.readFile(ciConfigPath, 'utf-8'));
+      shareSourcePublicly = ciConfig.shareSourcePublicly === true;
+    } catch {
+      // Config may not exist yet or may be malformed; default to not sharing.
+    }
+
+    const questionsBaseDir = path.join(this.course.path, 'questions');
+    const assessmentsBaseDir = path.join(
+      this.course.path,
+      'courseInstances',
+      this.course_instance.short_name,
+      'assessments',
+    );
+
+    // Pre-validate all paths before writing anything to avoid partial state.
+    const existingQids = await discoverInfoDirs(questionsBaseDir, 'info.json');
+    const importedQids: string[] = [];
+    const questionsByDirectoryName = new Map<string, QtiImportQuestionData>();
+    for (const question of this.questions) {
+      questionsByDirectoryName.set(question.directoryName, question);
+    }
+    for (const assessment of this.assessments) {
+      for (const question of assessment.questions) {
+        if (!questionsByDirectoryName.has(question.directoryName)) {
+          questionsByDirectoryName.set(question.directoryName, question);
+        }
+      }
+    }
+
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+      if (!contains(questionsBaseDir, qDir)) {
+        throw new AugmentedError('Invalid question folder path', {
+          info: html`
+            <p>The question folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
+            </div>
+            <p>must be inside the questions directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+      // Validate that the new QID doesn't nest inside (or contain) an existing question.
+      validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
+      importedQids.push(question.directoryName);
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const name of Object.keys(question.clientFiles)) {
+          const filePath = path.join(cfDir, name);
+          if (!contains(cfDir, filePath)) {
+            throw new AugmentedError('Invalid client file path', {
+              info: html`
+                <p>The client file path</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                </div>
+                <p>must be inside the clientFilesQuestion directory</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                </div>
+              `,
+            });
+          }
+        }
+      }
+    }
+
+    for (const assessment of this.assessments) {
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+      if (!contains(assessmentsBaseDir, assessmentDir)) {
+        throw new AugmentedError('Invalid assessment folder path', {
+          info: html`
+            <p>The assessment folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentDir}</pre>
+            </div>
+            <p>must be inside the assessments directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${assessmentsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+    }
+
+    const pathsToAdd: string[] = [];
+
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+
+      // When overwriting, wipe the entire directory so stale artifacts
+      // (e.g. a previous server.py or old clientFilesQuestion entries)
+      // don't persist alongside the fresh import.
+      if (question.overwrite && (await fs.pathExists(qDir))) {
+        await fs.remove(qDir);
+      }
+
+      const qInfoJson = { ...question.infoJson };
+      if (shareSourcePublicly) {
+        qInfoJson.sharePublicly = true;
+        qInfoJson.shareSourcePublicly = true;
+      }
+      const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
+      await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
+      await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
+
+      if (question.serverPy) {
+        await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
+      }
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const [name, base64Content] of Object.entries(question.clientFiles)) {
+          await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
+        }
+      }
+
+      pathsToAdd.push(qDir);
+    }
+
+    for (const assessment of this.assessments) {
+      // Write the assessment (path already validated above).
+      const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
+      const aInfoJson = { ...assessment.infoJson };
+      if (shareSourcePublicly) {
+        aInfoJson.shareSourcePublicly = true;
+      }
+      const formattedAssessmentJson = await formatJsonWithPrettier(JSON.stringify(aInfoJson));
+      await fs.outputFile(path.join(assessmentDir, 'infoAssessment.json'), formattedAssessmentJson);
+
+      pathsToAdd.push(assessmentDir);
+    }
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `${this.course_instance.short_name}: import QTI content`,
+    };
+  }
+}
+
+type PrepareJsonFileEditorResult<T extends Record<string, unknown>> =
+  | {
+      success: true;
+      editor: FileModifyEditor;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
+    }
+  | { success: false; reason: 'conflict' };
+
+type SaveJsonFileResult<T extends Record<string, unknown>> =
+  | {
+      success: true;
+      /** Hash of the scoped section after the write. */
+      newHash: string;
+      /** The JSON contents after `applyChanges` was applied. */
+      jsonData: T;
+    }
+  | { success: false; reason: 'conflict' }
+  | { success: false; reason: 'sync_failed'; jobSequenceId: string };
+
+interface JsonFileEdit<T extends Record<string, unknown>> {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  conflictCheck: {
+    origHash: string | null;
+    /** The section of the JSON file to hash for conflict detection. */
+    scope: (jsonContents: T) => object | object[];
+  };
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+}
+
+/**
+ * Prepares a `FileModifyEditor` for a JSON file edit: reads the file, runs
+ * scoped conflict detection, applies the caller's mutation, formats the
+ * result, and constructs the editor without executing it. Useful when the
+ * edit needs to be bundled into a `MultiEditor` so it commits and syncs as
+ * part of a larger atomic operation.
+ */
+export async function prepareJsonFileEditor<T extends Record<string, unknown>>({
+  applyChanges,
+  jsonPath,
+  conflictCheck,
+  locals,
+  container,
+}: JsonFileEdit<T>): Promise<PrepareJsonFileEditorResult<T>> {
+  // Read file once for conflict check, content modification, and TOCTOU hash.
+  const rawContents = await fs.readFile(jsonPath, 'utf8');
+  const fullFileHash = computeFileContentHash(rawContents);
+  const jsonContents = JSON.parse(rawContents) as T;
+
+  // Scoped conflict detection: hash only the section being edited.
+  if (conflictCheck.origHash) {
+    const currentHash = computeStableHash(conflictCheck.scope(jsonContents));
+    if (currentHash !== conflictCheck.origHash) {
+      return { success: false, reason: 'conflict' };
+    }
+  }
+
+  const modifiedJsonContents = applyChanges(jsonContents);
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
+
+  // Use the full-file hash for FileModifyEditor's TOCTOU safety net.
+  const editor = new FileModifyEditor({
+    locals,
+    container,
+    filePath: jsonPath,
+    editContents: b64EncodeUnicode(formattedJson),
+    origHash: fullFileHash,
+  });
+
+  const newHash = computeStableHash(conflictCheck.scope(modifiedJsonContents));
+  return { success: true, editor, newHash, jsonData: modifiedJsonContents };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>(
+  args: JsonFileEdit<T>,
+): Promise<SaveJsonFileResult<T>> {
+  const prepared = await prepareJsonFileEditor(args);
+  if (!prepared.success) return prepared;
+
+  const serverJob = await prepared.editor.prepareServerJob();
+  try {
+    await prepared.editor.executeWithServerJob(serverJob);
+  } catch {
+    return { success: false, reason: 'sync_failed', jobSequenceId: serverJob.jobSequenceId };
+  }
+
+  return { success: true, newHash: prepared.newHash, jsonData: prepared.jsonData };
+}
+
+/**
+ * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
+ * access control references `labelName`. The caller supplies `transform` to
+ * either rename the label (rewrite array entries) or delete it (filter it
+ * out). Intended to be bundled with the `infoCourseInstance.json` edit in a
+ * `MultiEditor` so the changes commit and sync atomically.
+ *
+ * Affected assessments are located by joining through the synced
+ * `assessment_access_control_student_labels` table, matching the pattern
+ * used by `AssessmentSetRenameEditor`.
+ */
+export async function prepareAccessControlLabelRewriteEditors({
+  course,
+  courseInstanceId,
+  labelName,
+  transform,
+  locals,
+}: {
+  course: Course;
+  courseInstanceId: string;
+  labelName: string;
+  transform: (labels: string[]) => string[];
+  locals: { authz_data: AuthzData; course: Course; user: User };
+}): Promise<FileModifyEditor[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_student_label,
+    { course_instance_id: courseInstanceId, label_name: labelName },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessment of assessments) {
+    if (assessment.assessment_directory == null) continue;
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+    );
+    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges: (contents) => {
+        for (const rule of contents.accessControl ?? []) {
+          if (rule.labels == null) continue;
+          if (!rule.labels.includes(labelName)) continue;
+          rule.labels = transform(rule.labels);
+        }
+        return contents;
+      },
+      jsonPath: infoPath,
+      // No scoped hash: this edit is not driven by a user-held origHash.
+      // FileModifyEditor's full-file hash still guards against TOCTOU at
+      // write time, and shouldEdit() makes unchanged files a no-op.
+      conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    // `prepared` can only fail with reason 'conflict', which can't happen
+    // when origHash is null.
+    if (prepared.success) editors.push(prepared.editor);
+  }
+
+  return editors;
+}

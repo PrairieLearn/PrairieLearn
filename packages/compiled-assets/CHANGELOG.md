@@ -1,5 +1,40 @@
 # @prairielearn/compiled-assets
 
+## 4.1.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 4.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.1.4
+
+### Patch Changes
+
+- 54a4c6d: Use OS-assigned ports for esbuild development asset servers.
+- 382dbd8: Bump dependencies
+
+## 4.1.3
+
+### Patch Changes
+
+- d482019: Mark `fs/promises` and `module` as external in browser bundles to work around issues with `web-tree-sitter`.
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
 ## 4.1.2
 
 ### Patch Changes

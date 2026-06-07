@@ -4,10 +4,12 @@ Internal package that converts questions from interchange formats into PrairieLe
 
 ## CLI
 
-The `question-convert` binary is exposed via `package.json#bin`. Build the package once (`yarn workspace @prairielearn/question-conversion build`), then run:
+The package provides a command-line interface for converting content.
 
-```text
-question-convert <input> --course <dir> --course-instance <name> [flags]
+```sh
+# From the root of the PrairieLearn repository:
+make build
+node packages/question-conversion/dist/bin/convert.js <input> --course <dir> --course-instance <name>
 ```
 
 | Flag                       | Required | Description                                                                                                                                                                 |
@@ -25,7 +27,7 @@ question-convert <input> --course <dir> --course-instance <name> [flags]
 For programmatic use, `@prairielearn/question-conversion` exports a small surface from `src/index.ts`:
 
 - `convert`, `convertWith`, `parseAssessment` — high-level pipeline entry points.
-- `QTI12AssessmentParser`, `InputParser`, `ParseOptions` — parser layer.
+- `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.

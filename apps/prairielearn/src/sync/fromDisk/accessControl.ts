@@ -5,6 +5,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
+import type { CourseInstanceData } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -40,7 +42,7 @@ function validateAssessmentRules(
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
   // Reject them here to prevent label-targeted rules from being silently
-  // treated as main rules.
+  // treated as default rules.
   for (const rule of rules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !studentLabelIdByName.has(label));
@@ -82,15 +84,15 @@ function prepareRuleRow(
   const dateControl = rule.dateControl ?? {};
   const afterComplete = rule.afterComplete ?? {};
   const afterLastDeadline = dateControl.afterLastDeadline;
-  const isMainRule = ruleNumber === JSON_RULE_START;
+  const isDefaultRule = ruleNumber === JSON_RULE_START;
 
   const beforeReleaseListed = mapField(rule.beforeRelease?.listed);
-  const dueDateField = mapField(dateControl.dueDate);
+  const dueField = mapField(dateControl.due);
   const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline?.allowSubmissions);
+  const afterLastDeadlineField = mapField(afterLastDeadline);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -99,23 +101,27 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' = isMainRule ? 'none' : 'student_label';
+  const targetType: 'none' | 'student_label' = isDefaultRule ? 'none' : 'student_label';
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    // beforeRelease.listed is only configurable on the main rule.
-    before_release_listed: isMainRule ? (beforeReleaseListed.value ?? false) : null,
+    // beforeRelease.listed is only configurable on the default rule.
+    before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
     date_control_release_date: dateControl.release?.date ?? null,
-    date_control_due_date_overridden: dueDateField.overridden,
-    date_control_due_date: dueDateField.value,
+    date_control_due_overridden: dueField.overridden,
+    date_control_due_date: dueField.value?.date ?? null,
+    date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
+    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
     date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineAllowSubmissionsField.value,
+      afterLastDeadlineField.value?.allowSubmissions ?? null,
     date_control_after_last_deadline_credit:
-      afterLastDeadline?.allowSubmissions === true ? (afterLastDeadline.credit ?? null) : null,
+      afterLastDeadlineField.value?.allowSubmissions === true
+        ? (afterLastDeadlineField.value.credit ?? null)
+        : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
@@ -161,71 +167,86 @@ export interface AccessControlSyncInput {
   rules: AccessControlJson[];
 }
 
-/**
- * Syncs access control rules for multiple assessments in a single sproc call.
- * Returns a map of assessmentId → error message for assessments that failed
- * validation. Assessments that fail validation are deliberately excluded from
- * the sproc call so their existing database rules are preserved. This is
- * consistent with how other sync operations handle errors: invalid new config
- * should not destroy valid existing state.
- *
- * Returns a map of assessment ID → error message for assessments that failed
- * validation. Callers should attach these to the in-memory assessment infofiles
- * via `infofile.addError()` so they appear in the sync job log (the same way
- * other late-discovered validation errors like invalid exam UUIDs are reported).
- */
-export async function syncAllAccessControl(
-  courseInstanceId: string,
-  assessments: AccessControlSyncInput[],
-): Promise<Map<string, string>> {
-  const errors = new Map<string, string>();
-  if (assessments.length === 0) return errors;
-
-  // Query student labels once for the whole course instance.
+async function selectStudentLabelIdByName(courseInstanceId: string): Promise<Map<string, string>> {
   const existingLabels = await sqldb.queryRows(
     sql.select_student_labels,
     { course_instance_id: courseInstanceId },
     StudentLabelSchema,
   );
-  const studentLabelIdByName = new Map(existingLabels.map((g) => [g.name, g.id]));
+  return new Map(existingLabels.map((g) => [g.name, g.id]));
+}
 
-  // Collect all exam UUIDs across all assessments and validate once.
+async function selectInvalidExamUuids(
+  assessments: { rules: AccessControlJson[] }[],
+): Promise<Set<string>> {
   const invalidExamUuids = new Set<string>();
-  if (config.checkAccessRulesExamUuid) {
-    const allExamUuids = new Set<string>();
-    for (const { rules } of assessments) {
-      for (const rule of rules) {
-        for (const e of rule.integrations?.prairieTest?.exams ?? []) {
-          if (UUID_REGEX.test(e.examUuid)) {
-            allExamUuids.add(e.examUuid);
-          }
+  if (!config.checkAccessRulesExamUuid) return invalidExamUuids;
+
+  const allExamUuids = new Set<string>();
+  for (const { rules } of assessments) {
+    for (const rule of rules) {
+      for (const e of rule.integrations?.prairieTest?.exams ?? []) {
+        if (UUID_REGEX.test(e.examUuid)) {
+          allExamUuids.add(e.examUuid);
         }
       }
     }
-
-    if (allExamUuids.size > 0) {
-      const examValidation = await sqldb.queryRows(
-        sql.check_exam_uuids_exist,
-        { exam_uuids: JSON.stringify([...allExamUuids]) },
-        z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
-      );
-      for (const { uuid, uuid_exists } of examValidation) {
-        if (!uuid_exists) invalidExamUuids.add(uuid);
-      }
-    }
   }
 
-  // Per-assessment validation.
-  for (const { assessmentId, rules } of assessments) {
+  if (allExamUuids.size === 0) return invalidExamUuids;
+
+  const examValidation = await sqldb.queryRows(
+    sql.check_exam_uuids_exist,
+    { exam_uuids: JSON.stringify([...allExamUuids]) },
+    z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
+  );
+  for (const { uuid, uuid_exists } of examValidation) {
+    if (!uuid_exists) invalidExamUuids.add(uuid);
+  }
+
+  return invalidExamUuids;
+}
+
+/**
+ * Validates access-control constraints that depend on synced database rows and
+ * records any resulting errors on assessment infofiles. This must run after
+ * course instances and student labels are synced, but before assessments are
+ * synced, so `assessments.sync_errors` includes these errors.
+ */
+export async function validateAccessControl(
+  courseInstanceId: string,
+  assessments: CourseInstanceData['assessments'],
+): Promise<void> {
+  const validationTargets: { tid: string; rules: AccessControlJson[] }[] = [];
+  for (const [tid, assessment] of Object.entries(assessments)) {
+    if (infofile.hasErrors(assessment) || !assessment.data?.accessControl?.length) continue;
+    validationTargets.push({ tid, rules: assessment.data.accessControl });
+  }
+  if (validationTargets.length === 0) return;
+
+  const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
+  const invalidExamUuids = await selectInvalidExamUuids(validationTargets);
+
+  for (const { tid, rules } of validationTargets) {
     const error = validateAssessmentRules(rules, studentLabelIdByName, invalidExamUuids);
     if (error) {
-      errors.set(assessmentId, error);
+      infofile.addError(assessments[tid], error);
     }
   }
+}
 
-  // Build batched data arrays. Assessments with validation errors are excluded
-  // entirely so their existing database rules are preserved (not cleaned up).
-  const validAssessmentIds: string[] = [];
+/**
+ * Syncs access control rules for multiple assessments in a single sproc call.
+ * Inputs must already have been checked with `validateAccessControl()`.
+ */
+export async function syncAccessControl(
+  courseInstanceId: string,
+  assessments: AccessControlSyncInput[],
+): Promise<void> {
+  if (assessments.length === 0) return;
+
+  const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
+  const assessmentIds: string[] = [];
   const allRuleRows: string[] = [];
   const allStudentLabels: string[] = [];
   const allEarlyDeadlines: string[] = [];
@@ -233,8 +254,7 @@ export async function syncAllAccessControl(
   const allPrairietestExams: string[] = [];
 
   for (const { assessmentId, rules } of assessments) {
-    if (errors.has(assessmentId)) continue;
-    validAssessmentIds.push(assessmentId);
+    assessmentIds.push(assessmentId);
 
     for (let i = 0; i < rules.length; i++) {
       const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
@@ -252,7 +272,7 @@ export async function syncAllAccessControl(
     'sync_access_control',
     [
       courseInstanceId,
-      validAssessmentIds,
+      assessmentIds,
       allRuleRows,
       allStudentLabels,
       allEarlyDeadlines,
@@ -261,6 +281,4 @@ export async function syncAllAccessControl(
     ],
     z.unknown(),
   );
-
-  return errors;
 }

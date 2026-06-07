@@ -290,7 +290,7 @@ const CourseInstanceRoleRowSchema = z.object({
   course_instance_role_formatted: z.string(),
 });
 
-export const CourseUsersRowSchema = z.object({
+const CourseUsersRowSchema = z.object({
   user: UserSchema,
   course_permission: CoursePermissionSchema,
   course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),

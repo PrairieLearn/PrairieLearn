@@ -39,5 +39,20 @@ export function prairieLearnConfig(
         ],
       },
     },
+    // PrairieLearn elements (e.g., <pl-sketch-tool id="fd">) treat `id` as an
+    // element-scoped identifier, not a DOM id, so `@html-eslint/no-duplicate-id`
+    // produces false positives.
+    {
+      rules: {
+        '@html-eslint/no-duplicate-id': 'off',
+        '@prairielearn/html-no-duplicate-id': 'error',
+      },
+    },
+    {
+      files: ['**/src/trpc/**/*.ts'],
+      rules: {
+        '@prairielearn/require-trpc-permission-middleware': 'error',
+      },
+    },
   ];
 }

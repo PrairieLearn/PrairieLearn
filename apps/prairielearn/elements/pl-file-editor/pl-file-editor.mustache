@@ -6,7 +6,7 @@ $(function() {
     new window.PLFileEditor(UUID, {
         originalContents: "{{original_file_contents}}",
         currentContents: "{{current_file_contents}}",
-        readOnly: {{read_only}},
+        readOnly: {{#editable}}false{{/editable}}{{^editable}}true{{/editable}},
         aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
         aceModePath: {{#ace_mode_path}}"{{ace_mode_path}}"{{/ace_mode_path}}{{^ace_mode_path}}undefined{{/ace_mode_path}},
         aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}},
@@ -64,6 +64,7 @@ $(function() {
             <div class="card-footer">Preview</div>
             <div class="preview p-2 mathjax_process"></div>
         {{/preview}}
+        {{#editable}}
         <div class="card-footer d-flex">
             <div class="ms-auto">
                 <button type="button" class="btn btn-outline-secondary btn-sm restore-original">Restore original file</button>
@@ -73,6 +74,7 @@ $(function() {
                 </div>
             </div>
         </div>
+        {{/editable}}
     </div>
     {{submission}}
 </div>

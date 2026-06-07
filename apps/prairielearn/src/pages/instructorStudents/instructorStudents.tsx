@@ -20,7 +20,7 @@ import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import type { CourseInstance } from '../../lib/db-types.js';
-import { getOriginalHash } from '../../lib/editors.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
@@ -95,9 +95,9 @@ const InviteUidsBodySchema = z.object({
 
 const SyncStudentsBodySchema = z.object({
   __action: z.literal('sync_students'),
-  toInvite: z.array(z.string().email()).max(5000),
-  toCancelInvitation: z.array(z.string().email()).max(5000),
-  toRemove: z.array(z.string().email()).max(5000),
+  toInvite: z.array(z.email()).max(5000),
+  toCancelInvitation: z.array(z.email()).max(5000),
+  toRemove: z.array(z.email()).max(5000),
 });
 
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
