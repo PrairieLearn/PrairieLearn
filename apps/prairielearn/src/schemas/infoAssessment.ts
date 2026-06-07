@@ -493,11 +493,6 @@ export const AssessmentJsonSchema = z
         'Requires the student to accept an honor code before starting the assessment. Set to true for Exam assessments by default. Only configurable for Exam assessments.',
       )
       .optional(),
-    // Optional assessment-level flag. When omitted, question titles remain hidden during exams
-    showQuestionTitles: z
-      .boolean()
-      .describe('Whether to show question titles to students during the exam')
-      .optional(),
     honorCode: z
       .string()
       .describe(

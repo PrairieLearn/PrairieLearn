@@ -105,10 +105,6 @@
       "type": "boolean",
       "description": "Requires the student to accept an honor code before starting the assessment. Set to true for Exam assessments by default. Only configurable for Exam assessments."
     },
-    "showQuestionTitles": {
-      "description": "Whether to show question titles to students during the exam",
-      "type": "boolean"
-    },
     "honorCode": {
       "type": "string",
       "description": "Custom text for the honor code to be accepted before starting the assessment. Supports Markdown formatting; HTML is not supported. Only available for Exam assessments."

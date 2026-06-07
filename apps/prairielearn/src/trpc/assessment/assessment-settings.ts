@@ -364,56 +364,6 @@ const updateAssessment = t.procedure
         message: shortNameValidation.lowercaseMessage,
       });
     }
-
-    const rootPath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-    
-    const infoAssessmentPath = path.join(rootPath, 'infoAssessment.json');
-
-    const assessmentInfo: AssessmentJsonInput = JSON.parse(
-      await fs.readFile(infoAssessmentPath, 'utf8'),
-    );
-
-    assessmentInfo.title = input.title;
-    assessmentInfo.set = input.set;
-    assessmentInfo.number = input.number;
-    if (assessmentInfo.module != null || input.module !== 'Default') {
-      assessmentInfo.module = input.module;
-    }
-    const normalizedText = input.text?.replaceAll('\r\n', '\n');
-    assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
-    assessmentInfo.allowIssueReporting = propertyValueWithDefault(
-      assessmentInfo.allowIssueReporting,
-      input.allow_issue_reporting,
-      true,
-    );
-    assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
-      assessmentInfo.allowPersonalNotes,
-      input.allow_personal_notes,
-      true,
-    );
-    assessmentInfo.showQuestionTitles = propertyValueWithDefault(
-      assessmentInfo.showQuestionTitles,
-      input.showQuestionTitles ?? (assessment.type === 'Exam' ? false : true),
-      assessment.type === 'Exam' ? false : true,
-    );
-
-    assessmentInfo.tools = assessmentInfo.tools ?? {};
-    for (const tool of EnumAssessmentToolSchema.options) {
-      const enabled = input.tools?.[tool] ?? false;
-      // Only update the tool if it was already defined in the assessmentInfo
-      // or if it's being enabled. This prevents accidentally adding new tools
-      // to the assessmentInfo when editing an existing assessment that doesn't
-      // have those tools configured.
-      if (tool in assessmentInfo.tools || enabled) {
-        assessmentInfo.tools[tool] = { ...assessmentInfo.tools[tool], enabled };
-      }
-    }
     if (
       locals.question_sharing_enabled &&
       input.share_source_publicly &&

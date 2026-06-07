@@ -214,7 +214,6 @@ const minimalStudentAssessment: z.input<typeof StudentAssessmentSchema> = {
   multiple_instance: false,
   number: 'A1',
   require_honor_code: null,
-  show_question_titles: false,
   shuffle_questions: null,
   team_work: false,
   text: null,

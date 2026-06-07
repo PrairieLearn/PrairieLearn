@@ -425,9 +425,6 @@ function getParamsForAssessment(
       assessment.requireHonorCode == null
         ? assessment.type === 'Exam'
         : assessment.requireHonorCode,
-    // Default to false when the field is omitted from infoAssessment
-    show_question_titles:
-      assessment.showQuestionTitles ?? (assessment.type === 'Exam' ? false : true),
     honor_code: assessment.honorCode,
     auto_close: assessment.autoClose,
     max_points: assessment.maxPoints,
