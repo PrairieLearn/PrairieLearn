@@ -89,6 +89,7 @@ const QUESTION_GENERATION_TOOLS = {
       path: z.enum(['question.html', 'server.py']),
       content: z.string(),
     }),
+    outputSchema: z.null(),
   }),
   getElementDocumentation: tool({
     inputSchema: z.object({
@@ -407,6 +408,14 @@ async function createQuestionGenerationAgent({
         ...QUESTION_GENERATION_TOOLS.writeFile,
         execute: ({ path, content }) => {
           files[path] = content;
+          // TODO: see the following issue and PR. If they're ever resolved,
+          // we can consider removing this return value.
+          // https://github.com/vercel/ai/issues/15854
+          // https://github.com/vercel/ai/pull/15855
+          //
+          // We return `null` (the value also backfilled for historical
+          // output-less parts on load) so old and new data share a shape.
+          return null;
         },
       }),
       getElementDocumentation: tool({
