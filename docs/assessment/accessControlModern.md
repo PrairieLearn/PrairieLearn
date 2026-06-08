@@ -2,20 +2,18 @@
 
 PrairieLearn access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides from the assessment **Access** page.
 
-!!! note "Legacy `allowAccess`"
-
-    Existing assessments that still use `allowAccess` can continue to use the [legacy access control documentation](accessControlLegacy.md). New assessments should use the `accessControl` format documented here.
-
 ## Access control checks
 
-In PrairieLearn there are two checks that determine whether a student has access to an assessment:
+PrairieLearn checks access at two levels:
 
-1. The **course instance** must be published to the student, and the student must be enrolled in the course instance. The `publishing` configuration in [infoCourseInstance.json](../courseInstance/index.md#publishing-controls) alongside [publishing extensions](../courseInstance/index.md#publishing-extensions) can be used to publish the course instance. Students are able to view the course instance as long as they are enrolled and the course instance is published. This does not by itself grant them access to any assessments in the course instance.
-2. The student must also have access to the specific **assessment**. In modern access control, this access is granted with `accessControl` rules in [infoAssessment.json](../assessment/overview.md), plus any student-specific overrides configured on the assessment **Access** page. Even if a student has been granted access to an assessment, they will only be able to actually access it if they also have access to the course instance.
+1. The **course instance** must be available to the student. The student must be enrolled in the course instance, and the course instance must be published or otherwise visible through its [publishing controls](../courseInstance/index.md#publishing-controls).
+2. The **assessment** must grant the student access. Configure assessment access from the assessment **Access** page: **Defaults** apply to all students, and **Overrides** apply to selected student labels or specific students.
 
-!!! note
+These two checks are both required. Publishing a course instance lets enrolled students see the course instance, but it does not by itself grant access to every assessment in it. Granting assessment access only works for students who can also access the course instance.
 
-    Existing assessments may still use legacy `allowAccess` rules for the assessment-level check.
+!!! note "Legacy `allowAccess`"
+
+    File-backed assessment access settings are stored as `accessControl` in `infoAssessment.json`. Existing assessments that still use `allowAccess` can continue to do so. New assessments should use the **Access** page and the `accessControl` format documented here. See the [legacy access control documentation](accessControlLegacy.md) for details about the older format.
 
 ## Open the Access page
 
@@ -24,7 +22,7 @@ From an assessment, open the **Access** tab. The page has two sections:
 - **Defaults**: settings that apply to all students.
 - **Overrides**: settings that apply only to selected student labels or specific students.
 
-![Modern access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
+![Access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
 /// caption
 The Access page summarizes the active configuration and lists every override that applies to the assessment.
 ///
@@ -35,7 +33,7 @@ The summary card shows the current access state, the release/due timeline, credi
 
 Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
-![Defaults editor panel for modern access control](accessControlModern/02-defaults-editor.png)
+![Defaults editor panel for access control](accessControlModern/02-defaults-editor.png)
 /// caption
 Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
 ///
