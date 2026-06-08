@@ -3,8 +3,7 @@ import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
 
-import { type ColumnFilter } from './TanstackTable.js';
-import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { type ColumnFilter, TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
 function HiddenMeasurementHeader<TData>({
   table,

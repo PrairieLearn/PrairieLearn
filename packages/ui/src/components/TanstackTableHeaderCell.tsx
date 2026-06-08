@@ -1,9 +1,10 @@
 import { flexRender } from '@tanstack/react-table';
 import type { Header, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
-import { type ColumnFilter } from './TanstackTable.js';
+/** Renders the filter control in a column header. */
+export type ColumnFilter<TData> = (props: { header: Header<TData, unknown> }) => ReactNode;
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {

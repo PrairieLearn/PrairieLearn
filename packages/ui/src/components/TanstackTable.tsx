@@ -1,6 +1,6 @@
 import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { Cell, Header, Row, Table } from '@tanstack/table-core';
+import type { Cell, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -14,7 +14,7 @@ import {
   TanstackTableDownloadButton,
   type TanstackTableDownloadButtonProps,
 } from './TanstackTableDownloadButton.js';
-import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { type ColumnFilter, TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
 function TableCell<RowDataModel>({
@@ -80,9 +80,6 @@ const DefaultNoResultsState = (
 const DefaultEmptyState = (
   <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
-
-/** Renders the filter control in a column header. */
-export type ColumnFilter<TData> = (props: { header: Header<TData, unknown> }) => ReactNode;
 
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
