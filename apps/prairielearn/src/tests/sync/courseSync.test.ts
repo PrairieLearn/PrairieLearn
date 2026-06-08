@@ -158,7 +158,6 @@ describe('Course syncing', () => {
     const syncResults = await util.syncCourseData(courseDir);
 
     assert.equal(syncResults.status, 'complete');
-    if (syncResults.status !== 'complete') return;
     assert.isTrue(syncResults.hadJsonErrors);
 
     const invalidElement = syncResults.courseData.courseElements['invalid-element'];
