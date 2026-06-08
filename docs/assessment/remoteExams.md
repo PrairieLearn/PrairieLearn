@@ -31,9 +31,7 @@ For a PrairieTest-only access path, configure the PrairieTest exam UUID and leav
 Some notes about this configuration:
 
 - The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid`, and it's vital that the correct value is used for each separate exam.
-- Do not configure date control or a PrairieLearn time limit for the PrairieTest-only access path. PrairieTest enforces scheduling and time limits on a per-student basis, taking into account conflict exams and disability accommodations.
-- PrairieTest also has a per-exam after-completion setting for the period after a student finishes but before their reservation ends. Use that setting only if you need to control review while the student is still in the testing environment.
-- With no date control configured, PrairieTest is the only access path. Add date control or overrides only if students should have non-PrairieTest access.
+- Do not configure date control or a PrairieLearn time limit unless students should have a non-PrairieTest access path. PrairieTest enforces scheduling and time limits, including conflict exams and disability accommodations.
 
 ## Testing center exams with a few students outside the testing center
 
@@ -58,9 +56,6 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
         "due": { "date": "2020-04-20T12:40:00" },
-        "afterLastDeadline": {
-          "allowSubmissions": false
-        },
         "durationMinutes": 90
       }
     }
@@ -135,7 +130,7 @@ Some notes about this configuration:
 - If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and login to PrairieLearn again, and continue taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
 - Remember to extend both the `due` date and `durationMinutes` for students with extra-time accommodations.
 - Students who need both a conflict exam and extra time should receive a student-specific override, or a dedicated label override listed below the other matching overrides.
-- After the timer expires the exam will auto-close and grade any saved but ungraded questions. The `afterLastDeadline` setting keeps the assessment view-only after the exam window, so students can see their final score but cannot submit. Students will be unable to see any of the questions unless the `afterComplete` visibility settings allow it.
+- After the timer expires the exam will auto-close and grade any saved but ungraded questions. The `afterLastDeadline` setting keeps the assessment available in a view-only state after the exam window, without allowing submissions. Students will be unable to see any of the questions unless the `afterComplete` visibility settings allow it.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
 - This configuration sets `afterComplete.questions.hidden` to `true` so students can see their score after the exam, but cannot review questions once their exam window or timer has ended. This limits post-exam review outside the exam window; it does not prevent students from seeing questions or grading feedback while they are taking the exam.
