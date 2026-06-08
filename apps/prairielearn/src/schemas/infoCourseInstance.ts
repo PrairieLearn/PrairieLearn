@@ -51,10 +51,7 @@ const PublishingJsonSchema = z.object({
 
 export const StudentLabelJsonSchema = z
   .object({
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID v4).'),
     name: z
       .string()
       .trim()
@@ -71,10 +68,7 @@ export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 export const CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID v4).'),
     longName: z.string().describe("The long name of this course instance (e.g., 'Spring 2015')."),
     shortName: z.string().meta({ deprecated: true }).optional(),
     timezone: z

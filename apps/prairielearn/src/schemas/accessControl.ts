@@ -105,13 +105,7 @@ const ExamAfterCompleteJsonSchema = z
 
 const ExamJsonSchema = z
   .object({
-    examUuid: z
-      .string()
-      .regex(
-        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-        'Invalid UUID format',
-      )
-      .describe('UUID of associated PrairieTest exam'),
+    examUuid: z.uuid({ version: 'v4' }).describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
     afterComplete: ExamAfterCompleteJsonSchema.describe(
       'Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.',

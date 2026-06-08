@@ -26,7 +26,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 }
 
 const JSON_RULE_START = 0;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Validates constraints that require database state: student label existence
@@ -186,7 +185,7 @@ async function selectInvalidExamUuids(
   for (const { rules } of assessments) {
     for (const rule of rules) {
       for (const e of rule.integrations?.prairieTest?.exams ?? []) {
-        if (UUID_REGEX.test(e.examUuid)) {
+        if (z.uuid().safeParse(e.examUuid).success) {
           allExamUuids.add(e.examUuid);
         }
       }
