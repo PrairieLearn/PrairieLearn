@@ -198,15 +198,16 @@ Set the point value if you want, then click **Save**.
 
 ## 8. Configure assessment access rules
 
-Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` block:
+Open the **Files** tab and edit `infoAssessment.json`. Add an `accessControl` block:
 
 ```json title="infoAssessment.json"
 {
-  "allowAccess": [
+  "accessControl": [
     {
-      "startDate": "2025-09-01T20:00:00",
-      "endDate": "2025-09-06T20:00:00",
-      "credit": 100
+      "dateControl": {
+        "release": { "date": "2025-09-01T20:00:00" },
+        "due": { "date": "2025-09-06T20:00:00" }
+      }
     }
   ]
 }

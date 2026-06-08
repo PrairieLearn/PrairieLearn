@@ -317,7 +317,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](../assessment/accessControl.md) for more details.
+It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [controlling access by institution](#controlling-access-by-institution) for more details.
 
 ### LTI linking into an assessment
 

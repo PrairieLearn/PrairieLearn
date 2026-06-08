@@ -2,7 +2,7 @@
 
 This page lists sample assessment configurations for remote exams, where students are not physically present in the same location as the proctors.
 
-_See the [Access control](accessControl.md) documentation for details on `allowAccess` rules._
+_These examples use legacy `allowAccess` rules. See the [legacy access control](accessControlLegacy.md) documentation for details on that format._
 
 ## Exams in a PrairieTest-managed testing center
 

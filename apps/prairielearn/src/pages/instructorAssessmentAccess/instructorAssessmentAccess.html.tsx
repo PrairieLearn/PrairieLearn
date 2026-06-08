@@ -214,7 +214,7 @@ export function InstructorAssessmentAccess({
           <small>
             Instructions on how to change the access rules can be found in the
             <a
-              href="https://docs.prairielearn.com/assessment/accessControl/"
+              href="https://docs.prairielearn.com/assessment/accessControlLegacy/"
               target="_blank"
               rel="noreferrer"
               >PrairieLearn documentation</a
