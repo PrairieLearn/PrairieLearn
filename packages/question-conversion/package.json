@@ -27,7 +27,8 @@
     "fast-xml-parser": "^5.8.0",
     "he": "^1.2.0",
     "mime": "^4.1.0",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
