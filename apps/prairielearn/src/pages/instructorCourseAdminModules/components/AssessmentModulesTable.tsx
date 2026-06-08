@@ -290,8 +290,11 @@ function AssessmentModulesCard({
     ...trpc.assessmentModules.save.mutationOptions(),
     onSuccess: async (result) => {
       setOrigHashOverride(result.origHash);
-      await refetch();
-      setEditMode(false);
+      try {
+        await refetch();
+      } finally {
+        setEditMode(false);
+      }
     },
   });
 

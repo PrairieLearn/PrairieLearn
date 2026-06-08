@@ -40,11 +40,10 @@ export function EditAssessmentModuleModal({
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!assessmentModule) return;
-    onSave({
-      ...assessmentModule,
-      name: assessmentModule.name.trim(),
-      heading: assessmentModule.heading.trim(),
-    });
+    const name = assessmentModule.name.trim();
+    const heading = assessmentModule.heading.trim();
+    if (!name || !heading) return;
+    onSave({ ...assessmentModule, name, heading });
   }
 
   const nameConflicts =
@@ -73,6 +72,8 @@ export function EditAssessmentModuleModal({
                   className="form-control"
                   id="module-name"
                   value={assessmentModule.name}
+                  aria-invalid={nameConflicts || undefined}
+                  aria-errormessage={nameConflicts ? 'module-name-warning' : undefined}
                   aria-describedby={nameConflicts ? 'module-name-warning' : undefined}
                   disabled={lockName}
                   required
