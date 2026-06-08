@@ -6,6 +6,7 @@ export {
   TanstackTableCard,
   TanstackTableEmptyState,
 } from './components/TanstackTable.js';
+export { type ColumnFilter } from './components/TanstackTableHeaderCell.js';
 export { ColumnManager } from './components/ColumnManager.js';
 export {
   TanstackTableDownloadButton,

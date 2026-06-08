@@ -1,6 +1,6 @@
 import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { Cell, Header, Row, Table } from '@tanstack/table-core';
+import type { Cell, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -14,7 +14,7 @@ import {
   TanstackTableDownloadButton,
   type TanstackTableDownloadButtonProps,
 } from './TanstackTableDownloadButton.js';
-import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { type ColumnFilter, TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
 function TableCell<RowDataModel>({
@@ -84,7 +84,7 @@ const DefaultEmptyState = (
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
   title: string;
-  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
+  filters?: Record<string, ColumnFilter<RowDataModel>>;
   rowHeight?: number;
   noResultsState?: ReactNode;
   emptyState?: ReactNode;

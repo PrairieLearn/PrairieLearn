@@ -11,8 +11,14 @@
     "node": ">=24.0.0"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./*.css": "./dist/*.css"
+    ".": {
+      "@prairielearn/source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*.css": {
+      "@prairielearn/source": "./src/*.css",
+      "default": "./dist/*.css"
+    }
   },
   "scripts": {
     "build": "tsgo && tscp",

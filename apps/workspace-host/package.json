@@ -7,9 +7,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "build": "tsgo && tscp",
+    "build": "tsgo -p tsconfig.build.json && tscp -p tsconfig.build.json",
     "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
-    "dev:no-watch": "tsx src/interface.js",
+    "dev:no-watch": "tsx --conditions=@prairielearn/source src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
   },

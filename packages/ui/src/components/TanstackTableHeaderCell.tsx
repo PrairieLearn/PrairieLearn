@@ -3,6 +3,9 @@ import type { Header, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import type { CSSProperties, ReactNode } from 'react';
 
+/** Renders the filter control in a column header. */
+export type ColumnFilter<TData> = (props: { header: Header<TData, unknown> }) => ReactNode;
+
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
     return <i className="bi bi-sort-up-alt" aria-hidden="true" />;
@@ -104,7 +107,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
   measurementMode = false,
 }: {
   header: Header<RowDataModel, unknown>;
-  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
+  filters: Record<string, ColumnFilter<RowDataModel>>;
   table: Table<RowDataModel>;
   handleResizeEnd?: () => void;
   isPinned: 'left' | false;

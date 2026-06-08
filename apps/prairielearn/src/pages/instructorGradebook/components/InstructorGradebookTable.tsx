@@ -16,6 +16,7 @@ import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
+  type ColumnFilter,
   type ColumnFilterEntry,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
@@ -375,44 +376,26 @@ function GradebookTable({
     }
   };
 
-  const filters = useMemo(() => {
-    const assessmentFilters: Record<
-      string,
-      (props: { header: Header<GradebookRow, unknown> }) => React.ReactNode
-    > = {};
-
-    courseAssessments.forEach((assessment) => {
-      const columnId = `a${assessment.assessment_id}`;
-      assessmentFilters[columnId] = ({ header }: { header: Header<GradebookRow, unknown> }) => {
-        return <NumericInputColumnFilter column={header.column} />;
-      };
-    });
-
-    const labelIds = studentLabels.map((l) => l.id);
-
+  const filters = useMemo<Record<string, ColumnFilter<GradebookRow>>>(() => {
     return {
-      role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
+      role: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={ROLE_VALUES}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      enrollment_status: ({ header }: { header: Header<GradebookRow, EnumEnrollmentStatus> }) => (
+      enrollment_status: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
           allColumnValues={STATUS_VALUES}
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
-      student_labels: ({
-        header,
-      }: {
-        header: Header<GradebookRow, GradebookRow['student_label_ids']>;
-      }) => (
+      student_labels: ({ header }) => (
         <MultiSelectColumnFilter
           column={header.column}
-          allColumnValues={labelIds}
+          allColumnValues={studentLabels.map((l) => l.id)}
           renderValueLabel={({ value }) => {
             const label = studentLabelsById.get(value);
             if (!label) return <span>{value}</span>;
@@ -420,7 +403,14 @@ function GradebookTable({
           }}
         />
       ),
-      ...assessmentFilters,
+      ...Object.fromEntries(
+        courseAssessments.map((assessment) => [
+          `a${assessment.assessment_id}`,
+          ({ header }: { header: Header<GradebookRow, unknown> }) => (
+            <NumericInputColumnFilter column={header.column} />
+          ),
+        ]),
+      ),
     };
   }, [courseAssessments, studentLabels, studentLabelsById]);
 

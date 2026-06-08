@@ -1,0 +1,13 @@
+{
+  // Emit config. Extends the editor/typecheck config (`tsconfig.json`) but
+  // resets `customConditions` so `@prairielearn/*` workspace packages resolve to
+  // built `dist/` instead of source, and turns emit back on into `../dist`.
+  // Referenced from `../tsconfig.json` and used by `tsgo --build`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "customConditions": [],
+    "rootDir": "./",
+    "outDir": "../dist"
+  }
+}

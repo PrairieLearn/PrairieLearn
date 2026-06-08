@@ -12,8 +12,14 @@
   },
   "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./zip": "./dist/zip/index.js"
+    ".": {
+      "@prairielearn/source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./zip": {
+      "@prairielearn/source": "./src/zip/index.ts",
+      "default": "./dist/zip/index.js"
+    }
   },
   "scripts": {
     "build": "tsgo",

@@ -36,9 +36,16 @@ export interface CompiledAssetsOptions {
   buildDirectory?: string;
   /** The path that assets will be served from, e.g. `/build/`. */
   publicPath?: string;
+  /**
+   * Additional package.json export conditions to apply.
+   */
+  conditions?: string[];
 }
 
-let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
+// `conditions` is intentionally left unset by default so that esbuild keeps all
+// of its automatically-included conditions.
+let options: Required<Omit<CompiledAssetsOptions, 'conditions'>> &
+  Pick<CompiledAssetsOptions, 'conditions'> = { ...DEFAULT_OPTIONS };
 
 let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
@@ -76,6 +83,11 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     options.publicPath += '/';
   }
 
+  // Re-add the module condition if any custom conditions are set
+  const conditions = options.conditions
+    ? [...options.conditions.filter((condition) => condition !== 'module'), 'module']
+    : undefined;
+
   if (options.dev) {
     // Use esbuild's asset server in development.
     //
@@ -105,6 +117,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     esbuildServer = await serveEsbuildContext(esbuildContext);
@@ -136,6 +149,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       define: {
         'process.env.NODE_ENV': '"development"',
       },
+      conditions,
       external: NODE_ONLY_EXTERNALS,
     });
     splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);

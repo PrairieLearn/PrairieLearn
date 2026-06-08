@@ -49,13 +49,13 @@ refresh-workspace-hosts-dev:
 	@pnpm refresh-workspace-hosts-dev
 
 dev: start-support python-deps
-	@pnpm dev
+	@pnpm --filter @prairielearn/prairielearn dev
 dev-vite: start-support python-deps
-	@pnpm dev-vite
+	@pnpm --filter @prairielearn/prairielearn dev:vite
 dev-bun: python-deps
-	@pnpm dev-bun
+	@pnpm --filter @prairielearn/prairielearn dev:bun
 dev-workspace-host: start-support
-	@pnpm dev-workspace-host
+	@pnpm --filter @prairielearn/workspace-host dev
 dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
