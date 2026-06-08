@@ -18,7 +18,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
-import { UUID_REGEXP } from '../lib/string-util.js';
+import { UUID_REGEXP_INLINE } from '../lib/string-util.js';
 import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
@@ -185,7 +185,7 @@ const DEFAULT_TAGS: TagJson[] = [
 ];
 
 // For finding all v4 UUIDs in a string/file
-const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP.source})"`, 'g');
+const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP_INLINE.source})"`, 'g');
 
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
@@ -460,7 +460,7 @@ export async function loadInfoFile<T = { uuid: string }>({
       if (!json.uuid) {
         return infofile.makeError('UUID is missing');
       }
-      if (!UUID_REGEXP.test(json.uuid)) {
+      if (!z.uuid().safeParse(json.uuid).success) {
         return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
       }
     }
@@ -519,7 +519,7 @@ export async function loadInfoFile<T = { uuid: string }>({
 
       // Extract and store UUID. Checking for a falsy value isn't technically
       // required, but it keeps TypeScript happy.
-      const uuid = match[0].match(UUID_REGEXP);
+      const uuid = match[0].match(UUID_REGEXP_INLINE);
       if (!uuid) {
         infofile.addError(result, 'UUID not found in file');
         return result;
