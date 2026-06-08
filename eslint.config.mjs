@@ -222,7 +222,6 @@ export default [
   globalIgnores([
     '.claude/worktrees/*',
     '.venv/*',
-    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'testCourse',
