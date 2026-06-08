@@ -2,13 +2,13 @@
 
 This page lists sample assessment configurations for remote exams, where students are not physically present in the same location as the proctors.
 
-These examples use modern [`accessControl`](accessControl.md). Existing assessments that still use `allowAccess` can use the [legacy access control](accessControlLegacy.md) documentation.
+These examples use [`accessControl`](accessControl.md). Existing assessments that still use `allowAccess` can use the [legacy access control](accessControlLegacy.md) documentation.
 
 Student-specific access overrides are managed from the assessment **Access** page and are stored in PrairieLearn. The JSON examples below use [student labels](../courseInstance/index.md#student-labels) for repeated cohorts such as conflict exams, remote makeups, and extra-time accommodations.
 
 ## Exams in a PrairieTest-managed testing center
 
-If you are using PrairieTest for remote proctoring then the access control should look like:
+For a PrairieTest-only access path, configure the PrairieTest exam UUID and leave date control disabled:
 
 ```json
 {
@@ -18,10 +18,7 @@ If you are using PrairieTest for remote proctoring then the access control shoul
         "prairieTest": {
           "exams": [
             {
-              "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-              "afterComplete": {
-                "questions": { "hidden": true }
-              }
+              "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228"
             }
           ]
         }
@@ -35,7 +32,7 @@ Some notes about this configuration:
 
 - The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid`, and it's vital that the correct value is used for each separate exam.
 - Do not configure date control or a PrairieLearn time limit for the PrairieTest-only access path. PrairieTest enforces scheduling and time limits on a per-student basis, taking into account conflict exams and disability accommodations.
-- The per-exam `afterComplete` setting controls what students see after they finish while their PrairieTest reservation is still active. In this example, students can see their score but not the questions.
+- PrairieTest also has a per-exam after-completion setting for the period after a student finishes but before their reservation ends. Use that setting only if you need to control review while the student is still in the testing environment.
 - With no date control configured, PrairieTest is the only access path. Add date control or overrides only if students should have non-PrairieTest access.
 
 ## Testing center exams with a few students outside the testing center
@@ -50,10 +47,7 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
         "prairieTest": {
           "exams": [
             {
-              "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-              "afterComplete": {
-                "questions": { "hidden": true }
-              }
+              "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228"
             }
           ]
         }
@@ -144,7 +138,7 @@ Some notes about this configuration:
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions. The `afterLastDeadline` setting keeps the assessment view-only after the exam window, so students can see their final score but cannot submit. Students will be unable to see any of the questions unless the `afterComplete` visibility settings allow it.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-- This configuration sets `afterComplete.questions.hidden` to `true` to prevent students from seeing the details of their exam after it is over. This can help to mitigate cheating with students taking conflict exams.
+- This configuration sets `afterComplete.questions.hidden` to `true` so students can see their score after the exam, but cannot review questions once their exam window or timer has ended. This limits post-exam review outside the exam window; it does not prevent students from seeing questions or grading feedback while they are taking the exam.
 
 ## Asynchronous, timed exams
 
@@ -244,7 +238,7 @@ This configuration is good when:
 Some notes about this configuration:
 
 - All of the [notes above for synchronous, timed exams](#synchronous-timed-exams) still apply.
-- The only change between this configuration and the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of the `"allowRealTimeGrading": false`. [Disabling real-time grading](configuration.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
+- The important change from the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of `"allowRealTimeGrading": false`. [Disabling real-time grading](configuration.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
 - When they are doing the exam, students can save answers to a question as many times as they like. When the exam finishes, the most recent saved answer for each question (if any) will be graded. Any earlier saved answers will be ignored.
 - With this configuration students will never see their grading results for specific questions. This is because `"allowRealTimeGrading": false` disallows grading _during_ the exam, and `afterComplete.questions.hidden` hides per-question grading results _after_ the exam is over.
 - To prevent students from seeing their total exam score as soon as the exam is over, set `afterComplete.score.hidden` to `true`; otherwise the students will see their total score even if the per-question score is hidden.

@@ -10,6 +10,7 @@ ALIASES = {
 
 
 def generate_access_control_aliases() -> None:
+    """Generate public access-control pages from review-friendly source files."""
     for output_path, source_path in ALIASES.items():
         with mkdocs_gen_files.open(output_path, "w") as output_file:
             output_file.write(source_path.read_text(encoding="utf-8"))
