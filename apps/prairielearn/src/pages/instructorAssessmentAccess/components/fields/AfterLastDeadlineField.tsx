@@ -244,22 +244,6 @@ function AfterLastDeadlineInput({
                   shouldUnregister: true,
                   valueAsNumber: true,
                   deps: creditDeps,
-                  validate: (v, formValues) => {
-                    if (v == null || Number.isNaN(v)) return 'Credit is required';
-                    if (!Number.isFinite(v)) return 'Credit must be a finite number';
-                    if (!Number.isInteger(v)) return 'Credit must be an integer';
-                    if (v < 0 || v >= 100) return 'Credit after the due date must be 0\u201399%';
-                    const { dueDate, dueCredit, lateDeadlines } = resolveConstraints(
-                      formValues,
-                      overrideIndex,
-                    );
-                    const precedingCredit =
-                      lateDeadlines.at(-1)?.credit ?? (dueDate != null ? dueCredit : undefined);
-                    if (precedingCredit != null && v >= precedingCredit) {
-                      return `Must be less than ${precedingCredit}% (the preceding deadline's credit)`;
-                    }
-                    return true;
-                  },
                 })}
               />
               <InputGroup.Text>%</InputGroup.Text>

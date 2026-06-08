@@ -7,20 +7,22 @@
  * reuse the e2e worker server, dev DB, writable testCourse copy, and `page`
  * fixture instead of redefining all of that.
  *
- * Usage: `yarn capture-onboarding-screenshots`
+ * Usage: `pnpm capture-onboarding-screenshots`
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import type { Locator, Page } from '@playwright/test';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
 import { test } from './fixtures.js';
-import { getAceEditorContent, setAceEditorContent } from './utils/ace.js';
+import { setAceEditorContent } from './utils/ace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -43,6 +45,10 @@ const QUESTION_HTML = `<pl-question-panel>
   <pl-answer correct="false">40</pl-answer>
 </pl-multiple-choice>
 `;
+
+function screenshotDate(displayTimezone: string, daysFromToday: number, time: string): string {
+  return `${Temporal.Now.plainDateISO(displayTimezone).add({ days: daysFromToday }).toString()}T${time}`;
+}
 
 let shotCount = 0;
 interface ShootOpts {
@@ -75,7 +81,17 @@ async function stripDevModeArtifacts(page: Page) {
 }
 
 async function shoot(page: Page, name: string, opts: ShootOpts = {}) {
+  const viewport = page.viewportSize();
+  if (viewport) {
+    await page.mouse.move(viewport.width - 1, viewport.height - 1);
+  }
   await stripDevModeArtifacts(page);
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
+  await page.waitForTimeout(200);
   const filePath = opts.filePath ?? path.join(OUT_DIR, `${name}.png`);
   if (opts.locator) {
     await opts.locator.screenshot({ path: filePath });
@@ -269,7 +285,11 @@ async function captureQuestionFlow(page: Page, courseInstanceUrl: string) {
   await shoot(page, '08-question-preview');
 }
 
-async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
+async function captureAssessmentFlow(
+  page: Page,
+  courseInstanceUrl: string,
+  displayTimezone: string,
+) {
   console.log('Assessment flow (list, create, edit, access, settings)');
   await page.goto(`${courseInstanceUrl}/instructor/instance_admin/assessments`);
   await page.getByRole('heading', { name: 'Assessments' }).waitFor();
@@ -318,41 +338,63 @@ async function captureAssessmentFlow(page: Page, courseInstanceUrl: string) {
 
   await page.getByRole('button', { name: 'Save' }).click();
   await page.waitForLoadState('networkidle');
-  await editAssessmentJsonViaUI(page, courseInstanceUrl, assessmentId);
+  await seedModernAssessmentAccessViaUI(page, courseInstanceUrl, assessmentId, displayTimezone);
 
-  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`);
-  await page.getByRole('heading', { name: /Access/ }).waitFor();
+  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+  await page.getByRole('button', { name: 'Clear' }).waitFor();
   const accessCardBottom = await page.evaluate(() => {
-    const table = document.querySelector('main table');
-    const card = table?.closest('.card') ?? table;
-    return card ? Math.ceil(card.getBoundingClientRect().bottom) : null;
+    const emptyOverrides = Array.from(document.querySelectorAll<HTMLElement>('main div')).find(
+      (el) => el.textContent.trim() === 'No overrides configured.',
+    );
+    if (emptyOverrides) {
+      return Math.ceil(emptyOverrides.getBoundingClientRect().bottom + 8);
+    }
+
+    const summaryContent = document.querySelector<HTMLElement>('main .p-3');
+    const splitPane = document.querySelector<HTMLElement>('main .pl-ui-split-pane');
+    const main = document.querySelector<HTMLElement>('main');
+    const bottom = Math.max(
+      summaryContent?.getBoundingClientRect().bottom ?? 0,
+      splitPane?.getBoundingClientRect().bottom ?? 0,
+      main?.getBoundingClientRect().bottom ?? 0,
+    );
+    return bottom > 0 ? Math.ceil(Math.min(bottom, document.documentElement.clientHeight)) : null;
   });
   await shoot(page, '12-assessment-access', {
-    clip: { x: 0, y: 0, width: VIEWPORT.width, height: (accessCardBottom ?? 600) + 24 },
+    clip: { x: 0, y: 0, width: VIEWPORT.width, height: accessCardBottom ?? VIEWPORT.height },
   });
 }
 
-async function editAssessmentJsonViaUI(
+async function seedModernAssessmentAccessViaUI(
   page: Page,
   courseInstanceUrl: string,
   assessmentId: string,
+  displayTimezone: string,
 ) {
-  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/file_view`);
-  await page.getByText('infoAssessment.json').waitFor();
-  await page.locator('a[href*="file_edit"][href$="infoAssessment.json"]').click();
-  await page.waitForURL(/\/file_edit\/.*infoAssessment\.json/);
-  const current = await getAceEditorContent(page);
-  const json = JSON.parse(current);
-  json.allowAccess = [
-    {
-      startDate: '2025-09-01T20:00:00',
-      endDate: '2025-09-06T20:00:00',
-      credit: 100,
-    },
-  ];
-  await setAceEditorContent(page, JSON.stringify(json, null, 2) + '\n');
+  await page.goto(`${courseInstanceUrl}/instructor/assessment/${assessmentId}/access`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByRole('heading', { name: 'Defaults' }).waitFor();
+
+  const dateControl = page.getByLabel('Date control');
+  await dateControl.check();
+  await page.getByLabel('Scheduled for release').check();
+  await page.getByLabel('Release date').fill(screenshotDate(displayTimezone, 2, '20:00'));
+  await page.getByLabel('Due on date').check();
+  await page
+    .getByLabel('Due date', { exact: true })
+    .fill(screenshotDate(displayTimezone, 7, '20:00'));
+  await page.getByLabel('List before release').check();
+  await page.getByRole('button', { name: 'Question visibility', exact: true }).click();
+  await page.getByRole('option', { name: 'Show questions after completion' }).click();
+
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.waitForLoadState('networkidle');
+  await page.getByText('Access control updated successfully.').waitFor();
 }
 
 async function captureStudentView(page: Page) {
@@ -446,6 +488,7 @@ test.describe('Onboarding screenshots', () => {
     // permissions. Grant Owner so the home/course pages render production-equivalent
     // (no admin override required) once we disable admin access below.
     await sqldb.execute(sql.grant_dev_user_owner_on_all_courses);
+    await features.enable('enhanced-access-control');
 
     await disableAdminAccess(page);
 
@@ -456,7 +499,7 @@ test.describe('Onboarding screenshots', () => {
     const courseInstanceUrl = await captureCreateInstanceModal(page, courseUrl);
     await captureStaffPage(page, courseUrl);
     await captureQuestionFlow(page, courseInstanceUrl);
-    await captureAssessmentFlow(page, courseInstanceUrl);
+    await captureAssessmentFlow(page, courseInstanceUrl, courseInstance.display_timezone);
     await captureStudentView(page);
     await capturePublishing(page, courseInstanceUrl);
     await captureRequestCourse(page);

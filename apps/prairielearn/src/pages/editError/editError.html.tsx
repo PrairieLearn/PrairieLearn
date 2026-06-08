@@ -5,6 +5,7 @@ import { renderHtml } from '@prairielearn/react';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
+import type { EditOutcome } from '../../lib/editors.js';
 import {
   type JobSequenceWithTokens,
   StaffJobSequenceWithJobsSchema,
@@ -13,13 +14,14 @@ import {
 export function EditError({
   resLocals,
   jobSequence,
-  failedSync,
+  outcome,
 }: {
   resLocals: any;
   jobSequence: JobSequenceWithTokens;
-  failedSync: boolean;
+  outcome: EditOutcome;
 }) {
   const { course, __csrf_token } = resLocals;
+  const isWarning = outcome === 'sync_json_errors';
 
   return PageLayout({
     resLocals,
@@ -44,8 +46,12 @@ export function EditError({
       </script>
 
       <div class="card mb-4">
-        <div class="card-header bg-danger text-white d-flex align-items-center">
-          <h1>Edit Failure</h1>
+        <div
+          class="card-header ${isWarning
+            ? 'bg-warning'
+            : 'bg-danger text-white'} d-flex align-items-center"
+        >
+          <h1>${isWarning ? 'Edit warning' : 'Edit failure'}</h1>
           <button
             type="button"
             class="btn btn-light btn-sm ms-auto"
@@ -57,28 +63,41 @@ export function EditError({
           </button>
         </div>
         <div class="card-body">
-          <p>The file edit did not complete successfully.</p>
-          ${failedSync
+          ${outcome === 'sync_json_errors'
             ? html`
                 <p>
-                  In particular, it looks like your changes were written to
-                  disk${config.fileEditorUseGit
-                    ? ' and were pushed to the remote GitHub repository'
+                  Your changes were
+                  saved${config.fileEditorUseGit
+                    ? ' and pushed to the remote GitHub repository'
                     : ''},
-                  but that there was a failure to sync these changes to the database. The most
-                  likely cause is broken course content. Please fix this content, then click
-                  <strong>Pull from remote GitHub repository</strong> to try again.
+                  but some course content contains errors that prevented it from syncing correctly.
+                  This may be caused by your edit or by pre-existing issues in other files.
                 </p>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                  <div class="mx-4">
-                    <button name="__action" value="pull" class="btn btn-primary">
-                      Pull from remote GitHub repository
-                    </button>
-                  </div>
-                </form>
               `
-            : html`<p>Please go back and try again.</p>`}
+            : html`
+                <p>The file edit did not complete successfully.</p>
+                ${outcome === 'sync_failed'
+                  ? html`
+                      <p>
+                        In particular, it looks like your changes were written to
+                        disk${config.fileEditorUseGit
+                          ? ' and were pushed to the remote GitHub repository'
+                          : ''},
+                        but that there was a failure to sync these changes to the database. The most
+                        likely cause is broken course content. Please fix this content, then click
+                        <strong>Pull from remote GitHub repository</strong> to try again.
+                      </p>
+                      <form method="POST">
+                        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                        <div class="mx-4">
+                          <button name="__action" value="pull" class="btn btn-primary">
+                            Pull from remote GitHub repository
+                          </button>
+                        </div>
+                      </form>
+                    `
+                  : html`<p>Please go back and try again.</p>`}
+              `}
         </div>
       </div>
 
