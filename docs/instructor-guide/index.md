@@ -6,7 +6,7 @@ This section of the documentation is the reference for everything an instructor 
 
 If you've taught with PrairieLearn before, here is a quick checklist to get you back up to speed:
 
-1. **Copy your previous course instance** by opening last term from Course instances, going to Instance settings, and clicking **Make a copy**.
+1. **Copy your previous course instance** by opening last the previous course instance, navigating to "Instance settings", and clicking **Make a copy**.
 2. **Update dates** in the new instance, including publishing dates and assessment access rules.
 3. **Update your course staff** for the new term.
 

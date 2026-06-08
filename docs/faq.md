@@ -16,7 +16,9 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 ## How do I give students access to view their exams after they are over?
 
-With modern access control, configure [After completion](assessment/accessControl.md#after-completion) visibility for the assessment or for the relevant PrairieTest exam. With legacy access control, you can add an [access rule](assessment/accessControlLegacy.md) like this:
+With modern access control, configure [After completion](assessment/accessControl.md#after-completion) visibility for the assessment or for the relevant PrairieTest exam.
+
+With legacy access control, you can add an [access rule](assessment/accessControlLegacy.md) like this:
 
 ```json title="infoAssessment.json"
 {
@@ -80,7 +82,9 @@ First, for the course instance, create a extension for the student:
 
 This will allow the student to access the course instance beyond the original end date.
 
-Second, use the assessment **Access** page to add a [student-specific access override](assessment/accessControl.md#add-an-override) for `student@example.com` with the February 2018 access window. With legacy access control, edit the assessment's `infoAssessment.json` to add a section for `student@example.com`:
+Second, use the assessment **Access** page to add a [student-specific access override](assessment/accessControl.md#add-an-override) for `student@example.com` with the February 2018 access window.
+
+If you're using legacy access control with `allowAccess`, edit the assessment's `infoAssessment.json` to add a section for `student@example.com`:
 
 ```json title="infoAssessment.json"
 {
