@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import stableStringify from 'fast-json-stable-stringify';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldArrayWithId,
@@ -16,6 +16,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
+import { MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -115,6 +116,11 @@ function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
   return undefined;
 }
 
+function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): string | undefined {
+  if (count < MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE) return undefined;
+  return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
+}
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -151,26 +157,20 @@ function DeadlineArrayInput({
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, deadlineFields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   const { errors } = useFormState();
 
   const deadlinesStringified = stableStringify(deadlines);
-  // Store constraint values in refs so the validate function (which is captured
-  // once by register()) always reads current values instead of stale closures.
-  const dueDateRef = useRef(validationDueDate ?? dueDate);
-  const releaseDateRef = useRef(validationReleaseDate ?? releaseDate);
-  const deadlinesRef = useRef(deadlines);
-  const dueCreditRef = useRef(dueCredit);
-  dueDateRef.current = validationDueDate ?? dueDate;
-  releaseDateRef.current = validationReleaseDate ?? releaseDate;
-  deadlinesRef.current = deadlines;
-  dueCreditRef.current = dueCredit;
+  const effectiveValidationDueDate = validationDueDate ?? dueDate;
+  const effectiveValidationReleaseDate = validationReleaseDate ?? releaseDate;
 
-  // Re-validate all deadline dates and credits when the number of deadlines
-  // changes (handles append and remove) or when external constraints change.
-  // Without this, react-hook-form won't run validators on newly appended fields
-  // or re-check existing fields against updated constraints.
+  // Re-run resolver validation for all deadline dates and credits when the
+  // number of deadlines changes (handles append and remove) or when external
+  // constraints change.
   useEffect(() => {
     if (deadlineFields.length > 0) {
       for (let i = 0; i < deadlineFields.length; i++) {
@@ -181,9 +181,9 @@ function DeadlineArrayInput({
   }, [
     deadlineFields.length,
     deadlinesStringified,
-    dueDate,
+    effectiveValidationDueDate,
     dueCredit,
-    releaseDate,
+    effectiveValidationReleaseDate,
     fieldArrayName,
     trigger,
   ]);
@@ -235,75 +235,6 @@ function DeadlineArrayInput({
     );
   };
 
-  // Read from refs to avoid stale closures — register() captures the validate
-  // function once, but these constraint values change over the form's lifetime.
-  const validateDate = (value: string, index: number) => {
-    if (!value) return 'Date is required';
-
-    const currentDueDate = dueDateRef.current ? new Date(dueDateRef.current) : null;
-    if (!currentDueDate && !isEarly) {
-      return 'Late deadlines require a due date';
-    }
-
-    const deadlineDate = new Date(value);
-    const currentReleaseDate = releaseDateRef.current ? new Date(releaseDateRef.current) : null;
-    const currentDeadlines = deadlinesRef.current;
-
-    for (let i = 0; i < currentDeadlines.length; i++) {
-      if (i !== index && currentDeadlines[i]?.date === value) {
-        return 'Duplicate deadline date';
-      }
-    }
-
-    if (isEarly) {
-      if (currentDueDate && deadlineDate > currentDueDate) {
-        return 'Early deadline must be on or before the due date';
-      }
-      if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after the previous deadline';
-        }
-      }
-      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Early deadline must be after the release date';
-      }
-    } else {
-      if (currentReleaseDate && deadlineDate <= currentReleaseDate) {
-        return 'Late deadline must be after the release date';
-      }
-      if (currentDueDate && deadlineDate < currentDueDate) {
-        return 'Late deadline must be on or after the due date';
-      }
-      if (index > 0 && currentDeadlines[index - 1]?.date) {
-        if (deadlineDate <= new Date(currentDeadlines[index - 1].date)) {
-          return 'Must be after the previous deadline';
-        }
-      }
-    }
-
-    return true;
-  };
-
-  const validateCredit = (value: number, index: number) => {
-    if (Number.isNaN(value)) return 'Credit is required';
-    if (!Number.isFinite(value)) return 'Credit must be a finite number';
-    if (!Number.isInteger(value)) return 'Credit must be an integer';
-    if (isEarly) {
-      if (value < 0 || value > 200) return 'Credit must be 0-200%';
-      if (value <= dueCreditRef.current) return 'Credit must be greater than due credit';
-    } else if (value < 0 || value >= 100) {
-      return 'Credit after the due date must be 0-99%';
-    }
-    const currentDeadlines = deadlinesRef.current;
-    if (index > 0 && value >= (currentDeadlines[index - 1]?.credit ?? 0)) {
-      return 'Credit must be less than previous deadline';
-    }
-    if (!isEarly && index === 0 && value >= dueCreditRef.current) {
-      return 'Credit must be less than due credit';
-    }
-    return true;
-  };
-
   const addDeadline = () => {
     appendDeadline(
       computeNextDeadline({ type, deadlines, releaseDate, dueDate, dueCredit, displayTimezone }),
@@ -334,8 +265,8 @@ function DeadlineArrayInput({
             <Button
               size="sm"
               variant="outline-primary"
-              disabled={addEarlyDisabled}
-              title={addEarlyDisabledTitle}
+              disabled={addDisabled}
+              title={addDisabledTitle}
               onClick={addDeadline}
             >
               Add {isEarly ? 'early' : 'late'}
@@ -344,9 +275,9 @@ function DeadlineArrayInput({
         </div>
       )}
 
-      {addEarlyDisabled && (
-        <Alert variant="secondary" className="py-2 mt-2 mb-0">
-          {addEarlyDisabledTitle}
+      {addDisabledTitle && (
+        <Alert variant="secondary" className="py-2 mt-2 mb-2">
+          {addDisabledTitle}
         </Alert>
       )}
 
@@ -367,9 +298,7 @@ function DeadlineArrayInput({
                 }
                 placeholder="Deadline Date"
                 disabled={!ruleEditable}
-                {...register(`${fieldArrayName}.${index}.date`, {
-                  validate: (value) => validateDate(value, index),
-                })}
+                {...register(`${fieldArrayName}.${index}.date`)}
               />
             </div>
             <div className="d-flex gap-2 align-items-center">
@@ -403,10 +332,8 @@ function DeadlineArrayInput({
                   })}
                   step={1}
                   disabled={!ruleEditable}
-                  onWheel={({ currentTarget }) => currentTarget.blur()}
                   {...register(`${fieldArrayName}.${index}.credit`, {
                     valueAsNumber: true,
-                    validate: (value) => validateCredit(value, index),
                   })}
                 />
                 <InputGroup.Text>%</InputGroup.Text>
@@ -571,7 +498,10 @@ export function OverrideDeadlineArrayField({
     });
 
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(effectiveDueCredit) : undefined;
+  const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, fields.length);
+  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
   const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabled = addDisabledTitle !== undefined;
 
   return (
     <FieldWrapper
@@ -584,7 +514,13 @@ export function OverrideDeadlineArrayField({
           checked={fields.length > 0}
           disabled={!ruleEditable || (addEarlyDisabled && fields.length === 0)}
           title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
-          onChange={(checked) => (checked ? append(nextDeadline()) : remove())}
+          onChange={(checked) => {
+            if (checked) {
+              append(nextDeadline());
+            } else {
+              remove();
+            }
+          }}
         />
       }
       headerAction={
@@ -592,8 +528,8 @@ export function OverrideDeadlineArrayField({
           <Button
             size="sm"
             variant="outline-primary"
-            disabled={addEarlyDisabled}
-            title={addEarlyDisabledTitle}
+            disabled={addDisabled}
+            title={addDisabledTitle}
             onClick={() => append(nextDeadline())}
           >
             Add {isEarly ? 'early' : 'late'}

@@ -106,13 +106,6 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     fieldState: { error },
   } = useController<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
-    rules: {
-      validate: (value, formValues) => {
-        if (!formValues.defaultRule.dateControlEnabled) return true;
-        if (!value) return 'Release date is required';
-        return true;
-      },
-    },
   });
 
   // Re-run the validator when dateControlEnabled changes so the
