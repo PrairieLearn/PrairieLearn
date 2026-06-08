@@ -87,7 +87,7 @@ describe('Valid configs', () => {
           prairieTest: {
             exams: [
               { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
-              { examUuid: '22f99903-4a00-5e80-a1b3-332483025d6d', readOnly: true },
+              { examUuid: '450a7084-360e-4801-b89e-24a1584c885f', readOnly: true },
             ],
           },
         },
