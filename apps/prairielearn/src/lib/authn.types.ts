@@ -28,4 +28,5 @@ export interface ResLocalsAuthnUser {
   access_as_administrator: boolean;
   is_administrator: boolean;
   is_institution_administrator: boolean;
+  lockdown_browser: boolean;
 }

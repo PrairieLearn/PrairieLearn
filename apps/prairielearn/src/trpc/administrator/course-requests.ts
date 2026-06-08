@@ -3,9 +3,10 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { type StaffCourse, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
 import {
   checkInstructorLegitimacy,
-  suggestPrefixFromEmailDomain,
+  suggestInstitutionPrefix,
 } from '../../lib/course-request-ai.js';
 import {
   createCourseFromRequest,
@@ -14,9 +15,28 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
+import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
+import {
+  selectOptionalCourseByGithubRepository,
+  selectOptionalCourseByPath,
+} from '../../models/course.js';
+import { throwAppError } from '../app-errors.js';
 
+import { normalizeCoursePathInput } from './course-path.js';
 import { requireAdministrator, t } from './init.js';
+
+const NullableStaffCourseSchema = StaffCourseSchema.nullable();
+
+export interface AdminCourseRequestError {
+  Deny: never;
+  UpdateNote: never;
+  CreateCourse: {
+    code: 'CONFLICTS';
+    repoCourse: StaffCourse | null;
+    githubRepoUrl: string | null;
+    pathCourse: StaffCourse | null;
+  };
+}
 
 const deny = t.procedure
   .use(requireAdministrator)
@@ -43,37 +63,49 @@ const createCourse = t.procedure
   .input(
     z.object({
       courseRequestId: IdSchema,
-      shortName: z
-        .string()
-        .min(1, 'Short name is required')
-        .regex(
-          /^[A-Z]+ [A-Z0-9]+$/,
-          'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-        ),
+      // No format validation — admins may need to deviate from the standard
+      // "RUBRIC NUMBER" pattern for non-standard department codes.
+      shortName: z.string().min(1, 'Short name is required'),
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       institutionId: IdSchema,
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
+      githubCourseOwner: z.string().min(1, 'GitHub organization is required'),
       githubUser: z.string(),
     }),
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
-    const repoExists = await checkCourseRepositoryExists(input.repoShortName);
-    if (repoExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this repository already exists.',
-      });
+    const normalizedPath = normalizeCoursePathInput(input.path);
+
+    const access = await validateGithubCourseOwner(input.githubCourseOwner);
+    if (!access.ok) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: access.message });
     }
 
-    const pathExists = await checkCoursePathExists(input.path);
-    if (pathExists) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A course with this path already exists.',
-      });
+    const [repoCourse, githubRepoExists, pathCourse] = await Promise.all([
+      selectOptionalCourseByGithubRepository({
+        owner: input.githubCourseOwner,
+        repoName: input.repoShortName,
+      }),
+      checkGithubRepositoryExists(input.repoShortName, input.githubCourseOwner),
+      selectOptionalCourseByPath(normalizedPath),
+    ]);
+
+    if (repoCourse != null || githubRepoExists || pathCourse != null) {
+      throwAppError<AdminCourseRequestError['CreateCourse']>(
+        {
+          code: 'CONFLICTS',
+          message: 'Conflicts detected with existing courses or repositories.',
+          repoCourse: NullableStaffCourseSchema.parse(repoCourse),
+          githubRepoUrl: githubRepoExists
+            ? `https://github.com/${input.githubCourseOwner}/${input.repoShortName}`
+            : null,
+          pathCourse: NullableStaffCourseSchema.parse(pathCourse),
+        },
+        'CONFLICT',
+      );
     }
 
     const jobSequenceId = await createCourseFromRequest({
@@ -82,15 +114,29 @@ const createCourse = t.procedure
       title: input.title,
       institutionId: input.institutionId,
       displayTimezone: input.displayTimezone,
-      path: input.path,
+      path: normalizedPath,
       repoShortName: input.repoShortName,
+      githubCourseOwner: input.githubCourseOwner,
       githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };
   });
 
-const checkInstructorLegitimacyQuery = t.procedure
+const SourcesSchema = z
+  .array(z.object({ url: z.url(), title: z.string().optional() }))
+  .transform((sources) =>
+    sources.filter((s) => {
+      try {
+        const parsed = new URL(s.url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }),
+  );
+
+const checkInstructorLegitimacyProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: IdSchema }))
   .output(
@@ -98,18 +144,7 @@ const checkInstructorLegitimacyQuery = t.procedure
       summary: z.string(),
       confidence: z.enum(['high', 'medium', 'low']),
       legitimate: z.boolean(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {
@@ -127,7 +162,7 @@ const checkInstructorLegitimacyQuery = t.procedure
     });
   });
 
-const selectInstitutionPrefixQuery = t.procedure
+const selectInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionId: IdSchema }))
   .output(
@@ -140,38 +175,34 @@ const selectInstitutionPrefixQuery = t.procedure
     return { prefix: row?.prefix ?? null };
   });
 
-const suggestPrefixFromEmailQuery = t.procedure
+const suggestInstitutionPrefixProcedure = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
+  .input(
+    z.object({
+      institutionLongName: z.string(),
+      institutionShortName: z.string(),
+      emailDomain: z.string(),
+    }),
+  )
   .output(
     z.object({
       prefix: z.string(),
       reasoning: z.string(),
-      sources: z
-        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
-        .transform((sources) =>
-          sources.filter((s) => {
-            try {
-              const parsed = new URL(s.url);
-              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-            } catch {
-              return false;
-            }
-          }),
-        ),
+      sources: SourcesSchema,
     }),
   )
   .query(async ({ input }) => {
-    return await suggestPrefixFromEmailDomain({
+    return await suggestInstitutionPrefix({
+      institutionLongName: input.institutionLongName,
+      institutionShortName: input.institutionShortName,
       emailDomain: input.emailDomain,
-      institutionName: input.institutionName,
     });
   });
 
 export const administratorCourseRequestsRouter = t.router({
-  checkInstructorLegitimacyQuery,
-  selectInstitutionPrefixQuery,
-  suggestPrefixFromEmailQuery,
+  checkInstructorLegitimacy: checkInstructorLegitimacyProcedure,
+  selectInstitutionPrefix: selectInstitutionPrefixProcedure,
+  suggestInstitutionPrefix: suggestInstitutionPrefixProcedure,
   deny,
   updateNote,
   createCourse,

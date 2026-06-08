@@ -10,6 +10,7 @@ import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
 const schemaNameOverrides: Record<string, string | null> = {
+  institution_settings: 'InstitutionSettingsSchema',
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
@@ -19,6 +20,9 @@ const schemaNameOverrides: Record<string, string | null> = {
 const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
+  // TODO: Make this the primary schema after renaming "alternative_groups" to
+  // "alternative_pools" in the database.
+  'AlternativePoolSchema',
   // TODO: Make these the primary schemas after renaming "teams" back to "groups"
   // in the database.
   'GroupSchema',

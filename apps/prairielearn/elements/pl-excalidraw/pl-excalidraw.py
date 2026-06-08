@@ -193,3 +193,70 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["format_errors"][drawing_name].append(
                 f"Invalid drawing submission: {exc}"
             )
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+    if not gradable:
+        return
+
+    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        text = f"Test {result}"
+        data["raw_submitted_answers"][drawing_name] = json.dumps({
+            "type": "excalidraw",
+            "version": 2,
+            "source": "test",
+            "elements": [
+                # Matches the type definition from the excalidraw library
+                {
+                    "type": "text",
+                    "id": f"test-{result}",
+                    "x": 0,
+                    "y": 0,
+                    "width": 200,
+                    "height": 25,
+                    "angle": 0,
+                    "strokeColor": "#000000",
+                    "backgroundColor": "transparent",
+                    "fillStyle": "solid",
+                    "strokeWidth": 1,
+                    "strokeStyle": "solid",
+                    "roundness": None,
+                    "roughness": 1,
+                    "opacity": 100,
+                    "seed": 1,
+                    "version": 1,
+                    "versionNonce": 1,
+                    "index": None,
+                    "isDeleted": False,
+                    "groupIds": [],
+                    "frameId": None,
+                    "boundElements": None,
+                    "updated": 0,
+                    "link": None,
+                    "locked": False,
+                    "text": text,
+                    "fontSize": 20,
+                    "fontFamily": 1,
+                    "textAlign": "left",
+                    "verticalAlign": "top",
+                    "containerId": None,
+                    "originalText": text,
+                    "autoResize": True,
+                    "lineHeight": 1.25,
+                },
+            ],
+            "appState": {},
+            "files": {},
+        })
+    elif result == "invalid":
+        invalid_submission = "not valid json"
+        data["raw_submitted_answers"][drawing_name] = invalid_submission
+        try:
+            json.loads(invalid_submission)
+        except ValueError as exc:
+            data["format_errors"][drawing_name] = [f"Invalid drawing submission: {exc}"]

@@ -332,11 +332,12 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                            |
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                        |
 | `preferences`           | `dict`  | Read-only [question preferences](preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                                                      |
+| `options`               | `dict`  | System-provided options such as file paths and URLs (see [accessing files](#accessing-files-on-disk)).                                                              |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                             |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
 | `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                              |
 | `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                              |
+| `correct_answer_shown`  | `bool`  | Whether the answer panel is being rendered (for use when rendering other panels).                                                                                   |
 | `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                             |
 | `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                              |
 | `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading.    |
@@ -366,6 +367,7 @@ Each field in the `data` dictionary is either stored **per-variant** (shared acr
 | `test_type`             | None (not saved) | Only in `test()`.                               |
 | `answers_names`         | None (not saved) | Only in `prepare()`.                            |
 | `panel`                 | None (not saved) | Only in `render()`.                             |
+| `correct_answer_shown`  | None (not saved) | Only in `render()`.                             |
 | `editable`              | None (not saved) | Only in `render()`.                             |
 | `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
 | `manual_grading`        | None (not saved) | Only in `render()`.                             |
@@ -401,30 +403,43 @@ The [`pl.to_json`][prairielearn.conversion_utils.to_json] function supports keyw
 
 ## Accessing files on disk
 
-From within `server.py` functions, directories can be accessed as:
+The functions in `server.py` can also retrieve the content from various directories related to the question, such as `serverFilesCourse/` and `clientFilesQuestion/`, through the `data["options"]` dictionary. For more details, see the [documentation on client and server files](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
+
+### Accessing user and group identity
+
+Courses can opt in so that `server.py` receives user and group identity. A course owner can enable this on the course settings page. When enabled, `data["options"]` contains two extra keys: `data["options"]["user"]` and `data["options"]["group"]`.
 
 ```python
-# on-disk location of the current question directory
-data["options"]["question_path"]
+def generate(data):
+    user = data["options"]["user"]    # Variant owner; None on group assessments
+    # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
+    group = data["options"]["group"]  # None on individual assessments
+    # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
 
-# on-disk location of clientFilesQuestion/
-data["options"]["client_files_question_path"]
+    if user is not None:
+        data["params"]["greeting"] = f"Hello, {user['name']}!"
 
-# URL location of clientFilesQuestion/ (only in render() function)
-data["options"]["client_files_question_url"]
-
-# URL location of dynamically-generated question files (only in render() function)
-data["options"]["client_files_question_dynamic_url"]
-
-# on-disk location of clientFilesCourse/
-data["options"]["client_files_course_path"]
-
-# URL location of clientFilesCourse/ (only in render() function)
-data["options"]["client_files_course_url"]
-
-# on-disk location of serverFilesCourse/
-data["options"]["server_files_course_path"]
+    if group is not None:
+        # group["members"] entries have the same shape as `user`.
+        data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
+
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
+The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
+
+??? info "Whose identity is provided"
+
+    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.
+
+    A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, and UIN may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
+
+User and group data are provided to `server.py` only when **all** of the following are true:
+
+1. The course has opted in so that `server.py` receives user data. In production, a course owner enables this on the course settings page; for local development, it can instead be set with `"questionsReceiveUserData": true` under `"options"` in `infoCourse.json`, which is honored only in development mode.
+2. The question is not shared. Once a question is shared publicly or has its source shared publicly, `server.py` never receives user data, including in the question's own course and in public previews.
+3. The question is rendered in its original course. For questions imported from another course via a sharing set, `server.py` never receives user data, regardless of either course's settings.
+
+When user data is not provided to `server.py`, `data["options"]["user"]` and `data["options"]["group"]` are both `None`. The keys are always present.
 
 ## Generating dynamic files with `file()`
 

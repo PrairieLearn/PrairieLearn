@@ -249,7 +249,7 @@ function EditQuestionPointsScoreForm({
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -393,7 +393,7 @@ export function EditQuestionPointsScoreButton({
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [show]);
 
   return (

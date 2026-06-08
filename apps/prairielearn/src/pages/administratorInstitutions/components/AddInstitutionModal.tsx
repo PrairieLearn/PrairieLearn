@@ -1,14 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Alert, Modal } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
-import { useTRPC } from '../utils/trpc-context.js';
+import { useTRPC } from '../../../trpc/administrator/context.js';
+import type { AdministratorInstitutionsError } from '../../../trpc/administrator/institutions.js';
 
 interface AddInstitutionFormData {
   short_name: string;
@@ -32,7 +34,8 @@ export function AddInstitutionModal({
   aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.addInstitution.mutationOptions());
+  const mutation = useMutation(trpc.institutions.addInstitution.mutationOptions());
+  const appError = getAppError<AdministratorInstitutionsError['AddInstitution']>(mutation.error);
 
   const defaultCheckedIds = supportedAuthenticationProviders
     .filter((p) => p.name === 'Google' || p.name === 'Azure')
@@ -68,7 +71,7 @@ export function AddInstitutionModal({
   };
 
   const timezoneQuery = useQuery({
-    ...trpc.suggestTimezoneQuery.queryOptions({ institutionName, emailDomain }),
+    ...trpc.institutions.suggestTimezone.queryOptions({ institutionName, emailDomain }),
     enabled: false,
   });
 
@@ -261,11 +264,11 @@ export function AddInstitutionModal({
               installation. Additional SSO authentication providers can be configured later.
             </div>
           )}
-          {mutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={appError}
+            render={{ UNKNOWN: ({ message }) => message }}
+            onDismiss={() => mutation.reset()}
+          />
         </form>
       </Modal.Body>
       <Modal.Footer>

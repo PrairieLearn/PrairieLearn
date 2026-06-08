@@ -4,7 +4,7 @@ import {
   type MathJsonExpression,
   isTensor,
 } from '@cortex-js/compute-engine';
-import { MathfieldElement } from 'mathlive';
+import { type Mathfield, MathfieldElement, convertLatexToAsciiMath } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -84,38 +84,43 @@ const INVERSE_TRIG_FUNCTIONS = new Set([
 ]);
 
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
-  showPanel('main');
-  initColumnNavigation();
+  showPanel('main', drawer);
+  initColumnNavigation(drawer);
   initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
   ce.timeLimit = 500;
   ce.pushScope();
   const calculatorInputElement = ensureElement(
-    document.querySelector<MathfieldElement>('#calculator-input'),
+    drawer.querySelector<MathfieldElement>('#calculator-input'),
   );
   const calculatorInputGroup = ensureElement(
     calculatorInputElement.closest<HTMLElement>('.calculator-input-group'),
   );
   const calculatorOutput = ensureElement(
-    document.querySelector<MathfieldElement>('#calculator-output'),
+    drawer.querySelector<MathfieldElement>('#calculator-output'),
   );
-  const copyButton = ensureElement(document.getElementById('calculator-output-copy'));
-  const historyPanel = ensureElement(document.getElementById('history-panel'));
-  const clearHistoryBtn = ensureElement(document.getElementById('calculatorClearHistory'));
+  const copyButton = ensureElement(drawer.querySelector<HTMLElement>('#calculator-output-copy'));
+  const historyPanel = ensureElement(drawer.querySelector<HTMLElement>('#history-panel'));
+  const clearHistoryBtn = ensureElement(
+    drawer.querySelector<HTMLElement>('#calculatorClearHistory'),
+  );
   const historyTemplate = ensureElement(
-    document.querySelector<HTMLTemplateElement>('#history-item-template'),
+    drawer.querySelector<HTMLTemplateElement>('#history-item-template'),
   );
-  const displayModeSwitch = ensureElement(document.getElementById('displayModeSwitch'));
-  const angleModeSwitch = ensureElement(document.getElementById('angleModeSwitch'));
+  const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
+  const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const onExport = (_mf: unknown, latex: string) => {
-    return ce.parse(latex).toString();
-  };
-  calculatorInputElement.onExport = onExport;
-  calculatorOutput.onExport = onExport;
+  const latexFieldOnExport = (_mf: Mathfield, latex: string) => convertLatexToAsciiMath(latex);
+
+  calculatorInputElement.onExport = latexFieldOnExport;
+  calculatorOutput.onExport = latexFieldOnExport;
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
+  // Prevent MathLive's built-in virtual keyboard from appearing on touch devices,
+  // since the calculator provides its own custom on-screen keyboard.
+  // Note: the HTML attribute `math-virtual-keyboard-policy` doesn't seem to work, so we set it here via JS.
+  calculatorInputElement.mathVirtualKeyboardPolicy = 'manual';
   calculatorOutput.dataset.displayMode = 'numeric';
   calculatorOutput.dataset.angleMode = 'rad';
 
@@ -247,7 +252,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
     if (result) {
       const outputField = ensureElement(
-        historyItemEl.querySelector<MathfieldElement>('.history-output .history-text'),
+        historyItemEl.querySelector<MathfieldElement>(
+          '.history-output .pl-calculator-history-text',
+        ),
       );
       outputField.value = `=${result.displayed}`;
     }
@@ -300,14 +307,26 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
   }
 
+  function showCalculationError() {
+    calculatorInputGroup.classList.add('error');
+    calculatorOutput.value = '';
+    copyButton.dataset.clipboardText = '';
+  }
+
   function calculate(addToHistory = false) {
     const input = calculatorInputElement.value;
     if (input.length === 0) {
       calculatorOutput.value = '';
-      copyButton.onclick = function () {
-        void navigator.clipboard.writeText('');
-      };
+      copyButton.dataset.clipboardText = '';
       calculatorInputGroup.classList.remove('error');
+      return;
+    }
+
+    const data = getCalculatorData(storageKey);
+
+    // Reject expressions using `ans` when there is no prior history
+    if (data.history.length === 0 && input.includes('{ans}')) {
+      showCalculationError();
       return;
     }
 
@@ -319,31 +338,21 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     if (!result) {
-      calculatorInputGroup.classList.add('error');
-      calculatorOutput.value = '';
-      copyButton.onclick = null;
+      showCalculationError();
       return;
     }
 
     const { displayed, evaluated } = result;
 
     if (hasError(evaluated.json)) {
-      console.error('Error in evaluated expression:', evaluated.toString());
-      calculatorInputGroup.classList.add('error');
-      calculatorOutput.value = '';
-      copyButton.onclick = null;
+      showCalculationError();
       return;
     }
 
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.onclick = function () {
-      window.bootstrap.Tooltip.getInstance(copyButton)?.hide();
-      void navigator.clipboard.writeText(ce.parse(displayed).toString());
-    };
-
-    const data = getCalculatorData(storageKey);
+    copyButton.dataset.clipboardText = convertLatexToAsciiMath(displayed);
 
     // Add to history
     if (addToHistory) {
@@ -404,7 +413,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   registerCustomFunctions(ce);
 
   // Buttons for number and letter inputs
-  document.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
+  drawer.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       shouldAutoInsertAns = false;
@@ -416,18 +425,18 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Upper/lowercase switch
-  document.getElementsByName('shift').forEach((button) =>
+  drawer.querySelectorAll<HTMLElement>('[name="shift"]').forEach((button) =>
     button.addEventListener('click', () => {
       button.classList.toggle('btn-light');
       button.classList.toggle('btn-secondary');
-      document.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
+      drawer.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
         btn.classList.toggle('uppercase');
       });
     }),
   );
 
   // Backspace button
-  document.getElementsByName('backspace').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="backspace"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['deleteBackward']);
@@ -436,14 +445,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Left/right
-  document.getElementsByName('left').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="left"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToPreviousChar']);
       calculatorInputElement.focus();
     });
   });
-  document.getElementsByName('right').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="right"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToNextChar']);
@@ -452,7 +461,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Clear all
-  document.getElementsByName('clear').forEach((button) => {
+  drawer.querySelectorAll<HTMLElement>('[name="clear"]').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand('deleteAll');
@@ -502,7 +511,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     lpar: '(',
     rpar: ')',
     assign: '\\coloneqq',
-    mul: '\\times',
+    mul: '\\cdot',
     minus: '-',
     plus: '+',
     'dec-point': '.',
@@ -514,10 +523,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   setupButtonEvents(buttonActions);
 
   // Panel switching (main / abc / func keyboards)
-  document.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
+  drawer.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
     radio.addEventListener('click', () => {
       const panel = radio.dataset.panel;
-      if (panel) showPanel(panel);
+      if (panel) showPanel(panel, drawer);
     });
   });
 
@@ -628,7 +637,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   function setupButtonEvents(actions: Record<string, string>) {
     for (const [buttonName, action] of Object.entries(actions)) {
-      document.getElementsByName(buttonName).forEach((button) => {
+      drawer.querySelectorAll<HTMLElement>(`[name="${buttonName}"]`).forEach((button) => {
         prepareButton(button);
         button.addEventListener('click', () => {
           if (
@@ -663,12 +672,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     // Set input text
     const inputRow = ensureElement(clone.querySelector<HTMLElement>('.history-input'));
-    const inputField = ensureElement(inputRow.querySelector<MathfieldElement>('.history-text'));
+    const inputField = ensureElement(
+      inputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     inputField.value = input;
 
     // Set output text
     const outputRow = ensureElement(clone.querySelector<HTMLElement>('.history-output'));
-    const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
+    const outputField = ensureElement(
+      outputRow.querySelector<MathfieldElement>('.pl-calculator-history-text'),
+    );
     outputField.value = `=${displayed}`;
 
     // Only show rad/deg badge if expression contains trig functions
@@ -680,10 +693,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       updateModeBadge(modeBadge, angleMode);
     }
 
-    const normalizeLatex = (latex: string) => ce.parse(latex).toString();
-    const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
-    inputField.onExport = historyOnExport;
-    outputField.onExport = historyOnExport;
+    inputField.onExport = latexFieldOnExport;
+    outputField.onExport = latexFieldOnExport;
 
     // Copy buttons
     const inputCopyBtn = ensureElement(
@@ -692,14 +703,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(inputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(input));
-    });
-    outputCopyBtn.addEventListener('click', () => {
-      window.bootstrap.Tooltip.getInstance(outputCopyBtn)?.hide();
-      void navigator.clipboard.writeText(normalizeLatex(outputField.value.replace(/^=/, '')));
-    });
+    inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
+    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(
+      outputField.value.replace(/^=/, ''),
+    );
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
@@ -747,20 +754,20 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   }
 }
 
-function showPanel(panelClass: string) {
-  const panels = document.querySelectorAll<HTMLElement>('.keyboard');
+function showPanel(panelClass: string, container: HTMLElement) {
+  const panels = container.querySelectorAll<HTMLElement>('.keyboard');
   panels.forEach((panel) => (panel.style.display = 'none'));
 
-  const panelToShow = document.querySelectorAll<HTMLElement>(`.${panelClass}`);
+  const panelToShow = container.querySelectorAll<HTMLElement>(`.${panelClass}`);
   panelToShow.forEach((panel) => (panel.style.display = 'flex'));
 }
 
-function initColumnNavigation() {
+function initColumnNavigation(container: HTMLElement) {
   setupKeyboardNav('main-keyboard', 'show-functions');
   setupKeyboardNav('func-keyboard', 'show-trig');
 
   function setupKeyboardNav(keyboardId: string, toggleClass: string) {
-    const keyboard = document.getElementById(keyboardId);
+    const keyboard = container.querySelector<HTMLElement>(`#${keyboardId}`);
     if (!keyboard) return;
 
     keyboard.querySelectorAll('.col-nav').forEach((btn) => {
@@ -787,21 +794,18 @@ function initDrawerUI(
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
-    drawer.removeAttribute('inert');
     setIsOpen(true);
     drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.add('visible');
     setIsOpen(false);
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
-    drawer.setAttribute('inert', '');
     fab.classList.remove('visible');
     setIsOpen(false);
   }
@@ -819,7 +823,7 @@ function initDrawerUI(
   }
 
   // Left-edge resize handle
-  const resizeHandle = document.getElementById('calculatorResizeHandle');
+  const resizeHandle = drawer.querySelector<HTMLElement>('#calculatorResizeHandle');
   if (resizeHandle) {
     let startX = 0;
     let startWidth = 0;
@@ -967,7 +971,6 @@ onDocumentReady(() => {
     initIfNeeded();
     fab.classList.remove('visible');
     drawer.classList.add('no-transition', 'open');
-    drawer.removeAttribute('inert');
     // Remove the no-transition class after the browser has painted the open state
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

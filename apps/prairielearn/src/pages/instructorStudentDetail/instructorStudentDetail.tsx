@@ -11,9 +11,9 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { getCourseInstanceBaseUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
-import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
   deleteEnrollment,
@@ -45,7 +45,7 @@ router.get(
       accessType: 'instructor',
     });
     const { urlPrefix, course_instance: courseInstance } = pageContext;
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
+    const courseInstanceUrl = getCourseInstanceBaseUrl(courseInstance.id);
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -72,10 +72,10 @@ router.get(
 
     const gradebookRows = student.user?.id
       ? await getGradebookRows({
-          course_instance_id: courseInstance.id,
-          user_id: student.user.id,
-          authz_data: res.locals.authz_data,
-          req_date: res.locals.req_date,
+          courseInstance,
+          userId: student.user.id,
+          authzData: res.locals.authz_data,
+          reqDate: res.locals.req_date,
           auth: 'instructor',
         })
       : [];
@@ -121,7 +121,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               hasCoursePermissionEdit={pageContext.authz_data.has_course_permission_edit}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit ?? false
+                pageContext.authz_data.has_course_instance_permission_edit
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />

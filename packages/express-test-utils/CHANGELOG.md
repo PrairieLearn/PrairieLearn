@@ -1,5 +1,17 @@
 # @prairielearn/express-test-utils
 
+## 2.0.11
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 2.0.10
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+
 ## 2.0.9
 
 ### Patch Changes

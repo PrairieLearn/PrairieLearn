@@ -24,12 +24,29 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
-  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
   await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
+    // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
+    // the next drop position. Yield to the event loop so React can
+    // commit the state update and dnd-kit can re-measure rects before
+    // the next arrow press.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   }
   await page.keyboard.press(' ');
+}
+
+async function expectHiddenZoneQuestionIds(
+  page: Page,
+  expectedQuestionIds: string[][],
+): Promise<void> {
+  await expect(async () => {
+    const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+    const parsedZones: { questions: { id: string }[] }[] = JSON.parse(hiddenZones);
+    expect(parsedZones.map((zone) => zone.questions.map((question) => question.id))).toEqual(
+      expectedQuestionIds,
+    );
+  }).toPass({ timeout: 5000 });
 }
 
 async function resetAssessmentFromTemplate({
@@ -54,10 +71,6 @@ async function resetAssessmentFromTemplate({
 }
 
 test.describe('Assessment questions', () => {
-  test.beforeEach(async ({ enableFeatureFlag }) => {
-    await enableFeatureFlag('assessment-questions-editor');
-  });
-
   test.describe('exam5-perZoneGrading mutations', () => {
     const assessmentTid = 'exam5-perZoneGrading';
 
@@ -82,8 +95,12 @@ test.describe('Assessment questions', () => {
 
       // Move partialCredit3 (index 2) up one position before partialCredit2
       await keyboardDrag(page, dragHandles.nth(2), 'up', 1);
+      await expectHiddenZoneQuestionIds(page, [
+        ['partialCredit1'],
+        ['partialCredit3', 'partialCredit2', 'partialCredit4_v2'],
+      ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -128,8 +145,12 @@ test.describe('Assessment questions', () => {
       // Drag partialCredit4_v2 (last, zone 2) up to zone 1.
       // 4 steps: 3 questions + 1 zone header (also a droppable) in between.
       await keyboardDrag(page, dragHandles.nth(3), 'up', 4);
+      await expectHiddenZoneQuestionIds(page, [
+        ['partialCredit4_v2', 'partialCredit1'],
+        ['partialCredit2', 'partialCredit3'],
+      ]);
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -192,7 +213,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].bestQuestions).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -264,7 +285,7 @@ test.describe('Assessment questions', () => {
     await expect(page.getByLabel('QID', { exact: true })).toHaveValue('differentiatePolynomial');
     await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -289,14 +310,14 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test.describe('hw16-editorTest alt group mutations', () => {
+  test.describe('hw16-editorTest alt pool mutations', () => {
     const assessmentTid = 'hw16-editorTest';
 
     test.beforeEach(async ({ testCoursePath }) => {
       await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
     });
 
-    test('can add an alternative to an alt group and save', async ({
+    test('can add an alternative to an alt pool and save', async ({
       page,
       testCoursePath,
       courseInstance,
@@ -321,7 +342,7 @@ test.describe('Assessment questions', () => {
 
       await page.getByRole('button', { name: 'Done' }).click();
 
-      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
@@ -333,10 +354,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const altGroupBlock = savedAssessment.zones[2].questions[1];
-      expect(altGroupBlock.numberChoose).toBe(1);
-      expect(altGroupBlock.alternatives).toHaveLength(3);
-      expect(altGroupBlock.alternatives[2].id).toBe('addNumbers');
+      const altPoolBlock = savedAssessment.zones[2].questions[1];
+      expect(altPoolBlock.numberChoose).toBe(1);
+      expect(altPoolBlock.alternatives).toHaveLength(3);
+      expect(altPoolBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -358,7 +379,7 @@ test.describe('Assessment questions', () => {
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      const warningText = 'Number to choose exceeds the number of alternatives in this group.';
+      const warningText = 'Number to choose exceeds the number of alternatives in this pool.';
       await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
@@ -385,7 +406,7 @@ test.describe('Assessment questions', () => {
     await page.locator('[aria-label="Delete question partialCredit2"]').first().click();
 
     // Save should be disabled because the zone has 0 questions
-    const saveButton = page.getByRole('button', { name: 'Save and sync' });
+    const saveButton = page.getByRole('button', { name: 'Save' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
@@ -471,7 +492,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -523,7 +544,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(5);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
@@ -570,7 +591,7 @@ test.describe('Assessment questions', () => {
       expect(parsedZones[0].questions[0].autoPoints).toBe(2);
     }).toPass({ timeout: 5000 });
 
-    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(

@@ -7,6 +7,7 @@ import { run } from '@prairielearn/run';
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
+import { ManualGradingBadgeHtml } from '../../components/ManualGradingBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -28,6 +29,7 @@ export function InstructorAssessments({
   assessmentSets,
   assessmentModules,
   assessmentsGroupBy,
+  qtiImportEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
@@ -36,8 +38,9 @@ export function InstructorAssessments({
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
+  qtiImportEnabled: boolean;
 }) {
-  const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
+  const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -61,17 +64,38 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
+          ${authz_data.has_course_permission_edit &&
+          !course.example_course &&
+          (rows.length > 0 || qtiImportEnabled)
             ? html`
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light ms-auto"
-                  data-bs-toggle="modal"
-                  data-bs-target="#createAssessmentModal"
-                >
-                  <i class="fa fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add assessment</span>
-                </button>
+                <div class="d-flex gap-2 ms-auto">
+                  ${qtiImportEnabled
+                    ? html`
+                        <a
+                          href="${urlPrefix}/instance_admin/qti_import"
+                          class="btn btn-sm btn-light"
+                          aria-label="Import content"
+                        >
+                          <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Import content</span>
+                        </a>
+                      `
+                    : ''}
+                  ${rows.length > 0
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-light"
+                          data-bs-toggle="modal"
+                          data-bs-target="#createAssessmentModal"
+                          aria-label="Add assessment"
+                        >
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Add assessment</span>
+                        </button>
+                      `
+                    : ''}
+                </div>
               `
             : ''}
         </div>
@@ -134,8 +158,13 @@ export function InstructorAssessments({
                             </a>
                             ${IssueBadgeHtml({
                               count: row.open_issue_count,
-                              urlPrefix,
+                              courseInstanceId: course_instance.id,
                               issueAid: row.tid,
+                            })}
+                            ${ManualGradingBadgeHtml({
+                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
+                              courseInstanceId: course_instance.id,
+                              assessmentId: row.id,
                             })}
                           </td>
 
@@ -311,7 +340,10 @@ function CreateAssessmentModal({
           <option value="Exam">Exam</option>
         </select>
         <small id="type_help" class="form-text text-muted">
-          The type of the assessment. This can be either Homework or Exam.
+          The type of the assessment. This can be either
+          <a href="https://docs.prairielearn.com/assessment/configuration/#assessment-types">
+            Homework or Exam</a
+          >.
         </small>
       </div>
       <div class="mb-3">

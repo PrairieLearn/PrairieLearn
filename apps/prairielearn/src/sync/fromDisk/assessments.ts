@@ -9,6 +9,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
   type AssessmentJson,
@@ -21,7 +22,7 @@ import {
   QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -95,10 +96,10 @@ function mergeAndValidatePreferences(
  *   e) Delete any excess zones from the current assessment using the zone number
  *   f) For each zone from the assessment...
  *     i) Generate a list of alternatives for the zone (either one or many questions, depending on if `id` or `alternatives` is used)
- *     ii) Insert a new alternative group
- *     iii) For each alternative in the group...
+ *     ii) Insert a new alternative pool
+ *     iii) For each alternative in the pool...
  *       1. Insert an assessment question
- *   g) Delete excess alternative groups
+ *   g) Delete excess alternative pools
  *   h) Soft-delete unused assessments (that were deleted since the last sync)
  *   i) Soft-delete unused assessment questions (from deleted assessments)
  *   j) Soft-delete unused assessment questions (from deleted assessments)
@@ -110,6 +111,7 @@ function mergeAndValidatePreferences(
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
+  enhancedAccessControlEnabled: boolean,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -119,7 +121,7 @@ function getParamsForAssessment(
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const allowAccess = assessment.allowAccess
+  const allowAccess = (assessment.allowAccess ?? [])
     .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
@@ -160,16 +162,22 @@ function getParamsForAssessment(
     };
   });
 
-  let alternativeGroupNumber = 0;
+  let alternativePoolNumber = 0;
   let assessmentQuestionNumber = 0;
 
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
-  const allRoleNames = groups.roles.map((role) => role.name);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
+  const allRoleNames = groups?.roles.map((role) => role.name) ?? [];
   const assessmentCanView =
-    groups.rolePermissions.canView.length > 0 ? groups.rolePermissions.canView : allRoleNames;
+    groups && groups.rolePermissions.canView.length > 0
+      ? groups.rolePermissions.canView
+      : allRoleNames;
   const assessmentCanSubmit =
-    groups.rolePermissions.canSubmit.length > 0 ? groups.rolePermissions.canSubmit : allRoleNames;
-  const alternativeGroups = assessment.zones.map((zone) => {
+    groups && groups.rolePermissions.canSubmit.length > 0
+      ? groups.rolePermissions.canSubmit
+      : allRoleNames;
+  const alternativePools = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
     const zoneCanView = zone.canView.length > 0 ? zone.canView : assessmentCanView;
@@ -312,7 +320,7 @@ function getParamsForAssessment(
         }
       });
 
-      alternativeGroupNumber++;
+      alternativePoolNumber++;
 
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
@@ -363,12 +371,12 @@ function getParamsForAssessment(
       });
 
       return {
-        number: alternativeGroupNumber,
+        number: alternativePoolNumber,
         number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
         questions,
         // If the question doesn't have any alternatives, we store the comment
-        // on the assessment question itself, not the alternative group.
+        // on the assessment question itself, not the alternative pool.
         comment: question.alternatives ? question.comment : undefined,
         json_allow_real_time_grading: question.allowRealTimeGrading,
         json_auto_points: question.autoPoints ?? null,
@@ -386,12 +394,14 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = groups.roles.map((role) => ({
-    role_name: role.name,
-    minimum: role.minMembers,
-    maximum: role.maxMembers,
-    can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
-  }));
+  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles);
+  const groupRoles =
+    groups?.roles.map((role) => ({
+      role_name: role.name,
+      minimum: role.minMembers,
+      maximum: role.maxMembers,
+      can_assign_roles: canAssignRoles.has(role.name),
+    })) ?? [];
 
   // If any errors were added during zone/question processing treat as error.
   if (infofile.hasErrors(assessmentInfoFile)) return null;
@@ -423,29 +433,29 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    team_work: groups.enabled,
-    group_max_size: groups.maxMembers ?? null,
-    group_min_size: groups.minMembers ?? null,
-    student_group_create: groups.studentPermissions.canCreateGroup,
-    student_group_choose_name: groups.studentPermissions.canNameGroup,
-    student_group_join: groups.studentPermissions.canJoinGroup,
-    student_group_leave: groups.studentPermissions.canLeaveGroup,
+    team_work: groups != null,
+    group_max_size: groups?.maxMembers ?? null,
+    group_min_size: groups?.minMembers ?? null,
+    student_group_create: groups?.studentPermissions.canCreateGroup ?? false,
+    student_group_choose_name: groups?.studentPermissions.canNameGroup ?? true,
+    student_group_join: groups?.studentPermissions.canJoinGroup ?? false,
+    student_group_leave: groups?.studentPermissions.canLeaveGroup ?? false,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: groupRoles.length > 0,
-    json_can_view: groups.rolePermissions.canView,
-    json_can_submit: groups.rolePermissions.canSubmit,
-    // TODO: This will be conditional based on the access control settings in the future.
-    modern_access_control: false,
+    json_can_view: groups?.rolePermissions.canView ?? [],
+    json_can_submit: groups?.rolePermissions.canSubmit ?? [],
+    modern_access_control: enhancedAccessControlEnabled && assessment.allowAccess == null,
     allowAccess,
     zones,
-    alternativeGroups,
+    alternativePools,
     groupRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
-    // Needed when deleting unused alternative groups
-    lastAlternativeGroupNumber: alternativeGroupNumber,
+    // Needed when deleting unused alternative pools
+    lastAlternativePoolNumber: alternativePoolNumber,
     share_source_publicly: assessment.shareSourcePublicly,
+    show_question_titles: assessment.showQuestionTitles ?? assessment.type === 'Homework',
   };
 }
 
@@ -498,6 +508,7 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
+  enhancedAccessControlEnabled: boolean,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -515,7 +526,7 @@ export async function sync(
     const uuidAssessmentMap = new Map<string, string[]>();
     Object.entries(assessments).forEach(([tid, assessment]) => {
       if (!assessment.data) return;
-      assessment.data.allowAccess.forEach((allowAccess) => {
+      assessment.data.allowAccess?.forEach((allowAccess) => {
         const { examUuid } = allowAccess;
         if (examUuid) {
           examUuids.add(examUuid);
@@ -547,7 +558,7 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds);
+    const params = getParamsForAssessment(assessment, questionIds, enhancedAccessControlEnabled);
     return JSON.stringify([
       tid,
       assessment.uuid,
@@ -557,7 +568,7 @@ export async function sync(
     ]);
   });
 
-  await sqldb.runInTransactionAsync(async () => {
+  return await sqldb.runInTransactionAsync(async () => {
     const { name_to_id_map } = await sqldb.callRow(
       'sync_assessments',
       [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
@@ -565,6 +576,7 @@ export async function sync(
     );
 
     await syncAssessmentTools(assessments, name_to_id_map);
+    return { name_to_id_map };
   });
 }
 

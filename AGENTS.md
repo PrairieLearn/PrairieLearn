@@ -41,12 +41,14 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
+- In PR descriptions, keep the Testing section high signal. Do not list routine lint/typecheck/test commands just because they were run locally, and do not mention that CI will run. Mention only manual verification, docs rendering, screenshots, special test coverage, or unusual validation that helps reviewers understand the change.
+- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
 
 ## Building, type checking, and linting
 
 When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
 
-Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+Run `make format-changed` from the root directory to format all files changed on the current branch compared to the default branch, including committed, staged, unstaged, and untracked changes.
 
 ### TypeScript
 
@@ -57,20 +59,20 @@ Typechecking:
 
 Linting:
 
-- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
-- Check for dead code with `make check-dependencies`.
+- Check for dead code with `make lint-dependencies`.
 
 Formatting:
 
-- Individual files: `yarn prettier --write path/to/file.ts`
-- All files: `make format-js`
+- Individual files: `pnpm prettier --write path/to/file.ts`
+- All files: `make fix-js`
 
 ### Python
 
 Typechecking:
 
-- Individual files: `yarn pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make typecheck-python`
 
 Linting:
@@ -81,11 +83,11 @@ Linting:
 Formatting:
 
 - Individual files: `uv run ruff format path/to/file.py`
-- All files: `make format-python`
+- All files: `make fix-python`
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
-SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
+SQL, shell, markdown, and JSON files should also be formatted with `pnpm prettier --write path/to/file.{sql,sh,md,json}`.
 Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
@@ -118,12 +120,13 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
 
 ### Library usage conventions
 
-- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`.
+- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
@@ -133,15 +136,17 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
-- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_ — if a comment just restates the code, remove it.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 - When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
+- When formatting dates and intervals, use the functions from `@prairielearn/formatter` to ensure consistent formatting across the application. The timezone should be retrieved from the course instance, the course, or the institution, in this order of preference, using the values from `res.locals` where available.
 
 ### User interface conventions
 
-- Use `react-bootstrap` components for UI elements.
+- Look for existing shared UI components in `apps/prairielearn/src/components/` or `@prairielearn/ui` before building new ones. When the same UI pattern appears across multiple pages, extract it into a shared component rather than duplicating code.
+- For basic UI elements that have a dedicated Bootstrap component, use `react-bootstrap` components. For more complex / interactive UI elements, use `react-aria`.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
 - Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 - Prefer using [Bootstrap Icons](https://icons.getbootstrap.com/) for icons in new code.
@@ -152,12 +157,12 @@ Integration and unit tests are written with Vitest. End-to-end tests are written
 
 Individual tests:
 
-- For integration and unit tests, use `yarn test path/to/file.test.ts` from the root directory.
-- For end-to-end tests, use `yarn test:e2e path/to/integration.spec.ts` from the root directory.
+- For integration and unit tests, use `pnpm test path/to/file.test.ts` from the root directory.
+- For end-to-end tests, use `pnpm --filter @prairielearn/prairielearn test:e2e path/to/integration.spec.ts` from the root directory.
 
 Avoid running the entire test suite unless necessary, as it can be time-consuming. However, if you must:
 
-- To run all TypeScript tests, use `yarn test` from the root directory
+- To run all TypeScript tests, use `pnpm test` from the root directory
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
@@ -170,6 +175,7 @@ When writing tests:
 - In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
+- To enable a feature flag for a test you can use `withConfig({ features: { 'feature-name': true } }, async () => { ... })`.
 
 ### Rendering HTML
 
@@ -184,11 +190,13 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
-- Inline prop definitions for components if they are not used outside of the component.
+- Define component props directly in the function signature (e.g., `function Foo({ a, b }: { a: string; b: number })`) instead of declaring a separate named interface. Exception: if the props type is used by multiple components or exported, a named interface is fine.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
+- Don't use `useEffect` to sync internal state to a parent via a callback on every change — instead, let the child own its state and notify the parent imperatively when a user action requires it (e.g., clicking "Save").
 - Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
+- When a `useEffect` is necessary, add a comment explaining what it does — the intent of effects is often non-obvious.
 - In hydrated components using `react-hook-form`, always add `defaultValue` (text inputs, textareas, selects) or `defaultChecked` (checkboxes) alongside `{...register(...)}`. Without these, values aren't populated until client hydration, causing a flash of empty fields.
 
 ## Python guidance
@@ -196,6 +204,10 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 Elements (similar to React components, used to build interactive questions) are written in Python and are located in `apps/prairielearn/elements/`.
 
 When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
+
+When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
+
+When changing attributes on an element exposed to AI question generation (any element in `SUPPORTED_ELEMENTS` in `apps/prairielearn/src/ee/lib/validateHTML.ts`), see the [`ai-html-validator` skill](./.agents/skills/ai-html-validator/SKILL.md) for the validator and documentation files that must be kept in sync.
 
 ### Testing
 

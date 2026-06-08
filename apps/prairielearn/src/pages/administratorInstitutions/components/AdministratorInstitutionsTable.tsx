@@ -4,8 +4,8 @@ import { useState } from 'react';
 import type { AdminInstitution, StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
-import { createAdministratorInstitutionsTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider } from '../utils/trpc-context.js';
+import { createAdministratorTrpcClient } from '../../../trpc/administrator/client.js';
+import { TRPCProvider } from '../../../trpc/administrator/context.js';
 
 import { AddInstitutionModal } from './AddInstitutionModal.js';
 
@@ -31,9 +31,7 @@ export function AdministratorInstitutionsTable({
 }) {
   const [showModal, setShowModal] = useState(false);
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() =>
-    createAdministratorInstitutionsTrpcClient({ csrfToken: trpcCsrfToken }),
-  );
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
   return (
     <QueryClientProviderDebug client={queryClient}>

@@ -48,7 +48,6 @@ Any text following the key is optional but recommended to remind students to not
 ```json
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-r",
     "timeout": 20,
     "environment": {

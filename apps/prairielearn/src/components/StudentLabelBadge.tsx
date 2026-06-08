@@ -1,14 +1,12 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
-import type { StaffStudentLabel } from '../lib/client/safe-db-types.js';
-
 export function StudentLabelBadge({
   label,
   href,
   children,
 }: {
-  label: StaffStudentLabel;
+  label: { name: string; color: string };
   href?: string;
   children?: ReactNode;
 }) {

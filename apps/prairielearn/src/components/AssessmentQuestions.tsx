@@ -37,15 +37,15 @@ export function AssessmentQuestionHeaders({
       ) : (
         ''
       )}
-      {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
+      {question.start_new_alternative_pool && question.alternative_pool_size > 1 ? (
         <tr>
           <td colSpan={nTableCols}>
-            {question.alternative_group.number}.{' '}
-            {question.alternative_group.number_choose == null
+            {question.alternative_pool.number}.{' '}
+            {question.alternative_pool.number_choose == null
               ? 'Choose all questions from:'
-              : question.alternative_group.number_choose === 1
+              : question.alternative_pool.number_choose === 1
                 ? 'Choose 1 question from:'
-                : `Choose ${question.alternative_group.number_choose} questions from:`}
+                : `Choose ${question.alternative_pool.number_choose} questions from:`}
           </td>
         </tr>
       ) : (

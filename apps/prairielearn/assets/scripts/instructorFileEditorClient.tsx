@@ -178,6 +178,14 @@ class InstructorFileEditor {
         ?.addEventListener('click', async () => await this.reformatJSONFile());
     }
 
+    if (element.dataset.lintHtmlMustache === 'true') {
+      document.dispatchEvent(
+        new CustomEvent('pl:html-mustache-linter-attach', {
+          detail: { editor: this.editor },
+        }),
+      );
+    }
+
     // Override the save button click to show confirmation modal if needed
     this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
   }
@@ -445,7 +453,7 @@ onDocumentReady(() => {
         .querySelectorAll('.js-version-choice-content')
         .forEach((element) => element.remove());
 
-      // Show div that contains "Show help" and "Save and sync" buttons
+      // Show div that contains "Show help" and "Save" buttons
       window.bootstrap.Collapse.getOrCreateInstance('#buttons').show();
 
       draftEditor?.takeOver();

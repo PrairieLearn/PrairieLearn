@@ -6,6 +6,15 @@ FROM
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_id_for_update
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id
+FOR UPDATE;
+
 -- BLOCK select_course_by_short_name
 SELECT
   c.*
@@ -13,6 +22,62 @@ FROM
   courses AS c
 WHERE
   c.short_name = $short_name
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_course_by_github_repository
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.repository ILIKE '%' || $owner || '/' || $repo_name || '%' ESCAPE '\'
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_course_by_path
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.path = $path
+  AND c.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK check_course_title_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.title) = LOWER($title)
+  AND c.institution_id = $institution_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK check_course_short_name_in_institution
+SELECT
+  COUNT(*) > 0 AS exists,
+  COUNT(*) FILTER (
+    WHERE
+      cp.course_role = 'Owner'
+  ) > 0 AS owned
+FROM
+  courses AS c
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
+  )
+WHERE
+  LOWER(c.short_name) = LOWER($short_name)
+  AND c.institution_id = $institution_id
   AND c.deleted_at IS NULL;
 
 -- BLOCK update_course_commit_hash
@@ -176,7 +241,7 @@ VALUES
     $title,
     $display_timezone,
     $path,
-    $repository,
+    NULLIF($repository, ''),
     $branch,
     $institution_id,
     TRUE
@@ -191,12 +256,30 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK update_course_questions_receive_user_data
+UPDATE courses
+SET
+  questions_receive_user_data = $questions_receive_user_data
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
 -- BLOCK update_course_sharing_name
 UPDATE courses
 SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK select_course_by_sharing_token
+SELECT
+  *
+FROM
+  courses
+WHERE
+  sharing_token = $sharing_token
+  AND deleted_at IS NULL;
 
 -- BLOCK update_course_column_short_name
 UPDATE courses
@@ -241,7 +324,7 @@ RETURNING
 -- BLOCK update_course_column_repository
 UPDATE courses
 SET
-  repository = $value
+  repository = NULLIF($value, '')
 WHERE
   id = $course_id
   AND deleted_at IS NULL
@@ -275,3 +358,27 @@ FROM
   courses
 WHERE
   sharing_name = ANY ($sharing_names::text[]);
+
+-- BLOCK select_shared_question_exists
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      (
+        q.share_publicly
+        OR q.share_source_publicly
+      )
+      AND course_id = $course_id
+    UNION
+    SELECT
+      1
+    FROM
+      sharing_sets AS ss
+      JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
+      JOIN questions AS q ON q.id = ssq.question_id
+    WHERE
+      ss.course_id = $course_id
+  );

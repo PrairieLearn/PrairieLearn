@@ -5,6 +5,7 @@
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
 import base64
+import hashlib
 import html
 import json
 import urllib.parse
@@ -18,6 +19,12 @@ from PIL import Image
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
 MANUAL_UPLOAD_ENABLED_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
+
+
+def get_answer_name(file_name: str) -> str:
+    return "_image_capture_{}".format(
+        hashlib.sha1(file_name.encode("utf-8")).hexdigest()
+    )
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -49,6 +56,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
     file_name = pl.get_string_attrib(element, "file-name")
+    answer_name = get_answer_name(file_name)
 
     mobile_capture_enabled = pl.get_boolean_attrib(
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
@@ -91,6 +99,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
+        "answer_name": answer_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
         "manual_upload_enabled": manual_upload_enabled,
@@ -118,17 +127,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
+    answer_name = get_answer_name(file_name)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     # On submission, the captured image is stored directly in submitted_answers.
     # Later, we will move the image to submitted_answers["_files"], and pop
-    # submitted_answers[file_name].
-    submitted_file_content = data["submitted_answers"].get(file_name)
+    # submitted_answers[answer_name].
+    submitted_file_content = data["submitted_answers"].get(
+        answer_name,
+        # A previous version of this code used the file name as an answer name.
+        # This is a workaround to ensure that variants opened in that version
+        # are still processed.
+        data["raw_submitted_answers"].get(file_name),
+    )
+
+    # Remove the answer corresponding to the file input from submitted_answers
+    # to avoid bloating logs. The file content will be stored separately in
+    # submitted_answers["_files"].
+    data["submitted_answers"].pop(answer_name, None)
 
     if not submitted_file_content:
         if not allow_blank:
             pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
-        data["submitted_answers"].pop(file_name, None)
         return
 
     if not submitted_file_content.startswith("data:"):
@@ -168,21 +188,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     pl.add_submitted_file(data, file_name, b64_payload)
 
-    # We remove the captured image from submitted_answers to prevent it from
-    # appearing in assessment instance logs.
-    #
-    # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
-    # Popping file_name ensures that we update older submissions that saved the file to
-    # submitted_answers[file_name].
-
-    data["submitted_answers"].pop(file_name, None)
-
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
 
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
+    answer_name = get_answer_name(file_name)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     if result in ["correct", "incorrect"]:
@@ -196,12 +208,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
 
-        data["raw_submitted_answers"][file_name] = (
+        data["raw_submitted_answers"][answer_name] = (
             f"data:image/jpeg;base64,{b64_payload}"
         )
 
     elif result == "invalid":
-        data["raw_submitted_answers"][file_name] = ""
+        data["raw_submitted_answers"][answer_name] = ""
 
         if not allow_blank:
             if "_files" not in data["format_errors"]:

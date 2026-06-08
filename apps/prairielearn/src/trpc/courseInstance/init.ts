@@ -3,10 +3,10 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
-
-import { AppError } from './app-errors.js';
+import { appErrorFormatter } from '../app-errors.js';
 
 export async function selectStudentLabelByIdOrNotFound({
   id,
@@ -40,15 +40,7 @@ type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        ...(error instanceof AppError ? { appError: error.meta } : {}),
-      },
-    };
-  },
+  errorFormatter: appErrorFormatter,
 });
 
 export const requireCourseInstancePermissionView = t.middleware(async (opts) => {
@@ -76,6 +68,21 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course editor)',
+    });
+  }
+  return opts.next();
+});
+
+export const requireEnhancedAccessControl = t.middleware(async (opts) => {
+  const enabled = await features.enabled('enhanced-access-control', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+  });
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Enhanced access control is not enabled for this course.',
     });
   }
   return opts.next();

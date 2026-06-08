@@ -9,9 +9,27 @@ import pytest
 import sympy
 
 
-def _caret(text: str, caret: str) -> str:
-    """Join text and caret lines for readable caret-position test assertions."""
-    return f"{text}\n{caret}"
+def _caret_template(template_expr: str) -> tuple[str, str]:
+    """Build a caret assertion from a single-string template.
+
+    The template should contain exactly one ``!`` placeholder marking the
+    caret position, such as ``"1 + !bad_name"`` or ``"1 !** {2}"``. The returned tuple
+    is ``(expr, caret_output)`` where ``expr`` is the template with the placeholder
+    removed and ``caret_output`` is `psu.point_to_error(expr, expr.index(!))`
+
+    Raises:
+        UsageError: if the template does not contain exactly one marker symbol
+
+    Returns:
+        A tuple that consists of (sympy_expr_text, _caret(text, ))
+    """
+    # NOTE: the marker was originally ^ itself, but it's used by our syntax...
+    match template_expr.split("!", maxsplit=2):
+        case [left, right]:
+            base = left + right
+            return base, psu.point_to_error(base, len(left))
+        case _:
+            raise pytest.UsageError("caret template must have exactly one unescaped !")
 
 
 def test_evaluate() -> None:
@@ -81,7 +99,7 @@ class TestSympy:
         ("n log^2 2n", N * (sympy.log(2 * N) ** 2)),
         ("e^(pi * i)", -1),
         ("infty", sympy.oo),
-        ("infty", sympy.oo + 99),
+        ("infty + 99", sympy.oo + 99),
         ("-infty", -sympy.oo),
         ("-infty + 99", -sympy.oo),
         ("n \u2212 m", N - M),
@@ -130,6 +148,91 @@ class TestSympy:
         ("tanh(m)", sympy.tanh(M)),
         ("sinh(m)", sympy.sinh(M)),
         ("cosh(m)", sympy.cosh(M)),
+    )
+
+    SET_EXPR_PAIRS = (
+        # basic sets
+        ("{}", sympy.EmptySet),
+        ("{1}", sympy.FiniteSet(1)),
+        ("{1, 2, 3}", sympy.FiniteSet(1, 2, 3)),
+        ("({1, 2, 3})", sympy.FiniteSet(1, 2, 3)),
+        # finite intervals
+        ("(1, 2)", sympy.Interval.open(1, 2)),
+        ("(1, 2]", sympy.Interval.Lopen(1, 2)),
+        ("[1, 2)", sympy.Interval.Ropen(1, 2)),
+        ("[1, 2]", sympy.Interval(1, 2)),
+        # non-finite intervals
+        ("[-oo, 1]", sympy.Interval(-sympy.oo, 1)),
+        ("(-oo, 1]", sympy.Interval.Lopen(-sympy.oo, 1)),
+        ("[-oo, 1)", sympy.Interval.Ropen(-sympy.oo, 1)),
+        ("(-oo, 1)", sympy.Interval.open(-sympy.oo, 1)),
+        ("[-infty, infty]", sympy.Interval(-sympy.oo, sympy.oo)),
+        ("[1, oo]", sympy.Interval(1, sympy.oo)),
+        ("(1, oo]", sympy.Interval.Lopen(1, sympy.oo)),
+        ("[1, oo)", sympy.Interval.Ropen(1, sympy.oo)),
+        ("(1, oo)", sympy.Interval.open(1, sympy.oo)),
+        # function interval endpoints
+        ("[sin(m), 2]", sympy.Interval(sympy.sin(M), 2)),
+        ("(sin(m), 2]", sympy.Interval.Lopen(sympy.sin(M), 2)),
+        ("[sin(m), 2)", sympy.Interval.Ropen(sympy.sin(M), 2)),
+        ("(sin(m), 2)", sympy.Interval.open(sympy.sin(M), 2)),
+        ("(2, sin(m))", sympy.Interval.open(2, sympy.sin(M))),
+        ("(2, sin(m)]", sympy.Interval.Lopen(2, sympy.sin(M))),
+        ("[2, sin(m))", sympy.Interval.Ropen(2, sympy.sin(M))),
+        ("[2, sin(m)]", sympy.Interval(2, sympy.sin(M))),
+        # set parenthesis, oop, and set operations
+        ("([1, 2])", sympy.Interval(1, 2)),
+        (
+            "(({1, 2, 3}) U ([1, 2]))",
+            sympy.Union(sympy.FiniteSet(1, 2, 3), sympy.Interval(1, 2)),
+        ),
+        (
+            "[m, 2] U (m + 2, 4]",
+            sympy.Union(sympy.Interval(M, 2), sympy.Interval.Lopen(M + 2, 4)),
+        ),
+        ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # noqa: RUF001
+        ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
+        ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
+        ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
+        (
+            "({m, 3} U (m + 1, 4])",
+            sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+        ),
+        (
+            "({m, 3} U (m + 1, 4]) & {m, 4}",
+            sympy.Intersection(
+                sympy.FiniteSet(4, M),
+                sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+            ),
+        ),
+        (
+            "(({m, 3} U (m + 1, 4]) & {m, 4})",
+            sympy.Intersection(
+                sympy.FiniteSet(4, M),
+                sympy.Union(sympy.FiniteSet(3, M), sympy.Interval.Lopen(M + 1, 4)),
+            ),
+        ),
+        (
+            "(sin((m/2) + 1), cos(m - 1)]",
+            sympy.Interval.Lopen(sympy.sin(M / 2 + 1), sympy.cos(M - 1)),
+        ),
+        (
+            "[f(m + 1), g(f(m) + 1)]",
+            sympy.Interval(F(M + 1), G(F(M) + 1)),
+        ),
+        # nested sets
+        ("{1, 1}", sympy.FiniteSet(1)),
+        ("{1, {2, 3}}", sympy.FiniteSet(1, sympy.FiniteSet(2, 3))),
+        ("{1, (2, 3)}", sympy.FiniteSet(1, sympy.Interval.open(2, 3))),
+        ("{1, (2, 3]}", sympy.FiniteSet(1, sympy.Interval.Lopen(2, 3))),
+        ("{1, [2, 3)}", sympy.FiniteSet(1, sympy.Interval.Ropen(2, 3))),
+        ("{1, [2, 3]}", sympy.FiniteSet(1, sympy.Interval(2, 3))),
+        (
+            "{ {}, {{}, {}} }",
+            sympy.FiniteSet(
+                sympy.EmptySet, sympy.FiniteSet(sympy.EmptySet, sympy.EmptySet)
+            ),
+        ),
     )
 
     # Using string-based comparisons here to bypass sympy's default simplification behavior
@@ -181,11 +284,33 @@ class TestSympy:
             allow_complex=True,
         )
 
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), SET_EXPR_PAIRS)
+    def test_sets_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert sympy_ref == psu.convert_string_to_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            custom_functions=self.FUNCTION_NAMES,
+        )
+
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
         assert (
             psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
+            is None
+        )
+
+    @pytest.mark.parametrize("a_pair", SET_EXPR_PAIRS)
+    def test_sets_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
+        a_sub, _ = a_pair
+        assert (
+            psu.validate_string_as_sympy(
+                a_sub,
+                self.SYMBOL_NAMES,
+                allow_sets=True,
+                custom_functions=list(self.FUNCTION_NAMES),
+            )
             is None
         )
 
@@ -195,6 +320,28 @@ class TestSympy:
             a_sub,
             self.SYMBOL_NAMES,
             allow_complex=True,
+        )
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        list(
+            dict(
+                [(text, expected) for text, expected in SET_EXPR_PAIRS]
+                + [
+                    (text.replace(" ", ""), expected)
+                    for text, expected in SET_EXPR_PAIRS
+                ]
+            ).items()
+        ),
+    )
+    def test_sets_try_parse_string_as_sympy(
+        self, text: str, expected: sympy.Expr
+    ) -> None:
+        assert psu.SympyParseSuccess(expected) == psu.try_parse_string_as_sympy(
+            text,
+            self.SYMBOL_NAMES,
+            allow_sets=True,
+            custom_functions=list(self.FUNCTION_NAMES),
         )
 
     def test_try_parse_string_as_sympy_returns_failure(self) -> None:
@@ -253,6 +400,29 @@ class TestSympy:
             assert result == expected
 
     @pytest.mark.parametrize(
+        "test",
+        [
+            "min(-n, -m, m)",
+            "arctan2(m, n)",
+            "cos(m)",
+            "U(m)",
+            "FiniteSet(m)",
+            "Union()",
+            "Intersection(m)",
+            "Interval(m, m)",
+        ],
+    )
+    def test_sets_disabled_does_not_break_function_calls(self, test: str) -> None:
+        # technically this is redundant with some
+        out = psu.try_parse_string_as_sympy(
+            test,
+            ["n", "m"],
+            custom_functions=["U", "FiniteSet", "Union", "Interval", "Intersection"],
+            allow_sets=False,
+        )
+        assert isinstance(out, psu.SympyParseSuccess), f'broke on "{test}": {out}'
+
+    @pytest.mark.parametrize(
         ("a_sub", "variables", "expected"),
         [
             # See https://github.com/PrairieLearn/PrairieLearn/issues/11709 for additional details.
@@ -282,6 +452,64 @@ class TestSympy:
         )
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
+
+    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
+    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
+        )
+
+    def test_sets_json_conversion_requires_sets_enabled(self) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.sympy_to_json(sympy.Interval(0, 1))
+
+    @pytest.mark.parametrize(
+        ("fn_name", "fn_args"),
+        [
+            ("FiniteSet", (M,)),
+            ("Interval", (0, 1)),
+            ("Union", (sympy.EmptySet, sympy.EmptySet)),
+            ("Intersection", (sympy.EmptySet, sympy.EmptySet)),
+        ],
+    )
+    def test_sets_reserveds_respected_by_json_conversion(
+        self,
+        fn_name: str,
+        fn_args: tuple[Any, ...],
+    ) -> None:
+        expr = sympy.Function(fn_name)(*fn_args)
+        assert isinstance(expr, sympy.Basic)
+
+        without_sets = psu.sympy_to_json(expr, allow_sets=False)
+        with_sets = psu.sympy_to_json(expr, allow_sets=True)
+
+        assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
+        assert with_sets["_custom_functions"] == []  # type: ignore
+
+    def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
+        x = sympy.Symbol("x")
+        union = sympy.Function("Union")
+        expr = union(x)
+
+        assert psu.json_to_sympy(psu.sympy_to_json(expr)) == expr
+
+    @pytest.mark.parametrize(
+        "sympy_expr",
+        [
+            sympy.symbols("U"),
+            sympy.symbols("FiniteSet"),
+            sympy.symbols("Interval"),
+            sympy.symbols("Union"),
+            sympy.symbols("Intersection"),
+        ],
+    )
+    def test_sets_disabled_reserveds_pass_json_conversion(
+        self, sympy_expr: sympy.Expr
+    ) -> None:
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr, allow_sets=False),
+            allow_sets=False,
+        )
 
     @pytest.mark.parametrize(
         ("a_pair", "custom_functions"),
@@ -423,6 +651,31 @@ class TestExceptions:
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
             )
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "∪",  # noqa: RUF001
+            "∩",
+            "&",
+            "|",
+            "{}",
+            "1 ∪ 2",  # noqa: RUF001
+            "1 ∩ 2",
+            "1 & 2",
+            "1 | 2",
+            "{1, 2, 3}",
+            "(0, 1)",
+            "(0, 1]",
+            "[0, 1)",
+            "[0, 1]",
+        ],
+    )
+    def test_sets_notation_specific_syntax_rejected_when_disabled(
+        self, text: str
+    ) -> None:
+        with pytest.raises(psu.HasSetNotationError):
+            psu.convert_string_to_sympy(text, allow_sets=False)
+
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
         with pytest.raises(psu.HasConflictingVariableError):
@@ -449,7 +702,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises((psu.HasInvalidSymbolError, psu.HasInvalidVariableError)):
+        with pytest.raises(psu.HasInvalidSymbolError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", FUNCTION_NOT_CALLED_CASES)
@@ -539,107 +792,168 @@ class TestExceptions:
         )
 
     @pytest.mark.parametrize(
-        ("expr", "expected_caret", "with_vars"),
+        "text",
+        [
+            # invalid syntax
+            "[1, 2",
+            "1, 2]",
+            "(1, 2",
+            "1, 2)",
+            "[1, 2, 3]",
+            "(1, 2, 3]",
+            "[1, 2, 3)",
+            "(1, 2, 3)",
+            "[1, 2}",
+            "{1, 2]",
+            # valid syntax, invalid nesting
+            "(1, [2, 3])",
+            "(1, [2, 3))",
+            "(1, (2, 3])",
+            "(1, (2, 3))",
+            "(1, [2, 3]]",
+            "(1, [2, 3)]",
+            "(1, (2, 3]]",
+            "(1, (2, 3)]",
+            "[1, [2, 3])",
+            "[1, [2, 3))",
+            "[1, (2, 3])",
+            "[1, (2, 3))",
+            "[1, [2, 3]]",
+            "[1, [2, 3)]",
+            "[1, (2, 3]]",
+            "[1, (2, 3)]",
+            "[1, {2, 3}]",
+            "[{2, 3}, 1]",
+        ],
+    )
+    def test_sets_syntax_errors_are_rejected(self, text: str) -> None:
+        out = psu.try_parse_string_as_sympy(text, None, allow_sets=True)
+        assert isinstance(out, psu.SympyParseFailure)
+        assert "syntax error" in out.error
+
+    @pytest.mark.parametrize(
+        ("caret_spec", "with_vars"),
         [
             # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
             # shifting the '#' offset. Caret must still point at '#' in the original input.
-            (
-                "1234567890 # abcdefghij",
-                _caret(
-                    "7890 # abc",
-                    "     ^     ",
-                ),
-                (),
-            ),
+            ("1234567890 !# abcdefghij", ()),
             # '#' at the very start of the expression
-            (
-                "# x + 1",
-                _caret(
-                    "# x +",
-                    "^     ",
-                ),
-                (),
-            ),
+            ("!# x + 1", ()),
             # '#' after '^' which becomes '**' (offset shift from replacement)
-            (
-                "n^2 # comment",
-                _caret(
-                    "n^2 # com",
-                    "    ^     ",
-                ),
-                (),
-            ),
+            ("n^2 !# comment", ()),
             # #14141: '\\' at the start — previously misreported as generic "syntax error"
             # because stringify_expr raised TokenError before ast_check_str ran
-            (
-                "\\n + 2",
-                _caret(
-                    "\\n + ",
-                    "^     ",
-                ),
-                (),
-            ),
+            ("!\\n + 2", ()),
             # '\\' after a large integer
-            (
-                "1234567890 \\",
-                _caret(
-                    "7890 \\",
-                    "     ^ ",
-                ),
-                (),
-            ),
+            ("1234567890 !\\", ()),
             # #14142: invalid symbol — previously showed an empty caret pointing at nothing
             # because point_to_error received ind=-1
-            (
-                "nlogn",
-                _caret(
-                    "nlogn",
-                    "  ^   ",
-                ),
-                (),
-            ),
+            ("nl!ogn", ()),
             # Invalid symbol in the middle of a valid expression
-            (
-                "n + abc",
-                _caret(
-                    " + abc",
-                    "     ^ ",
-                ),
-                (),
-            ),
+            ("n + ab!c", ()),
+            # bad uses of ambiguous set infix ops resolve to unknown symbols
+            ("1!U2", ()),
             # Invalid symbol at the start
-            (
-                "xyz * n",
-                _caret(
-                    "xyz * n",
-                    "  ^     ",
-                ),
-                (),
-            ),
+            ("xy!z * n", ()),
             # Invalid symbol after a valid symbol containing the same character
-            (
-                "ab + a",
-                _caret(
-                    "ab + a",
-                    "     ^ ",
-                ),
-                ("ab",),
-            ),
+            ("ab + !a", ("ab",)),
         ],
     )
     def test_error_caret_output(
-        self, expr: str, expected_caret: str, with_vars: tuple[str, ...]
+        self, caret_spec: str, with_vars: tuple[str, ...]
     ) -> None:
         """Regression tests for #14141 and #14142.
 
         Verifies that the caret visualization in error messages points at the
         correct character in the original input expression.
         """
+        expr, expected_caret = _caret_template(caret_spec)
         error_msg = psu.validate_string_as_sympy(expr, self.VARIABLES + with_vars)
         assert error_msg is not None
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None
         assert match.group(1) == expected_caret
+
+    SET_TYPE_ERROR_CARET_TEMPLATES = (
+        "{1, 2} !/ {2, 3}",
+        "{1, 2} !U 3",
+        "{1, 2} !+ 3",
+        "{1, 2} !- 3",
+        "1 !+ {2, 3}",
+        "1 !- {2, 3}",
+        "!factorial({})",
+        "!sin({ {}, {} })",
+        "!cos({a, b})",
+        "!Integer({1, 2})",
+        "!exp({2, 3})",
+        "!Interval({}, 2)",
+        "!Interval(1, {})",
+        "!Interval(1)",
+        "!Interval(1, 2, 3)",
+        "!Union(1, 2)",
+        "!Intersection(1, 2)",
+        "!Intersection({}, 2)",
+        "!Intersection( )",
+        "1 !U 2",
+        "1 !| 2",
+        "1 !cup 2",
+        "1 !∪ 2",  # noqa: RUF001
+        "1 !& 2",
+        "1 !cap 2",
+        "1 !∩ 2",
+        "10/2 !U 2/10",
+        "10/2 !| 2/10",
+        "{1, 2} !* {3, 4}",
+        "x^2 !/ {1,2}",
+        "x^2 !U {1,2}",
+    )
+
+    @pytest.mark.parametrize(
+        "caret_spec",
+        list(
+            dict.fromkeys(
+                list(SET_TYPE_ERROR_CARET_TEMPLATES)
+                + [t.replace(" ", "") for t in SET_TYPE_ERROR_CARET_TEMPLATES]
+            )
+        ),
+    )
+    def test_sets_operation_type_error_caret_output(self, caret_spec: str) -> None:
+        expr, expected_caret = _caret_template(caret_spec)
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_sets=True)
+        assert error_msg is not None
+        assert re.search(r"\b(set|arguments?|syntax)\b", error_msg) is not None, (
+            f"error message is not descriptive: {error_msg}"
+        )
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None, f"error message has no caret: {error_msg}"
+        assert expected_caret == match.group(1)
+
+    @pytest.mark.parametrize(
+        "caret_spec",
+        [
+            "{1, 2} {1, 2}",  # implicit mult results in caret-less type error
+            "{1, 2} !* {1, 2}",
+            "{1, 2} !** 3",
+            "{1, 2} !/ 3",
+            "{1, 2} !/ {2}",
+        ],
+    )
+    def test_sets_unsupported_product_features_are_rejected(
+        self, caret_spec: str
+    ) -> None:
+        if "!" in caret_spec:
+            expr, expected_caret = _caret_template(caret_spec)
+        else:
+            expr, expected_caret = caret_spec, None
+        error_msg = psu.validate_string_as_sympy(expr, None, allow_sets=True)
+        assert error_msg is not None
+        assert re.search(r"\bset\b", error_msg, re.IGNORECASE), (
+            f"error message is not descriptive: {error_msg}"
+        )
+        if expected_caret:
+            match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+            assert match is not None, f"error message has no caret: {error_msg}"
+            assert expected_caret == match.group(1)
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.
@@ -716,6 +1030,26 @@ class TestValidateNamesForConflicts:
                 "test", [], [conflicting_name], allow_complex=True
             )
 
+    @pytest.mark.parametrize("conflicting_name", ["U", "cap", "cup"])
+    def test_sets_notation_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_sets=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_sets=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_sets=True
+            )
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [], [conflicting_name], allow_sets=True
+            )
+
     @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
     def test_trig_functions_only_conflict_when_enabled(
         self, conflicting_name: str
@@ -731,6 +1065,51 @@ class TestValidateNamesForConflicts:
             psu.validate_names_for_conflicts("test", [conflicting_name], [])
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts("test", [], [conflicting_name])
+
+    _SET_OPERATORS = "U", "cup", "cap", "∪", "∩"  # noqa: RUF001
+
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
+    def test_sets_notation_alias_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingVariableError):
+            psu.convert_string_to_sympy(
+                "0", [conflicting_name], allow_sets=True, custom_functions=[]
+            )
+
+    @pytest.mark.parametrize("conflicting_name", _SET_OPERATORS)
+    def test_sets_notation_alias_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(psu.HasConflictingFunctionError):
+            psu.convert_string_to_sympy(
+                "0", [], allow_sets=True, custom_functions=[conflicting_name]
+            )
+
+    _MANGLED_SET_OPERATORS = tuple(
+        f"{op}{num}" for op in _SET_OPERATORS for num in (*range(11), 765, 173209)
+    )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_sets_mangled_notation_conflicts_with_variables(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0", [conflicting_name], allow_sets=True, custom_functions=[]
+            )
+
+    @pytest.mark.parametrize("conflicting_name", _MANGLED_SET_OPERATORS)
+    def test_sets_mangled_notation_conflicts_with_custom_functions(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "0",
+                [],
+                allow_sets=True,
+                custom_functions=[conflicting_name],
+            )
 
 
 class TestValidateStringConfigurationErrors:

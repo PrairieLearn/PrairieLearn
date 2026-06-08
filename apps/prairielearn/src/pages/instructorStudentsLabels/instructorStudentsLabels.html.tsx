@@ -5,6 +5,7 @@ import { Alert } from 'react-bootstrap';
 import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { MAX_STUDENT_LABELS_PER_COURSE_INSTANCE } from '../../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';
 
@@ -18,6 +19,7 @@ interface StudentLabelsPageProps {
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
+  isExampleCourse: boolean;
   isDevMode: boolean;
   origHash: string | null;
 }
@@ -26,11 +28,13 @@ function StudentLabelsCard({
   courseInstanceId,
   initialLabels,
   canEdit,
+  isExampleCourse,
   origHash: initialOrigHash,
 }: {
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
+  isExampleCourse: boolean;
   origHash: string | null;
 }) {
   const trpc = useTRPC();
@@ -45,6 +49,7 @@ function StudentLabelsCard({
   });
 
   const labels = data.labels;
+  const atStudentLabelLimit = labels.length >= MAX_STUDENT_LABELS_PER_COURSE_INSTANCE;
   const [origHashOverride, setOrigHashOverride] = useState<string | null>(null);
   const origHash = origHashOverride ?? data.origHash ?? initialOrigHash;
 
@@ -92,7 +97,7 @@ function StudentLabelsCard({
             <button
               type="button"
               className="btn btn-outline-primary btn-sm text-nowrap"
-              disabled={origHash === null}
+              disabled={origHash === null || atStudentLabelLimit}
               onClick={() => editModal.showWithData({ type: 'add', origHash })}
             >
               Add label
@@ -107,8 +112,9 @@ function StudentLabelsCard({
 
       {!canEdit && (
         <Alert variant="info">
-          You can view labels on this page, but creating, renaming, deleting, and assigning labels
-          here requires both course editor and student data editor permissions.
+          {isExampleCourse
+            ? "You can't edit student labels in the example course."
+            : 'You can view labels on this page, but creating, renaming, deleting, and assigning labels here requires both course editor and student data editor permissions.'}
         </Alert>
       )}
 
@@ -123,6 +129,13 @@ function StudentLabelsCard({
           You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
           not exist.
         </div>
+      )}
+
+      {canEdit && atStudentLabelLimit && (
+        <Alert variant="info">
+          This course instance has reached the limit of {MAX_STUDENT_LABELS_PER_COURSE_INSTANCE}{' '}
+          student labels. Existing labels can still be edited or deleted.
+        </Alert>
       )}
 
       {labels.length === 0 ? (

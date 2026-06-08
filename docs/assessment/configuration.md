@@ -443,12 +443,13 @@ The `groups` object supports the following properties:
 
 | Attribute            | Type    | Default | Description                                                                                                                      |
 | -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`            | boolean | `true`  | Whether groups are enabled for this assessment.                                                                                  |
 | `minMembers`         | integer | -       | The minimum number of students in a group.                                                                                       |
 | `maxMembers`         | integer | -       | The maximum number of students in a group.                                                                                       |
 | `roles`              | array   | `[]`    | Array of custom user roles in a group. See [Enabling custom group roles](#enabling-custom-group-roles).                          |
 | `studentPermissions` | object  | `{}`    | Student permissions for group management. See below.                                                                             |
 | `rolePermissions`    | object  | `{}`    | Role-based permissions for group assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
+
+The presence of the `groups` object indicates that group work is enabled for the assessment; remove the property to disable group work.
 
 ### Student permissions
 
@@ -456,10 +457,14 @@ The `studentPermissions` object controls what students can do to manage their gr
 
 | Attribute        | Type    | Default | Description                                                                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
+| `canCreateGroup` | boolean | `true`  | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `true`  | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `true`  | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+
+??? note "Legacy defaults"
+
+    The previous legacy defaults were `canCreateGroup: false`, `canJoinGroup: false`, `canLeaveGroup: false`, `canNameGroup: true`.
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
 
@@ -503,9 +508,9 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group memberships. This can be used to copy group memberships from one assessment to another. The same file can also be exported from the "Groups" tab by using "Actions" > "Export CSV".
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Assign randomly" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
@@ -952,7 +957,7 @@ Real-time grading can be disabled for an entire assessment:
 }
 ```
 
-It can also be disabled for specific zones, alternative groups, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
+It can also be disabled for specific zones, alternative pools, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
 
 ```json title="infoAssessment.json"
 {
@@ -1048,7 +1053,7 @@ To disable this requirement, set `"requireHonorCode": false` as a top-level opti
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
 
-The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting; HTML is not supported. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
 
 For example:
 

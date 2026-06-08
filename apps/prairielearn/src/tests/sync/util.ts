@@ -1,13 +1,12 @@
+import { strict as assert } from 'node:assert';
 import * as path from 'path';
 
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { type AnyRowSchema } from '@prairielearn/postgres';
 
 import {
   AlternativeGroupSchema,
@@ -254,7 +253,6 @@ const courseInstances: Record<string, CourseInstanceData> = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [{ credit: 100 }],
         zones: [
           {
             title: 'zone 1',
@@ -361,7 +359,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * @param schema - The schema of the table to query
  * @returns The rows of the given table
  */
-export async function dumpTableWithSchema<Schema extends AnyRowSchema>(
+export async function dumpTableWithSchema<Schema extends z.ZodType>(
   tableName: string,
   schema: Schema,
 ): Promise<z.infer<Schema>[]> {

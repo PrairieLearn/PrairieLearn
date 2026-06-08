@@ -8,15 +8,20 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { CourseInfoCreateEditor, FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { config } from '../../lib/config.js';
+import { CourseInfoCreateEditor, prepareJsonFileEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { computeStableHash } from '../../lib/json.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { updateCourseShowGettingStarted } from '../../models/course.js';
+import {
+  updateCourseQuestionsReceiveUserData,
+  updateCourseShowGettingStarted,
+} from '../../models/course.js';
+import type { CourseJsonInput } from '../../schemas/infoCourse.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
@@ -38,8 +43,13 @@ router.get(
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
 
-    const origHash =
-      (await getOriginalHash(path.join(res.locals.course.path, 'infoCourse.json'))) ?? '';
+    const origHash = courseInfoExists
+      ? computeStableHash(
+          JSON.parse(
+            await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
+          ),
+        )
+      : '';
 
     const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
       course_id: res.locals.course.id,
@@ -110,6 +120,19 @@ router.post(
         });
       }
 
+      const questions_receive_user_data = req.body.questions_receive_user_data === 'on';
+      const questions_receive_user_data_changed =
+        res.locals.course.questions_receive_user_data !== questions_receive_user_data;
+
+      if (questions_receive_user_data_changed) {
+        if (!res.locals.authz_data.has_course_permission_own) {
+          throw new error.HttpStatusError(
+            403,
+            'Only course owners can change whether questions receive user data',
+          );
+        }
+      }
+
       const context = {
         course_id: res.locals.course.id,
         institution_id: res.locals.institution.id,
@@ -125,34 +148,73 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
 
-      const courseInfo = JSON.parse(
-        await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
-      );
+      const preparedEditor = await prepareJsonFileEditor<CourseJsonInput>({
+        jsonPath: path.join(res.locals.course.path, 'infoCourse.json'),
+        conflictCheck: { origHash: req.body.orig_hash, scope: (courseInfo) => courseInfo },
+        applyChanges: (courseInfo) => {
+          courseInfo.name = req.body.short_name;
+          courseInfo.title = req.body.title;
+          courseInfo.timezone = req.body.display_timezone;
 
-      const origHash = req.body.orig_hash;
+          // Always mirror the setting into infoCourse.json. In dev mode this JSON
+          // value is the source of truth for sync; in production the database
+          // column is authoritative and sync only warns if the two diverge.
+          if (questions_receive_user_data) {
+            courseInfo.options = { ...courseInfo.options, questionsReceiveUserData: true };
+          } else {
+            delete courseInfo.options?.questionsReceiveUserData;
+          }
 
-      const courseInfoEdit = courseInfo;
-      courseInfoEdit.name = req.body.short_name;
-      courseInfoEdit.title = req.body.title;
-      courseInfoEdit.timezone = req.body.display_timezone;
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
+          return courseInfo;
         },
-        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
-        editContents: b64EncodeUnicode(JSON.stringify(courseInfoEdit, null, 2)),
-        origHash,
+        locals: {
+          authz_data: res.locals.authz_data,
+          course: res.locals.course,
+          user: res.locals.user,
+        },
+        container: { rootPath: paths.rootPath, invalidRootPaths: paths.invalidRootPaths },
       });
 
-      const serverJob = await editor.prepareServerJob();
+      if (!preparedEditor.success) {
+        flash(
+          'error',
+          'Course configuration was modified elsewhere. Please reload the page and try again.',
+        );
+        return res.redirect(req.originalUrl);
+      }
+
+      // In production, sync treats the database as the source of truth for this
+      // setting and warns if infoCourse.json disagrees. Update the DB before
+      // executing the file edit so the sync triggered by the edit sees the new
+      // value. Risk: if the later file edit fails, the DB setting has still
+      // changed and the JSON mirror may be stale until the next successful save.
+      if (questions_receive_user_data_changed && !config.devMode) {
+        await updateCourseQuestionsReceiveUserData({
+          course_id: res.locals.course.id,
+          questions_receive_user_data,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          old_questions_receive_user_data: res.locals.course.questions_receive_user_data,
+        });
+      }
+
+      const serverJob = await preparedEditor.editor.prepareServerJob();
       try {
-        await editor.executeWithServerJob(serverJob);
+        await preparedEditor.editor.executeWithServerJob(serverJob);
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
+
+      if (questions_receive_user_data_changed && config.devMode) {
+        await updateCourseQuestionsReceiveUserData({
+          course_id: res.locals.course.id,
+          questions_receive_user_data,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          old_questions_receive_user_data: res.locals.course.questions_receive_user_data,
+        });
+      }
+
       flash('success', 'Course configuration updated successfully');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_configuration') {

@@ -10,6 +10,7 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -21,7 +22,9 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
+import { parseGithubRepository } from '../lib/github-utils.js';
 
+import { insertAuditEvent } from './audit-event.js';
 import { insertAuditLog } from './audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -30,7 +33,7 @@ const CourseWithPermissionsSchema = z.object({
   course: CourseSchema,
   course_role: EnumCourseRoleSchema,
 });
-export type CourseWithPermissions = Course & {
+type CourseWithPermissions = Course & {
   permissions_course: {
     course_role: EnumCourseRole;
     has_course_permission_own: boolean;
@@ -50,6 +53,80 @@ export async function selectOptionalCourseById(course_id: string): Promise<Cours
 
 export async function selectCourseByShortName(shortName: string): Promise<Course> {
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
+}
+
+export async function selectOptionalCourseByGithubRepository({
+  owner,
+  repoName,
+}: {
+  owner: string;
+  repoName: string;
+}): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally in the loose match.
+  const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  const candidates = await queryRows(
+    sql.select_course_by_github_repository,
+    { owner: escapedOwner, repo_name: escapedRepoName },
+    CourseSchema,
+  );
+  const match = candidates.find((c) => {
+    const parsed = c.repository ? parseGithubRepository(c.repository) : null;
+    if (parsed === null) return false;
+    return (
+      parsed.owner.toLowerCase() === owner.toLowerCase() &&
+      parsed.repo.toLowerCase() === repoName.toLowerCase()
+    );
+  });
+  return match ?? null;
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
+interface CourseFieldCheck {
+  exists: boolean;
+  owned: boolean;
+}
+
+const CourseFieldCheckRowSchema = z.object({
+  exists: z.boolean(),
+  owned: z.boolean().nullable(),
+});
+
+export async function checkCourseTitleInInstitution({
+  title,
+  institutionId,
+  userId,
+}: {
+  title: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_title_in_institution,
+    { title, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export async function checkCourseShortNameInInstitution({
+  shortName,
+  institutionId,
+  userId,
+}: {
+  shortName: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
 }
 
 export function getLockNameForCoursePath(coursePath: string): string {
@@ -159,7 +236,7 @@ export async function selectCoursesWithStaffAccess({
       // Administrators have Owner permission in all courses, so we can skip the
       // complex query and just return all courses
       const courses = await queryRows(sql.select_all_courses, CourseSchema);
-      return courses.map((course) => ({ course, course_role: 'Owner' as EnumCourseRole }));
+      return courses.map((course) => ({ course, course_role: 'Owner' as const }));
     }
 
     return await queryRows(
@@ -230,6 +307,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
@@ -271,6 +349,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
@@ -319,6 +398,7 @@ export async function updateCourseColumn({
       { course_id: courseId, value },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id: authnUserId,
       action: 'update',
@@ -352,6 +432,79 @@ export async function updateCourseShowGettingStarted({
 }
 
 /**
+ * Update the `questions_receive_user_data` column for a course, and record an
+ * audit event in the same transaction.
+ */
+export async function updateCourseQuestionsReceiveUserData({
+  course_id,
+  questions_receive_user_data,
+  authn_user_id,
+  user_id,
+  old_questions_receive_user_data,
+}: {
+  course_id: string;
+  questions_receive_user_data: boolean;
+  authn_user_id: string;
+  user_id: string;
+  /**
+   * The value observed before this save began. A sync triggered by saving
+   * `infoCourse.json` may have already written the column in dev mode, so we
+   * compare against this rather than a fresh read to detect the real change.
+   */
+  old_questions_receive_user_data: boolean;
+}): Promise<Course> {
+  if (old_questions_receive_user_data === questions_receive_user_data) {
+    return await selectCourseById(course_id);
+  }
+  return await runInTransactionAsync(async () => {
+    const newCourse = await queryRow(
+      sql.update_course_questions_receive_user_data,
+      { course_id, questions_receive_user_data },
+      CourseSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'courses',
+      action: 'update',
+      actionDetail: 'questions_receive_user_data',
+      rowId: course_id,
+      agentAuthnUserId: authn_user_id,
+      agentUserId: user_id,
+      courseId: course_id,
+      institutionId: newCourse.institution_id,
+      oldRow: { questions_receive_user_data: old_questions_receive_user_data },
+      newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
+    });
+    return newCourse;
+  });
+}
+
+/**
+ * Returns `true` if the course can still pick/change its sharing name — i.e.
+ * no sharing name has been set yet, or no questions have been shared publicly
+ * or through a sharing set. Changing the sharing name after questions have
+ * been shared would break consuming courses that imported those questions.
+ */
+export async function selectCanChooseSharingName(course: {
+  id: string;
+  sharing_name: string | null;
+}): Promise<boolean> {
+  return (
+    course.sharing_name === null ||
+    !(await queryScalar(sql.select_shared_question_exists, { course_id: course.id }, z.boolean()))
+  );
+}
+
+export async function selectOptionalCourseBySharingToken(
+  sharing_token: string,
+): Promise<Course | null> {
+  return await queryOptionalRow(
+    sql.select_course_by_sharing_token,
+    { sharing_token },
+    CourseSchema,
+  );
+}
+
+/**
  * Update the `sharing_name` column for a course.
  */
 export async function updateCourseSharingName({
@@ -364,6 +517,29 @@ export async function updateCourseSharingName({
   await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,
+  });
+}
+
+/**
+ * Updates `sharing_name` only if the course is still allowed to change it
+ * (i.e., no sharing name yet, or no shared questions). The check and the
+ * write run in one transaction with `SELECT ... FOR UPDATE` on the courses
+ * row, so concurrent calls serialize and a question being shared between
+ * page-load and submit cannot slip past the guard. Returns `true` on
+ * success, `false` if the check failed at the time of the write.
+ */
+export async function updateCourseSharingNameIfAllowed({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<boolean> {
+  return await runInTransactionAsync(async () => {
+    const course = await queryRow(sql.select_course_by_id_for_update, { course_id }, CourseSchema);
+    if (!(await selectCanChooseSharingName(course))) return false;
+    await execute(sql.update_course_sharing_name, { course_id, sharing_name });
+    return true;
   });
 }
 

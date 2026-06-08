@@ -4,6 +4,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
 import type { StudentLabelUserData } from '../instructorStudentsLabels.types.js';
 
 export interface LabelDeleteModalData {
@@ -36,7 +37,7 @@ export function LabelDeleteModal({
     onSuccess: (result) => onSuccess(result.origHash),
   });
 
-  const appError = getAppError<'studentLabels.destroy'>(deleteMutation.error);
+  const appError = getAppError<StudentLabelError['Destroy']>(deleteMutation.error);
 
   function renderMutationError() {
     if (!appError) return null;

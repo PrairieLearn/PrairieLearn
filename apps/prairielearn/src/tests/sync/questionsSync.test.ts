@@ -908,7 +908,7 @@ describe('Question syncing', () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
         ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
-        badField: { type: 'invalid' as any, default: 'hello' as any },
+        badField: { type: 'invalid' as any, default: 'hello' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -920,7 +920,7 @@ describe('Question syncing', () => {
     it('fails with an error when a string default is given for a number type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badNum: { type: 'number', default: 'not-a-number' as any },
+        badNum: { type: 'number', default: 'not-a-number' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -932,7 +932,7 @@ describe('Question syncing', () => {
     it('fails with an error when a number default is given for a string type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badStr: { type: 'string', default: 42 as any },
+        badStr: { type: 'string', default: 42 },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -944,7 +944,7 @@ describe('Question syncing', () => {
     it('fails with an error when a string default is given for a boolean type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badBool: { type: 'boolean', default: 'yes' as any },
+        badBool: { type: 'boolean', default: 'yes' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -981,7 +981,7 @@ describe('Question syncing', () => {
     it('fails with an error when number enum values are given for a string type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badEnumType: { type: 'string', enum: [1, 2] as any, default: 'a' },
+        badEnumType: { type: 'string', enum: [1, 2], default: 'a' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -993,7 +993,7 @@ describe('Question syncing', () => {
     it('fails with an error when string enum values are given for a number type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badEnumType: { type: 'number', enum: ['a', 'b'] as any, default: 1 },
+        badEnumType: { type: 'number', enum: ['a', 'b'], default: 1 },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -1029,7 +1029,7 @@ describe('Question syncing', () => {
     it('reports multiple errors for multiple invalid preference fields', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        bad1: { type: 'number', default: 'wrong' as any },
+        bad1: { type: 'number', default: 'wrong' },
         bad2: { type: 'string', enum: ['a'], default: 'b' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);

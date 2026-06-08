@@ -36,6 +36,7 @@ find_module_augmentation_files() {
         --exclude-dir=build \
         --exclude-dir=client \
         --exclude-dir=assets \
+        --exclude-dir=.claude \
         2> /dev/null || true
 }
 
@@ -101,7 +102,7 @@ for tsconfig in $tsconfigs; do
 }
 EOF
 
-    yarn tsgo --project "$TMP" --skipLibCheck --noEmit || exit_code=$?
+    pnpm tsgo --project "$TMP" --skipLibCheck --noEmit || exit_code=$?
     rm -f "$TMP"
 done
 

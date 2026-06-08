@@ -22,8 +22,8 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { getFileMetadataForPath } from '../../lib/editorUtil.js';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
+import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -110,14 +110,16 @@ router.get(
 
       const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
       const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
+      const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
 
       const editorData: FileEditorData = {
         fileName: path.basename(relPath),
         normalizedFileName: path.normalize(relPath),
-        aceMode: getModeForPath(relPath).mode,
+        aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
         diskContents: encodedContents,
         diskHash: getHash(encodedContents),
         fileMetadata,
+        lintHtmlMustache,
       };
 
       const draftEdit = await readDraftEdit({
@@ -145,33 +147,14 @@ router.get(
             return;
           }
 
-          const job = draftEdit.jobSequence.jobs[0];
-
-          // We check for the presence of a `saveSucceeded` key to know if
-          // the edit was saved (i.e., written to disk in the case of no git,
-          // or written to disk and then pushed in the case of git). If this
-          // key exists, its value will be true.
-          if (job.data.saveSucceeded) {
-            draftEdit.didSave = true;
-
-            // We check for the presence of a `syncSucceeded` key to know
-            // if the sync was successful. If this key exists, its value will
-            // be true. Note that the cause of sync failure could be a file
-            // other than the one being edited.
-            //
-            // By "the sync" we mean "the sync after a successfully saved
-            // edit." Remember that, if using git, we pull before we push.
-            // So, if we error on save, then we still try to sync whatever
-            // was pulled from the remote repository, even though changes
-            // made by the edit will have been discarded. We ignore this
-            // in the UI for now.
-            if (job.data.syncSucceeded) {
-              draftEdit.didSync = true;
-            }
-          }
+          // Note that if using git, we pull before we push, so a failed save
+          // still syncs whatever was pulled from the remote repository (with
+          // the edit's changes discarded). We ignore that case in the UI.
+          draftEdit.outcome = classifyEditOutcome(draftEdit.jobSequence.jobs[0].data);
         }
 
-        if (!draftEdit.didSave && draftEdit.hash !== editorData.diskHash) {
+        const editWasSaved = draftEdit.outcome != null && draftEdit.outcome !== 'save_failed';
+        if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
           // There is a recently saved draft that was not written to disk and that differs from what is on disk.
           draftEdit.alertChoice = true;
         }

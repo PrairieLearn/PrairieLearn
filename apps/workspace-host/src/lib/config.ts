@@ -4,6 +4,7 @@ import {
   ConfigLoader,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
@@ -88,5 +89,6 @@ export async function loadConfig(paths: string[]) {
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
   ]);
 }

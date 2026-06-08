@@ -3,6 +3,7 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { appErrorFormatter } from '../app-errors.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;
@@ -16,6 +17,7 @@ type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
+  errorFormatter: appErrorFormatter,
 });
 
 export const requireAdministrator = t.middleware((opts) => {

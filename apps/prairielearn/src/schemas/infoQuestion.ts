@@ -33,15 +33,13 @@ const QuestionDependencyJsonSchema = z
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
-      )
+      .describe('The styles required by this question from /public/stylesheets.')
+      .meta({ deprecated: true })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
-      )
+      .describe('The scripts required by this question from /public/javascripts.')
+      .meta({ deprecated: true })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -140,15 +138,14 @@ const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the workspace container.')
       .optional()
       .default({}),
     syncIgnore: z
       .array(z.string().describe('A single file or directory that will be excluded from sync.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
-      )
+      .describe('The list of files or directories that will be excluded from sync.')
+      .meta({ deprecated: true })
       .optional(),
   })
   .strict()
@@ -165,7 +162,8 @@ const ExternalGradingOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
-      .describe('[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.')
+      .describe('Whether the external grader is currently enabled.')
+      .meta({ deprecated: true })
       .optional()
       .default(true),
     image: z
@@ -203,7 +201,7 @@ const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the grading container.')
       .optional()
       .default({}),
@@ -235,16 +233,21 @@ export const QuestionJsonSchema = z
     authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client.')
+      .describe(
+        'The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.',
+      )
+      .meta({ deprecated: true })
       .optional()
       .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')
+      .meta({ deprecated: true })
       .optional(),
     template: z
       .string()
-      .describe('The QID of a question that serves at the template for this question.')
+      .describe('The QID of a question that serves as the template for this question.')
+      .meta({ deprecated: true })
       .optional(),
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
@@ -271,8 +274,9 @@ export const QuestionJsonSchema = z
       .object({})
       .catchall(z.any())
       .describe(
-        'Options that define how the question will work, specific to the individual question type.',
+        'Options that define how the question will work, specific to the individual question type (not supported for v3 questions).',
       )
+      .meta({ deprecated: true })
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
     dependencies: QuestionDependencyJsonSchema.optional().default({}),
@@ -294,7 +298,8 @@ export const QuestionJsonSchema = z
     preferences: QuestionPreferencesSchemaJsonSchema.optional(),
   })
   .strict()
-  .describe('Info files for questions.');
+  .describe('Info files for questions.')
+  .meta({ title: 'Question Info' });
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;
