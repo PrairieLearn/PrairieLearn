@@ -19,7 +19,7 @@ export interface RuntimeDateControl {
  * Discriminator for which structural slot a segment fills:
  * - `beforeRelease`: pre-release segment (always entries[0])
  * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
- * - `afterLastDeadline`: trailing segment when at least one deadline exists; credit/submittable come from `afterLastDeadline`
+ * - `afterLastDeadline`: trailing segment when at least one deadline exists; submission permission comes from `afterLastDeadline`
  * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
  */
 const AccessTimelineEntryKindSchema = z.enum([
@@ -38,7 +38,7 @@ export const AccessTimelineEntrySchema = z.object({
   current: z.boolean(),
   /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
-  /** False when the student has no access at all (afterLastDeadline omitted). Distinct from `submittable: false` which still allows viewing. */
+  /** False when the student has no access at all. Distinct from `submittable: false` which still allows viewing. */
   accessible: z.boolean(),
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
@@ -178,18 +178,19 @@ export function buildAccessTimeline(
       accessible: true,
     });
   } else {
-    // `afterLastDeadline` absent (undefined) or explicitly null = no access.
-    // `{ allowSubmissions: false }` = view-only (accessible but not submittable).
+    // After the final deadline, the assessment is complete and remains
+    // accessible for whatever afterComplete permits. `afterLastDeadline`
+    // controls only whether submissions continue and at what credit.
     const ald = dateControl.afterLastDeadline;
-    const hasAccess = ald != null;
+    const allowsSubmissions = ald?.allowSubmissions === true;
     entries.push({
       kind: 'afterLastDeadline',
       startDate: segStart,
       endDate: null,
-      credit: hasAccess ? (ald.credit ?? 0) : 0,
+      credit: allowsSubmissions ? (ald.credit ?? 0) : 0,
       current: isCurrent(segStart, null),
-      submittable: hasAccess && ald.allowSubmissions === true,
-      accessible: hasAccess,
+      submittable: allowsSubmissions,
+      accessible: true,
     });
   }
 

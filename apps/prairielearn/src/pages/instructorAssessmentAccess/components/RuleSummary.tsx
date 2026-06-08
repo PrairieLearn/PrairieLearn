@@ -301,12 +301,12 @@ export function generateDefaultRuleDateTableRows(
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       access:
         afterLastDeadline == null
-          ? 'No access'
+          ? 'Closed to submissions'
           : afterLastDeadline.allowSubmissions
             ? afterLastDeadline.credit != null
               ? formatCreditPercent(afterLastDeadline.credit)
               : 'Practice'
-            : 'Closed',
+            : 'Closed to submissions',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -526,7 +526,7 @@ function formatDeadlineEntries(
 }
 
 function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
-  if (afterLastDeadline == null) return 'No access';
+  if (afterLastDeadline == null) return 'No submissions allowed';
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
@@ -536,9 +536,9 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | nul
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Practice submissions allowed');
   } else {
-    parts.push('Closed');
+    parts.push('No submissions allowed');
   }
   return parts.join(', ');
 }
@@ -1063,11 +1063,11 @@ function buildDefaultRuleCurrentIndicator(
   }
 
   if (!segment.accessible) {
-    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
+    return { variant: 'secondary', icon: 'bi-x-circle', text: 'Not accessible' };
   }
 
   if (!segment.submittable) {
-    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'Closed to submissions' };
   }
 
   if (segment.endDate) {

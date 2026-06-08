@@ -18,22 +18,13 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
-type AfterLastDeadlineMode =
-  | 'no_access'
-  | 'no_submissions'
-  | 'practice_submissions'
-  | 'partial_credit';
+type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
 const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
-    value: 'no_access',
-    label: 'No access',
-    description: 'Students cannot access the assessment',
-  },
-  {
     value: 'no_submissions',
     label: 'No submissions allowed',
-    description: 'Students can still view but not submit',
+    description: 'Students can review what after-completion visibility allows',
   },
   {
     value: 'practice_submissions',
@@ -61,7 +52,7 @@ function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
 }
 
 function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
-  if (value == null) return 'no_access';
+  if (value == null) return 'no_submissions';
   if (!value.allowSubmissions) return 'no_submissions';
   if (value.credit == null) return 'practice_submissions';
   return 'partial_credit';
@@ -162,9 +153,10 @@ function AfterLastDeadlineInput({
     if (lastDate) {
       return (
         <>
-          This will take effect after{' '}
+          This controls submission permission after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
-          , until the course instance end date.
+          , until the course instance end date. Visibility is controlled by the after-completion
+          settings.
         </>
       );
     }
@@ -172,16 +164,13 @@ function AfterLastDeadlineInput({
     // TODO: we want to update the UI to completely hide the "after last deadline" options
     // when there are in fact no deadlines. That'll render this branch obsolete, but in the
     // meantime we have to show something here.
-    return 'This will take effect until the course instance end date.';
+    return 'This controls submission permission until the course instance end date. Visibility is controlled by the after-completion settings.';
   };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
-      case 'no_access':
-        onChange(null);
-        break;
       case 'no_submissions':
-        onChange({ allowSubmissions: false });
+        onChange(null);
         break;
       case 'practice_submissions':
         onChange({ allowSubmissions: true });

@@ -272,7 +272,7 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, credit: 100, submittable: true },
       },
       {
-        name: 'after due date with no afterLastDeadline: no access',
+        name: 'after due date with no afterLastDeadline: complete review-only',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -282,10 +282,16 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: {
+          authorized: true,
+          credit: 0,
+          submittable: false,
+          complete: true,
+          visibilitySource: 'afterComplete',
+        },
       },
       {
-        name: 'after due date with explicit afterLastDeadline: null: no access (same as omitted)',
+        name: 'after due date with explicit afterLastDeadline: null: complete review-only',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -296,7 +302,13 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: {
+          authorized: true,
+          credit: 0,
+          submittable: false,
+          complete: true,
+          visibilitySource: 'afterComplete',
+        },
       },
       {
         name: 'after release date with indefinite due: 100% credit forever',
@@ -378,10 +390,16 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, credit: 0, submittable: true },
       },
       {
-        name: '0% credit late deadline: no access after the late window',
+        name: '0% credit late deadline: complete review-only after the late window',
         rules: [zeroCreditLateRule],
         date: new Date('2025-03-16T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: {
+          authorized: true,
+          credit: 0,
+          submittable: false,
+          complete: true,
+          visibilitySource: 'afterComplete',
+        },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -631,7 +649,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false, complete: true },
       },
       {
         name: 'no enrollment context → enrollment override skipped',
@@ -650,7 +668,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: null,
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0, complete: true },
       },
       {
         name: 'student_label override matches via label intersection',
@@ -682,10 +700,10 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0, complete: true },
       },
       {
-        name: 'override with explicit afterLastDeadline: null denies access after due',
+        name: 'override with explicit afterLastDeadline: null disables submissions after due',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -702,7 +720,7 @@ describe('resolveAccessControl', () => {
         ],
         enrollment: { enrollmentId: 'enroll-1', studentLabelIds: [] },
         date: new Date('2025-03-15T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0, complete: true },
       },
     ])('$name', (c) => {
       expect(runCase(c)).toMatchObject(c.expect);
@@ -1430,7 +1448,7 @@ describe('resolveAccessControl', () => {
         {
           // Public mode: DC path applies, past-due is shown as closed not "before
           // release".
-          name: 'past due in Public mode: no access (no afterLastDeadline)',
+          name: 'past due in Public mode: complete review-only (no afterLastDeadline)',
           rules: [
             makeDefaultRule(
               {
@@ -1445,9 +1463,10 @@ describe('resolveAccessControl', () => {
           ],
           authzMode: 'Public',
           expect: {
-            authorized: false,
+            authorized: true,
             submittable: false,
             credit: 0,
+            complete: true,
             showBeforeRelease: false,
           },
         },
@@ -1828,6 +1847,24 @@ describe('resolveAccessControl', () => {
         },
       },
       {
+        name: 'omitted afterLastDeadline: afterComplete visibility is applied',
+        rules: [
+          makeDefaultRule({
+            dateControl: {
+              release: { date: '2025-03-01T00:00:00Z' },
+              due: { date: '2025-03-10T00:00:00Z' },
+            },
+            afterComplete: { questions: { hidden: false } },
+          }),
+        ],
+        expect: {
+          authorized: true,
+          submittable: false,
+          complete: true,
+          visibility: { showQuestions: true, showScore: true },
+        },
+      },
+      {
         name: 'questions.hidden=false: questions visible',
         rules: [completedRule({ afterComplete: { questions: { hidden: false } } })],
         expect: {
@@ -1995,7 +2032,7 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        name: 'afterLastDeadline submissions allowed: afterComplete score policy is not applied',
+        name: 'afterLastDeadline submissions allowed: afterComplete score policy still applies',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -2010,8 +2047,8 @@ describe('resolveAccessControl', () => {
         expect: {
           authorized: true,
           submittable: true,
-          complete: false,
-          visibility: { showQuestions: true, showScore: true },
+          complete: true,
+          visibility: { showQuestions: false, showScore: false },
         },
       },
     ])('$name', (c) => {
@@ -2125,7 +2162,7 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, credit: 100 },
       },
       {
-        // Late deadline March 25 < due date March 30, so ignored → past due → no access
+        // Late deadline March 25 < due date March 30, so ignored → past due → complete review-only.
         name: 'late deadline before cascaded due date is ignored',
         rules: [
           makeDefaultRule({
@@ -2142,7 +2179,7 @@ describe('resolveAccessControl', () => {
           ),
         ],
         date: new Date('2025-04-01T00:00:00Z'),
-        expect: { authorized: false, submittable: false, credit: 0 },
+        expect: { authorized: true, submittable: false, credit: 0, complete: true },
       },
       {
         name: 'afterLastDeadline ignored when there are no deadlines',
@@ -2232,8 +2269,8 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: true, credit: 120 },
       },
       {
-        // No afterLastDeadline configured → no access.
-        name: 'no access after due date with no late deadlines',
+        // No afterLastDeadline configured → no submissions after the final deadline.
+        name: 'complete review-only after due date with no late deadlines',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -2243,7 +2280,7 @@ describe('resolveAccessControl', () => {
           }),
         ],
         date: new Date('2025-04-05T00:00:00Z'),
-        expect: { authorized: false, credit: 0, submittable: false },
+        expect: { authorized: true, credit: 0, submittable: false, complete: true },
       },
       {
         name: 'defaults due credit to 100 when credit field is omitted',
@@ -2554,7 +2591,7 @@ describe('resolveAccessControl', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: false,
+          accessible: true,
         },
       ]);
     });
