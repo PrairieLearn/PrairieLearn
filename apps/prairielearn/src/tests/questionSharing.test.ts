@@ -16,6 +16,7 @@ import { pullAndUpdateCourse } from '../lib/course.js';
 import { type Course } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
 import { features } from '../lib/features/index.js';
+import { UUID_REGEXP } from '../lib/string-util.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -49,8 +50,6 @@ const { logger } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-
-const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 
 const SHARING_COURSE_SHARING_NAME = 'sharing-course';
 const CONSUMING_COURSE_SHARING_NAME = 'consuming-course';
