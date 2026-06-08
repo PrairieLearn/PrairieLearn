@@ -204,14 +204,21 @@ describe('course database', () => {
             clientFilesCourseScripts: ['missing.js'],
             clientFilesQuestionStyles: ['missing.css'],
             clientFilesQuestionScripts: ['missing.js'],
-            nodeModulesStyles: ['missing.css'],
-            nodeModulesScripts: ['missing.js'],
+            nodeModulesStyles: ['@fortawesome/fontawesome-free/missing.css'],
+            nodeModulesScripts: ['@fortawesome/fontawesome-free/missing.js'],
           },
         };
         await writeQuestion(dir, 'question', question);
         const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.equal(Object.keys(result).length, 1);
-        assert.lengthOf(result['question'].warnings, 6);
+        assert.sameMembers(result['question'].warnings, [
+          'Missing dependency file: clientFilesCourse/missing.css.',
+          'Missing dependency file: clientFilesCourse/missing.js.',
+          'Missing dependency file: clientFilesQuestion/missing.css.',
+          'Missing dependency file: clientFilesQuestion/missing.js.',
+          'Missing dependency file: node_modules/@fortawesome/fontawesome-free/missing.css.',
+          'Missing dependency file: node_modules/@fortawesome/fontawesome-free/missing.js.',
+        ]);
       });
     });
 
@@ -226,7 +233,9 @@ describe('course database', () => {
         await writeQuestion(dir, 'question', question);
         const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.equal(Object.keys(result).length, 1);
-        assert.lengthOf(result['question'].warnings, 1);
+        assert.sameMembers(result['question'].warnings, [
+          'Node module dependency "@playwright/test" is only listed in devDependencies.',
+        ]);
       });
     });
 
@@ -241,7 +250,9 @@ describe('course database', () => {
         await writeQuestion(dir, 'question', question);
         const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.equal(Object.keys(result).length, 1);
-        assert.lengthOf(result['question'].warnings, 1);
+        assert.sameMembers(result['question'].warnings, [
+          'Node module dependency "@changesets/cli" is not a direct dependency of PrairieLearn.',
+        ]);
       });
     });
   });

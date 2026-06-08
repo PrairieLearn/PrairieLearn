@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -39,6 +40,8 @@ import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+
+const repoRequire = createRequire(path.join(REPOSITORY_ROOT_PATH, 'package.json'));
 
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
@@ -1036,25 +1039,19 @@ function isValidORCID(orcid: string): boolean {
 }
 
 function nodeModuleDependencyExists(file: string): boolean {
-  return (
-    fs.pathExistsSync(path.resolve(APP_ROOT_PATH, 'node_modules', file)) ||
-    fs.pathExistsSync(path.resolve(REPOSITORY_ROOT_PATH, 'node_modules', file))
-  );
+  try {
+    repoRequire.resolve(file);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-function getNodeModulePackage(file: string): string | null {
+function getNodeModulePackage(file: string): string {
   const parts = file.split('/');
 
-  if (parts.length === 0) {
-    return null;
-  }
-
   if (parts[0].startsWith('@')) {
-    if (parts.length < 2) {
-      return null;
-    }
-
-    return `${parts[0]}/${parts[1]}`;
+    return parts.slice(0, 2).join('/');
   }
 
   return parts[0];
@@ -1095,45 +1092,21 @@ function validateNodeModulesDependency({
   const packageName = getNodeModulePackage(file);
 
   if (!nodeModuleDependencyExists(file)) {
-    if (config.devMode) {
-      warnings.push(
-        `Missing dependency file: node_modules/${file}. ` +
-          'Check the filename or add the file to node_modules.',
-      );
-    } else {
-      warnings.push(`Missing dependency file: node_modules/${file}.`);
-    }
-    return;
+    warnings.push(`Missing dependency file: node_modules/${file}.`);
   }
 
-  if (packageName != null && !checkedPackages.has(packageName)) {
+  if (!checkedPackages.has(packageName)) {
     checkedPackages.add(packageName);
 
     const { dependencies, devDependencies } = getPrairieLearnPackageDependencies();
 
     if (!dependencies.has(packageName)) {
       if (devDependencies.has(packageName)) {
-        if (config.devMode) {
-          warnings.push(
-            `Node module dependency "${packageName}" is only listed in devDependencies. ` +
-              'Runtime dependencies should be listed in dependencies.',
-          );
-        } else {
-          warnings.push(
-            `Node module dependency "${packageName}" is only listed in devDependencies.`,
-          );
-        }
+        warnings.push(`Node module dependency "${packageName}" is only listed in devDependencies.`);
       } else {
-        if (config.devMode) {
-          warnings.push(
-            `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn. ` +
-              'Add it to apps/prairielearn/package.json if required at runtime.',
-          );
-        } else {
-          warnings.push(
-            `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn.`,
-          );
-        }
+        warnings.push(
+          `Node module dependency "${packageName}" is not a direct dependency of PrairieLearn.`,
+        );
       }
     }
   }
@@ -1231,14 +1204,7 @@ function validateQuestion({
     const fullPath = path.join(coursePath, 'clientFilesCourse', file);
 
     if (!fs.pathExistsSync(fullPath)) {
-      if (config.devMode) {
-        warnings.push(
-          `Missing dependency file: clientFilesCourse/${file}. ` +
-            'Check the filename or add the file to clientFilesCourse.',
-        );
-      } else {
-        warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
-      }
+      warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
     }
   }
 
@@ -1246,14 +1212,7 @@ function validateQuestion({
     const fullPath = path.join(coursePath, 'clientFilesCourse', file);
 
     if (!fs.pathExistsSync(fullPath)) {
-      if (config.devMode) {
-        warnings.push(
-          `Missing dependency file: clientFilesCourse/${file}. ` +
-            'Check the filename or add the file to clientFilesCourse.',
-        );
-      } else {
-        warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
-      }
+      warnings.push(`Missing dependency file: clientFilesCourse/${file}.`);
     }
   }
 
@@ -1261,14 +1220,7 @@ function validateQuestion({
     const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
 
     if (!fs.pathExistsSync(fullPath)) {
-      if (config.devMode) {
-        warnings.push(
-          `Missing dependency file: clientFilesQuestion/${file}. ` +
-            'Check the filename or add the file to clientFilesQuestion.',
-        );
-      } else {
-        warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
-      }
+      warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
     }
   }
 
@@ -1276,14 +1228,7 @@ function validateQuestion({
     const fullPath = path.join(questionPath, 'clientFilesQuestion', file);
 
     if (!fs.pathExistsSync(fullPath)) {
-      if (config.devMode) {
-        warnings.push(
-          `Missing dependency file: clientFilesQuestion/${file}. ` +
-            'Check the filename or add the file to clientFilesQuestion.',
-        );
-      } else {
-        warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
-      }
+      warnings.push(`Missing dependency file: clientFilesQuestion/${file}.`);
     }
   }
 
