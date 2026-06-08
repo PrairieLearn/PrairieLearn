@@ -144,7 +144,7 @@ export type TestType = (typeof TEST_TYPES)[number];
  * @param authn_user_id - The currently authenticated user.
  * @returns The test submission data, as well as a flag indicating if there was a fatal issue.
  */
-export async function createTestSubmissionData(
+async function createTestSubmissionData(
   variant: Variant,
   question: Question,
   variant_course: Course,
