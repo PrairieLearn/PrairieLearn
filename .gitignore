@@ -62,16 +62,8 @@ docker-compose.override.yml
 /server.log
 /apps/prairielearn/server.log
 
-## Yarn
+## pnpm
 node_modules
-yarn-error.log
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
 
 ## Programming languages
 

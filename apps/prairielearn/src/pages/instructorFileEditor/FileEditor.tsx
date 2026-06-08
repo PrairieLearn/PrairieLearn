@@ -7,11 +7,13 @@ import { Fragment, type SubmitEvent, useCallback, useRef, useState } from 'react
 import { Alert, Collapse, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { AceFileEditor, type AceFileEditorHandle } from '../../components/AceFileEditor.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
-import { FileType } from '../../lib/editorUtil.shared.js';
+import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
+import type { EditOutcome } from '../../lib/editors.js';
 import type { StaffJobSequenceWithJobs } from '../../lib/server-jobs.types.js';
 
 import type { FileEditorData } from './instructorFileEditor.types.js';
@@ -161,6 +163,55 @@ async function contentsWithRestoredUuid(
   });
 }
 
+/**
+ * Determines the alert style and message for the save/sync result banner.
+ *
+ * For a `sync_json_errors` outcome the sync ran to completion but some entity
+ * had invalid JSON. We use the edited file's own per-entity `sync_errors` to
+ * tell whether THIS file caused the errors vs. some unrelated file, so we can
+ * show a specific message instead of a blanket "sync failed" message.
+ *
+ * `outcome` is undefined when there is a draft but no associated edit job, in
+ * which case nothing was saved to disk yet.
+ */
+function getSyncAlert(
+  outcome: EditOutcome | undefined,
+  fileMetadata?: FileMetadata,
+): { variant: 'success' | 'danger' | 'warning'; message: string } {
+  switch (outcome) {
+    case undefined:
+    case 'save_failed':
+      return { variant: 'danger', message: 'Failed to save file.' };
+    case 'sync_failed':
+      return { variant: 'danger', message: 'File was saved, but the course failed to sync.' };
+    case 'sync_json_errors':
+      // The file's own entity has sync errors — the user's edit likely caused them.
+      if (fileMetadata?.syncErrors) {
+        return {
+          variant: 'danger',
+          message:
+            'File was saved, but it contains errors that prevented it from syncing. See the details above.',
+        };
+      }
+      // The sync completed, but some *other* entity has JSON errors. The user's
+      // file synced fine — we show a warning so they're not alarmed.
+      //
+      // TODO: This can be misleading when the user's edit *caused* errors in other
+      // entities (e.g., renaming a QID that an assessment references). We'd need to
+      // snapshot sync_errors before the sync and diff afterward to distinguish
+      // "pre-existing errors" from "errors caused by this edit."
+      return {
+        variant: 'warning',
+        message:
+          'File was saved and synced successfully. Other files in this course have sync errors.',
+      };
+    case 'success':
+      return { variant: 'success', message: 'File was saved and synced successfully.' };
+    default:
+      assertNever(outcome);
+  }
+}
+
 export function FileEditor({
   editorData,
   draftContents,
@@ -175,8 +226,7 @@ export function FileEditor({
   draftContents?: string;
   versionChoice: { hasRemoteChanges: boolean } | null;
   draftEditResult: {
-    didSave: boolean;
-    didSync: boolean;
+    outcome: EditOutcome | undefined;
     jobSequence: StaffJobSequenceWithJobs | null;
   } | null;
   timeZone: string;
@@ -392,9 +442,7 @@ export function FileEditor({
             <div className="container-fluid">
               {draftEditResult != null ? (
                 <Alert
-                  variant={
-                    draftEditResult.didSave && draftEditResult.didSync ? 'success' : 'danger'
-                  }
+                  variant={getSyncAlert(draftEditResult.outcome, editorData.fileMetadata).variant}
                   className="m-2"
                   show={showStatusAlert}
                   dismissible
@@ -402,11 +450,7 @@ export function FileEditor({
                 >
                   <div className="row align-items-center">
                     <div className="col-auto">
-                      {!draftEditResult.didSave
-                        ? 'Failed to save and sync file.'
-                        : draftEditResult.didSync
-                          ? 'File was both saved and synced successfully.'
-                          : 'File was saved, but failed to sync.'}
+                      {getSyncAlert(draftEditResult.outcome, editorData.fileMetadata).message}
                     </div>
                     {draftEditResult.jobSequence != null ? (
                       <div className="col-auto">

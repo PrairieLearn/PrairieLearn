@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -29,7 +29,7 @@ import {
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
 } from './types.js';
-import { type AccessControlFormFieldPath, getGlobalDateValidationErrors } from './validation.js';
+import { type AccessControlFormResolverContext, accessControlFormResolver } from './validation.js';
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
@@ -120,8 +120,10 @@ export function AccessControlForm({
     : jsonToDefaultRuleFormData({}, displayTimezone);
   const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
 
-  const methods = useForm<AccessControlFormData>({
+  const methods = useForm<AccessControlFormData, AccessControlFormResolverContext>({
     mode: 'onChange',
+    resolver: accessControlFormResolver,
+    context: { displayTimezone },
     defaultValues: {
       defaultRule,
       overrides,
@@ -129,15 +131,12 @@ export function AccessControlForm({
   });
 
   const {
-    clearErrors,
     control,
-    getFieldState,
     handleSubmit,
-    setError,
     setValue,
     watch,
     reset,
-    formState: { isDirty, isValid, errors },
+    formState: { isDirty, isValid },
   } = methods;
 
   const {
@@ -151,40 +150,7 @@ export function AccessControlForm({
   });
 
   const watchedData = watch();
-  const manualErrorPathsRef = useRef<Set<AccessControlFormFieldPath>>(new Set());
   const overrideLimitPolicy = getOverrideLimitPolicy(watchedData.overrides, canEditEnrollmentRules);
-
-  // Sync cross-field validation errors into react-hook-form as manual errors,
-  // and clear them when the underlying issues are resolved. Depends on `errors`
-  // so we re-sync when child `trigger()` calls clear a manual error we set.
-  useEffect(() => {
-    const nextManualErrors = new Map<AccessControlFormFieldPath, string>();
-    for (const error of getGlobalDateValidationErrors(watchedData, displayTimezone)) {
-      nextManualErrors.set(error.path, error.message);
-    }
-
-    const candidatePaths = new Set<AccessControlFormFieldPath>([
-      ...manualErrorPathsRef.current,
-      ...nextManualErrors.keys(),
-    ]);
-
-    for (const path of candidatePaths) {
-      const fieldState = getFieldState(path);
-      const nextMessage = nextManualErrors.get(path);
-
-      if (nextMessage) {
-        if (!fieldState.error) {
-          setError(path, { type: 'manual', message: nextMessage });
-        } else if (fieldState.error.type === 'manual' && fieldState.error.message !== nextMessage) {
-          setError(path, { type: 'manual', message: nextMessage });
-        }
-      } else if (fieldState.error?.type === 'manual') {
-        clearErrors(path);
-      }
-    }
-
-    manualErrorPathsRef.current = new Set(nextManualErrors.keys());
-  }, [clearErrors, getFieldState, setError, watchedData, errors, displayTimezone]);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
     if (!canEditAccessSettings) return;
@@ -291,11 +257,9 @@ export function AccessControlForm({
     }
   };
 
-  const hasManualErrors = getGlobalDateValidationErrors(watchedData, displayTimezone).length > 0;
-
   const saveDisabledReason = !isDirty
     ? 'No changes to save'
-    : !isValid || hasManualErrors
+    : !isValid
       ? 'Fix validation errors before saving'
       : null;
 

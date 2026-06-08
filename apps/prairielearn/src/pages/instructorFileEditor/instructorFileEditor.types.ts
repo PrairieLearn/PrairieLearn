@@ -1,5 +1,6 @@
 import type { FileEdit } from '../../lib/db-types.js';
 import type { FileMetadata } from '../../lib/editorUtil.shared.js';
+import type { EditOutcome } from '../../lib/editors.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export interface FileEditorData {
@@ -18,6 +19,5 @@ export interface DraftEdit {
   hash: string | undefined;
   jobSequence?: JobSequenceWithTokens;
   alertChoice?: boolean;
-  didSave?: boolean;
-  didSync?: boolean;
+  outcome?: EditOutcome;
 }

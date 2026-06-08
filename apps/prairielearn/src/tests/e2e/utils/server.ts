@@ -83,7 +83,7 @@ async function startServerSubprocess(
 
   const serverDir = path.resolve(import.meta.dirname, '..', '..', '..');
 
-  const serverProcess = spawn('yarn', ['dev:no-watch'], {
+  const serverProcess = spawn('pnpm', ['dev:no-watch'], {
     cwd: serverDir,
     env: {
       ...process.env,
@@ -143,7 +143,7 @@ async function startServerSubprocess(
 
       serverProcess.on('exit', () => resolve());
 
-      // Kill the entire process group (yarn + tsx + server) using negative PID
+      // Kill the entire process group (pnpm + tsx + server) using negative PID
       // This ensures SIGTERM reaches the actual server process for graceful shutdown
       if (serverProcess.pid) {
         process.kill(-serverProcess.pid, 'SIGTERM');
