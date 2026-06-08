@@ -6,7 +6,6 @@ DOCS = Path("docs")
 
 ALIASES = {
     "assessment/accessControl.md": DOCS / "assessment/accessControlModern.md",
-    "assessment/accessControlLegacy.md": DOCS / "assessment/accessControl.md",
 }
 
 
