@@ -1,4 +1,4 @@
-FROM node:24-bookworm
+FROM node:26-trixie
 ARG CACHEBUST=2026-05-15-14-49-21
 
 RUN apt-get update \
@@ -9,7 +9,7 @@ RUN apt-get update \
 COPY src /xterm
 
 WORKDIR /xterm
-RUN yarn install --frozen-lockfile && yarn cache clean
+RUN npm install --frozen-lockfile && npm cache clean --force
 
 RUN useradd -m student
 ENTRYPOINT ["node", "server.js", "-w", "/home/student"]
