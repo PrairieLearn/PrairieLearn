@@ -1,6 +1,6 @@
 # Assessment access control
 
-PrairieLearn access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides from the assessment **Access** page.
+Instructors can use the assessment **Access** page to configure availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides.
 
 ## Access control checks
 
