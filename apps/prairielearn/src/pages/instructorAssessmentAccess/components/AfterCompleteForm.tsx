@@ -3,6 +3,7 @@ import { get, useController, useFormContext, useFormState, useWatch } from 'reac
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import {
@@ -12,6 +13,7 @@ import {
   defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
+import { DATE_REQUIRED_MESSAGE, isDateFieldEmpty } from './validation.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -75,19 +77,6 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
-const DATE_REQUIRED_MESSAGE = 'Date is required';
-
-function isDateFieldEmpty(value: string | undefined): boolean {
-  return value !== undefined && !value;
-}
-
-function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  if (isDateFieldEmpty(value.visibleUntilDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function QuestionVisibilityInput({
   value,
   onChange,
@@ -107,6 +96,7 @@ function QuestionVisibilityInput({
   visibleUntilDateError?: string;
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const hideQuestionsMode = getHideQuestionsMode(value);
   const selectedDescription = QUESTION_VISIBILITY_ITEMS.find(
     (item) => item.value === hideQuestionsMode,
@@ -151,6 +141,7 @@ function QuestionVisibilityInput({
           aria-label="Question visibility"
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
+          disabled={!ruleEditable}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -169,6 +160,7 @@ function QuestionVisibilityInput({
               step={1}
               value={value.visibleFromDate ?? ''}
               isInvalid={visibleFromDateInvalid}
+              disabled={!ruleEditable}
               aria-invalid={visibleFromDateInvalid}
               aria-errormessage={
                 visibleFromDateInvalid
@@ -202,6 +194,7 @@ function QuestionVisibilityInput({
               step={1}
               value={value.visibleUntilDate ?? ''}
               isInvalid={visibleUntilDateInvalid}
+              disabled={!ruleEditable}
               aria-invalid={visibleUntilDateInvalid}
               aria-errormessage={
                 visibleUntilDateInvalid ? `${idPrefix}-hide-questions-between-end-error` : undefined
@@ -234,6 +227,7 @@ function QuestionVisibilityInput({
             aria-label="Show questions on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
+            disabled={!ruleEditable}
             aria-invalid={visibleFromDateInvalid}
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-questions-date-error` : undefined
@@ -265,12 +259,6 @@ function QuestionVisibilityInput({
   );
 }
 
-function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function ScoreVisibilityInput({
   value,
   onChange,
@@ -284,6 +272,7 @@ function ScoreVisibilityInput({
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const hideScoreMode = getHideScoreMode(value);
   const selectedDescription = SCORE_VISIBILITY_ITEMS.find(
     (item) => item.value === hideScoreMode,
@@ -317,6 +306,7 @@ function ScoreVisibilityInput({
           aria-label="Score visibility"
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
+          disabled={!ruleEditable}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -332,6 +322,7 @@ function ScoreVisibilityInput({
             aria-label="Show score on"
             value={value.visibleFromDate ?? ''}
             isInvalid={visibleFromDateInvalid}
+            disabled={!ruleEditable}
             aria-invalid={visibleFromDateInvalid}
             aria-errormessage={
               visibleFromDateInvalid ? `${idPrefix}-show-score-date-error` : undefined
@@ -415,13 +406,12 @@ export function DefaultAfterCompleteForm({
   const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
     {
       name: 'defaultRule.questionVisibility',
-      rules: { validate: validateQuestionVisibility },
     },
   );
 
   const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
     name: 'defaultRule.scoreVisibility',
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
@@ -502,6 +492,7 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
     name: 'defaultRule.questionVisibility',
   });
@@ -527,8 +518,6 @@ export function OverrideAfterCompleteForm({
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
 
-  const { clearErrors } = useFormContext<AccessControlFormData>();
-
   const {
     isOverridden: qvOverridden,
     addOverride: addQvOverride,
@@ -545,14 +534,13 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: { validate: validateQuestionVisibility },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   return (
@@ -564,8 +552,12 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
+            void trigger(svField.name);
           }}
-          onRemoveOverride={removeQvOverride}
+          onRemoveOverride={() => {
+            removeQvOverride();
+            void trigger(svField.name);
+          }}
         >
           <QuestionVisibilityInput
             value={qvField.value}
@@ -585,10 +577,11 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
+            void trigger(qvField.name);
           }}
           onRemoveOverride={() => {
             removeSvOverride();
-            clearErrors(`overrides.${index}.questionVisibility`);
+            void trigger(qvField.name);
           }}
         >
           <ScoreVisibilityInput

@@ -15,7 +15,7 @@ import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAssessments } from '../models/assessment.js';
+import { selectAssessments, selectAssessmentsReferencingQuestions } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -45,10 +45,13 @@ import {
 import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import { features } from './features/index.js';
 import { idsEqual } from './id.js';
+import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
+import { qidsToRemoveForQuestions } from './question-deletion-validation.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -89,9 +92,43 @@ async function syncCourseFromDisk(
 
   await updateCourseCommitHash(course);
 
+  // JSON errors mean individual entities failed to sync (e.g., a question has
+  // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
+  // on `job.data` before throwing so the file editor can distinguish this
+  // from a hard failure.
   if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+    job.data.hadJsonErrors = true;
+    throw new Error('One or more JSON files contained errors and were unable to be synced.');
   }
+}
+
+/**
+ * The outcome of a "save and sync" edit, derived from the flags that
+ * {@link Editor.executeWithServerJob} records on `job.data`.
+ *
+ * A save-and-sync writes the file to disk (and pushes to git in production),
+ * then syncs the entire course from disk to the database:
+ *
+ * - `save_failed`: the write/push failed; nothing reached the database.
+ * - `sync_failed`: the save succeeded but the sync hard-failed.
+ * - `sync_json_errors`: the save succeeded and the sync ran to completion, but
+ *   one or more entities had invalid JSON. {@link syncCourseFromDisk} sets
+ *   `hadJsonErrors` and throws, so `syncSucceeded` is never set in this case.
+ * - `success`: the save and sync both completed cleanly.
+ */
+export type EditOutcome = 'save_failed' | 'sync_failed' | 'sync_json_errors' | 'success';
+
+/**
+ * Interpret the flags an edit job records on `job.data` into a single outcome.
+ * This is the canonical reading of that (otherwise untyped) blob; pages that
+ * render edit results should dispatch on the returned value rather than
+ * re-deriving the meaning of the individual flags.
+ */
+export function classifyEditOutcome(data: Record<string, unknown>): EditOutcome {
+  if (!data.saveSucceeded) return 'save_failed';
+  if (data.hadJsonErrors) return 'sync_json_errors';
+  if (!data.syncSucceeded) return 'sync_failed';
+  return 'success';
 }
 
 async function cleanAndResetRepository(
@@ -769,6 +806,13 @@ export class AssessmentAddEditor extends Editor {
 
     debug('Write infoAssessment.json');
 
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: this.course.institution_id,
+      course_id: this.course.id,
+      course_instance_id: this.course_instance.id,
+      user_id: this.user.id,
+    });
+
     const infoJson = {
       uuid: this.uuid,
       type: this.type,
@@ -776,7 +820,7 @@ export class AssessmentAddEditor extends Editor {
       set: this.set,
       module: this.module,
       number: nextAssessmentNumber.toString(),
-      allowAccess: [],
+      ...(enhancedAccessControlEnabled ? { accessControl: [] } : { allowAccess: [] }),
       zones: [],
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
@@ -1538,21 +1582,55 @@ export class QuestionDeleteEditor extends Editor {
   async write() {
     debug('QuestionDeleteEditor: write()');
 
+    const pathsToAdd: string[] = [];
+    const qidsToRemove = qidsToRemoveForQuestions(this.questions);
+
+    // Assessment files are rewritten under this course's repository path, so
+    // shared-question references from other courses must be ignored here.
+    const referencingAssessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: this.questions.map((q) => q.id),
+    });
+
+    for (const referenced of referencingAssessments) {
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        referenced.course_instance_short_name,
+        'assessments',
+        referenced.assessment_directory,
+        'infoAssessment.json',
+      );
+      let formattedJson: string;
+      try {
+        const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+        const { assessment: updatedInfoJson } = removeQidsFromAssessment(infoJson, qidsToRemove);
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
+      } catch (err) {
+        if (err instanceof AugmentedError) throw err;
+        throw new AugmentedError(`Unable to rewrite ${infoPath} while deleting questions.`, {
+          cause: err,
+        });
+      }
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+
     for (const question of this.questions) {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      const questionPath = path.join(this.course.path, 'questions', question.qid);
+      await fs.remove(questionPath);
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
       );
+      pathsToAdd.push(questionPath);
     }
 
     return {
-      pathsToAdd: this.questions.flatMap((question) =>
-        question.qid !== null ? path.join(this.course.path, 'questions', question.qid) : [],
-      ),
+      pathsToAdd,
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`
@@ -1604,25 +1682,22 @@ export class QuestionRenameEditor extends Editor {
 
     pathsToAdd.push(oldPath, newPath);
 
-    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_question,
-      { question_id: this.question.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
+    debug(
+      `Find all assessments (in this course's course instances) that contain ${this.question.qid}`,
     );
+    const assessments = await selectAssessmentsReferencingQuestions({
+      course_id: this.course.id,
+      question_ids: [this.question.id],
+    });
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
-        assessment.course_instance_directory,
+        assessment.course_instance_short_name,
         'assessments',
         assessment.assessment_directory,
         'infoAssessment.json',
@@ -1630,30 +1705,19 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+      const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false as boolean;
-      infoJson.zones?.forEach((zone: any) => {
-        zone.questions?.forEach((question: any) => {
-          if (question.alternatives) {
-            question.alternatives?.forEach((alternative: any) => {
-              if (alternative.id === this.question.qid) {
-                alternative.id = this.qid_new;
-                found = true;
-              }
-            });
-          } else if (question.id === this.question.qid) {
-            question.id = this.qid_new;
-            found = true;
-          }
-        });
-      });
-      if (!found) {
-        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+      const { assessment: updatedInfoJson, renamedCount } = renameQidInAssessment(
+        infoJson,
+        existingQid,
+        this.qid_new,
+      );
+      if (renamedCount === 0) {
+        logger.info(`Should have but did not find ${existingQid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(updatedInfoJson));
       await fs.writeFile(infoPath, formattedJson);
     }
 
@@ -2516,7 +2580,7 @@ export class MultiEditor extends Editor {
 export type AssessmentToolsConfig = { name: string; label: string; enabled: boolean }[];
 
 /** A single question to import, with all file contents as serialized data. */
-interface QtiImportQuestionData {
+export interface QtiImportQuestionData {
   directoryName: string;
   infoJson: Record<string, unknown>;
   questionHtml: string;
@@ -2537,19 +2601,22 @@ export interface QtiImportAssessmentData {
 export class QtiImportEditor extends Editor {
   private course_instance: CourseInstance;
   private assessments: QtiImportAssessmentData[];
+  private questions: QtiImportQuestionData[];
 
   constructor(
     params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
       assessments: QtiImportAssessmentData[];
+      questions?: QtiImportQuestionData[];
     },
   ) {
     const { course_instance } = params.locals;
     super({
       ...params,
-      description: `${course_instance.short_name}: Import ${params.assessments.length} assessment(s) from QTI`,
+      description: `${course_instance.short_name}: Import QTI content`,
     });
     this.course_instance = course_instance;
     this.assessments = params.assessments;
+    this.questions = params.questions ?? [];
   }
 
   async write() {
@@ -2582,49 +2649,61 @@ export class QtiImportEditor extends Editor {
     // Pre-validate all paths before writing anything to avoid partial state.
     const existingQids = await discoverInfoDirs(questionsBaseDir, 'info.json');
     const importedQids: string[] = [];
-
+    const questionsByDirectoryName = new Map<string, QtiImportQuestionData>();
+    for (const question of this.questions) {
+      questionsByDirectoryName.set(question.directoryName, question);
+    }
     for (const assessment of this.assessments) {
       for (const question of assessment.questions) {
-        const qDir = path.join(questionsBaseDir, question.directoryName);
-        if (!contains(questionsBaseDir, qDir)) {
-          throw new AugmentedError('Invalid question folder path', {
-            info: html`
-              <p>The question folder path</p>
-              <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
-              </div>
-              <p>must be inside the questions directory</p>
-              <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
-              </div>
-            `,
-          });
+        if (!questionsByDirectoryName.has(question.directoryName)) {
+          questionsByDirectoryName.set(question.directoryName, question);
         }
-        // Validate that the new QID doesn't nest inside (or contain) an existing question.
-        validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
-        importedQids.push(question.directoryName);
+      }
+    }
 
-        if (Object.keys(question.clientFiles).length > 0) {
-          const cfDir = path.join(qDir, 'clientFilesQuestion');
-          for (const name of Object.keys(question.clientFiles)) {
-            const filePath = path.join(cfDir, name);
-            if (!contains(cfDir, filePath)) {
-              throw new AugmentedError('Invalid client file path', {
-                info: html`
-                  <p>The client file path</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
-                  </div>
-                  <p>must be inside the clientFilesQuestion directory</p>
-                  <div class="container">
-                    <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
-                  </div>
-                `,
-              });
-            }
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
+      if (!contains(questionsBaseDir, qDir)) {
+        throw new AugmentedError('Invalid question folder path', {
+          info: html`
+            <p>The question folder path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${qDir}</pre>
+            </div>
+            <p>must be inside the questions directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${questionsBaseDir}</pre>
+            </div>
+          `,
+        });
+      }
+      // Validate that the new QID doesn't nest inside (or contain) an existing question.
+      validateQidNesting(question.directoryName, [...existingQids, ...importedQids]);
+      importedQids.push(question.directoryName);
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const name of Object.keys(question.clientFiles)) {
+          const filePath = path.join(cfDir, name);
+          if (!contains(cfDir, filePath)) {
+            throw new AugmentedError('Invalid client file path', {
+              info: html`
+                <p>The client file path</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+                </div>
+                <p>must be inside the clientFilesQuestion directory</p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${cfDir}</pre>
+                </div>
+              `,
+            });
           }
         }
       }
+    }
+
+    for (const assessment of this.assessments) {
       const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
       if (!contains(assessmentsBaseDir, assessmentDir)) {
         throw new AugmentedError('Invalid assessment folder path', {
@@ -2644,41 +2723,40 @@ export class QtiImportEditor extends Editor {
 
     const pathsToAdd: string[] = [];
 
-    for (const assessment of this.assessments) {
-      // Write each question (paths already validated above).
-      for (const question of assessment.questions) {
-        const qDir = path.join(questionsBaseDir, question.directoryName);
+    for (const question of questionsByDirectoryName.values()) {
+      const qDir = path.join(questionsBaseDir, question.directoryName);
 
-        // When overwriting, wipe the entire directory so stale artifacts
-        // (e.g. a previous server.py or old clientFilesQuestion entries)
-        // don't persist alongside the fresh import.
-        if (question.overwrite && (await fs.pathExists(qDir))) {
-          await fs.remove(qDir);
-        }
-
-        const qInfoJson = { ...question.infoJson };
-        if (shareSourcePublicly) {
-          qInfoJson.sharePublicly = true;
-          qInfoJson.shareSourcePublicly = true;
-        }
-        const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
-        await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
-        await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
-
-        if (question.serverPy) {
-          await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
-        }
-
-        if (Object.keys(question.clientFiles).length > 0) {
-          const cfDir = path.join(qDir, 'clientFilesQuestion');
-          for (const [name, base64Content] of Object.entries(question.clientFiles)) {
-            await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
-          }
-        }
-
-        pathsToAdd.push(qDir);
+      // When overwriting, wipe the entire directory so stale artifacts
+      // (e.g. a previous server.py or old clientFilesQuestion entries)
+      // don't persist alongside the fresh import.
+      if (question.overwrite && (await fs.pathExists(qDir))) {
+        await fs.remove(qDir);
       }
 
+      const qInfoJson = { ...question.infoJson };
+      if (shareSourcePublicly) {
+        qInfoJson.sharePublicly = true;
+        qInfoJson.shareSourcePublicly = true;
+      }
+      const formattedInfoJson = await formatJsonWithPrettier(JSON.stringify(qInfoJson));
+      await fs.outputFile(path.join(qDir, 'info.json'), formattedInfoJson);
+      await fs.outputFile(path.join(qDir, 'question.html'), question.questionHtml);
+
+      if (question.serverPy) {
+        await fs.outputFile(path.join(qDir, 'server.py'), question.serverPy);
+      }
+
+      if (Object.keys(question.clientFiles).length > 0) {
+        const cfDir = path.join(qDir, 'clientFilesQuestion');
+        for (const [name, base64Content] of Object.entries(question.clientFiles)) {
+          await fs.outputFile(path.join(cfDir, name), Buffer.from(base64Content, 'base64'));
+        }
+      }
+
+      pathsToAdd.push(qDir);
+    }
+
+    for (const assessment of this.assessments) {
       // Write the assessment (path already validated above).
       const assessmentDir = path.join(assessmentsBaseDir, assessment.directoryName);
       const aInfoJson = { ...assessment.infoJson };
@@ -2695,7 +2773,7 @@ export class QtiImportEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage: `${this.course_instance.short_name}: import ${this.assessments.length} assessment(s) from QTI`,
+      commitMessage: `${this.course_instance.short_name}: import QTI content`,
     };
   }
 }

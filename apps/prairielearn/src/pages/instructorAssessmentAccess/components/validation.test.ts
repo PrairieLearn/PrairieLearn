@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AccessControlFormData, OverrideData } from './types.js';
-import { getGlobalDateValidationErrors } from './validation.js';
+import {
+  getAccessControlFormValidationErrors,
+  getGlobalDateValidationErrors,
+} from './validation.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
@@ -223,5 +226,125 @@ describe('getGlobalDateValidationErrors', () => {
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility.visibleFromDate')).toBe(
       undefined,
     );
+  });
+
+  it('maps inherited after-complete conflicts to an active override field', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData(
+        [
+          makeOverride({
+            overriddenFields: ['scoreVisibility'],
+            scoreVisibility: { hidden: true },
+          }),
+        ],
+        {
+          questionVisibility: { hidden: false },
+        },
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.scoreVisibility',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
+  });
+
+  it('does not map inherited after-complete conflicts to inactive override fields', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([makeOverride()], {
+        questionVisibility: { hidden: false },
+        scoreVisibility: { hidden: true },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.questionVisibility',
+      message: 'The score cannot be hidden after completion while questions are visible.',
+    });
+    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
+    expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
+  });
+});
+
+describe('getAccessControlFormValidationErrors', () => {
+  it('validates default rule fields independently of mounted editors', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([makeOverride()], {
+        prairieTestExams: [
+          {
+            examUuid: '',
+            readOnly: false,
+            afterCompleteQuestionsHidden: false,
+            afterCompleteScoreHidden: false,
+          },
+        ],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.prairieTestExams.0.examUuid',
+      message: 'Exam UUID is required',
+    });
+  });
+
+  it('does not validate hidden default after-complete date inputs without a completion mechanism', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([], {
+        dateControlEnabled: false,
+        due: { date: null, credit: null, customCredit: false },
+        questionVisibility: { hidden: true, visibleFromDate: '' },
+        scoreVisibility: { hidden: true, visibleFromDate: '' },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(
+      errors.find(
+        (e) =>
+          e.path === 'defaultRule.questionVisibility.visibleFromDate' ||
+          e.path === 'defaultRule.scoreVisibility.visibleFromDate',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('ignores invalid values for inactive override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: [],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors.find((e) => e.path.startsWith('overrides.0.'))).toBeUndefined();
+  });
+
+  it('validates invalid values for active override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: ['durationMinutes', 'password'],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.durationMinutes',
+      message: 'Duration must be at least 1 minute',
+    });
+    expect(errors).toContainEqual({
+      path: 'overrides.0.password',
+      message: 'Password is required',
+    });
   });
 });

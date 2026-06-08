@@ -19,11 +19,10 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   AssessmentToolSchema,
+  GroupConfigSchema,
   type GroupRole,
   GroupRoleSchema,
   QuestionSchema,
-  TeamConfigSchema,
-  TeamRoleSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -1357,8 +1356,8 @@ describe('Assessment syncing', () => {
 
   it('still validates when groups.minMembers is 0', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
@@ -1373,11 +1372,11 @@ describe('Assessment syncing', () => {
         canSubmit: [],
       },
     };
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsMinZero'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupMinZero'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsMinZero');
+    const syncedAssessment = await findSyncedAssessment('groupMinZero');
     assert.isNotOk(syncedAssessment.sync_errors);
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
@@ -1975,6 +1974,398 @@ describe('Assessment syncing', () => {
       syncedAssessment.sync_errors,
       /Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0/,
     );
+  });
+
+  it('records a warning if autoPoints exceeds maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Question "test": "autoPoints" \(15\) should not exceed "maxAutoPoints" \(10\)/,
+    );
+  });
+
+  it('records a warning if points exceeds maxPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 20,
+          maxPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Question "test": "points" \(20\) should not exceed "maxPoints" \(10\)/,
+    );
+  });
+
+  it('does not produce a warning when autoPoints equals maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 10,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('records a warning if bestQuestions exceeds numberChoose on a zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 1,
+      bestQuestions: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(3\) should not exceed "numberChoose" \(1\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if alternative group numberChoose exceeds alternatives count', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          numberChoose: 5,
+          points: 10,
+          alternatives: [{ id: util.QUESTION_ID }, { id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Zone "test zone", alternative group 1: "numberChoose" \(5\) exceeds the number of alternatives \(2\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" is 0, so no questions will be presented from this zone/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" is 0, so no questions from this zone will count toward the total points/,
+    );
+  });
+
+  it('does not produce warnings for a valid zone configuration', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 2,
+      bestQuestions: 1,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('does not warn when numberChoose equals effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('does not warn when bestQuestions equals effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('accounts for alternative group numberChoose in effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(4\) exceeds the number of questions in the zone \(3\)/,
+    );
+  });
+
+  it('caps alternative group contribution at actual alternatives count', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 5,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(4\) exceeds the number of questions in the zone \(3\)/,
+    );
+  });
+
+  it('counts all alternatives in effective zone size when numberChoose is not set', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    // Effective zone size = 1 (standalone) + 2 (all alternatives) = 3.
+    // Zone numberChoose of 3 should not warn.
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('warns when zone numberChoose exceeds effective size with unset alternative numberChoose', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(4\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('does not produce warnings for an expired course instance', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '2001-01-01T00:00:00',
+      },
+    ];
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotOk(syncedAssessment.sync_warnings);
   });
 
   it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
@@ -4137,26 +4528,26 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsAssessment'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] = assessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsAssessment');
+    const syncedAssessment = await findSyncedAssessment('groupAssessment');
     assert.isNull(syncedAssessment.sync_errors);
 
-    // Verify team config was synced
-    const teamConfigs = await util.dumpTableWithSchema('team_configs', TeamConfigSchema);
-    const teamConfig = teamConfigs.find((tc) => tc.assessment_id === syncedAssessment.id);
-    assert.isOk(teamConfig);
-    assert.equal(teamConfig.minimum, 2);
-    assert.equal(teamConfig.maximum, 5);
-    assert.equal(teamConfig.student_authz_create, true);
-    assert.equal(teamConfig.student_authz_join, true);
-    assert.equal(teamConfig.student_authz_leave, false);
-    assert.equal(teamConfig.student_authz_choose_name, true);
+    // Verify group config was synced
+    const groupConfigs = await util.dumpTableWithSchema('team_configs', GroupConfigSchema);
+    const groupConfig = groupConfigs.find((gc) => gc.assessment_id === syncedAssessment.id);
+    assert.isOk(groupConfig);
+    assert.equal(groupConfig.minimum, 2);
+    assert.equal(groupConfig.maximum, 5);
+    assert.equal(groupConfig.student_authz_create, true);
+    assert.equal(groupConfig.student_authz_join, true);
+    assert.equal(groupConfig.student_authz_leave, false);
+    assert.equal(groupConfig.student_authz_choose_name, true);
 
-    // Verify team roles were synced
-    const teamRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
-    const assessmentRoles = teamRoles.filter((r) => r.assessment_id === syncedAssessment.id);
+    // Verify group roles were synced
+    const groupRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const assessmentRoles = groupRoles.filter((r) => r.assessment_id === syncedAssessment.id);
     assert.equal(assessmentRoles.length, 3);
 
     const managerRole = assessmentRoles.find((r) => r.role_name === 'Manager');
@@ -4172,8 +4563,8 @@ describe('Assessment syncing', () => {
 
   it('cascades groups.rolePermissions to zones and questions when not overridden', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
@@ -4183,7 +4574,7 @@ describe('Assessment syncing', () => {
         canSubmit: ['Recorder'], // Assessment-level default
       },
     };
-    teamAssessment.zones?.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       // No canView/canSubmit specified - should inherit from assessment
       questions: [
@@ -4194,18 +4585,18 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamCascadeAssessment'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupCascadeAssessment'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
 
     // Get synced data
-    const syncedData = await getSyncedAssessmentData('teamCascadeAssessment');
+    const syncedData = await getSyncedAssessmentData('groupCascadeAssessment');
     const assessmentQuestion = syncedData.assessment_questions[0];
     assert.isDefined(assessmentQuestion);
 
-    // Check team roles were created
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    // Check group roles were created
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     const manager = syncedRoles.find((role) => role.role_name === 'Manager');
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -4228,7 +4619,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(managerPermission);
     assert.isTrue(
       managerPermission.can_view,
-      'Manager should inherit can_view from teams.rolePermissions',
+      'Manager should inherit can_view from groups.rolePermissions',
     );
     assert.isFalse(managerPermission.can_submit, 'Manager should not have can_submit');
 
@@ -4236,11 +4627,11 @@ describe('Assessment syncing', () => {
     assert.isDefined(recorderPermission);
     assert.isTrue(
       recorderPermission.can_view,
-      'Recorder should inherit can_view from teams.rolePermissions',
+      'Recorder should inherit can_view from groups.rolePermissions',
     );
     assert.isTrue(
       recorderPermission.can_submit,
-      'Recorder should inherit can_submit from teams.rolePermissions',
+      'Recorder should inherit can_submit from groups.rolePermissions',
     );
 
     // Contributor should have neither (not in canView or canSubmit)

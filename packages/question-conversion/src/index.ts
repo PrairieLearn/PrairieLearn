@@ -3,7 +3,7 @@ export { convert, convertWith, parseAssessment } from './pipeline.js';
 export type { ConvertOptions } from './pipeline.js';
 
 // Parsers
-export { QTI12AssessmentParser } from './parsers/qti12/index.js';
+export { QTI12ItemContainerParser } from './parsers/qti12/index.js';
 export type { InputParser, ParseOptions } from './parsers/parser.js';
 
 // Emitters
@@ -26,10 +26,13 @@ export { createQTI12Registry } from './transforms/qti12/index.js';
 // Types
 export type {
   IRAssessment,
+  IRQuestionBank,
+  IRItemContainer,
   IRQuestion,
   IRQuestionBody,
   IRZone,
   IRZoneQuestion,
+  IRSourceBankRef,
   IRChoice,
   IRMatchPair,
   IRMatchDistractor,
@@ -57,3 +60,4 @@ export {
 } from './utils/course-export.js';
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
+export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/html.js';

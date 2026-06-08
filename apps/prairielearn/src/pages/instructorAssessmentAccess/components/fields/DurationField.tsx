@@ -1,6 +1,8 @@
 import { Form, InputGroup } from 'react-bootstrap';
 import { useController, useWatch } from 'react-hook-form';
 
+import { MAX_ACCESS_CONTROL_DURATION_MINUTES } from '../../../../schemas/accessControl.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -17,6 +19,7 @@ function DurationDetails({
   idPrefix: string;
   error?: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <>
       {value !== null && (
@@ -27,9 +30,12 @@ function DurationDetails({
               aria-label="Duration in minutes"
               aria-invalid={!!error}
               placeholder="Duration in minutes"
-              value={value || ''}
+              value={value === 0 ? '' : value}
+              min={1}
+              max={MAX_ACCESS_CONTROL_DURATION_MINUTES}
               isInvalid={!!error}
               aria-errormessage={error ? `${idPrefix}-duration-error` : undefined}
+              disabled={!ruleEditable}
               onChange={({ currentTarget }) => {
                 if (currentTarget.value === '') {
                   onChange(0);
@@ -63,11 +69,6 @@ function DurationDetails({
   );
 }
 
-function validateDuration(value: number | null): string | true {
-  if (value !== null && value < 1) return 'Duration must be at least 1 minute';
-  return true;
-}
-
 function DurationToggle({
   value,
   onChange,
@@ -77,11 +78,13 @@ function DurationToggle({
   onChange: (value: number | null) => void;
   idPrefix: string;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   return (
     <ToggleTitle
       id={`${idPrefix}-time-limit-enabled`}
       label="Time limit"
       checked={value !== null}
+      disabled={!ruleEditable}
       onChange={(checked) => onChange(checked ? 60 : null)}
     />
   );
@@ -93,7 +96,6 @@ export function DefaultDurationField() {
     fieldState: { error },
   } = useController<AccessControlFormData, 'defaultRule.durationMinutes'>({
     name: 'defaultRule.durationMinutes',
-    rules: { validate: validateDuration },
   });
 
   return (
@@ -119,7 +121,6 @@ export function OverrideDurationField({ index }: { index: number }) {
     fieldState: { error },
   } = useController<AccessControlFormData, `overrides.${number}.durationMinutes`>({
     name: `overrides.${index}.durationMinutes`,
-    rules: { validate: validateDuration },
   });
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');

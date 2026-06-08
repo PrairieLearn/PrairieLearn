@@ -70,7 +70,6 @@ When `builtin-grading="false"` is set:
 ### :pencil: Notes
 
 - "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
-- Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -80,6 +79,17 @@ a `pl-answer` that has attributes:
 | `correct`  | boolean | false           | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
 | `score`    | float   | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+
+### Migrating from deprecated attributes
+
+The following deprecated attributes are still supported for backward compatibility:
+
+| Old syntax           | New syntax         |
+| -------------------- | ------------------ |
+| `inline="true"`      | `display="inline"` |
+| `fixed-order="true"` | `order="fixed"`    |
+
+Defining answer choices with external JSON files via the `external-json`, `external-json-correct-key`, and `external-json-incorrect-key` attributes is also deprecated. Define answer choices inline with `pl-answer` elements instead.
 
 ## Example implementations
 

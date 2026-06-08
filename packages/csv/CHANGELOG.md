@@ -1,5 +1,17 @@
 # @prairielearn/csv
 
+## 3.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
 ## 3.0.4
 
 ### Patch Changes

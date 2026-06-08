@@ -453,7 +453,7 @@ onDocumentReady(() => {
         .querySelectorAll('.js-version-choice-content')
         .forEach((element) => element.remove());
 
-      // Show div that contains "Show help" and "Save and sync" buttons
+      // Show div that contains "Show help" and "Save" buttons
       window.bootstrap.Collapse.getOrCreateInstance('#buttons').show();
 
       draftEditor?.takeOver();

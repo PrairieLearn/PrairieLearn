@@ -102,6 +102,15 @@ ORDER BY
   END,
   aacr.number;
 
+-- BLOCK count_enrollment_access_control_rules
+SELECT
+  count(*)::integer
+FROM
+  assessment_access_control_rules
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment';
+
 -- BLOCK select_prairietest_exam_metadata_by_uuids
 SELECT DISTINCT
   u::text AS uuid,
@@ -120,3 +129,12 @@ WHERE
   id = ANY ($ids::bigint[])
   AND target_type = 'enrollment'
   AND assessment_id = $assessment_id;
+
+-- BLOCK move_enrollment_rules_to_temporary_numbers
+UPDATE assessment_access_control_rules
+SET
+  number = - number
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment'
+  AND number > 0;

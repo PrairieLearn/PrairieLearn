@@ -43,12 +43,14 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionCaller,
   type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
   type TestResultData,
 } from './types.js';
+import { type QuestionUserContext, buildQuestionUserContext } from './user-context.js';
 
 const debug = debugfn('prairielearn:freeform');
 
@@ -824,16 +826,26 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
-  preferences: Record<string, string | number | boolean> = {},
+  preferences: Record<string, string | number | boolean>,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      options: {
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences,
     } satisfies ExecutionData;
 
@@ -860,18 +872,29 @@ export async function prepare(
   question: Question,
   course: Course,
   variant: PrepareVariant,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
@@ -910,6 +933,7 @@ async function renderPanel({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
@@ -918,6 +942,7 @@ async function renderPanel({
   course: Course;
   locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
@@ -977,6 +1002,8 @@ async function renderPanel({
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
+    user: userContext.user,
+    group: userContext.group,
   };
 
   const data = {
@@ -1062,6 +1089,7 @@ async function renderPanelInstrumented({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
@@ -1071,6 +1099,7 @@ async function renderPanelInstrumented({
   course: Course;
   locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
     span.setAttributes({
@@ -1087,6 +1116,7 @@ async function renderPanelInstrumented({
       course,
       locals,
       context,
+      userContext,
     });
     span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
     return result;
@@ -1101,6 +1131,7 @@ export async function render({
   submissions,
   course,
   locals,
+  caller,
 }: {
   renderSelection: RenderSelection;
   variant: Variant;
@@ -1109,9 +1140,15 @@ export async function render({
   submissions: Submission[];
   course: Course;
   locals: QuestionRenderRequiredLocals;
+  caller: QuestionCaller;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
@@ -1137,6 +1174,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1161,6 +1199,7 @@ export async function render({
               course,
               locals,
               context,
+              userContext,
             });
 
             courseIssues.push(...newCourseIssues);
@@ -1184,6 +1223,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1517,19 +1557,30 @@ export async function file(
   variant: Variant,
   question: Question,
   course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
@@ -1569,12 +1620,18 @@ export async function parse(
   variant: Variant,
   question: Question,
   course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1584,7 +1641,12 @@ export async function parse(
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1621,6 +1683,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
@@ -1628,6 +1691,11 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course: question_course,
+      caller,
+    });
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
@@ -1641,7 +1709,12 @@ export async function grade(
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1680,12 +1753,18 @@ export async function test(
   question: Question,
   course: Course,
   test_type: 'correct' | 'incorrect' | 'invalid',
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<TestResultData> {
   return instrumented('freeform.test', async () => {
     debug('test()');
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1696,7 +1775,12 @@ export async function test(
       score: 0,
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,
@@ -1785,6 +1869,15 @@ async function getCacheKey(
         // We deliberately exclude large user-controlled objects from the cache key.
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
+        //
+        // `data.options` is kept because `options.user` / `options.group` can change
+        // without bumping `modified_at`, so they must stay in the key:
+        //   1. the course toggles `questions_receive_user_data`
+        //   2. a user is renamed (uid/uin/name)
+        //   3. group membership or a member's name changes
+        //
+        // `options.user` is the variant owner (not the viewer); on group variants
+        // it is null and `group.members` is ordered deterministically.
         omit(data, [
           'params',
           'correct_answers',

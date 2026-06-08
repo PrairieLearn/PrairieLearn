@@ -15,6 +15,23 @@ import lxml.html
 from prairielearn.colors import PLColor
 from prairielearn.misc_utils import escape_unicode_string
 
+__all__ = [
+    "LIBXML_BOOLEAN_ATTRIBUTES",
+    "check_attribs",
+    "escape_invalid_string",
+    "get_boolean_attrib",
+    "get_color_attrib",
+    "get_enum_attrib",
+    "get_float_attrib",
+    "get_integer_attrib",
+    "get_string_attrib",
+    "has_attrib",
+    "inner_html",
+    "is_boolean_attrib",
+    "is_float_attrib",
+    "is_integer_attrib",
+]
+
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
 LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "checked",
@@ -60,22 +77,21 @@ _PL_BOOLEAN_FALSE = frozenset({
 })
 
 
-def is_pl_boolean(value: str) -> bool:
+def is_boolean_attrib(value: str) -> bool:
     """Return whether a string is a PrairieLearn boolean value."""
     return value in _PL_BOOLEAN_TRUE or value in _PL_BOOLEAN_FALSE
 
 
-def parse_pl_boolean(value: str) -> bool:
-    """Parse a string as a PrairieLearn boolean value."""
-    if value in _PL_BOOLEAN_TRUE:
-        return True
-    if value in _PL_BOOLEAN_FALSE:
-        return False
-    raise ValueError(f"Attribute must be a boolean value: {value}")
+def is_integer_attrib(value: str) -> bool:
+    """Return whether a string is a PrairieLearn integer value.
 
-
-def is_pl_integer(value: str) -> bool:
-    """Return whether a string is a PrairieLearn integer value."""
+    This is the authoritative `integer` format check (it matches how
+    `get_integer_attrib` parses values at runtime). The linter-side regex in
+    `element-schemas/htmlmustache-plugin-utils.ts` is intentionally stricter:
+    `int()` also accepts forms like ``1_000``, ``+5``, and surrounding
+    whitespace that the linter flags. Keep the two notions aligned when changing
+    either side.
+    """
     try:
         int(value)
     except ValueError:
@@ -83,29 +99,19 @@ def is_pl_integer(value: str) -> bool:
     return True
 
 
-def parse_pl_integer(value: str) -> int:
-    """Parse a string as a PrairieLearn integer value."""
-    try:
-        return int(value)
-    except ValueError as exc:
-        raise ValueError(f"Attribute must be an integer: {value}") from exc
+def is_float_attrib(value: str) -> bool:
+    """Return whether a string is a PrairieLearn floating-point value.
 
-
-def is_pl_float(value: str) -> bool:
-    """Return whether a string is a PrairieLearn floating-point value."""
+    Authoritative `number` format check, mirroring `get_float_attrib`. The
+    linter-side regex is stricter: ``float()`` also accepts ``inf``/``nan``,
+    ``1_000.0``, ``+5``, and surrounding whitespace. See the note in
+    `is_integer_attrib`.
+    """
     try:
         float(value)
     except ValueError:
         return False
     return True
-
-
-def parse_pl_float(value: str) -> float:
-    """Parse a string as a PrairieLearn floating-point value."""
-    try:
-        return float(value)
-    except ValueError as exc:
-        raise ValueError(f"Attribute must be a number: {value}") from exc
 
 
 def get_enum_attrib[EnumT: Enum](
@@ -317,10 +323,11 @@ def get_boolean_attrib(
     if is_default:
         return val
 
-    try:
-        return parse_pl_boolean(val)
-    except ValueError:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}') from None
+    if val in _PL_BOOLEAN_TRUE:
+        return True
+    if val in _PL_BOOLEAN_FALSE:
+        return False
+    raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -359,10 +366,8 @@ def get_integer_attrib(
     if is_default:
         return val
     try:
-        return parse_pl_integer(val)
+        return int(val)
     except ValueError:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
         raise ValueError(f'Attribute "{name}" must be an integer: {val}') from None
 
 
@@ -405,10 +410,8 @@ def get_float_attrib(
     if is_default:
         return val
     try:
-        return parse_pl_float(val)
+        return float(val)
     except ValueError:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
         raise ValueError(f'Attribute "{name}" must be a number: {val}') from None
 
 

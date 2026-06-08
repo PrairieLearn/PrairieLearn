@@ -19,20 +19,25 @@ import {
   getStudentAssessmentUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
+import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
 import { selectAssessmentSetsForCourse } from '../../models/assessment-set.js';
 import {
   selectAssessmentToolDefaults,
   selectAssessmentZonePointsRange,
 } from '../../models/assessment.js';
-import { EnumAssessmentToolSchema } from '../../schemas/infoAssessment.js';
+import {
+  type AssessmentJsonInput,
+  EnumAssessmentToolSchema,
+} from '../../schemas/infoAssessment.js';
+import { settingsScope } from '../../trpc/assessment/assessment-settings.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
@@ -77,11 +82,14 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(course.path, infoAssessmentPath);
 
-    const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
+    const origHash =
+      (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
+      '';
 
-    const [toolDefaultRows, zonePointsRange] = await Promise.all([
+    const [toolDefaultRows, zonePointsRange, hasInstances] = await Promise.all([
       selectAssessmentToolDefaults({ assessment_id: assessment.id }),
       selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+      selectAssessmentHasInstances(assessment.id),
     ]);
     const enabledTools = new Set(toolDefaultRows.filter((r) => r.enabled).map((r) => r.tool));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
@@ -96,6 +104,7 @@ router.get(
     );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+    const canViewLogs = authz_data.has_course_instance_permission_view;
 
     const questionSharingEnabled = res.locals.question_sharing_enabled;
     const nonPublicQuestionsInAssessment =
@@ -134,6 +143,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               urlPrefix={urlPrefix}
               canEdit={canEdit}
+              canViewLogs={canViewLogs}
               origHash={origHash}
               assessment={assessment}
               assessmentSet={assessment_set}
@@ -149,6 +159,7 @@ router.get(
               zonePointsRange={zonePointsRange}
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
               questionSharingEnabled={questionSharingEnabled}
+              hasInstances={hasInstances}
             />
           </Hydrate>
         ),

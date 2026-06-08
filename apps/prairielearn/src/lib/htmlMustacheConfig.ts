@@ -1,12 +1,6 @@
-import type { Config, CustomTag } from '@reteps/tree-sitter-htmlmustache/linter';
+import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-import { elementCustomTags } from '../ee/lib/element-schemas/index.js';
-
-type HtmlMustacheConfig = Config & {
-  customTagDefaults?: {
-    allowBooleanAttributes?: boolean;
-  };
-};
+import { elementCustomTags } from './element-schemas/index.js';
 
 const drawingObjectTags: CustomTag[] = [
   { name: 'pl-3pointrod' },
@@ -55,8 +49,11 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
-// This should be kept in sync with `.htmlmustache.jsonc`
-export const htmlMustacheConfig: HtmlMustacheConfig = {
+// Source of truth for the htmlmustache linter config. The on-disk
+// `.htmlmustache.jsonc` (used by the standalone CLI / editor integration) is
+// generated from this file by `scripts/gen-element-schemas.mts`; run
+// `make update-element-schemas` after editing.
+export const htmlMustacheConfig: Config = {
   printWidth: 100,
   customTagDefaults: {
     allowBooleanAttributes: false,
@@ -150,9 +147,16 @@ export const htmlMustacheConfig: HtmlMustacheConfig = {
     },
     {
       id: 'pl-prefer-pl-figure',
-      selector: 'img:not([style]):not([class]):not(pl-overlay img)',
+      selector:
+        'img:not([style]):not([class]):not(pl-overlay img):not([src^="https://"]):not([src^="http://"]):not([src^="://"])',
       message:
         'Prefer pl-figure over raw <img> tags. See https://docs.prairielearn.com/elements/pl-figure/.',
+      severity: 'warning',
+    },
+    {
+      id: 'pl-remote-image-url',
+      selector: 'img[src^="https://"], img[src^="http://"], img[src^="://"]',
+      message: 'Question contains an image reference to a remote URL.',
       severity: 'warning',
     },
     {
@@ -206,6 +210,8 @@ export const htmlMustacheConfig: HtmlMustacheConfig = {
     },
   ],
   customTags: [
+    // Elements with generated JSON schemas (see element-schemas/).
+    ...elementCustomTags,
     {
       name: 'pl-code',
       display: 'block',
@@ -261,7 +267,6 @@ export const htmlMustacheConfig: HtmlMustacheConfig = {
       name: 'pl-checkbox',
       children: [{ name: 'pl-answer' }],
     },
-    ...elementCustomTags,
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },
     { name: 'pl-symbolic-input' },

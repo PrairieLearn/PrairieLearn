@@ -5,7 +5,7 @@
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
- * Usage: `yarn capture-access-control-screenshots`
+ * Usage: `pnpm capture-access-control-screenshots`
  */
 
 import fs from 'node:fs';
@@ -19,10 +19,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import type { Assessment, CourseInstance } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import {
-  type EnrollmentAccessControlRuleData,
-  syncEnrollmentAccessControl,
-} from '../../models/assessment-access-control-rules.js';
+import { replaceEnrollmentAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   generateAndEnrollUsers,
@@ -32,6 +29,7 @@ import {
   addLabelToEnrollments,
   selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
+import { formJsonToEnrollmentRuleData } from '../../trpc/assessment/access-control.js';
 import { syncCourse } from '../helperCourse.js';
 
 import { test } from './fixtures.js';
@@ -127,7 +125,7 @@ async function prepareScreenshotDom(page: Page, replacements: ScreenshotTextRepl
         return (
           rect.height > 0 &&
           (text.includes('No unsaved changes') || text.includes('You have unsaved changes')) &&
-          text.includes('Save and sync')
+          text.includes('Save')
         );
       })
       .sort((a, b) => a.getBoundingClientRect().height - b.getBoundingClientRect().height)
@@ -202,35 +200,6 @@ async function navigateToAccessPage(page: Page, courseInstanceId: string, assess
   await page.waitForSelector('.js-hydrated-component');
 }
 
-function makeEnrollmentRuleData(
-  overrides: Partial<EnrollmentAccessControlRuleData>,
-): EnrollmentAccessControlRuleData {
-  return {
-    beforeReleaseListed: null,
-    releaseDate: null,
-    dueOverridden: false,
-    dueDate: null,
-    dueCredit: null,
-    earlyDeadlinesOverridden: false,
-    lateDeadlinesOverridden: false,
-    afterLastDeadlineOverridden: false,
-    afterLastDeadlineAllowSubmissions: null,
-    afterLastDeadlineCredit: null,
-    durationMinutesOverridden: false,
-    durationMinutes: null,
-    passwordOverridden: false,
-    password: null,
-    questionsHidden: null,
-    questionsVisibleFromDate: null,
-    questionsVisibleUntilDate: null,
-    scoreHidden: null,
-    scoreVisibleFromDate: null,
-    earlyDeadlines: [],
-    lateDeadlines: [],
-    ...overrides,
-  };
-}
-
 async function seedRealisticOverrides({
   courseInstance,
   assessment,
@@ -264,25 +233,26 @@ async function seedRealisticOverrides({
     authzData,
   });
 
-  await syncEnrollmentAccessControl(
-    assessment,
-    makeEnrollmentRuleData({
-      releaseDate: screenshotDate(displayTimezone, 2, '09:00:00'),
-      durationMinutesOverridden: true,
-      durationMinutes: 90,
-    }),
-    enrollments.slice(4, 7).map((e) => e.id),
-  );
-  await syncEnrollmentAccessControl(
-    assessment,
-    makeEnrollmentRuleData({
-      dueOverridden: true,
-      dueDate: screenshotDate(displayTimezone, 21, '23:59:59'),
-      durationMinutesOverridden: true,
-      durationMinutes: 75,
-    }),
-    enrollments.slice(7, 10).map((e) => e.id),
-  );
+  await replaceEnrollmentAccessControlRules(assessment, [
+    {
+      ruleData: formJsonToEnrollmentRuleData({
+        dateControl: {
+          release: { date: screenshotDate(displayTimezone, 2, '09:00:00') },
+          durationMinutes: 90,
+        },
+      }),
+      enrollmentIds: enrollments.slice(4, 7).map((e) => e.id),
+    },
+    {
+      ruleData: formJsonToEnrollmentRuleData({
+        dateControl: {
+          due: { date: screenshotDate(displayTimezone, 21, '23:59:59') },
+          durationMinutes: 75,
+        },
+      }),
+      enrollmentIds: enrollments.slice(7, 10).map((e) => e.id),
+    },
+  ]);
 
   // Sort by UID before zipping with display names so the override card lists
   // the same names in the same order as the UI, which renders enrollment

@@ -43,6 +43,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -58,7 +59,7 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
+import type { QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {
@@ -216,7 +217,7 @@ router.post(
                       // Fall through to error
                     }
                     ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
+                      code: 'custom',
                       message: 'Invalid enum format',
                     });
                     return z.NEVER;
@@ -228,7 +229,7 @@ router.post(
               prefs.forEach((pref, i) => {
                 if (names.has(pref.name)) {
                   ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: 'custom',
                     message: `Duplicate preference name: "${pref.name}"`,
                     path: [i, 'name'],
                   });
@@ -560,6 +561,19 @@ router.post(
         });
       }
     } else if (req.body.__action === 'delete_question') {
+      const usedInOtherCourses = await selectQuestionsBlockingDeletion({
+        course: res.locals.course,
+        questions: [res.locals.question],
+      });
+
+      if (usedInOtherCourses.length > 0) {
+        flash(
+          'error',
+          'This question is used by another course and cannot be deleted. Unshare it or remove it from those assessments first.',
+        );
+        return res.redirect(req.originalUrl);
+      }
+
       const editor = new QuestionDeleteEditor({
         locals: res.locals,
         questions: res.locals.question,

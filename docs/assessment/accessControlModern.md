@@ -4,7 +4,7 @@
 
     This feature is under active development and is not yet available for general use. The documentation here is for internal reference only.
 
-Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific exceptions from the assessment **Access** page.
+Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides from the assessment **Access** page.
 
 !!! note
 
@@ -15,14 +15,14 @@ Modern access control lets instructors configure assessment availability, deadli
 From an assessment, open the **Access** tab. The page has two sections:
 
 - **Defaults**: settings that apply to all students.
-- **Overrides**: settings that apply only to selected student labels or individual students.
+- **Overrides**: settings that apply only to selected student labels or specific students.
 
 ![Modern access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
 /// caption
 The Access page summarizes the active configuration and lists every override that applies to the assessment.
 ///
 
-The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save and sync** to persist the changes.
+The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save** to persist the changes.
 
 ## Configure defaults
 
@@ -72,21 +72,27 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
 
-#### Time limits and passwords
+#### Time limits
 
-Enable **Time limit** to give each student a fixed amount of working time after they start the assessment. The timer is independent of deadlines: a student who starts close to a deadline gets the full time limit, but the credit they earn shifts as each deadline passes during the attempt. For example, a student with a 60-minute time limit who starts 1 minute before the due date works for the full 60 minutes — the first minute earns the on-time credit, and the remainder earns the next late-deadline credit.
+Enable **Time limit** to give each student a fixed amount of working time after they start the assessment.
 
-Enable **Password** to require a password to start or continue working on the assessment. This is typically used for proctored exams. Students do not need to re-enter the password to review their work once submissions are no longer allowed (for example, in **No submissions allowed** mode after the last deadline).
+Timed attempts can span early deadlines, the due date, and late deadlines that still allow submissions, so the credit a student earns can shift as those deadlines pass during the attempt. If an assessment has a due date, a late deadline, and a 60-minute time limit, a student who starts 1 minute before the due date works for the full 60 minutes: the first minute earns the on-time credit, and the remainder earns the late-deadline credit.
+
+However, a timed attempt cannot continue past the point where submissions stop entirely. For example, if **After due date** is set to **No submissions allowed** with no late deadlines, a student who starts shortly before the due date receives only the remaining time until then, not the full configured time limit.
+
+#### Passwords
+
+Enable **Password** to require a password to start or continue working on the assessment. This is typically used for proctored exams. The password gates active, submittable work; students do not need to re-enter the password to review their work once submissions are no longer allowed (for example, in **No submissions allowed** mode after the last deadline).
 
 !!! info
 
-    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit, and PrairieTest exams do not support a separate password.
+    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit and access controls, including any PrairieTest session password.
 
 ### PrairieTest
 
 Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
 
-While a matching reservation is active, PrairieTest controls the scheduled access window and time limit. The top-level date control, before-release behavior, and after-completion visibility apply outside the active reservation.
+PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, which means the student has a checked-in PrairieTest reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
 
 For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
 
@@ -96,13 +102,21 @@ For each PrairieTest exam, configure what students see after they finish **while
 
 These per-exam settings do not support reveal dates. Use the top-level **After completion** settings for visibility after the active reservation ends.
 
-You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations.
+You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations, regardless of the per-exam visibility settings.
 
-When both PrairieTest and date control are configured, an active matching reservation **takes precedence**: access is granted through PrairieTest using its own scheduling and time limit. Outside the reservation, date control determines access. To restrict an exam to PrairieTest only, leave date control disabled so students cannot open the assessment outside the reservation.
+#### PrairieTest precedence
+
+When a PrairieTest exam is associated with the assessment, PrairieLearn resolves access in this order:
+
+- **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling, time limit, and access controls. For non-read-only reservations, the per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
+- **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
+- **Outside Exam mode**, the top-level date control rules apply normally when a date-control release exists. Top-level **After completion** visibility also takes over for completed instances once the reservation ends.
+
+To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review questions or scores outside the reservation, keep top-level **Question visibility** and **Score visibility** hidden.
 
 ### Before release
 
-Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), the assessment is listed any time the student is not in an active reservation. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
+Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), this controls whether students can see the assessment title outside Exam mode even though they cannot open it. In Exam mode, only assessments with an active matching reservation are listed or accessible. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
 
 Disable it when the assessment should be completely hidden until release.
 
@@ -110,7 +124,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-An assessment is complete when students can no longer answer questions, usually after the last late deadline, after a timed assessment closes, or after an instructor closes it.
+An assessment is complete when students can no longer answer questions, usually after the due date and any late deadlines pass, after a timed assessment closes, or after an instructor closes it.
 
 Question visibility options:
 
@@ -137,8 +151,8 @@ Click **Add override** in the **Overrides** section.
 
 Choose who the override applies to:
 
-- **Specific students**: select individual enrolled students.
-- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them).
+- **Specific students**: select enrolled students. Student-specific overrides are stored in the database, not in `infoAssessment.json`, which keeps one-off accommodations and makeup windows out of the course's git history.
+- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them). Student-label overrides are stored in `infoAssessment.json` alongside the rest of the assessment configuration.
 
 [Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
 
@@ -164,13 +178,7 @@ When an override field is active, the detail panel shows **Remove override** for
 
 ## Override priority
 
-If a student matches more than one override, PrairieLearn resolves the rules in this order:
-
-1. Start with the defaults.
-2. Apply matching student-label overrides.
-3. Apply matching specific-student overrides.
-
-Specific-student overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over overrides higher in the list. Use the drag handle to reorder overrides when priority matters.
+Student-specific overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over those higher in the list; use the drag handle to reorder overrides when priority matters.
 
 For example, suppose a student has both the "Section A" and "Extended time" labels:
 
@@ -181,7 +189,7 @@ The student inherits both overrides on top of the defaults: due date Feb 20, tim
 
 ## Save changes
 
-The page tracks unsaved changes at the bottom of the screen. Click **Save and sync** to write file-backed access control to `infoAssessment.json`, store individual-student overrides in the database, and sync the course.
+The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store student-specific overrides in the database, and sync the course.
 
 Click **Cancel** to discard unsaved UI changes.
 
@@ -198,7 +206,7 @@ Migration from legacy `allowAccess` can be done in two ways:
 
 !!! note
 
-    UID-based rules from the legacy system do not have a direct JSON equivalent in modern access control. After migration, use the Access page to configure overrides for student labels or individual enrolled students.
+    UID-based rules from the legacy system do not have a direct JSON equivalent in modern access control. After migration, use the Access page to configure overrides for student labels or specific enrolled students.
 
 For JSON-level before-and-after examples, see [Legacy migration examples](#legacy-migration-examples) in the advanced JSON reference.
 
@@ -408,9 +416,9 @@ In the UI:
     }
     ```
 
-### Extended access for individual students
+### Extended access for specific students
 
-Use individual-student overrides for one-off accommodations or makeup windows that should not become course content.
+Use student-specific overrides for one-off accommodations or makeup windows that should not become course content.
 
 In the UI:
 
@@ -420,8 +428,6 @@ In the UI:
 4. Click **Override** next to only the fields that should differ, such as **Release**, **Due date**, or **Time limit**.
 5. Save the changes.
 
-Individual-student overrides are stored in the database and are not represented in `infoAssessment.json`.
-
 ## Limitations
 
 Modern access control models credit as a single contiguous timeline from the release date through deadlines to the final close. It cannot represent non-contiguous credit ranges where credit is available, then unavailable, then available again.
@@ -429,6 +435,21 @@ Modern access control models credit as a single contiguous timeline from the rel
 For example, a legacy setup that opens for 100% credit from Jan 15 to Feb 15, closes completely, and then reopens for 100% credit from Mar 1 to Mar 15 cannot be represented as one modern credit timeline.
 
 Assessments with non-contiguous credit ranges are flagged as incompatible during migration. You can clear those rules and reconfigure access manually, or keep the legacy format.
+
+## Limits
+
+Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of students individually.
+
+| Setting                                      | Limit                                   |
+| -------------------------------------------- | --------------------------------------- |
+| Student-label overrides                      | 100 overrides per assessment            |
+| Student-specific overrides                   | 100 overrides per assessment            |
+| Students in one student-specific override    | 100 students                            |
+| Student labels in one student-label override | 100 labels                              |
+| Early and late deadlines                     | 10 early and 10 late deadlines per rule |
+| Linked PrairieTest exams                     | 10 exams per assessment                 |
+| Time limits                                  | 525,600 minutes (365 days)              |
+| Passwords                                    | 128 characters                          |
 
 ## Staff access
 
@@ -462,7 +483,7 @@ The `accessControl` field is an array in `infoAssessment.json`:
 }
 ```
 
-The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; overrides for individual enrolled students are configured through the UI.
+The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; student-specific overrides are configured through the UI.
 
 ### Full JSON skeleton
 
@@ -581,20 +602,29 @@ The visibility fields follow a toggle pattern. For example, if `questions.hidden
 
 ### JSON override inheritance
 
-Overrides only store fields they change. Unset fields inherit from the defaults and from earlier matching overrides. The UI's **Override** and **Remove override** buttons are the safest way to control whether a field is explicitly set or inherited.
+JSON overrides only target student labels. They store the fields they change; omitted fields inherit through the same priority order used by the UI:
 
-| Field                        | Defaults to override merge                                        | Override to override cascade                            |
-| ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit | Later override replaces; unset fields kept from earlier |
-| `afterComplete.*` sub-fields | Same as `dateControl`                                             | Same as `dateControl`                                   |
-| `beforeRelease`              | Cannot be overridden                                              | Not applicable                                          |
+1. Start with the defaults rule.
+2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
+3. Apply any student-specific overrides configured through the UI.
+
+Later matching student-label overrides replace fields from earlier matching student-label overrides. Student-specific overrides are managed through the UI and take priority over student-label overrides.
+
+| Field                        | Defaults to override merge                                          | Override to override cascade                              |
+| ---------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |
+| `dateControl.*` sub-fields   | Override replaces individual sub-fields; omitted sub-fields inherit | Later override replaces; omitted fields kept from earlier |
+| `afterComplete.questions`    | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `afterComplete.score`        | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `beforeRelease`              | Cannot be overridden                                                | Not applicable                                            |
+| `integrations.prairieTest.*` | Cannot be overridden                                                | Not applicable                                            |
 
 There are a few important details:
 
-- `due` is one atomic setting. Overriding the due date also overrides the due-date credit choice.
-- Early and late deadline arrays can be overridden with an empty list, which clears inherited deadlines.
-- Time limits and passwords can be overridden to no value, which clears an inherited time limit or password.
-- Individual-student overrides are not written to `infoAssessment.json`; they are stored in the database.
+- `due` is one atomic setting. Overriding the due date also overrides the due-date credit choice — they cannot be cascaded independently.
+- `earlyDeadlines` and `lateDeadlines` are each replaced as a whole array. Setting either to `[]` in an override **clears** the inherited deadlines for that override's students.
+- `durationMinutes: null` and `password: null` in an override **clear** the inherited time limit or password. Omitting the field entirely keeps the inherited value.
+- `afterComplete.questions` and `afterComplete.score` inherit independently of each other, but each is replaced as a whole object: an override that sets `afterComplete.questions` without dates does not retain the default's `visibleFromDate`/`visibleUntilDate`.
+- `beforeRelease.listed` and PrairieTest integrations (`integrations.prairieTest`) are **defaults-only**. Overrides cannot enable, disable, or change them.
 
 ### Legacy migration examples
 

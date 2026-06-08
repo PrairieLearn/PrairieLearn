@@ -8,16 +8,16 @@
   },
   "scripts": {
     "build": "tsgo && tscp",
-    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.1042.0",
-    "@aws-sdk/client-s3": "^3.1042.0",
-    "@aws-sdk/credential-providers": "^3.1042.0",
-    "@aws-sdk/lib-storage": "^3.1042.0",
+    "@aws-sdk/client-ecr": "^3.1057.0",
+    "@aws-sdk/client-s3": "^3.1057.0",
+    "@aws-sdk/credential-providers": "^3.1057.0",
+    "@aws-sdk/lib-storage": "^3.1057.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -36,11 +36,11 @@
     "dockerode": "^5.0.0",
     "express": "^4.22.1 <5",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.10.1",
+    "ioredis": "^5.11.0",
     "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
     "shlex": "^3.0.0",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
@@ -51,14 +51,14 @@
     "@types/dockerode": "^4.0.1",
     "@types/express": "^4.17.25 <5",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.7",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.14",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.7"
   },
   "nodemonConfig": {
     "ext": "js,jsx,ts,tsx,json,sql",

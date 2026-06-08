@@ -61,8 +61,8 @@ PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
-SCHEMA_PATH = pathlib.Path(__file__).with_suffix(".schema.json")
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).with_name("pl-answer.schema.json")
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-multiple-choice.json"
+ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
 
 
 def categorize_options(
@@ -76,11 +76,8 @@ def categorize_options(
     # First, check internal HTML for answer choices
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
-            pl.validate_element(child, ANSWER_SCHEMA_PATH)
-            pl.check_attribs(
-                child,
-                required_attribs=[],
-                optional_attribs=["score", "correct", "feedback"],
+            pl.validate_element(
+                child, ANSWER_SCHEMA_PATH, parent_tag="pl-multiple-choice"
             )
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
@@ -92,7 +89,8 @@ def categorize_options(
                 SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
             ):
                 raise ValueError(
-                    f"Score {score} is invalid, must be in the range [0.0, 1.0]."
+                    'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
+                    "must be a number in the range [0.0, 1.0]."
                 )
 
             answer_tuple = AnswerTuple(
@@ -108,7 +106,7 @@ def categorize_options(
 
         else:
             raise ValueError(
-                f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
+                "<pl-multiple-choice> only allows these child elements: <pl-answer>."
             )
 
     # NOTE Reading in answer choices from JSON is deprecated.
@@ -182,7 +180,8 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Get order type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
-            'Setting answer choice order should be done with the "order" attribute.'
+            'Attributes "order" and "fixed-order" on <pl-multiple-choice> '
+            'cannot be set together. Use "order".'
         )
 
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
@@ -195,8 +194,8 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Get display type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(
-            "Cannot set both 'display' and 'inline' attributes. "
-            "Use only 'display'; the 'inline' attribute is deprecated."
+            'Attributes "display" and "inline" on <pl-multiple-choice> '
+            'cannot be set together. Use "display"; "inline" is deprecated.'
         )
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
@@ -223,9 +222,7 @@ def prepare_answers_to_display(
     len_total = len_correct + len_incorrect
 
     if len_total == 0:
-        raise ValueError(
-            "pl-multiple-choice element must have at least 1 answer choice."
-        )
+        raise ValueError("<pl-multiple-choice> must have at least 1 answer choice.")
 
     # When builtin grading is disabled, NOTA/AOTA just controls display
     # (show/hide) with no correctness semantics.
@@ -237,13 +234,15 @@ def prepare_answers_to_display(
 
     if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
         raise ValueError(
-            'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'
+            '<pl-multiple-choice> cannot have both "all-of-the-above" and '
+            '"none-of-the-above" set to "correct".'
         )
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
         raise ValueError(
-            'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
+            "<pl-multiple-choice> must have at least 2 correct answers when "
+            '"all-of-the-above" is "correct" or "random".'
         )
 
     if (
@@ -253,7 +252,8 @@ def prepare_answers_to_display(
     ):
         # There must be a correct answer
         raise ValueError(
-            'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
+            "<pl-multiple-choice> must have at least 1 correct answer, or set "
+            '"none-of-the-above" to "correct" or "random".'
         )
 
     # If no correct option is provided, a random 'None of the above' will be
@@ -293,7 +293,8 @@ def prepare_answers_to_display(
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
-                f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
+                "<pl-multiple-choice> does not have enough correct choices for "
+                f'"all-of-the-above". Need {expected_num_answers - number_answers} more.'
             )
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
         # max number if 'None of the above' is correct
@@ -301,7 +302,8 @@ def prepare_answers_to_display(
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
-                f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
+                "<pl-multiple-choice> does not have enough incorrect choices for "
+                f'"none-of-the-above". Need {expected_num_answers - number_answers} more.'
             )
     elif aota is not AotaNotaType.CORRECT:
         # 'None of the above' does not exist or is not correct, so:
@@ -423,11 +425,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if get_display_type(element) is not DisplayType.DROPDOWN:
         if pl.has_attrib(element, "size"):
             raise ValueError(
-                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
+                'Attribute "size" on <pl-multiple-choice> is only allowed when '
+                '"display" is "dropdown".'
             )
         if pl.has_attrib(element, "placeholder"):
             raise ValueError(
-                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
+                'Attribute "placeholder" on <pl-multiple-choice> is only allowed when '
+                '"display" is "dropdown".'
             )
 
     if name in data["params"]:
@@ -442,32 +446,40 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if not builtin_grading:
         if pl.has_attrib(element, "weight"):
             raise ValueError(
-                '"weight" should not be set when builtin-grading is false.'
+                'Attribute "weight" on <pl-multiple-choice> is only allowed when '
+                '"builtin-grading" is true.'
             )
         restricted_aota_nota_values = {"correct", "incorrect", "random"}
         aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
         if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
+                'Attribute "all-of-the-above" on <pl-multiple-choice> cannot use the '
+                'grading values "correct", "incorrect", or "random" when '
+                '"builtin-grading" is false.'
             )
         nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
         if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
+                'Attribute "none-of-the-above" on <pl-multiple-choice> cannot use the '
+                'grading values "correct", "incorrect", or "random" when '
+                '"builtin-grading" is false.'
             )
         if pl.has_attrib(element, "hide-score-badge"):
             raise ValueError(
-                '"hide-score-badge" should not be set when builtin-grading is false.'
+                'Attribute "hide-score-badge" on <pl-multiple-choice> is only allowed '
+                'when "builtin-grading" is true.'
             )
         for child in element:
             if child.tag in {"pl-answer", "pl_answer"}:
                 if pl.has_attrib(child, "score"):
                     raise ValueError(
-                        '"score" on pl-answer should not be set when builtin-grading is false.'
+                        'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
+                        'is only allowed when "builtin-grading" is true.'
                     )
                 if pl.has_attrib(child, "feedback"):
                     raise ValueError(
-                        '"feedback" on pl-answer should not be set when builtin-grading is false.'
+                        'Attribute "feedback" on <pl-answer> inside <pl-multiple-choice> '
+                        'is only allowed when "builtin-grading" is true.'
                     )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
@@ -484,7 +496,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if duplicates:
         raise ValueError(
-            f"pl-multiple-choice element has duplicate choices: {duplicates}"
+            f"<pl-multiple-choice> has duplicate answer choices: {duplicates}."
         )
 
     # Get answers to display to student, using a helper function to separate out logic.

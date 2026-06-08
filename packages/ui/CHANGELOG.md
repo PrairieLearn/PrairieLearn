@@ -1,5 +1,41 @@
 # @prairielearn/ui
 
+## 3.6.0
+
+### Minor Changes
+
+- 74672f0: Add an optional `unit` prop to `NumericInputColumnFilter` to show a unit label (e.g. "minutes") in the filter dropdown.
+
+## 3.5.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.5.1
+
+### Patch Changes
+
+- 56efa59: Simplify the sticky save bar button label to "Save".
+
+## 3.5.0
+
+### Minor Changes
+
+- 19b8b6e: Support cell-content-based auto-sizing via `autoSizeSample` on column meta
+- 3070141: Fix `useShiftClickCheckbox` so shift-click range selection works correctly when the table is sorted or filtered. The hook now tracks the last-clicked row's id and computes the range against the current row-model positions, instead of `row.index` (which is the pre-sort data index).
+- 5558c93: Add `mapRowToJsonData` option to `TanstackTableDownloadButton` for proper JSON export formatting.
+- 0a7a8ff: `CategoricalColumnFilter` was removed, and `MultiSelectColumnFilter` now contains the same toggle functionality, with `parseAsMultiSelectFilter` and `applyMultiSelectFilter` helpers.
+  `PresetFilterDropdown` now clears columns by removing them from `columnFilters` rather than writing a sentinel empty value. Consumers whose `onColumnFiltersChange` mirrors filter state elsewhere (e.g., into URL params) must reset state for column IDs that are absent from the new filters.
+- 19b8b6e: Add `extractLeafColumnIds`. Add scroll to CategoricalColumnFilter dropdown. Use useLayoutEffect for indeterminate checkbox state in ColumnManager.
+- 19b8b6e: Fix bug with autosizing table columns - it now uses the filtered row set
+  Add a clear-filters control via `onResetColumnFilters`
+  Add `useColumnFilters` hook to reduce boilerplate and improve typing
+
+### Patch Changes
+
+- d195079: Remove unused SplitPane CSS that forced Bootstrap grid columns in the detail panel to full width.
+
 ## 3.4.1
 
 ### Patch Changes

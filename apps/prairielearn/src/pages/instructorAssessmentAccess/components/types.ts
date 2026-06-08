@@ -147,6 +147,15 @@ export interface AccessControlFormData {
   overrides: OverrideData[];
 }
 
+export function isOverrideEditable(
+  override: OverrideData | null | undefined,
+  permissions: { canEditAccessSettings: boolean; canEditEnrollmentRules: boolean },
+): boolean {
+  if (!permissions.canEditAccessSettings) return false;
+  if (override?.appliesTo.targetType === 'enrollment') return permissions.canEditEnrollmentRules;
+  return true;
+}
+
 /**
  * The default rule has a completion mechanism when something can actually
  * close the assessment: a due date, a late deadline, a duration limit, or a
@@ -266,10 +275,10 @@ export function jsonToOverrideFormData(
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
+  if (json.ruleType === 'enrollment') {
     appliesTo = {
       targetType: 'enrollment',
-      enrollments: json.enrollments.map((i) => ({
+      enrollments: (json.enrollments ?? []).map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,

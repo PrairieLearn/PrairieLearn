@@ -1,12 +1,13 @@
-import { type Formatter, createFormatter } from '@reteps/tree-sitter-htmlmustache/formatter';
+import type ace from 'ace-builds';
+
+import { type Formatter, createFormatter } from '@prairielearn/tree-sitter-htmlmustache/formatter';
 import {
   type Diagnostic,
   type Linter,
   createLinter,
-} from '@reteps/tree-sitter-htmlmustache/linter';
-import type ace from 'ace-builds';
+} from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-import { formats, validators } from '../../../src/ee/lib/element-schemas/htmlmustache-plugin.js';
+import { formats, validators } from '../../../src/lib/element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';

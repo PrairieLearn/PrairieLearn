@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "answers-name": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    },
+    "source-blocks-order": {
+      "type": "string",
+      "enum": ["random", "alphabetized", "ordered", "random-sections"]
+    },
+    "distractor-order": {
+      "type": "string",
+      "enum": ["random", "inherit"]
+    },
+    "grading-method": {
+      "type": "string",
+      "enum": ["unordered", "ordered", "ranking", "dag", "external"]
+    },
+    "indentation": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "source-header": {
+      "type": "string"
+    },
+    "solution-header": {
+      "type": "string"
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "solution-placement": {
+      "type": "string",
+      "enum": ["right", "bottom"]
+    },
+    "max-incorrect": {
+      "type": "string",
+      "format": "integer"
+    },
+    "min-incorrect": {
+      "type": "string",
+      "format": "integer"
+    },
+    "inline": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "max-indent": {
+      "type": "string",
+      "format": "integer"
+    },
+    "feedback": {
+      "type": "string",
+      "enum": ["none", "first-wrong", "first-wrong-verbose"]
+    },
+    "partial-credit": {
+      "type": "string",
+      "enum": ["none", "lcs"]
+    },
+    "format": {
+      "type": "string",
+      "enum": ["default", "code"]
+    },
+    "code-language": {
+      "type": "string"
+    },
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

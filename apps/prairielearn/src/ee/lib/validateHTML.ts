@@ -4,8 +4,8 @@ import * as parse5 from 'parse5';
 import {
   BOOLEAN_TRUE_VALUES,
   BOOLEAN_VALUES,
-} from './element-schemas/htmlmustache-plugin-utils.js';
-import { lintQuestionHtml } from './htmlMustacheLinterNode.js';
+} from '../../lib/element-schemas/htmlmustache-plugin-utils.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
@@ -543,6 +543,9 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
           break;
         case 'correct-answer':
           usedCorrectAnswer = true;
+          break;
+        case 'correct-answer-format':
+          assertInChoices('pl-string-input', key, val, ['exact', 'regex'], errors);
           break;
         case 'label':
         case 'aria-label':

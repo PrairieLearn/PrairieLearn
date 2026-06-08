@@ -99,9 +99,9 @@ Click **Edit** next to `question.html` and replace the contents with:
 
 [`pl-multiple-choice`](../elements/pl-multiple-choice.md) is one of PrairieLearn's [submission elements](../elements/index.md#submission-elements) — the inputs students interact with. The [element catalog](../elements/index.md) lists every element you can use here.
 
-![Browser file editor for question.html with syntax highlighting and a Save and sync button](screenshots/10-question-editor.png)
+![Browser file editor for question.html with syntax highlighting and a Save button](screenshots/10-question-editor.png)
 
-Click **Save and sync**, then click the **Preview** tab.
+Click **Save**, then click the **Preview** tab.
 
 ![Question preview after answering 20 and clicking Save & Grade; the submission panel shows a Correct! badge and the staff information sidebar is visible](screenshots/08-question-preview.png)
 
@@ -194,29 +194,17 @@ After clicking the result, the question is added to the zone:
 
 ![Assessment Questions tab in edit mode with rectangle-area in the zone](screenshots/19-assessment-edit-mode.png)
 
-Set the point value if you want, then click **Save and sync**.
+Set the point value if you want, then click **Save**.
 
 ## 8. Configure assessment access rules
 
-Open the **Files** tab and edit `infoAssessment.json`. Add an `allowAccess` block:
+Open the assessment's **Access** tab. In **Defaults**, click **Edit**. In **Date control**, choose **Scheduled for release**, set the release date/time when students may start, choose **Due on date**, set the due date/time, and keep the due-date credit at 100%. Click **Save**.
 
-```json title="infoAssessment.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2025-09-01T20:00:00",
-      "endDate": "2025-09-06T20:00:00",
-      "credit": 100
-    }
-  ]
-}
-```
+The **Access** tab summarizes the release window and due-date credit:
 
-Click **Save and sync**. The **Access** tab summarizes the rules:
+![Assessment Access tab showing modern access control defaults](screenshots/12-assessment-access.png)
 
-![Assessment Access tab showing the access rule table](screenshots/12-assessment-access.png)
-
-For late credit, time limits, per-student exceptions, exam mode, and PrairieTest integration, see [assessment access control](../assessment/accessControl.md).
+For late credit, time limits, student-specific overrides, exam mode, and PrairieTest integration, see the [assessment access control documentation](../assessment/accessControlModern.md).
 
 ## 9. Preview as a student
 

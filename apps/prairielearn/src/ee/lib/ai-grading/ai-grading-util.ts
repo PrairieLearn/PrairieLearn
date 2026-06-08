@@ -1,11 +1,11 @@
 import {
-  type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
+  Output,
   type UserContent,
-  generateObject,
+  generateText,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
@@ -68,9 +68,9 @@ const SubmissionVariantSchema = z.object({
 
 /**
  * Models supporting system messages after the first user message.
- * As of April 2026,
+ * As of May 2026,
  * - OpenAI GPT 5.4-mini and GPT 5.4 support this.
- * - Google Gemini 3 Flash Preview and Gemini 3.1 Pro Preview do not support this.
+ * - Google Gemini 3 Flash Preview, Gemini 3.5 Flash, and Gemini 3.1 Pro Preview do not support this.
  * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.6, and Claude Opus 4.7 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
@@ -504,7 +504,7 @@ export async function insertAiGradingJob({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<string> {
@@ -558,15 +558,15 @@ export async function insertAiGradingJobWithRotationCorrection({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+  gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
   rotationCorrections: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response: GenerateTextResult<any, any>;
     }
   >;
-  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  gradingResponseWithRotationCorrection: GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<string> {
@@ -805,7 +805,7 @@ async function correctImageOrientation({
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
-  response: GenerateObjectResult<any>;
+  response: GenerateTextResult<any, any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
@@ -848,15 +848,15 @@ async function correctImageOrientation({
     });
   }
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
-    schema: RotationCorrectionOutputSchema,
+    output: Output.object({ schema: RotationCorrectionOutputSchema }),
     messages: prompt,
     // System messages in `messages` are hard-coded authored strings; safe to allow.
     allowSystemInMessages: true,
   });
 
-  const index = Number.parseInt(response.object.upright_image) - 1;
+  const index = Number.parseInt(response.output.upright_image) - 1;
 
   return {
     correctedImage: images[index],
@@ -901,7 +901,7 @@ export async function correctImagesOrientation({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response: GenerateTextResult<any, any>;
     }
   > = {};
 
@@ -937,6 +937,46 @@ const AiGradingJobDataForSubmissionSchema = z.object({
   completion: AiGradingJobSchema.shape.completion,
   rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
 });
+
+const AiGradingExplanationSchema = z.object({
+  explanation: z.string(),
+});
+
+/**
+ * The persisted completion is a schemaless JSON blob whose shape depends on
+ * which API/library produced it. We've used several over the lifetime of AI
+ * grading, so we accept every shape we've ever stored. Each field is optional
+ * because only one is present for a given completion (and for some time the
+ * explanation wasn't persisted at all, so all of them may be absent).
+ */
+const AiGradingCompletionSchema = z.object({
+  // OpenAI chat completions.
+  choices: z
+    .array(z.object({ message: z.object({ parsed: z.unknown().optional() }).optional() }))
+    .optional(),
+  // OpenAI responses API.
+  output_parsed: z.unknown().optional(),
+  // `ai` package `generateObject`.
+  object: z.unknown().optional(),
+  // `ai` package `generateText` with structured output. The result exposes the
+  // structured output via a non-enumerable `output` getter backed by an
+  // `_output` field, so only `_output` survives JSON serialization.
+  _output: z.unknown().optional(),
+});
+
+export function extractAiGradingExplanationFromCompletion(completion: unknown): string | null {
+  const parsed = AiGradingCompletionSchema.safeParse(completion);
+  if (!parsed.success) return null;
+
+  const { choices, output_parsed, object, _output } = parsed.data;
+  const explanation = AiGradingExplanationSchema.safeParse(
+    // The 4 different formats
+    choices?.[0]?.message?.parsed ?? output_parsed ?? object ?? _output,
+  );
+  if (!explanation.success) return null;
+
+  return explanation.data.explanation.trim() || null;
+}
 
 /**
  * Builds the `aiGradingInfo` displayed in the manual-grading instance question
@@ -976,44 +1016,7 @@ export async function buildAiGradingInfo({
           .trimStart()
       : '';
 
-  // We're dealing with a schemaless JSON blob here. We'll be defensive and
-  // try to avoid errors when extracting the explanation. Note that for some
-  // time, the explanation wasn't included in the completion at all, so it
-  // may legitimately be missing.
-  //
-  // Over the lifetime of this feature, we've changed which APIs/libraries we
-  // use to generate the completion, so we need to handle all formats we've ever
-  // used for backwards-compatibility. Each one is documented below.
-  const explanation = run(() => {
-    const completion = aiGradingJobData.completion;
-    if (!completion) return null;
-
-    // OpenAI chat completion format
-    if (completion.choices) {
-      const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    // OpenAI response format
-    if (completion.output_parsed) {
-      const explanation = completion?.output_parsed?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    // `ai` package format
-    if (completion.object) {
-      const explanation = completion?.object?.explanation;
-      if (typeof explanation !== 'string') return null;
-
-      return explanation.trim() || null;
-    }
-
-    return null;
-  });
+  const explanation = extractAiGradingExplanationFromCompletion(aiGradingJobData.completion);
 
   const correctedDegrees = aiGradingJobData.rotation_correction_degrees;
   const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
