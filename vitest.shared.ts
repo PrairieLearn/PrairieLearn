@@ -7,11 +7,6 @@ import ignore from 'ignore';
 import { defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
-// Normalize Windows-style path separators to forward slashes.
-function slash(path: string) {
-  return path.replace(/\\/g, '/');
-}
-
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
@@ -102,7 +97,10 @@ class CustomSequencer extends BaseSequencer {
         );
       })
       .map((spec) => {
-        const fullPath = resolve(slash(config.root), slash(spec.moduleId));
+        const fullPath = resolve(
+          config.root.replaceAll('\\', '/'),
+          spec.moduleId.replaceAll('\\', '/'),
+        );
         const specPath = fullPath?.slice(config.root.length);
         return {
           spec,
