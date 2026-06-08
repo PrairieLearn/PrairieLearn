@@ -32,6 +32,7 @@ Some notes about this configuration:
 
 - The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid`, and it's vital that the correct value is used for each separate exam.
 - Do not configure date control or a PrairieLearn time limit unless students should have a non-PrairieTest access path. PrairieTest enforces scheduling and time limits, including conflict exams and disability accommodations.
+- Use the PrairieTest exam's after-completion visibility setting if students should not review questions or scores after finishing while their reservation is still active.
 
 ## Testing center exams with a few students outside the testing center
 
@@ -67,7 +68,6 @@ Some notes about this configuration:
 
 - See the [next section](#synchronous-timed-exams) for more details on the extra date-control override for the unproctored students.
 - The override can be added at any time, including after other students already completed the exam using PrairieTest. This is useful for accommodations or makeup exams.
-- Student-label overrides are applied in order, and lower overrides take priority when multiple labels match. Student-specific overrides configured in the UI take priority over student-label overrides.
 
 ## Synchronous, timed exams
 
@@ -95,9 +95,6 @@ This configuration is good when:
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
         "due": { "date": "2020-04-20T12:05:00" },
-        "afterLastDeadline": {
-          "allowSubmissions": false
-        },
         "durationMinutes": 60
       },
       "afterComplete": {
@@ -130,10 +127,10 @@ Some notes about this configuration:
 - If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and login to PrairieLearn again, and continue taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
 - Remember to extend both the `due` date and `durationMinutes` for students with extra-time accommodations.
 - Students who need both a conflict exam and extra time should receive a student-specific override, or a dedicated label override listed below the other matching overrides.
-- After the timer expires the exam will auto-close and grade any saved but ungraded questions. Students can see their final score, but cannot review any questions.
+- After the timer expires the exam will auto-close and grade any saved but ungraded questions. While the exam window is still open, students can see their final score but cannot review any questions. After the `due` time, students can no longer open the assessment.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-- This configuration sets `afterLastDeadline.allowSubmissions` to `false` to keep a post-due access rule in effect without allowing submissions. It also sets `afterComplete.questions.hidden` to `true` to hide question content after completion. Score visibility remains at the default visible setting. This limits post-exam review outside the exam window; it does not prevent students from seeing questions or grading feedback while they are taking the exam.
+- This configuration omits `afterLastDeadline`, so students cannot open the assessment after the `due` time. It sets `afterComplete.questions.hidden` to `true`, so a student who finishes before the exam window closes can see their total score but cannot review questions. This does not prevent students from seeing questions or grading feedback while they are taking the exam.
 
 ## Asynchronous, timed exams
 
@@ -158,9 +155,6 @@ This configuration is good when:
       "dateControl": {
         "release": { "date": "2020-04-20T06:00:00" },
         "due": { "date": "2020-04-21T06:00:00" },
-        "afterLastDeadline": {
-          "allowSubmissions": false
-        },
         "durationMinutes": 60
       },
       "afterComplete": {
@@ -201,9 +195,6 @@ This configuration is good when:
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
         "due": { "date": "2020-04-20T12:10:00" },
-        "afterLastDeadline": {
-          "allowSubmissions": false
-        },
         "durationMinutes": 60
       },
       "afterComplete": {
@@ -236,6 +227,6 @@ Some notes about this configuration:
 - The important change from the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of `"allowRealTimeGrading": false`. [Disabling real-time grading](configuration.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
 - When they are doing the exam, students can save answers to a question as many times as they like. When the exam finishes, the most recent saved answer for each question (if any) will be graded. Any earlier saved answers will be ignored.
 - With this configuration students will never see their grading results for specific questions. This is because `"allowRealTimeGrading": false` disallows grading _during_ the exam, and `afterComplete.questions.hidden` hides per-question grading results _after_ the exam is over.
-- To prevent students from seeing their total exam score as soon as the exam is over, set `afterComplete.score.hidden` to `true`; otherwise the students will see their total score even if the per-question score is hidden.
+- To prevent students from seeing their total exam score after their assessment is graded, set `afterComplete.score.hidden` to `true`; otherwise the students will see their total score even if the per-question results are hidden.
 - Having real-time grading disabled means that students are unable to re-attempt questions. This means you should not include complex numeric or programming questions, because students will often need multiple attempts at a question after grading feedback to correct minor typos and errors.
 - It's possible to also combine this configuration with [asynchronous, timed](#asynchronous-timed-exams) by adding `"allowRealTimeGrading": false` to that configuration above.
