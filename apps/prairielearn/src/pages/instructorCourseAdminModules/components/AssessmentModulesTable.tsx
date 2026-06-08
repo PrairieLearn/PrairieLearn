@@ -1,28 +1,57 @@
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
-import { useModalState } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
-import type { StaffAssessmentModule } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl } from '../../../lib/client/url.js';
 import type { AssessmentModulesError } from '../../../trpc/course/assessment-modules.js';
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/course/context.js';
-import type { AssessmentModuleFormRow } from '../instructorCourseAdminModules.types.js';
+import type {
+  AssessmentModuleFormRow,
+  StaffAssessmentModuleWithAssessments,
+} from '../instructorCourseAdminModules.types.js';
 
+import {
+  AssessmentModuleUsageModal,
+  type AssessmentModuleUsageModalData,
+} from './AssessmentModuleUsageModal.js';
+import {
+  DeleteAssessmentModuleModal,
+  type DeleteAssessmentModuleModalData,
+} from './DeleteAssessmentModuleModal.js';
 import {
   EditAssessmentModuleModal,
   type EditAssessmentModuleModalData,
 } from './EditAssessmentModuleModal.js';
 
+const DEFAULT_MODULE_NAME = 'Default';
+
 interface AssessmentModulesPageProps {
   trpcCsrfToken: string;
   courseId: string;
-  initialModules: StaffAssessmentModule[];
+  initialModules: StaffAssessmentModuleWithAssessments[];
   allowEdit: boolean;
   isExampleCourse: boolean;
   isDevMode: boolean;
@@ -30,6 +59,7 @@ interface AssessmentModulesPageProps {
 }
 
 const emptyModule = {
+  assessments: [],
   course_id: null,
   heading: '',
   id: null,
@@ -38,8 +68,193 @@ const emptyModule = {
   number: 0,
 };
 
-function toFormRow(module: StaffAssessmentModule): AssessmentModuleFormRow {
+function toFormRow(module: StaffAssessmentModuleWithAssessments): AssessmentModuleFormRow {
   return { ...module, trackingId: module.id };
+}
+
+function AssessmentModuleRow({
+  module,
+  editMode,
+  allowEdit,
+  onEdit,
+  onDelete,
+  onShowUsage,
+}: {
+  module: AssessmentModuleFormRow;
+  editMode: boolean;
+  allowEdit: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onShowUsage: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: module.trackingId,
+  });
+
+  const style = {
+    opacity: isDragging ? 0.6 : 1,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
+  };
+
+  const isDefault = module.name === DEFAULT_MODULE_NAME;
+
+  return (
+    <tr ref={setNodeRef} style={style}>
+      {editMode && allowEdit && (
+        <td className="align-middle">
+          <div className="d-flex align-items-center">
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              style={{ cursor: 'grab', touchAction: 'none' }}
+              aria-label="Drag row"
+              {...attributes}
+              {...listeners}
+            >
+              <i className="fa fa-grip-vertical" aria-hidden="true" />
+            </button>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              aria-label={`Edit module ${module.name}`}
+              onClick={onEdit}
+            >
+              <i className="fa fa-edit" aria-hidden="true" />
+            </button>
+            {isDefault ? (
+              <OverlayTrigger
+                trigger="click"
+                tooltip={{
+                  body: 'The Default module is required and cannot be deleted.',
+                  props: { id: `delete-tooltip-${module.trackingId}` },
+                }}
+                rootClose
+              >
+                <button
+                  className="btn btn-sm btn-ghost"
+                  type="button"
+                  aria-label="The Default module cannot be deleted"
+                >
+                  <i className="fa fa-trash text-muted" aria-hidden="true" />
+                </button>
+              </OverlayTrigger>
+            ) : (
+              <button
+                className="btn btn-sm btn-ghost"
+                type="button"
+                aria-label={`Delete module ${module.name}`}
+                onClick={onDelete}
+              >
+                <i className="fa fa-trash text-danger" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </td>
+      )}
+      <td className="align-middle">{module.name}</td>
+      <td className="align-middle">
+        <AssessmentModuleHeading assessmentModule={module} />
+      </td>
+      <td className="align-middle">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary text-nowrap"
+          aria-label={`View ${module.assessments.length} assessment${module.assessments.length === 1 ? '' : 's'} in this module`}
+          onClick={onShowUsage}
+        >
+          View assessments
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function AssessmentModulesTable({
+  rows,
+  setModulesState,
+  editMode,
+  allowEdit,
+  handleEdit,
+  handleDelete,
+  handleCreate,
+  handleShowUsage,
+}: {
+  rows: AssessmentModuleFormRow[];
+  setModulesState: (
+    setter: (items: AssessmentModuleFormRow[]) => AssessmentModuleFormRow[],
+  ) => void;
+  editMode: boolean;
+  allowEdit: boolean;
+  handleEdit: (trackingId: string) => void;
+  handleDelete: (module: AssessmentModuleFormRow) => void;
+  handleCreate: () => void;
+  handleShowUsage: (module: AssessmentModuleFormRow) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const ids = useMemo(() => rows.map((module) => module.trackingId), [rows]);
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      autoScroll={false}
+      onDragEnd={({ active, over }: DragEndEvent) => {
+        if (!over || active.id === over.id) return;
+
+        setModulesState((items) => {
+          const oldIndex = items.findIndex((item) => item.trackingId === active.id);
+          const newIndex = items.findIndex((item) => item.trackingId === over.id);
+          if (oldIndex === -1 || newIndex === -1) return items;
+          return arrayMove(items, oldIndex, newIndex);
+        });
+      }}
+    >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <table className="table table-sm table-hover table-striped" aria-label="Assessment modules">
+          <thead>
+            <tr>
+              {editMode && allowEdit && (
+                <th style={{ width: '1%' }}>
+                  <span className="visually-hidden">Drag, Edit and Delete</span>
+                </th>
+              )}
+              <th>Name</th>
+              <th className="col-8">Heading</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((module) => (
+              <AssessmentModuleRow
+                key={module.trackingId}
+                module={module}
+                editMode={editMode}
+                allowEdit={allowEdit}
+                onEdit={() => handleEdit(module.trackingId)}
+                onDelete={() => handleDelete(module)}
+                onShowUsage={() => handleShowUsage(module)}
+              />
+            ))}
+            {editMode && allowEdit && (
+              <tr>
+                <td colSpan={4}>
+                  <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                    <i className="fa fa-plus" aria-hidden="true" /> New module
+                  </button>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </SortableContext>
+    </DndContext>
+  );
 }
 
 function AssessmentModulesCard({
@@ -50,13 +265,15 @@ function AssessmentModulesCard({
   origHash: initialOrigHash,
 }: {
   courseId: string;
-  initialModules: StaffAssessmentModule[];
+  initialModules: StaffAssessmentModuleWithAssessments[];
   allowEdit: boolean;
   isExampleCourse: boolean;
   origHash: string | null;
 }) {
   const trpc = useTRPC();
   const editModal = useModalState<EditAssessmentModuleModalData>();
+  const usageModal = useModalState<AssessmentModuleUsageModalData>();
+  const deleteModal = useModalState<DeleteAssessmentModuleModalData>();
 
   const { data, refetch } = useQuery({
     ...trpc.assessmentModules.list.queryOptions(),
@@ -126,13 +343,23 @@ function AssessmentModulesCard({
     editModal.hide();
   };
 
-  const handleDelete = (trackingId: string) => {
+  const removeModule = (trackingId: string) => {
     setModulesState((prev) => prev.filter((m) => m.trackingId !== trackingId));
+  };
+
+  const handleDelete = (module: AssessmentModuleFormRow) => {
+    if (module.name === DEFAULT_MODULE_NAME) return;
+    if (module.assessments.length > 0) {
+      deleteModal.showWithData(module);
+    } else {
+      removeModule(module.trackingId);
+    }
   };
 
   const handleSubmit = () => {
     saveMutation.mutate({
       modules: modulesState.map((module) => ({
+        id: module.id,
         name: module.name,
         heading: module.heading,
         implicit: module.implicit,
@@ -142,6 +369,9 @@ function AssessmentModulesCard({
   };
 
   const saveError = getAppError<AssessmentModulesError['Save']>(saveMutation.error);
+
+  const lockName =
+    editModal.data?.mode === 'edit' && editModal.data.assessmentModule.name === DEFAULT_MODULE_NAME;
 
   return (
     <>
@@ -216,63 +446,16 @@ function AssessmentModulesCard({
         )}
 
         <div className="table-responsive">
-          <table
-            className="table table-sm table-hover table-striped"
-            aria-label="Assessment modules"
-          >
-            <thead>
-              <tr>
-                {editMode && allowEdit && (
-                  <th style={{ width: '1%' }}>
-                    <span className="visually-hidden">Edit and Delete</span>
-                  </th>
-                )}
-                <th>Name</th>
-                <th className="col-9">Heading</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((module) => (
-                <tr key={module.trackingId}>
-                  {editMode && allowEdit && (
-                    <td className="align-middle">
-                      <div className="d-flex align-items-center">
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          type="button"
-                          aria-label={`Edit module ${module.name}`}
-                          onClick={() => handleEdit(module.trackingId)}
-                        >
-                          <i className="fa fa-edit" aria-hidden="true" />
-                        </button>
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          type="button"
-                          aria-label={`Delete module ${module.name}`}
-                          onClick={() => handleDelete(module.trackingId)}
-                        >
-                          <i className="fa fa-trash text-danger" aria-hidden="true" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                  <td className="align-middle">{module.name}</td>
-                  <td className="align-middle">
-                    <AssessmentModuleHeading assessmentModule={module} />
-                  </td>
-                </tr>
-              ))}
-              {editMode && allowEdit && (
-                <tr>
-                  <td colSpan={3}>
-                    <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                      <i className="fa fa-plus" aria-hidden="true" /> New module
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <AssessmentModulesTable
+            rows={rows}
+            setModulesState={setModulesState}
+            editMode={editMode}
+            allowEdit={allowEdit}
+            handleEdit={handleEdit}
+            handleDelete={handleDelete}
+            handleCreate={handleCreate}
+            handleShowUsage={usageModal.showWithData}
+          />
         </div>
 
         <div className="card-footer">
@@ -302,7 +485,22 @@ function AssessmentModulesCard({
         <Alert variant="info">You can't edit assessment modules in the example course.</Alert>
       )}
 
-      <EditAssessmentModuleModal {...editModal} existingNames={existingNames} onSave={handleSave} />
+      <EditAssessmentModuleModal
+        {...editModal}
+        existingNames={existingNames}
+        lockName={lockName}
+        onSave={handleSave}
+      />
+
+      <DeleteAssessmentModuleModal
+        {...deleteModal}
+        onConfirm={(module) => {
+          removeModule(module.trackingId);
+          deleteModal.hide();
+        }}
+      />
+
+      <AssessmentModuleUsageModal {...usageModal} />
     </>
   );
 }

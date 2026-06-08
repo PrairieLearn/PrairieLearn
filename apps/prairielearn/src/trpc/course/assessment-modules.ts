@@ -3,11 +3,18 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { StaffAssessmentModuleSchema } from '../../lib/client/safe-db-types.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
-import { prepareJsonFileEditor } from '../../lib/editors.js';
-import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
+import {
+  MultiEditor,
+  prepareAssessmentModuleRewriteEditors,
+  prepareJsonFileEditor,
+} from '../../lib/editors.js';
+import {
+  AssessmentModuleWithAssessmentsSchema,
+  selectAssessmentModulesForCourse,
+  selectAssessmentModulesWithAssessmentsForCourse,
+} from '../../models/assessment-module.js';
 import { type CourseJsonInput } from '../../schemas/infoCourse.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -22,6 +29,8 @@ export interface AssessmentModulesError {
   List: never;
   Save: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
+
+const DEFAULT_MODULE_NAME = 'Default';
 
 function getCourseContainer(coursePath: string) {
   return {
@@ -42,23 +51,20 @@ const list = t.procedure
   .use(requireCoursePermissionPreview)
   .output(
     z.object({
-      modules: z.array(StaffAssessmentModuleSchema),
+      modules: z.array(AssessmentModuleWithAssessmentsSchema),
       origHash: z.string().nullable(),
     }),
   )
   .query(async (opts) => {
     const { course } = opts.ctx;
 
-    const modules = await selectAssessmentModulesForCourse(course.id);
+    const modules = await selectAssessmentModulesWithAssessmentsForCourse(course.id);
     const origHash = await computeScopedJsonHash<CourseJsonInput>(
       path.join(course.path, 'infoCourse.json'),
       assessmentModulesScope,
     );
 
-    return {
-      modules: modules.map((module) => StaffAssessmentModuleSchema.parse(module)),
-      origHash,
-    };
+    return { modules, origHash };
   });
 
 const save = t.procedure
@@ -68,6 +74,7 @@ const save = t.procedure
     z.object({
       modules: z.array(
         z.object({
+          id: z.string().nullable(),
           name: z.string().trim().min(1, 'Module name is required'),
           heading: z.string().trim().min(1, 'Module heading is required'),
           implicit: z.boolean(),
@@ -100,6 +107,39 @@ const save = t.procedure
       seenNames.add(module.name);
     }
 
+    // Compare the submitted modules against the current database state to find
+    // modules that were renamed or deleted, so the assessments that reference
+    // them can be updated to stay consistent.
+    const currentModules = await selectAssessmentModulesForCourse(course.id);
+    const currentById = new Map(currentModules.map((module) => [module.id, module]));
+    const submittedIds = new Set(modules.map((module) => module.id).filter((id) => id !== null));
+    const submittedNames = new Set(modules.map((module) => module.name));
+
+    // A submitted row that maps to an existing module whose name changed is a
+    // rename: referencing assessments must point at the new name.
+    const renames: { oldName: string; newName: string }[] = [];
+    for (const module of modules) {
+      if (module.id === null) continue;
+      const existing = currentById.get(module.id);
+      if (!existing || existing.name === DEFAULT_MODULE_NAME) continue;
+      if (existing.name !== module.name) {
+        renames.push({ oldName: existing.name, newName: module.name });
+      }
+    }
+
+    // An existing module that's no longer present in the submitted list (by id
+    // and name) is deleted: its assessments are reassigned to the Default module
+    // by removing the `module` field from each one. Checking both id and name
+    // avoids treating a rename as a delete.
+    const deletedNames = currentModules
+      .filter(
+        (module) =>
+          module.name !== DEFAULT_MODULE_NAME &&
+          !submittedIds.has(module.id) &&
+          !submittedNames.has(module.name),
+      )
+      .map((module) => module.name);
+
     const prepared = await prepareJsonFileEditor<CourseJsonInput>({
       applyChanges: (jsonContents) => {
         jsonContents.assessmentModules = propertyValueWithDefault(
@@ -123,9 +163,50 @@ const save = t.procedure
       });
     }
 
-    const serverJob = await prepared.editor.prepareServerJob();
+    const renameEditors = (
+      await Promise.all(
+        renames.map((rename) =>
+          prepareAssessmentModuleRewriteEditors({
+            course: locals.course,
+            moduleName: rename.oldName,
+            applyChanges: (contents) => {
+              contents.module = rename.newName;
+              return contents;
+            },
+            locals,
+          }),
+        ),
+      )
+    ).flat();
+
+    const reassignEditors = (
+      await Promise.all(
+        deletedNames.map((name) =>
+          prepareAssessmentModuleRewriteEditors({
+            course: locals.course,
+            moduleName: name,
+            applyChanges: (contents) => {
+              delete contents.module;
+              return contents;
+            },
+            locals,
+          }),
+        ),
+      )
+    ).flat();
+
+    const editor =
+      renameEditors.length === 0 && reassignEditors.length === 0
+        ? prepared.editor
+        : new MultiEditor({ locals, description: 'Update assessment modules' }, [
+            ...renameEditors,
+            ...reassignEditors,
+            prepared.editor,
+          ]);
+
+    const serverJob = await editor.prepareServerJob();
     try {
-      await prepared.editor.executeWithServerJob(serverJob);
+      await editor.executeWithServerJob(serverJob);
     } catch {
       throwAppError<AssessmentModulesError['Save']>({
         code: 'SYNC_JOB_FAILED',

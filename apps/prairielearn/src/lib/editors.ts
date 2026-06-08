@@ -2934,3 +2934,66 @@ export async function prepareAccessControlLabelRewriteEditors({
 
   return editors;
 }
+
+/**
+ * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
+ * assessment module is `moduleName`. The caller supplies `applyChanges` to
+ * either rename the module (set `module` to the new name) or reassign the
+ * assessment to the Default module (delete the `module` field). Intended to be
+ * bundled with the `infoCourse.json` edit in a `MultiEditor` so the changes
+ * commit and sync atomically.
+ *
+ * Affected assessments are located by joining through the synced
+ * `assessment_module_id`, matching the pattern used by `AssessmentSetRenameEditor`.
+ */
+export async function prepareAssessmentModuleRewriteEditors({
+  course,
+  moduleName,
+  applyChanges,
+  locals,
+}: {
+  course: Course;
+  moduleName: string;
+  applyChanges: (contents: AssessmentJsonInput) => AssessmentJsonInput;
+  locals: { authz_data: AuthzData; course: Course; user: User };
+}): Promise<FileModifyEditor[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_assessment_module,
+    { assessment_module_name: moduleName, course_id: course.id },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const editors: FileModifyEditor[] = [];
+
+  for (const assessment of assessments) {
+    if (assessment.assessment_directory == null) continue;
+
+    const assessmentDir = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+    );
+    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
+
+    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
+      applyChanges,
+      jsonPath: infoPath,
+      // No scoped hash: this edit is not driven by a user-held origHash.
+      // FileModifyEditor's full-file hash still guards against TOCTOU at
+      // write time, and shouldEdit() makes unchanged files a no-op.
+      conflictCheck: { origHash: null, scope: (json) => ({ module: json.module ?? null }) },
+      locals,
+      container: { rootPath: assessmentDir, invalidRootPaths: [] },
+    });
+    // `prepared` can only fail with reason 'conflict', which can't happen
+    // when origHash is null.
+    if (prepared.success) editors.push(prepared.editor);
+  }
+
+  return editors;
+}

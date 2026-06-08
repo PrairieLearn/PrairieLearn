@@ -8,15 +8,15 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAssessmentModuleSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { selectAssessmentModulesForCourse } from '../../models/assessment-module.js';
+import { selectAssessmentModulesWithAssessmentsForCourse } from '../../models/assessment-module.js';
 import { type CourseJsonInput } from '../../schemas/infoCourse.js';
 
 import { AssessmentModulesPage } from './components/AssessmentModulesTable.js';
+import { StaffAssessmentModuleWithAssessmentsSchema } from './instructorCourseAdminModules.types.js';
 
 const router = Router();
 
@@ -28,7 +28,7 @@ router.get(
       accessType: 'instructor',
     });
 
-    const assessmentModules = await selectAssessmentModulesForCourse(course.id);
+    const assessmentModules = await selectAssessmentModulesWithAssessmentsForCourse(course.id);
 
     const origHash = await computeScopedJsonHash<CourseJsonInput>(
       path.join(course.path, 'infoCourse.json'),
@@ -56,7 +56,9 @@ router.get(
             <AssessmentModulesPage
               trpcCsrfToken={trpcCsrfToken}
               courseId={course.id}
-              initialModules={z.array(StaffAssessmentModuleSchema).parse(assessmentModules)}
+              initialModules={z
+                .array(StaffAssessmentModuleWithAssessmentsSchema)
+                .parse(assessmentModules)}
               allowEdit={allowEdit}
               isExampleCourse={course.example_course}
               isDevMode={config.devMode}

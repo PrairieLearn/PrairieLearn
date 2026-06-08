@@ -15,6 +15,7 @@ export function EditAssessmentModuleModal({
   onExited,
   onSave,
   existingNames,
+  lockName,
 }: {
   show: boolean;
   data: EditAssessmentModuleModalData | null;
@@ -22,6 +23,7 @@ export function EditAssessmentModuleModal({
   onExited: () => void;
   onSave: (assessmentModule: AssessmentModuleFormRow) => void;
   existingNames: Set<string>;
+  lockName: boolean;
 }) {
   const [assessmentModule, setAssessmentModule] = useState<AssessmentModuleFormRow | null>(null);
 
@@ -72,13 +74,16 @@ export function EditAssessmentModuleModal({
                   id="module-name"
                   value={assessmentModule.name}
                   aria-describedby={nameConflicts ? 'module-name-warning' : undefined}
+                  disabled={lockName}
                   required
                   onChange={({ currentTarget }) =>
                     setAssessmentModule({ ...assessmentModule, name: currentTarget.value })
                   }
                 />
                 <small className="form-text text-muted">
-                  Short name for the module (preferably 1 to 3 words), e.g. "Introduction".
+                  {lockName
+                    ? 'The Default module is required and cannot be renamed.'
+                    : 'Short name for the module (preferably 1 to 3 words), e.g. "Introduction".'}
                 </small>
                 {nameConflicts && (
                   <div
