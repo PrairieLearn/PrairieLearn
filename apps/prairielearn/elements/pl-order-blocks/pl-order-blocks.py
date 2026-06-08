@@ -38,9 +38,11 @@ from order_blocks_options_parsing import (
     SourceBlocksOrderType,
 )
 
-SCHEMA_PATH = pathlib.Path(__file__).with_suffix(".schema.json")
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).with_name("pl-answer.schema.json")
-BLOCK_GROUP_SCHEMA_PATH = pathlib.Path(__file__).with_name("pl-block-group.schema.json")
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-order-blocks.json"
+ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
+BLOCK_GROUP_SCHEMA_PATH = (
+    pathlib.Path(__file__).parent / "schemas" / "pl-block-group.json"
+)
 
 
 class OrderBlocksAnswerData(TypedDict):
@@ -217,14 +219,18 @@ def validate_child_schemas(html_element: lxml.html.HtmlElement) -> None:
         if isinstance(child, lxml.etree._Comment):
             continue
         if child.tag == "pl-answer":
-            pl.validate_element(child, ANSWER_SCHEMA_PATH)
+            pl.validate_element(child, ANSWER_SCHEMA_PATH, parent_tag="pl-order-blocks")
         elif child.tag == "pl-block-group":
-            pl.validate_element(child, BLOCK_GROUP_SCHEMA_PATH)
+            pl.validate_element(
+                child, BLOCK_GROUP_SCHEMA_PATH, parent_tag="pl-order-blocks"
+            )
             for group_child in child:
                 if isinstance(group_child, lxml.etree._Comment):
                     continue
                 if group_child.tag == "pl-answer":
-                    pl.validate_element(group_child, ANSWER_SCHEMA_PATH)
+                    pl.validate_element(
+                        group_child, ANSWER_SCHEMA_PATH, parent_tag="pl-block-group"
+                    )
 
 
 def prepare(html: str, data: pl.QuestionData) -> None:
