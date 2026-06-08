@@ -130,10 +130,10 @@ Some notes about this configuration:
 - If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and login to PrairieLearn again, and continue taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
 - Remember to extend both the `due` date and `durationMinutes` for students with extra-time accommodations.
 - Students who need both a conflict exam and extra time should receive a student-specific override, or a dedicated label override listed below the other matching overrides.
-- After the timer expires the exam will auto-close and grade any saved but ungraded questions. The `afterLastDeadline` setting keeps the assessment available in a view-only state after the exam window, without allowing submissions. Students will be unable to see any of the questions unless the `afterComplete` visibility settings allow it.
+- After the timer expires the exam will auto-close and grade any saved but ungraded questions. Students can see their final score, but cannot review any questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-- This configuration sets `afterComplete.questions.hidden` to `true` so students can see their score after the exam, but cannot review questions once their exam window or timer has ended. This limits post-exam review outside the exam window; it does not prevent students from seeing questions or grading feedback while they are taking the exam.
+- This configuration sets `afterLastDeadline.allowSubmissions` to `false` to keep a post-due access rule in effect without allowing submissions. It also sets `afterComplete.questions.hidden` to `true` to hide question content after completion. Score visibility remains at the default visible setting. This limits post-exam review outside the exam window; it does not prevent students from seeing questions or grading feedback while they are taking the exam.
 
 ## Asynchronous, timed exams
 

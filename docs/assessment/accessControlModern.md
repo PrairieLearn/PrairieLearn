@@ -77,9 +77,12 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
 Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
 
+- **No access**: students cannot access the assessment after the last deadline.
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
+
+These options control whether students can open the assessment after the last deadline. Score visibility in gradebook-style views is controlled separately by the **After completion** score visibility setting.
 
 #### Time limits
 
@@ -223,7 +226,7 @@ For JSON-level before-and-after examples, see [Legacy migration examples](#legac
 
 ### Simple homework with a due date
 
-Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, students can no longer start or submit unless `afterLastDeadline.allowSubmissions` is enabled.
+Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, students can no longer access, start, or submit the assessment.
 
 In the UI:
 
@@ -232,7 +235,7 @@ In the UI:
 3. Set **Release** to **Scheduled for release** and enter Jan 15.
 4. Set **Due date** to **Due on date** and enter Feb 15.
 5. Leave due-date credit at the default 100%.
-6. Set **After due date** to **No submissions allowed**.
+6. Set **After due date** to **No access**.
 
 ??? info "JSON"
 
@@ -568,10 +571,12 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 
 ### `afterLastDeadline`
 
-| Field              | Type    | Default | Description                                                    |
-| ------------------ | ------- | ------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 99.       |
+When `afterLastDeadline` is omitted or set to `null`, students have no access after the last deadline. Set it to an object to allow post-deadline review or submissions.
+
+| Field              | Type    | Default                          | Description                                                    |
+| ------------------ | ------- | -------------------------------- | -------------------------------------------------------------- |
+| `allowSubmissions` | boolean | Required when the object exists  | Whether students can still submit answers after all deadlines. |
+| `credit`           | integer | `0` when submissions are allowed | Credit percentage after the last deadline, from 0 to 99.       |
 
 If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
 

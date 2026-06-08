@@ -28,12 +28,12 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'no_access',
     label: 'No access',
-    description: 'Students cannot access the assessment',
+    description: 'Students cannot open the assessment',
   },
   {
     value: 'no_submissions',
     label: 'No submissions allowed',
-    description: 'Students can still view but not submit',
+    description: 'Students can open the assessment but not submit',
   },
   {
     value: 'practice_submissions',

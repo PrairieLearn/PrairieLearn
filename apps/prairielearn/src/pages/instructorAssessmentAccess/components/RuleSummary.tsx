@@ -306,7 +306,7 @@ export function generateDefaultRuleDateTableRows(
             ? afterLastDeadline.credit != null
               ? formatCreditPercent(afterLastDeadline.credit)
               : 'Practice'
-            : 'Closed',
+            : 'No submissions allowed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -538,7 +538,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | nul
   if (afterLastDeadline.allowSubmissions) {
     parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
   } else {
-    parts.push('Closed');
+    parts.push('No submissions allowed');
   }
   return parts.join(', ');
 }
@@ -1067,7 +1067,7 @@ function buildDefaultRuleCurrentIndicator(
   }
 
   if (!segment.submittable) {
-    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'No submissions allowed' };
   }
 
   if (segment.endDate) {
