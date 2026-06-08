@@ -1,6 +1,6 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import { normalizeImsFilePath } from '../utils/html.js';
+import { normalizeImsFilePath } from '../utils/ims-file-path.js';
 import { slugify } from '../utils/slugify.js';
 
 import {

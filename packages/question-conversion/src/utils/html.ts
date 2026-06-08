@@ -4,6 +4,8 @@ import { createRequire } from 'node:module';
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
 import he from 'he';
 
+import { normalizeImsFilePath } from './ims-file-path.js';
+
 // The package ships as a UMD CJS bundle; named ESM imports don't work.
 const _require = createRequire(import.meta.url);
 const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
@@ -182,25 +184,6 @@ export function resolveImsFileRefs(
   }
 
   return { html: rewrittenHtml, fileRefs, skippedFiles: [...skippedSourcePaths] };
-}
-
-/**
- * Normalize an IMS/Canvas file reference to the on-disk filename: strip any
- * `?query`/`#fragment`, then URL- and HTML-decode. This is the canonical form
- * stored in `fileRefs`; consumers that read the referenced asset back off disk
- * must resolve against this same normalization.
- */
-export function normalizeImsFilePath(rawPath: string): string {
-  const pathWithoutQuery = rawPath.replace(/[?#].*$/, '');
-  return he.decode(safeDecodeURIComponent(pathWithoutQuery));
-}
-
-export function safeDecodeURIComponent(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
