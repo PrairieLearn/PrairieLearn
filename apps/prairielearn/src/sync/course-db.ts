@@ -460,7 +460,7 @@ export async function loadInfoFile<T = { uuid: string }>({
       if (!json.uuid) {
         return infofile.makeError('UUID is missing');
       }
-      if (!z.uuid().safeParse(json.uuid).success) {
+      if (!z.guid().safeParse(json.uuid).success) {
         return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
       }
     }
