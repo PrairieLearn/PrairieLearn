@@ -1,5 +1,5 @@
 /**
- * Regenerates the screenshots embedded in `docs/assessment/accessControl.md`.
+ * Regenerates the screenshots embedded in `docs/assessment/accessControlModern.md`.
  *
  * This is a Playwright spec rather than a normal test. It is skipped unless
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
@@ -34,7 +34,7 @@ import { syncCourse } from '../helperCourse.js';
 
 import { test } from './fixtures.js';
 
-const OUT_DIR = path.resolve(REPOSITORY_ROOT_PATH, 'docs/assessment/accessControl');
+const OUT_DIR = path.resolve(REPOSITORY_ROOT_PATH, 'docs/assessment/accessControlModern');
 const VIEWPORT = { width: 1440, height: 1600 };
 const ASSESSMENT_TID = 'hw19-accessControlUi';
 const ASSESSMENT_RELATIVE_PATH = path.join(
@@ -296,7 +296,7 @@ async function seedRealisticOverrides({
 test.describe('Modern access control docs screenshots', () => {
   test.skip(
     !process.env.CAPTURE_SCREENSHOTS,
-    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/assessment/accessControl/*.png.',
+    'Set CAPTURE_SCREENSHOTS=1 to regenerate docs/assessment/accessControlModern/*.png.',
   );
 
   test('capture access-control UI screenshots', async ({

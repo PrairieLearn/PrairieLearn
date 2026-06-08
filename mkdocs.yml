@@ -68,8 +68,11 @@ plugins:
         - overrides/**
         - mkdocstrings/**
         - pyproject.toml
+        - assessment/accessControl.md
+        - assessment/accessControlModern.md
   - gen-files:
       scripts:
+        - docs/scripts/gen_access_control_aliases.py
         - docs/scripts/gen_python_nav.py
         - docs/scripts/gen_additional_readmes.py
         - docs/scripts/gen_jsonschemas.py
