@@ -70,14 +70,6 @@ In `infoAssessment.json`, add a `preferences` object to a question entry. Only t
   "set": "Homework",
   "number": "5",
   "title": "Forces on Earth",
-  "accessControl": [
-    {
-      "dateControl": {
-        "release": { "date": "2025-01-01T00:00:01" },
-        "due": { "date": null }
-      }
-    }
-  ],
   "zones": [
     {
       "questions": [

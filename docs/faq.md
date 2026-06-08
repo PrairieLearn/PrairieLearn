@@ -80,7 +80,7 @@ First, for the course instance, create a extension for the student:
 
 This will allow the student to access the course instance beyond the original end date.
 
-Second, use the assessment **Access** page to add a [student-specific access override](assessment/accessControl.md#add-an-override) for `student@example.com` with the February 2018 access window. With legacy access control, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
+Second, use the assessment **Access** page to add a [student-specific access override](assessment/accessControl.md#add-an-override) for `student@example.com` with the February 2018 access window. With legacy access control, edit the assessment's `infoAssessment.json` to add a section for `student@example.com`:
 
 ```json title="infoAssessment.json"
 {
