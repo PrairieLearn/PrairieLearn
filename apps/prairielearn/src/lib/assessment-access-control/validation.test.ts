@@ -1190,15 +1190,15 @@ describe('Duplicate detection', () => {
       integrations: {
         prairieTest: {
           exams: [
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
           ],
         },
       },
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.includes('Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.'),
+      errors.includes('Duplicate PrairieTest exam UUID: 8d38a804-7858-49a6-abe7-7a057604dd34.'),
     );
   });
 
@@ -1211,8 +1211,8 @@ describe('Duplicate detection', () => {
       integrations: {
         prairieTest: {
           exams: [
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
-            { examUuid: '22222222-2222-2222-2222-222222222222' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+            { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
           ],
         },
       },
