@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { countBy } from 'es-toolkit';
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
@@ -168,6 +169,14 @@ router.post(
         if (req.body.file_path && req.files.length > 1) {
           throw new Error('Cannot upload multiple files when file path is specified');
         }
+        const duplicateNames = Object.entries(countBy(req.files, (file) => file.originalname))
+          .filter(([, count]) => count > 1)
+          .map(([name]) => name);
+        if (duplicateNames.length > 0) {
+          throw new Error(
+            `Duplicate file names in upload: ${duplicateNames.join(', ')}. Please rename files to have unique names and try again.`,
+          );
+        }
 
         const files = Object.fromEntries(
           req.files.map((file) => {
@@ -190,6 +199,7 @@ router.post(
             return [filePath, file.buffer];
           }),
         );
+
         const editor = new FileUploadEditor({ locals: res.locals, container, files });
 
         const serverJob = await editor.prepareServerJob();
