@@ -71,11 +71,22 @@ const prairieTestExamMetadata = t.procedure
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
 
+function normalizeAfterLastDeadlineAllowSubmissions(
+  afterLastDeadline: NonNullable<AccessControlJson['dateControl']>['afterLastDeadline'],
+): boolean | null {
+  if (afterLastDeadline?.allowSubmissions === true) return true;
+  if (afterLastDeadline === undefined) return null;
+  return false;
+}
+
 export function formJsonToEnrollmentRuleData(
   rule: AccessControlJson & { id?: string },
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;
   const ac = rule.afterComplete;
+  const afterLastDeadlineAllowSubmissions = normalizeAfterLastDeadlineAllowSubmissions(
+    dc?.afterLastDeadline,
+  );
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
@@ -85,12 +96,9 @@ export function formJsonToEnrollmentRuleData(
     dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
-    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
-    afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
+    afterLastDeadlineAllowSubmissions,
     afterLastDeadlineCredit:
-      dc?.afterLastDeadline?.allowSubmissions === true
-        ? (dc.afterLastDeadline.credit ?? null)
-        : null,
+      afterLastDeadlineAllowSubmissions === true ? (dc?.afterLastDeadline?.credit ?? null) : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,

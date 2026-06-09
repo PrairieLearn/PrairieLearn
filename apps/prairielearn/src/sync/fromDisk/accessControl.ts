@@ -28,6 +28,15 @@ function mapField<T>(jsonValue: T | null | undefined): {
 const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function normalizeAfterLastDeadlineAllowSubmissions(
+  afterLastDeadline: NonNullable<AccessControlJson['dateControl']>['afterLastDeadline'],
+  isDefaultRule: boolean,
+): boolean | null {
+  if (afterLastDeadline?.allowSubmissions === true) return true;
+  if (afterLastDeadline === undefined || isDefaultRule) return null;
+  return false;
+}
+
 /**
  * Validates constraints that require database state: student label existence
  * and PrairieTest exam UUID existence.
@@ -92,7 +101,10 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineField = mapField(afterLastDeadline);
+  const afterLastDeadlineAllowSubmissions = normalizeAfterLastDeadlineAllowSubmissions(
+    afterLastDeadline,
+    isDefaultRule,
+  );
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -115,13 +127,9 @@ function prepareRuleRow(
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
-    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
-    date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineField.value?.allowSubmissions ?? null,
+    date_control_after_last_deadline_allow_submissions: afterLastDeadlineAllowSubmissions,
     date_control_after_last_deadline_credit:
-      afterLastDeadlineField.value?.allowSubmissions === true
-        ? (afterLastDeadlineField.value.credit ?? null)
-        : null,
+      afterLastDeadlineAllowSubmissions === true ? (afterLastDeadline?.credit ?? null) : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,

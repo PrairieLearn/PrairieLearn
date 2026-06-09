@@ -1514,6 +1514,29 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
+    it('normalizes default afterLastDeadline null to omitted', () =>
+      runInTransactionAndRollback(async () => {
+        const courseData = util.getCourseData();
+        const defaultRule = makeAccessControlRule({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+            afterLastDeadline: null,
+          },
+        });
+
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule];
+        await util.writeAndSyncCourseData(courseData);
+
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const rules = await selectAccessControlRulesForAssessment(assessment);
+        const defaultRuleResult = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRuleResult);
+        assert.isUndefined(defaultRuleResult.rule.dateControl?.afterLastDeadline);
+      }));
+
     it('preserves afterLastDeadline allowSubmissions false on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
@@ -1544,7 +1567,40 @@ describe('Access control syncing', () => {
         const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
         assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
-        assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
+        assert.isUndefined(override.rule.dateControl?.afterLastDeadline?.credit);
+      }));
+
+    it('normalizes override afterLastDeadline null to disabled submissions', () =>
+      runInTransactionAndRollback(async () => {
+        const courseData = util.getCourseData();
+        const labelName = 'Test Label';
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
+
+        const defaultRule = makeAccessControlRule({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+            afterLastDeadline: { credit: 50, allowSubmissions: true },
+          },
+        });
+        const overrideRule: AccessControlJsonInput = {
+          labels: [labelName],
+          dateControl: {
+            afterLastDeadline: null,
+          },
+        };
+
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule, overrideRule];
+        await util.writeAndSyncCourseData(courseData);
+
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const rules = await selectAccessControlRulesForAssessment(assessment);
+        const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
+        assert.isOk(override);
+        assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
+        assert.isUndefined(override.rule.dateControl?.afterLastDeadline?.credit);
       }));
 
     it('preserves afterComplete question hidden: true without dates on override', () =>

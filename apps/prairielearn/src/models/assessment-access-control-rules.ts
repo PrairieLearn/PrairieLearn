@@ -51,7 +51,6 @@ export interface EnrollmentAccessControlRuleData {
   dueCredit: number | null;
   earlyDeadlinesOverridden: boolean;
   lateDeadlinesOverridden: boolean;
-  afterLastDeadlineOverridden: boolean;
   afterLastDeadlineAllowSubmissions: boolean | null;
   afterLastDeadlineCredit: number | null;
   durationMinutesOverridden: boolean;
@@ -135,20 +134,7 @@ function dbBaseRowToAccessControlJson(
     dateControl.lateDeadlines = row.late_deadlines ?? [];
   }
   const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
-  if (rule.date_control_after_last_deadline_overridden) {
-    if (allowSubmissions === true) {
-      const credit = rule.date_control_after_last_deadline_credit;
-      dateControl.afterLastDeadline = {
-        allowSubmissions,
-        ...(credit != null ? { credit } : {}),
-      };
-    } else if (allowSubmissions === false) {
-      dateControl.afterLastDeadline = { allowSubmissions };
-    } else {
-      dateControl.afterLastDeadline = null;
-    }
-  } else if (allowSubmissions === true) {
-    // Legacy rows written before the overridden flag was added.
+  if (allowSubmissions === true) {
     const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
@@ -328,13 +314,9 @@ async function syncEnrollmentAccessControlRule(
     date_control_due_credit: ruleData.dueCredit,
     date_control_early_deadlines_overridden: ruleData.earlyDeadlinesOverridden,
     date_control_late_deadlines_overridden: ruleData.lateDeadlinesOverridden,
-    date_control_after_last_deadline_overridden: ruleData.afterLastDeadlineOverridden,
-    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineOverridden
-      ? ruleData.afterLastDeadlineAllowSubmissions
-      : null,
-    date_control_after_last_deadline_credit: ruleData.afterLastDeadlineOverridden
-      ? ruleData.afterLastDeadlineCredit
-      : null,
+    date_control_after_last_deadline_allow_submissions: ruleData.afterLastDeadlineAllowSubmissions,
+    date_control_after_last_deadline_credit:
+      ruleData.afterLastDeadlineAllowSubmissions === true ? ruleData.afterLastDeadlineCredit : null,
     date_control_duration_minutes_overridden: ruleData.durationMinutesOverridden,
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,

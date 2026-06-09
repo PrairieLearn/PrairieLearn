@@ -89,20 +89,12 @@ function buildDateControl(
       })) ?? null;
   }
 
-  if (rule.date_control_after_last_deadline_overridden) {
-    if (rule.date_control_after_last_deadline_allow_submissions != null) {
-      dateControl.afterLastDeadline = {
-        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
-        credit: rule.date_control_after_last_deadline_credit,
-      };
-    } else {
-      dateControl.afterLastDeadline = null;
-    }
-  } else if (rule.date_control_after_last_deadline_allow_submissions != null) {
-    // Legacy rows written before the overridden flag was added.
+  if (rule.date_control_after_last_deadline_allow_submissions != null) {
     dateControl.afterLastDeadline = {
       allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
-      credit: rule.date_control_after_last_deadline_credit,
+      ...(rule.date_control_after_last_deadline_allow_submissions
+        ? { credit: rule.date_control_after_last_deadline_credit }
+        : {}),
     };
   }
 

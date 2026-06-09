@@ -17,7 +17,6 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     date_control_late_deadlines_overridden: false,
     date_control_after_last_deadline_allow_submissions: null,
     date_control_after_last_deadline_credit: null,
-    date_control_after_last_deadline_overridden: false,
     date_control_duration_minutes: null,
     date_control_duration_minutes_overridden: false,
     date_control_password: null,
@@ -114,11 +113,10 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for default rule afterLastDeadline when not set', () => {
+  it('omits credit for default rule afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
-          date_control_after_last_deadline_overridden: true,
           date_control_after_last_deadline_allow_submissions: false,
         },
       }),
@@ -129,13 +127,12 @@ describe('dbRowToAccessControlJson', () => {
     });
   });
 
-  it('omits credit for override afterLastDeadline when submissions disabled', () => {
+  it('omits credit for override afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
           target_type: 'student_label',
           number: 1,
-          date_control_after_last_deadline_overridden: true,
           date_control_after_last_deadline_allow_submissions: false,
         },
       }),
@@ -146,24 +143,10 @@ describe('dbRowToAccessControlJson', () => {
     });
   });
 
-  it('emits afterLastDeadline: null when overridden with allow_submissions null', () => {
+  it('omits afterLastDeadline when allow_submissions is null', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
-          date_control_after_last_deadline_overridden: true,
-          date_control_after_last_deadline_allow_submissions: null,
-        },
-      }),
-    );
-
-    expect(result.dateControl?.afterLastDeadline).toBeNull();
-  });
-
-  it('omits afterLastDeadline when not overridden and allow_submissions null', () => {
-    const result = dbRowToAccessControlJson(
-      makeRow({
-        rule: {
-          date_control_after_last_deadline_overridden: false,
           date_control_after_last_deadline_allow_submissions: null,
         },
       }),
@@ -172,11 +155,10 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.dateControl?.afterLastDeadline).toBeUndefined();
   });
 
-  it('legacy: emits afterLastDeadline when not overridden but allow_submissions is set', () => {
+  it('emits afterLastDeadline when allow_submissions is set', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
-          date_control_after_last_deadline_overridden: false,
           date_control_after_last_deadline_allow_submissions: true,
           date_control_after_last_deadline_credit: 50,
         },
