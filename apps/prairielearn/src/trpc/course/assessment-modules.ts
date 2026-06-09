@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../lib/assessment-module.shared.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -29,8 +30,6 @@ export interface AssessmentModulesError {
   List: never;
   Save: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
-
-const DEFAULT_MODULE_NAME = 'Default';
 
 function getCourseContainer(coursePath: string) {
   return {
@@ -121,7 +120,7 @@ const save = t.procedure
     for (const module of modules) {
       if (module.id === null) continue;
       const existing = currentById.get(module.id);
-      if (!existing || existing.name === DEFAULT_MODULE_NAME) continue;
+      if (!existing || existing.name === DEFAULT_ASSESSMENT_MODULE_NAME) continue;
       if (existing.name !== module.name) {
         renames.push({ oldName: existing.name, newName: module.name });
       }
@@ -134,7 +133,7 @@ const save = t.procedure
     const deletedNames = currentModules
       .filter(
         (module) =>
-          module.name !== DEFAULT_MODULE_NAME &&
+          module.name !== DEFAULT_ASSESSMENT_MODULE_NAME &&
           !submittedIds.has(module.id) &&
           !submittedNames.has(module.name),
       )

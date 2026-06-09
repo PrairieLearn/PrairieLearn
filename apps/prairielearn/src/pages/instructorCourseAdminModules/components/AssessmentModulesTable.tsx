@@ -22,6 +22,7 @@ import { Alert } from 'react-bootstrap';
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
+import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../../lib/assessment-module.shared.js';
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl } from '../../../lib/client/url.js';
@@ -45,8 +46,6 @@ import {
   EditAssessmentModuleModal,
   type EditAssessmentModuleModalData,
 } from './EditAssessmentModuleModal.js';
-
-const DEFAULT_MODULE_NAME = 'Default';
 
 interface AssessmentModulesPageProps {
   trpcCsrfToken: string;
@@ -98,7 +97,7 @@ function AssessmentModuleRow({
     background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
   };
 
-  const isDefault = module.name === DEFAULT_MODULE_NAME;
+  const isDefault = module.name === DEFAULT_ASSESSMENT_MODULE_NAME;
 
   return (
     <tr ref={setNodeRef} style={style}>
@@ -113,7 +112,7 @@ function AssessmentModuleRow({
               {...attributes}
               {...listeners}
             >
-              <i className="fa fa-grip-vertical" aria-hidden="true" />
+              <i className="bi bi-grip-vertical" aria-hidden="true" />
             </button>
             <button
               className="btn btn-sm btn-ghost"
@@ -121,7 +120,7 @@ function AssessmentModuleRow({
               aria-label={`Edit module ${module.name}`}
               onClick={onEdit}
             >
-              <i className="fa fa-edit" aria-hidden="true" />
+              <i className="bi bi-pencil" aria-hidden="true" />
             </button>
             {isDefault ? (
               <OverlayTrigger
@@ -137,7 +136,7 @@ function AssessmentModuleRow({
                   type="button"
                   aria-label="The Default module cannot be deleted"
                 >
-                  <i className="fa fa-trash text-muted" aria-hidden="true" />
+                  <i className="bi bi-trash text-muted" aria-hidden="true" />
                 </button>
               </OverlayTrigger>
             ) : (
@@ -147,7 +146,7 @@ function AssessmentModuleRow({
                 aria-label={`Delete module ${module.name}`}
                 onClick={onDelete}
               >
-                <i className="fa fa-trash text-danger" aria-hidden="true" />
+                <i className="bi bi-trash text-danger" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -245,7 +244,7 @@ function AssessmentModulesTable({
               <tr>
                 <td colSpan={4}>
                   <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                    <i className="fa fa-plus" aria-hidden="true" /> New module
+                    <i className="bi bi-plus-lg" aria-hidden="true" /> New module
                   </button>
                 </td>
               </tr>
@@ -351,7 +350,7 @@ function AssessmentModulesCard({
   };
 
   const handleDelete = (module: AssessmentModuleFormRow) => {
-    if (module.name === DEFAULT_MODULE_NAME) return;
+    if (module.name === DEFAULT_ASSESSMENT_MODULE_NAME) return;
     if (module.assessments.length > 0) {
       deleteModal.showWithData(module);
     } else {
@@ -374,7 +373,8 @@ function AssessmentModulesCard({
   const saveError = getAppError<AssessmentModulesError['Save']>(saveMutation.error);
 
   const lockName =
-    editModal.data?.mode === 'edit' && editModal.data.assessmentModule.name === DEFAULT_MODULE_NAME;
+    editModal.data?.mode === 'edit' &&
+    editModal.data.assessmentModule.name === DEFAULT_ASSESSMENT_MODULE_NAME;
 
   return (
     <>
@@ -385,7 +385,7 @@ function AssessmentModulesCard({
             {allowEdit && origHash ? (
               !editMode ? (
                 <button className="btn btn-sm btn-light" type="button" onClick={enterEditMode}>
-                  <i className="fa fa-edit" aria-hidden="true" /> Edit modules
+                  <i className="bi bi-pencil" aria-hidden="true" /> Edit modules
                 </button>
               ) : (
                 <>
@@ -402,7 +402,7 @@ function AssessmentModulesCard({
                         aria-hidden="true"
                       />
                     ) : (
-                      <i className="fa fa-save" aria-hidden="true" />
+                      <i className="bi bi-floppy" aria-hidden="true" />
                     )}{' '}
                     Save
                   </button>
@@ -442,7 +442,7 @@ function AssessmentModulesCard({
 
         {editMode && duplicateNames.length > 0 && (
           <div className="alert alert-warning m-3" role="alert">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
+            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
             <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Only the last
             module with each name will be synced.
           </div>
