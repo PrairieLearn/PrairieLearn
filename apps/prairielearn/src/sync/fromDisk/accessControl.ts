@@ -92,8 +92,11 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
+  // Only materialize the default `afterLastDeadline: false` when date control
+  // actually exists. Otherwise `null` keeps the date-control section absent.
+  const defaultRuleHasDateControl = isDefaultRule && dateControl.release != null;
   const afterLastDeadlineAllowSubmissions =
-    afterLastDeadline?.allowSubmissions ?? (isDefaultRule ? false : null);
+    afterLastDeadline?.allowSubmissions ?? (defaultRuleHasDateControl ? false : null);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 

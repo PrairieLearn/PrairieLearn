@@ -219,7 +219,7 @@ describe('Access control syncing', () => {
         assert.equal(row.date_control_password, 'secret');
       }));
 
-    it('fields absent from JSON get default database values', () =>
+    it('omitted JSON fields are stored as unset overrides', () =>
       runInTransactionAndRollback(async () => {
         const rule: AccessControlJsonInput = {
           dateControl: {
@@ -258,7 +258,7 @@ describe('Access control syncing', () => {
         assert.isNull(row.date_control_password);
       }));
 
-    it('no dateControl at all: all flags are overridden=false', () =>
+    it('no dateControl at all leaves date-control fields unset', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
         const { syncedRules } = await syncRulesAndRead([rule]);
@@ -269,6 +269,7 @@ describe('Access control syncing', () => {
         assert.isFalse(row.date_control_password_overridden);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
+        assert.isNull(row.date_control_after_last_deadline_allow_submissions);
       }));
 
     it('afterComplete fields follow the same pattern', () =>
@@ -1705,7 +1706,7 @@ describe('Access control syncing', () => {
         assert.deepEqual(dc.afterLastDeadline, { allowSubmissions: false });
       }));
 
-    it('no dateControl in JSON produces default afterLastDeadline in runtime readback', () =>
+    it('no dateControl in JSON produces no dateControl in runtime readback', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const defaultRuleJson: AccessControlJsonInput = {};
@@ -1719,9 +1720,7 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
         assert.isOk(defaultRule);
-        assert.deepEqual(defaultRule.rule.dateControl, {
-          afterLastDeadline: { allowSubmissions: false },
-        });
+        assert.isUndefined(defaultRule.rule.dateControl);
       }));
 
     it('all dateControl fields round-trip correctly', () =>
