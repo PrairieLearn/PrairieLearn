@@ -159,7 +159,7 @@ function AfterLastDeadlineInput({
     if (lastDate) {
       return (
         <>
-          This controls submission permission after{' '}
+          This controls the ability to submit after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
           , until the course instance end date. Visibility is controlled by the after-completion
           settings.
@@ -170,7 +170,7 @@ function AfterLastDeadlineInput({
     // TODO: we want to update the UI to completely hide the "after last deadline" options
     // when there are in fact no deadlines. That'll render this branch obsolete, but in the
     // meantime we have to show something here.
-    return 'This controls submission permission until the course instance end date. Visibility is controlled by the after-completion settings.';
+    return 'This controls the ability to submit until the course instance end date. Visibility is controlled by the after-completion settings.';
   };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {

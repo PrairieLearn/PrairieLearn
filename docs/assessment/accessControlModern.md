@@ -126,7 +126,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-These settings apply after submissions are no longer allowed after the final deadline, after a timed assessment closes, or after an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+These settings apply once submissions are no longer allowed: after the final deadline, when a timed assessment closes, or when an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 Question visibility options:
 
