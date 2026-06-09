@@ -431,8 +431,6 @@ function findMatchingDivBlock(
     }
   }
 
-  const openTag = html.slice(openStart, openEnd);
-  if (openTag.endsWith('/>')) return { closeStart: openEnd, end: openEnd };
   return undefined;
 }
 
