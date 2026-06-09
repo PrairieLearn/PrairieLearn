@@ -1515,7 +1515,7 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
-    it('round-trips default afterLastDeadline allowSubmissions false as disabled submissions', () =>
+    it('canonicalizes default-rule afterLastDeadline allowSubmissions false to omitted', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const defaultRule = makeAccessControlRule({
@@ -1535,9 +1535,10 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const defaultRuleResult = rules.find((r): r is DefaultRule => r.targetType === 'none');
         assert.isOk(defaultRuleResult);
-        assert.deepEqual(defaultRuleResult.rule.dateControl?.afterLastDeadline, {
-          allowSubmissions: false,
-        });
+        // Disabled submissions on the default rule are the implicit default, so
+        // the runtime readback omits afterLastDeadline (the resolver treats an
+        // omitted segment as non-submittable).
+        assert.isUndefined(defaultRuleResult.rule.dateControl?.afterLastDeadline);
       }));
 
     it('preserves afterLastDeadline allowSubmissions false on override', () =>
@@ -1669,10 +1670,10 @@ describe('Access control syncing', () => {
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        assert.strictEqual(override.rule.dateControl.afterLastDeadline?.credit, null);
+        assert.deepEqual(override.rule.dateControl.afterLastDeadline, { allowSubmissions: true });
       }));
 
-    it('configured fields and default afterLastDeadline appear in runtime readback', () =>
+    it('only configured fields appear in runtime readback', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
@@ -1703,7 +1704,7 @@ describe('Access control syncing', () => {
         assert.isUndefined(dc.password);
         assert.isUndefined(dc.earlyDeadlines);
         assert.isUndefined(dc.lateDeadlines);
-        assert.deepEqual(dc.afterLastDeadline, { allowSubmissions: false });
+        assert.isUndefined(dc.afterLastDeadline);
       }));
 
     it('no dateControl in JSON produces no dateControl in runtime readback', () =>
