@@ -382,14 +382,16 @@ export async function rewritePreAsPlCode(html: string): Promise<string> {
       }
 
       const langAttr = language ? ` language="${language}"` : '';
-      // Insert text through Cheerio instead of hand-escaping it. That lets the serializer keep
-      // code such as `i <= n` valid inside HTML as `i &lt;= n`.
-      return { pre, replacement: `<pl-code${langAttr}>\n${plainCode}</pl-code>` };
+      // Use Cheerio's .text() so the serializer entity-encodes characters like < and &,
+      // keeping code such as `#include <stdio.h>` valid inside HTML as `#include &lt;stdio.h&gt;`.
+      const $plCode = $(`<pl-code${langAttr}></pl-code>`);
+      $plCode.text('\n' + plainCode);
+      return { pre, $plCode };
     }),
   );
 
-  for (const { pre, replacement } of replacements) {
-    $(pre).replaceWith(replacement);
+  for (const { pre, $plCode } of replacements) {
+    $(pre).replaceWith($plCode);
   }
 
   removeEmptyParagraphs($);
