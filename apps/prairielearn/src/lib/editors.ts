@@ -2277,12 +2277,14 @@ export class FileUploadEditor extends Editor {
     if (course.path !== container.rootPath) {
       prefix = `${path.basename(container.rootPath)}: `;
     }
-    super({
-      ...params,
-      description: `${prefix}Upload ${Object.keys(files)
-        .map((filePath) => path.relative(container.rootPath, filePath))
-        .join(', ')}`,
-    });
+
+    const description = `${prefix}Upload ${Object.keys(files)
+      .slice(0, 3)
+      .map((filePath) => path.relative(container.rootPath, filePath))
+      .join(
+        ', ',
+      )}${Object.keys(files).length > 3 ? ` and ${Object.keys(files).length - 3} more` : ''}`;
+    super({ ...params, description });
 
     this.container = container;
     this.files = files;
