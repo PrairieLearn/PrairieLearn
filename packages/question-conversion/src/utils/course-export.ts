@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import { logger } from '@prairielearn/logger';
@@ -246,28 +246,32 @@ function isQtiXmlFilename(filename: string): boolean {
 
 /**
  * Heuristic fallback for finding QTI XML files when no manifest is present.
- * Scans the directory and one level of subdirectories for XML files that
- * aren't known non-QTI files.
+ * Scans the directory and nested subdirectories for XML files that aren't
+ * known non-QTI files.
  */
 export async function findQtiXmlFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir);
+  return findQtiXmlFilesRecursive(dir, 0);
+}
 
-  const directXmls = entries.filter(isQtiXmlFilename);
+async function findQtiXmlFilesRecursive(dir: string, depth: number): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+
+  const directXmls = entries
+    .filter((entry) => entry.isFile() && !entry.name.startsWith('._'))
+    .map((entry) => entry.name)
+    .filter(isQtiXmlFilename)
+    .sort();
   if (directXmls.length > 0) {
     return directXmls.map((f) => path.join(dir, f));
   }
 
+  if (depth >= 3) return [];
+
   const xmlFiles: string[] = [];
   for (const entry of entries) {
-    const entryPath = path.join(dir, entry);
-    const entryStat = await stat(entryPath);
-    if (entryStat.isDirectory()) {
-      const subEntries = await readdir(entryPath);
-      const xml = subEntries.find(isQtiXmlFilename);
-      if (xml) {
-        xmlFiles.push(path.join(entryPath, xml));
-      }
-    }
+    if (!entry.isDirectory() || entry.name === '__MACOSX') continue;
+    const entryPath = path.join(dir, entry.name);
+    xmlFiles.push(...(await findQtiXmlFilesRecursive(entryPath, depth + 1)));
   }
   return xmlFiles;
 }

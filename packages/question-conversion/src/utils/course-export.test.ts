@@ -311,13 +311,17 @@ describe('findQtiXmlFiles', () => {
     assert.deepEqual(result, []);
   });
 
-  it('finds QTI XML files one directory deep', async () => {
+  it('finds all QTI XML files one directory deep', async () => {
     await mkdir(path.join(tmpDir, 'bank'), { recursive: true });
-    await writeFile(path.join(tmpDir, 'bank', 'bank.xml'), '<questestinterop/>');
+    await writeFile(path.join(tmpDir, 'bank', 'bank-a.xml'), '<questestinterop/>');
+    await writeFile(path.join(tmpDir, 'bank', 'bank-b.xml'), '<questestinterop/>');
 
     const result = await findQtiXmlFiles(tmpDir);
 
-    assert.deepEqual(result, [path.join(tmpDir, 'bank', 'bank.xml')]);
+    assert.deepEqual(result, [
+      path.join(tmpDir, 'bank', 'bank-a.xml'),
+      path.join(tmpDir, 'bank', 'bank-b.xml'),
+    ]);
   });
 
   it('finds QTI .xml.qti files one directory deep', async () => {
@@ -327,5 +331,29 @@ describe('findQtiXmlFiles', () => {
     const result = await findQtiXmlFiles(tmpDir);
 
     assert.deepEqual(result, [path.join(tmpDir, 'non_cc_assessments', 'bank.xml.qti')]);
+  });
+
+  it('finds QTI XML files in a hidden wrapper directory', async () => {
+    await mkdir(path.join(tmpDir, '.exam-question-bank', 'QTI'), { recursive: true });
+    await mkdir(path.join(tmpDir, '__MACOSX', '.exam-question-bank', 'QTI'), { recursive: true });
+    await writeFile(
+      path.join(tmpDir, '.exam-question-bank', 'QTI', 'ch1_functions.xml'),
+      '<questestinterop/>',
+    );
+    await writeFile(
+      path.join(tmpDir, '.exam-question-bank', 'QTI', 'ch2_limits.xml'),
+      '<questestinterop/>',
+    );
+    await writeFile(
+      path.join(tmpDir, '__MACOSX', '.exam-question-bank', 'QTI', '._ch1_functions.xml'),
+      '<plist/>',
+    );
+
+    const result = await findQtiXmlFiles(tmpDir);
+
+    assert.deepEqual(result, [
+      path.join(tmpDir, '.exam-question-bank', 'QTI', 'ch1_functions.xml'),
+      path.join(tmpDir, '.exam-question-bank', 'QTI', 'ch2_limits.xml'),
+    ]);
   });
 });
