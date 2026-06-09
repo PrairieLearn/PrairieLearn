@@ -113,7 +113,7 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for default rule afterLastDeadline when submissions are disabled', () => {
+  it('omits default rule afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -122,9 +122,7 @@ describe('dbRowToAccessControlJson', () => {
       }),
     );
 
-    expect(result.dateControl?.afterLastDeadline).toEqual({
-      allowSubmissions: false,
-    });
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
   });
 
   it('omits credit for override afterLastDeadline when submissions are disabled', () => {

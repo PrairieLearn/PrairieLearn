@@ -116,8 +116,9 @@ function dbBaseRowToAccessControlJson(
   >,
 ): AccessControlJsonWithRequiredId {
   const rule = row.access_control_rule;
-  const dateControl: AccessControlJson['dateControl'] = {};
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
 
+  const dateControl: AccessControlJson['dateControl'] = {};
   if (rule.date_control_release_date) {
     dateControl.release = { date: rule.date_control_release_date.toISOString() };
   }
@@ -140,7 +141,7 @@ function dbBaseRowToAccessControlJson(
       allowSubmissions,
       ...(credit != null ? { credit } : {}),
     };
-  } else if (allowSubmissions === false) {
+  } else if (allowSubmissions === false && !isDefaultRule) {
     dateControl.afterLastDeadline = { allowSubmissions };
   }
   if (rule.date_control_duration_minutes_overridden) {
@@ -193,7 +194,6 @@ function dbBaseRowToAccessControlJson(
     afterComplete.score = score;
   }
 
-  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
   const beforeReleaseListed = isDefaultRule
     ? (rule.before_release_listed ?? false)
     : rule.before_release_listed;

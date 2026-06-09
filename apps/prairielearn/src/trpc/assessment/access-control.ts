@@ -125,7 +125,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits default-valued settings on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -140,7 +140,13 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.dateControl)) {
-      clean.dateControl = rule.dateControl;
+      const dateControl = { ...rule.dateControl };
+      if (index === 0 && dateControl.afterLastDeadline?.allowSubmissions === false) {
+        delete dateControl.afterLastDeadline;
+      }
+      if (isNonEmptyObject(dateControl)) {
+        clean.dateControl = dateControl;
+      }
     }
 
     if (rule.integrations && isNonEmptyObject(rule.integrations)) {

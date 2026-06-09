@@ -28,15 +28,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 const JSON_RULE_START = 0;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function normalizeAfterLastDeadlineAllowSubmissions(
-  afterLastDeadline: NonNullable<AccessControlJson['dateControl']>['afterLastDeadline'],
-  isDefaultRule: boolean,
-): boolean | null {
-  if (afterLastDeadline?.allowSubmissions === true) return true;
-  if (afterLastDeadline === undefined || isDefaultRule) return null;
-  return false;
-}
-
 /**
  * Validates constraints that require database state: student label existence
  * and PrairieTest exam UUID existence.
@@ -101,10 +92,8 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineAllowSubmissions = normalizeAfterLastDeadlineAllowSubmissions(
-    afterLastDeadline,
-    isDefaultRule,
-  );
+  const afterLastDeadlineAllowSubmissions =
+    afterLastDeadline?.allowSubmissions ?? (isDefaultRule ? false : null);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
