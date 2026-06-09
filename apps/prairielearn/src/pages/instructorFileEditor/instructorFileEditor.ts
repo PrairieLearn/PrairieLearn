@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import * as path from 'path';
 
 // @ts-expect-error No types for ace-code/src/ext/modelist.js
@@ -23,7 +22,7 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
 import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
-import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
+import { FileModifyEditor, classifyEditOutcome, getHash } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -219,10 +218,6 @@ router.post(
     }
   }),
 );
-
-function getHash(contents: string) {
-  return crypto.createHash('sha256').update(contents).digest('hex');
-}
 
 async function readDraftEdit({
   user_id,
