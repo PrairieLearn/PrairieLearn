@@ -108,8 +108,8 @@ export function EditAssessmentModuleModal({
                 className="alert alert-warning mt-2 mb-0 py-2"
                 role="alert"
               >
-                <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" /> This module has
-                the same name as another module.
+                <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This module has the
+                same name as another module.
               </div>
             )}
           </div>
