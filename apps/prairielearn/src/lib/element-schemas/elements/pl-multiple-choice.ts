@@ -1,39 +1,39 @@
 import * as z from 'zod/v4';
 
-import { plBoolean, plInteger, plNumber } from '../element-schema-helpers.ts';
+import { booleanFormat, integerFormat, numberFormat } from '../helpers.ts';
 import type { ElementSchemaModule } from '../types.js';
 
 import { validators } from './pl-multiple-choice.validator.ts';
 
 const aotaNotaAttribute = () =>
-  z.union([plBoolean(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
+  z.union([booleanFormat(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
 
 const plMultipleChoiceAnswerAttributesSchema = z
   .object({
-    correct: plBoolean().optional(),
+    correct: booleanFormat().optional(),
     feedback: z.string().optional(),
-    score: plNumber().optional(),
+    score: numberFormat().optional(),
   })
   .strict();
 
 const plMultipleChoiceAttributesSchema = z
   .object({
     'answers-name': z.string(),
-    weight: plInteger().optional(),
-    'number-answers': plInteger().optional(),
+    weight: integerFormat().optional(),
+    'number-answers': integerFormat().optional(),
     order: z.enum(['random', 'ascend', 'descend', 'fixed']).optional(),
     display: z.enum(['block', 'inline', 'dropdown']).optional(),
-    'hide-letter-keys': plBoolean().optional(),
-    'fixed-order': plBoolean()
+    'hide-letter-keys': booleanFormat().optional(),
+    'fixed-order': booleanFormat()
       .meta({ deprecated: true, description: 'Use the "order" attribute instead.' })
       .optional(),
-    inline: plBoolean()
+    inline: booleanFormat()
       .meta({ deprecated: true, description: 'Use the "display" attribute instead.' })
       .optional(),
-    'hide-score-badge': plBoolean().optional(),
-    'allow-blank': plBoolean().optional(),
-    'builtin-grading': plBoolean().optional(),
-    size: plInteger().optional(),
+    'hide-score-badge': booleanFormat().optional(),
+    'allow-blank': booleanFormat().optional(),
+    'builtin-grading': booleanFormat().optional(),
+    size: integerFormat().optional(),
     placeholder: z.string().optional(),
     'aria-label': z.string().optional(),
     'external-json': z
