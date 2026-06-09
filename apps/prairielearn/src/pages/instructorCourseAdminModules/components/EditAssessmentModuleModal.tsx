@@ -81,6 +81,7 @@ export function EditAssessmentModuleModal({
             <input
               id="module-name"
               type="text"
+              defaultValue={data?.assessmentModule.name ?? ''}
               className={clsx('form-control', errors.name && 'is-invalid')}
               aria-invalid={errors.name ? true : undefined}
               aria-errormessage={errors.name ? 'module-name-error' : undefined}
@@ -119,6 +120,7 @@ export function EditAssessmentModuleModal({
             <input
               id="module-heading"
               type="text"
+              defaultValue={data?.assessmentModule.heading ?? ''}
               className={clsx('form-control', errors.heading && 'is-invalid')}
               aria-invalid={errors.heading ? true : undefined}
               aria-errormessage={errors.heading ? 'module-heading-error' : undefined}
