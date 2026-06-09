@@ -294,7 +294,7 @@
       "type": "number"
     },
     "fileUploadMaxFiles": {
-      "default": 100,
+      "default": 20,
       "type": "number"
     },
     "fileUploadMaxParts": {
