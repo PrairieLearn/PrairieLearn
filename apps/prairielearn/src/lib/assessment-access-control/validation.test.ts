@@ -1274,6 +1274,18 @@ describe('Duplicate detection', () => {
 });
 
 describe('afterLastDeadline validation', () => {
+  it('should reject null afterLastDeadline', () => {
+    assert.throws(() =>
+      AccessControlJsonSchema.parse({
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+          afterLastDeadline: null,
+        },
+      }),
+    );
+  });
+
   it('should accept allowSubmissions false without credit', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {

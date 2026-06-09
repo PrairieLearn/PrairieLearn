@@ -502,27 +502,20 @@
               ]
             },
             "afterLastDeadline": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "allowSubmissions": {
-                      "type": "boolean"
-                    },
-                    "credit": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 99
-                    }
-                  },
-                  "required": ["allowSubmissions"],
-                  "additionalProperties": false
+              "type": "object",
+              "properties": {
+                "allowSubmissions": {
+                  "type": "boolean"
                 },
-                {
-                  "type": "null"
+                "credit": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 99
                 }
-              ],
-              "description": "Controls whether submissions are allowed after the last deadline. Null means no submissions; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no submissions)."
+              },
+              "required": ["allowSubmissions"],
+              "additionalProperties": false,
+              "description": "Controls whether submissions are allowed after the last deadline. Omitted on overrides inherits from the default rule. On the default rule, omitting means no submissions."
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",

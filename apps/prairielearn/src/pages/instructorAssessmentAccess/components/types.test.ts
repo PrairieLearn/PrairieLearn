@@ -434,15 +434,17 @@ describe('formDataToJson', () => {
   });
 
   it('serializes afterLastDeadline overrides', () => {
-    const omittedSubmissions: OverrideData = {
+    const noSubmissionsFromFormNull: OverrideData = {
       ...baseOverride,
       trackingId: 'o-ald-0',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: null,
     };
     expect(
-      formDataToJson(buildFormData(omittedSubmissions))[1].dateControl!.afterLastDeadline,
-    ).toBeNull();
+      formDataToJson(buildFormData(noSubmissionsFromFormNull))[1].dateControl!.afterLastDeadline,
+    ).toEqual({
+      allowSubmissions: false,
+    });
 
     const noSubmissions: OverrideData = {
       ...baseOverride,

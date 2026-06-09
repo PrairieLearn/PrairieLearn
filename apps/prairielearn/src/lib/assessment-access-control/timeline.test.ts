@@ -77,7 +77,7 @@ describe('buildAccessTimeline', () => {
         due: { date: new Date('2025-03-15T00:00:00Z') },
         earlyDeadlines: [{ date: '2025-03-08T00:00:00Z', credit: 120 }],
         lateDeadlines: [{ date: '2025-03-22T00:00:00Z', credit: 50 }],
-        afterLastDeadline: { credit: 0 },
+        afterLastDeadline: { allowSubmissions: false },
       },
       currentDate: new Date('2025-03-10T00:00:00Z'),
       expected: [
@@ -159,11 +159,11 @@ describe('buildAccessTimeline', () => {
       ],
     },
     {
-      name: 'afterLastDeadline credit without allowSubmissions is closed, post-due date',
+      name: 'afterLastDeadline with allowSubmissions false is closed, post-due date',
       dateControl: {
         release: { date: new Date('2025-03-01T00:00:00Z') },
         due: { date: new Date('2025-03-15T00:00:00Z') },
-        afterLastDeadline: { credit: 25 },
+        afterLastDeadline: { allowSubmissions: false },
       },
       currentDate: new Date('2025-03-20T00:00:00Z'),
       expected: [
@@ -551,12 +551,12 @@ describe('buildAccessTimeline', () => {
       ],
     },
     {
-      name: 'pre-release with late deadlines and afterLastDeadline credit',
+      name: 'pre-release with late deadlines and disabled afterLastDeadline submissions',
       dateControl: {
         release: { date: new Date('2025-03-15T00:00:00Z') },
         due: { date: new Date('2025-04-01T00:00:00Z') },
         lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }],
-        afterLastDeadline: { credit: 10 },
+        afterLastDeadline: { allowSubmissions: false },
       },
       currentDate: new Date('2025-03-10T00:00:00Z'),
       expected: [

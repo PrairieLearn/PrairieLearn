@@ -3,17 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { formJsonToEnrollmentRuleData } from './access-control.js';
 
 describe('formJsonToEnrollmentRuleData', () => {
-  it('normalizes omitted afterLastDeadline to inherited submissions behavior', () => {
+  it('maps omitted afterLastDeadline to inherited submissions behavior', () => {
     const result = formJsonToEnrollmentRuleData({ dateControl: {} });
 
     expect(result.afterLastDeadlineAllowSubmissions).toBeNull();
     expect(result.afterLastDeadlineCredit).toBeNull();
   });
 
-  it('normalizes null afterLastDeadline to disabled submissions', () => {
+  it('maps allowSubmissions false to disabled submissions', () => {
     const result = formJsonToEnrollmentRuleData({
       dateControl: {
-        afterLastDeadline: null,
+        afterLastDeadline: { allowSubmissions: false },
       },
     });
 

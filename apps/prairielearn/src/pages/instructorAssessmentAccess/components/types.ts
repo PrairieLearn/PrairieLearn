@@ -430,7 +430,7 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
     if (rule.lateDeadlines.length > 0) {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
-    if (rule.afterLastDeadline) {
+    if (rule.afterLastDeadline?.allowSubmissions === true) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
@@ -526,7 +526,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (of.has('afterLastDeadline')) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = rule.afterLastDeadline ?? { allowSubmissions: false };
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;

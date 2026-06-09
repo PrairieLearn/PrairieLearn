@@ -291,13 +291,13 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        name: 'after due date with explicit afterLastDeadline: null: complete review-only',
+        name: 'after due date with afterLastDeadline.allowSubmissions false: complete review-only',
         rules: [
           makeDefaultRule({
             dateControl: {
               release: { date: '2025-03-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
-              afterLastDeadline: null,
+              afterLastDeadline: { allowSubmissions: false },
             },
           }),
         ],
@@ -703,18 +703,18 @@ describe('resolveAccessControl', () => {
         expect: { authorized: true, submittable: false, credit: 0, complete: true },
       },
       {
-        name: 'override with explicit afterLastDeadline: null disables submissions after due',
+        name: 'override with afterLastDeadline.allowSubmissions false disables inherited submissions after due',
         rules: [
           makeDefaultRule({
             dateControl: {
               release: { date: '2025-01-01T00:00:00Z' },
               due: { date: '2025-03-10T00:00:00Z' },
-              afterLastDeadline: { allowSubmissions: false },
+              afterLastDeadline: { allowSubmissions: true, credit: 25 },
             },
           }),
           makeOverrideRule(
             1,
-            { dateControl: { afterLastDeadline: null } },
+            { dateControl: { afterLastDeadline: { allowSubmissions: false } } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
         ],
