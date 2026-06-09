@@ -599,9 +599,6 @@ importers:
       cropperjs:
         specifier: ^2.1.1
         version: 2.1.1
-      crypto-js:
-        specifier: ^4.2.0
-        version: 4.2.0
       csv-parse:
         specifier: ^6.2.1
         version: 6.2.1
@@ -1014,9 +1011,6 @@ importers:
       '@types/cookie-parser':
         specifier: ^1.4.10 <2
         version: 1.4.10(@types/express@4.17.25)
-      '@types/crypto-js':
-        specifier: ^4.2.2
-        version: 4.2.2
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
@@ -5150,9 +5144,6 @@ packages:
   '@types/cors@2.8.19':
     resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
 
-  '@types/crypto-js@4.2.2':
-    resolution: {integrity: sha512-sDOLlVbHhXpAUAL0YHDUUwDZf3iN4Bwi4W6a0W0b+QcAezUbRtH4FVb+9J4h+XFPW7l/gQ9F8qC7P+Ec4k8QVQ==}
-
   '@types/css-tree@2.3.11':
     resolution: {integrity: sha512-aEokibJOI77uIlqoBOkVbaQGC9zII0A+JH1kcTNKW2CwyYWD8KM6qdo+4c77wD3wZOQfJuNWAr9M4hdk+YhDIg==}
 
@@ -6521,9 +6512,6 @@ packages:
 
   crypto-js@3.1.9-1:
     resolution: {integrity: sha512-W93aKztssqf29OvUlqfikzGyYbD1rpkXvGP9IQ1JchLY3bxaLXZSWYbwrtib2vk8DobrDzX7PIXcDWHp0B6Ymw==}
-
-  crypto-js@4.2.0:
-    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
 
   css-functions-list@3.3.3:
     resolution: {integrity: sha512-8HFEBPKhOpJPEPu70wJJetjKta86Gw9+CCyCnB3sui2qQfOvRyqBy4IKLKKAwdMpWb2lHXWk9Wb4Z6AmaUT1Pg==}
@@ -13362,8 +13350,6 @@ snapshots:
     dependencies:
       '@types/node': 24.12.4
 
-  '@types/crypto-js@4.2.2': {}
-
   '@types/css-tree@2.3.11': {}
 
   '@types/d3-array@3.2.2': {}
@@ -14728,8 +14714,6 @@ snapshots:
   crypt@0.0.2: {}
 
   crypto-js@3.1.9-1: {}
-
-  crypto-js@4.2.0: {}
 
   css-functions-list@3.3.3: {}
 
