@@ -1,22 +1,22 @@
 {
   "prairielearn/executor": {
     "linux/amd64": {
-      "digest": "sha256:617e94e5843dd5a08caa5fc2977a94406f7920f39cc9532e665d57dfdd739126",
-      "size": 1391472195
+      "digest": "sha256:5ec6d4165746a2bc90f5fdc10cd9e7b335a5f44107cf1a25c7dab5e34c7d5e1a",
+      "size": 1391127601
     },
     "linux/arm64": {
-      "digest": "sha256:ec6bf9fa04558276f7035895f1d59903d690cd753376ae7f22a830f74b4681fc",
-      "size": 1363963219
+      "digest": "sha256:d50aa753591b8374b3dc9cb2156cf2ea595de03da6aac80686a686cd78eef573",
+      "size": 1363643463
     }
   },
   "prairielearn/prairielearn": {
     "linux/amd64": {
-      "digest": "sha256:1b294e84ac55c3b7a174aa481b69873a56a7bbdc81f1b89ca83568ec7340a800",
-      "size": 1391469364
+      "digest": "sha256:93825e47bbb18eac5e28cea05372db02c0f082b8d32720744a6788b2a5706069",
+      "size": 1391124769
     },
     "linux/arm64": {
-      "digest": "sha256:eaa90fa0a2199a3755af9bc618862d89846ed9d937d612900725f2ab01953f35",
-      "size": 1363960387
+      "digest": "sha256:34d61e0eafe22896f7cfe4a9bcde4cc58b62d2bfc0e41b969b5720b204f14122",
+      "size": 1363640631
     }
   },
   "prairielearn/workspace-desktop": {
