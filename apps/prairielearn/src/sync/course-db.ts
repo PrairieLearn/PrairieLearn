@@ -185,7 +185,7 @@ const DEFAULT_TAGS: TagJson[] = [
 ];
 
 // For finding all UUIDs in a string/file
-const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP_INLINE.source})"`, 'g');
+const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP_INLINE.source})"`, 'gi');
 
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
