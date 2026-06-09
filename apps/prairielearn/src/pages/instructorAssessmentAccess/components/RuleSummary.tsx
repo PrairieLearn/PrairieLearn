@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
-import { get, type FieldErrors } from 'react-hook-form';
+import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
