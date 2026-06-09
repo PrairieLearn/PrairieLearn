@@ -35,7 +35,7 @@ Editing the defaults opens a side panel with date control, PrairieTest, before-r
 
 ### Date control
 
-Use **Date control** to decide when students can start or submit the assessment and how much credit submissions receive over time.
+Use **Date control** to configure when students can open the assessment, when submissions are accepted, and how much credit submissions receive over time.
 
 Set a **Release** option:
 

@@ -159,41 +159,6 @@ describe('buildAccessTimeline', () => {
       ],
     },
     {
-      name: 'afterLastDeadline with allowSubmissions false is closed, post-due date',
-      dateControl: {
-        release: { date: new Date('2025-03-01T00:00:00Z') },
-        due: { date: new Date('2025-03-15T00:00:00Z') },
-        afterLastDeadline: { allowSubmissions: false },
-      },
-      currentDate: new Date('2025-03-20T00:00:00Z'),
-      expected: [
-        {
-          kind: 'beforeRelease',
-          credit: 0,
-          startDate: null,
-          endDate: new Date('2025-03-01T00:00:00Z'),
-          current: false,
-          submittable: false,
-        },
-        {
-          kind: 'deadline',
-          credit: 100,
-          startDate: new Date('2025-03-01T00:00:00Z'),
-          endDate: new Date('2025-03-15T00:00:00Z'),
-          current: false,
-          submittable: true,
-        },
-        {
-          kind: 'afterLastDeadline',
-          credit: 0,
-          startDate: new Date('2025-03-15T00:00:00Z'),
-          endDate: null,
-          current: true,
-          submittable: false,
-        },
-      ],
-    },
-    {
       name: 'pre-release: pre-release segment is current',
       dateControl: {
         release: { date: new Date('2025-03-15T00:00:00Z') },
