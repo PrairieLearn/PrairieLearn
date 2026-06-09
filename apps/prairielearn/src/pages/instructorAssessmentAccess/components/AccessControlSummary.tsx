@@ -148,7 +148,7 @@ function DefaultRuleSummaryContent({
           className="rounded text-center py-3 text-body-secondary"
           style={{ border: '2px dashed var(--bs-border-color)' }}
         >
-          No availability settings configured.
+          No access settings configured.
         </div>
       )}
     </div>
