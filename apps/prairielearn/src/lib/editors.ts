@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import { someSeries } from 'async';
+import { someLimit } from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -2294,7 +2294,7 @@ export class FileUploadEditor extends Editor {
 
   async shouldEdit() {
     debug('look for old contents');
-    return await someSeries(Object.entries(this.files), async ([filePath, fileContents]) => {
+    return await someLimit(Object.entries(this.files), 5, async ([filePath, fileContents]) => {
       let contents;
       try {
         contents = await fs.readFile(filePath);
