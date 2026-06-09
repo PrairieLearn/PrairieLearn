@@ -2228,9 +2228,15 @@ importers:
       '@zip.js/zip.js':
         specifier: ^2.8.26
         version: 2.8.26
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
       commander:
         specifier: ^15.0.0
         version: 15.0.0
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
       fast-xml-parser:
         specifier: ^5.8.0
         version: 5.8.0

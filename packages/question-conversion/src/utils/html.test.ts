@@ -145,7 +145,7 @@ describe('resolveImsFileRefs', () => {
     assert.equal(
       result.html,
       '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<video src="{{ options.client_files_question_url }}/clip.webm" />\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.webm"></video>\n' +
         '-->',
     );
     assert.deepEqual(result.skippedFiles, ['clip.webm']);
@@ -296,7 +296,7 @@ describe('rewritePreAsPlCode', () => {
     assert.include(result, '<pl-code');
     assert.notInclude(result, '<span>');
     assert.notInclude(result, '<br>');
-    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, 'for (int i = 0; i &lt;= n; i++)\n');
     assert.include(result, '  // body\n');
   });
 });
