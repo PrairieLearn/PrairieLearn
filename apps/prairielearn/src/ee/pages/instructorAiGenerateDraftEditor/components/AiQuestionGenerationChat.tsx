@@ -352,14 +352,12 @@ function Message({
   showJobLogsLink,
   showSpinner,
   urlPrefix,
-  currentUserName,
 }: {
   message: QuestionGenerationUIMessage;
   isLastMessage: boolean;
   showJobLogsLink: boolean;
   showSpinner: boolean;
   urlPrefix: string;
-  currentUserName: string | null;
 }) {
   if (message.role === 'user') {
     const textContent = message.parts
@@ -367,9 +365,7 @@ function Message({
       .map((part) => part.text)
       .join('\n');
 
-    // Messages loaded from the server carry the sender's name; fall back to the
-    // current user for messages this client just sent.
-    const userName = message.metadata?.user_name ?? currentUserName;
+    const userName = message.metadata?.user_name;
     const createdAt = message.metadata?.created_at;
 
     return (
@@ -421,13 +417,11 @@ function Messages({
   showJobLogsLink,
   showSpinner,
   urlPrefix,
-  currentUserName,
 }: {
   messages: QuestionGenerationUIMessage[];
   showJobLogsLink: boolean;
   showSpinner: boolean;
   urlPrefix: string;
-  currentUserName: string | null;
 }) {
   const [showExcluded, setShowExcluded] = useState(false);
 
@@ -466,7 +460,6 @@ function Messages({
                   showJobLogsLink={showJobLogsLink}
                   showSpinner={false}
                   urlPrefix={urlPrefix}
-                  currentUserName={currentUserName}
                 />
               ))}
             </div>
@@ -484,7 +477,6 @@ function Messages({
             showJobLogsLink={showJobLogsLink}
             showSpinner={showSpinner}
             urlPrefix={urlPrefix}
-            currentUserName={currentUserName}
           />
         );
       })}
@@ -692,7 +684,6 @@ export function AiQuestionGenerationChat({
                   urlPrefix={urlPrefix}
                   showJobLogsLink={showJobLogsLink}
                   showSpinner={showSpinner}
-                  currentUserName={currentUserName}
                 />
               </div>
             </div>
