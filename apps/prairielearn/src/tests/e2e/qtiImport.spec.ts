@@ -719,7 +719,7 @@ test.describe('QTI Import', () => {
     });
     await expect(firstBankUploadButton).toBeEnabled();
     await expect(firstBankUploadButton).toContainText('Upload export');
-    await expect(firstBankUploadButton).not.toContainText('Processing...');
+    await expect(firstBankUploadButton).not.toContainText('Uploading');
 
     // Hold the first supplemental upload open so we can verify that only its button shows
     // the processing state while other bank uploads are temporarily disabled.
@@ -727,7 +727,12 @@ test.describe('QTI Import', () => {
     const continueBankUploadPromise = new Promise<void>((resolve) => {
       continueBankUpload = resolve;
     });
-    await page.route('**/qti_import/upload', async (route) => {
+    let bankUploadStarted!: () => void;
+    const bankUploadStartedPromise = new Promise<void>((resolve) => {
+      bankUploadStarted = resolve;
+    });
+    await page.route('**/instructor/instance_admin/qti_import/upload', async (route) => {
+      bankUploadStarted();
       await continueBankUploadPromise;
       await route.fallback();
     });
@@ -737,14 +742,15 @@ test.describe('QTI Import', () => {
       .setInputFiles(firstBankZipPath);
     await firstBankUploadButton.click();
 
-    await expect(page.getByText('Processing...')).toHaveCount(1);
-    await expect(firstBankUploadButton).toContainText('Processing...');
+    await bankUploadStartedPromise;
+    await expect(page.getByText('Uploading')).toHaveCount(1);
+    await expect(firstBankUploadButton).toContainText('Uploading');
     await expect(secondBankUploadButton).toBeDisabled();
     await expect(secondBankUploadButton).toContainText('Upload export');
-    await expect(secondBankUploadButton).not.toContainText('Processing...');
+    await expect(secondBankUploadButton).not.toContainText('Uploading');
 
     continueBankUpload!();
-    await page.unroute('**/qti_import/upload');
+    await page.unroute('**/instructor/instance_admin/qti_import/upload');
 
     await expect(page.getByText('Matched 1 question bank from that upload.')).toBeVisible({
       timeout: 15000,

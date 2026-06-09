@@ -18,6 +18,7 @@ import {
   validateRuleDateOrderingIssues,
   validateRuleStructuralDependencyIssues,
 } from '../../../lib/assessment-access-control/validation.js';
+import { UUID_REGEXP } from '../../../lib/string-util.js';
 import {
   MAX_ACCESS_CONTROL_DURATION_MINUTES,
   MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE,
@@ -37,8 +38,6 @@ import {
   formDataToJson,
   isReleasedNow,
 } from './types.js';
-
-export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const DATE_REQUIRED_MESSAGE = 'Date is required';
 
@@ -455,7 +454,7 @@ function validatePrairieTestExams(
 
   const examUuidCounts = new Map<string, number>();
   for (const exam of exams) {
-    if (UUID_PATTERN.test(exam.examUuid)) {
+    if (UUID_REGEXP.test(exam.examUuid)) {
       const normalizedUuid = exam.examUuid.toLowerCase();
       examUuidCounts.set(normalizedUuid, (examUuidCounts.get(normalizedUuid) ?? 0) + 1);
     }
@@ -465,7 +464,7 @@ function validatePrairieTestExams(
     const path: AccessControlFormFieldPath = `defaultRule.prairieTestExams.${index}.examUuid`;
     if (!exam.examUuid) {
       addError(path, 'Exam UUID is required');
-    } else if (!UUID_PATTERN.test(exam.examUuid)) {
+    } else if (!UUID_REGEXP.test(exam.examUuid)) {
       addError(path, 'Invalid UUID format');
     } else if ((examUuidCounts.get(exam.examUuid.toLowerCase()) ?? 0) > 1) {
       addError(path, 'Duplicate exam UUID');
