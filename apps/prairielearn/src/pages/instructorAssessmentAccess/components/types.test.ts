@@ -162,6 +162,18 @@ describe('formDataToJson', () => {
     expect(result[0].dateControl?.due).toEqual({ date: null, credit: 80 });
   });
 
+  it('omits default afterLastDeadline when submissions are disabled', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        afterLastDeadline: { allowSubmissions: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.afterLastDeadline).toBeUndefined();
+  });
+
   it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
       ...baseOverride,
@@ -434,21 +446,9 @@ describe('formDataToJson', () => {
   });
 
   it('serializes afterLastDeadline overrides', () => {
-    const noSubmissionsFromFormNull: OverrideData = {
-      ...baseOverride,
-      trackingId: 'o-ald-0',
-      overriddenFields: ['afterLastDeadline'],
-      afterLastDeadline: null,
-    };
-    expect(
-      formDataToJson(buildFormData(noSubmissionsFromFormNull))[1].dateControl!.afterLastDeadline,
-    ).toEqual({
-      allowSubmissions: false,
-    });
-
     const noSubmissions: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-1',
+      trackingId: 'o-ald-0',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: false },
     };
@@ -458,7 +458,7 @@ describe('formDataToJson', () => {
 
     const practice: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-2',
+      trackingId: 'o-ald-1',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: true },
     };
@@ -468,7 +468,7 @@ describe('formDataToJson', () => {
 
     const partialCredit: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-3',
+      trackingId: 'o-ald-2',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: true, credit: 50 },
     };

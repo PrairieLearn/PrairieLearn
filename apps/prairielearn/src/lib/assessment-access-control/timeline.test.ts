@@ -551,12 +551,12 @@ describe('buildAccessTimeline', () => {
       ],
     },
     {
-      name: 'pre-release with late deadlines and disabled afterLastDeadline submissions',
+      name: 'pre-release with late deadlines and afterLastDeadline credit',
       dateControl: {
         release: { date: new Date('2025-03-15T00:00:00Z') },
         due: { date: new Date('2025-04-01T00:00:00Z') },
         lateDeadlines: [{ date: '2025-04-08T00:00:00Z', credit: 50 }],
-        afterLastDeadline: { allowSubmissions: false },
+        afterLastDeadline: { allowSubmissions: true, credit: 10 },
       },
       currentDate: new Date('2025-03-10T00:00:00Z'),
       expected: [
@@ -586,11 +586,11 @@ describe('buildAccessTimeline', () => {
         },
         {
           kind: 'afterLastDeadline',
-          credit: 0,
+          credit: 10,
           startDate: new Date('2025-04-08T00:00:00Z'),
           endDate: null,
           current: false,
-          submittable: false,
+          submittable: true,
         },
       ],
     },

@@ -122,7 +122,9 @@ function defaultRuleToRuntimeDateControl(
       : {}),
     ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
     ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
-    ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
+    ...(rule.afterLastDeadline.allowSubmissions
+      ? { afterLastDeadline: rule.afterLastDeadline }
+      : {}),
   };
 }
 
@@ -299,14 +301,11 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
-      access:
-        afterLastDeadline == null
-          ? 'No submissions allowed'
-          : afterLastDeadline.allowSubmissions
-            ? afterLastDeadline.credit != null
-              ? formatCreditPercent(afterLastDeadline.credit)
-              : 'Practice'
-            : 'No submissions allowed',
+      access: afterLastDeadline.allowSubmissions
+        ? afterLastDeadline.credit != null
+          ? formatCreditPercent(afterLastDeadline.credit)
+          : 'Practice'
+        : 'No submissions allowed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -525,8 +524,7 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
-  if (afterLastDeadline == null) return 'No submissions allowed';
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&

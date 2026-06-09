@@ -51,8 +51,7 @@ function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
   return 'late deadlines';
 }
 
-function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
-  if (value == null) return 'no_submissions';
+function getMode(value: AfterLastDeadlineValue): AfterLastDeadlineMode {
   if (!value.allowSubmissions) return 'no_submissions';
   if (value.credit == null) return 'practice_submissions';
   return 'partial_credit';
@@ -93,8 +92,8 @@ function AfterLastDeadlineInput({
   displayTimezone,
   isExam,
 }: {
-  value: AfterLastDeadlineValue | null;
-  onChange: (value: AfterLastDeadlineValue | null) => void;
+  value: AfterLastDeadlineValue;
+  onChange: (value: AfterLastDeadlineValue) => void;
   overrideIndex?: number;
   displayTimezone: string;
   isExam: boolean;
@@ -170,7 +169,7 @@ function AfterLastDeadlineInput({
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
       case 'no_submissions':
-        onChange(null);
+        onChange({ allowSubmissions: false });
         break;
       case 'practice_submissions':
         onChange({ allowSubmissions: true });
@@ -181,7 +180,7 @@ function AfterLastDeadlineInput({
     }
   };
 
-  const showExamSubmissionsWarning = isExam && value?.allowSubmissions === true;
+  const showExamSubmissionsWarning = isExam && value.allowSubmissions === true;
   const deadlineNoun = isOverride ? 'last deadline' : getLastDeadlineNoun(lateDeadlines);
 
   return (
@@ -312,7 +311,7 @@ export function OverrideAfterLastDeadlineField({
       isOverridden={isOverridden}
       label="After last deadline"
       onOverride={() => {
-        field.onChange(defaultRuleValue ?? null);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}

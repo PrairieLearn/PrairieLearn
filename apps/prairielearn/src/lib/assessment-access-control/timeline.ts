@@ -19,7 +19,7 @@ export interface RuntimeDateControl {
  * Discriminator for which structural slot a segment fills:
  * - `beforeRelease`: pre-release segment (always entries[0])
  * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
- * - `afterLastDeadline`: trailing segment when at least one deadline exists; submission permission comes from `afterLastDeadline`
+ * - `afterLastDeadline`: trailing segment after the final deadline, with submission permission controlled by the date-control setting
  * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
  */
 const AccessTimelineEntryKindSchema = z.enum([
