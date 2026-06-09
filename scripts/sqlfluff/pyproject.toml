@@ -1,0 +1,20 @@
+[project]
+name = "sqlfluff-prairielearn"
+version = "0.0.0"
+description = "PrairieLearn-specific sqlfluff rules"
+requires-python = ">=3.13,<3.14"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = ["sqlfluff==4.1.0"]
+
+# sqlfluff discovers plugins via the `sqlfluff` entry-point group (see
+# sqlfluff/core/plugin/host.py:_discover_plugins).
+[project.entry-points.sqlfluff]
+sqlfluff_prairielearn = "prairielearn_rules"
+
+[tool.setuptools]
+py-modules = [
+  "prairielearn_rules",
+  "soft_filter",
+  "deleted_at_rule",
+  "enrollment_status_rule",
+]
