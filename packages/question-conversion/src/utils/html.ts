@@ -366,7 +366,7 @@ function stripHtmlFromCode(code: string): string {
 
 const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
 const DIV_TAG_RE = /<\/?div(?:\s[^>]*)?>/gi;
-const CLASS_ATTR_VALUE_RE = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i;
+const CLASS_ATTR_LOOSE_RE = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i;
 
 /**
  * Clean up question HTML for PrairieLearn output.
@@ -444,7 +444,7 @@ function hasDivWithClass(html: string, className: string): boolean {
 }
 
 function hasClass(tag: string, className: string): boolean {
-  const match = CLASS_ATTR_VALUE_RE.exec(tag);
+  const match = CLASS_ATTR_LOOSE_RE.exec(tag);
   const classValue = match?.[1] ?? match?.[2] ?? match?.[3];
   return classValue?.split(/\s+/).includes(className) ?? false;
 }
