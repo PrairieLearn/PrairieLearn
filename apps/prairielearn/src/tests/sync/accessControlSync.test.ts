@@ -1915,7 +1915,7 @@ describe('cleanAccessControlRulesForDisk', () => {
       {
         beforeRelease: { listed: false },
         dateControl: { afterLastDeadline: { allowSubmissions: false } },
-        afterComplete: {},
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
       },
     ];
 
@@ -1939,6 +1939,23 @@ describe('cleanAccessControlRulesForDisk', () => {
     const cleaned = cleanAccessControlRulesForDisk(rules);
 
     assert.deepEqual(cleaned[1].dateControl?.afterLastDeadline, { allowSubmissions: false });
+  });
+
+  it('preserves afterComplete default values on overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({}),
+      makeAccessControlRule({
+        labels: ['Section A'],
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual(cleaned[1].afterComplete, {
+      questions: { hidden: true },
+      score: { hidden: false },
+    });
   });
 
   it('preserves beforeRelease.listed: true on the default rule only', () => {
@@ -1965,11 +1982,14 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.deepEqual(cleaned[1].labels, []);
   });
 
-  it('includes non-empty dateControl and afterComplete', () => {
+  it('includes non-empty dateControl and non-default afterComplete', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({
         dateControl: { due: { date: '2024-04-01T23:59:00' } },
-        afterComplete: { questions: { hidden: true } },
+        afterComplete: {
+          questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          score: { hidden: true },
+        },
       }),
     ];
 
@@ -1979,6 +1999,9 @@ describe('cleanAccessControlRulesForDisk', () => {
       release: { date: '2024-03-14T00:01:00' },
       due: { date: '2024-04-01T23:59:00' },
     });
-    assert.deepEqual(cleaned[0].afterComplete, { questions: { hidden: true } });
+    assert.deepEqual(cleaned[0].afterComplete, {
+      questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+      score: { hidden: true },
+    });
   });
 });

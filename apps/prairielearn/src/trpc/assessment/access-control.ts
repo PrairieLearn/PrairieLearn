@@ -154,7 +154,22 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.afterComplete)) {
-      clean.afterComplete = rule.afterComplete;
+      const afterComplete = { ...rule.afterComplete };
+      if (index === 0) {
+        if (
+          afterComplete.questions?.hidden === true &&
+          afterComplete.questions.visibleFromDate == null &&
+          afterComplete.questions.visibleUntilDate == null
+        ) {
+          delete afterComplete.questions;
+        }
+        if (afterComplete.score?.hidden === false && afterComplete.score.visibleFromDate == null) {
+          delete afterComplete.score;
+        }
+      }
+      if (isNonEmptyObject(afterComplete)) {
+        clean.afterComplete = afterComplete;
+      }
     }
 
     return clean;
