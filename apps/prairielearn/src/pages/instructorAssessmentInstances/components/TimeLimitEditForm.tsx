@@ -136,8 +136,8 @@ export function TimeLimitEditForm({
   }
 
   function proposedClosingTime() {
-    if (singleRow?.total_time_sec == null) return null;
-    const totalTime = Math.round(singleRow.total_time_sec);
+    if (singleRow == null || Number.isNaN(form.time_add)) return null;
+    const totalTime = Math.round(singleRow.total_time_sec ?? 0);
 
     let startDate = Temporal.Instant.from(singleRow.date).toZonedDateTimeISO(timezone);
     if (form.action === 'set_total') {
