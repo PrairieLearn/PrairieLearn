@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
+import { someSeries } from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
@@ -2258,21 +2259,18 @@ export class FileRenameEditor extends Editor {
 
 export class FileUploadEditor extends Editor {
   private container: { rootPath: string; invalidRootPaths: string[] };
-  private filePath: string;
-  private fileContents: Buffer;
+  private files: Record<string, Buffer>;
 
   constructor(
     params: BaseEditorOptions & {
       container: { rootPath: string; invalidRootPaths: string[] };
-      filePath: string;
-      fileContents: Buffer;
+      files: Record<string, Buffer>;
     },
   ) {
     const {
       locals: { course },
       container,
-      filePath,
-      fileContents,
+      files,
     } = params;
 
     let prefix = '';
@@ -2281,12 +2279,13 @@ export class FileUploadEditor extends Editor {
     }
     super({
       ...params,
-      description: `${prefix}Upload ${path.relative(container.rootPath, params.filePath)}`,
+      description: `${prefix}Upload ${Object.keys(files)
+        .map((filePath) => path.relative(container.rootPath, filePath))
+        .join(', ')}`,
     });
 
     this.container = container;
-    this.filePath = filePath;
-    this.fileContents = fileContents;
+    this.files = files;
   }
 
   getHashFromBuffer(buffer: Buffer) {
@@ -2295,62 +2294,66 @@ export class FileUploadEditor extends Editor {
 
   async shouldEdit() {
     debug('look for old contents');
-    let contents;
-    try {
-      contents = await fs.readFile(this.filePath);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
-        debug('no old contents, so continue with upload');
-        return true;
+    return await someSeries(Object.entries(this.files), async ([filePath, fileContents]) => {
+      let contents;
+      try {
+        contents = await fs.readFile(filePath);
+      } catch (err: any) {
+        if (err.code === 'ENOENT') {
+          debug('no old contents, so continue with upload');
+          return true;
+        }
+
+        throw err;
       }
 
-      throw err;
-    }
-
-    debug('get hash of old contents and of new contents');
-    const oldHash = this.getHashFromBuffer(contents);
-    const newHash = this.getHashFromBuffer(this.fileContents);
-    debug('oldHash: ' + oldHash);
-    debug('newHash: ' + newHash);
-    if (oldHash === newHash) {
-      debug('new contents are the same as old contents, so abort upload');
-      return false;
-    } else {
-      debug('new contents are different from old contents, so continue with upload');
-      return true;
-    }
+      debug('get hash of old contents and of new contents');
+      const oldHash = this.getHashFromBuffer(contents);
+      const newHash = this.getHashFromBuffer(fileContents);
+      debug('oldHash: ' + oldHash);
+      debug('newHash: ' + newHash);
+      if (oldHash === newHash) {
+        debug('new contents are the same as old contents, so abort upload');
+        return false;
+      } else {
+        debug('new contents are different from old contents, so continue with upload');
+        return true;
+      }
+    });
   }
 
   assertCanEdit() {
-    if (!contains(this.container.rootPath, this.filePath)) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
-          </div>
-        `,
-      });
-    }
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(this.container.rootPath, filePath)) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+            </div>
+          `,
+        });
+      }
 
-    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.filePath),
-    );
-    if (found) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must <em>not</em> be inside the directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `,
-      });
+      const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+        contains(invalidRootPath, filePath),
+      );
+      if (found) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must <em>not</em> be inside the directory</p>
+            <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+          `,
+        });
+      }
     }
 
     super.assertCanEdit();
@@ -2361,14 +2364,16 @@ export class FileUploadEditor extends Editor {
 
     if (!(await this.shouldEdit())) return null;
 
-    debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
+      debug('ensure path exists');
+      await fs.ensureDir(path.dirname(filePath));
 
-    debug('write file');
-    await fs.writeFile(this.filePath, this.fileContents);
+      debug('write file');
+      await fs.writeFile(filePath, fileContents);
+    }
 
     return {
-      pathsToAdd: [this.filePath],
+      pathsToAdd: Object.keys(this.files),
       commitMessage: this.description,
     };
   }

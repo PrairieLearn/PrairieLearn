@@ -162,30 +162,35 @@ router.post(
           res.redirect(req.originalUrl);
         }
       } else if (req.body.__action === 'upload_file') {
-        if (!req.file) throw new Error('No file uploaded');
-
-        let filePath: string;
-        if (req.body.file_path) {
-          try {
-            filePath = path.join(res.locals.course.path, req.body.file_path);
-          } catch {
-            throw new Error(`Invalid file path: ${req.body.file_path}`);
-          }
-        } else {
-          try {
-            filePath = path.join(req.body.working_path, req.file.originalname);
-          } catch {
-            throw new Error(
-              `Invalid file path: ${req.body.working_path} / ${req.file.originalname}`,
-            );
-          }
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+          throw new Error('No file uploaded');
         }
-        const editor = new FileUploadEditor({
-          locals: res.locals,
-          container,
-          filePath,
-          fileContents: req.file.buffer,
-        });
+        if (req.body.file_path && req.files.length > 1) {
+          throw new Error('Cannot upload multiple files when file path is specified');
+        }
+
+        const files = Object.fromEntries(
+          req.files.map((file) => {
+            let filePath: string;
+            if (req.body.file_path) {
+              try {
+                filePath = path.join(res.locals.course.path, req.body.file_path);
+              } catch {
+                throw new Error(`Invalid file path: ${req.body.file_path}`);
+              }
+            } else {
+              try {
+                filePath = path.join(req.body.working_path, file.originalname);
+              } catch {
+                throw new Error(
+                  `Invalid file path: ${req.body.working_path} / ${file.originalname}`,
+                );
+              }
+            }
+            return [filePath, file.buffer];
+          }),
+        );
+        const editor = new FileUploadEditor({ locals: res.locals, container, files });
 
         const serverJob = await editor.prepareServerJob();
         try {
