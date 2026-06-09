@@ -378,7 +378,7 @@ export function cleanQuestionHtml(html: string): string {
   const divOpenMatch = /^<div(?:\s[^>]*)?>/i.exec(cleaned);
   if (!divOpenMatch) return cleaned;
 
-  const block = findMatchingDivBlock(cleaned, 0, divOpenMatch[0].length);
+  const block = findMatchingDivBlock(cleaned, divOpenMatch[0].length);
   if (block?.end === cleaned.length) {
     cleaned = cleaned.slice(divOpenMatch[0].length, block.closeStart).trim();
   }
@@ -394,7 +394,7 @@ function removeCanvasAnswerBlocks(html: string): string {
     const tag = match[0];
     if (tag.startsWith('</') || !hasClass(tag, 'answers')) continue;
 
-    const block = findMatchingDivBlock(html, match.index, divTagRe.lastIndex);
+    const block = findMatchingDivBlock(html, divTagRe.lastIndex);
     if (!block) continue;
 
     const innerHtml = html.slice(divTagRe.lastIndex, block.closeStart);
@@ -416,7 +416,6 @@ function removeCanvasAnswerBlocks(html: string): string {
 
 function findMatchingDivBlock(
   html: string,
-  openStart: number,
   openEnd: number,
 ): { closeStart: number; end: number } | undefined {
   const divTagRe = new RegExp(DIV_TAG_RE.source, DIV_TAG_RE.flags);
