@@ -1062,10 +1062,6 @@ function buildDefaultRuleCurrentIndicator(
     };
   }
 
-  if (!segment.accessible) {
-    return { variant: 'secondary', icon: 'bi-x-circle', text: 'Not accessible' };
-  }
-
   if (!segment.submittable) {
     return { variant: 'primary', icon: 'bi-lock', text: 'Closed to submissions' };
   }

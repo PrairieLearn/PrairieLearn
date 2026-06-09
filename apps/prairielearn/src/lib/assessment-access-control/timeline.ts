@@ -38,8 +38,6 @@ export const AccessTimelineEntrySchema = z.object({
   current: z.boolean(),
   /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
-  /** False when the student has no access at all. Distinct from `submittable: false` which still allows viewing. */
-  accessible: z.boolean(),
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;
 
@@ -149,7 +147,6 @@ export function buildAccessTimeline(
       credit: 0,
       current: isCurrent(null, releaseDate),
       submittable: false,
-      accessible: true,
     },
   ];
 
@@ -162,7 +159,6 @@ export function buildAccessTimeline(
       credit: deadline.credit,
       current: isCurrent(segStart, deadline.date),
       submittable: true,
-      accessible: true,
     });
     segStart = deadline.date;
   }
@@ -175,7 +171,6 @@ export function buildAccessTimeline(
       credit: dueIsIndefinite ? dueCredit : 100,
       current: isCurrent(segStart, null),
       submittable: true,
-      accessible: true,
     });
   } else {
     // After the final deadline, the assessment is complete and remains
@@ -190,7 +185,6 @@ export function buildAccessTimeline(
       credit: allowsSubmissions ? (ald.credit ?? 0) : 0,
       current: isCurrent(segStart, null),
       submittable: allowsSubmissions,
-      accessible: true,
     });
   }
 

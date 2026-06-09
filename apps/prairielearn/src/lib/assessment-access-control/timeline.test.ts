@@ -51,7 +51,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -60,7 +59,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -69,7 +67,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -91,7 +88,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -100,7 +96,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-08T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -109,7 +104,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -118,7 +112,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-22T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -127,7 +120,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -147,7 +139,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -156,7 +147,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -165,7 +155,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: true,
-          accessible: true,
         },
       ],
     },
@@ -185,7 +174,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -194,7 +182,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -203,7 +190,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -222,7 +208,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: true,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -231,7 +216,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -240,7 +224,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -259,7 +242,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -268,7 +250,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -277,7 +258,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -295,7 +275,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: true,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'noDeadline',
@@ -304,7 +283,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: true,
-          accessible: true,
         },
       ],
     },
@@ -323,7 +301,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -332,7 +309,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -341,7 +317,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -360,7 +335,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -369,7 +343,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -378,7 +351,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -401,7 +373,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -410,7 +381,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -419,7 +389,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-15T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -428,7 +397,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-30T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -437,7 +405,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -460,7 +427,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-01-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -469,7 +435,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-02-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -478,7 +443,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -487,7 +451,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -496,7 +459,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },
@@ -515,7 +477,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'noDeadline',
@@ -524,7 +485,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: true,
-          accessible: true,
         },
       ],
     },
@@ -543,7 +503,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'noDeadline',
@@ -552,7 +511,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: true,
-          accessible: true,
         },
       ],
     },
@@ -573,7 +531,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-01-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -582,7 +539,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-02-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'noDeadline',
@@ -591,7 +547,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: true,
           submittable: true,
-          accessible: true,
         },
       ],
     },
@@ -612,7 +567,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-03-15T00:00:00Z'),
           current: true,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -621,7 +575,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -630,7 +583,6 @@ describe('buildAccessTimeline', () => {
           endDate: new Date('2025-04-08T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -639,7 +591,6 @@ describe('buildAccessTimeline', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ],
     },

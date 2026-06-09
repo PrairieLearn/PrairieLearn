@@ -2493,7 +2493,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-01-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -2502,7 +2501,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -2511,7 +2509,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-04-08T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -2520,7 +2517,6 @@ describe('resolveAccessControl', () => {
           endDate: null,
           current: true,
           submittable: true,
-          accessible: true,
         },
       ]);
     });
@@ -2564,7 +2560,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-01-01T00:00:00Z'),
           current: false,
           submittable: false,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -2573,7 +2568,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-04-01T00:00:00Z'),
           current: false,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'deadline',
@@ -2582,7 +2576,6 @@ describe('resolveAccessControl', () => {
           endDate: new Date('2025-04-08T00:00:00Z'),
           current: true,
           submittable: true,
-          accessible: true,
         },
         {
           kind: 'afterLastDeadline',
@@ -2591,7 +2584,6 @@ describe('resolveAccessControl', () => {
           endDate: null,
           current: false,
           submittable: false,
-          accessible: true,
         },
       ]);
     });
