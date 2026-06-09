@@ -253,7 +253,7 @@ In the UI:
 
 ### Always-open practice assessment
 
-Students can access a practice assessment indefinitely after release with full credit. There is no due date, so deadlines and after-deadline behavior do not apply.
+Students can access a practice assessment indefinitely after release with full credit.
 
 In the UI:
 
@@ -277,7 +277,7 @@ In the UI:
     }
     ```
 
-    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release and any `afterLastDeadline` configuration is ignored.
+    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release.
 
 ### Homework with early bonus and late penalty
 
@@ -568,7 +568,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 
 `due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
-When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
+When `due.date` is `null`, the due credit applies indefinitely after release.
 
 ### `afterLastDeadline`
 
