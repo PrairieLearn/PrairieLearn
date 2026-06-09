@@ -347,10 +347,10 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is complete for visibility purposes after the final deadline passes, after a
-        time limit expires, or once their assessment instance is closed (manually or via autoclose).
-        If after-deadline submissions are allowed, those submissions are still governed by the
-        after-deadline submission setting.
+        These settings apply after submissions are no longer allowed after the final deadline, after
+        a time limit expires, or once their assessment instance is closed (manually or via
+        autoclose). If after-deadline submissions are allowed, these settings apply only after the
+        student's assessment instance closes or its time limit expires.
       </p>
       <p>
         The completion time can vary between students based on when they started or any

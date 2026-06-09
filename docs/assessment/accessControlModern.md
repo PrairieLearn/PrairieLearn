@@ -72,7 +72,7 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
 
-This setting controls submission permission only. Once the final deadline has passed, the assessment is complete for visibility purposes and the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, they are still governed by this submission setting.
+This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 #### Time limits
 
@@ -126,7 +126,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-An assessment is complete for visibility purposes after the final deadline passes, after a timed assessment closes, or after an instructor closes it. If after-deadline submissions are allowed, those submissions are still governed by the **After deadlines** setting.
+These settings apply after submissions are no longer allowed after the final deadline, after a timed assessment closes, or after an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 Question visibility options:
 
@@ -216,7 +216,7 @@ For JSON-level before-and-after examples, see [Legacy migration examples](#legac
 
 ### Simple homework with a due date
 
-Students can start and submit the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, students can no longer submit unless `afterLastDeadline.allowSubmissions` is enabled. The assessment is then complete, so review is controlled by the **After completion** settings.
+Students can start and submit the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, submissions are not allowed. The **After completion** settings apply; by default, students can see their score but not the questions.
 
 In the UI:
 
@@ -281,6 +281,8 @@ In the UI:
 | Feb 22-Mar 1  | 50%                                       |
 | After Mar 1   | 0%, with submissions allowed for feedback |
 
+After Mar 1, submissions remain open indefinitely for feedback at 0% credit. The **After completion** settings apply only after the student's assessment instance closes or its time limit expires.
+
 In the UI:
 
 1. Edit **Defaults**.
@@ -316,7 +318,7 @@ In the UI:
 
 ### Timed exam with password
 
-Students have a 90-minute time limit within the two-hour exam window. A password is required to start. Submissions are not allowed after the exam window because `afterLastDeadline` is omitted. Questions and scores are hidden after completion, with scores revealed on Mar 12.
+Students have a 90-minute time limit within the two-hour exam window. A password is required to start. Submissions stop after the exam window. Once the exam is complete, questions and scores are hidden, with scores revealed on Mar 12.
 
 In the UI:
 
@@ -569,6 +571,8 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
 
 If `afterLastDeadline` is omitted, `null`, or `{ "allowSubmissions": false }`, students cannot submit after the final deadline. They can still review whatever the `afterComplete` settings make visible.
+
+If `allowSubmissions` is `true`, the `afterComplete` visibility settings apply only after the student's assessment instance closes or its time limit expires.
 
 ### `beforeRelease`
 

@@ -173,9 +173,8 @@ export function buildAccessTimeline(
       submittable: true,
     });
   } else {
-    // After the final deadline, the assessment is complete and remains
-    // accessible for whatever afterComplete permits. `afterLastDeadline`
-    // controls only whether submissions continue and at what credit.
+    // After the final deadline, `afterLastDeadline` controls whether
+    // submissions continue and at what credit.
     const ald = dateControl.afterLastDeadline;
     const allowsSubmissions = ald?.allowSubmissions === true;
     entries.push({

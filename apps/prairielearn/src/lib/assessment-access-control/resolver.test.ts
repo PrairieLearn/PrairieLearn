@@ -2032,7 +2032,7 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        name: 'afterLastDeadline submissions allowed: afterComplete score policy still applies',
+        name: 'afterLastDeadline submissions allowed: afterComplete score policy is not applied yet',
         rules: [
           makeDefaultRule({
             dateControl: {
@@ -2047,8 +2047,8 @@ describe('resolveAccessControl', () => {
         expect: {
           authorized: true,
           submittable: true,
-          complete: true,
-          visibility: { showQuestions: false, showScore: false },
+          complete: false,
+          visibility: { showQuestions: true, showScore: true },
         },
       },
     ])('$name', (c) => {
