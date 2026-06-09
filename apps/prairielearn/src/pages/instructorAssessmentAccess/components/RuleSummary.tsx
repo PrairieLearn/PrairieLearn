@@ -301,12 +301,12 @@ export function generateDefaultRuleDateTableRows(
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       access:
         afterLastDeadline == null
-          ? 'Closed to submissions'
+          ? 'No submissions allowed'
           : afterLastDeadline.allowSubmissions
             ? afterLastDeadline.credit != null
               ? formatCreditPercent(afterLastDeadline.credit)
               : 'Practice'
-            : 'Closed to submissions',
+            : 'No submissions allowed',
       error: formErrors?.afterLastDeadline?.credit?.message,
       current: isAfterLastSegment,
       currentVariant,
@@ -1063,7 +1063,7 @@ function buildDefaultRuleCurrentIndicator(
   }
 
   if (!segment.submittable) {
-    return { variant: 'primary', icon: 'bi-lock', text: 'Closed to submissions' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'No submissions allowed' };
   }
 
   if (segment.endDate) {
