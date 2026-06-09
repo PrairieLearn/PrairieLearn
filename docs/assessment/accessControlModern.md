@@ -473,7 +473,7 @@ The `accessControl` field is an array in `infoAssessment.json`:
       "dateControl": {
         "release": { "date": "2026-04-10T00:00:01" },
         "due": { "date": "2026-05-01T23:59:59" },
-        "afterLastDeadline": { "allowSubmissions": true }
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
@@ -563,12 +563,12 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 
 ### `afterLastDeadline`
 
-| Field              | Type    | Default | Description                                                    |
-| ------------------ | ------- | ------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 99.       |
+| Field              | Type    | Default | Description                                                                                          |
+| ------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines.                                       |
+| `credit`           | integer | -       | Required when `allowSubmissions` is `true`; credit percentage after the last deadline, from 0 to 99. |
 
-If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
+If `allowSubmissions` is `true`, `credit` is required and must be below 100% and below the preceding deadline's credit. Use `"credit": 0` for practice submissions.
 
 If `afterLastDeadline` is omitted on the default rule or set to `{ "allowSubmissions": false }`, students cannot submit after the final deadline. They can still review whatever the `afterComplete` settings make visible. On overrides, omit `afterLastDeadline` to inherit from the default rule, or set `{ "allowSubmissions": false }` to explicitly disable submissions.
 

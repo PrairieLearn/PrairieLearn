@@ -502,19 +502,35 @@
               ]
             },
             "afterLastDeadline": {
-              "type": "object",
-              "properties": {
-                "allowSubmissions": {
-                  "type": "boolean"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": ["allowSubmissions"],
+                  "additionalProperties": false
                 },
-                "credit": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 99
+                {
+                  "type": "object",
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "credit": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 99
+                    }
+                  },
+                  "required": ["allowSubmissions", "credit"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["allowSubmissions"],
-              "additionalProperties": false,
+              ],
               "description": "Controls whether submissions are allowed after the last deadline. Omitted on overrides inherits from the default rule. On the default rule, omitting means no submissions."
             },
             "durationMinutes": {

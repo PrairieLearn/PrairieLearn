@@ -21,12 +21,19 @@ export const DeadlineEntryJsonSchema = z
   })
   .strict();
 
-const AfterLastDeadlineJsonSchema = z
-  .object({
-    allowSubmissions: z.boolean(),
-    credit: z.number().int().min(0).max(99).optional(),
-  })
-  .strict();
+const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
+  z
+    .object({
+      allowSubmissions: z.literal(false),
+    })
+    .strict(),
+  z
+    .object({
+      allowSubmissions: z.literal(true),
+      credit: z.number().int().min(0).max(99),
+    })
+    .strict(),
+]);
 
 const ReleaseJsonSchema = z
   .object({

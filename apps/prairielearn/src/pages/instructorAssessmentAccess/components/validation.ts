@@ -435,7 +435,7 @@ function validateDeadlineArray({
 }
 
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue): string | undefined {
-  if (value.credit === undefined) return undefined;
+  if (!value.allowSubmissions) return undefined;
   return validateIntegerCredit(value.credit, {
     max: 99,
     rangeMessage: 'Credit after the due date must be 0-99%',

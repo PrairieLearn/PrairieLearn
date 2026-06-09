@@ -121,7 +121,7 @@ function prepareRuleRow(
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
     date_control_after_last_deadline_allow_submissions: afterLastDeadlineAllowSubmissions,
     date_control_after_last_deadline_credit:
-      afterLastDeadlineAllowSubmissions === true ? (afterLastDeadline?.credit ?? null) : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,

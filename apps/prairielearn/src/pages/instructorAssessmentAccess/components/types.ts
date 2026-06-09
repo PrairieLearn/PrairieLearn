@@ -39,10 +39,9 @@ export interface DueValue {
   customCredit: boolean;
 }
 
-export interface AfterLastDeadlineValue {
-  allowSubmissions: boolean;
-  credit?: number;
-}
+export type AfterLastDeadlineValue =
+  | { allowSubmissions: false }
+  | { allowSubmissions: true; credit: number };
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
@@ -406,6 +405,15 @@ function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
   return { date: due.date };
 }
 
+function buildAfterLastDeadlineJson(
+  value: AfterLastDeadlineValue,
+): NonNullable<NonNullable<AccessControlJsonWithId['dateControl']>['afterLastDeadline']> {
+  if (!value.allowSubmissions) {
+    return { allowSubmissions: false };
+  }
+  return { allowSubmissions: true, credit: value.credit };
+}
+
 function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
@@ -431,7 +439,7 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (rule.afterLastDeadline.allowSubmissions === true) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
@@ -526,7 +534,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (of.has('afterLastDeadline')) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;

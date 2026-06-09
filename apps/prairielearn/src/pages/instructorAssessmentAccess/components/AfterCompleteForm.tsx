@@ -347,8 +347,8 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        These settings apply after submissions are no longer allowed after the final deadline, after
-        a time limit expires, or once their assessment instance is closed (manually or via
+        These settings apply once submissions are no longer allowed: after the final deadline, when
+        a time limit expires, or when a student's assessment instance is closed (manually or via
         autoclose). If after-deadline submissions are allowed, these settings apply only after the
         student's assessment instance closes or its time limit expires.
       </p>

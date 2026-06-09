@@ -10,7 +10,7 @@ export interface RuntimeDateControl {
   due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions: boolean; credit?: number };
+  afterLastDeadline?: { allowSubmissions: false } | { allowSubmissions: true; credit: number };
   durationMinutes?: number | null;
   password?: string | null;
 }
@@ -181,7 +181,7 @@ export function buildAccessTimeline(
       kind: 'afterLastDeadline',
       startDate: segStart,
       endDate: null,
-      credit: allowsSubmissions ? (ald.credit ?? 0) : 0,
+      credit: allowsSubmissions ? ald.credit : 0,
       current: isCurrent(segStart, null),
       submittable: allowsSubmissions,
     });

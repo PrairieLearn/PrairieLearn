@@ -89,7 +89,7 @@ export function formJsonToEnrollmentRuleData(
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
     afterLastDeadlineAllowSubmissions,
     afterLastDeadlineCredit:
-      afterLastDeadlineAllowSubmissions === true ? (afterLastDeadline?.credit ?? null) : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,

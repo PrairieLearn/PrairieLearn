@@ -1570,8 +1570,7 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
-        assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
-        assert.isUndefined(override.rule.dateControl?.afterLastDeadline?.credit);
+        assert.deepEqual(override.rule.dateControl?.afterLastDeadline, { allowSubmissions: false });
       }));
 
     it('preserves afterComplete question hidden: true without dates on override', () =>
@@ -1654,7 +1653,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: { allowSubmissions: true },
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         };
 
@@ -1670,7 +1669,10 @@ describe('Access control syncing', () => {
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        assert.deepEqual(override.rule.dateControl.afterLastDeadline, { allowSubmissions: true });
+        assert.deepEqual(override.rule.dateControl.afterLastDeadline, {
+          allowSubmissions: true,
+          credit: 0,
+        });
       }));
 
     it('only configured fields appear in runtime readback', () =>
@@ -1772,8 +1774,7 @@ describe('Access control syncing', () => {
         assert.equal(dc.earlyDeadlines?.[0].credit, 120);
         assert.equal(dc.lateDeadlines?.length, 1);
         assert.equal(dc.lateDeadlines?.[0].credit, 50);
-        assert.equal(dc.afterLastDeadline?.credit, 10);
-        assert.equal(dc.afterLastDeadline?.allowSubmissions, true);
+        assert.deepEqual(dc.afterLastDeadline, { allowSubmissions: true, credit: 10 });
 
         const ac = defaultRule.rule.afterComplete;
         assert.isOk(ac);

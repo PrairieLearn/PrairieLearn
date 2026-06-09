@@ -53,8 +53,15 @@ function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
 
 function getMode(value: AfterLastDeadlineValue): AfterLastDeadlineMode {
   if (!value.allowSubmissions) return 'no_submissions';
-  if (value.credit == null) return 'practice_submissions';
+  if (value.credit === 0) return 'practice_submissions';
   return 'partial_credit';
+}
+
+function getDefaultPartialCredit(precedingCredit: number | undefined): number {
+  // Match late-deadline defaults: choose 10 points below the preceding credit,
+  // capping bonus-credit anchors at 100 and keeping partial credit positive.
+  const anchor = precedingCredit === undefined ? 100 : Math.min(precedingCredit, 100);
+  return Math.max(1, Math.min(anchor - 10, 99));
 }
 
 /**
@@ -172,10 +179,16 @@ function AfterLastDeadlineInput({
         onChange({ allowSubmissions: false });
         break;
       case 'practice_submissions':
-        onChange({ allowSubmissions: true });
+        onChange({ allowSubmissions: true, credit: 0 });
         break;
       case 'partial_credit':
-        onChange({ allowSubmissions: true, credit: 0 });
+        onChange({
+          allowSubmissions: true,
+          credit:
+            value.allowSubmissions && value.credit > 0
+              ? value.credit
+              : getDefaultPartialCredit(precedingCredit),
+        });
         break;
     }
   };

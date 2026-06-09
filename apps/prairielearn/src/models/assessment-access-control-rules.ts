@@ -139,7 +139,7 @@ function dbBaseRowToAccessControlJson(
     const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
       allowSubmissions,
-      ...(credit != null ? { credit } : {}),
+      credit: credit ?? 0,
     };
   } else if (allowSubmissions === false && !isDefaultRule) {
     dateControl.afterLastDeadline = { allowSubmissions };

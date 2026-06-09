@@ -1084,7 +1084,7 @@ describe('resolveAccessControl', () => {
           dateControl: {
             release: { date: '2025-02-01T00:00:00Z' },
             due: { date: '2025-03-01T00:00:00Z' },
-            afterLastDeadline: { credit: 0, allowSubmissions: false },
+            afterLastDeadline: { allowSubmissions: false },
           },
           afterComplete: {
             questions: { hidden: false },

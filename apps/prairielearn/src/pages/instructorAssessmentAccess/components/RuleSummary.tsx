@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
-import type { FieldErrors } from 'react-hook-form';
+import { get, type FieldErrors } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
@@ -123,7 +123,12 @@ function defaultRuleToRuntimeDateControl(
     ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
     ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
     ...(rule.afterLastDeadline.allowSubmissions
-      ? { afterLastDeadline: rule.afterLastDeadline }
+      ? {
+          afterLastDeadline: {
+            allowSubmissions: true as const,
+            credit: rule.afterLastDeadline.credit,
+          },
+        }
       : {}),
   };
 }
@@ -302,11 +307,11 @@ export function generateDefaultRuleDateTableRows(
       date: '',
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
       access: afterLastDeadline.allowSubmissions
-        ? afterLastDeadline.credit != null
+        ? afterLastDeadline.credit > 0
           ? formatCreditPercent(afterLastDeadline.credit)
           : 'Practice'
         : 'No submissions allowed',
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
       current: isAfterLastSegment,
       currentVariant,
     });
@@ -528,7 +533,7 @@ function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): str
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
-    afterLastDeadline.credit != null &&
+    afterLastDeadline.credit > 0 &&
     Number.isFinite(afterLastDeadline.credit)
   ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
@@ -676,7 +681,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
     });
   }
 
