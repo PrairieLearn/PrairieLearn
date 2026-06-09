@@ -322,4 +322,27 @@ describe('cleanQuestionHtml', () => {
   it('trims whitespace', () => {
     assert.equal(cleanQuestionHtml('  <p>Hello</p>  '), '<p>Hello</p>');
   });
+
+  it('removes Canvas answer blocks from prompt HTML', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<p>Prompt</p><div class="answers"><div class="answers_wrapper"><div>Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('removes answer blocks with extra classes and attributes', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<div class="prompt"><p>Prompt</p><div id="answer-list" class="canvas answers"><div class="answers_wrapper hidden">Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('preserves answers divs without an answers_wrapper child', () => {
+    const html = '<p>Prompt</p><div class="answers"><p>Discussion of answers</p></div>';
+    assert.equal(cleanQuestionHtml(html), html);
+  });
 });

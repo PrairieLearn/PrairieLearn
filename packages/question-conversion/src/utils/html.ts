@@ -365,29 +365,88 @@ function stripHtmlFromCode(code: string): string {
 }
 
 const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
+const DIV_TAG_RE = /<\/?div(?:\s[^>]*)?>/gi;
+const CLASS_ATTR_VALUE_RE = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i;
 
 /**
  * Clean up question HTML for PrairieLearn output.
- * Strips a single wrapping <div> tag that Canvas often adds.
+ * Strips a single wrapping <div> tag that Canvas often adds, and removes
+ * answer blocks that Canvas can embed in the prompt HTML.
  */
 export function cleanQuestionHtml(html: string): string {
-  let cleaned = html.trim();
+  let cleaned = removeCanvasAnswerBlocks(html.trim()).trim();
   const divOpenMatch = /^<div(?:\s[^>]*)?>/i.exec(cleaned);
   if (!divOpenMatch) return cleaned;
 
-  const divTagRe = /<\/?div(?:\s[^>]*)?>/gi;
-  let depth = 0;
-  let match: RegExpExecArray | null;
-  while ((match = divTagRe.exec(cleaned)) !== null) {
-    const isClose = /^<\//.test(match[0]);
-    depth += isClose ? -1 : 1;
-
-    if (depth === 0) {
-      if (divTagRe.lastIndex === cleaned.length) {
-        cleaned = cleaned.slice(divOpenMatch[0].length, match.index).trim();
-      }
-      break;
-    }
+  const block = findMatchingDivBlock(cleaned, 0, divOpenMatch[0].length);
+  if (block?.end === cleaned.length) {
+    cleaned = cleaned.slice(divOpenMatch[0].length, block.closeStart).trim();
   }
   return cleaned;
+}
+
+function removeCanvasAnswerBlocks(html: string): string {
+  const removals: { start: number; end: number }[] = [];
+  const divTagRe = new RegExp(DIV_TAG_RE.source, DIV_TAG_RE.flags);
+  let match: RegExpExecArray | null;
+
+  while ((match = divTagRe.exec(html)) !== null) {
+    const tag = match[0];
+    if (tag.startsWith('</') || !hasClass(tag, 'answers')) continue;
+
+    const block = findMatchingDivBlock(html, match.index, divTagRe.lastIndex);
+    if (!block) continue;
+
+    const innerHtml = html.slice(divTagRe.lastIndex, block.closeStart);
+    if (hasDivWithClass(innerHtml, 'answers_wrapper')) {
+      removals.push({ start: match.index, end: block.end });
+    }
+
+    divTagRe.lastIndex = block.end;
+  }
+
+  if (removals.length === 0) return html;
+
+  let result = html;
+  for (const { start, end } of removals.reverse()) {
+    result = result.slice(0, start) + result.slice(end);
+  }
+  return result;
+}
+
+function findMatchingDivBlock(
+  html: string,
+  openStart: number,
+  openEnd: number,
+): { closeStart: number; end: number } | undefined {
+  const divTagRe = new RegExp(DIV_TAG_RE.source, DIV_TAG_RE.flags);
+  divTagRe.lastIndex = openEnd;
+  let depth = 1;
+  let match: RegExpExecArray | null;
+
+  while ((match = divTagRe.exec(html)) !== null) {
+    depth += match[0].startsWith('</') ? -1 : 1;
+    if (depth === 0) {
+      return { closeStart: match.index, end: divTagRe.lastIndex };
+    }
+  }
+
+  const openTag = html.slice(openStart, openEnd);
+  if (openTag.endsWith('/>')) return { closeStart: openEnd, end: openEnd };
+  return undefined;
+}
+
+function hasDivWithClass(html: string, className: string): boolean {
+  const divTagRe = new RegExp(DIV_TAG_RE.source, DIV_TAG_RE.flags);
+  let match: RegExpExecArray | null;
+  while ((match = divTagRe.exec(html)) !== null) {
+    if (!match[0].startsWith('</') && hasClass(match[0], className)) return true;
+  }
+  return false;
+}
+
+function hasClass(tag: string, className: string): boolean {
+  const match = CLASS_ATTR_VALUE_RE.exec(tag);
+  const classValue = match?.[1] ?? match?.[2] ?? match?.[3];
+  return classValue?.split(/\s+/).includes(className) ?? false;
 }
