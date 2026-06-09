@@ -1,8 +1,8 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
 // @ts-expect-error No types for ace-code/src/ext/modelist.js
 import { getModeForPath } from 'ace-code/src/ext/modelist.js';
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
@@ -221,7 +221,7 @@ router.post(
 );
 
 function getHash(contents: string) {
-  return sha256(contents).toString();
+  return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
 async function readDraftEdit({

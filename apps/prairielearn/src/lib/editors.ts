@@ -1,8 +1,8 @@
 import assert from 'node:assert';
+import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -2290,7 +2290,7 @@ export class FileUploadEditor extends Editor {
   }
 
   getHashFromBuffer(buffer: Buffer) {
-    return sha256(buffer.toString('utf8')).toString();
+    return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
   async shouldEdit() {
@@ -2426,7 +2426,7 @@ export class FileModifyEditor extends Editor {
   }
 
   getHash(contents: string) {
-    return sha256(contents).toString();
+    return crypto.createHash('sha256').update(contents).digest('hex');
   }
 
   shouldEdit() {
