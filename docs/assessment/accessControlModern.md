@@ -234,7 +234,7 @@ In the UI:
 3. Set **Release** to **Scheduled for release** and enter Jan 15.
 4. Set **Due date** to **Due on date** and enter Feb 15.
 5. Leave due-date credit at the default 100%.
-6. Set **After due date** to **No access**.
+6. Leave **After due date** set to **No submissions allowed**.
 
 ??? info "JSON"
 

@@ -53,7 +53,7 @@ Different instructors have different opinions regarding post-exam student access
 
 Three strategies that courses adopt in practice are:
 
-1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
+1. Students cannot review exam contents after the exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
 2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write and test new exam questions every semester.
 3. Limited access post-exam under controlled conditions. For example, the TAM 2XX courses (Introductory Mechanics sequence) at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.illinois.edu/) during exam review sessions with TAs. This is moderately popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. This is the approach that was used by the TAM 2XX courses prior to the CBTF-based review system.
 
