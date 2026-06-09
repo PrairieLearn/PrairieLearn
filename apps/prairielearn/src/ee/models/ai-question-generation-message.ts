@@ -1,13 +1,15 @@
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { AiQuestionGenerationMessageSchema, type Question } from '../../lib/db-types.js';
+import {
+  AiQuestionGenerationMessageSchema,
+  type Question,
+  UserSchema,
+} from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const AiQuestionGenerationMessageWithUserSchema = AiQuestionGenerationMessageSchema.extend({
-  user_name: z.string().nullable(),
+  user_name: UserSchema.shape.name,
 });
 
 export async function selectAiQuestionGenerationMessages(question: Question) {

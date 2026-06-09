@@ -70,9 +70,12 @@ import { getAiQuestionGenerationStreamContext } from './redis.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 interface QuestionGenerationUIMessageMetadata {
-  job_sequence_id?: string | null;
-  status?: EnumAiQuestionGenerationMessageStatus;
+  job_sequence_id: string | null;
+  status: EnumAiQuestionGenerationMessageStatus;
   include_in_context?: boolean;
+  // `user_name` and `created_at` are optional because the streaming assistant
+  // metadata doesn't include them; they're populated for messages loaded from
+  // the database and for optimistic user messages sent by the client.
   /** Display name of the user who sent the message. Null for assistant messages. */
   user_name?: string | null;
   /** ISO timestamp of when the message was sent. */

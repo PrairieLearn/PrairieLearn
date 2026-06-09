@@ -733,7 +733,12 @@ export function AiQuestionGenerationChat({
               } else {
                 void sendMessage({
                   text,
-                  metadata: { user_name: currentUserName, created_at: new Date().toISOString() },
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
                 });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
@@ -780,7 +785,12 @@ export function AiQuestionGenerationChat({
               if (text) {
                 void sendMessage({
                   text,
-                  metadata: { user_name: currentUserName, created_at: new Date().toISOString() },
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
                 });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
