@@ -40,6 +40,7 @@
     "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "zod": "^4.4.3"
   }
 }

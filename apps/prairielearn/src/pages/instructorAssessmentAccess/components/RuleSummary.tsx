@@ -14,6 +14,7 @@ import {
   type RuntimeDateControl,
   buildAccessTimeline,
 } from '../../../lib/assessment-access-control/timeline.js';
+import { UUID_REGEXP } from '../../../lib/string-util.js';
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
@@ -26,7 +27,6 @@ import {
   isNonDefaultQuestionVisibility,
   isNonDefaultScoreVisibility,
 } from './types.js';
-import { UUID_PATTERN } from './validation.js';
 
 function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
@@ -1131,7 +1131,7 @@ export function PrairieTestExamsTable({
     new Set(
       exams
         .map((e) => e.examUuid)
-        .filter((u) => UUID_PATTERN.test(u))
+        .filter((u) => UUID_REGEXP.test(u))
         .map((u) => u.toLowerCase()),
     ),
   ).sort();

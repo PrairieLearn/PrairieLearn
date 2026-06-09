@@ -1344,7 +1344,7 @@ describe('Access control syncing', () => {
     it('rejects non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is enabled', () =>
       runInTransactionAndRollback(() =>
         withConfig({ checkAccessRulesExamUuid: true }, async () => {
-          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const fakeUuid = '166da275-8f52-4c11-9cb9-2e7ba9ba62d9';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
               dateControl: undefined,
@@ -1367,7 +1367,7 @@ describe('Access control syncing', () => {
     it('allows non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is disabled', () =>
       runInTransactionAndRollback(() =>
         withConfig({ checkAccessRulesExamUuid: false }, async () => {
-          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const fakeUuid = '46909567-db2c-44e7-9a79-1510e192bbc1';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
               dateControl: undefined,
