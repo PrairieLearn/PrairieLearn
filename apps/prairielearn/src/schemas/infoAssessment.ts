@@ -402,7 +402,7 @@ export type ZoneAssessmentJsonInput = z.input<typeof ZoneAssessmentJsonSchema>;
 export const AssessmentJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z.guid().describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     type: z.enum(['Homework', 'Exam']).describe('Type of the assessment.'),
     title: z
       .string()

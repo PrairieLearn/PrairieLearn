@@ -184,7 +184,7 @@ const DEFAULT_TAGS: TagJson[] = [
   { name: 'Fa21', color: 'gray1' },
 ];
 
-// For finding all v4 UUIDs in a string/file
+// For finding all UUIDs in a string/file
 const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP_INLINE.source})"`, 'g');
 
 // This type is used a lot, so make an alias
@@ -461,7 +461,7 @@ export async function loadInfoFile<T = { uuid: string }>({
         return infofile.makeError('UUID is missing');
       }
       if (!z.guid().safeParse(json.uuid).success) {
-        return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+        return infofile.makeError(`UUID "${json.uuid}" is not a valid UUID`);
       }
     }
 

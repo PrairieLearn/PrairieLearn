@@ -116,7 +116,7 @@ const CourseOptionsJsonSchema = z
 export const CourseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z.guid().describe('Unique identifier (UUID v4).').meta({ deprecated: true }).optional(),
+    uuid: z.guid().describe('Unique identifier (UUID).').meta({ deprecated: true }).optional(),
     name: z.string().describe("The course name (e.g., 'TAM 212')."),
     title: z.string().describe("The course title (e.g., 'Introductory Dynamics')."),
     timezone: z
