@@ -54,7 +54,8 @@
           "type": "boolean",
           "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "hideInEnrollPage": {
       "type": "boolean",

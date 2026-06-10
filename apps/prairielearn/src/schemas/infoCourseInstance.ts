@@ -110,6 +110,7 @@ export const CourseInstanceJsonSchema = z
           .optional()
           .default(false),
       })
+      .strict()
       .prefault({}),
     hideInEnrollPage: z
       .boolean()
