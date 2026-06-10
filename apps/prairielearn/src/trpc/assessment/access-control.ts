@@ -33,7 +33,6 @@ import {
   requireCourseInstancePermissionView,
   requireCoursePermissionEdit,
   requireCoursePermissionEditOrCourseInstancePermissionView,
-  requireEnhancedAccessControl,
   t,
 } from './init.js';
 
@@ -41,22 +40,18 @@ export interface AccessControlError {
   SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-const students = t.procedure
-  .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
-  .query(async (opts) => {
-    const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
-    return rows
-      .filter((r) => r.enrollment.status === 'joined' && r.user != null)
-      .map((r) => ({
-        id: r.enrollment.id,
-        uid: r.user!.uid,
-        name: r.user!.name,
-      }));
-  });
+const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
+  const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
+  return rows
+    .filter((r) => r.enrollment.status === 'joined' && r.user != null)
+    .map((r) => ({
+      id: r.enrollment.id,
+      uid: r.user!.uid,
+      name: r.user!.name,
+    }));
+});
 
 const studentLabels = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
@@ -64,7 +59,6 @@ const studentLabels = t.procedure
   });
 
 const prairieTestExamMetadata = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
   .input(z.object({ examUuids: z.array(z.uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }))
   .query(async (opts) => {
@@ -177,7 +171,6 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
 }
 
 const saveAllRules = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEdit)
   .input(
     z.object({

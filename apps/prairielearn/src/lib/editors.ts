@@ -45,7 +45,6 @@ import {
 import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
-import { features } from './features/index.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -810,13 +809,6 @@ export class AssessmentAddEditor extends Editor {
 
     debug('Write infoAssessment.json');
 
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: this.course.institution_id,
-      course_id: this.course.id,
-      course_instance_id: this.course_instance.id,
-      user_id: this.user.id,
-    });
-
     const infoJson = {
       uuid: this.uuid,
       type: this.type,
@@ -824,7 +816,7 @@ export class AssessmentAddEditor extends Editor {
       set: this.set,
       module: this.module,
       number: nextAssessmentNumber.toString(),
-      ...(enhancedAccessControlEnabled ? { accessControl: [] } : { allowAccess: [] }),
+      accessControl: [],
       zones: [],
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));

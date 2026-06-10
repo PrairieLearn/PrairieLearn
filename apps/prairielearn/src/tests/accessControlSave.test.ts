@@ -10,7 +10,6 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
-import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   replaceEnrollmentAccessControlRules,
@@ -62,7 +61,6 @@ describe('Access control save via tRPC', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
     await helperServer.before(courseRepo.courseLiveDir)();
-    await features.enable('enhanced-access-control');
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
 
     const instructor = await getOrCreateUser({
