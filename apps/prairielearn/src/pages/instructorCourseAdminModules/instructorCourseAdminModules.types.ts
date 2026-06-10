@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
+import { AssessmentUsageSchema } from '../../lib/client/assessment-usage.js';
 import { RawStaffAssessmentModuleSchema } from '../../lib/client/safe-db-types.js';
-import { AssessmentForModuleSchema } from '../../models/assessment-module.js';
 
 // Safe-db-types view of a module plus the assessments that belong to it. Used
 // for data that crosses the server -> client hydration boundary.
 export const StaffAssessmentModuleWithAssessmentsSchema = RawStaffAssessmentModuleSchema.extend({
-  assessments: z.array(AssessmentForModuleSchema),
+  assessments: z.array(AssessmentUsageSchema),
 });
 export type StaffAssessmentModuleWithAssessments = z.infer<
   typeof StaffAssessmentModuleWithAssessmentsSchema

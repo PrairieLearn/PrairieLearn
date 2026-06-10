@@ -1,49 +1,51 @@
 import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import type { AssessmentForModule } from '../../../models/assessment-module.js';
-import type { AssessmentModuleFormRow } from '../instructorCourseAdminModules.types.js';
+import type { AssessmentUsage } from '../lib/client/assessment-usage.js';
 
-export type AssessmentModuleUsageModalData = AssessmentModuleFormRow;
-
-interface AssessmentModuleUsageModalProps {
-  show: boolean;
-  data: AssessmentModuleUsageModalData | null;
-  onHide: () => void;
-  onExited: () => void;
-}
-
-export function AssessmentModuleUsageModal({
+/**
+ * Lists the assessments that reference a course entity (e.g. an assessment set
+ * or module), grouped by course instance.
+ */
+export function AssessmentUsageModal({
   show,
   data,
+  entityLabel,
   onHide,
   onExited,
-}: AssessmentModuleUsageModalProps) {
-  // Group assessments by course instance
+}: {
+  show: boolean;
+  data: { name: string; assessments: AssessmentUsage[] } | null;
+  /** Describes the referenced entity, e.g. "assessment set" or "module". */
+  entityLabel: string;
+  onHide: () => void;
+  onExited: () => void;
+}) {
+  // Group assessments by course instance (already sorted by publishing dates in SQL).
   const groupedAssessments = useMemo(() => {
     if (!data) return [];
 
-    const groups = new Map<string, AssessmentForModule[]>();
+    const groups = new Map<string, AssessmentUsage[]>();
     for (const assessment of data.assessments) {
-      const key = assessment.course_instance_id;
-      if (!groups.has(key)) {
-        groups.set(key, []);
+      let group = groups.get(assessment.course_instance_id);
+      if (!group) {
+        group = [];
+        groups.set(assessment.course_instance_id, group);
       }
-      groups.get(key)!.push(assessment);
+      group.push(assessment);
     }
 
-    // Convert to array (already sorted by publishing dates DESC from SQL)
     return Array.from(groups.entries());
   }, [data]);
 
   return (
     <Modal show={show} size="lg" onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
-        <Modal.Title>Assessments in "{data?.name}"</Modal.Title>
+        <Modal.Title>Assessments using "{data?.name}"</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {data?.assessments.length === 0 ? (
-          <p className="text-muted mb-0">No assessments use this module.</p>
+          <p className="text-muted mb-0">No assessments use this {entityLabel}.</p>
         ) : (
           <div className="d-flex flex-column gap-3">
             {groupedAssessments.map(([courseInstanceId, assessments]) => (
@@ -78,4 +80,4 @@ export function AssessmentModuleUsageModal({
   );
 }
 
-AssessmentModuleUsageModal.displayName = 'AssessmentModuleUsageModal';
+AssessmentUsageModal.displayName = 'AssessmentUsageModal';

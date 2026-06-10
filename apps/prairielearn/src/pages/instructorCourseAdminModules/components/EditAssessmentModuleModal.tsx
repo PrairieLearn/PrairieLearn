@@ -88,7 +88,6 @@ export function EditAssessmentModuleModal({
               aria-describedby={nameConflicts ? 'module-name-warning' : undefined}
               disabled={lockName}
               {...register('name', {
-                required: 'Module name is required',
                 validate: (value) => value.trim().length > 0 || 'Module name is required',
               })}
             />
@@ -125,7 +124,6 @@ export function EditAssessmentModuleModal({
               aria-invalid={errors.heading ? true : undefined}
               aria-errormessage={errors.heading ? 'module-heading-error' : undefined}
               {...register('heading', {
-                required: 'Module heading is required',
                 validate: (value) => value.trim().length > 0 || 'Module heading is required',
               })}
             />

@@ -15,7 +15,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentModulesWithAssessmentsForCourse } from '../../models/assessment-module.js';
 import { type CourseJsonInput } from '../../schemas/infoCourse.js';
 
-import { AssessmentModulesPage } from './components/AssessmentModulesTable.js';
+import { AssessmentModulesPage } from './components/AssessmentModulesPage.js';
 import { StaffAssessmentModuleWithAssessmentsSchema } from './instructorCourseAdminModules.types.js';
 
 const router = Router();

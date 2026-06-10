@@ -1803,95 +1803,25 @@ export class QuestionRenameEditor extends Editor {
 }
 
 /**
- * This rename editor is used to rename an assessment set referenced by assessments.
- *
- * It does not rename the assessment set at the course level (infoCourse.json).
- */
-export class AssessmentSetRenameEditor extends Editor {
-  private oldName: string;
-  private newName: string;
-
-  constructor(
-    params: BaseEditorOptions & {
-      oldName: string;
-      newName: string;
-    },
-  ) {
-    super({
-      ...params,
-      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
-    });
-    this.oldName = params.oldName;
-    this.newName = params.newName;
-  }
-
-  async write() {
-    if (this.oldName === this.newName) return null;
-
-    debug('AssessmentSetRenameEditor: write()');
-
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_assessment_set,
-      { assessment_set_name: this.oldName, course_id: this.course.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
-
-    if (assessments.length === 0) return null;
-
-    const pathsToAdd: string[] = [];
-
-    for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
-      );
-      pathsToAdd.push(infoPath);
-
-      debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
-
-      debug(`Replace assessment set name in ${infoPath}`);
-      infoJson.set = this.newName;
-
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
-    }
-
-    return {
-      pathsToAdd,
-      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
-    };
-  }
-}
-
-/**
- * Shared by the assessment module editors: rewrites the `module` field of every
- * `infoAssessment.json` whose synced module is `moduleName`, applying `transform`
- * to each file's parsed contents and returning the paths that were written.
+ * Rewrites the `infoAssessment.json` of every assessment returned by `query`
+ * (which must select `course_instance_directory` and `assessment_directory`),
+ * applying `transform` to each file's parsed contents and returning the paths
+ * that were written.
  *
  * This runs at `write()` time (under the course repo lock), so it reads the
  * current on-disk state and is correctly re-run if the edit has to be retried
  * after merging remote changes. Affected assessments are located by joining
- * through the synced `assessment_module_id`, matching `AssessmentSetRenameEditor`.
+ * through the synced foreign keys.
  */
-async function rewriteAssessmentModuleReferences(
+async function rewriteAssessmentInfoFiles(
   course: Course,
-  moduleName: string,
+  query: string,
+  params: Record<string, string>,
   transform: (contents: AssessmentJsonInput) => void,
 ): Promise<string[]> {
   const assessments = await sqldb.queryRows(
-    sql.select_assessments_with_assessment_module,
-    { assessment_module_name: moduleName, course_id: course.id },
+    query,
+    params,
     z.object({
       course_instance_directory: CourseInstanceSchema.shape.short_name,
       assessment_directory: AssessmentSchema.shape.tid,
@@ -1923,11 +1853,11 @@ async function rewriteAssessmentModuleReferences(
 }
 
 /**
- * Renames an assessment module referenced by assessments, updating the `module`
- * field in each `infoAssessment.json`. It does not rename the module at the
- * course level (infoCourse.json).
+ * This rename editor is used to rename an assessment set referenced by assessments.
+ *
+ * It does not rename the assessment set at the course level (infoCourse.json).
  */
-export class AssessmentModuleRenameEditor extends Editor {
+export class AssessmentSetRenameEditor extends Editor {
   private oldName: string;
   private newName: string;
 
@@ -1939,7 +1869,59 @@ export class AssessmentModuleRenameEditor extends Editor {
   ) {
     super({
       ...params,
-      description: `Rename assessment module ${params.oldName} to ${params.newName}`,
+      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentSetRenameEditor: write()');
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(
+      this.course,
+      sql.select_assessments_with_assessment_set,
+      { assessment_set_name: this.oldName, course_id: this.course.id },
+      (contents) => {
+        contents.set = this.newName;
+      },
+    );
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+    };
+  }
+}
+
+/**
+ * Rewrites the `module` field of every `infoAssessment.json` that references
+ * `oldName`. A string `newName` renames the reference; a null `newName` removes
+ * the field entirely, so the assessments fall back to the implicit "Default"
+ * module that sync always creates.
+ *
+ * It does not change the module at the course level (infoCourse.json).
+ */
+export class AssessmentModuleRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string | null;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string | null;
+    },
+  ) {
+    super({
+      ...params,
+      description:
+        params.newName === null
+          ? `Reassign assessments from module ${params.oldName} to the default module`
+          : `Rename assessment module ${params.oldName} to ${params.newName}`,
     });
     this.oldName = params.oldName;
     this.newName = params.newName;
@@ -1950,11 +1932,16 @@ export class AssessmentModuleRenameEditor extends Editor {
 
     debug('AssessmentModuleRenameEditor: write()');
 
-    const pathsToAdd = await rewriteAssessmentModuleReferences(
+    const pathsToAdd = await rewriteAssessmentInfoFiles(
       this.course,
-      this.oldName,
+      sql.select_assessments_with_assessment_module,
+      { assessment_module_name: this.oldName, course_id: this.course.id },
       (contents) => {
-        contents.module = this.newName;
+        if (this.newName === null) {
+          delete contents.module;
+        } else {
+          contents.module = this.newName;
+        }
       },
     );
 
@@ -1962,47 +1949,10 @@ export class AssessmentModuleRenameEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage: `rename assessment module ${this.oldName} to ${this.newName}`,
-    };
-  }
-}
-
-/**
- * Reassigns the assessments of a deleted module to the Default module by removing
- * the `module` field from each `infoAssessment.json`, so they fall back to the
- * implicit "Default" module that sync always creates.
- */
-export class AssessmentModuleReassignToDefaultEditor extends Editor {
-  private moduleName: string;
-
-  constructor(
-    params: BaseEditorOptions & {
-      moduleName: string;
-    },
-  ) {
-    super({
-      ...params,
-      description: `Reassign assessments from module ${params.moduleName} to the default module`,
-    });
-    this.moduleName = params.moduleName;
-  }
-
-  async write() {
-    debug('AssessmentModuleReassignToDefaultEditor: write()');
-
-    const pathsToAdd = await rewriteAssessmentModuleReferences(
-      this.course,
-      this.moduleName,
-      (contents) => {
-        delete contents.module;
-      },
-    );
-
-    if (pathsToAdd.length === 0) return null;
-
-    return {
-      pathsToAdd,
-      commitMessage: `reassign assessments from module ${this.moduleName} to the default module`,
+      commitMessage:
+        this.newName === null
+          ? `reassign assessments from module ${this.oldName} to the default module`
+          : `rename assessment module ${this.oldName} to ${this.newName}`,
     };
   }
 }

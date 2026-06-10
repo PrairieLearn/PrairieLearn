@@ -3,14 +3,15 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../lib/assessment-modules.shared.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
-  AssessmentModuleReassignToDefaultEditor,
   AssessmentModuleRenameEditor,
   MultiEditor,
   prepareJsonFileEditor,
 } from '../../lib/editors.js';
+import { getCourseContainer } from '../../lib/instructorFiles.js';
 import {
   AssessmentModuleWithAssessmentsSchema,
   selectAssessmentModulesForCourse,
@@ -29,17 +30,6 @@ import {
 export interface AssessmentModulesError {
   List: never;
   Save: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
-
-function getCourseContainer(coursePath: string) {
-  return {
-    rootPath: coursePath,
-    invalidRootPaths: [
-      path.join(coursePath, '.git'),
-      path.join(coursePath, 'questions'),
-      path.join(coursePath, 'courseInstances'),
-    ],
-  };
 }
 
 function assessmentModulesScope(json: CourseJsonInput) {
@@ -115,29 +105,30 @@ const save = t.procedure
     const submittedNames = new Set(modules.map((module) => module.name));
 
     // A submitted row that maps to an existing module whose name changed is a
-    // rename: referencing assessments must point at the new name.
-    const renames: { oldName: string; newName: string }[] = [];
+    // rename: referencing assessments must point at the new name (`newName`).
+    const rewrites: { oldName: string; newName: string | null }[] = [];
     for (const module of modules) {
       if (module.id === null) continue;
       const existing = currentById.get(module.id);
-      if (!existing || existing.name === 'Default') continue;
+      if (!existing || existing.name === DEFAULT_ASSESSMENT_MODULE_NAME) continue;
       if (existing.name !== module.name) {
-        renames.push({ oldName: existing.name, newName: module.name });
+        rewrites.push({ oldName: existing.name, newName: module.name });
       }
     }
 
     // An existing module that's no longer present in the submitted list (by id
     // and name) is deleted: its assessments are reassigned to the Default module
-    // by removing the `module` field from each one. Checking both id and name
-    // avoids treating a rename as a delete.
-    const deletedNames = currentModules
-      .filter(
-        (module) =>
-          module.name !== 'Default' &&
-          !submittedIds.has(module.id) &&
-          !submittedNames.has(module.name),
-      )
-      .map((module) => module.name);
+    // by removing the `module` field from each one (a null `newName`). Checking
+    // both id and name avoids treating a rename as a delete.
+    for (const module of currentModules) {
+      if (
+        module.name !== DEFAULT_ASSESSMENT_MODULE_NAME &&
+        !submittedIds.has(module.id) &&
+        !submittedNames.has(module.name)
+      ) {
+        rewrites.push({ oldName: module.name, newName: null });
+      }
+    }
 
     const prepared = await prepareJsonFileEditor<CourseJsonInput>({
       applyChanges: (jsonContents) => {
@@ -162,25 +153,15 @@ const save = t.procedure
       });
     }
 
-    const renameEditors = renames.map(
-      (rename) =>
-        new AssessmentModuleRenameEditor({
-          locals,
-          oldName: rename.oldName,
-          newName: rename.newName,
-        }),
-    );
-
-    const reassignEditors = deletedNames.map(
-      (name) => new AssessmentModuleReassignToDefaultEditor({ locals, moduleName: name }),
+    const rewriteEditors = rewrites.map(
+      (rewrite) => new AssessmentModuleRenameEditor({ locals, ...rewrite }),
     );
 
     const editor =
-      renameEditors.length === 0 && reassignEditors.length === 0
+      rewriteEditors.length === 0
         ? prepared.editor
         : new MultiEditor({ locals, description: 'Update assessment modules' }, [
-            ...renameEditors,
-            ...reassignEditors,
+            ...rewriteEditors,
             prepared.editor,
           ]);
 
