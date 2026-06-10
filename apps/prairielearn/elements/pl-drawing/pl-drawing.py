@@ -282,7 +282,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
-    tol = pl.get_float_attrib(element, "tol", grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"]/2)
+    tol = pl.get_float_attrib(
+        element,
+        "tol",
+        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
+    )
     angle_tol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -314,7 +318,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if grid_size == 0:
         message_default = (
             "The expected tolerance is "
-            + str(tol) 
+            + str(tol)
             + " pixels for position and "
             + str(angle_tol)
             + " degrees for angle."
