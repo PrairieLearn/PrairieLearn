@@ -1,0 +1,1 @@
+This question has many correct answers. Instead of comparing the submission against a fixed correct answer, the `grade()` function in `server.py` checks whether the submitted matrix satisfies the property requested by the variant. The stored correct answer is only one example of a valid answer, which is shown to students in the answer panel.
