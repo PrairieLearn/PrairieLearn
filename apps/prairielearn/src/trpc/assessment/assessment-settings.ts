@@ -19,7 +19,10 @@ import {
   prepareJsonFileEditor,
   saveJsonFile,
 } from '../../lib/editors.js';
-import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
+import {
+  assertAssessmentCanBeSharedPublicly,
+  assertAssessmentCanBeUnsharedPublicly,
+} from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
@@ -364,13 +367,13 @@ const updateAssessment = t.procedure
       });
     }
 
-    if (
-      locals.question_sharing_enabled &&
-      input.share_source_publicly &&
-      !assessment.share_source_publicly
-    ) {
+    if (locals.question_sharing_enabled) {
       try {
-        await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        if (input.share_source_publicly === true && !assessment.share_source_publicly) {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } else if (input.share_source_publicly === false && assessment.share_source_publicly) {
+          await assertAssessmentCanBeUnsharedPublicly({ assessment_id: assessment.id });
+        }
       } catch (err) {
         if (err instanceof HttpStatusError) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
@@ -507,8 +510,9 @@ const updateAssessment = t.procedure
         if (locals.question_sharing_enabled) {
           assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
             assessmentInfo.shareSourcePublicly,
-            // If source is already public, preserve that setting regardless of the submitted value.
-            assessment.share_source_publicly || (input.share_source_publicly ?? false),
+            // An omitted value (e.g. disabled checkbox) preserves the current setting;
+            // an explicit value shares or un-shares (validated above).
+            input.share_source_publicly ?? assessment.share_source_publicly,
             false,
           );
         }

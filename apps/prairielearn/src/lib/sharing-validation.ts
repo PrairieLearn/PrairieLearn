@@ -68,6 +68,31 @@ export async function assertAssessmentCanBeSharedPublicly({
 }
 
 /**
+ * Throws a 400 HttpStatusError if the assessment cannot transition away from
+ * publicly shared because its course instance is publicly shared (a shared
+ * course instance may not contain non-shared assessments). Enforces the
+ * invariant server-side at submit time; the settings page drives the disabled
+ * checkbox + warning from the course instance's shared flag directly.
+ */
+export async function assertAssessmentCanBeUnsharedPublicly({
+  assessment_id,
+}: {
+  assessment_id: string;
+}): Promise<void> {
+  const courseInstanceShared = await sqldb.queryScalar(
+    sql.select_assessment_course_instance_shared,
+    { assessment_id },
+    z.boolean(),
+  );
+  if (courseInstanceShared) {
+    throw new HttpStatusError(
+      400,
+      'Cannot un-share this assessment publicly because its course instance is publicly shared. Un-share the course instance first.',
+    );
+  }
+}
+
+/**
  * Throws a 400 HttpStatusError if the course instance cannot transition to
  * publicly shared because one or more of its assessments are not publicly shared.
  */

@@ -88,6 +88,24 @@ async function setAssessmentSharingFilesPublic(sharePublicly: boolean) {
   );
 }
 
+async function setCourseInstanceSharingFilePublic(sharePublicly: boolean) {
+  const relPath = 'courseInstances/Fa18/infoCourseInstance.json';
+  const absPath = path.join(courseRepo.courseOriginDir, relPath);
+  const info = await fs.readJSON(absPath);
+  if (sharePublicly) {
+    info.shareSourcePublicly = true;
+  } else {
+    delete info.shareSourcePublicly;
+  }
+  await fs.writeJSON(absPath, info, { spaces: 2 });
+
+  await commitOriginAndSync(
+    courseRepo,
+    sharePublicly ? 'Share test course instance' : 'Unshare test course instance',
+    [relPath],
+  );
+}
+
 async function createTrpcClient(assessmentId: string) {
   const user = await getConfiguredUser();
   const trpcPath = getAssessmentTrpcUrl({
@@ -450,27 +468,67 @@ describe('Editing assessment settings', () => {
     },
   );
 
-  test.sequential('ignores assessment source sharing when source is already public', async () => {
-    await setAssessmentSharingFilesPublic(true);
+  test.sequential(
+    'un-shares assessment source when its course instance is not publicly shared',
+    async () => {
+      await setAssessmentSharingFilesPublic(true);
 
-    try {
-      const trpcClient = await createTrpcClient('1');
-      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
-        title: assessmentInfo.title,
-        set: assessmentInfo.set,
-        number: assessmentInfo.number,
-        module: assessmentInfo.module ?? 'Default',
-        aid: 'A1',
-        ...defaultMutationFields,
-        share_source_publicly: false,
-        origHash: await getOrigHash(assessmentLiveInfoPath),
-      });
-      assert.ok(result.origHash);
-      const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
-    } finally {
-      await setAssessmentSharingFilesPublic(false);
-    }
-  });
+      try {
+        const trpcClient = await createTrpcClient('1');
+        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+        const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: assessmentInfo.title,
+          set: assessmentInfo.set,
+          number: assessmentInfo.number,
+          module: assessmentInfo.module ?? 'Default',
+          aid: 'A1',
+          ...defaultMutationFields,
+          share_source_publicly: false,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.ok(result.origHash);
+        const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+        assert.isUndefined(updatedAssessmentInfo.shareSourcePublicly);
+      } finally {
+        await setAssessmentSharingFilesPublic(false);
+      }
+    },
+  );
+
+  test.sequential(
+    'cannot un-share assessment source while its course instance is publicly shared',
+    async () => {
+      await setAssessmentSharingFilesPublic(true);
+      await setCourseInstanceSharingFilePublic(true);
+
+      try {
+        const trpcClient = await createTrpcClient('1');
+        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+        await trpcClient.assessmentSettings.updateAssessment.mutate({
+          title: assessmentInfo.title,
+          set: assessmentInfo.set,
+          number: assessmentInfo.number,
+          module: assessmentInfo.module ?? 'Default',
+          aid: 'A1',
+          ...defaultMutationFields,
+          share_source_publicly: false,
+          origHash: await getOrigHash(assessmentLiveInfoPath),
+        });
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'UNKNOWN');
+        assert.include(
+          appError.message,
+          'Cannot un-share this assessment publicly because its course instance is publicly shared',
+        );
+        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+        assert.equal(assessmentInfo.shareSourcePublicly, true);
+      } finally {
+        await setCourseInstanceSharingFilePublic(false);
+        await setAssessmentSharingFilesPublic(false);
+      }
+    },
+  );
 });

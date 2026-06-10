@@ -462,10 +462,10 @@ router.post(
             course_instance_id: courseInstance.id,
           });
         }
+        // A course instance can be un-shared at any time, so the submitted value wins.
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,
-          // If source is already public, preserve that setting regardless of the submitted value.
-          courseInstance.share_source_publicly || (parsedBody.share_source_publicly ?? false),
+          parsedBody.share_source_publicly ?? false,
           false,
         );
       }

@@ -26,3 +26,12 @@ WHERE
   AND NOT a.share_source_publicly
 ORDER BY
   a.tid;
+
+-- BLOCK select_assessment_course_instance_shared
+SELECT
+  ci.share_source_publicly
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id
+WHERE
+  a.id = $assessment_id;

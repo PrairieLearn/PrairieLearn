@@ -151,32 +151,29 @@ describe('Updating a course instance ID', () => {
     },
   );
 
-  test.sequential(
-    'ignores course instance source sharing when source is already public',
-    async () => {
-      await setSharingFilesPublic(true);
-      try {
-        const response = await fetchCheerio(
-          `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-          {
-            method: 'POST',
-            body: new URLSearchParams(
-              await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
-            ),
-          },
-        );
-        assert.equal(response.status, 200);
-        const courseInstanceInfoPath = path.join(
-          courseRepo.courseLiveDir,
-          'courseInstances',
-          'Fa18',
-          'infoCourseInstance.json',
-        );
-        const courseInstanceInfo = await fs.readJSON(courseInstanceInfoPath);
-        assert.equal(courseInstanceInfo.shareSourcePublicly, true);
-      } finally {
-        await setSharingFilesPublic(false);
-      }
-    },
-  );
+  test.sequential('un-shares course instance source at any time', async () => {
+    await setSharingFilesPublic(true);
+    try {
+      const response = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams(
+            await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
+          ),
+        },
+      );
+      assert.equal(response.status, 200);
+      const courseInstanceInfoPath = path.join(
+        courseRepo.courseLiveDir,
+        'courseInstances',
+        'Fa18',
+        'infoCourseInstance.json',
+      );
+      const courseInstanceInfo = await fs.readJSON(courseInstanceInfoPath);
+      assert.isUndefined(courseInstanceInfo.shareSourcePublicly);
+    } finally {
+      await setSharingFilesPublic(false);
+    }
+  });
 });
