@@ -623,6 +623,10 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     const releaseDate = findReleaseDate(rules);
     const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
     if (releaseDate) dateControl.release = { date: releaseDate };
+    const openTimedRule = creditRules.find((r) => r.timeLimitMin);
+    if (openTimedRule?.timeLimitMin) {
+      dateControl.durationMinutes = openTimedRule.timeLimitMin;
+    }
     return { dateControl, errors, notes };
   }
 

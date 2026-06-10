@@ -51,7 +51,7 @@
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
       },
-      "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied."
+      "description": "(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied."
     },
     "accessControl": {
       "maxItems": 101,

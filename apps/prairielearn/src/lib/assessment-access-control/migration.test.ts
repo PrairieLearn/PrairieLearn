@@ -87,6 +87,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'timed-assessment-open-ended',
+      rules: [{ credit: 100, timeLimitMin: 50, showClosedAssessment: false }],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: FALLBACK_RELEASE },
+            durationMinutes: 50,
+          },
+          afterComplete: {
+            questions: { hidden: true },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'declining-credit',
       rules: [
         { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
