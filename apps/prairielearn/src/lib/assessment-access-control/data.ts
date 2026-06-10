@@ -7,6 +7,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 import {
   type Assessment,
   AssessmentAccessControlPrairietestExamSchema,
+  type AssessmentAccessControlRule,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from '../db-types.js';
@@ -22,6 +23,7 @@ import type { RuntimeDateControl } from './timeline.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
+type DeadlineJson = z.infer<typeof DeadlineJsonSchema>;
 
 const PrairieTestExamJsonSchema = z
   .array(
@@ -42,19 +44,17 @@ const AccessControlRuleRowSchema = z.object({
   early_deadlines: DeadlineJsonSchema,
   late_deadlines: DeadlineJsonSchema,
 });
+type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 
 const AssessmentAccessControlRulesRowSchema = z.object({
   assessment_id: IdSchema,
   access_control_rules: z.array(AccessControlRuleRowSchema),
 });
 
-type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
-type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
-
 function buildDateControl(
   rule: AssessmentAccessControlRule,
-  earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
-  lateDeadlines: z.infer<typeof DeadlineJsonSchema>,
+  earlyDeadlines: DeadlineJson,
+  lateDeadlines: DeadlineJson,
 ): RuntimeDateControl | undefined {
   // Only include fields that were explicitly configured (overridden flag is true).
   const dateControl: RuntimeDateControl = {};
@@ -183,12 +183,12 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 export async function selectAccessControlRulesForAssessment(
   assessment: Assessment,
 ): Promise<AccessControlRuleInput[]> {
-  const rows = await queryRows(
+  const row = await queryRow(
     sql.select_access_control_rules,
     { assessment_id: assessment.id, course_instance_id: null },
     AssessmentAccessControlRulesRowSchema,
   );
-  return rows.flatMap((row) => row.access_control_rules.map(rowToAccessControlRuleInput));
+  return row.access_control_rules.map(rowToAccessControlRuleInput);
 }
 
 export async function selectAccessControlRulesForCourseInstance(
