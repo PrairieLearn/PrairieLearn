@@ -56,7 +56,7 @@ By default, the due date is worth 100% credit. Click **Change** next to the due 
 
 #### Credit
 
-Available credit is the maximum percentage score a student can earn during a particular access window. When the available credit is less than 100%, the percentage score is capped at that value and never decreases if the student previously earned a higher score. When the available credit is greater than 100%, students receive the bonus credit percentage once they reach full points; if [`maxBonusPoints`](configuration.md#assessment-points) is used, points above `maxPoints` are also scaled by the available credit percentage.
+Available credit is the maximum percentage score a student can earn during a particular access window. When the available credit is less than 100%, the percentage score is capped at that value. When the available credit is greater than 100%, students receive the bonus credit percentage once they reach full points; if [`maxBonusPoints`](configuration.md#assessment-points) is used, points above `maxPoints` are also scaled by the available credit percentage.
 
 For example, on a 10-point assessment with 80% available credit, a student who earns 9/10 points receives an 80% score because the access window caps the percentage score. With 110% available credit, a student who earns 10/10 points receives 110%, while a student who earns 8/10 points still receives 80%.
 
