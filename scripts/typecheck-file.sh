@@ -72,9 +72,16 @@ for tsconfig in $tsconfigs; do
     # Find module augmentation files within this tsconfig's directory tree
     augmentation_files=$(find_module_augmentation_files "$(dirname "$tsconfig")")
 
-    # Build include array
+    tsconfig_dir=$(dirname "$tsconfig")
+    tsconfig_name=$(basename "$tsconfig")
+
+    # Build include array. Use absolute paths so the temporary config can live
+    # next to the real tsconfig, where package-local @types dependencies resolve.
     includes=""
     for file in $files; do
+        if [[ "$file" != /* ]]; then
+            file="$PWD/$file"
+        fi
         if [ -n "$includes" ]; then
             includes="$includes,"
         fi
@@ -87,18 +94,21 @@ for tsconfig in $tsconfigs; do
         if echo "$files" | grep -qF "$aug_file"; then
             continue
         fi
+        if [[ "$aug_file" != /* ]]; then
+            aug_file="$PWD/$aug_file"
+        fi
         if [ -n "$includes" ]; then
             includes="$includes,"
         fi
         includes="$includes\"$aug_file\""
     done
 
-    TMP=$(mktemp .tsconfig-lint.XXXXXX.json)
+    TMP=$(mktemp "$tsconfig_dir/.tsconfig-lint.XXXXXX")
     TMP_FILES+=("$TMP")
 
     cat > "$TMP" << EOF
 {
-  "extends": "./$tsconfig",
+  "extends": "./$tsconfig_name",
   "include": [$includes]
 }
 EOF

@@ -212,10 +212,7 @@ const ExternalGradingOptionsJsonSchema = z
 export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),

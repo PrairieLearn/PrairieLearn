@@ -87,7 +87,7 @@ describe('Valid configs', () => {
           prairieTest: {
             exams: [
               { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
-              { examUuid: '22f99903-4a00-5e80-a1b3-332483025d6d', readOnly: true },
+              { examUuid: '450a7084-360e-4801-b89e-24a1584c885f', readOnly: true },
             ],
           },
         },
@@ -836,12 +836,12 @@ describe('Credit ordering validation', () => {
       },
     },
     {
-      label: 'afterLastDeadline without credit (practice mode)',
+      label: 'afterLastDeadline with zero credit (practice mode)',
       config: {
         dateControl: {
           due: { date: '2024-03-21T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-          afterLastDeadline: { allowSubmissions: true },
+          afterLastDeadline: { allowSubmissions: true, credit: 0 },
         },
       },
     },
@@ -1190,15 +1190,15 @@ describe('Duplicate detection', () => {
       integrations: {
         prairieTest: {
           exams: [
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
           ],
         },
       },
     });
     const errors = validateRule(rule, 'none');
     assert.isTrue(
-      errors.includes('Duplicate PrairieTest exam UUID: 11111111-1111-1111-1111-111111111111.'),
+      errors.includes('Duplicate PrairieTest exam UUID: 8d38a804-7858-49a6-abe7-7a057604dd34.'),
     );
   });
 
@@ -1211,8 +1211,8 @@ describe('Duplicate detection', () => {
       integrations: {
         prairieTest: {
           exams: [
-            { examUuid: '11111111-1111-1111-1111-111111111111' },
-            { examUuid: '22222222-2222-2222-2222-222222222222' },
+            { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+            { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
           ],
         },
       },
@@ -1288,13 +1288,14 @@ describe('afterLastDeadline validation', () => {
     assert.deepEqual(errors, []);
   });
 
-  it('should accept allowSubmissions true without credit', () => {
+  it('should accept zero credit when allowSubmissions is true', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         release: { date: '2024-03-14T00:01:00' },
         due: { date: '2024-03-21T23:59:00' },
         afterLastDeadline: {
           allowSubmissions: true,
+          credit: 0,
         },
       },
     });
@@ -1315,25 +1316,6 @@ describe('afterLastDeadline validation', () => {
     });
     const errors = validateRule(rule, 'none');
     assert.deepEqual(errors, []);
-  });
-
-  it('should reject numeric credit when allowSubmissions is false', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        release: { date: '2024-03-14T00:01:00' },
-        due: { date: '2024-03-21T23:59:00' },
-        afterLastDeadline: {
-          allowSubmissions: false,
-          credit: 50,
-        },
-      },
-    });
-    const errors = validateRule(rule, 'none');
-    assert.isTrue(
-      errors.some((e) =>
-        e.includes('afterLastDeadline.credit cannot be set when allowSubmissions is false'),
-      ),
-    );
   });
 });
 
@@ -1546,7 +1528,7 @@ describe('Structural field dependency validation', () => {
     const rule = AccessControlJsonSchema.parse({
       dateControl: {
         due: { date: null },
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
     });
     const issues = validateRuleStructuralDependencyIssues({
@@ -1579,7 +1561,7 @@ describe('Structural field dependency validation', () => {
       labels: ['Section A'],
       dateControl: {
         due: { date: null },
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
     });
     const issues = validateRuleStructuralDependencyIssues({
@@ -1596,7 +1578,7 @@ describe('Structural field dependency validation', () => {
     const rule = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
     });
     const issues = validateRuleStructuralDependencyIssues({
@@ -1686,7 +1668,7 @@ describe('Global structural dependency validation', () => {
     const override = AccessControlJsonSchema.parse({
       labels: ['Section A'],
       dateControl: {
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
     });
     const issues = validateGlobalStructuralDependencyIssues([
@@ -1779,7 +1761,7 @@ describe('Global structural dependency validation', () => {
         dateControl: {
           due: { date: null },
           lateDeadlines: [{ date: '2024-03-25T23:59:00', credit: 80 }],
-          afterLastDeadline: { allowSubmissions: true },
+          afterLastDeadline: { allowSubmissions: true, credit: 0 },
         },
       }),
     ];
@@ -1805,14 +1787,14 @@ describe('AccessControlJsonSchema nullable override fields', () => {
         due: { date: null },
         earlyDeadlines: null,
         lateDeadlines: null,
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
         durationMinutes: null,
         password: null,
       },
     });
 
     assert.equal(result.dateControl?.release?.date, '2024-03-14T00:01:00');
-    assert.deepEqual(result.dateControl?.afterLastDeadline, { allowSubmissions: true });
+    assert.deepEqual(result.dateControl?.afterLastDeadline, { allowSubmissions: true, credit: 0 });
     assert.isNull(result.dateControl?.durationMinutes);
   });
 });
