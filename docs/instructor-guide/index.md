@@ -32,6 +32,7 @@ There are four major concepts you will need to configure in your course:
   - [Python](../python-grader/index.md)
   - [C / C++](../c-grader/index.md)
   - [Java](../java-grader/index.md)
+  - [Julia](../julia-grader/index.md)
 - [FAQ](../faq.md): find answers to common questions.
 - [Workspaces](../workspaces/index.md): learn about workspaces, which provide students with a coding environment.
 - [LMS integration](../lmsIntegrationInstructor.md): learn how to send grades to your LMS.

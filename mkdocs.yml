@@ -283,6 +283,7 @@ nav:
           - 'API reference': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
+      - 'Julia autograder': 'julia-grader/index.md'
       - 'Python API reference':
           - python-reference/index.md
           - 'Colors': python-reference/prairielearn/colors.md

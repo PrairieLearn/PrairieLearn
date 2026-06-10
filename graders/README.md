@@ -3,6 +3,9 @@
 Within this directory are a set of docker containers for automatically grading student code.
 These docker containers may be modified as needed on a per-course basis.
 
+Current maintained images include `grader-c`, `grader-java`, `grader-julia`, `grader-python`,
+and `grader-r`.
+
 Full details on how externally graded questions are created can be found
 in the [Externally Graded Question](https://docs.prairielearn.com/externalGrading/)
 documentation.
