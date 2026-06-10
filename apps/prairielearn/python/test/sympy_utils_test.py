@@ -612,6 +612,34 @@ class TestSympy:
             )
 
 
+class TestAllowExtraSymbols:
+    @pytest.mark.parametrize(
+        ("expr", "variables", "expected_symbols"),
+        [
+            ("n*log(n) + m", None, {"m", "n"}),
+            ("x + y", ["x"], {"x", "y"}),
+            # Builtin constants are resolved, not treated as free symbols.
+            ("2*e + n", None, {"n"}),
+            # Greek letters are normalized to their spelled-out names.
+            ("α + n", None, {"alpha", "n"}),  # noqa: RUF001
+            # Unknown names followed by parentheses are implicit multiplication,
+            # not function calls.
+            ("f(n)", None, {"f", "n"}),
+        ],
+    )
+    def test_extra_symbols_allowed(
+        self, expr: str, variables: list[str] | None, expected_symbols: set[str]
+    ) -> None:
+        result = psu.convert_string_to_sympy(expr, variables, allow_extra_symbols=True)
+        assert {str(symbol) for symbol in result.free_symbols} == expected_symbols
+
+    def test_other_errors_still_raised(self) -> None:
+        with pytest.raises(psu.HasParseError):
+            psu.convert_string_to_sympy("n**", allow_extra_symbols=True)
+        with pytest.raises(psu.HasFloatError):
+            psu.convert_string_to_sympy("3.5*n", allow_extra_symbols=True)
+
+
 class TestExceptions:
     VARIABLES: tuple[str] = ("n",)
 

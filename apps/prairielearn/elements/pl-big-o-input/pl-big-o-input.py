@@ -50,31 +50,6 @@ SYMPY_TIMEOUT = 3
 MAX_VARIABLES = 7
 
 
-def _get_answer_vars(a_true: str, variables: list[str]) -> set[str] | None:
-    variables_for_parse = set(variables)
-    extra_symbols: set[str] = set()
-
-    while len(extra_symbols) <= MAX_VARIABLES:
-        try:
-            a_true_reparsed = psu.convert_string_to_sympy(
-                a_true,
-                variables_for_parse,
-                allow_complex=False,
-                allow_trig_functions=False,
-            )
-        except psu.HasInvalidSymbolError as exc:
-            if exc.symbol in variables_for_parse:
-                return None
-            extra_symbols.add(exc.symbol)
-            variables_for_parse.add(exc.symbol)
-        except psu.BaseSympyError:
-            return None
-        else:
-            return {str(s) for s in a_true_reparsed.free_symbols}
-
-    return None
-
-
 def _get_variables_with_fallback(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> list[str]:
@@ -89,20 +64,25 @@ def _get_variables_with_fallback(
     """
     for attrib in ("variables", "variable"):
         if pl.has_attrib(element, attrib):
-            variables = [
+            return [
                 var
                 for var in psu.get_items_list(pl.get_string_attrib(element, attrib))
                 if var
             ]
-            if variables:
-                return variables
 
     name = pl.get_string_attrib(element, "answers-name")
     a_true = data["correct_answers"].get(name)
     if isinstance(a_true, str) and a_true != "":
-        inferred = _get_answer_vars(a_true, [])
-        if inferred is not None:
-            return sorted(inferred)
+        try:
+            a_true_expr = psu.convert_string_to_sympy(
+                a_true,
+                allow_complex=False,
+                allow_trig_functions=False,
+                allow_extra_symbols=True,
+            )
+        except psu.BaseSympyError:
+            return []
+        return sorted(str(symbol) for symbol in a_true_expr.free_symbols)
 
     return []
 
@@ -147,7 +127,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len(variables) > MAX_VARIABLES:
         raise ValueError("Too many variables specified.")
 
-    # Validate that the answer can be parsed and that the variable attribute
+    # Validate that the answer can be parsed and that the variables attribute
     # includes all variables needed by the correct answer
     a_true = data["correct_answers"].get(name)
     if a_true is not None and len(a_true) > 0:
@@ -155,18 +135,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             psu.convert_string_to_sympy(
                 a_true, variables, allow_complex=False, allow_trig_functions=False
             )
+        except psu.HasInvalidSymbolError as exc:
+            raise ValueError(
+                f'Correct answer "{a_true}" for "{name}" uses the variable '
+                f'"{exc.symbol}", which is not included in the "variables" attribute.'
+            ) from exc
         except psu.BaseSympyError as exc:
-            # Check if the error is due to undefined variables and give a clearer message
-            answer_vars = _get_answer_vars(a_true, variables)
-            if answer_vars is not None:
-                specified_vars = {psu.greek_unicode_transform(v) for v in variables}
-                missing_vars = answer_vars - specified_vars
-                if missing_vars:
-                    raise ValueError(
-                        f'Correct answer "{a_true}" for "{name}" uses variable(s) '
-                        f"{sorted(missing_vars)} not specified in the variable attribute. "
-                        f"The correct answer uses the variable(s) {','.join(sorted(answer_vars))}."
-                    ) from exc
             raise ValueError(
                 f'Parsing correct answer "{a_true}" for "{name}" failed.'
             ) from exc
