@@ -22,7 +22,7 @@ const booleanValueSet = new Set(BOOLEAN_VALUES);
 const booleanFalseValueSet = new Set(BOOLEAN_FALSE_VALUES);
 
 // Advisory linter-side checks for the shared element schemas. The authoritative
-// versions are Python's `is_integer_attrib`/`is_float_attrib` (`int()`/`float()`).
+// versions are Python's `is_integer_value`/`is_float_value` (`int()`/`float()`).
 // These regexes are intentionally stricter — Python also accepts `1_000`, `+5`,
 // whitespace, and `inf`/`nan` — so the linter nudges toward canonical values.
 const plBoolean: SchemaFormat = (value) => typeof value === 'string' && booleanValueSet.has(value);

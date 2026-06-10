@@ -239,8 +239,7 @@ class AnswerOptions:
     ) -> None:
         if html_element.tag != "pl-answer":
             raise ValueError(
-                """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                    Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                "<pl-block-group> only allows these child elements: <pl-answer>."
             )
 
         parent = html_element.getparent()
@@ -568,8 +567,7 @@ def collect_answer_options(
                 answer_options.append(options)
             case _:
                 raise ValueError(
-                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                    "<pl-order-blocks> only allows these child elements: <pl-answer>, <pl-block-group>."
                 )
 
     return answer_options

@@ -17,9 +17,9 @@ from jsonschema import FormatChecker, ValidationError
 from jsonschema.validators import validator_for
 
 from prairielearn.html_utils import (
-    is_boolean_attrib,
-    is_float_attrib,
-    is_integer_attrib,
+    is_boolean_value,
+    is_float_value,
+    is_integer_value,
 )
 
 __all__ = ["validate_element"]
@@ -27,21 +27,21 @@ __all__ = ["validate_element"]
 pl_format_checker = FormatChecker(formats=())
 
 
-def _check_boolean_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_boolean_attrib(value)
+def _check_boolean_format(value: object) -> bool:
+    return isinstance(value, str) and is_boolean_value(value)
 
 
-def _check_integer_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_integer_attrib(value)
+def _check_integer_format(value: object) -> bool:
+    return isinstance(value, str) and is_integer_value(value)
 
 
-def _check_float_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_float_attrib(value)
+def _check_number_format(value: object) -> bool:
+    return isinstance(value, str) and is_float_value(value)
 
 
-pl_format_checker.checks("boolean")(_check_boolean_attrib)
-pl_format_checker.checks("integer")(_check_integer_attrib)
-pl_format_checker.checks("number")(_check_float_attrib)
+pl_format_checker.checks("boolean")(_check_boolean_format)
+pl_format_checker.checks("integer")(_check_integer_format)
+pl_format_checker.checks("number")(_check_number_format)
 
 
 @functools.cache

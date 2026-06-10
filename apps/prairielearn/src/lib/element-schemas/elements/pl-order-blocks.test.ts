@@ -84,7 +84,7 @@ describe('pl-order-blocks schema', () => {
     assert.deepEqual(messages, [
       'Unknown attribute "bogus" on <pl-order-blocks>.',
       '<pl-order-blocks> only allows these child elements: <pl-answer>, <pl-block-group>.',
-      'pl-order-blocks element must have at least 1 answer block.',
+      '<pl-order-blocks> must have at least 1 answer block.',
     ]);
   });
 

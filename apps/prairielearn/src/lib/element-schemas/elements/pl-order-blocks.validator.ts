@@ -123,7 +123,7 @@ function validateTagCharacters(element: TagElement, context: ValidatorContext) {
 export const validators: TagValidator[] = defineTagValidators('pl-order-blocks', {
   'pl/order-blocks-children'(element, context) {
     if (allAnswers(element).length === 0) {
-      context.reportElement(element, 'pl-order-blocks element must have at least 1 answer block.');
+      context.reportElement(element, '<pl-order-blocks> must have at least 1 answer block.');
     }
   },
 

@@ -3,6 +3,6 @@
 // element schema module under `./elements`.
 import { element as plMultipleChoice } from './elements/pl-multiple-choice.ts';
 import { element as plOrderBlocks } from './elements/pl-order-blocks.ts';
-import type { ElementSchemaModule } from './types.js';
+import type { ElementSchemaModule } from './types.ts';
 
 export const elementModules: ElementSchemaModule[] = [plMultipleChoice, plOrderBlocks];

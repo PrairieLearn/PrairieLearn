@@ -117,7 +117,7 @@ check-npm-packages:
 update-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts
 update-element-schemas:
-	@pnpm dlx tsx scripts/gen-element-schemas.mts && yarn prettier --write "apps/prairielearn/elements/**/schemas/*.json"
+	@pnpm dlx tsx scripts/gen-element-schemas.mts
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql

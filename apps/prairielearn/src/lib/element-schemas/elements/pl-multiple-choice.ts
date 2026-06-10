@@ -1,7 +1,7 @@
 import * as z from 'zod/v4';
 
 import { booleanFormat, integerFormat, numberFormat } from '../helpers.ts';
-import type { ElementSchemaModule } from '../types.js';
+import type { ElementSchemaModule } from '../types.ts';
 
 import { validators } from './pl-multiple-choice.validator.ts';
 
