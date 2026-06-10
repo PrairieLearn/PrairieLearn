@@ -328,6 +328,7 @@ export const htmlMustacheConfig: Config = {
       name: 'pl-matrix-output',
       children: [{ name: 'variable' }],
     },
+    // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
     { name: 'pl-github-link' },
     // pl-drawing
     {

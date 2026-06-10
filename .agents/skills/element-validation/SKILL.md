@@ -17,14 +17,14 @@ Lives in `apps/prairielearn/src/lib/element-schemas/`. Source of truth is one mo
 
 - `tag` — the element tag, which must match the filename.
 - `schema` — JSON Schema for the element's own attributes, produced from a Zod object via `z.toJSONSchema(obj, { target: 'draft-04' })`. `.strict()` makes unknown attributes an error.
-- `children` — optional map of child-tag name → JSON Schema (e.g. `pl-answer` inside `pl-multiple-choice`).
+- `children` — optional map of child-tag name → `ElementChildSchema` (`{ schema?, children?, allowAdditionalChildren? }`). The shape is recursive, mirroring the linter's `ChildTagConfig`, so nested children (e.g. `pl-block-group` containing `pl-answer` inside `pl-order-blocks`) can be expressed.
 - `validators` — optional cross-attribute checks that JSON Schema can't express (mutual exclusion, conditional requirement, value ranges, answer-HTML uniqueness, …), defined in a sibling `elements/<tag>.validator.ts` with `defineTagValidators(tag, { 'pl/<rule-id>'(element, context) { … } })` from `@prairielearn/tree-sitter-htmlmustache/linter`.
 
 Helpers in `element-schema-helpers.ts`: `plBoolean()`, `plInteger()`, `plNumber()` are `z.string()` tagged with a PL `format`. Mark deprecated attributes with `.meta({ deprecated: true, description: 'Use … instead.' })`.
 
 **Generation.** After editing any `elements/*.ts` / `*.validator.ts`, run `make update-element-schemas` (runs `scripts/gen-element-schemas.mts`). From the modules it regenerates, and commits to disk:
 
-- the JSON schemas at `apps/prairielearn/elements/<tag>/schemas/<tag>.json` (plus one per child),
+- the JSON schemas at `apps/prairielearn/elements/<tag>/schemas/<tag>.json` (plus one per child with a schema; direct children use the bare tag name, nested children are prefixed with their ancestor tags, e.g. `pl-block-group.pl-answer.json`),
 - the static module list `registry.generated.ts`,
 - `.htmlmustache.jsonc` in its entirety (derived from `htmlMustacheConfig.ts` plus CLI-only settings the runtime `Config` can't express).
 

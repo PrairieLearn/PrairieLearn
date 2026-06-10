@@ -28,7 +28,10 @@ import prettier from 'prettier';
 
 import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-import type { ElementSchemaModule } from '../apps/prairielearn/src/lib/element-schemas/types.js';
+import type {
+  ElementChildSchema,
+  ElementSchemaModule,
+} from '../apps/prairielearn/src/lib/element-schemas/types.js';
 
 const check = process.argv[2] === 'check';
 
@@ -168,6 +171,23 @@ function schemaRelPath(tag: string, schemaTag: string): string {
   return `apps/prairielearn/elements/${tag}/schemas/${schemaTag}.json`;
 }
 
+/**
+ * All generated schema files for an element, keyed by schema file name: the
+ * root schema plus one per (possibly nested) child tag that declares a schema.
+ */
+function collectElementSchemas(element: ElementSchemaModule): Map<string, Record<string, unknown>> {
+  const schemas = new Map<string, Record<string, unknown>>([[element.tag, element.schema]]);
+  const visit = (children: Record<string, ElementChildSchema>, prefix: string[]) => {
+    for (const [childTag, child] of Object.entries(children)) {
+      const childPath = [...prefix, childTag];
+      if (child.schema) schemas.set(childPath.join('.'), child.schema);
+      if (child.children) visit(child.children, childPath);
+    }
+  };
+  if (element.children) visit(element.children, []);
+  return schemas;
+}
+
 /** The `./`-prefixed path used to reference a schema from `.htmlmustache.jsonc`. */
 function schemaConfigPath(tag: string, schemaTag: string): string {
   return `./${schemaRelPath(tag, schemaTag)}`;
@@ -195,6 +215,8 @@ function buildRegistry(elements: DiscoveredElement[]): string {
   ].join('\n');
 }
 
+type ChildTag = NonNullable<CustomTag['children']>[number];
+
 /**
  * Convert a runtime custom tag to its on-disk form. Element tags carry inline
  * JSON Schema objects at runtime, but `.htmlmustache.jsonc` references the
@@ -209,14 +231,30 @@ function toOnDiskCustomTag(
   if (!element) return tag;
   const onDisk: CustomTag = { ...tag, schema: schemaConfigPath(tag.name, tag.name) };
   if (tag.children) {
-    const childSchemas = element.element.children ?? {};
-    onDisk.children = tag.children.map((child) =>
-      child.name in childSchemas
-        ? { ...child, schema: schemaConfigPath(tag.name, child.name) }
-        : child,
-    );
+    onDisk.children = toOnDiskChildTags(tag.name, tag.children, element.element.children ?? {}, []);
   }
   return onDisk;
+}
+
+function toOnDiskChildTags(
+  rootTag: string,
+  children: ChildTag[],
+  childSchemas: Record<string, ElementChildSchema>,
+  prefix: string[],
+): ChildTag[] {
+  return children.map((child) => {
+    const node = childSchemas[child.name];
+    if (!node) return child;
+    const childPath = [...prefix, child.name];
+    const onDisk: ChildTag = { ...child };
+    if (node.schema) {
+      onDisk.schema = schemaConfigPath(rootTag, childPath.join('.'));
+    }
+    if (child.children && node.children) {
+      onDisk.children = toOnDiskChildTags(rootTag, child.children, node.children, childPath);
+    }
+    return onDisk;
+  });
 }
 
 /**
@@ -275,13 +313,10 @@ const elements = await loadElements();
 const baseFiles: Record<string, string> = {};
 const schemaPaths = new Set<string>();
 for (const { tag, element } of elements) {
-  const rootPath = path.resolve(REPO_ROOT, schemaRelPath(tag, tag));
-  baseFiles[rootPath] = await format(rootPath, `${JSON.stringify(element.schema, null, 2)}\n`);
-  schemaPaths.add(rootPath);
-  for (const [childTag, childSchema] of Object.entries(element.children ?? {})) {
-    const childPath = path.resolve(REPO_ROOT, schemaRelPath(tag, childTag));
-    baseFiles[childPath] = await format(childPath, `${JSON.stringify(childSchema, null, 2)}\n`);
-    schemaPaths.add(childPath);
+  for (const [schemaTag, schema] of collectElementSchemas(element)) {
+    const filePath = path.resolve(REPO_ROOT, schemaRelPath(tag, schemaTag));
+    baseFiles[filePath] = await format(filePath, `${JSON.stringify(schema, null, 2)}\n`);
+    schemaPaths.add(filePath);
   }
 }
 baseFiles[REGISTRY_PATH] = await format(REGISTRY_PATH, buildRegistry(elements));

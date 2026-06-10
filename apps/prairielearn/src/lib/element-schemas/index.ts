@@ -1,12 +1,24 @@
 import type { CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { elementModules } from './registry.generated.js';
-import type { ElementSchemaModule } from './types.js';
+import type { ElementChildSchema, ElementSchemaModule } from './types.js';
+
+type ChildTag = NonNullable<CustomTag['children']>[number];
+
+function toChildTags(children: Record<string, ElementChildSchema>): ChildTag[] {
+  return Object.entries(children).map(([name, child]) => {
+    const tag: ChildTag = { name };
+    if (child.schema) tag.schema = child.schema;
+    if (child.children) tag.children = toChildTags(child.children);
+    if (child.allowAdditionalChildren) tag.allowAdditionalChildren = true;
+    return tag;
+  });
+}
 
 function toCustomTag(module: ElementSchemaModule): CustomTag {
   const tag: CustomTag = { name: module.tag, schema: module.schema };
   if (module.children) {
-    tag.children = Object.entries(module.children).map(([name, schema]) => ({ name, schema }));
+    tag.children = toChildTags(module.children);
   }
   return tag;
 }

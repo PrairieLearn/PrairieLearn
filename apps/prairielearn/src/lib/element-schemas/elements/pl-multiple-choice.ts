@@ -56,7 +56,9 @@ export const element: ElementSchemaModule = {
   tag: 'pl-multiple-choice',
   schema: z.toJSONSchema(plMultipleChoiceAttributesSchema, { target: 'draft-04' }),
   children: {
-    'pl-answer': z.toJSONSchema(plMultipleChoiceAnswerAttributesSchema, { target: 'draft-04' }),
+    'pl-answer': {
+      schema: z.toJSONSchema(plMultipleChoiceAnswerAttributesSchema, { target: 'draft-04' }),
+    },
   },
   validators,
 };

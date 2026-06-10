@@ -16,6 +16,15 @@ def test_normalize_attrs_replaces_underscores() -> None:
     assert _normalize_attrs({"answers_name": "x"}) == {"answers-name": "x"}
 
 
+def test_normalize_attrs_prefers_hyphenated_spelling() -> None:
+    assert _normalize_attrs({"number-answers": "3", "number_answers": "bad"}) == {
+        "number-answers": "3"
+    }
+    assert _normalize_attrs({"number_answers": "bad", "number-answers": "3"}) == {
+        "number-answers": "3"
+    }
+
+
 def test_attribute_name_empty_path_returns_none() -> None:
     assert _attribute_name(ValidationError("boom")) is None
 

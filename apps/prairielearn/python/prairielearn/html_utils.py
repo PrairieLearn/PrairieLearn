@@ -16,7 +16,6 @@ from prairielearn.colors import PLColor
 from prairielearn.misc_utils import escape_unicode_string
 
 __all__ = [
-    "LIBXML_BOOLEAN_ATTRIBUTES",
     "check_attribs",
     "escape_invalid_string",
     "get_boolean_attrib",
@@ -33,7 +32,7 @@ __all__ = [
 ]
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
-LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
+_LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "checked",
     "compact",
     "declare",
@@ -218,7 +217,7 @@ def _get_attrib(
     # boolean function has a test before this point with an early return, so
     # this point should only be reached if this is being handled with a
     # non-boolean value.
-    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+    if name.lower() in _LIBXML_BOOLEAN_ATTRIBUTES:
         raise ValueError(
             f"The attribute '{name}' is an HTML boolean attribute, and should not be used."
         )
@@ -311,7 +310,7 @@ def get_boolean_attrib(
         ValueError: If the attribute is not a valid boolean value.
     """
     # If the attribute is a boolean attribute, then its value is determined by its presence
-    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+    if name.lower() in _LIBXML_BOOLEAN_ATTRIBUTES:
         default_value = None if len(args) == 0 else args[0]
         if default_value:
             raise ValueError(
