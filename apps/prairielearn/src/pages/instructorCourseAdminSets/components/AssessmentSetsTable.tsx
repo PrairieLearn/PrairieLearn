@@ -66,7 +66,7 @@ function AssessmentSetRow({
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
     background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
   };

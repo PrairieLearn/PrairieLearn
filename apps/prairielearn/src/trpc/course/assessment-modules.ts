@@ -3,12 +3,12 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../lib/assessment-module.shared.js';
 import { computeScopedJsonHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
+  AssessmentModuleReassignToDefaultEditor,
+  AssessmentModuleRenameEditor,
   MultiEditor,
-  prepareAssessmentModuleRewriteEditors,
   prepareJsonFileEditor,
 } from '../../lib/editors.js';
 import {
@@ -120,7 +120,7 @@ const save = t.procedure
     for (const module of modules) {
       if (module.id === null) continue;
       const existing = currentById.get(module.id);
-      if (!existing || existing.name === DEFAULT_ASSESSMENT_MODULE_NAME) continue;
+      if (!existing || existing.name === 'Default') continue;
       if (existing.name !== module.name) {
         renames.push({ oldName: existing.name, newName: module.name });
       }
@@ -133,7 +133,7 @@ const save = t.procedure
     const deletedNames = currentModules
       .filter(
         (module) =>
-          module.name !== DEFAULT_ASSESSMENT_MODULE_NAME &&
+          module.name !== 'Default' &&
           !submittedIds.has(module.id) &&
           !submittedNames.has(module.name),
       )
@@ -162,37 +162,18 @@ const save = t.procedure
       });
     }
 
-    const renameEditors = (
-      await Promise.all(
-        renames.map((rename) =>
-          prepareAssessmentModuleRewriteEditors({
-            course: locals.course,
-            moduleName: rename.oldName,
-            applyChanges: (contents) => {
-              contents.module = rename.newName;
-              return contents;
-            },
-            locals,
-          }),
-        ),
-      )
-    ).flat();
+    const renameEditors = renames.map(
+      (rename) =>
+        new AssessmentModuleRenameEditor({
+          locals,
+          oldName: rename.oldName,
+          newName: rename.newName,
+        }),
+    );
 
-    const reassignEditors = (
-      await Promise.all(
-        deletedNames.map((name) =>
-          prepareAssessmentModuleRewriteEditors({
-            course: locals.course,
-            moduleName: name,
-            applyChanges: (contents) => {
-              delete contents.module;
-              return contents;
-            },
-            locals,
-          }),
-        ),
-      )
-    ).flat();
+    const reassignEditors = deletedNames.map(
+      (name) => new AssessmentModuleReassignToDefaultEditor({ locals, moduleName: name }),
+    );
 
     const editor =
       renameEditors.length === 0 && reassignEditors.length === 0

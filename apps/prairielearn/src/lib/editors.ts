@@ -1874,6 +1874,139 @@ export class AssessmentSetRenameEditor extends Editor {
   }
 }
 
+/**
+ * Shared by the assessment module editors: rewrites the `module` field of every
+ * `infoAssessment.json` whose synced module is `moduleName`, applying `transform`
+ * to each file's parsed contents and returning the paths that were written.
+ *
+ * This runs at `write()` time (under the course repo lock), so it reads the
+ * current on-disk state and is correctly re-run if the edit has to be retried
+ * after merging remote changes. Affected assessments are located by joining
+ * through the synced `assessment_module_id`, matching `AssessmentSetRenameEditor`.
+ */
+async function rewriteAssessmentModuleReferences(
+  course: Course,
+  moduleName: string,
+  transform: (contents: AssessmentJsonInput) => void,
+): Promise<string[]> {
+  const assessments = await sqldb.queryRows(
+    sql.select_assessments_with_assessment_module,
+    { assessment_module_name: moduleName, course_id: course.id },
+    z.object({
+      course_instance_directory: CourseInstanceSchema.shape.short_name,
+      assessment_directory: AssessmentSchema.shape.tid,
+    }),
+  );
+
+  const pathsToAdd: string[] = [];
+
+  for (const assessment of assessments) {
+    assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+    const infoPath = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+      'infoAssessment.json',
+    );
+    pathsToAdd.push(infoPath);
+
+    const infoJson: AssessmentJsonInput = await fs.readJson(infoPath);
+    transform(infoJson);
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(infoPath, formattedJson);
+  }
+
+  return pathsToAdd;
+}
+
+/**
+ * Renames an assessment module referenced by assessments, updating the `module`
+ * field in each `infoAssessment.json`. It does not rename the module at the
+ * course level (infoCourse.json).
+ */
+export class AssessmentModuleRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string;
+    },
+  ) {
+    super({
+      ...params,
+      description: `Rename assessment module ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentModuleRenameEditor: write()');
+
+    const pathsToAdd = await rewriteAssessmentModuleReferences(
+      this.course,
+      this.oldName,
+      (contents) => {
+        contents.module = this.newName;
+      },
+    );
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename assessment module ${this.oldName} to ${this.newName}`,
+    };
+  }
+}
+
+/**
+ * Reassigns the assessments of a deleted module to the Default module by removing
+ * the `module` field from each `infoAssessment.json`, so they fall back to the
+ * implicit "Default" module that sync always creates.
+ */
+export class AssessmentModuleReassignToDefaultEditor extends Editor {
+  private moduleName: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      moduleName: string;
+    },
+  ) {
+    super({
+      ...params,
+      description: `Reassign assessments from module ${params.moduleName} to the default module`,
+    });
+    this.moduleName = params.moduleName;
+  }
+
+  async write() {
+    debug('AssessmentModuleReassignToDefaultEditor: write()');
+
+    const pathsToAdd = await rewriteAssessmentModuleReferences(
+      this.course,
+      this.moduleName,
+      (contents) => {
+        delete contents.module;
+      },
+    );
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: `reassign assessments from module ${this.moduleName} to the default module`,
+    };
+  }
+}
+
 export class QuestionCopyEditor extends Editor {
   private from_course: Course;
   private from_course_label: string;
@@ -2924,69 +3057,6 @@ export async function prepareAccessControlLabelRewriteEditors({
       // FileModifyEditor's full-file hash still guards against TOCTOU at
       // write time, and shouldEdit() makes unchanged files a no-op.
       conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
-      locals,
-      container: { rootPath: assessmentDir, invalidRootPaths: [] },
-    });
-    // `prepared` can only fail with reason 'conflict', which can't happen
-    // when origHash is null.
-    if (prepared.success) editors.push(prepared.editor);
-  }
-
-  return editors;
-}
-
-/**
- * Prepares `FileModifyEditor`s for every `infoAssessment.json` whose synced
- * assessment module is `moduleName`. The caller supplies `applyChanges` to
- * either rename the module (set `module` to the new name) or reassign the
- * assessment to the Default module (delete the `module` field). Intended to be
- * bundled with the `infoCourse.json` edit in a `MultiEditor` so the changes
- * commit and sync atomically.
- *
- * Affected assessments are located by joining through the synced
- * `assessment_module_id`, matching the pattern used by `AssessmentSetRenameEditor`.
- */
-export async function prepareAssessmentModuleRewriteEditors({
-  course,
-  moduleName,
-  applyChanges,
-  locals,
-}: {
-  course: Course;
-  moduleName: string;
-  applyChanges: (contents: AssessmentJsonInput) => AssessmentJsonInput;
-  locals: { authz_data: AuthzData; course: Course; user: User };
-}): Promise<FileModifyEditor[]> {
-  const assessments = await sqldb.queryRows(
-    sql.select_assessments_with_assessment_module,
-    { assessment_module_name: moduleName, course_id: course.id },
-    z.object({
-      course_instance_directory: CourseInstanceSchema.shape.short_name,
-      assessment_directory: AssessmentSchema.shape.tid,
-    }),
-  );
-
-  const editors: FileModifyEditor[] = [];
-
-  for (const assessment of assessments) {
-    if (assessment.assessment_directory == null) continue;
-
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      assessment.course_instance_directory,
-      'assessments',
-      assessment.assessment_directory,
-    );
-    const infoPath = path.join(assessmentDir, 'infoAssessment.json');
-
-    const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
-      applyChanges,
-      jsonPath: infoPath,
-      // No scoped hash: this edit is not driven by a user-held origHash.
-      // FileModifyEditor's full-file hash still guards against TOCTOU at
-      // write time, and shouldEdit() makes unchanged files a no-op.
-      conflictCheck: { origHash: null, scope: (json) => ({ module: json.module ?? null }) },
       locals,
       container: { rootPath: assessmentDir, invalidRootPaths: [] },
     });

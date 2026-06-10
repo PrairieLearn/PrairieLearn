@@ -22,7 +22,6 @@ import { Alert } from 'react-bootstrap';
 import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
-import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../../lib/assessment-module.shared.js';
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getCourseEditErrorUrl } from '../../../lib/client/url.js';
@@ -92,12 +91,12 @@ function AssessmentModuleRow({
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
     background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
   };
 
-  const isDefault = module.name === DEFAULT_ASSESSMENT_MODULE_NAME;
+  const isDefault = module.name === 'Default';
 
   return (
     <tr ref={setNodeRef} style={style}>
@@ -350,7 +349,7 @@ function AssessmentModulesCard({
   };
 
   const handleDelete = (module: AssessmentModuleFormRow) => {
-    if (module.name === DEFAULT_ASSESSMENT_MODULE_NAME) return;
+    if (module.name === 'Default') return;
     if (module.assessments.length > 0) {
       deleteModal.showWithData(module);
     } else {
@@ -373,8 +372,7 @@ function AssessmentModulesCard({
   const saveError = getAppError<AssessmentModulesError['Save']>(saveMutation.error);
 
   const lockName =
-    editModal.data?.mode === 'edit' &&
-    editModal.data.assessmentModule.name === DEFAULT_ASSESSMENT_MODULE_NAME;
+    editModal.data?.mode === 'edit' && editModal.data.assessmentModule.name === 'Default';
 
   return (
     <>
@@ -443,8 +441,8 @@ function AssessmentModulesCard({
         {editMode && duplicateNames.length > 0 && (
           <div className="alert alert-warning m-3" role="alert">
             <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
-            <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Only the last
-            module with each name will be synced.
+            <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Module names
+            must be unique; rename or remove the duplicates before saving.
           </div>
         )}
 

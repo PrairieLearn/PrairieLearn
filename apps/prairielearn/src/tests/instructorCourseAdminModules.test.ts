@@ -2,11 +2,10 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { getAppError } from '../lib/client/errors.js';
 import { config } from '../lib/config.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -14,9 +13,7 @@ import {
   selectAssessmentModulesForCourse,
   selectAssessmentModulesWithAssessmentsForCourse,
 } from '../models/assessment-module.js';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import type { CourseJsonInput } from '../schemas/infoCourse.js';
-import type { AssessmentModulesError } from '../trpc/course/assessment-modules.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import {
@@ -25,7 +22,6 @@ import {
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const modulesUrl = `${siteUrl}/pl/course/1/course_admin/modules`;
@@ -77,19 +73,6 @@ describe('Instructor course admin modules page', () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
-
-    const instructor = await getOrCreateUser({
-      uid: 'instructor@example.com',
-      name: 'Test Instructor',
-      uin: '100000000',
-      email: 'instructor@example.com',
-    });
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: instructor.uid,
-      course_role: 'Owner',
-      authn_user_id: instructor.id,
-    });
   });
 
   afterAll(helperServer.after);
@@ -237,36 +220,26 @@ describe('Instructor course admin modules page', () => {
   test.sequential('rejects a stale hash with a conflict error', async () => {
     const client = createTrpcClient();
 
-    try {
-      await client.assessmentModules.save.mutate({
+    await expect(
+      client.assessmentModules.save.mutate({
         modules: await currentModulesInput(),
         origHash: 'stale-hash-that-does-not-match',
-      });
-      assert.fail('Expected a conflict error');
-    } catch (err) {
-      const appError = getAppError<AssessmentModulesError['Save']>(err);
-      assert.isNotNull(appError);
-      assert.include(appError.message, 'modified since');
-    }
+      }),
+    ).rejects.toThrow(/modified since/);
   });
 
   test.sequential('rejects duplicate module names', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
-    try {
-      await client.assessmentModules.save.mutate({
+    await expect(
+      client.assessmentModules.save.mutate({
         modules: [
           { id: null, name: 'Duplicate', heading: 'First', implicit: false },
           { id: null, name: 'Duplicate', heading: 'Second', implicit: false },
         ],
         origHash,
-      });
-      assert.fail('Expected a duplicate-name error');
-    } catch (err) {
-      const appError = getAppError<AssessmentModulesError['Save']>(err);
-      assert.isNotNull(appError);
-      assert.include(appError.message, 'unique');
-    }
+      }),
+    ).rejects.toThrow(/unique/);
   });
 });

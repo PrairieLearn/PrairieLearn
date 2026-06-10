@@ -113,7 +113,7 @@ export function EditAssessmentModuleModal({
               </div>
             )}
           </div>
-          <div className="mb-3">
+          <div>
             <label className="form-label" htmlFor="module-heading">
               Heading
             </label>
