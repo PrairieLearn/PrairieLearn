@@ -217,6 +217,12 @@ function buildRegistry(elements: DiscoveredElement[]): string {
 
 type ChildTag = NonNullable<CustomTag['children']>[number];
 
+/**
+ * Convert a runtime custom tag to its on-disk form. Element tags carry inline
+ * JSON Schema objects at runtime, but `.htmlmustache.jsonc` references the
+ * generated schema files by path so the CLI (and Python) can load them lazily.
+ * Non-element tags are returned unchanged.
+ */
 function toOnDiskCustomTag(
   tag: CustomTag,
   elementByTag: Map<string, DiscoveredElement>,
