@@ -35,8 +35,7 @@ const PrairieTestExamJsonSchema = z
   .nullable();
 
 const AccessControlRuleRowSchema = z.object({
-  assessment_id: IdSchema,
-  access_control_rule: AssessmentAccessControlRuleSchema.nullable(),
+  access_control_rule: AssessmentAccessControlRuleSchema,
   enrollment_ids: z.array(IdSchema),
   student_label_ids: z.array(IdSchema),
   prairietest_exams: PrairieTestExamJsonSchema,
@@ -44,15 +43,13 @@ const AccessControlRuleRowSchema = z.object({
   late_deadlines: DeadlineJsonSchema,
 });
 
-type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
-type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
-type AccessControlRuleRowWithRule = AccessControlRuleRow & {
-  access_control_rule: AssessmentAccessControlRule;
-};
+const AssessmentAccessControlRulesRowSchema = z.object({
+  assessment_id: IdSchema,
+  access_control_rules: z.array(AccessControlRuleRowSchema),
+});
 
-function hasAccessControlRule(row: AccessControlRuleRow): row is AccessControlRuleRowWithRule {
-  return row.access_control_rule != null;
-}
+type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
+type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
 
 function buildDateControl(
   rule: AssessmentAccessControlRule,
@@ -138,7 +135,7 @@ function buildAfterComplete(rule: AssessmentAccessControlRule): RuntimeAfterComp
   return Object.keys(afterComplete).length > 0 ? afterComplete : undefined;
 }
 
-function rowToAccessControlRuleInput(row: AccessControlRuleRowWithRule): AccessControlRuleInput {
+function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRuleInput {
   const rule = row.access_control_rule;
   const dateControl = buildDateControl(rule, row.early_deadlines, row.late_deadlines);
   const afterComplete = buildAfterComplete(rule);
@@ -189,9 +186,9 @@ export async function selectAccessControlRulesForAssessment(
   const rows = await queryRows(
     sql.select_access_control_rules,
     { assessment_id: assessment.id, course_instance_id: null },
-    AccessControlRuleRowSchema,
+    AssessmentAccessControlRulesRowSchema,
   );
-  return rows.filter(hasAccessControlRule).map(rowToAccessControlRuleInput);
+  return rows.flatMap((row) => row.access_control_rules.map(rowToAccessControlRuleInput));
 }
 
 export async function selectAccessControlRulesForCourseInstance(
@@ -200,20 +197,15 @@ export async function selectAccessControlRulesForCourseInstance(
   const rows = await queryRows(
     sql.select_access_control_rules,
     { assessment_id: null, course_instance_id: courseInstance.id },
-    AccessControlRuleRowSchema,
+    AssessmentAccessControlRulesRowSchema,
   );
 
-  const result = new Map<string, AccessControlRuleInput[]>();
-  for (const row of rows) {
-    const assessmentId = row.assessment_id;
-    if (!result.has(assessmentId)) {
-      result.set(assessmentId, []);
-    }
-    if (hasAccessControlRule(row)) {
-      result.get(assessmentId)!.push(rowToAccessControlRuleInput(row));
-    }
-  }
-  return result;
+  return new Map(
+    rows.map((row) => [
+      row.assessment_id,
+      row.access_control_rules.map(rowToAccessControlRuleInput),
+    ]),
+  );
 }
 
 interface UserAccessContext {
