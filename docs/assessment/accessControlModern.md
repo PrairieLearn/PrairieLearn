@@ -13,7 +13,7 @@ These two checks are both required. Publishing a course instance lets enrolled s
 
 !!! note "Legacy `allowAccess`"
 
-    File-backed assessment access settings are stored as `accessControl` in `infoAssessment.json`. Existing assessments that still use `allowAccess` can continue to do so. New assessments should use the **Access** page and the `accessControl` format documented here. See the [legacy access control documentation](accessControlLegacy.md) for details about the older format.
+    Existing assessments that still use `allowAccess` can continue to do so. New assessments should use the **Access** page and the `accessControl` format documented here. For details about the older format, see the [legacy assessment access control](accessControlLegacy.md) documentation.
 
 ## Open the Access page
 
@@ -57,6 +57,8 @@ By default, the due date is worth 100% credit. Click **Change** next to the due 
 #### Credit
 
 Available credit is the maximum percentage score a student can earn during a particular access window. When the available credit is less than 100%, the percentage score is capped at that value and never decreases if the student previously earned a higher score. When the available credit is greater than 100%, students receive the bonus credit percentage once they reach full points; if [`maxBonusPoints`](configuration.md#assessment-points) is used, points above `maxPoints` are also scaled by the available credit percentage.
+
+For example, on a 10-point assessment with 80% available credit, a student who earns 9/10 points receives an 80% score because the access window caps the percentage score. With 110% available credit, a student who earns 10/10 points receives 110%, while a student who earns 8/10 points still receives 80%.
 
 #### Early and late deadlines
 
@@ -206,7 +208,7 @@ Click **Cancel** to discard unsaved UI changes.
 
 Click **Clear** on the Defaults card to remove the default access-control configuration. Click **Remove** on an override card to delete the entire override.
 
-## Migration from legacy access control
+## Migrating from legacy access control
 
 Legacy access control uses `allowAccess` rules. Modern access control uses `accessControl` rules. See the [legacy access control documentation](accessControlLegacy.md) for details about the older format.
 

@@ -4,6 +4,8 @@ import mkdocs_gen_files
 
 DOCS = Path("docs")
 
+# TODO: Replace this generated alias with a physical accessControl.md file after
+# the review-friendly source-file rename has landed.
 ALIASES = {
     "assessment/accessControl.md": DOCS / "assessment/accessControlModern.md",
 }

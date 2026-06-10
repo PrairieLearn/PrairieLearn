@@ -66,7 +66,7 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
 
 Some notes about this configuration:
 
-- See the [next section](#synchronous-timed-exams) for more details on the extra date-control override for the unproctored students.
+- The label override uses [date control](accessControl.md#date-control) to create an unproctored access window with its own [time limit](accessControl.md#time-limits). See the [synchronous exam notes](#synchronous-timed-exams) for details about choosing the window and time limit.
 - The override can be added at any time, including after other students already completed the exam using PrairieTest. This is useful for accommodations or makeup exams.
 
 ## Synchronous, timed exams
@@ -84,7 +84,7 @@ This configuration is good when:
 
   !!! warning
 
-        Students with custom accommodations should use student-specific overrides or student-label overrides. If a student matches multiple label overrides, lower overrides in `accessControl` take priority.
+        Students with custom accommodations should use student-specific overrides or student-label overrides. If a student matches multiple label overrides, [override priority](accessControl.md#override-priority) determines which settings apply.
 
 - Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
@@ -130,7 +130,7 @@ Some notes about this configuration:
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions. Students cannot submit after their timer expires or after the `due` time, whichever comes first. Once the assessment is complete, students can see their final score but cannot review any questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-- This configuration omits `afterLastDeadline`, so submissions are not allowed after the `due` time. It sets `afterComplete.questions.hidden` to `true`, so completed exam questions stay hidden while the total score remains visible by default. This does not prevent students from seeing questions or grading feedback while they are taking the exam.
+- Because no after-deadline submission mode is configured, submissions are not allowed after the `due` time. The [`afterComplete.questions.hidden`](accessControl.md#after-completion) setting keeps completed exam questions hidden while the total score remains visible by default. This does not prevent students from seeing questions or grading feedback while they are taking the exam.
 
 ## Asynchronous, timed exams
 
@@ -144,7 +144,7 @@ This configuration is good when:
 
   !!! warning
 
-        Students with custom accommodations should use student-specific overrides or student-label overrides. If a student matches multiple label overrides, lower overrides in `accessControl` take priority.
+        Students with custom accommodations should use student-specific overrides or student-label overrides. If a student matches multiple label overrides, [override priority](accessControl.md#override-priority) determines which settings apply.
 
 - There is no need for conflict exams because students can choose their own time
 
