@@ -1,6 +1,10 @@
 -- BLOCK select_access_control_rules
 SELECT
-  to_jsonb(aacr.*) AS access_control_rule,
+  a.id AS assessment_id,
+  CASE
+    WHEN aacr.id IS NULL THEN NULL
+    ELSE to_jsonb(aacr.*)
+  END AS access_control_rule,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE
@@ -61,24 +65,26 @@ SELECT
       ld.assessment_access_control_rule_id = aacr.id
   ) AS late_deadlines
 FROM
-  assessment_access_control_rules aacr
-  JOIN assessments a ON a.id = aacr.assessment_id
+  assessments a
+  LEFT JOIN assessment_access_control_rules aacr ON aacr.assessment_id = a.id
   LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
   LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
 WHERE
   (
     $assessment_id::bigint IS NOT NULL
-    AND aacr.assessment_id = $assessment_id
+    AND a.id = $assessment_id
   )
   OR (
     $course_instance_id::bigint IS NOT NULL
     AND a.course_instance_id = $course_instance_id
+    AND a.modern_access_control
     AND a.deleted_at IS NULL
   )
 GROUP BY
+  a.id,
   aacr.id
 ORDER BY
-  aacr.assessment_id,
+  a.id,
   CASE aacr.target_type
     WHEN 'none' THEN 0
     WHEN 'student_label' THEN 1
