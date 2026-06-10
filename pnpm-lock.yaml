@@ -49,6 +49,9 @@ importers:
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:packages/tsconfig
+      '@types/node':
+        specifier: ^24.12.4
+        version: 24.12.4
       '@typescript/native-preview':
         specifier: beta
         version: 7.0.0-dev.20260421.2
