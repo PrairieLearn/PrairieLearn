@@ -89,7 +89,7 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
     });
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
       const maxSizeLabel = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, { round: 0, standard: 'jedec' });
-      res.status(413).json({ error: `The maximum upload size is ${maxSizeLabel}.` });
+      res.status(413).json({ error: `The maximum import size is ${maxSizeLabel}.` });
       return;
     }
     next(err);

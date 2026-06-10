@@ -510,9 +510,12 @@ function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
-  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  const afterLastCredit =
+    dateControl.afterLastDeadline?.allowSubmissions === true
+      ? dateControl.afterLastDeadline.credit
+      : 0;
   if (
-    dateControl.afterLastDeadline &&
+    dateControl.afterLastDeadline?.allowSubmissions === true &&
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {

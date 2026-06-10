@@ -1,4 +1,5 @@
 import importlib
+import json
 from typing import Any
 
 import pytest
@@ -128,36 +129,127 @@ def test_prepare_no_correct_answers_default_raises() -> None:
 
 
 @pytest.mark.parametrize(
+    "attr",
+    ['all-of-the-above="true"', 'none-of-the-above="true"'],
+    ids=["aota_boolean", "nota_boolean"],
+)
+def test_prepare_allows_aota_nota_boolean_with_builtin_grading(attr: str) -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            attr,
+            '<pl-answer correct="true">A</pl-answer><pl-answer correct="true">B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert "survey" in data["params"]
+
+
+def test_prepare_allows_python_float_score() -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true" score=".5">A</pl-answer><pl-answer>B</pl-answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+    assert data["params"]["survey"][0]["score"] == pytest.approx(0.5)
+
+
+def test_prepare_rejects_score_outside_range() -> None:
+    with pytest.raises(ValueError, match="must be a number in the range"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                answers='<pl-answer correct="true" score="1.5">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("attr", "match"),
+    [
+        ('size="5"', 'is only allowed when "display" is "dropdown"'),
+        ('placeholder="Pick one"', 'is only allowed when "display" is "dropdown"'),
+    ],
+    ids=["size", "placeholder"],
+)
+def test_prepare_requires_dropdown_for_dropdown_attributes(
+    attr: str, match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        pl_multiple_choice.prepare(
+            mc_html(
+                attr,
+                '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+def test_prepare_allows_duplicate_visible_text_with_different_markup() -> None:
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl-answer correct="true"><strong>A</strong></pl-answer><pl-answer>A</pl-answer>',
+            builtin_grading=True,
+        ),
+        _make_question_data(),
+    )
+
+
+def test_prepare_rejects_duplicate_external_json_answers(tmp_path: Any) -> None:
+    answers_path = tmp_path / "answers.json"
+    answers_path.write_text(json.dumps({"correct": ["A"], "incorrect": ["A"]}))
+
+    with pytest.raises(ValueError, match="duplicate answer choices"):
+        pl_multiple_choice.prepare(
+            mc_html(
+                f'external-json="{answers_path}"',
+                answers="",
+                builtin_grading=True,
+            ),
+            _make_question_data(),
+        )
+
+
+@pytest.mark.parametrize(
     ("html", "match"),
     [
-        (mc_html('weight="2"'), r"weight.*should not be set"),
+        (mc_html('weight="2"'), r'"weight" on <pl-multiple-choice> is only allowed'),
         (
             mc_html(
                 'all-of-the-above="correct"',
                 '<pl-answer correct="true">A</pl-answer>'
                 '<pl-answer correct="true">B</pl-answer>',
             ),
-            r"all-of-the-above.*true or false",
+            r'"all-of-the-above" on <pl-multiple-choice> cannot use the grading values',
         ),
         (
             mc_html(
                 'none-of-the-above="correct"',
                 '<pl-answer correct="true">A</pl-answer><pl-answer>B</pl-answer>',
             ),
-            r"none-of-the-above.*true or false",
+            r'"none-of-the-above" on <pl-multiple-choice> cannot use the grading values',
         ),
-        (mc_html('hide-score-badge="true"'), r"hide-score-badge.*should not be set"),
+        (
+            mc_html('hide-score-badge="true"'),
+            r'"hide-score-badge" on <pl-multiple-choice> is only allowed',
+        ),
         (
             mc_html(
                 answers='<pl-answer score="0.5">A</pl-answer><pl-answer>B</pl-answer>'
             ),
-            r"score.*should not be set",
+            r'"score" on <pl-answer> inside <pl-multiple-choice> is only allowed',
         ),
         (
             mc_html(
                 answers='<pl-answer feedback="Nice try">A</pl-answer><pl-answer>B</pl-answer>'
             ),
-            r"feedback.*should not be set",
+            r'"feedback" on <pl-answer> inside <pl-multiple-choice> is only allowed',
         ),
     ],
     ids=[

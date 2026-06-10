@@ -981,13 +981,6 @@ export function validateRule(
   }
 
   if (
-    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
-    rule.dateControl.afterLastDeadline.credit !== undefined
-  ) {
-    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
-  }
-
-  if (
     rule.afterComplete?.questions?.hidden === false &&
     (rule.afterComplete.questions.visibleFromDate !== undefined ||
       rule.afterComplete.questions.visibleUntilDate !== undefined)
