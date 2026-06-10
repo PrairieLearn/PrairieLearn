@@ -68,8 +68,11 @@ plugins:
         - overrides/**
         - mkdocstrings/**
         - pyproject.toml
+        - assessment/accessControl.md
+        - assessment/accessControlModern.md
   - gen-files:
       scripts:
+        - docs/scripts/gen_access_control_aliases.py
         - docs/scripts/gen_python_nav.py
         - docs/scripts/gen_additional_readmes.py
         - docs/scripts/gen_jsonschemas.py
@@ -219,8 +222,6 @@ nav:
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
-          # TODO: unhide once modern access control is generally available.
-          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
@@ -336,6 +337,7 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+      - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
 
 not_in_nav: |
   workshop/lesson1.md
@@ -353,7 +355,6 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
-  assessment/accessControlModern.md
   importingContent.md
 
 validation:

@@ -204,7 +204,7 @@ The **Access** tab summarizes the release window and due-date credit:
 
 ![Assessment Access tab showing modern access control defaults](screenshots/12-assessment-access.png)
 
-For late credit, time limits, student-specific overrides, exam mode, and PrairieTest integration, see the [assessment access control documentation](../assessment/accessControlModern.md).
+To learn more about the different access control options, see the [assessment access control documentation](../assessment/accessControl.md).
 
 ## 9. Preview as a student
 
