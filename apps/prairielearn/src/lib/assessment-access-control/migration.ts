@@ -1037,7 +1037,13 @@ export function migrateAssessmentJson(
 ): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+  if (!Array.isArray(allowAccess)) return null;
+
+  if (allowAccess.length === 0) {
+    data.accessControl = [];
+    delete data.allowAccess;
+    return { json: JSON.stringify(data), errors: [], notes: [] };
+  }
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
@@ -1066,11 +1072,14 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+  if (!Array.isArray(allowAccess)) {
     return null;
   }
 
-  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
+  const { errors, notes, hasUidRules } =
+    allowAccess.length === 0
+      ? { errors: [], notes: [], hasUidRules: false }
+      : migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,

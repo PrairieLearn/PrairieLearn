@@ -1698,7 +1698,7 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
-  it('returns null for empty allowAccess array', async () => {
+  it('analyzes an empty allowAccess array as legacy access control', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1711,7 +1711,12 @@ describe('analyzeAssessmentFile', () => {
           }),
         );
         const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
-        assert.isNull(result);
+        assert.isNotNull(result);
+        assert.equal(result.tid, 'e01');
+        assert.equal(result.ruleCount, 0);
+        assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -2139,6 +2144,22 @@ describe('applyMigrationToAssessmentFile', () => {
       },
       { unsafeCleanup: true },
     );
+  });
+});
+
+describe('migrateAssessmentJson', () => {
+  it('converts empty allowAccess to empty accessControl', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    assert.deepEqual(result.notes, []);
+    assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
   });
 });
 
