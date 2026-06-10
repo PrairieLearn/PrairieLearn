@@ -16,9 +16,9 @@ classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "coloraide==8.8.1",
   "jsonschema==4.25.1",
-  "lxml==6.1.0",
+  "lxml==6.1.1",
   "networkx==3.6.1",
-  "numpy==2.4.4",
+  "numpy==2.4.6",
   "pandas==2.3.3",
   "pint==0.25.3",
   "rich==15.0.0",
