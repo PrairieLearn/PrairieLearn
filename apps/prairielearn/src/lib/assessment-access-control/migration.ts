@@ -1072,9 +1072,7 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!Array.isArray(allowAccess)) {
-    return null;
-  }
+  if (!Array.isArray(allowAccess)) return null;
 
   const { errors, notes, hasUidRules } =
     allowAccess.length === 0
