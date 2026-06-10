@@ -171,21 +171,43 @@ function schemaRelPath(tag: string, schemaTag: string): string {
   return `apps/prairielearn/elements/${tag}/schemas/${schemaTag}.json`;
 }
 
+interface ElementSchemas {
+  /** Schema contents keyed by schema file name (without `.json`). */
+  files: Map<string, Record<string, unknown>>;
+  /** Schema file name for each dotted child path that declares a schema. */
+  fileNameByPath: Map<string, string>;
+}
+
 /**
- * All generated schema files for an element, keyed by schema file name: the
- * root schema plus one per (possibly nested) child tag that declares a schema.
+ * All generated schema files for an element: the root schema plus one per
+ * (possibly nested) child tag that declares a schema. A child whose schema is
+ * identical to one already collected for the same tag (e.g. `pl-answer` under
+ * `pl-block-group`) reuses that file instead of getting a `parent.child`
+ * variant — the Python runtime loads schemas by tag name and would never read
+ * the duplicate.
  */
-function collectElementSchemas(element: ElementSchemaModule): Map<string, Record<string, unknown>> {
-  const schemas = new Map<string, Record<string, unknown>>([[element.tag, element.schema]]);
+function collectElementSchemas(element: ElementSchemaModule): ElementSchemas {
+  const files = new Map<string, Record<string, unknown>>([[element.tag, element.schema]]);
+  const fileNameByPath = new Map<string, string>();
   const visit = (children: Record<string, ElementChildSchema>, prefix: string[]) => {
     for (const [childTag, child] of Object.entries(children)) {
       const childPath = [...prefix, childTag];
-      if (child.schema) schemas.set(childPath.join('.'), child.schema);
+      if (child.schema) {
+        const dotted = childPath.join('.');
+        const schemaJson = JSON.stringify(child.schema);
+        const existing = [...files.keys()].find(
+          (name) =>
+            (name === childTag || name.endsWith(`.${childTag}`)) &&
+            JSON.stringify(files.get(name)) === schemaJson,
+        );
+        if (!existing) files.set(dotted, child.schema);
+        fileNameByPath.set(dotted, existing ?? dotted);
+      }
       if (child.children) visit(child.children, childPath);
     }
   };
   if (element.children) visit(element.children, []);
-  return schemas;
+  return { files, fileNameByPath };
 }
 
 /** The `./`-prefixed path used to reference a schema from `.htmlmustache.jsonc`. */
@@ -231,7 +253,14 @@ function toOnDiskCustomTag(
   if (!element) return tag;
   const onDisk: CustomTag = { ...tag, schema: schemaConfigPath(tag.name, tag.name) };
   if (tag.children) {
-    onDisk.children = toOnDiskChildTags(tag.name, tag.children, element.element.children ?? {}, []);
+    const { fileNameByPath } = collectElementSchemas(element.element);
+    onDisk.children = toOnDiskChildTags(
+      tag.name,
+      tag.children,
+      element.element.children ?? {},
+      [],
+      fileNameByPath,
+    );
   }
   return onDisk;
 }
@@ -241,17 +270,25 @@ function toOnDiskChildTags(
   children: ChildTag[],
   childSchemas: Record<string, ElementChildSchema>,
   prefix: string[],
+  fileNameByPath: Map<string, string>,
 ): ChildTag[] {
   return children.map((child) => {
     const node = childSchemas[child.name];
     if (!node) return child;
     const childPath = [...prefix, child.name];
     const onDisk: ChildTag = { ...child };
-    if (node.schema) {
-      onDisk.schema = schemaConfigPath(rootTag, childPath.join('.'));
+    const fileName = fileNameByPath.get(childPath.join('.'));
+    if (fileName) {
+      onDisk.schema = schemaConfigPath(rootTag, fileName);
     }
     if (child.children && node.children) {
-      onDisk.children = toOnDiskChildTags(rootTag, child.children, node.children, childPath);
+      onDisk.children = toOnDiskChildTags(
+        rootTag,
+        child.children,
+        node.children,
+        childPath,
+        fileNameByPath,
+      );
     }
     return onDisk;
   });
@@ -313,7 +350,7 @@ const elements = await loadElements();
 const baseFiles: Record<string, string> = {};
 const schemaPaths = new Set<string>();
 for (const { tag, element } of elements) {
-  for (const [schemaTag, schema] of collectElementSchemas(element)) {
+  for (const [schemaTag, schema] of collectElementSchemas(element).files) {
     const filePath = path.resolve(REPO_ROOT, schemaRelPath(tag, schemaTag));
     baseFiles[filePath] = await format(filePath, `${JSON.stringify(schema, null, 2)}\n`);
     schemaPaths.add(filePath);

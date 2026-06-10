@@ -178,7 +178,7 @@
           "children": [
             {
               "name": "pl-answer",
-              "schema": "./apps/prairielearn/elements/pl-order-blocks/schemas/pl-block-group.pl-answer.json"
+              "schema": "./apps/prairielearn/elements/pl-order-blocks/schemas/pl-answer.json"
             }
           ]
         }
