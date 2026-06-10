@@ -187,6 +187,13 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+### Grading without a fixed correct answer
+
+A custom `grade` function is not limited to comparing the submission against `data["correct_answers"]`:
+
+- For questions with many correct answers (e.g., "give an example of a matrix with some property"), the grade function can check that the submitted answer satisfies the required property. In this case, `data["correct_answers"]` can hold one example of a valid answer to show to students. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeAnyValidAnswer) for an example.
+- For questions where students collect their own data (e.g., measurements from a lab experiment), the grade function can compute the expected answer from the student's own submitted values, so that any answer consistent with their data is accepted. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFromStudentData) for an example.
+
 ### Providing feedback
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.

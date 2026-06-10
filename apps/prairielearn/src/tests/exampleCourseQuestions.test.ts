@@ -14,6 +14,8 @@ import { withConfig } from './utils/config.js';
 const qidsExampleCourse = [
   'demo/calculation',
   'demo/custom/element',
+  'demo/custom/gradeAnyValidAnswer',
+  'demo/custom/gradeFromStudentData',
   'demo/custom/gradeFunction',
   'demo/fixedCheckbox',
   'demo/matrixAlgebra',

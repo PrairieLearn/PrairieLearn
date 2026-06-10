@@ -1,0 +1,27 @@
+<pl-question-panel>
+  <p>{{params.prompt}}</p>
+</pl-question-panel>
+
+<pl-answer-panel>
+  <p>This question has many correct answers; the answer shown here is just one example.</p>
+</pl-answer-panel>
+
+<pl-matrix-component-input answers-name="A" label="$A = $"></pl-matrix-component-input>
+
+<pl-submission-panel>
+  {{#feedback.A}}
+  <p>{{.}}</p>
+  {{/feedback.A}}
+</pl-submission-panel>
+
+<pl-question-panel>
+  {{! This is not part of the question, and is included for documentation purposes }}
+  <div class="alert alert-info p-2" role="alert">
+    <small>
+      Note: this is an example of a question with many correct answers. Instead of comparing the
+      submission against a fixed correct answer, the <code>grade</code> function in
+      <code>server.py</code> checks whether the submitted matrix satisfies the required property.
+      <pl-github-link></pl-github-link>
+    </small>
+  </div>
+</pl-question-panel>
