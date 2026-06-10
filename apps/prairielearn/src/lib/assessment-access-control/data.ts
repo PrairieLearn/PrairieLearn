@@ -89,21 +89,21 @@ function buildDateControl(
       })) ?? null;
   }
 
-  if (rule.date_control_after_last_deadline_overridden) {
-    if (rule.date_control_after_last_deadline_allow_submissions != null) {
-      dateControl.afterLastDeadline = {
-        allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
-        credit: rule.date_control_after_last_deadline_credit,
-      };
-    } else {
-      dateControl.afterLastDeadline = null;
-    }
-  } else if (rule.date_control_after_last_deadline_allow_submissions != null) {
-    // Legacy rows written before the overridden flag was added.
+  // Mirror `dbBaseRowToAccessControlJson`: emit submissions-allowed with an
+  // explicit credit for `true`, and an explicit disable only for non-default
+  // rules so an override still overrides the inherited value. The default
+  // rule's `false` is left implicit — it's the merge base, so omitting it is
+  // equivalent.
+  const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
+  if (allowSubmissions === true) {
+    const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
-      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
-      credit: rule.date_control_after_last_deadline_credit,
+      allowSubmissions,
+      credit: credit ?? 0,
     };
+  } else if (allowSubmissions === false && !isDefaultRule) {
+    dateControl.afterLastDeadline = { allowSubmissions };
   }
 
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;

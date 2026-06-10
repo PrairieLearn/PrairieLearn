@@ -91,7 +91,11 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineField = mapField(afterLastDeadline);
+  // Only materialize the default `afterLastDeadline: false` when date control
+  // actually exists. Otherwise `null` keeps the date-control section absent.
+  const defaultRuleHasDateControl = isDefaultRule && dateControl.release != null;
+  const afterLastDeadlineAllowSubmissions =
+    afterLastDeadline?.allowSubmissions ?? (defaultRuleHasDateControl ? false : null);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -114,13 +118,9 @@ function prepareRuleRow(
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
-    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
-    date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineField.value?.allowSubmissions ?? null,
+    date_control_after_last_deadline_allow_submissions: afterLastDeadlineAllowSubmissions,
     date_control_after_last_deadline_credit:
-      afterLastDeadlineField.value?.allowSubmissions === true
-        ? (afterLastDeadlineField.value.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,

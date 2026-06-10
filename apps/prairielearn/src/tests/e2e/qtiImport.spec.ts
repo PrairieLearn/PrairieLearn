@@ -2,7 +2,7 @@ import { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 
 import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
@@ -75,7 +75,7 @@ async function buildQtiZip(
   </resources>
 </manifest>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   if (options?.includeManifest !== false) {
     archive.append(manifest, { name: 'imsmanifest.xml' });
@@ -129,7 +129,7 @@ async function buildQtiZipWithUnusedAsset(destPath: string): Promise<void> {
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'asset-quiz.xml' });
   archive.append(Buffer.from('used image'), { name: 'web_resources/used.png' });
@@ -225,7 +225,7 @@ async function buildEmbeddedBankCourseZip(destPath: string): Promise<void> {
   </resources>
 </manifest>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(manifest, { name: 'imsmanifest.xml' });
   archive.append('<quiz/>', { name: 'embedded_bank_assessment/assessment_meta.xml' });
@@ -266,7 +266,7 @@ async function buildExternalBankAssessmentZip(
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'bank-ref.xml' });
   void archive.finalize();
@@ -310,7 +310,7 @@ async function buildMultiExternalBankAssessmentZip(destPath: string): Promise<vo
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'multi-bank-ref.xml' });
   void archive.finalize();
@@ -376,7 +376,7 @@ async function buildQuestionBankZip(
   </objectbank>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'external-bank.xml' });
   void archive.finalize();
