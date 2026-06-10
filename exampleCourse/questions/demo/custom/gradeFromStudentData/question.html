@@ -1,19 +1,12 @@
 <pl-question-panel>
   <p>
-    The purpose of this experiment is to determine the convective heat transfer coefficients for
-    natural convection over pin fins.
+    The purpose of this experiment is to estimate the gravitational acceleration $g$ using a simple
+    pendulum.
   </p>
 
   <p>
-    Seven thermocouples are embedded along the length of the fin. One thermocouple is placed at the
-    base of the fin, which is the reference position $x_0 = 0$. We denote the temperature at the
-    base as $T_b = T(x_0)$. The other thermocouples are placed at positions $x_1$, $x_2$, ... with
-    corresponding temperatures $T_1$, $T_2$, etc.
-  </p>
-
-  <p>
-    The pin fin has diameter $D$, length $L$ and is made of stainless steel with thermal
-    conductivity $k = {{params.k}} \rm\ W/mK$.
+    Set up the pendulum, displace it from equilibrium by a small angle, and release it. Use a
+    stopwatch to time ten complete swings.
   </p>
 
   <hr>
@@ -26,29 +19,14 @@
 </pl-question-panel>
 
 <pl-hide-in-panel answer="true">
-  <p>Measure the dimensions of the fin (in meters):</p>
-
-  <p>
-    <pl-number-input answers-name="D" label="$D = $" rtol="1e-1" atol="0" size="20" suffix="m" show-correct-answer="false"></pl-number-input>
-  </p>
-
+  <p>Measure the length of the pendulum (in meters):</p>
   <p>
     <pl-number-input answers-name="L" label="$L = $" rtol="1e-1" atol="0" size="20" suffix="m" show-correct-answer="false"></pl-number-input>
   </p>
 
-  <p>Record the distance of the first thermocouple from the base of the fin (in meters):</p>
+  <p>Record the time for ten complete swings (in seconds):</p>
   <p>
-    <pl-number-input answers-name="x1" label="$x_1 = $" rtol="1e-1" atol="0" size="20" suffix="m" show-correct-answer="false"></pl-number-input>
-  </p>
-
-  <p>Record the temperature at the first thermocouple from the base (in $^o\rm C$):</p>
-  <p>
-    <pl-number-input answers-name="T1" label="$T_1 = $" rtol="1e-9" atol="25" size="20" suffix="$^o\rm C$" show-correct-answer="false"></pl-number-input>
-  </p>
-
-  <p>Record the temperature at the base (in $^o\rm C$):</p>
-  <p>
-    <pl-number-input answers-name="Tb" label="$T_b = $" rtol="1e-9" atol="25" size="20" suffix="$^o \rm C$" show-correct-answer="false"></pl-number-input>
+    <pl-number-input answers-name="t" label="$t = $" rtol="1e-9" atol="2" size="20" suffix="s" show-correct-answer="false"></pl-number-input>
   </p>
 </pl-hide-in-panel>
 
@@ -59,18 +37,18 @@
   </strong>
 
   <p>
-    Use your data to determine the convective heat transfer rate of the film using the Fourier's
-    law. Assume:
+    Use your data to estimate the gravitational acceleration. The period of one swing is $T =
+    t/10$, and for small angles the pendulum satisfies:
   </p>
-  <p>$\frac{dT}{dx}|_{x=0} \approx \frac{T_1 - T_b}{x_1}$</p>
+  <p>$g = \frac{4\pi^2 L}{T^2}$</p>
 </pl-question-panel>
 
 <p>
-  <pl-number-input answers-name="qf" label="$q_f = $" size="20" suffix="$W$"></pl-number-input>
+  <pl-number-input answers-name="g" label="$g = $" size="20" suffix="$\rm m/s^2$"></pl-number-input>
 </p>
 
 <pl-submission-panel>
-  {{#feedback.qf}}
+  {{#feedback.g}}
   <p>{{.}}</p>
-  {{/feedback.qf}}
+  {{/feedback.g}}
 </pl-submission-panel>
