@@ -43,7 +43,7 @@ function makeFormData(
       due: { date: '2024-04-10T00:00:00', credit: null, customCredit: false },
       earlyDeadlines: [],
       lateDeadlines: [],
-      afterLastDeadline: null,
+      afterLastDeadline: { allowSubmissions: false },
       durationMinutes: null,
       password: null,
       prairieTestExams: [],

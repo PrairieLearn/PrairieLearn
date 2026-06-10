@@ -73,6 +73,13 @@ interface QuestionGenerationUIMessageMetadata {
   job_sequence_id: string | null;
   status: EnumAiQuestionGenerationMessageStatus;
   include_in_context?: boolean;
+  // `user_name` and `created_at` are optional because the streaming assistant
+  // metadata doesn't include them; they're populated for messages loaded from
+  // the database and for optimistic user messages sent by the client.
+  /** Display name of the user who sent the message. Null for assistant messages. */
+  user_name?: string | null;
+  /** ISO timestamp of when the message was sent. */
+  created_at?: string;
 }
 
 const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
@@ -473,7 +480,10 @@ async function createQuestionGenerationAgent({
             return { errors: ['You must generate a question.html file.'], warnings: [] };
           }
 
-          const { errors, warnings } = validateHTML(files['question.html'], !!files['server.py']);
+          const { errors, warnings } = await validateHTML(
+            files['question.html'],
+            !!files['server.py'],
+          );
 
           // When creating a new question, treat warnings as errors — the AI
           // agent should always fix these issues for freshly generated HTML.

@@ -114,6 +114,7 @@ export function InstructorAiGenerateDraftEditor({
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFilesData={questionFilesData}
+          currentUserName={resLocals.authn_user.name}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}

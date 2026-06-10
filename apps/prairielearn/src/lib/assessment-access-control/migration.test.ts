@@ -110,14 +110,14 @@ describe('migrateAllowAccess', () => {
     {
       name: 'prairietest with viewing rule',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
         { startDate: '2024-01-01T00:00:00', active: false },
       ],
       expected: {
         accessControl: {
           dateControl: { release: { date: '2024-01-01T00:00:00' } },
           integrations: {
-            prairieTest: { exams: [{ examUuid: '11111111-1111-1111-1111-111111111111' }] },
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
           },
         },
         errors: [],
@@ -1097,16 +1097,16 @@ describe('migrateAllowAccess', () => {
     {
       name: 'multiple prairietest exams',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65', credit: 100 },
       ],
       expected: {
         accessControl: {
           integrations: {
             prairieTest: {
               exams: [
-                { examUuid: '11111111-1111-1111-1111-111111111111' },
-                { examUuid: '22222222-2222-2222-2222-222222222222' },
+                { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+                { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
               ],
             },
           },
@@ -1119,17 +1119,17 @@ describe('migrateAllowAccess', () => {
     {
       name: 'duplicate prairietest exam rules are collapsed',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65', credit: 100 },
       ],
       expected: {
         accessControl: {
           integrations: {
             prairieTest: {
               exams: [
-                { examUuid: '11111111-1111-1111-1111-111111111111' },
-                { examUuid: '22222222-2222-2222-2222-222222222222' },
+                { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+                { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
               ],
             },
           },
@@ -1142,12 +1142,12 @@ describe('migrateAllowAccess', () => {
     {
       name: 'prairietest rule with password emits a warning note',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100, password: 'discarded' },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100, password: 'discarded' },
       ],
       expected: {
         accessControl: {
           integrations: {
-            prairieTest: { exams: [{ examUuid: '11111111-1111-1111-1111-111111111111' }] },
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
           },
         },
         errors: [],

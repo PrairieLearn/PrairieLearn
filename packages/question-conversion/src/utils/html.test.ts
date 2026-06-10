@@ -145,7 +145,7 @@ describe('resolveImsFileRefs', () => {
     assert.equal(
       result.html,
       '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<video src="{{ options.client_files_question_url }}/clip.webm" />\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.webm"></video>\n' +
         '-->',
     );
     assert.deepEqual(result.skippedFiles, ['clip.webm']);
@@ -296,7 +296,7 @@ describe('rewritePreAsPlCode', () => {
     assert.include(result, '<pl-code');
     assert.notInclude(result, '<span>');
     assert.notInclude(result, '<br>');
-    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, 'for (int i = 0; i &lt;= n; i++)\n');
     assert.include(result, '  // body\n');
   });
 });
@@ -321,5 +321,28 @@ describe('cleanQuestionHtml', () => {
 
   it('trims whitespace', () => {
     assert.equal(cleanQuestionHtml('  <p>Hello</p>  '), '<p>Hello</p>');
+  });
+
+  it('removes Canvas answer blocks from prompt HTML', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<p>Prompt</p><div class="answers"><div class="answers_wrapper"><div>Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('removes answer blocks with extra classes and attributes', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<div class="prompt"><p>Prompt</p><div id="answer-list" class="canvas answers"><div class="answers_wrapper hidden">Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('preserves answers divs without an answers_wrapper child', () => {
+    const html = '<p>Prompt</p><div class="answers"><p>Discussion of answers</p></div>';
+    assert.equal(cleanQuestionHtml(html), html);
   });
 });

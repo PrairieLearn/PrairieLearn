@@ -1,8 +1,8 @@
 import assert from 'node:assert';
+import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -63,6 +63,10 @@ function todayAsDatetimeLocal(
 ): string {
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   return `${today.toString()}T00:00:00`;
+}
+
+export function getHash(contents: string | Buffer) {
+  return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
 async function syncCourseFromDisk(
@@ -2313,10 +2317,6 @@ export class FileUploadEditor extends Editor {
     this.fileContents = fileContents;
   }
 
-  getHashFromBuffer(buffer: Buffer) {
-    return sha256(buffer.toString('utf8')).toString();
-  }
-
   async shouldEdit() {
     debug('look for old contents');
     let contents;
@@ -2332,8 +2332,8 @@ export class FileUploadEditor extends Editor {
     }
 
     debug('get hash of old contents and of new contents');
-    const oldHash = this.getHashFromBuffer(contents);
-    const newHash = this.getHashFromBuffer(this.fileContents);
+    const oldHash = getHash(contents);
+    const newHash = getHash(this.fileContents);
     debug('oldHash: ' + oldHash);
     debug('newHash: ' + newHash);
     if (oldHash === newHash) {
@@ -2473,10 +2473,6 @@ export class FileModifyEditor extends Editor {
     this.force = force ?? false;
   }
 
-  getHash(contents: string) {
-    return sha256(contents).toString();
-  }
-
   assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
       throw new AugmentedError('Invalid file path', {
@@ -2515,7 +2511,7 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    const editHash = this.getHash(this.editContents);
+    const editHash = getHash(this.editContents);
 
     // When the buffer still matches what the editor was opened with, there is
     // nothing to save: writing nothing cannot clobber a concurrent change, so
@@ -2529,7 +2525,7 @@ export class FileModifyEditor extends Editor {
     let diskHash: string | null = null;
     try {
       const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-      diskHash = this.getHash(b64EncodeUnicode(diskContentsUTF));
+      diskHash = getHash(b64EncodeUnicode(diskContentsUTF));
     } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
       // The file was deleted on disk since the editor opened it.

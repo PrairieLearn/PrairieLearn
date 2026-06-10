@@ -28,7 +28,7 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.4 <2",
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/async": "^3.2.25",
     "@types/body-parser": "^1.19.6 <2",
     "@types/debug": "^4.1.13",

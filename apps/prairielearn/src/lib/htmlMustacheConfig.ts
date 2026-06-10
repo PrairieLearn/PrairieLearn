@@ -1,6 +1,7 @@
 import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-// This should be kept in sync with `.htmlmustache.jsonc`
+import { elementCustomTags } from './element-schemas/index.js';
+
 const drawingObjectTags: CustomTag[] = [
   { name: 'pl-3pointrod' },
   { name: 'pl-4pointrod' },
@@ -48,8 +49,15 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
+// Source of truth for the htmlmustache linter config. The on-disk
+// `.htmlmustache.jsonc` (used by the standalone CLI / editor integration) is
+// generated from this file by `scripts/gen-element-schemas.mts`; run
+// `make update-element-schemas` after editing.
 export const htmlMustacheConfig: Config = {
   printWidth: 100,
+  customTagDefaults: {
+    allowBooleanAttributes: false,
+  },
   noBreakDelimiters: [
     { start: '$', end: '$' },
     { start: '$$', end: '$$' },
@@ -202,6 +210,8 @@ export const htmlMustacheConfig: Config = {
     },
   ],
   customTags: [
+    // Elements with generated JSON schemas (see element-schemas/).
+    ...elementCustomTags,
     {
       name: 'pl-code',
       display: 'block',
@@ -255,10 +265,6 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-matrix-input' },
     {
       name: 'pl-checkbox',
-      children: [{ name: 'pl-answer' }],
-    },
-    {
-      name: 'pl-multiple-choice',
       children: [{ name: 'pl-answer' }],
     },
     {
@@ -322,6 +328,7 @@ export const htmlMustacheConfig: Config = {
       name: 'pl-matrix-output',
       children: [{ name: 'variable' }],
     },
+    // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
     { name: 'pl-github-link' },
     // pl-drawing
     {
