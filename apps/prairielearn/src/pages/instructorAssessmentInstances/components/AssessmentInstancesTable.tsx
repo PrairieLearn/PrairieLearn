@@ -458,12 +458,12 @@ export function AssessmentInstancesTable({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <span className="text-nowrap">
-              {row.time_remaining}
+            <span className="text-nowrap d-flex align-items-center">
+              <span className="flex-shrink-1 text-truncate">{row.time_remaining}</span>
               {canEdit ? (
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost text-muted ms-1"
+                  className="btn btn-xs btn-ghost text-muted ms-1 flex-shrink-0"
                   aria-label="Change time limit"
                   onClick={() => setTimeLimitRow(row)}
                 >
