@@ -29,7 +29,7 @@ import prettier from 'prettier';
 import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import type {
-  ElementSchemaChild,
+  ElementChildSchema,
   ElementSchemaModule,
 } from '../apps/prairielearn/src/lib/element-schemas/types.js';
 
@@ -172,19 +172,20 @@ function schemaRelPath(tag: string, schemaTag: string): string {
 }
 
 /**
- * Flatten an element's (possibly nested) children into a map of tag name to JSON
- * Schema. A child tag that recurs at multiple depths (e.g. `pl-answer` directly
- * under `pl-order-blocks` and again under `pl-block-group`) shares a single
- * generated schema file, so identical schemas collapse to one entry.
+ * All generated schema files for an element, keyed by schema file name: the
+ * root schema plus one per (possibly nested) child tag that declares a schema.
  */
-function collectChildSchemas(
-  children: Record<string, ElementSchemaChild> | undefined,
-  out: Map<string, Record<string, unknown>>,
-): void {
-  for (const [name, child] of Object.entries(children ?? {})) {
-    out.set(name, child.schema);
-    collectChildSchemas(child.children, out);
-  }
+function collectElementSchemas(element: ElementSchemaModule): Map<string, Record<string, unknown>> {
+  const schemas = new Map<string, Record<string, unknown>>([[element.tag, element.schema]]);
+  const visit = (children: Record<string, ElementChildSchema>, prefix: string[]) => {
+    for (const [childTag, child] of Object.entries(children)) {
+      const childPath = [...prefix, childTag];
+      if (child.schema) schemas.set(childPath.join('.'), child.schema);
+      if (child.children) visit(child.children, childPath);
+    }
+  };
+  if (element.children) visit(element.children, []);
+  return schemas;
 }
 
 /** The `./`-prefixed path used to reference a schema from `.htmlmustache.jsonc`. */
@@ -214,25 +215,7 @@ function buildRegistry(elements: DiscoveredElement[]): string {
   ].join('\n');
 }
 
-/**
- * Convert a runtime custom tag to its on-disk form. Element tags carry inline
- * JSON Schema objects at runtime, but `.htmlmustache.jsonc` references the
- * generated schema files by path so the CLI (and Python) can load them lazily.
- * Non-element tags are returned unchanged.
- */
-function toOnDiskChildTag(child: CustomTag, elementTag: string): CustomTag {
-  // Inline schemas come from the element module; replace each with the generated
-  // file path (keyed by the child's own tag name). Children that carry no schema
-  // — e.g. structural-only tags — are left untouched.
-  const onDisk: CustomTag = { ...child };
-  if (child.schema !== undefined) {
-    onDisk.schema = schemaConfigPath(elementTag, child.name);
-  }
-  if (child.children) {
-    onDisk.children = child.children.map((grandchild) => toOnDiskChildTag(grandchild, elementTag));
-  }
-  return onDisk;
-}
+type ChildTag = NonNullable<CustomTag['children']>[number];
 
 function toOnDiskCustomTag(
   tag: CustomTag,
@@ -242,9 +225,30 @@ function toOnDiskCustomTag(
   if (!element) return tag;
   const onDisk: CustomTag = { ...tag, schema: schemaConfigPath(tag.name, tag.name) };
   if (tag.children) {
-    onDisk.children = tag.children.map((child) => toOnDiskChildTag(child, tag.name));
+    onDisk.children = toOnDiskChildTags(tag.name, tag.children, element.element.children ?? {}, []);
   }
   return onDisk;
+}
+
+function toOnDiskChildTags(
+  rootTag: string,
+  children: ChildTag[],
+  childSchemas: Record<string, ElementChildSchema>,
+  prefix: string[],
+): ChildTag[] {
+  return children.map((child) => {
+    const node = childSchemas[child.name];
+    if (!node) return child;
+    const childPath = [...prefix, child.name];
+    const onDisk: ChildTag = { ...child };
+    if (node.schema) {
+      onDisk.schema = schemaConfigPath(rootTag, childPath.join('.'));
+    }
+    if (child.children && node.children) {
+      onDisk.children = toOnDiskChildTags(rootTag, child.children, node.children, childPath);
+    }
+    return onDisk;
+  });
 }
 
 /**
@@ -303,15 +307,10 @@ const elements = await loadElements();
 const baseFiles: Record<string, string> = {};
 const schemaPaths = new Set<string>();
 for (const { tag, element } of elements) {
-  const rootPath = path.resolve(REPO_ROOT, schemaRelPath(tag, tag));
-  baseFiles[rootPath] = await format(rootPath, `${JSON.stringify(element.schema, null, 2)}\n`);
-  schemaPaths.add(rootPath);
-  const childSchemas = new Map<string, Record<string, unknown>>();
-  collectChildSchemas(element.children, childSchemas);
-  for (const [childTag, childSchema] of childSchemas) {
-    const childPath = path.resolve(REPO_ROOT, schemaRelPath(tag, childTag));
-    baseFiles[childPath] = await format(childPath, `${JSON.stringify(childSchema, null, 2)}\n`);
-    schemaPaths.add(childPath);
+  for (const [schemaTag, schema] of collectElementSchemas(element)) {
+    const filePath = path.resolve(REPO_ROOT, schemaRelPath(tag, schemaTag));
+    baseFiles[filePath] = await format(filePath, `${JSON.stringify(schema, null, 2)}\n`);
+    schemaPaths.add(filePath);
   }
 }
 baseFiles[REGISTRY_PATH] = await format(REGISTRY_PATH, buildRegistry(elements));

@@ -79,7 +79,13 @@ def _tag_name(element: lxml.html.HtmlElement) -> str:
 
 
 def _normalize_attrs(attribs: Mapping[str, Any]) -> dict[str, Any]:
-    return {key.replace("_", "-"): value for key, value in attribs.items()}
+    # When both spellings are present, the hyphenated one wins regardless of
+    # attribute order, matching `_get_attrib()`.
+    return {
+        key.replace("_", "-"): value
+        for key, value in attribs.items()
+        if "_" not in key or key.replace("_", "-") not in attribs
+    }
 
 
 def _tag_context(tag: str, parent_tag: str | None) -> str:

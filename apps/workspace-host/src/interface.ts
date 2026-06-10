@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
@@ -1116,7 +1116,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   archive.pipe(res);
 
   archive.on('error', (err) => {
