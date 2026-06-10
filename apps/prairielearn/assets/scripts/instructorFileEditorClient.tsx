@@ -178,6 +178,14 @@ class InstructorFileEditor {
         ?.addEventListener('click', async () => await this.reformatJSONFile());
     }
 
+    if (element.dataset.lintHtmlMustache === 'true') {
+      document.dispatchEvent(
+        new CustomEvent('pl:html-mustache-linter-attach', {
+          detail: { editor: this.editor },
+        }),
+      );
+    }
+
     // Override the save button click to show confirmation modal if needed
     this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
   }
@@ -244,7 +252,13 @@ class InstructorFileEditor {
           return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
-            if (parsedContent.uuid !== this.fileMetadata.uuid) {
+            if (typeof parsedContent.uuid !== 'string') {
+              return {
+                errorCode: SaveErrorCode.UUID_CHANGED,
+                originalUuid: this.fileMetadata.uuid,
+              };
+            }
+            if (parsedContent.uuid.toLowerCase() !== this.fileMetadata.uuid.toLowerCase()) {
               return {
                 errorCode: SaveErrorCode.UUID_CHANGED,
                 originalUuid: this.fileMetadata.uuid,
@@ -439,7 +453,7 @@ onDocumentReady(() => {
         .querySelectorAll('.js-version-choice-content')
         .forEach((element) => element.remove());
 
-      // Show div that contains "Show help" and "Save and sync" buttons
+      // Show div that contains "Show help" and "Save" buttons
       window.bootstrap.Collapse.getOrCreateInstance('#buttons').show();
 
       draftEditor?.takeOver();

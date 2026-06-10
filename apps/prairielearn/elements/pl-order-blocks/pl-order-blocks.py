@@ -5,7 +5,7 @@ import os
 import random
 from collections import defaultdict
 from copy import deepcopy
-from typing import TypedDict
+from typing import NotRequired, TypedDict, assert_never
 
 import chevron
 import lxml.html
@@ -24,6 +24,7 @@ from dag_checker import (
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
+    DisplayBlocksType,
     DistractorOrderType,
     FeedbackType,
     FormatType,
@@ -34,7 +35,6 @@ from order_blocks_options_parsing import (
     SolutionPlacementType,
     SourceBlocksOrderType,
 )
-from typing_extensions import NotRequired, assert_never
 
 
 class OrderBlocksAnswerData(TypedDict):
@@ -43,6 +43,7 @@ class OrderBlocksAnswerData(TypedDict):
     ranking: int
     index: int
     tag: str
+    initially_placed: bool
     distractor_for: str | None
     depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
@@ -220,6 +221,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
             "ranking": answer_options.ranking,
             "index": i,
             "tag": answer_options.tag,
+            "initially_placed": answer_options.initially_placed,
             "distractor_for": answer_options.distractor_for,
             "depends": answer_options.depends,  # only used with DAG grader
             "group_info": answer_options.group_info,  # only used with DAG grader
@@ -328,6 +330,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     order_blocks_options = OrderBlocksOptions(element)
     answer_name = order_blocks_options.answers_name
     inline = order_blocks_options.inline
+    display_blocks = order_blocks_options.display_blocks
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
     has_optional_blocks = order_blocks_options.has_optional_blocks
@@ -339,18 +342,41 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     grading_method = order_blocks_options.grading_method
 
+    score = data["partial_scores"].get(answer_name, {"score": None}).get("score", None)
+    score_params = {}
+    if score is not None:
+        try:
+            score = float(score * 100)
+            if score >= 100:
+                score_params["correct"] = True
+            elif score > 0:
+                score_params["partially_correct"] = math.floor(score)
+            else:
+                score_params["incorrect"] = True
+        except Exception as exc:
+            raise ValueError(
+                f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
+            ) from exc
+    submission_was_graded = score is not None
+    uuid = pl.get_uuid()
+
     if data["panel"] == "question":
         editable = data["editable"]
+
+        all_blocks = data["params"][answer_name]
+        initially_placed_blocks = sorted(
+            [block for block in all_blocks if block.get("initially_placed")],
+            key=lambda x: x["index"],
+        )
 
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update indentation
         # fields to values suitable for rendering.
         student_previous_submission = deepcopy(
-            data["submitted_answers"].get(answer_name, [])
+            data["submitted_answers"].get(answer_name, initially_placed_blocks)
         )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
 
-        all_blocks = data["params"][answer_name]
         source_blocks = [
             {**block, "indent_depth": 0}
             for block in all_blocks
@@ -382,9 +408,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if check_indentation:
             help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
 
-        uuid = pl.get_uuid()
         html_params = {
             "question": True,
+            "parse-error": data["format_errors"].get(answer_name, None),
+            "submission_was_graded": submission_was_graded,
             "answer_name": answer_name,
             "source-header": order_blocks_options.source_header,
             "solution-header": order_blocks_options.solution_header,
@@ -395,15 +422,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if dropzone_layout is SolutionPlacementType.BOTTOM
                 else "pl-order-blocks-right"
             ),
-            "inline": str(inline).lower(),
+            "inline": "true" if inline or display_blocks.is_inline() else "false",
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
             "max_indent": order_blocks_options.max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
-            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal"
+            if inline or display_blocks.is_inline()
+            else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
+            else "",
         }
+        html_params.update(score_params)
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -413,12 +447,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
-        score = None
-        feedback = None
-        if answer_name in data["partial_scores"]:
-            score = data["partial_scores"][answer_name]["score"]
-            feedback = data["partial_scores"][answer_name].get("feedback", "")
-        submission_was_graded = score is not None
+        feedback = (
+            data["partial_scores"].get(answer_name, {"score": None}).get("feedback", "")
+        )
 
         student_submission = [
             {
@@ -443,31 +474,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse-error": data["format_errors"].get(answer_name, None),
             "student_submission": student_submission,
             "feedback": feedback,
+            "uuid": uuid,
             "block_formatting": block_formatting,
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
-            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal"
+            if inline or display_blocks.is_inline()
+            else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM
                 else "pl-order-blocks-right"
             ),
         }
-
-        if score is not None:
-            try:
-                score = float(score * 100)
-                if score >= 100:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partially_correct"] = math.floor(score)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError(
-                    f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                ) from exc
+        html_params.update(score_params)
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -526,7 +551,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
-            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal"
+            if inline or display_blocks.is_inline()
+            else "",
+            "block_scroll": "pl-order-blocks-scroll"
+            if display_blocks == DisplayBlocksType.INLINE_NOWRAP
+            or (inline and display_blocks == DisplayBlocksType.VERTICAL)
+            else "",
             "dropzone_layout": (
                 "pl-order-blocks-bottom"
                 if dropzone_layout is SolutionPlacementType.BOTTOM
@@ -546,15 +577,34 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     order_block_options = OrderBlocksOptions(element)
     answer_name = order_block_options.answers_name
     answer_raw_name = answer_name + "-input"
-    student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+    student_answer_raw = data["raw_submitted_answers"].get(answer_raw_name, "[]")
 
-    student_answer = json.loads(student_answer)
+    invalid_format_message = (
+        "The submitted answer is not in the expected format. This usually means "
+        "the submission was modified outside of the PrairieLearn interface."
+    )
 
-    if (not order_block_options.allow_blank) and (
-        student_answer is None or student_answer == []
+    try:
+        student_answer = json.loads(student_answer_raw)
+    except (json.JSONDecodeError, TypeError):
+        data["format_errors"][answer_name] = invalid_format_message
+        return
+
+    if not isinstance(student_answer, list) or any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("inner_html"), str)
+        or not isinstance(item.get("uuid"), str)
+        or not (item.get("indent") is None or isinstance(item.get("indent"), int))
+        for item in student_answer
     ):
+        data["format_errors"][answer_name] = invalid_format_message
+        return
+
+    if (not order_block_options.allow_blank) and student_answer == []:
+        data["submitted_answers"][answer_name] = []
+        data["submitted_answers"].pop(answer_raw_name, None)
         data["format_errors"][answer_name] = (
-            "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
+            "Your submitted answer was blank; the answer area must contain at least one block."
         )
         return
 

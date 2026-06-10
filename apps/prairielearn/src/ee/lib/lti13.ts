@@ -19,7 +19,6 @@ import {
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
-import type { AuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -68,7 +67,7 @@ const LineitemSchema = z.object({
 });
 type Lineitem = z.infer<typeof LineitemSchema>;
 
-export const LineitemsSchema = z.array(LineitemSchema);
+const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
@@ -155,35 +154,31 @@ const Lti13ClaimBaseSchema = z.object({
 });
 
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
-    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-      id: z.string(),
-      description: z.string().nullish(),
-      title: z.string().nullish(),
-    }),
+const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+    id: z.string(),
+    description: z.string().nullish(),
+    title: z.string().nullish(),
   }),
-);
+});
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
-const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
-  z.object({
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
-    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
-      deep_link_return_url: z.string(),
-      accept_types: z.string().array(),
-      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
-      accept_media_types: z.string().optional(),
-      accept_multiple: z.boolean().optional(),
-      accept_lineitem: z.boolean().optional(),
-      auto_create: z.boolean().optional(),
-      title: z.string().optional(),
-      text: z.string().optional(),
-      data: z.any().optional(),
-    }),
+const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.extend({
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+  'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+    deep_link_return_url: z.string(),
+    accept_types: z.string().array(),
+    accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+    accept_media_types: z.string().optional(),
+    accept_multiple: z.boolean().optional(),
+    accept_lineitem: z.boolean().optional(),
+    auto_create: z.boolean().optional(),
+    title: z.string().optional(),
+    text: z.string().optional(),
+    data: z.any().optional(),
   }),
-);
+});
 
 export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
@@ -227,6 +222,7 @@ export async function getOpenidClientConfig(
 
   // Only for testing
   if (config.devMode) {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     client.allowInsecureRequests(openidClientConfig);
   }
 
@@ -838,13 +834,11 @@ class Lti13ContextMembership {
 
 export async function updateLti13Scores({
   courseInstance,
-  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
   courseInstance: CourseInstance;
-  authzData: AuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -879,8 +873,6 @@ export async function updateLti13Scores({
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
     courseInstance,
-    authzData,
-    requiredRole: ['Student Data Viewer'],
     minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));

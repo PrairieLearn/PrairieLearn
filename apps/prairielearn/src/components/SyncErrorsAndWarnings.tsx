@@ -43,7 +43,7 @@ export function SyncErrorsAndWarnings({
             style={{ backgroundColor: 'black' }}
           >
             {syncErrorsAnsified && (
-              /* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */
+              /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
               <code dangerouslySetInnerHTML={{ __html: syncErrorsAnsified }} />
             )}
           </pre>
@@ -71,7 +71,7 @@ export function SyncErrorsAndWarnings({
             style={{ backgroundColor: 'black' }}
           >
             {syncWarningsAnsified && (
-              /* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */
+              /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
               <code dangerouslySetInnerHTML={{ __html: syncWarningsAnsified }} />
             )}
           </pre>

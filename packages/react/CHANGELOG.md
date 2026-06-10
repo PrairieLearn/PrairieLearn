@@ -1,5 +1,35 @@
 # @prairielearn/react
 
+## 2.1.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.1.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 2.1.0
+
+### Minor Changes
+
+- 240b216: `<Hydrate>` now throws at render time if the child component is given a `resLocals` or `locals` prop. All props on a hydrated component are serialized and sent to the client, so passing `res.locals` would leak the entire server-side locals object. Extract the specific fields you need (e.g. via `extractPageContext`) and pass them as individual props instead.
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [d482019]
+- Updated dependencies [e80a5a5]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/compiled-assets@4.1.3
+  - @prairielearn/browser-utils@2.7.2
+  - @prairielearn/error@3.0.5
+  - @prairielearn/utils@3.1.3
+  - @prairielearn/html@5.0.3
+
 ## 2.0.2
 
 ### Patch Changes

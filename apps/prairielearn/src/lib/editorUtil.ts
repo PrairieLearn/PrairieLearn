@@ -1,12 +1,49 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
+import fs from 'fs-extra';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { b64EncodeUnicode } from './base64-util.js';
 import { type FileDetails, type FileMetadata, FileType } from './editorUtil.shared.js';
+import { computeStableHash } from './json.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export function computeFileContentHash(contents: string): string {
+  return crypto.createHash('sha256').update(b64EncodeUnicode(contents)).digest('hex');
+}
+
+export async function getOriginalHash(filePath: string) {
+  try {
+    return computeFileContentHash(await fs.readFile(filePath, 'utf8'));
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/**
+ * Returns true if `relPath` (relative to the course root) is a `question.html`
+ * file inside a v3 question's directory, as determined by reading the sibling
+ * `info.json`.
+ */
+export async function isV3QuestionHtmlFile(coursePath: string, relPath: string): Promise<boolean> {
+  const components = path.normalize(relPath).split(path.posix.sep);
+  if (components.length < 3) return false;
+  if (components[0] !== 'questions') return false;
+  if (components.at(-1) !== 'question.html') return false;
+
+  const infoPath = path.join(coursePath, ...components.slice(0, -1), 'info.json');
+  try {
+    const info = await fs.readJson(infoPath);
+    return info?.type === 'v3';
+  } catch {
+    return false;
+  }
+}
 
 export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
@@ -95,4 +132,24 @@ export async function getFileMetadataForPath(
     uuid: res.uuid,
     type: details.type,
   };
+}
+
+/**
+ * Computes a stable hash of a scoped section of a JSON file. The generic type
+ * parameter should be the Zod input type for the file's schema so that the
+ * `scope` callback gets full type safety.
+ *
+ * @returns The hash string, or `null` if the file does not exist.
+ */
+export async function computeScopedJsonHash<T extends Record<string, unknown>>(
+  jsonPath: string,
+  scope: (json: T) => unknown,
+): Promise<string | null> {
+  try {
+    const json = (await fs.readJson(jsonPath)) as T;
+    return computeStableHash(scope(json));
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
 }

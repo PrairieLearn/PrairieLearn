@@ -2,7 +2,7 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -18,14 +18,17 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  AssessmentToolSchema,
+  GroupConfigSchema,
   type GroupRole,
   GroupRoleSchema,
   QuestionSchema,
-  TeamConfigSchema,
-  TeamRoleSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectEnabledAssessmentTools } from '../../models/assessment.js';
+import { updateCourseSharingName } from '../../models/course.js';
 import type {
   AssessmentJsonInput,
   AssessmentSetJsonInput,
@@ -71,7 +74,6 @@ function makeAssessmentSet() {
 
 function getGroupsConfig(): GroupsJsonInput {
   return {
-    enabled: true,
     roles: [{ name: 'Recorder', minMembers: 1, maxMembers: 4 }, { name: 'Contributor' }],
     studentPermissions: {
       canCreateGroup: false,
@@ -213,6 +215,29 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('newhomework');
     assert.isTrue(syncedData.assessment.shuffle_questions);
+  });
+
+  it('syncs showQuestionTitles configuration', async () => {
+    const courseData = util.getCourseData();
+
+    const explicitExam = makeAssessment(courseData, 'Exam');
+    explicitExam.showQuestionTitles = true;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['explicitexam'] = explicitExam;
+
+    const defaultHomework = makeAssessment(courseData, 'Homework');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaulthomework'] =
+      defaultHomework;
+
+    const defaultExam = makeAssessment(courseData, 'Exam');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['defaultexam'] = defaultExam;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    assert.isTrue((await getSyncedAssessmentData('explicitexam')).assessment.show_question_titles);
+    assert.isTrue(
+      (await getSyncedAssessmentData('defaulthomework')).assessment.show_question_titles,
+    );
+    assert.isFalse((await getSyncedAssessmentData('defaultexam')).assessment.show_question_titles);
   });
 
   it('syncs alternatives in an Exam zone', async () => {
@@ -669,7 +694,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.allowAccess?.push(
       {
-        mode: 'Exam',
+        examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
       },
       {
         mode: 'Public',
@@ -722,7 +747,6 @@ describe('Assessment syncing', () => {
     // an empty points array, so we can't test that here as it's impossible
     // for it to ever be written to the database.
     assessment.allowAccess?.push({
-      mode: 'Exam',
       uids: [],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -1259,7 +1283,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       roles: [{ name: 'Recorder' }],
       rolePermissions: {
         canAssignRoles: [],
@@ -1282,7 +1305,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 4,
       roles: [
         { name: 'Manager', minMembers: 10 },
@@ -1313,7 +1335,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1335,9 +1356,8 @@ describe('Assessment syncing', () => {
 
   it('still validates when groups.minMembers is 0', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
-      enabled: true,
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
@@ -1352,11 +1372,11 @@ describe('Assessment syncing', () => {
         canSubmit: [],
       },
     };
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsMinZero'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupMinZero'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsMinZero');
+    const syncedAssessment = await findSyncedAssessment('groupMinZero');
     assert.isNotOk(syncedAssessment.sync_errors);
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
@@ -1371,7 +1391,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groups = {
-      enabled: true,
       maxMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       rolePermissions: {
@@ -1490,7 +1509,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
 
     const singleRoleConfig = {
-      enabled: true,
       roles: [{ name: 'Recorder', minMembers: 1 }],
       rolePermissions: {
         canAssignRoles: ['Recorder'],
@@ -1724,6 +1742,23 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records an error if an access rule mode=Exam without an examUuid', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      mode: 'Exam',
+      credit: 100,
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Invalid allowAccess rule: examUuid is required with "mode": "Exam"/,
+    );
+  });
+
   it('records an error if a question specifies neither an ID nor an alternative', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
@@ -1939,6 +1974,398 @@ describe('Assessment syncing', () => {
       syncedAssessment.sync_errors,
       /Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0/,
     );
+  });
+
+  it('records a warning if autoPoints exceeds maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Question "test": "autoPoints" \(15\) should not exceed "maxAutoPoints" \(10\)/,
+    );
+  });
+
+  it('records a warning if points exceeds maxPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 20,
+          maxPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Question "test": "points" \(20\) should not exceed "maxPoints" \(10\)/,
+    );
+  });
+
+  it('does not produce a warning when autoPoints equals maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 10,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('records a warning if bestQuestions exceeds numberChoose on a zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 1,
+      bestQuestions: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(3\) should not exceed "numberChoose" \(1\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if alternative group numberChoose exceeds alternatives count', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          numberChoose: 5,
+          points: 10,
+          alternatives: [{ id: util.QUESTION_ID }, { id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Zone "test zone", alternative group 1: "numberChoose" \(5\) exceeds the number of alternatives \(2\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" is 0, so no questions will be presented from this zone/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" is 0, so no questions from this zone will count toward the total points/,
+    );
+  });
+
+  it('does not produce warnings for a valid zone configuration', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 2,
+      bestQuestions: 1,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('does not warn when numberChoose equals effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('does not warn when bestQuestions equals effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('accounts for alternative group numberChoose in effective zone size', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 2,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(4\) exceeds the number of questions in the zone \(3\)/,
+    );
+  });
+
+  it('caps alternative group contribution at actual alternatives count', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          numberChoose: 5,
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(4\) exceeds the number of questions in the zone \(3\)/,
+    );
+  });
+
+  it('counts all alternatives in effective zone size when numberChoose is not set', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    // Effective zone size = 1 (standalone) + 2 (all alternatives) = 3.
+    // Zone numberChoose of 3 should not warn.
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('warns when zone numberChoose exceeds effective size with unset alternative numberChoose', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(4\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('does not produce warnings for an expired course instance', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '2001-01-01T00:00:00',
+      },
+    ];
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotOk(syncedAssessment.sync_warnings);
   });
 
   it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
@@ -2517,29 +2944,22 @@ describe('Assessment syncing', () => {
 
       // This assessment has both valid and invalid exam UUIDs.
       const assessment = makeAssessment(courseData);
+      const invalidExamUuid = 'df12ea39-8d47-4825-ab22-bbc690a1fc20';
+      const validExamUuid = 'a817e4b9-b1b1-40b6-b076-c3a752dd8e72';
       assessment.allowAccess = [
-        {
-          mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
-        },
-        {
-          mode: 'Exam',
-          examUuid: '11111111-1111-1111-1111-111111111111',
-        },
+        { mode: 'Exam', examUuid: invalidExamUuid },
+        { mode: 'Exam', examUuid: validExamUuid },
       ];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
 
       // Insert a `pt_exams` row for the valid exam UUID.
-      await sqldb.execute(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
+      await sqldb.execute(sql.insert_pt_exam, { uuid: validExamUuid });
 
       await util.writeAndSyncCourseData(courseData);
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotNull(syncedAssessment.sync_warnings);
-      assert.match(
-        syncedAssessment.sync_warnings,
-        /examUuid "00000000-0000-0000-0000-000000000000" not found./,
-      );
-      assert.notMatch(syncedAssessment.sync_warnings, /11111111-1111-1111-1111-111111111111/);
+      expect(syncedAssessment.sync_warnings).to.contain(`examUuid "${invalidExamUuid}" not found.`);
+      expect(syncedAssessment.sync_warnings).to.not.contain(validExamUuid);
     });
 
     it('does not validate exam UUIDs for assessments in an inaccessible course instance', async () => {
@@ -2561,7 +2981,7 @@ describe('Assessment syncing', () => {
       assessment.allowAccess = [
         {
           mode: 'Exam',
-          examUuid: '00000000-0000-0000-0000-000000000000',
+          examUuid: '2ba49357-1592-4f6e-9dab-f8ef3d969321',
         },
       ];
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
@@ -2631,7 +3051,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       roles: [
         { name: 'Manager', minMembers: 1, maxMembers: 1 },
         { name: 'Recorder', minMembers: 1, maxMembers: 1 },
@@ -2766,7 +3185,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: 'alternative group comment',
+          comment: 'alternative pool comment',
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2800,7 +3219,7 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
     assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
-    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative pool comment');
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
@@ -2827,7 +3246,7 @@ describe('Assessment syncing', () => {
         },
         {
           points: 1,
-          comment: ['alternative group comment 1', 'alternative group comment 2'],
+          comment: ['alternative pool comment 1', 'alternative pool comment 2'],
           alternatives: [
             {
               id: util.ALTERNATIVE_QUESTION_ID,
@@ -2871,8 +3290,8 @@ describe('Assessment syncing', () => {
       'question comment 2',
     ]);
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, [
-      'alternative group comment 1',
-      'alternative group comment 2',
+      'alternative pool comment 1',
+      'alternative pool comment 2',
     ]);
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -2916,8 +3335,8 @@ describe('Assessment syncing', () => {
         {
           points: 1,
           comment: {
-            comment: 'alternative group comment',
-            comment2: 'alternative group comment 2',
+            comment: 'alternative pool comment',
+            comment2: 'alternative pool comment 2',
           },
           alternatives: [
             {
@@ -2968,8 +3387,8 @@ describe('Assessment syncing', () => {
       comment2: 'question comment 2',
     });
     assert.deepEqual(syncedData.alternative_groups[1].json_comment, {
-      comment: 'alternative group comment',
-      comment2: 'alternative group comment 2',
+      comment: 'alternative pool comment',
+      comment2: 'alternative pool comment 2',
     });
     const alternativeQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
@@ -3285,7 +3704,7 @@ describe('Assessment syncing', () => {
       assert.isNotEmpty(syncedData.zones);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
-      // Alternative group JSON config is not explicitly set.
+      // Alternative pool JSON config is not explicitly set.
       assert.isNotEmpty(syncedData.alternative_groups);
       assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
 
@@ -3670,7 +4089,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with own points',
+        name: 'alternative pool level with own points',
         zone: {
           questions: [
             {
@@ -3717,7 +4136,7 @@ describe('Assessment syncing', () => {
         },
       },
       {
-        name: 'alternative group level with inherited points',
+        name: 'alternative pool level with inherited points',
         zone: {
           questions: [
             {
@@ -4054,7 +4473,6 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }],
@@ -4080,7 +4498,6 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groups = {
-      enabled: true,
       minMembers: 2,
       maxMembers: 5,
       roles: [
@@ -4104,26 +4521,26 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [{ id: util.QUESTION_ID, points: 5 }],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsAssessment'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] = assessment;
 
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('teamsAssessment');
+    const syncedAssessment = await findSyncedAssessment('groupAssessment');
     assert.isNull(syncedAssessment.sync_errors);
 
-    // Verify team config was synced
-    const teamConfigs = await util.dumpTableWithSchema('team_configs', TeamConfigSchema);
-    const teamConfig = teamConfigs.find((tc) => tc.assessment_id === syncedAssessment.id);
-    assert.isOk(teamConfig);
-    assert.equal(teamConfig.minimum, 2);
-    assert.equal(teamConfig.maximum, 5);
-    assert.equal(teamConfig.student_authz_create, true);
-    assert.equal(teamConfig.student_authz_join, true);
-    assert.equal(teamConfig.student_authz_leave, false);
-    assert.equal(teamConfig.student_authz_choose_name, true);
+    // Verify group config was synced
+    const groupConfigs = await util.dumpTableWithSchema('team_configs', GroupConfigSchema);
+    const groupConfig = groupConfigs.find((gc) => gc.assessment_id === syncedAssessment.id);
+    assert.isOk(groupConfig);
+    assert.equal(groupConfig.minimum, 2);
+    assert.equal(groupConfig.maximum, 5);
+    assert.equal(groupConfig.student_authz_create, true);
+    assert.equal(groupConfig.student_authz_join, true);
+    assert.equal(groupConfig.student_authz_leave, false);
+    assert.equal(groupConfig.student_authz_choose_name, true);
 
-    // Verify team roles were synced
-    const teamRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
-    const assessmentRoles = teamRoles.filter((r) => r.assessment_id === syncedAssessment.id);
+    // Verify group roles were synced
+    const groupRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const assessmentRoles = groupRoles.filter((r) => r.assessment_id === syncedAssessment.id);
     assert.equal(assessmentRoles.length, 3);
 
     const managerRole = assessmentRoles.find((r) => r.role_name === 'Manager');
@@ -4139,9 +4556,8 @@ describe('Assessment syncing', () => {
 
   it('cascades groups.rolePermissions to zones and questions when not overridden', async () => {
     const courseData = util.getCourseData();
-    const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.groups = {
-      enabled: true,
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groups = {
       minMembers: 2,
       maxMembers: 4,
       roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
@@ -4151,7 +4567,7 @@ describe('Assessment syncing', () => {
         canSubmit: ['Recorder'], // Assessment-level default
       },
     };
-    teamAssessment.zones?.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       // No canView/canSubmit specified - should inherit from assessment
       questions: [
@@ -4162,18 +4578,18 @@ describe('Assessment syncing', () => {
         },
       ],
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamCascadeAssessment'] =
-      teamAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupCascadeAssessment'] =
+      groupAssessment;
 
     await util.writeAndSyncCourseData(courseData);
 
     // Get synced data
-    const syncedData = await getSyncedAssessmentData('teamCascadeAssessment');
+    const syncedData = await getSyncedAssessmentData('groupCascadeAssessment');
     const assessmentQuestion = syncedData.assessment_questions[0];
     assert.isDefined(assessmentQuestion);
 
-    // Check team roles were created
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    // Check group roles were created
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     const manager = syncedRoles.find((role) => role.role_name === 'Manager');
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -4196,7 +4612,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(managerPermission);
     assert.isTrue(
       managerPermission.can_view,
-      'Manager should inherit can_view from teams.rolePermissions',
+      'Manager should inherit can_view from groups.rolePermissions',
     );
     assert.isFalse(managerPermission.can_submit, 'Manager should not have can_submit');
 
@@ -4204,16 +4620,689 @@ describe('Assessment syncing', () => {
     assert.isDefined(recorderPermission);
     assert.isTrue(
       recorderPermission.can_view,
-      'Recorder should inherit can_view from teams.rolePermissions',
+      'Recorder should inherit can_view from groups.rolePermissions',
     );
     assert.isTrue(
       recorderPermission.can_submit,
-      'Recorder should inherit can_submit from teams.rolePermissions',
+      'Recorder should inherit can_submit from groups.rolePermissions',
     );
 
     // Contributor should have neither (not in canView or canSubmit)
     assert.isDefined(contributorPermission);
     assert.isFalse(contributorPermission.can_view, 'Contributor should not have can_view');
     assert.isFalse(contributorPermission.can_submit, 'Contributor should not have can_submit');
+  });
+
+  describe('Assessment tools syncing', () => {
+    it('syncs assessment-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 1);
+      assert.equal(assessmentTools[0].tool, 'calculator');
+      assert.isTrue(assessmentTools[0].enabled);
+      assert.isNotNull(assessmentTools[0].assessment_id);
+      assert.isNull(assessmentTools[0].zone_id);
+    });
+
+    it('syncs zone-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: true } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const zoneIds = syncedData.zones.map((z) => z.id);
+      const assessmentZoneTools = tools.filter((t) =>
+        zoneIds.some((zid) => t.zone_id != null && idsEqual(t.zone_id, zid)),
+      );
+
+      assert.lengthOf(assessmentZoneTools, 1);
+      assert.equal(assessmentZoneTools[0].tool, 'calculator');
+      assert.isTrue(assessmentZoneTools[0].enabled);
+      assert.isNotNull(assessmentZoneTools[0].zone_id);
+      assert.isNull(assessmentZoneTools[0].assessment_id);
+    });
+
+    it('syncs both assessment-level and zone-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: false } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+
+      const assessmentLevelTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+      const zoneIds = syncedData.zones.map((z) => z.id);
+      const zoneLevelTools = tools.filter((t) =>
+        zoneIds.some((zid) => t.zone_id != null && idsEqual(t.zone_id, zid)),
+      );
+
+      assert.lengthOf(assessmentLevelTools, 1);
+      assert.isTrue(assessmentLevelTools[0].enabled);
+
+      assert.lengthOf(zoneLevelTools, 1);
+      assert.isFalse(zoneLevelTools[0].enabled);
+    });
+
+    it('zone-level disabled tool overrides assessment-level enabled tool', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: false } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 0);
+    });
+
+    it('zone-level enabled tool overrides assessment-level disabled tool', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: false } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: true } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 1);
+      assert.equal(enabledTools[0].tool, 'calculator');
+    });
+
+    it('falls back to assessment-level tool when zone has no tool override', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 1);
+      assert.equal(enabledTools[0].tool, 'calculator');
+    });
+
+    it('removes tools on re-sync when removed from JSON', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+      // Remove tools and re-sync
+      delete assessment.tools;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 0);
+    });
+
+    it('updates tool enabled status on re-sync', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+      // Update enabled status and re-sync
+      assessment.tools = { calculator: { enabled: false } };
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 1);
+      assert.isFalse(assessmentTools[0].enabled);
+    });
+
+    it('does not create tools when tools property is absent', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 0);
+    });
+  });
+
+  it('syncs a question with valid preferences without errors', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: 10,
+            str: 'valid A',
+            bool: true,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefTest');
+    assert.isNull(syncedAssessment.sync_errors);
+  });
+
+  it('records an error if preferences references a key not defined in the question schema', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            nonExistentKey: 'hello',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "questionPreferencesTest": preferences must NOT have additional properties: "nonExistentKey"',
+    );
+  });
+
+  it('records an error if a preference value has the wrong type', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: 'not a number',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "questionPreferencesTest": preferences/num must be number',
+    );
+  });
+
+  it('records an error if a preference value is not in the allowed enum', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            str: 'invalid choice',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "questionPreferencesTest": preferences/str must be equal to one of the allowed values: valid A, valid B',
+    );
+  });
+
+  it('records an error if a boolean preference value is not passed as a boolean', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            bool: 'invalid choice',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "questionPreferencesTest": preferences/bool must be boolean',
+    );
+  });
+
+  it('records an error if preferences is set on a question that has no preferences schema', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          preferences: {
+            someKey: 'someValue',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "test" does not define a preferences schema, but preferences were provided in the assessment',
+    );
+  });
+
+  it('uses question default values when preferences are not specified in the assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefDefault'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefDefault');
+    assert.isNull(syncedAssessment.sync_errors);
+
+    const assessmentQuestions = await util.dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    );
+    const aq = assessmentQuestions.find((q) => q.assessment_id === syncedAssessment.id);
+    assert.isOk(aq);
+    // No overrides were specified, so preferences should be null (not the merged defaults).
+    assert.isNull(aq.preferences);
+  });
+
+  it('allows specifying only a subset of preference keys', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: 99,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefSubset'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefSubset');
+    assert.isNull(syncedAssessment.sync_errors);
+  });
+
+  it('stores only overrides in assessment_questions.preferences, not merged defaults', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: 99,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefOverrides'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefOverrides');
+    assert.isNull(syncedAssessment.sync_errors);
+
+    const assessmentQuestions = await util.dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    );
+    const aq = assessmentQuestions.find((q) => q.assessment_id === syncedAssessment.id);
+    assert.isOk(aq);
+    // Should contain ONLY the override, not the merged defaults (str, bool).
+    assert.deepEqual(aq.preferences, { num: 99 });
+  });
+
+  it('records an error if preferences is not an object', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          // @ts-expect-error -- Deliberately invalid: not an object.
+          preferences: 'not an object',
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+  });
+
+  it('records an error if a number preference is given a boolean value', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: true,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+  });
+
+  it('records an error if a string enum preference is given a number value', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            str: 123,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+  });
+
+  it('records an error if a preference value is null', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            // @ts-expect-error -- Preference values cannot be null.
+            num: null,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+  });
+
+  it('does not crash when a nonexistent question has preferences', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: 'doesNotExist',
+          points: 5,
+          preferences: {
+            someKey: 'someValue',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefMissing'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefMissing');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(syncedAssessment.sync_errors, /doesNotExist/);
+  });
+
+  it('records an error for a question with an empty-string preference key', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions['emptyKeyPref'] = {
+      uuid: 'b1c2d3e4-f5a6-7890-abcd-ef1234567890',
+      title: 'Empty key preferences test',
+      topic: 'Test',
+      tags: ['test'],
+      type: 'v3',
+      preferences: {
+        '': {
+          type: 'number',
+          default: 1,
+        },
+      },
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === 'emptyKeyPref');
+    assert.isDefined(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
+  });
+
+  describe('preferences on shared questions', () => {
+    const SHARING_NAME = 'SHARING_PREFS';
+    const SHARED_PREFS_QID = 'sharedPrefsQuestion';
+    const SHARED_NO_PREFS_QID = 'sharedNoPrefsQuestion';
+
+    async function setupSharingCourse() {
+      await features.enable('question-sharing');
+
+      const sharingCourseData = util.getCourseData();
+      sharingCourseData.course.name = 'Sharing Prefs Course';
+      sharingCourseData.questions = {
+        private: sharingCourseData.questions.private,
+        [SHARED_PREFS_QID]: {
+          uuid: 'aaaa1111-bbbb-cccc-dddd-eeee00001111',
+          type: 'v3',
+          title: 'Shared question with preferences',
+          topic: 'Test',
+          tags: ['test'],
+          sharePublicly: true,
+          preferences: {
+            gravity: { type: 'number', default: 9.8 },
+            mode: { type: 'string', enum: ['easy', 'hard'], default: 'easy' },
+          },
+        },
+        [SHARED_NO_PREFS_QID]: {
+          uuid: 'aaaa2222-bbbb-cccc-dddd-eeee00002222',
+          type: 'v3',
+          title: 'Shared question without preferences',
+          topic: 'Test',
+          tags: ['test'],
+          sharePublicly: true,
+        },
+      };
+      const { syncResults } = await util.writeAndSyncCourseData(sharingCourseData);
+      await updateCourseSharingName({
+        course_id: syncResults.courseId,
+        sharing_name: SHARING_NAME,
+      });
+    }
+
+    it('syncs valid preferences on a shared question without errors', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_PREFS_QID}`,
+            points: 5,
+            preferences: { gravity: 3.7, mode: 'hard' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedPrefOk'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedPrefOk');
+      assert.isNull(syncedAssessment.sync_errors);
+    });
+
+    it('records an error for an invalid preference value on a shared question', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_PREFS_QID}`,
+            points: 5,
+            preferences: { gravity: 'not a number' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedPrefBad'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedPrefBad');
+      assert.equal(
+        syncedAssessment.sync_errors,
+        `Question "@${SHARING_NAME}/${SHARED_PREFS_QID}": preferences/gravity must be number`,
+      );
+    });
+
+    it('records an error when setting preferences on a shared question without a schema', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_NO_PREFS_QID}`,
+            points: 5,
+            preferences: { someKey: 'someValue' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedNoPref'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedNoPref');
+      assert.equal(
+        syncedAssessment.sync_errors,
+        `Question "@${SHARING_NAME}/${SHARED_NO_PREFS_QID}" does not define a preferences schema, but preferences were provided in the assessment`,
+      );
+    });
   });
 });

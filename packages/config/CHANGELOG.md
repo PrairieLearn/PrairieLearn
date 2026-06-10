@@ -1,5 +1,47 @@
 # @prairielearn/config
 
+## 5.0.0
+
+### Major Changes
+
+- 288ff13: Upgrade to Zod 4. Zod is part of these packages' public API surface (exported schemas and schema-generic functions such as `ConfigLoader` and the `query*` helpers), so consumers must also upgrade to Zod 4. Additionally, `@prairielearn/postgres` no longer exports the `AnyRowSchema` type alias; use `z.ZodType` instead.
+
+## 4.2.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.2.2
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.2.1
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.2.0
+
+### Minor Changes
+
+- 7a9cda5: Add a KMS config source that decrypts encrypted config value objects.
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/aws-imds@3.0.3
+
+## 4.1.1
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 4.1.0
 
 ### Minor Changes

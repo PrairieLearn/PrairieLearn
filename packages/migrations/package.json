@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "5.0.2",
+  "version": "5.0.8",
   "type": "module",
   "repository": {
     "type": "git",
@@ -21,20 +21,18 @@
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
-    "fs-extra": "^11.3.3",
+    "fs-extra": "^11.3.5",
     "serialize-error": "^13.0.1",
-    "zod": "^3.25.76"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.11.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260302.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.7"
   }
 }

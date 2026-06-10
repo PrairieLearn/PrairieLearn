@@ -8,6 +8,7 @@ on:
       - '**-code-freeze'
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
@@ -27,6 +28,23 @@ jobs:
   check-js:
     name: JavaScript
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -39,20 +57,14 @@ jobs:
         run: |-
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
+      - uses: pnpm/action-setup@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'yarn'
-      - name: Cache node-gyp headers
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/node-gyp
-          key: node-gyp-${{ runner.os }}
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
+          cache: 'pnpm'
       - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
+        run: pnpm install
 
       - name: Set up Turborepo cache
         uses: actions/cache@v5
@@ -80,52 +92,57 @@ jobs:
           path: ${{ runner.temp }}/bundle-sizes-section.md
           retention-days: 1
 
+      - name: Restore lint caches
+        uses: actions/cache@v5
+        with:
+          path: |
+            .eslintcache
+            node_modules/.cache/prettier
+          key: >-
+            lint-${{ runner.os }}-${{ hashFiles(
+              'pnpm-lock.yaml',
+              'Makefile',
+              'eslint.config.mjs',
+              'packages/eslint-config/**',
+              'packages/eslint-plugin-prairielearn/**',
+              '.prettierrc.json',
+              '.prettierignore'
+            ) }}
+
       - name: Run the JavaScript linter
-        run: make lint-js
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: make lint-js-cached
       - name: Run the Mustache linter
         run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
 
       - name: Check dependency structure
-        run: make check-dependencies
+        run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
       - name: Check that all packages exist on npm
         run: make check-npm-packages
+      - name: Check badge color contrast
+        run: make check-badge-contrast
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for contrib
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
-      - name: Start Postgres
-        run: |
-          sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends postgresql-common
-          # Configure Postgres repository, purge existing postgres version, and install v17
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
-          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector
-
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
-
-          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
-          fsync = off
-          full_page_writes = off
-          synchronous_commit = off
-          EOF
-
-          sudo systemctl restart postgresql.service
       # We must migrate our database before we can typecheck the SQL.
       - name: Run the SQL typechecker
         run: |
-          yarn migrate
+          pnpm migrate
           make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
-      # Requires Git history and yarn install. Not using the make version
+      # Requires Git history and pnpm install. Not using the make version
       # because the base ref is potentially different. Does not run in
       # changeset-release or dependabot PRs, since they are expected to change
       # packages without creating a changeset. Also does not run in merge_group
@@ -135,12 +152,12 @@ jobs:
         if: ${{github.event_name == 'pull_request'
           && !contains(github.event.pull_request.head.ref, 'changeset-release')
           && github.event.pull_request.user.login != 'dependabot[bot]' }}
-        run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
+        run: pnpm changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
+        run: pnpm dedupe --check
 
   check-python:
     name: Python
@@ -150,6 +167,9 @@ jobs:
         with:
           show-progress: false
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
       - name: Install OS packages
         run: |-
           sudo apt-get update
@@ -174,14 +194,15 @@ jobs:
           UV_LOCKED: 1
         run: make python-deps
 
+      - uses: pnpm/action-setup@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Set up Yarn
-        # We only install the dependencies in the root workspace to avoid
-        # installing dependencies that won't be used.
-        run: yarn workspaces focus prairielearn
+      - name: Install Node dependencies
+        # We only install root dependencies to avoid installing workspaces that
+        # are not used by these checks.
+        run: pnpm --filter . install
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -199,11 +220,14 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.2
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   check-other:
     name: Other
@@ -216,6 +240,10 @@ jobs:
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint
+
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
 
       - name: Install OS packages
         run: |-

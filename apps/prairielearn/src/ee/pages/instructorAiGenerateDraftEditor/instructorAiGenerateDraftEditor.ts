@@ -23,6 +23,7 @@ import {
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
+import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -168,7 +169,7 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
@@ -181,7 +182,23 @@ router.get(
         if (message.parts.length === 0) {
           return [{ type: 'text', text: '' }];
         }
-        return message.parts;
+        // Tool calls whose tool returned nothing (e.g. legacy `writeFile`) were
+        // persisted without an `output` field. Zod 4's `validateUIMessages()`
+        // rejects an `output-available` tool part that lacks `output`, so
+        // backfill a null output for these older parts.
+        //
+        // TODO: see the following issue and PR. If they're ever resolved,
+        // we can consider removing this workaround. Specifically, we'll need
+        // the AI SDK to be able to gracefully handle message parts that were
+        // persisted without an explicit `output` property.
+        //
+        // https://github.com/vercel/ai/issues/15854
+        // https://github.com/vercel/ai/pull/15855
+        return message.parts.map((part) =>
+          part?.state === 'output-available' && !('output' in part)
+            ? { ...part, output: null }
+            : part,
+        );
       });
 
       return {
@@ -433,7 +450,7 @@ router.post(
 
 router.get(
   '/variant',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     // This endpoint is JSON-only; the client patches the preview without a full page reload.
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -461,7 +478,7 @@ router.get(
 
 router.post(
   '/variant',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       // This endpoint is JSON-only; the client patches the preview without a full page reload.
       const variantId = await processSubmission(req, res);

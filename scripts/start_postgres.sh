@@ -8,6 +8,11 @@ else
     ACTION=$1
 fi
 
+# Postgres is provided externally; exit with no action.
+if [[ -n "$PGHOST" ]]; then
+    exit 0
+fi
+
 # if we are trying to start but postgres is already running, exit with no action
 if [[ "$ACTION" == "start" ]]; then
     if pg_isready -q; then

@@ -8,6 +8,8 @@ export function PageFooter() {
               href="https://prairielearn.com"
               className="text-decoration-none me-3 page-footer-text"
               aria-label="Company"
+              target="_blank"
+              rel="noreferrer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -85,12 +87,16 @@ export function PageFooter() {
             <a
               href="https://prairielearn.com"
               className="text-decoration-none me-3 page-footer-text d-none d-md-inline"
+              target="_blank"
+              rel="noreferrer"
             >
               Company
             </a>
             <a
               href="https://github.com/PrairieLearn/PrairieLearn"
               className="text-decoration-none page-footer-text"
+              target="_blank"
+              rel="noreferrer"
             >
               <i className="fab fa-github" /> <span>GitHub</span>
             </a>

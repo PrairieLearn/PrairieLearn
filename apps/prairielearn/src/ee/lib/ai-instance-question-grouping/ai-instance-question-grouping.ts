@@ -1,5 +1,5 @@
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
+import { type LanguageModel, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -7,16 +7,17 @@ import { HttpStatusError } from '@prairielearn/error';
 import { assertNever } from '@prairielearn/utils';
 
 import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai-util.js';
-import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
   Course,
+  CourseInstance,
   InstanceQuestion,
   Question,
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import * as questionServers from '../../../question-servers/index.js';
+import { resolveAiGradingKeys } from '../ai-grading/ai-grading-credentials.js';
 import {
   generateSubmissionMessage,
   selectInstanceQuestionsForAssessmentQuestion,
@@ -32,7 +33,7 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5.4-mini-2026-03-17' satisfies OpenAIModelId;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
@@ -59,7 +60,10 @@ async function aiEvaluateStudentResponse({
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
+    urlPrefix,
+    showCorrectAnswer: false,
+    allowAnswerEditing: false,
+    questionRenderContext: 'ai_grading' as const,
   };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render({
@@ -70,6 +74,11 @@ async function aiEvaluateStudentResponse({
     submissions: [submission],
     course,
     locals,
+    caller: {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: course,
+    },
   });
 
   const answer_text = render_submission_results.data.answerHtml;
@@ -121,10 +130,12 @@ async function aiEvaluateStudentResponse({
     },
   ];
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
-    schema: z.object({
-      correct: z.boolean().describe('Whether or not the student submission is correct.'),
+    output: Output.object({
+      schema: z.object({
+        correct: z.boolean().describe('Whether or not the student submission is correct.'),
+      }),
     }),
     messages: input,
     providerOptions: {
@@ -145,7 +156,7 @@ async function aiEvaluateStudentResponse({
 
   logResponseUsage({ response, logger });
 
-  return response.object.correct;
+  return response.output.correct;
 }
 
 /**
@@ -158,7 +169,7 @@ async function aiEvaluateStudentResponse({
  */
 export async function aiInstanceQuestionGrouping({
   course,
-  course_instance_id,
+  course_instance,
   question,
   assessment_question,
   urlPrefix,
@@ -170,7 +181,7 @@ export async function aiInstanceQuestionGrouping({
 }: {
   question: Question;
   course: Course;
-  course_instance_id: string;
+  course_instance: CourseInstance;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -183,10 +194,6 @@ export async function aiInstanceQuestionGrouping({
    */
   instance_question_ids?: string[];
 }) {
-  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-    throw new HttpStatusError(403, 'Feature not available.');
-  }
-
   if (!assessment_question.max_manual_points) {
     throw new HttpStatusError(
       400,
@@ -194,11 +201,16 @@ export async function aiInstanceQuestionGrouping({
     );
   }
 
-  const openai = createOpenAI({
-    apiKey: config.aiGradingOpenAiApiKey,
-    organization: config.aiGradingOpenAiOrganization,
+  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  if (!resolvedKeys.openai) {
+    throw new HttpStatusError(403, 'AI submission grouping requires an OpenAI API key.');
+  }
+
+  const openAi = createOpenAI({
+    apiKey: resolvedKeys.openai.apiKey,
+    organization: resolvedKeys.openai.organization ?? undefined,
   });
-  const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
+  const model = openAi(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
     type: 'ai_instance_question_grouping',
@@ -206,7 +218,7 @@ export async function aiInstanceQuestionGrouping({
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course.id,
-    courseInstanceId: course_instance_id,
+    courseInstanceId: course_instance.id,
     assessmentId: assessment_question.assessment_id,
   });
 
@@ -265,7 +277,7 @@ export async function aiInstanceQuestionGrouping({
     ) => {
       const responseIsLikelyCorrect = await aiEvaluateStudentResponse({
         course,
-        course_instance_id,
+        course_instance_id: course_instance.id,
         question,
         assessment_question,
         instance_question,

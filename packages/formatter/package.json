@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/formatter",
-  "version": "2.2.1",
+  "version": "2.4.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,15 +18,13 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "es-toolkit": "^1.45.0"
+    "es-toolkit": "^1.47.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.11.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260302.1",
-    "@vitest/coverage-v8": "^4.0.18",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }

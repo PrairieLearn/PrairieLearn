@@ -31,9 +31,7 @@ The timestamps for each individual phase of the grading process are recorded and
 
 ## Configuring and enabling external grader support
 
-External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following two options:
-
-- `enabled`: Whether external grading is enabled for the question. Setting this value to `false` can be used as a kill switch if things start breaking.
+External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following option:
 
 - `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is enabled.
 
@@ -56,7 +54,6 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["my_libraries/"],
     "timeout": 5
