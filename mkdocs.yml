@@ -293,6 +293,7 @@ nav:
           - 'Questions': python-reference/prairielearn/question_utils.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'Schema': python-reference/prairielearn/element_schemas.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'

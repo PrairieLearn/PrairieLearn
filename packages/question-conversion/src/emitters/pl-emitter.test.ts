@@ -1,4 +1,5 @@
 import { assert, describe, it } from 'vitest';
+import z from 'zod';
 
 import type { IRAssessment, IRAssessmentMeta, IRQuestion } from '../types/ir.js';
 
@@ -42,7 +43,7 @@ describe('PLEmitter', () => {
     assert.equal(q.infoJson.type, 'v3');
     assert.equal(q.infoJson.title, 'Test Question');
     assert.isTrue(q.infoJson.singleVariant);
-    assert.match(q.infoJson.uuid, /^[0-9a-f]{8}-/);
+    assert.doesNotThrow(() => z.uuid().parse(q.infoJson.uuid));
   });
 
   it('generates multiple choice HTML', () => {

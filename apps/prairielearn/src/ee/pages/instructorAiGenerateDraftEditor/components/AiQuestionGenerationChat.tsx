@@ -8,7 +8,7 @@ import {
   type UIToolInvocation,
 } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -313,6 +313,39 @@ function ScrollToBottomButton({
   );
 }
 
+const noopSubscribe = () => () => {};
+
+/**
+ * Renders a message's timestamp in the viewer's local timezone, with a leading
+ * separator. The server can't know the viewer's timezone, so we render nothing
+ * during SSR and the initial hydration pass, then render once on the client.
+ * This avoids a hydration mismatch without an effect, and keeps the separator
+ * from dangling while the timestamp is absent.
+ */
+function MessageTimestamp({ createdAt }: { createdAt: string }) {
+  const isClient = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+
+  if (!isClient) return null;
+
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(createdAt));
+
+  return (
+    <>
+      <span aria-hidden="true">&middot;</span>
+      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
+    </>
+  );
+}
+
 function Message({
   message,
   isLastMessage,
@@ -332,13 +365,20 @@ function Message({
       .map((part) => part.text)
       .join('\n');
 
+    const userName = message.metadata?.user_name;
+    const createdAt = message.metadata?.created_at;
+
     return (
-      <div className="d-flex flex-row-reverse mb-3">
+      <div className="d-flex flex-column align-items-end mb-3">
         <div
           className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
           style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
         >
           {textContent}
+        </div>
+        <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
+          <span className="fw-medium">{userName ?? 'Unknown user'}</span>
+          {createdAt && <MessageTimestamp createdAt={createdAt} />}
         </div>
       </div>
     );
@@ -488,6 +528,7 @@ function useShowSpinner({
 export function AiQuestionGenerationChat({
   chatCsrfToken,
   initialMessages,
+  currentUserName,
   questionId,
   showJobLogsLink,
   urlPrefix,
@@ -500,6 +541,7 @@ export function AiQuestionGenerationChat({
 }: {
   chatCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
+  currentUserName: string | null;
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
@@ -695,7 +737,15 @@ export function AiQuestionGenerationChat({
               if (getHasUnsavedChanges()) {
                 setShowUnsavedChangesModal(true);
               } else {
-                void sendMessage({ text });
+                void sendMessage({
+                  text,
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
+                });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
               }
@@ -751,7 +801,15 @@ export function AiQuestionGenerationChat({
               discardUnsavedChanges();
               const text = promptInput.trim();
               if (text) {
-                void sendMessage({ text });
+                void sendMessage({
+                  text,
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
+                });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
               }
