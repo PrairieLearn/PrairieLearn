@@ -283,7 +283,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
     tol = pl.get_float_attrib(element, "tol", grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"]/2)
-    print(tol)
     angle_tol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -312,7 +311,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     show_btn = data["panel"] == "question" and not preview_mode
 
-    if math.isclose(tol, grid_size / 2):
+    if grid_size == 0:
+        message_default = (
+            "The expected tolerance is "
+            + str(tol) 
+            + " pixels for position and "
+            + str(angle_tol)
+            + " degrees for angle."
+        )
+    elif math.isclose(tol, grid_size / 2):
         message_default = (
             "The expected tolerance is 1/2 square grid for position and "
             + str(angle_tol)
