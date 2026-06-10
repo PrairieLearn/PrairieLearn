@@ -15,7 +15,7 @@ import {
 } from '../../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
-import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
+import { aiGradingFeatureProcedure, creditPoolProcedures } from '../../lib/credit-pool-trpc.js';
 import { refundCreditPurchase } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 export async function createAdminContext({ req, res }: CreateExpressContextOptions) {
@@ -59,7 +59,7 @@ function dollarsToCentPrecisionMilliDollars(dollars: number, label: string): num
 }
 
 const adjustCreditPoolMutation = t.procedure
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(
     z.discriminatedUnion('action', [
       z.object({
@@ -155,7 +155,7 @@ const adjustCreditPoolMutation = t.procedure
   });
 
 const refundCreditPurchaseMutation = t.procedure
-  .use(requireAiGradingFeature)
+  .concat(aiGradingFeatureProcedure)
   .input(z.object({ checkout_session_id: IdSchema }))
   .mutation(async (opts) => {
     if (!config.stripeAiGradingCreditsRefundsEnabled) {

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "4.1.6",
+  "version": "4.1.7",
   "type": "module",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "bin": "dist/cli.js",
+  "bin": "bin/cli.js",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsgo",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "esbuild": "^0.28.0",
     "express-static-gzip": "^2.2.0 <3",
     "fs-extra": "^11.3.5",

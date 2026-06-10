@@ -2,6 +2,7 @@ import type { QTI12ParsedItem } from '../../types/qti12.js';
 import { TransformRegistry } from '../transform-registry.js';
 
 import { calculatedHandler } from './calculated.js';
+import { errorHandler } from './error.js';
 import { essayHandler } from './essay.js';
 import { fileUploadHandler } from './file-upload.js';
 import { fillInBlanksHandler } from './fill-in-blanks.js';
@@ -25,6 +26,7 @@ export function createQTI12Registry(): TransformRegistry<QTI12ParsedItem> {
   registry.register(multipleDropdownsHandler);
   registry.register(textOnlyHandler);
   registry.register(essayHandler);
+  registry.register(errorHandler);
   registry.register(shortAnswerHandler);
   registry.register(numericalHandler);
   registry.register(calculatedHandler);

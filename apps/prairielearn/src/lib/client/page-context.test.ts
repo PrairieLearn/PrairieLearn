@@ -154,6 +154,7 @@ const mockInstructorData = {
     announcement_color: 'red',
     announcement_html: '<p>Hello, world!</p>',
     course_instance_enrollment_limit: 10,
+    options: {},
     path: 'example/path',
     json_comment: null,
     sync_errors: null,

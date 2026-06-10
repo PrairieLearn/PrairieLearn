@@ -15,6 +15,10 @@
     "question-convert": "./dist/bin/convert.js"
   },
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./trimmer": "./dist/trimmer/index.js"
+  },
   "scripts": {
     "build": "tsgo",
     "dev": "tsgo --watch --preserveWatchOutput",
@@ -23,7 +27,10 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@vscode/vscode-languagedetection": "^1.0.23",
-    "commander": "^14.0.3",
+    "@zip.js/zip.js": "^2.8.26",
+    "cheerio": "^1.2.0",
+    "commander": "^15.0.0",
+    "domhandler": "^5.0.3",
     "fast-xml-parser": "^5.8.0",
     "he": "^1.2.0",
     "mime": "^4.1.0",
@@ -35,6 +42,7 @@
     "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "zod": "^4.4.3"
   }
 }

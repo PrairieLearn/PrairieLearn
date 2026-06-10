@@ -1,8 +1,9 @@
+import * as crypto from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { queryOptionalRow } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -27,13 +28,17 @@ import {
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
 import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
-import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
+import {
+  type CourseInstanceJsonInput,
+  MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
+} from '../schemas/infoCourseInstance.js';
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 import type { StudentLabelError } from '../trpc/courseInstance/student-labels.js';
 
 import * as helperClient from './helperClient.js';
 import {
   type CourseRepoFixture,
+  commitOriginAndSync,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -502,5 +507,64 @@ describe('Instructor student labels page', () => {
       assert.deepEqual(after.accessControl?.[1].labels, []);
       assert.isDefined(after.accessControl?.[1].dateControl);
     });
+  });
+
+  test.sequential('should enforce the student label limit only for new labels', async () => {
+    const trpcClient = createTrpcClient();
+    const originInfoPath = getCourseInstanceJsonPath(
+      courseRepo.courseOriginDir,
+      courseInstanceShortName,
+    );
+    const originJson = (await fs.readJson(originInfoPath)) as CourseInstanceJsonInput;
+    originJson.studentLabels = Array.from(
+      { length: MAX_STUDENT_LABELS_PER_COURSE_INSTANCE },
+      (_, index) => ({
+        uuid: crypto.randomUUID(),
+        name: index === 0 ? 'Section A' : `Limit Label ${String(index + 1).padStart(2, '0')}`,
+        color: 'blue1' as const,
+      }),
+    );
+    await fs.writeJson(originInfoPath, originJson, { spaces: 2 });
+
+    await commitOriginAndSync(courseRepo, 'Fill student labels to limit', [
+      path.relative(courseRepo.courseOriginDir, originInfoPath),
+    ]);
+
+    let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
+    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
+
+    const labelToEdit = labels.find((l) => l.name === 'Limit Label 02');
+    assert.isDefined(labelToEdit);
+
+    let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
+    );
+
+    await trpcClient.studentLabels.upsert.mutate({
+      labelId: labelToEdit.id,
+      name: 'Limit Label 02 Renamed',
+      color: 'green1',
+      uids: [],
+      origHash,
+    });
+
+    labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
+    assert.lengthOf(labels, MAX_STUDENT_LABELS_PER_COURSE_INSTANCE);
+    assert.isDefined(labels.find((l) => l.name === 'Limit Label 02 Renamed'));
+
+    origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+      (json) => json.studentLabels ?? [],
+    );
+
+    await expect(
+      trpcClient.studentLabels.upsert.mutate({
+        name: 'Overflow Label',
+        color: 'red1',
+        uids: [],
+        origHash,
+      }),
+    ).rejects.toThrow(`at most ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels`);
   });
 });
