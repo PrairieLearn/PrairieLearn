@@ -555,7 +555,9 @@ export const ConfigSchema = z.object({
     .default(
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
-  features: z.record(z.string(), z.boolean()).default({}),
+  // TODO: remove the `enhanced-access-control` default once the feature flag
+  // is removed entirely.
+  features: z.record(z.string(), z.boolean()).default({ 'enhanced-access-control': true }),
   /**
    * Determines if sharing validation should be performed. In essence checks
    * that:

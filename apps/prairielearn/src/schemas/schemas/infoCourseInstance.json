@@ -78,7 +78,8 @@
           "type": "string",
           "description": "When the course instance is unpublished. If specified, startDate must also be specified."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "allowAccess": {
       "type": "array",

@@ -34,20 +34,22 @@ const AllowAccessJsonSchema = z
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-const PublishingJsonSchema = z.object({
-  startDate: z
-    .string()
-    .describe(
-      'When the course instance is published. If specified, endDate must also be specified.',
-    )
-    .optional(),
-  endDate: z
-    .string()
-    .describe(
-      'When the course instance is unpublished. If specified, startDate must also be specified.',
-    )
-    .optional(),
-});
+const PublishingJsonSchema = z
+  .object({
+    startDate: z
+      .string()
+      .describe(
+        'When the course instance is published. If specified, endDate must also be specified.',
+      )
+      .optional(),
+    endDate: z
+      .string()
+      .describe(
+        'When the course instance is unpublished. If specified, startDate must also be specified.',
+      )
+      .optional(),
+  })
+  .strict();
 
 export const StudentLabelJsonSchema = z
   .object({
