@@ -2,12 +2,16 @@
 requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
+# This package is intended for internal VCS/subdirectory installs:
+#   python -m pip install "prairielearn @ git+https://github.com/PrairieLearn/PrairieLearn.git@<commit>#subdirectory=apps/prairielearn/python"
+#   uv add "prairielearn @ git+https://github.com/PrairieLearn/PrairieLearn.git@<commit>#subdirectory=apps/prairielearn/python"
+#
+# It is not intended to be published to PyPI.
 [project]
 name = "prairielearn"
 version = "0.0.0+internal"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-# This package is intended for internal VCS/subdirectory installs, not PyPI.
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
   "chevron==0.14.0",
