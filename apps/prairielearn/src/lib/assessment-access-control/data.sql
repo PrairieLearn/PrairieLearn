@@ -1,10 +1,7 @@
 -- BLOCK select_access_control_rules
 SELECT
   a.id AS assessment_id,
-  CASE
-    WHEN aacr.id IS NULL THEN NULL
-    ELSE to_jsonb(aacr.*)
-  END AS access_control_rule,
+  to_jsonb(aacr.*) AS access_control_rule,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE
