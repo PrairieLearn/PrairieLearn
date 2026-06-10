@@ -12,12 +12,22 @@ import tomllib
 from enum import Enum
 from pathlib import Path
 
+import tomlkit
+from tomlkit.items import Table
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ROOT_PYPROJECT_PATH = REPOSITORY_ROOT / "pyproject.toml"
 HELPER_PYPROJECT_PATH = REPOSITORY_ROOT / "apps/prairielearn/python/pyproject.toml"
 # Only derive dependencies for the installed helper package. Deprecated
 # top-level modules next to this package are intentionally not included.
 HELPER_PACKAGE_ROOT = REPOSITORY_ROOT / "apps/prairielearn/python/prairielearn"
+# Keep this list small: add entries only for import names whose package name
+# differs from the top-level module name used in Python code.
+ALIAS_MAP = {
+    "cv2": "opencv-python",
+    "pil": "pillow",
+    "yaml": "pyyaml",
+}
 
 
 class SyncResult(Enum):
@@ -85,12 +95,13 @@ def helper_imports() -> set[str]:
 
 
 def helper_dependencies() -> list[str]:
-    """Return helper package dependencies using versions from the root project."""
+    """Return helper package dependencies using root versions and import aliases."""
     dependencies_by_name = root_dependencies_by_name()
     dependencies: list[str] = []
 
     for module_name in sorted(helper_imports()):
         normalized_name = normalize_package_name(module_name)
+        normalized_name = ALIAS_MAP.get(normalized_name, normalized_name)
         dependency = dependencies_by_name.get(normalized_name)
         if dependency is None:
             raise ValueError(
@@ -102,54 +113,23 @@ def helper_dependencies() -> list[str]:
     return dependencies
 
 
-def render_dependencies_block(dependencies: list[str]) -> list[str]:
-    """Render a TOML dependencies block."""
-    lines = ["dependencies = [\n"]
-    lines.extend(f'  "{dependency}",\n' for dependency in dependencies)
-    lines.append("]\n")
-    return lines
-
-
 def replace_project_dependencies(contents: str, dependencies: list[str]) -> str:
     """Replace the [project] dependencies array in a pyproject.toml file."""
-    lines = contents.splitlines(keepends=True)
-
-    project_index = next(
-        (index for index, line in enumerate(lines) if line.strip() == "[project]"),
-        None,
-    )
-    if project_index is None:
+    document = tomlkit.parse(contents)
+    if "project" not in document:
         raise ValueError("Could not find [project] table")
 
-    dependencies_start = None
-    next_table_index = len(lines)
-    for index in range(project_index + 1, len(lines)):
-        stripped_line = lines[index].strip()
-        if stripped_line.startswith("[") and stripped_line.endswith("]"):
-            next_table_index = index
-            break
-        if stripped_line == "dependencies = [":
-            dependencies_start = index
-            break
+    project = document["project"]
+    if not isinstance(project, Table):
+        raise TypeError("[project] must be a table")
 
-    if dependencies_start is None:
-        raise ValueError("Could not find [project].dependencies array")
+    dependency_array = tomlkit.array()
+    for dependency in dependencies:
+        dependency_array.add_line(dependency, indent="  ")
+    dependency_array.add_line(indent="")
 
-    dependencies_end = None
-    for index in range(dependencies_start + 1, next_table_index):
-        if lines[index].strip() == "]":
-            dependencies_end = index + 1
-            break
-
-    if dependencies_end is None:
-        raise ValueError("Could not find end of [project].dependencies array")
-
-    new_lines = (
-        lines[:dependencies_start]
-        + render_dependencies_block(dependencies)
-        + lines[dependencies_end:]
-    )
-    return "".join(new_lines)
+    project["dependencies"] = dependency_array
+    return tomlkit.dumps(document)
 
 
 def sync_helper_pyproject(*, check: bool) -> SyncResult:
