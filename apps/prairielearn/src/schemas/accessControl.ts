@@ -21,12 +21,19 @@ export const DeadlineEntryJsonSchema = z
   })
   .strict();
 
-const AfterLastDeadlineJsonSchema = z
-  .object({
-    allowSubmissions: z.boolean(),
-    credit: z.number().int().min(0).max(99).optional(),
-  })
-  .strict();
+const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
+  z
+    .object({
+      allowSubmissions: z.literal(false),
+    })
+    .strict(),
+  z
+    .object({
+      allowSubmissions: z.literal(true),
+      credit: z.number().int().min(0).max(99),
+    })
+    .strict(),
+]);
 
 const ReleaseJsonSchema = z
   .object({
@@ -71,11 +78,9 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
-      .describe(
-        'Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).',
-      )
-      .optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
+      'Controls whether submissions are allowed after the last deadline. Omitted on overrides inherits from the default rule. On the default rule, omitting means no submissions.',
+    ).optional(),
     durationMinutes: z
       .number()
       .int()

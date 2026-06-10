@@ -465,6 +465,38 @@ describe('QTI12ItemContainerParser', async () => {
         '<p>Which collision resolution method tries different sequences?</p>',
       );
     });
+
+    it('removes Canvas answer blocks from prompt HTML', async () => {
+      const xml = `<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="a1" title="Quiz">
+    <section ident="root_section">
+      <item ident="q1" title="Leaky prompt">
+        <itemmetadata><qtimetadata>
+          <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+        </qtimetadata></itemmetadata>
+        <presentation>
+          <material><mattext texttype="text/html">&lt;p&gt;Pick one.&lt;/p&gt;&lt;div class="answers"&gt;&lt;div class="answers_wrapper"&gt;&lt;div&gt;Correct answer&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</mattext></material>
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>
+              <response_label ident="a"><material><mattext>A</mattext></material></response_label>
+              <response_label ident="b"><material><mattext>B</mattext></material></response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <respcondition continue="No">
+            <conditionvar><varequal respident="response1">a</varequal></conditionvar>
+            <setvar varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>`;
+      const result = await parser.parse(xml);
+      assert.equal(result.questions[0].promptHtml, '<p>Pick one.</p>');
+    });
   });
 
   describe('true/false', async () => {

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
-import type { FieldErrors } from 'react-hook-form';
+import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
@@ -122,7 +122,14 @@ function defaultRuleToRuntimeDateControl(
       : {}),
     ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
     ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
-    ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
+    ...(rule.afterLastDeadline.allowSubmissions
+      ? {
+          afterLastDeadline: {
+            allowSubmissions: true as const,
+            credit: rule.afterLastDeadline.credit,
+          },
+        }
+      : {}),
   };
 }
 
@@ -299,15 +306,12 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
-      access:
-        afterLastDeadline == null
-          ? 'No access'
-          : afterLastDeadline.allowSubmissions
-            ? afterLastDeadline.credit != null
-              ? formatCreditPercent(afterLastDeadline.credit)
-              : 'Practice'
-            : 'Closed',
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      access: afterLastDeadline.allowSubmissions
+        ? afterLastDeadline.credit > 0
+          ? formatCreditPercent(afterLastDeadline.credit)
+          : 'Practice'
+        : 'No submissions allowed',
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
       current: isAfterLastSegment,
       currentVariant,
     });
@@ -525,20 +529,19 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
-  if (afterLastDeadline == null) return 'No access';
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
-    afterLastDeadline.credit != null &&
+    afterLastDeadline.credit > 0 &&
     Number.isFinite(afterLastDeadline.credit)
   ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Practice submissions allowed');
   } else {
-    parts.push('Closed');
+    parts.push('No submissions allowed');
   }
   return parts.join(', ');
 }
@@ -678,7 +681,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
     });
   }
 
@@ -1062,12 +1065,8 @@ function buildDefaultRuleCurrentIndicator(
     };
   }
 
-  if (!segment.accessible) {
-    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
-  }
-
   if (!segment.submittable) {
-    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'No submissions allowed' };
   }
 
   if (segment.endDate) {

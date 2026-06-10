@@ -76,6 +76,8 @@ export function formJsonToEnrollmentRuleData(
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;
   const ac = rule.afterComplete;
+  const afterLastDeadline = dc?.afterLastDeadline;
+  const afterLastDeadlineAllowSubmissions = afterLastDeadline?.allowSubmissions ?? null;
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
@@ -85,12 +87,9 @@ export function formJsonToEnrollmentRuleData(
     dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
-    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
-    afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
+    afterLastDeadlineAllowSubmissions,
     afterLastDeadlineCredit:
-      dc?.afterLastDeadline?.allowSubmissions === true
-        ? (dc.afterLastDeadline.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
@@ -126,7 +125,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits default-valued settings on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -141,7 +140,13 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.dateControl)) {
-      clean.dateControl = rule.dateControl;
+      const dateControl = { ...rule.dateControl };
+      if (index === 0 && dateControl.afterLastDeadline?.allowSubmissions === false) {
+        delete dateControl.afterLastDeadline;
+      }
+      if (isNonEmptyObject(dateControl)) {
+        clean.dateControl = dateControl;
+      }
     }
 
     if (rule.integrations && isNonEmptyObject(rule.integrations)) {
@@ -149,7 +154,22 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.afterComplete)) {
-      clean.afterComplete = rule.afterComplete;
+      const afterComplete = { ...rule.afterComplete };
+      if (index === 0) {
+        if (
+          afterComplete.questions?.hidden === true &&
+          afterComplete.questions.visibleFromDate == null &&
+          afterComplete.questions.visibleUntilDate == null
+        ) {
+          delete afterComplete.questions;
+        }
+        if (afterComplete.score?.hidden === false && afterComplete.score.visibleFromDate == null) {
+          delete afterComplete.score;
+        }
+      }
+      if (isNonEmptyObject(afterComplete)) {
+        clean.afterComplete = afterComplete;
+      }
     }
 
     return clean;

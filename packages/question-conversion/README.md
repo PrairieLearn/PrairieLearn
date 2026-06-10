@@ -43,7 +43,7 @@ The pipeline is `parse` (XML → IR) → `transform` (per-question normalization
 | `multiple_answers_question`                       | `pl-checkbox`                                                                       |
 | `matching_question`                               | `pl-matching`                                                                       |
 | `fill_in_multiple_blanks_question`                | inline `pl-string-input` blanks                                                     |
-| `multiple_dropdowns_question`                     | inline `pl-dropdown` blanks                                                         |
+| `multiple_dropdowns_question`                     | inline `pl-multiple-choice` with `display="dropdown"`                               |
 | `short_answer_question`                           | `pl-string-input` / `pl-integer-input` / `pl-number-input` (chosen by answer shape) |
 | `numerical_question`                              | `pl-number-input`                                                                   |
 | `calculated_question`                             | `pl-number-input` with a generated `server.py`                                      |
