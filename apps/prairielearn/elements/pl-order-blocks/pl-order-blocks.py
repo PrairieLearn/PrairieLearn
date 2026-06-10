@@ -2,14 +2,12 @@ import base64
 import json
 import math
 import os
-import pathlib
 import random
 from collections import defaultdict
 from copy import deepcopy
 from typing import NotRequired, TypedDict, assert_never
 
 import chevron
-import lxml.etree
 import lxml.html
 import prairielearn as pl
 from dag_checker import (
@@ -36,12 +34,6 @@ from order_blocks_options_parsing import (
     PartialCreditType,
     SolutionPlacementType,
     SourceBlocksOrderType,
-)
-
-SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-order-blocks.json"
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
-BLOCK_GROUP_SCHEMA_PATH = (
-    pathlib.Path(__file__).parent / "schemas" / "pl-block-group.json"
 )
 
 
@@ -214,29 +206,8 @@ def solve_problem(
         assert_never(grading_method)
 
 
-def validate_child_schemas(html_element: lxml.html.HtmlElement) -> None:
-    for child in html_element:
-        if isinstance(child, lxml.etree._Comment):
-            continue
-        if child.tag == "pl-answer":
-            pl.validate_element(child, ANSWER_SCHEMA_PATH, parent_tag="pl-order-blocks")
-        elif child.tag == "pl-block-group":
-            pl.validate_element(
-                child, BLOCK_GROUP_SCHEMA_PATH, parent_tag="pl-order-blocks"
-            )
-            for group_child in child:
-                if isinstance(group_child, lxml.etree._Comment):
-                    continue
-                if group_child.tag == "pl-answer":
-                    pl.validate_element(
-                        group_child, ANSWER_SCHEMA_PATH, parent_tag="pl-block-group"
-                    )
-
-
 def prepare(html: str, data: pl.QuestionData) -> None:
     html_element = lxml.html.fragment_fromstring(html)
-    pl.validate_element(html_element, SCHEMA_PATH)
-    validate_child_schemas(html_element)
 
     order_blocks_options = OrderBlocksOptions(html_element)
     order_blocks_options.validate()

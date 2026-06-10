@@ -1,3 +1,4 @@
+import pathlib
 from enum import Enum
 from typing import TypedDict
 
@@ -5,6 +6,11 @@ import lxml.html
 import prairielearn as pl
 from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
+
+SCHEMAS_PATH = pathlib.Path(__file__).parent / "schemas"
+SCHEMA_PATH = SCHEMAS_PATH / "pl-order-blocks.json"
+ANSWER_SCHEMA_PATH = SCHEMAS_PATH / "pl-answer.json"
+BLOCK_GROUP_SCHEMA_PATH = SCHEMAS_PATH / "pl-block-group.json"
 
 
 class GroupInfo(TypedDict):
@@ -67,6 +73,46 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.DAG,
     GradingMethodType.ORDERED,
 ])
+
+# Keep in sync with GRADING_METHOD_ANSWER_ATTRIBUTES in
+# apps/prairielearn/src/lib/element-schemas/elements/pl-order-blocks.validator.ts.
+GRADING_METHOD_ANSWER_ATTRIBUTES: dict[GradingMethodType, frozenset[str]] = {
+    GradingMethodType.EXTERNAL: frozenset(["correct", "initially-placed"]),
+    GradingMethodType.UNORDERED: frozenset([
+        "correct",
+        "initially-placed",
+        "indent",
+        "distractor-feedback",
+    ]),
+    GradingMethodType.ORDERED: frozenset([
+        "correct",
+        "initially-placed",
+        "indent",
+        "distractor-feedback",
+    ]),
+    GradingMethodType.RANKING: frozenset([
+        "correct",
+        "initially-placed",
+        "tag",
+        "ranking",
+        "indent",
+        "distractor-feedback",
+        "distractor-for",
+        "ordering-feedback",
+    ]),
+    GradingMethodType.DAG: frozenset([
+        "correct",
+        "initially-placed",
+        "tag",
+        "depends",
+        "comment",
+        "indent",
+        "distractor-feedback",
+        "distractor-for",
+        "ordering-feedback",
+        "final",
+    ]),
+}
 
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
@@ -197,58 +243,21 @@ class AnswerOptions:
                     Any html tags nested inside <pl-block-group> must be <pl-answer>"""
             )
 
-        if grading_method is GradingMethodType.EXTERNAL:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=["correct", "initially-placed"],
-            )
-        elif grading_method in [
-            GradingMethodType.UNORDERED,
-            GradingMethodType.ORDERED,
-        ]:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "indent",
-                    "distractor-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.RANKING:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "tag",
-                    "ranking",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.DAG:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "tag",
-                    "depends",
-                    "comment",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                    "final",
-                ],
-            )
+        parent = html_element.getparent()
+        pl.validate_element(
+            html_element,
+            ANSWER_SCHEMA_PATH,
+            parent_tag=str(parent.tag) if parent is not None else None,
+        )
+
+        # The schema allows the union of attributes across all grading methods;
+        # restrict to the ones meaningful for the current method.
+        allowed_attribs = GRADING_METHOD_ANSWER_ATTRIBUTES[grading_method]
+        for attribute in html_element.attrib:
+            if attribute.replace("_", "-") not in allowed_attribs:
+                raise ValueError(
+                    f"pl-answer: {attribute} is not valid with this pl-order-blocks grading method."
+                )
 
 
 class OrderBlocksOptions:
@@ -363,33 +372,7 @@ class OrderBlocksOptions:
         if html_element.tag != "pl-order-blocks":
             raise ValueError("HTML element is not a pl-order-blocks")
 
-        required_attribs = ["answers-name"]
-        optional_attribs = [
-            "source-blocks-order",
-            "distractor-order",
-            "grading-method",
-            "indentation",
-            "source-header",
-            "solution-header",
-            "file-name",
-            "solution-placement",
-            "max-incorrect",
-            "min-incorrect",
-            "weight",
-            "inline",
-            "display-blocks",
-            "max-indent",
-            "feedback",
-            "partial-credit",
-            "format",
-            "code-language",
-            "allow-blank",
-        ]
-        pl.check_attribs(
-            html_element,
-            required_attribs=required_attribs,
-            optional_attribs=optional_attribs,
-        )
+        pl.validate_element(html_element, SCHEMA_PATH)
 
     def validate(self) -> None:
         self._validate_order_blocks_options()
@@ -559,6 +542,11 @@ def collect_answer_options(
 
         match inner_element.tag:
             case "pl-block-group":
+                pl.validate_element(
+                    inner_element,
+                    BLOCK_GROUP_SCHEMA_PATH,
+                    parent_tag="pl-order-blocks",
+                )
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
                     if isinstance(answer_element, _Comment):

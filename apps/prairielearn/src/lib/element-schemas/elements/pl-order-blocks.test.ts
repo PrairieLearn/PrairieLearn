@@ -133,7 +133,19 @@ describe('pl-order-blocks schema', () => {
     assert.deepEqual(messages, [
       'code-language attribute may only be used with format="code".',
       'feedback type first-wrong is not available with the ordered grading-method.',
-      'indentation may not be used when inline is true.',
+      'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
+    ]);
+  });
+
+  it('rejects indentation with an inline display-blocks value', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks" display-blocks="inline-wrap" indentation="true">
+        <pl-answer correct="true">A</pl-answer>
+      </pl-order-blocks>
+    `);
+
+    assert.deepEqual(messages, [
+      'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
     ]);
   });
 

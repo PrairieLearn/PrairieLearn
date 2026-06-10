@@ -177,14 +177,17 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
       );
     }
 
+    const displayBlocks = literalStringAttribute(element, 'display-blocks', 'vertical');
     if (
-      isLiteralTrueAttribute(element, 'inline') &&
+      (isLiteralTrueAttribute(element, 'inline') ||
+        displayBlocks === 'inline-wrap' ||
+        displayBlocks === 'inline-nowrap') &&
       isLiteralTrueAttribute(element, 'indentation')
     ) {
       context.reportAttribute(
         element,
         'indentation',
-        'indentation may not be used when inline is true.',
+        'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
       );
     }
 

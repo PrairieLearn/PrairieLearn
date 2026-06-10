@@ -44,7 +44,10 @@ const plOrderBlocksAttributesSchema = z
     'solution-placement': z.enum(['right', 'bottom']).optional(),
     'max-incorrect': integerFormat().optional(),
     'min-incorrect': integerFormat().optional(),
-    inline: booleanFormat().optional(),
+    inline: booleanFormat()
+      .meta({ deprecated: true, description: 'Use the "display-blocks" attribute instead.' })
+      .optional(),
+    'display-blocks': z.enum(['vertical', 'inline-wrap', 'inline-nowrap']).optional(),
     'max-indent': integerFormat().optional(),
     feedback: z.enum(['none', 'first-wrong', 'first-wrong-verbose']).optional(),
     'partial-credit': z.enum(['none', 'lcs']).optional(),

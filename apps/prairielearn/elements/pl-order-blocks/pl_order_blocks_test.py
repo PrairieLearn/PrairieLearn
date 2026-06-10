@@ -141,9 +141,12 @@ def test_valid_order_block_options() -> None:
             {
                 "weight": 3,
             },
-            r'Required attribute "answers-name" missing',
+            r'<pl-order-blocks> is missing required attribute "answers-name"\.',
         ),
-        ({"answers-name": "test", "invalid": "test"}, r'Unknown attribute "invalid"'),
+        (
+            {"answers-name": "test", "invalid": "test"},
+            r'Unknown attribute "invalid" on <pl-order-blocks>\.',
+        ),
     ],
 )
 def test_check_attribute_failure(options: dict, error: str) -> None:

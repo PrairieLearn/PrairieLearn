@@ -48,7 +48,13 @@
     },
     "inline": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"display-blocks\" attribute instead."
+    },
+    "display-blocks": {
+      "type": "string",
+      "enum": ["vertical", "inline-wrap", "inline-nowrap"]
     },
     "max-indent": {
       "type": "string",
