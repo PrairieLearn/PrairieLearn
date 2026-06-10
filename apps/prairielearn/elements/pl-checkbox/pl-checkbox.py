@@ -918,10 +918,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": feedback,
         }
     elif result == "invalid":
-        # Place an invalid key in raw_submitted_answers; this is invalid even if allow_blank=true
-        data["raw_submitted_answers"][name] = "0"
-        # Place any error message in format_errors[name]
-        data["format_errors"][name] = "You selected an invalid option: 0"
+        if allow_blank:
+            # Place an invalid key in raw_submitted_answers; this is invalid regardless of whether allow_blank is true
+            data["raw_submitted_answers"][name] = "0"
+            # Place any error message in format_errors[name]
+            data["format_errors"][name] = "You selected an invalid option: 0"
+        else:
+            # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
+            # This mimics what a browser does when no checkbox is selected: we simply get no value
+            # for that form field.
+            data["format_errors"][name] = "You must select at least one option."
     else:
         assert_never(result)
 
