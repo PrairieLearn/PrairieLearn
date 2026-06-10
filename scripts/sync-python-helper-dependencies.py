@@ -168,6 +168,11 @@ def sync_helper_pyproject(*, check: bool) -> SyncResult:
             tofile=f"{HELPER_PYPROJECT_PATH} (expected)",
         )
         sys.stdout.writelines(diff)
+        print(
+            "\nPython helper dependencies are out of sync. "
+            "Run `make update-python-helper-dependencies` and commit the result.",
+            file=sys.stderr,
+        )
         return SyncResult.OUT_OF_SYNC
 
     HELPER_PYPROJECT_PATH.write_text(new_contents)
