@@ -1,4 +1,8 @@
-# Assessment access control
+# Legacy assessment access control
+
+!!! warning "Legacy access control"
+
+    This page documents the legacy `allowAccess` format. New assessments should use [`accessControl`](accessControl.md). Existing assessments can continue to use `allowAccess` until they are migrated. When you are ready to migrate, see [Migrating from legacy access control](accessControl.md#migrating-from-legacy-access-control).
 
 By default, assessments are only accessible to [course staff](../course/index.md#course-staff). To control access to assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
 

@@ -1,14 +1,19 @@
-# Modern access control
+# Assessment access control
 
-!!! warning "Not yet generally available"
+Instructors can use the assessment **Access** page to configure availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides.
 
-    This feature is under active development and is not yet available for general use. The documentation here is for internal reference only.
+## Access control checks
 
-Modern access control lets instructors configure assessment availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides from the assessment **Access** page.
+PrairieLearn checks access at two levels:
 
-!!! note
+1. The **course instance** must be available to the student. The student must be enrolled in the course instance, and the course instance must be published or otherwise visible through its [publishing controls](../courseInstance/index.md#publishing-controls).
+2. The **assessment** must grant the student access. Configure assessment access from the assessment **Access** page: **Defaults** apply to all students, and **Overrides** apply to selected student labels or specific students.
 
-    Students must first have access to the **course instance** through [publishing controls](../courseInstance/index.md#publishing-controls), and then must also have access to the specific **assessment** through modern access control. See [Access control checks](accessControl.md#access-control-checks) for details.
+These two checks are both required. Publishing a course instance lets enrolled students see the course instance, but it does not by itself grant access to every assessment in it. Granting assessment access only works for students who can also access the course instance.
+
+!!! note "Legacy `allowAccess`"
+
+    Existing assessments that still use `allowAccess` can continue to do so. New assessments should use the **Access** page and the `accessControl` format documented here. For details about the older format, see the [legacy assessment access control](accessControlLegacy.md) documentation.
 
 ## Open the Access page
 
@@ -17,7 +22,7 @@ From an assessment, open the **Access** tab. The page has two sections:
 - **Defaults**: settings that apply to all students.
 - **Overrides**: settings that apply only to selected student labels or specific students.
 
-![Modern access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
+![Access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
 /// caption
 The Access page summarizes the active configuration and lists every override that applies to the assessment.
 ///
@@ -28,7 +33,7 @@ The summary card shows the current access state, the release/due timeline, credi
 
 Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
-![Defaults editor panel for modern access control](accessControlModern/02-defaults-editor.png)
+![Defaults editor panel for access control](accessControlModern/02-defaults-editor.png)
 /// caption
 Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
 ///
@@ -48,6 +53,12 @@ Set a **Due date** option:
 - **Due on date**: students receive the due-date credit until that date.
 
 By default, the due date is worth 100% credit. Click **Change** next to the due credit if you need a different on-time credit value. This is uncommon — most courses keep the on-time value at 100% and use an **early deadline** to reward early submissions or [bonus points](configuration.md#assessment-points) to let students exceed 100% by doing additional work.
+
+#### Credit
+
+Available credit is the maximum percentage score a student can earn during a particular access window. When the available credit is less than 100%, the percentage score is capped at that value. When the available credit is greater than 100%, students receive the bonus credit percentage once they reach full points; if [`maxBonusPoints`](configuration.md#assessment-points) is used, points above `maxPoints` are also scaled by the available credit percentage.
+
+For example, on a 10-point assessment with 80% available credit, a student who earns 9/10 points receives an 80% score because the access window caps the percentage score. With 110% available credit, a student who earns 10/10 points receives 110%, while a student who earns 8/10 points still receives 80%.
 
 #### Early and late deadlines
 
@@ -197,9 +208,9 @@ Click **Cancel** to discard unsaved UI changes.
 
 Click **Clear** on the Defaults card to remove the default access-control configuration. Click **Remove** on an override card to delete the entire override.
 
-## Migration from legacy access control
+## Migrating from legacy access control
 
-Legacy access control uses `allowAccess` rules. Modern access control uses `accessControl` rules.
+Legacy access control uses `allowAccess` rules. Modern access control uses `accessControl` rules. See the [legacy access control documentation](accessControlLegacy.md) for details about the older format.
 
 Migration from legacy `allowAccess` can be done in two ways:
 
@@ -225,7 +236,7 @@ In the UI:
 3. Set **Release** to **Scheduled for release** and enter Jan 15.
 4. Set **Due date** to **Due on date** and enter Feb 15.
 5. Leave due-date credit at the default 100%.
-6. Set **After due date** to **No submissions allowed**.
+6. Leave **After due date** set to **No submissions allowed**.
 
 ??? info "JSON"
 
@@ -244,7 +255,7 @@ In the UI:
 
 ### Always-open practice assessment
 
-Students can access a practice assessment indefinitely after release with full credit. There is no due date, so deadlines and after-deadline behavior do not apply.
+Students can access a practice assessment indefinitely after release with full credit.
 
 In the UI:
 
@@ -268,7 +279,7 @@ In the UI:
     }
     ```
 
-    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release and any `afterLastDeadline` configuration is ignored.
+    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release.
 
 ### Homework with early bonus and late penalty
 
@@ -559,7 +570,7 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 
 `due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
-When `due.date` is `null`, the due credit applies indefinitely after release and `afterLastDeadline` is ignored.
+When `due.date` is `null`, the due credit applies indefinitely after release.
 
 ### `afterLastDeadline`
 
