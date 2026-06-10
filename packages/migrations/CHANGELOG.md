@@ -1,5 +1,19 @@
 # @prairielearn/migrations
 
+## 5.0.8
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+- Updated dependencies [288ff13]
+  - @prairielearn/postgres@7.0.0
+
+## 5.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 5.0.6
 
 ### Patch Changes

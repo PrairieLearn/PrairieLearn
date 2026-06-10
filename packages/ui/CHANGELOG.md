@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 3.6.0
+
+### Minor Changes
+
+- 74672f0: Add an optional `unit` prop to `NumericInputColumnFilter` to show a unit label (e.g. "minutes") in the filter dropdown.
+
+## 3.5.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.5.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @prairielearn/react
 
+## 2.1.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 2.1.1
 
 ### Patch Changes

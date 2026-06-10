@@ -129,3 +129,12 @@ WHERE
   id = ANY ($ids::bigint[])
   AND target_type = 'enrollment'
   AND assessment_id = $assessment_id;
+
+-- BLOCK move_enrollment_rules_to_temporary_numbers
+UPDATE assessment_access_control_rules
+SET
+  number = - number
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment'
+  AND number > 0;

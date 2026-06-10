@@ -1,17 +1,5 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
-/**
- * Maximum number of access control rules (default + overrides) per assessment.
- * Enforced during both JSON sync and tRPC input validation.
- */
-export const MAX_ACCESS_CONTROL_RULES = 50;
-
-/**
- * Maximum number of enrollment-targeted access control rules per assessment.
- * Enrollment rules are per-student overrides, so a lower limit is appropriate.
- */
-export const MAX_ENROLLMENT_RULES = 100;
-
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
 type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
@@ -993,13 +981,6 @@ export function validateRule(
   }
 
   if (
-    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
-    rule.dateControl.afterLastDeadline.credit !== undefined
-  ) {
-    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
-  }
-
-  if (
     rule.afterComplete?.questions?.hidden === false &&
     (rule.afterComplete.questions.visibleFromDate !== undefined ||
       rule.afterComplete.questions.visibleUntilDate !== undefined)
@@ -1078,12 +1059,6 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    errors.push(
-      `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
-    );
-  }
-
   // A default rule is identified by the absence of a `labels` key.
   const defaultRules = rules.filter((rule) => rule.labels == null);
 
@@ -1157,11 +1132,10 @@ export function validateAccessControlRules({
     // Run the "no completion mechanism" check before the cross-field check,
     // matching the form-side validator. The mechanism error is more
     // fundamental (cross-field consistency is moot when there's no completion
-    // mechanism at all), so surface it first. Errors here are concatenated
-    // rather than deduped by path, so this is purely presentational.
+    // mechanism at all), so surface it first.
     ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
     ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
-  return { errors, warnings };
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }

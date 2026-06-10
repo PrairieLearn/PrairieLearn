@@ -1,5 +1,21 @@
 # @prairielearn/eslint-config
 
+## 3.1.0
+
+### Minor Changes
+
+- d0e7952: enable @typescript-eslint/no-deprecated
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 3.0.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 3.0.2
 
 ### Patch Changes

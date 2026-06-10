@@ -21,6 +21,10 @@ function isRubricWarning(message: string): boolean {
   return message.includes('rubric') || message.includes('Rubric');
 }
 
+export const REMOTE_IMAGE_URL_WARNING = 'Question contains an image reference to a remote URL.';
+const REMOTE_IMAGE_URL_SUMMARY =
+  'One or more questions contain an image reference to a remote URL.';
+
 function uniqueCanvasCourseIds(refs: IRSourceBankRef[]): string[] {
   return [...new Set(refs.flatMap((ref) => (ref.externalCourseId ? [ref.externalCourseId] : [])))];
 }
@@ -89,28 +93,67 @@ export function UnresolvedBankWarnings({ results }: { results: SerializedConvers
   );
 }
 
+export function QuestionBankDeduplicationWarning({
+  deduplicatedQuestionCount,
+}: {
+  deduplicatedQuestionCount: number;
+}) {
+  if (deduplicatedQuestionCount === 0) return null;
+
+  return (
+    <Alert variant="info" className="mb-3">
+      <div className="d-flex align-items-start gap-2">
+        <i className="bi bi-info-circle-fill mt-1" aria-hidden="true" />
+        <div>
+          <strong>Duplicate question bank questions were deduplicated</strong>
+          <p className="mb-0 mt-1">
+            {deduplicatedQuestionCount} question{deduplicatedQuestionCount !== 1 ? 's' : ''}{' '}
+            appeared in multiple question banks and will only be imported once.
+          </p>
+        </div>
+      </div>
+    </Alert>
+  );
+}
+
 export function NonRubricWarnings({
   warnings,
   questions,
+  questionOverrides = new Map(),
 }: {
   warnings: SerializedConversionResult['warnings'];
   questions: SerializedQuestionOutput[];
+  questionOverrides?: Map<string, QuestionOverrides>;
 }) {
   const filtered = warnings.filter((w) => !isRubricWarning(w.message));
-  if (filtered.length === 0) return null;
+  const duplicateQuestionTitles = findDuplicateQuestionTitles(questions, questionOverrides);
+  if (filtered.length === 0 && duplicateQuestionTitles.length === 0) return null;
 
-  const questionBySourceId = new Map(
-    questions.map((q, i) => [q.sourceId, { title: q.infoJson.title, number: i + 1 }]),
+  const hasRemoteImageUrlWarning = filtered.some((w) => w.message === REMOTE_IMAGE_URL_WARNING);
+  const individualWarnings = uniqueWarnings(
+    filtered.filter((w) => w.message !== REMOTE_IMAGE_URL_WARNING),
   );
+
+  const questionById = new Map<string, { title: string; number: number }>();
+  for (const [index, question] of questions.entries()) {
+    const questionInfo = { title: question.infoJson.title, number: index + 1 };
+    questionById.set(question.sourceId, questionInfo);
+    questionById.set(question.directoryName, questionInfo);
+    questionById.set(question.originalDirectoryName, questionInfo);
+  }
 
   return (
     <Alert variant="warning" className="mb-3">
       <strong>Warnings:</strong>
       <ul className="mb-0 mt-1">
-        {filtered.map((w) => {
-          const q = questionBySourceId.get(w.questionId);
+        {hasRemoteImageUrlWarning && (
+          <li key="remote-image-url-warning">{REMOTE_IMAGE_URL_SUMMARY}</li>
+        )}
+        <DuplicateQuestionTitleWarningListItem duplicateTitles={duplicateQuestionTitles} />
+        {individualWarnings.map((w) => {
+          const q = questionById.get(w.questionId);
           return (
-            <li key={`${w.questionId}-${w.message}`}>
+            <li key={warningKey(w)}>
               {q ? `For question "${q.title}" (#${q.number}): ${w.message}` : w.message}
             </li>
           );
@@ -118,6 +161,56 @@ export function NonRubricWarnings({
       </ul>
     </Alert>
   );
+}
+
+export function findDuplicateQuestionTitles(
+  questions: SerializedQuestionOutput[],
+  questionOverrides: Map<string, QuestionOverrides>,
+): string[] {
+  const titleCounts = new Map<string, number>();
+  for (const question of questions) {
+    const override = questionOverrides.get(question.directoryName);
+    if (override?.included === false) continue;
+
+    const title = (override?.title ?? question.infoJson.title).trim();
+    if (title === '') continue;
+
+    titleCounts.set(title, (titleCounts.get(title) ?? 0) + 1);
+  }
+
+  return [...titleCounts.entries()].filter(([, count]) => count > 1).map(([title]) => title);
+}
+
+function DuplicateQuestionTitleWarningListItem({ duplicateTitles }: { duplicateTitles: string[] }) {
+  if (duplicateTitles.length === 0) return null;
+
+  return duplicateTitles.length === 1 ? (
+    <li key="duplicate-question-title">
+      We detected several questions named &ldquo;{duplicateTitles[0]}&rdquo;. We recommend you add
+      meaningful names to these questions to find and edit them more easily in PrairieLearn.
+    </li>
+  ) : (
+    <li key="duplicate-question-titles">
+      We detected several questions with the same names. We recommend you add meaningful names to
+      these questions to find and edit them more easily in PrairieLearn.
+    </li>
+  );
+}
+
+function warningKey(warning: SerializedConversionResult['warnings'][number]): string {
+  return [warning.questionId, warning.message, warning.level, warning.externalCourseId].join('\0');
+}
+
+function uniqueWarnings(
+  warnings: SerializedConversionResult['warnings'],
+): SerializedConversionResult['warnings'] {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = warningKey(warning);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function ImportSummary({
@@ -229,14 +322,24 @@ export function ImportSummary({
   );
 }
 
+export type ProcessingPhase = 'idle' | 'trimming' | 'uploading';
+
+const PROCESSING_PHASE_LABELS: Record<ProcessingPhase, string> = {
+  idle: '',
+  trimming: 'Extracting QTI content\u2026',
+  uploading: 'Uploading\u2026',
+};
+
 export function UploadStep({
   uploading,
+  processingPhase,
   onSubmit,
   courseInstances,
   selectedCourseInstanceId,
   onCourseInstanceChange,
 }: {
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   courseInstances: CourseInstanceOption[];
   selectedCourseInstanceId: string;
@@ -277,15 +380,18 @@ export function UploadStep({
           name="file"
           accept=".zip,.imscc"
           disabled={uploading}
+          aria-describedby="qti-file-help"
           required
         />
-        <Form.Text>Supported formats: .zip (quiz export), .imscc (course export)</Form.Text>
+        <Form.Text id="qti-file-help">
+          Supported formats: .zip (quiz export), .imscc (course export).
+        </Form.Text>
       </div>
       <Button type="submit" variant="primary" disabled={uploading}>
         {uploading ? (
           <>
             <Spinner size="sm" className="me-2" />
-            Processing...
+            {PROCESSING_PHASE_LABELS[processingPhase]}
           </>
         ) : (
           <>
@@ -301,6 +407,7 @@ export function UploadStep({
 export function MissingBanksStep({
   results,
   uploading,
+  processingPhase,
   uploadingBankKey,
   successMessage,
   onSubmit,
@@ -309,6 +416,7 @@ export function MissingBanksStep({
 }: {
   results: SerializedConversionResult[];
   uploading: boolean;
+  processingPhase: ProcessingPhase;
   uploadingBankKey: string | null;
   successMessage: string | null;
   onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
@@ -407,9 +515,10 @@ export function MissingBanksStep({
                     name="file"
                     accept=".zip,.imscc"
                     disabled={uploading}
+                    aria-describedby={`${inputId}-help`}
                     required
                   />
-                  <Form.Text>
+                  <Form.Text id={`${inputId}-help`}>
                     Upload {hasCanvasRef ? 'the Canvas course export' : 'an export'} that contains
                     this bank.
                   </Form.Text>
@@ -424,7 +533,7 @@ export function MissingBanksStep({
                   {isUploadingThisBank ? (
                     <>
                       <Spinner size="sm" className="me-2" />
-                      Processing...
+                      {PROCESSING_PHASE_LABELS[processingPhase]}
                     </>
                   ) : (
                     <>
@@ -459,11 +568,13 @@ export function MissingBanksStep({
 
 export function AssessmentQuestionsSection({
   questions,
+  warnings,
   questionOverrides,
   existingDirs,
   onUpdateOverride,
 }: {
   questions: SerializedQuestionOutput[];
+  warnings: SerializedConversionResult['warnings'];
   questionOverrides: Map<string, QuestionOverrides>;
   existingDirs: Set<string>;
   onUpdateOverride: (dirName: string, updates: Partial<QuestionOverrides>) => void;
@@ -475,6 +586,10 @@ export function AssessmentQuestionsSection({
   const conflictingQuestions = useMemo(
     () => questions.filter((q) => questionOverrides.get(q.directoryName)?.collides),
     [questions, questionOverrides],
+  );
+  const questionWarningsByDirectoryName = useMemo(
+    () => buildQuestionWarningsByDirectoryName(questions, warnings),
+    [questions, warnings],
   );
   const conflictCount = conflictingQuestions.length;
 
@@ -540,6 +655,7 @@ export function AssessmentQuestionsSection({
               key={q.directoryName}
               question={q}
               questionNumber={qi + 1}
+              warnings={questionWarningsByDirectoryName.get(q.directoryName) ?? []}
               overrides={questionOverrides.get(q.directoryName)}
               existingDirs={existingDirs}
               expansionCommand={expansionCommand}
@@ -550,4 +666,38 @@ export function AssessmentQuestionsSection({
       </details>
     </>
   );
+}
+
+export function buildQuestionWarningsByDirectoryName(
+  questions: SerializedQuestionOutput[],
+  warnings: SerializedConversionResult['warnings'],
+): Map<string, SerializedConversionResult['warnings']> {
+  const warningsByQuestionId = new Map<string, SerializedConversionResult['warnings']>();
+  for (const warning of warnings) {
+    if (isRubricWarning(warning.message)) continue;
+    const questionWarnings = warningsByQuestionId.get(warning.questionId) ?? [];
+    questionWarnings.push(warning);
+    warningsByQuestionId.set(warning.questionId, questionWarnings);
+  }
+
+  const questionWarningsByDirectoryName = new Map<string, SerializedConversionResult['warnings']>();
+  for (const question of questions) {
+    const matchingWarnings: SerializedConversionResult['warnings'] = [];
+    const seenWarningKeys = new Set<string>();
+    for (const questionId of [
+      question.directoryName,
+      question.originalDirectoryName,
+      question.sourceId,
+    ]) {
+      for (const warning of warningsByQuestionId.get(questionId) ?? []) {
+        const key = warning.message;
+        if (seenWarningKeys.has(key)) continue;
+        seenWarningKeys.add(key);
+        matchingWarnings.push(warning);
+      }
+    }
+    questionWarningsByDirectoryName.set(question.directoryName, matchingWarnings);
+  }
+
+  return questionWarningsByDirectoryName;
 }
