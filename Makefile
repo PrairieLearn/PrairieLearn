@@ -112,6 +112,8 @@ check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-helper-dependencies:
+	@uv run python scripts/sync-python-helper-dependencies.py --check
 update-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts
 
