@@ -18,22 +18,13 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
-type AfterLastDeadlineMode =
-  | 'no_access'
-  | 'no_submissions'
-  | 'practice_submissions'
-  | 'partial_credit';
+type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
 const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
-    value: 'no_access',
-    label: 'No access',
-    description: 'Students cannot access the assessment',
-  },
-  {
     value: 'no_submissions',
     label: 'No submissions allowed',
-    description: 'Students can still view but not submit',
+    description: 'Students can review what after-completion visibility allows',
   },
   {
     value: 'practice_submissions',
@@ -60,11 +51,17 @@ function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
   return 'late deadlines';
 }
 
-function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
-  if (value == null) return 'no_access';
+function getMode(value: AfterLastDeadlineValue): AfterLastDeadlineMode {
   if (!value.allowSubmissions) return 'no_submissions';
-  if (value.credit == null) return 'practice_submissions';
+  if (value.credit === 0) return 'practice_submissions';
   return 'partial_credit';
+}
+
+function getDefaultPartialCredit(precedingCredit: number | undefined): number {
+  // Match late-deadline defaults: choose 10 points below the preceding credit,
+  // capping bonus-credit anchors at 100 and keeping partial credit positive.
+  const anchor = precedingCredit === undefined ? 100 : Math.min(precedingCredit, 100);
+  return Math.max(1, Math.min(anchor - 10, 99));
 }
 
 /**
@@ -102,8 +99,8 @@ function AfterLastDeadlineInput({
   displayTimezone,
   isExam,
 }: {
-  value: AfterLastDeadlineValue | null;
-  onChange: (value: AfterLastDeadlineValue | null) => void;
+  value: AfterLastDeadlineValue;
+  onChange: (value: AfterLastDeadlineValue) => void;
   overrideIndex?: number;
   displayTimezone: string;
   isExam: boolean;
@@ -162,9 +159,10 @@ function AfterLastDeadlineInput({
     if (lastDate) {
       return (
         <>
-          This will take effect after{' '}
+          This controls the ability to submit after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
-          , until the course instance end date.
+          , until the course instance end date. Visibility is controlled by the after-completion
+          settings.
         </>
       );
     }
@@ -172,27 +170,30 @@ function AfterLastDeadlineInput({
     // TODO: we want to update the UI to completely hide the "after last deadline" options
     // when there are in fact no deadlines. That'll render this branch obsolete, but in the
     // meantime we have to show something here.
-    return 'This will take effect until the course instance end date.';
+    return 'This controls the ability to submit until the course instance end date. Visibility is controlled by the after-completion settings.';
   };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
     switch (newMode) {
-      case 'no_access':
-        onChange(null);
-        break;
       case 'no_submissions':
         onChange({ allowSubmissions: false });
         break;
       case 'practice_submissions':
-        onChange({ allowSubmissions: true });
+        onChange({ allowSubmissions: true, credit: 0 });
         break;
       case 'partial_credit':
-        onChange({ allowSubmissions: true, credit: 0 });
+        onChange({
+          allowSubmissions: true,
+          credit:
+            value.allowSubmissions && value.credit > 0
+              ? value.credit
+              : getDefaultPartialCredit(precedingCredit),
+        });
         break;
     }
   };
 
-  const showExamSubmissionsWarning = isExam && value?.allowSubmissions === true;
+  const showExamSubmissionsWarning = isExam && value.allowSubmissions === true;
   const deadlineNoun = isOverride ? 'last deadline' : getLastDeadlineNoun(lateDeadlines);
 
   return (
@@ -323,7 +324,7 @@ export function OverrideAfterLastDeadlineField({
       isOverridden={isOverridden}
       label="After last deadline"
       onOverride={() => {
-        field.onChange(defaultRuleValue ?? null);
+        field.onChange(defaultRuleValue);
         addOverride();
       }}
       onRemoveOverride={removeOverride}

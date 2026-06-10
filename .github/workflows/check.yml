@@ -124,6 +124,8 @@ jobs:
         run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that element schemas are up-to-date
+        run: make check-element-schemas
       - name: Check that all packages exist on npm
         run: make check-npm-packages
       - name: Check badge color contrast

@@ -35,7 +35,7 @@ Editing the defaults opens a side panel with date control, PrairieTest, before-r
 
 ### Date control
 
-Use **Date control** to decide when students can open the assessment and how much credit submissions receive over time.
+Use **Date control** to configure when students can open the assessment, when submissions are accepted, and how much credit submissions receive over time.
 
 Set a **Release** option:
 
@@ -71,6 +71,8 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
 - **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
+
+This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 #### Time limits
 
@@ -124,7 +126,7 @@ Disable it when the assessment should be completely hidden until release.
 
 Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
 
-An assessment is complete when students can no longer answer questions, usually after the due date and any late deadlines pass, after a timed assessment closes, or after an instructor closes it.
+These settings apply once submissions are no longer allowed: after the final deadline, when a timed assessment closes, or when an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
 Question visibility options:
 
@@ -214,7 +216,7 @@ For JSON-level before-and-after examples, see [Legacy migration examples](#legac
 
 ### Simple homework with a due date
 
-Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, students can no longer start or submit unless `afterLastDeadline.allowSubmissions` is enabled.
+Students can start and submit the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, submissions are not allowed. The **After completion** settings apply; by default, students can see their score but not the questions.
 
 In the UI:
 
@@ -279,6 +281,8 @@ In the UI:
 | Feb 22-Mar 1  | 50%                                       |
 | After Mar 1   | 0%, with submissions allowed for feedback |
 
+After Mar 1, submissions remain open indefinitely for feedback at 0% credit. The **After completion** settings apply only after the student's assessment instance closes or its time limit expires.
+
 In the UI:
 
 1. Edit **Defaults**.
@@ -314,7 +318,7 @@ In the UI:
 
 ### Timed exam with password
 
-Students have a 90-minute time limit within the two-hour exam window. A password is required to start. Questions and scores are hidden after completion, with scores revealed on Mar 12.
+Students have a 90-minute time limit within the two-hour exam window. A password is required to start. Submissions stop after the exam window. Once the exam is complete, questions and scores are hidden, with scores revealed on Mar 12.
 
 In the UI:
 
@@ -430,9 +434,9 @@ In the UI:
 
 ## Limitations
 
-Modern access control models credit as a single contiguous timeline from the release date through deadlines to the final close. It cannot represent non-contiguous credit ranges where credit is available, then unavailable, then available again.
+Modern access control models credit as a single contiguous submission timeline from the release date through deadlines to the point where submissions stop. It cannot represent non-contiguous submission ranges where credit is available, then unavailable, then available again.
 
-For example, a legacy setup that opens for 100% credit from Jan 15 to Feb 15, closes completely, and then reopens for 100% credit from Mar 1 to Mar 15 cannot be represented as one modern credit timeline.
+For example, a legacy setup that accepts 100% credit submissions from Jan 15 to Feb 15, stops accepting submissions, and then reopens for 100% credit submissions from Mar 1 to Mar 15 cannot be represented as one modern credit timeline.
 
 Assessments with non-contiguous credit ranges are flagged as incompatible during migration. You can clear those rules and reconfigure access manually, or keep the legacy format.
 
@@ -469,7 +473,7 @@ The `accessControl` field is an array in `infoAssessment.json`:
       "dateControl": {
         "release": { "date": "2026-04-10T00:00:01" },
         "due": { "date": "2026-05-01T23:59:59" },
-        "afterLastDeadline": { "allowSubmissions": true }
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
@@ -543,15 +547,15 @@ The first element is the defaults rule. Later elements are overrides. Each overr
 
 ### `dateControl`
 
-| Field               | Type    | Description                                                                                                      |
-| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
-| `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                      |
-| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional integer `credit` (0-200, default 100). |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                        |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                       |
-| `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive.      |
-| `durationMinutes`   | integer | Time limit in minutes.                                                                                           |
-| `password`          | string  | Password required to start the assessment.                                                                       |
+| Field               | Type    | Description                                                                                                                                                                                 |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                                                                                                 |
+| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional integer `credit` (0-200, default 100).                                                                            |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                                                                                                   |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                                                                                                  |
+| `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive. Omit on the default rule to disallow submissions; omit on overrides to inherit. |
+| `durationMinutes`   | integer | Time limit in minutes.                                                                                                                                                                      |
+| `password`          | string  | Password required to start the assessment.                                                                                                                                                  |
 
 `due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
@@ -559,12 +563,16 @@ When `due.date` is `null`, the due credit applies indefinitely after release and
 
 ### `afterLastDeadline`
 
-| Field              | Type    | Default | Description                                                    |
-| ------------------ | ------- | ------- | -------------------------------------------------------------- |
-| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines. |
-| `credit`           | integer | `0`     | Credit percentage after the last deadline, from 0 to 99.       |
+| Field              | Type    | Default | Description                                                                                          |
+| ------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines.                                       |
+| `credit`           | integer | -       | Required when `allowSubmissions` is `true`; credit percentage after the last deadline, from 0 to 99. |
 
-If `allowSubmissions` is `true` and `credit` is omitted, submissions are allowed for practice with 0% credit. If `credit` is set, it must be below 100% and below the preceding deadline's credit.
+If `allowSubmissions` is `true`, `credit` is required and must be below 100% and below the preceding deadline's credit. Use `"credit": 0` for practice submissions.
+
+If `afterLastDeadline` is omitted on the default rule or set to `{ "allowSubmissions": false }`, students cannot submit after the final deadline. They can still review whatever the `afterComplete` settings make visible. On overrides, omit `afterLastDeadline` to inherit from the default rule, or set `{ "allowSubmissions": false }` to explicitly disable submissions.
+
+If `allowSubmissions` is `true`, the `afterComplete` visibility settings apply only after the student's assessment instance closes or its time limit expires.
 
 ### `beforeRelease`
 
@@ -622,6 +630,7 @@ There are a few important details:
 
 - `due` is one atomic setting. Overriding the due date also overrides the due-date credit choice — they cannot be cascaded independently.
 - `earlyDeadlines` and `lateDeadlines` are each replaced as a whole array. Setting either to `[]` in an override **clears** the inherited deadlines for that override's students.
+- `afterLastDeadline` is inherited when omitted from an override. Set `{ "allowSubmissions": false }` to explicitly disable after-deadline submissions for that override.
 - `durationMinutes: null` and `password: null` in an override **clear** the inherited time limit or password. Omitting the field entirely keeps the inherited value.
 - `afterComplete.questions` and `afterComplete.score` inherit independently of each other, but each is replaced as a whole object: an override that sets `afterComplete.questions` without dates does not retain the default's `visibleFromDate`/`visibleUntilDate`.
 - `beforeRelease.listed` and PrairieTest integrations (`integrations.prairieTest`) are **defaults-only**. Overrides cannot enable, disable, or change them.

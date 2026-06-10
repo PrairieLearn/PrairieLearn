@@ -39,10 +39,9 @@ export interface DueValue {
   customCredit: boolean;
 }
 
-export interface AfterLastDeadlineValue {
-  allowSubmissions: boolean;
-  credit?: number;
-}
+export type AfterLastDeadlineValue =
+  | { allowSubmissions: false }
+  | { allowSubmissions: true; credit: number };
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
@@ -104,7 +103,7 @@ interface ReleaseValue {
   released: boolean;
 }
 
-// Default rule: flat fields, null = feature off
+// Default rule: flat fields. Nullable field values use null as their "off" state.
 export interface DefaultRuleData {
   id?: string;
   trackingId: string;
@@ -114,7 +113,7 @@ export interface DefaultRuleData {
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   prairieTestExams: PrairieTestExam[];
@@ -135,7 +134,7 @@ export interface OverrideData {
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   questionVisibility: QuestionVisibilityValue;
@@ -243,7 +242,7 @@ export function jsonToDefaultRuleFormData(
       ...d,
       date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
-    afterLastDeadline: dc?.afterLastDeadline ?? null,
+    afterLastDeadline: dc?.afterLastDeadline ?? { allowSubmissions: false },
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
     prairieTestExams: (json.integrations?.prairieTest?.exams ?? []).map((e) => ({
@@ -332,7 +331,7 @@ export function jsonToOverrideFormData(
     overriddenFields.push('lateDeadlines');
   }
 
-  let afterLastDeadline: AfterLastDeadlineValue | null = null;
+  let afterLastDeadline: AfterLastDeadlineValue = { allowSubmissions: false };
   if (dc?.afterLastDeadline !== undefined) {
     afterLastDeadline = dc.afterLastDeadline;
     overriddenFields.push('afterLastDeadline');
@@ -406,6 +405,15 @@ function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
   return { date: due.date };
 }
 
+function buildAfterLastDeadlineJson(
+  value: AfterLastDeadlineValue,
+): NonNullable<NonNullable<AccessControlJsonWithId['dateControl']>['afterLastDeadline']> {
+  if (!value.allowSubmissions) {
+    return { allowSubmissions: false };
+  }
+  return { allowSubmissions: true, credit: value.credit };
+}
+
 function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
@@ -430,8 +438,8 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
     if (rule.lateDeadlines.length > 0) {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
-    if (rule.afterLastDeadline) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (rule.afterLastDeadline.allowSubmissions === true) {
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
@@ -526,7 +534,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (of.has('afterLastDeadline')) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
@@ -588,7 +596,9 @@ export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): Ov
       : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: defaultRule?.afterLastDeadline ? { ...defaultRule.afterLastDeadline } : null,
+    afterLastDeadline: defaultRule
+      ? { ...defaultRule.afterLastDeadline }
+      : { allowSubmissions: false },
     durationMinutes: defaultRule?.durationMinutes ?? null,
     password: defaultRule?.password ?? null,
     questionVisibility: defaultRule ? { ...defaultRule.questionVisibility } : { hidden: true },

@@ -347,9 +347,10 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is complete when students can no longer answer questions — for example, after
-        the due date and any late deadlines pass, after a time limit expires, or once their
-        assessment instance is closed (manually or via autoclose).
+        These settings apply once submissions are no longer allowed: after the final deadline, when
+        a time limit expires, or when a student's assessment instance is closed (manually or via
+        autoclose). If after-deadline submissions are allowed, these settings apply only after the
+        student's assessment instance closes or its time limit expires.
       </p>
       <p>
         The completion time can vary between students based on when they started or any
