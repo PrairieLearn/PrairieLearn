@@ -3,7 +3,7 @@ import { ok as assert } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
 import type { Entry } from 'fast-glob';
@@ -730,7 +730,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   );
   const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const remoteName = `workspace-${workspace_id}-${workspace_version}`;
   const remoteDir = path.join(config.workspaceHomeDirRoot, remoteName, 'current');
 

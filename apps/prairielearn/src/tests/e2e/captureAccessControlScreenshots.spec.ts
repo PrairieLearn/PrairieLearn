@@ -5,7 +5,7 @@
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
- * Usage: `yarn capture-access-control-screenshots`
+ * Usage: `pnpm capture-access-control-screenshots`
  */
 
 import fs from 'node:fs';
@@ -87,7 +87,7 @@ async function writeScreenshotAssessmentConfig({
       dateControl: {
         release: { date: screenshotDate(displayTimezone, -7, '00:00:01') },
         due: { date: screenshotDate(displayTimezone, 14, '23:59:59') },
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
       afterComplete: { questions: { hidden: false } },
     },

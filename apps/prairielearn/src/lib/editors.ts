@@ -1,8 +1,8 @@
 import assert from 'node:assert';
+import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -45,6 +45,7 @@ import {
 import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import { features } from './features/index.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -62,6 +63,10 @@ function todayAsDatetimeLocal(
 ): string {
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   return `${today.toString()}T00:00:00`;
+}
+
+export function getHash(contents: string | Buffer) {
+  return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
 async function syncCourseFromDisk(
@@ -805,6 +810,13 @@ export class AssessmentAddEditor extends Editor {
 
     debug('Write infoAssessment.json');
 
+    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
+      institution_id: this.course.institution_id,
+      course_id: this.course.id,
+      course_instance_id: this.course_instance.id,
+      user_id: this.user.id,
+    });
+
     const infoJson = {
       uuid: this.uuid,
       type: this.type,
@@ -812,7 +824,7 @@ export class AssessmentAddEditor extends Editor {
       set: this.set,
       module: this.module,
       number: nextAssessmentNumber.toString(),
-      allowAccess: [],
+      ...(enhancedAccessControlEnabled ? { accessControl: [] } : { allowAccess: [] }),
       zones: [],
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
@@ -2364,10 +2376,6 @@ export class FileUploadEditor extends Editor {
     this.fileContents = fileContents;
   }
 
-  getHashFromBuffer(buffer: Buffer) {
-    return sha256(buffer.toString('utf8')).toString();
-  }
-
   async shouldEdit() {
     debug('look for old contents');
     let contents;
@@ -2383,8 +2391,8 @@ export class FileUploadEditor extends Editor {
     }
 
     debug('get hash of old contents and of new contents');
-    const oldHash = this.getHashFromBuffer(contents);
-    const newHash = this.getHashFromBuffer(this.fileContents);
+    const oldHash = getHash(contents);
+    const newHash = getHash(this.fileContents);
     debug('oldHash: ' + oldHash);
     debug('newHash: ' + newHash);
     if (oldHash === newHash) {
@@ -2500,13 +2508,9 @@ export class FileModifyEditor extends Editor {
     this.origHash = origHash;
   }
 
-  getHash(contents: string) {
-    return sha256(contents).toString();
-  }
-
   shouldEdit() {
     debug('get hash of edit contents');
-    const editHash = this.getHash(this.editContents);
+    const editHash = getHash(this.editContents);
     debug('editHash: ' + editHash);
     debug('origHash: ' + this.origHash);
     if (this.origHash === editHash) {
@@ -2564,7 +2568,7 @@ export class FileModifyEditor extends Editor {
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
     const diskContents = b64EncodeUnicode(diskContentsUTF);
-    const diskHash = this.getHash(diskContents);
+    const diskHash = getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }

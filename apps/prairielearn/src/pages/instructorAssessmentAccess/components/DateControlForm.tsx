@@ -47,7 +47,8 @@ export function DefaultDateControlForm({
   const afterLastDeadline = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
   });
-  const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
+  const showLateFields =
+    dueDate != null || lateDeadlines.length > 0 || afterLastDeadline.allowSubmissions;
 
   return (
     <div>

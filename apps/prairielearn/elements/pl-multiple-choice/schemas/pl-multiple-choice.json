@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "answers-name": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    },
+    "number-answers": {
+      "type": "string",
+      "format": "integer"
+    },
+    "order": {
+      "type": "string",
+      "enum": ["random", "ascend", "descend", "fixed"]
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline", "dropdown"]
+    },
+    "hide-letter-keys": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "fixed-order": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"order\" attribute instead."
+    },
+    "inline": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"display\" attribute instead."
+    },
+    "hide-score-badge": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "builtin-grading": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "external-json": {
+      "type": "string",
+      "deprecated": true,
+      "description": "Define answer choices inline with <pl-answer> instead."
+    },
+    "external-json-correct-key": {
+      "type": "string",
+      "deprecated": true
+    },
+    "external-json-incorrect-key": {
+      "type": "string",
+      "deprecated": true
+    },
+    "all-of-the-above": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "boolean"
+        },
+        {
+          "type": "string",
+          "enum": ["false", "random", "correct", "incorrect"]
+        }
+      ]
+    },
+    "none-of-the-above": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "boolean"
+        },
+        {
+          "type": "string",
+          "enum": ["false", "random", "correct", "incorrect"]
+        }
+      ]
+    },
+    "all-of-the-above-feedback": {
+      "type": "string"
+    },
+    "none-of-the-above-feedback": {
+      "type": "string"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

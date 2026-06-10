@@ -12,6 +12,7 @@ dependencies = [
   "coloraide==8.8.1",
   "faker==40.15.0",
   "jinja2==3.1.6",
+  "jsonschema==4.25.1",
   "lxml==6.1.0",
   "matplotlib==3.10.9",
   "networkx==3.6.1",
@@ -51,7 +52,7 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-github-actions-annotate-failures==0.4.0",
   "pytest-repeat==0.9.4",
-  "ruff==0.15.12",
+  "ruff==0.15.16",
   "sqlfluff==4.1.0",
   "squawk-cli==2.49.0",
   "types-chevron==0.14.2.20260408",
@@ -75,7 +76,7 @@ docs = [
   "pygments==2.20.0",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.15.12",
+  "ruff==0.15.16",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -150,6 +151,7 @@ ignore = [
   "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
   "PLR2004", # magic-value-comparison
   "PLR6301", # no-self-use
+  "PLW0717", # too-many-try-statements
   "PLW1514", # unspecified-encoding
   "RET503",  # implicit-return
   "RET504",  # unnecessary-assign
