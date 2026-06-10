@@ -4,28 +4,6 @@
   "title": "Test Active Access Rule",
   "set": "Exam",
   "number": "11",
-  "allowAccess": [
-    {
-      "timeLimitMin": 50,
-      "startDate": "2010-01-01T00:00:01",
-      "endDate": "2010-01-01T23:59:59",
-      "credit": 100
-    },
-    {
-      "startDate": "2020-01-01T00:00:01",
-      "endDate": "2021-01-01T00:00:01",
-      "active": false,
-      "showClosedAssessment": false
-    },
-    {
-      "startDate": "2030-01-01T00:00:01",
-      "endDate": "2031-01-01T00:00:01",
-      "active": false,
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false
-    },
-    { "startDate": "1900-01-01T00:00:01", "endDate": "2100-01-01T00:00:01", "active": false }
-  ],
   "shuffleQuestions": false,
   "zones": [
     {
@@ -38,6 +16,20 @@
         { "id": "partialCredit3", "autoPoints": [13, 13, 8, 0.5, 0.1] },
         { "id": "workspace", "autoPoints": [10] }
       ]
+    }
+  ],
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2010-01-01T00:00:01" },
+        "due": { "date": "2010-01-01T23:59:59" },
+        "durationMinutes": 50
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2020-01-01T00:00:01" },
+        "score": { "hidden": true, "visibleFromDate": "2020-01-01T00:00:01" }
+      },
+      "beforeRelease": { "listed": true }
     }
   ]
 }

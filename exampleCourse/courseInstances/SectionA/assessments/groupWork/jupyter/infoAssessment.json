@@ -9,13 +9,8 @@
   "groups": {
     "minMembers": 1,
     "maxMembers": 5,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    }
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true }
   },
-  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": " How Markov chains work?",
@@ -26,5 +21,6 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/groupWork/jupyter/__docs/docs.md\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p>"
+  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/groupWork/jupyter/__docs/docs.md\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p>",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
 }

@@ -5,7 +5,6 @@
   "set": "Exam",
   "number": "2",
   "allowRealTimeGrading": false,
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 3, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Warm-up",
@@ -56,5 +55,11 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This assessment will only be graded after it is completed. Students will not be able to auto-grade their questions during the assessment, instead they will only be able to save their answers. The assessment will be graded once the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Once the assessment is closed, the questions will be auto-graded, and students will be able to immediately see their total score. To prevent students from seeing their total score as soon as the assessment is over, instructors can set 'showClosedAssessmentScore' to false. </p> <p> In this assessment configuration, students will never see their grading result for each specific question, because it uses 'showClosedAssessment: false'. If this attribute is removed, students are be able to go back to each question from a closed assessment, and review how the questions were graded. </p>"
+  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This assessment will only be graded after it is completed. Students will not be able to auto-grade their questions during the assessment, instead they will only be able to save their answers. The assessment will be graded once the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Once the assessment is closed, the questions will be auto-graded, and students will be able to immediately see their total score. To prevent students from seeing their total score as soon as the assessment is over, instructors can set 'showClosedAssessmentScore' to false. </p> <p> In this assessment configuration, students will never see their grading result for each specific question, because it uses 'showClosedAssessment: false'. If this attribute is removed, students are be able to go back to each question from a closed assessment, and review how the questions were graded. </p>",
+  "accessControl": [
+    {
+      "dateControl": { "durationMinutes": 3, "release": { "date": "2000-01-01T00:00:00" } },
+      "afterComplete": { "questions": { "hidden": true } }
+    }
+  ]
 }

@@ -5,7 +5,6 @@
   "set": "Homework",
   "number": "1",
   "module": "Module1",
-  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
@@ -28,5 +27,6 @@
         { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
       ]
     }
-  ]
+  ],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
 }

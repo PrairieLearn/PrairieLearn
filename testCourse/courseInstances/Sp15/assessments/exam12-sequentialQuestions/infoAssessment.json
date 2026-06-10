@@ -1,6 +1,5 @@
 {
   "uuid": "d7bcc376-4f23-41d6-9f71-87dd1d23991b",
-  "allowAccess": [{ "credit": 100 }],
   "title": "Force student to complete questions in-order",
   "type": "Exam",
   "set": "Exam",
@@ -25,5 +24,6 @@
     { "questions": [{ "id": "partialCredit4_v2", "autoPoints": 1, "advanceScorePerc": 0 }] },
     { "questions": [{ "id": "addNumbers", "autoPoints": 1, "advanceScorePerc": 30 }] },
     { "questions": [{ "id": "internalGrade/addingNumbers", "autoPoints": 1 }] }
-  ]
+  ],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
 }

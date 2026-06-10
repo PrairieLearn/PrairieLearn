@@ -4,14 +4,6 @@
   "title": "Exam to test per-zone grading",
   "set": "Exam",
   "number": "5",
-  "allowAccess": [
-    {
-      "credit": 100,
-      "startDate": "1900-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59",
-      "timeLimitMin": 50
-    }
-  ],
   "zones": [
     {
       "title": "Questions to test maxPoints",
@@ -27,6 +19,15 @@
         { "id": "partialCredit3", "autoPoints": [15, 10, 5, 1] },
         { "id": "partialCredit4_v2", "autoPoints": [20, 15, 10, 5, 1] }
       ]
+    }
+  ],
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "1900-07-07T23:59:59" },
+        "due": { "date": "2300-07-10T23:59:59" },
+        "durationMinutes": 50
+      }
     }
   ]
 }

@@ -6,12 +6,6 @@
   "number": "3",
   "module": "Module2",
   "constantQuestionValue": true,
-  "allowAccess": [
-    { "credit": 120, "startDate": "2014-04-07T00:00:01", "endDate": "2014-07-10T23:59:59" },
-    { "credit": 100, "startDate": "2014-07-07T00:00:01", "endDate": "2024-07-10T23:59:59" },
-    { "credit": 80, "startDate": "2014-07-07T00:00:01", "endDate": "2024-08-10T23:59:59" },
-    { "credit": 50, "startDate": "2014-07-07T00:00:01", "endDate": "2024-09-10T23:59:59" }
-  ],
   "zones": [
     {
       "questions": [
@@ -21,6 +15,19 @@
         { "id": "partialCredit4_v2", "autoPoints": 3, "maxAutoPoints": 10 },
         { "id": "partialCredit6_no_partial", "autoPoints": 3, "maxAutoPoints": 11 }
       ]
+    }
+  ],
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2014-04-07T00:00:01" },
+        "due": { "date": "2024-07-10T23:59:59" },
+        "earlyDeadlines": [{ "date": "2014-07-10T23:59:59", "credit": 120 }],
+        "lateDeadlines": [
+          { "date": "2024-08-10T23:59:59", "credit": 80 },
+          { "date": "2024-09-10T23:59:59", "credit": 50 }
+        ]
+      }
     }
   ]
 }
