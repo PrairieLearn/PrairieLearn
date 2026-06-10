@@ -146,6 +146,7 @@ WHERE
       assessments AS a
     WHERE
       a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
       AND CASE
         WHEN $assessments_group_by = 'Set' THEN a.assessment_set_id = $group_id
         WHEN $assessments_group_by = 'Module' THEN a.assessment_module_id = $group_id

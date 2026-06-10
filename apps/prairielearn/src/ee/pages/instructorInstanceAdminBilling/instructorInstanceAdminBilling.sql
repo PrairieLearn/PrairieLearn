@@ -4,7 +4,8 @@ SELECT
 FROM
   enrollments
 WHERE
-  course_instance_id = $course_instance_id;
+  course_instance_id = $course_instance_id
+  AND status = 'joined';
 
 -- BLOCK question_counts
 WITH

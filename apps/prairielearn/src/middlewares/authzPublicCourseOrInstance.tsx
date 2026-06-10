@@ -39,7 +39,9 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
         const course_instance = await selectOptionalCourseInstanceById(
           req.params.course_instance_id,
         );
-        if (!course_instance) throw new HttpStatusError(404, 'Not Found');
+        if (!course_instance || course_instance.deleted_at != null) {
+          throw new HttpStatusError(404, 'Not Found');
+        }
 
         return {
           course: await selectOptionalCourseById(course_instance.course_id),
@@ -57,7 +59,7 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
       throw new Error('Either course_id or course_instance_id must be provided.');
     });
 
-    if (!course) throw new HttpStatusError(404, 'Not Found');
+    if (!course || course.deleted_at != null) throw new HttpStatusError(404, 'Not Found');
 
     const questionSharingEnabled = await features.enabled('question-sharing', {
       institution_id: course.institution_id,

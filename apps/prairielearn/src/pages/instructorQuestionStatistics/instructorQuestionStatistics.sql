@@ -41,6 +41,9 @@ FROM
 WHERE
   aq.question_id = $question_id
   AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+  AND c.deleted_at IS NULL
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,

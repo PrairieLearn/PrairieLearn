@@ -18,6 +18,8 @@ INSERT INTO
     WHERE
       u.id = $user_id
       AND c.example_course IS TRUE
+      AND c.deleted_at IS NULL
+      AND ci.deleted_at IS NULL
   )
 ON CONFLICT DO NOTHING
 RETURNING

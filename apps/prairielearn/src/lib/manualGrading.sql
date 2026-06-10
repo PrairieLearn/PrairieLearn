@@ -424,6 +424,7 @@ WITH
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id
         AND ri.rubric_id = $rubric_id
+        AND ri.deleted_at IS NULL
       )
     RETURNING
       *
