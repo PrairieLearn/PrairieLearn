@@ -8,9 +8,9 @@ import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import {
   type AccessControlFormData,
+  type DefaultRuleData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
 import { DATE_REQUIRED_MESSAGE, isDateFieldEmpty } from './validation.js';
@@ -63,6 +63,18 @@ const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
     description: 'Score will be hidden after completion and become visible on this date',
   },
 ];
+
+function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  > & { hasExamAutoClose: boolean },
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0 || rule.hasExamAutoClose;
+}
 
 function getHideQuestionsMode(value: QuestionVisibilityValue): HideQuestionsMode {
   if (!value.hidden) return 'show_questions';
@@ -348,8 +360,8 @@ const infoPopoverConfig = {
     <>
       <p>
         These settings apply once submissions are no longer allowed: after the final deadline, when
-        a time limit expires, or when a student's assessment instance is closed (manually or via
-        autoclose). If after-deadline submissions are allowed, these settings apply only after the
+        a time limit expires, or when a student's assessment instance is closed manually or by Exam
+        auto-close. If after-deadline submissions are allowed, these settings apply only after the
         student's assessment instance closes or its time limit expires.
       </p>
       <p>
@@ -400,9 +412,13 @@ function AfterCompleteCard({
 export function DefaultAfterCompleteForm({
   title,
   displayTimezone,
+  isExam,
+  hasExamAutoClose,
 }: {
   title?: string;
   displayTimezone: string;
+  isExam: boolean;
+  hasExamAutoClose: boolean;
 }) {
   const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
     {
@@ -449,10 +465,20 @@ export function DefaultAfterCompleteForm({
     lateDeadlines,
     durationMinutes,
     prairieTestExams,
+    hasExamAutoClose,
   });
+  const automaticCompletionMechanisms = isExam
+    ? 'a due date, time limit, late deadline, PrairieTest exam, or Exam auto-close'
+    : 'a due date, time limit, late deadline, or PrairieTest exam';
 
   return (
     <AfterCompleteCard title={title}>
+      {!hasCompletionMechanism && (
+        <Alert variant="info" className="mb-0">
+          Without {automaticCompletionMechanisms}, these settings will only take effect if an
+          instructor manually closes a student's assessment instance.
+        </Alert>
+      )}
       <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility

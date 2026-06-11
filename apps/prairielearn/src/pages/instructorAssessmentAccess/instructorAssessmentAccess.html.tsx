@@ -425,6 +425,9 @@ export function InstructorAssessmentAccessNew({
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
           isExam={resLocals.assessment.type === 'Exam'}
+          hasExamAutoClose={
+            resLocals.assessment.type === 'Exam' && (resLocals.assessment.auto_close ?? true)
+          }
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}

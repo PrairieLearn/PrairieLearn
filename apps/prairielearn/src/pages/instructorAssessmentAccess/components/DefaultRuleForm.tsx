@@ -24,9 +24,11 @@ const beforeReleasePopoverConfig = {
 export function DefaultRuleForm({
   displayTimezone,
   isExam,
+  hasExamAutoClose,
 }: {
   displayTimezone: string;
   isExam: boolean;
+  hasExamAutoClose: boolean;
 }) {
   const ruleEditable = useAccessControlRuleEditable();
   const { register } = useFormContext<AccessControlFormData>();
@@ -61,7 +63,11 @@ export function DefaultRuleForm({
           Students can see the assessment title before release
         </Form.Text>
       </div>
-      <DefaultAfterCompleteForm displayTimezone={displayTimezone} />
+      <DefaultAfterCompleteForm
+        displayTimezone={displayTimezone}
+        isExam={isExam}
+        hasExamAutoClose={hasExamAutoClose}
+      />
     </div>
   );
 }

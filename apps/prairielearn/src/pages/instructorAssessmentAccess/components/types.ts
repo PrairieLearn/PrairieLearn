@@ -156,24 +156,6 @@ export function isOverrideEditable(
 }
 
 /**
- * The default rule has an automatic completion mechanism when a due date, late
- * deadline, duration limit, or PrairieTest exam can close the assessment.
- * Manual assessment-instance closure can still trigger after-completion
- * visibility; this helper only controls form advisory copy.
- */
-export function defaultRuleHasCompletionMechanism(
-  rule: Pick<
-    DefaultRuleData,
-    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
-  >,
-): boolean {
-  const hasDateControlMechanism =
-    rule.dateControlEnabled &&
-    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
-  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
-}
-
-/**
  * Whether a (timezone-naive) datetime string is at or before "now" in the
  * given display timezone. A null/empty value is treated as released.
  */
