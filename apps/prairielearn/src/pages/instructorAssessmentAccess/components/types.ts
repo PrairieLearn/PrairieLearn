@@ -156,13 +156,10 @@ export function isOverrideEditable(
 }
 
 /**
- * The default rule has a completion mechanism when something can actually
- * close the assessment: a due date, a late deadline, a duration limit, or a
- * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
- * with only a release date or password has date control "on" but nothing to
- * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
- * in `validation.ts`. Used to gate after-complete UI and serialization on
- * the default rule.
+ * The default rule has an automatic completion mechanism when a due date, late
+ * deadline, duration limit, or PrairieTest exam can close the assessment.
+ * Manual assessment-instance closure can still trigger after-completion
+ * visibility; this helper only controls form advisory copy.
  */
 export function defaultRuleHasCompletionMechanism(
   rule: Pick<
@@ -467,16 +464,15 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false) AND there is a
-  // completion mechanism (dateControl or PrairieTest). Without one,
-  // after-complete settings are meaningless and would fail validation.
-  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
+  // (questions.hidden: true, score.hidden: false). These settings can apply
+  // even without a scheduled deadline when an instructor manually closes a
+  // student's assessment instance.
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden

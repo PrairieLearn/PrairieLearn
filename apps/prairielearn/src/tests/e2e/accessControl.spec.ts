@@ -17,6 +17,17 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const ASSESSMENT_TID = 'hw19-accessControlUi';
 
+function getAssessmentJsonPath(testCoursePath: string) {
+  return path.join(
+    testCoursePath,
+    'courseInstances',
+    'Sp15',
+    'assessments',
+    ASSESSMENT_TID,
+    'infoAssessment.json',
+  );
+}
+
 async function getAccessControlRecords(assessmentId: string) {
   return sqldb.queryRows(
     sql.select_access_controls,
@@ -26,14 +37,7 @@ async function getAccessControlRecords(assessmentId: string) {
 }
 
 async function readAssessmentJson(testCoursePath: string) {
-  const filePath = path.join(
-    testCoursePath,
-    'courseInstances',
-    'Sp15',
-    'assessments',
-    ASSESSMENT_TID,
-    'infoAssessment.json',
-  );
+  const filePath = getAssessmentJsonPath(testCoursePath);
   return JSON.parse(await fs.readFile(filePath, 'utf8'));
 }
 
@@ -211,6 +215,42 @@ test.describe('Access control UI', () => {
     const json = await readAssessmentJson(testCoursePath);
     expect(json.accessControl).toHaveLength(1);
     expect(json.accessControl[0].labels).toBeUndefined();
+  });
+
+  test('can edit after-completion visibility without a due date', async ({
+    page,
+    courseInstance,
+    testCoursePath,
+  }) => {
+    const filePath = getAssessmentJsonPath(testCoursePath);
+    const json = JSON.parse(await fs.readFile(filePath, 'utf8'));
+    delete json.accessControl[0].dateControl.due;
+    delete json.accessControl[0].dateControl.afterLastDeadline;
+    delete json.accessControl[0].afterComplete;
+    await fs.writeFile(filePath, JSON.stringify(json, null, 2));
+    await syncCourse(testCoursePath);
+
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText('After completion', { exact: true })).toBeVisible();
+
+    await panel.getByRole('button', { name: 'Question visibility', exact: true }).click();
+    await page.getByRole('option', { name: 'Show questions after completion' }).click();
+
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Access control updated successfully.')).toBeVisible();
+
+    const savedJson = await readAssessmentJson(testCoursePath);
+    expect(savedJson.accessControl[0].dateControl.due).toBeUndefined();
+    expect(savedJson.accessControl[0].afterComplete.questions.hidden).toBe(false);
   });
 
   test('can edit override with duration and question visibility', async ({
