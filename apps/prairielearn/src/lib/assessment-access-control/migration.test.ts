@@ -720,7 +720,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'visibility-only inactive rule reports one completion mechanism error',
+      name: 'visibility-only inactive rule preserves afterComplete',
       rules: [
         {
           showClosedAssessment: false,
@@ -729,10 +729,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        accessControl: null,
-        errors: [
-          'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
-        ],
+        accessControl: {
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
