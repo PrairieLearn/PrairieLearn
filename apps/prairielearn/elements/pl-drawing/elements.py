@@ -1358,7 +1358,17 @@ class Point(BaseElement):
 
     @staticmethod
     def get_attributes() -> list[str]:
-        return ["x1", "y1", "radius", "label", "offsetx", "offsety", "opacity", "color"]
+        return [
+            "x1",
+            "y1",
+            "radius",
+            "label",
+            "offsetx",
+            "offsety",
+            "opacity",
+            "color",
+            "draw-error-box",
+        ]
 
 
 class Coordinates(BaseElement):

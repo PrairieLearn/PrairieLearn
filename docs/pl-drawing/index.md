@@ -224,16 +224,17 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute | Type   | Default | Description                                                                                                                                            |
-| --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`      | float  | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`      | float  | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `radius`  | float  | 4       | Radius of the circle that defines the point.                                                                                                           |
-| `label`   | string | -       | Text to label the point.                                                                                                                               |
-| `offsetx` | float  | 5       | Horizontal distance of `label` from the point.                                                                                                         |
-| `offsety` | float  | 5       | Vertical distance of `label` from the point.                                                                                                           |
-| `opacity` | float  | 1       | Set the opacity of the point.                                                                                                                          |
-| `color`   | string | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| Attribute        | Type    | Default | Description                                                                                                                                            |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`             | float   | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                           |
+| `y1`             | float   | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                              |
+| `radius`         | float   | 4       | Radius of the circle that defines the point.                                                                                                           |
+| `label`          | string  | -       | Text to label the point.                                                                                                                               |
+| `offsetx`        | float   | 5       | Horizontal distance of `label` from the point.                                                                                                         |
+| `offsety`        | float   | 5       | Vertical distance of `label` from the point.                                                                                                           |
+| `opacity`        | float   | 1       | Set the opacity of the point.                                                                                                                          |
+| `color`          | string  | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `draw-error-box` | boolean | -       | Override the parent `draw-error-box` setting for this point. The error box is centered at the point and uses the parent `pl-drawing` `tol`.            |
 
 #### Example implementations
 
@@ -1637,6 +1638,8 @@ This element will wrap all the elements that will be graded (checked for correct
 | Attribute        | Type    | Default | Description                                                                                                                                           |
 | ---------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-answer` will be displayed with their respective error bounding boxes in the answer panel. |
+
+Set this attribute on `pl-drawing-answer` to display error boxes for all graded objects in the answer panel. Some drawing objects also list `draw-error-box`; those object-level settings override the parent setting for a single object.
 
 In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
 
