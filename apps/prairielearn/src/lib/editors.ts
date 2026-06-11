@@ -482,7 +482,8 @@ export async function runEditorJob(editor: Editor): Promise<EditorJobResult> {
     await editor.executeWithServerJob(serverJob);
   } catch (err) {
     // A stale-edit conflict is a typed outcome the caller maps to its own error,
-    // not a generic job failure. Only `FileModifyEditor` throws this.
+    // not a generic job failure. Only the file-modify editors
+    // (`FileModifyEditor`, `QuestionModifyEditor`) throw this.
     if (err instanceof FileModifyConflictError) throw err;
     return { status: 'error', jobSequenceId: serverJob.jobSequenceId };
   }
@@ -1530,15 +1531,30 @@ export class QuestionAddEditor extends Editor {
 export class QuestionModifyEditor extends Editor {
   private question: Question;
   private files: Record<string, string | null>;
+  private origHashes: Record<string, string | null> | undefined;
+  /** Overwrite even if a file changed on disk, and recreate it if it was deleted. */
+  private force: boolean;
 
   constructor(
     params: BaseEditorOptions<{ question: Question }> & {
+      /** Base64-encoded contents per question-relative path; `null` deletes the file. */
       files: Record<string, string | null>;
+      /**
+       * Per-file hash of the contents the caller's editor was opened with, as
+       * the save's stale-edit guard (see {@link FileModifyEditor} for the hash
+       * convention). `null` means the file did not exist when it was opened.
+       * Files without an entry — and all files when the map is omitted — are
+       * written unconditionally.
+       */
+      origHashes?: Record<string, string | null>;
+      force?: boolean;
     },
   ) {
     const {
       locals: { question },
       files,
+      origHashes,
+      force,
     } = params;
 
     super({
@@ -1548,6 +1564,8 @@ export class QuestionModifyEditor extends Editor {
 
     this.question = question;
     this.files = files;
+    this.origHashes = origHashes;
+    this.force = force ?? false;
   }
 
   async write() {
@@ -1568,11 +1586,66 @@ export class QuestionModifyEditor extends Editor {
     // `clientFilesQuestion` directory. We don't want to remove them, and we also
     // don't want to mandate that the caller must always read all existing files
     // and provide them in the `files` object.
+    //
+    // The job runs in two passes — decide, then apply — so a stale-edit
+    // conflict on any file is raised before a single byte is written and can
+    // never leave the question half-modified.
+    const writes: { resolvedPath: string; contents: string | null }[] = [];
     for (const [filePath, contents] of Object.entries(this.files)) {
       const resolvedPath = path.join(questionPath, filePath);
+      const origHash = this.origHashes?.[filePath];
+
+      if (origHash === undefined) {
+        writes.push({ resolvedPath, contents });
+        continue;
+      }
+
+      const editHash = contents === null ? null : getHash(contents);
+
+      // When the buffer still matches what the editor was opened with there is
+      // nothing to save: skipping cannot clobber a concurrent change, and it
+      // means an untouched sibling file never conflicts with (or overwrites)
+      // another writer's changes to it. `force` skips this so an explicit
+      // overwrite still recreates a deleted file even when the buffer was
+      // never edited.
+      if (!this.force && editHash === origHash) continue;
+
+      let diskHash: string | null = null;
+      try {
+        const diskContentsUTF = await fs.readFile(resolvedPath, 'utf8');
+        diskHash = getHash(b64EncodeUnicode(diskContentsUTF));
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') throw err;
+        // The file was deleted on disk since the editor opened it.
+      }
+
+      // The same under-lock stale-edit contract as `FileModifyEditor.write()`:
+      // if the file changed on disk (or appeared, for a file opened as absent)
+      // since it was opened, this save would clobber that change.
+      if (!this.force) {
+        if (origHash === null) {
+          if (diskHash !== null) throw new FileModifyConflictError('changed', filePath);
+        } else if (diskHash === null) {
+          // Deleting an already-deleted file is convergent, not a conflict.
+          if (contents !== null) throw new FileModifyConflictError('deleted', filePath);
+        } else if (diskHash !== origHash) {
+          throw new FileModifyConflictError('changed', filePath);
+        }
+      }
+
+      // Skip a no-op write or delete when disk already matches the buffer.
+      if (editHash === diskHash) continue;
+
+      writes.push({ resolvedPath, contents });
+    }
+
+    if (writes.length === 0) return null;
+
+    for (const { resolvedPath, contents } of writes) {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
+        await fs.ensureDir(path.dirname(resolvedPath));
         await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
@@ -2407,7 +2480,11 @@ export class FileUploadEditor extends Editor {
  * to a typed conflict.
  */
 export class FileModifyConflictError extends Error {
-  constructor(readonly reason: 'changed' | 'deleted') {
+  constructor(
+    readonly reason: 'changed' | 'deleted',
+    /** Path of the conflicting file, relative to the editor's root, when known. */
+    readonly filePath?: string,
+  ) {
     super(
       reason === 'deleted'
         ? 'The file was deleted since it was opened.'

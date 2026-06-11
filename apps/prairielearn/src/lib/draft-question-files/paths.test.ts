@@ -10,19 +10,16 @@ describe('draft question file path schemas', () => {
   describe('QuestionRelativeFilePathSchema', () => {
     it('trims and normalizes relative file paths', () => {
       assert.equal(
-        QuestionRelativeFilePathSchema.parse('clientFilesQuestion/../server.py'),
-        'server.py',
-      );
-      assert.equal(
         QuestionRelativeFilePathSchema.parse(' ./clientFilesQuestion/data.txt '),
         'clientFilesQuestion/data.txt',
       );
     });
 
-    it('rejects paths outside the question directory', () => {
+    it('rejects paths outside the question directory or containing `..`', () => {
       for (const value of [
         '',
         '../infoCourse.json',
+        'clientFilesQuestion/../server.py',
         '/tmp/file.txt',
         'client\\file.txt',
         'client\0file.txt',
@@ -39,7 +36,13 @@ describe('draft question file path schemas', () => {
     });
 
     it('normalizes selected directories', () => {
-      assert.equal(QuestionRelativeDirectorySchema.parse('clientFilesQuestion/../tests'), 'tests');
+      assert.equal(QuestionRelativeDirectorySchema.parse(' ./tests '), 'tests');
+    });
+
+    it('rejects directories containing `..`', () => {
+      assert.isFalse(
+        QuestionRelativeDirectorySchema.safeParse('clientFilesQuestion/../tests').success,
+      );
     });
   });
 

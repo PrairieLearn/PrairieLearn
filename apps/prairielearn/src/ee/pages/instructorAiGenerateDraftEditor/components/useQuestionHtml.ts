@@ -17,6 +17,12 @@ interface PreviewRequest {
   errorMessage: string;
 }
 
+/** A failed preview refresh: the message to show, and `retry` replays the failed request. */
+export interface QuestionPreviewError {
+  message: string;
+  retry: () => void;
+}
+
 function assertOkResponse(response: Response) {
   if (!response.ok) throw new Error(`Server returned status ${response.status}`);
 }
@@ -203,7 +209,7 @@ export function useQuestionHtml({
 
   // The failed request stays on the mutation, so `retry` just replays it.
   const failedRequest = previewMutation.isError ? previewMutation.variables : undefined;
-  const previewError = failedRequest
+  const previewError: QuestionPreviewError | null = failedRequest
     ? { message: failedRequest.errorMessage, retry: () => refreshPreview(failedRequest) }
     : null;
   const dismissPreviewError = previewMutation.reset;

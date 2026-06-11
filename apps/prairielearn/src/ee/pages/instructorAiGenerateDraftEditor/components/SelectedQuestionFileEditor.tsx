@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { type Ref, type SubmitEvent, useImperativeHandle, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
@@ -9,22 +9,14 @@ import {
   renderAppError,
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
-import type {
-  DraftQuestionFileBrowserBreadcrumbSegment,
-  SelectedQuestionFile,
-} from '../../../../lib/draft-question-files/browser.js';
-import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+import type { DraftQuestionSelectedFile } from '../../../../lib/draft-question-files/browser.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 
 import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
-import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
-import { useDraftFiles } from './draftFilesContext.js';
+import { useDraftFiles, useRegisterDraftEditor } from './draftFilesContext.js';
 import { useDraftFileNavigation } from './useDraftFileNavigation.js';
-
-export interface SelectedQuestionFileEditorHandle {
-  discardChanges: () => void;
-  /** Returns whether the editor currently holds unsaved changes. */
-  getHasChanges: () => boolean;
-}
+import { useRefetchDraftFiles } from './useRefetchDraftFiles.js';
 
 function getSaveStatus({
   hasChanges,
@@ -43,20 +35,13 @@ function getSaveStatus({
 
 export function SelectedQuestionFileEditor({
   selectedFile,
-  breadcrumb,
-  editorUrl,
   onFileMutated,
-  editorRef,
 }: {
-  selectedFile: SelectedQuestionFile;
-  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
-  /** Base editor URL used to build directory links from the breadcrumb. */
-  editorUrl: string;
+  selectedFile: Extract<DraftQuestionSelectedFile, { kind: 'editor' }>;
   onFileMutated: () => Promise<unknown>;
-  editorRef?: Ref<SelectedQuestionFileEditorHandle>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating, search } = useDraftFiles();
+  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
   const { selectDirectory } = useDraftFileNavigation();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
@@ -74,13 +59,13 @@ export function SelectedQuestionFileEditor({
   const hasConflict = saveError?.code === 'STALE_EDIT';
   const saveStatus = getSaveStatus({ hasChanges, isSaving, isGenerating });
 
-  useImperativeHandle(editorRef, () => ({
+  useRegisterDraftEditor({
+    getHasChanges: () => hasChanges,
     discardChanges: () => {
       setContents(savedContents);
       saveMutation.reset();
     },
-    getHasChanges: () => hasChanges,
-  }));
+  });
 
   /** Leaving unmounts the editor and drops unsaved edits, so confirm first. */
   function handleSelectDirectory(directory: string | null) {
@@ -103,9 +88,13 @@ export function SelectedQuestionFileEditor({
 
     saveMutation.mutate({
       questionId,
-      filePath: selectedFile.path,
-      encodedContents: b64EncodeUnicode(contents),
-      origHash: selectedFile.contentHash,
+      files: [
+        {
+          path: selectedFile.path,
+          encodedContents: b64EncodeUnicode(contents),
+          origHash: selectedFile.contentHash,
+        },
+      ],
       force,
     });
   }
@@ -136,9 +125,7 @@ export function SelectedQuestionFileEditor({
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
           <DraftQuestionFileBrowserBreadcrumb
-            segments={breadcrumb}
-            editorUrl={editorUrl}
-            search={search}
+            selection={{ kind: 'file', path: selectedFile.path }}
             ariaLabel="Selected file breadcrumb"
             onSelectDirectory={handleSelectDirectory}
           />

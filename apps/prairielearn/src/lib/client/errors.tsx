@@ -1,7 +1,6 @@
 import { TRPCClientError } from '@trpc/client';
 import type { ReactNode } from 'react';
 import { Alert, type AlertProps } from 'react-bootstrap';
-import { type z } from 'zod';
 
 /**
  * Resolves the error type for client-side use:
@@ -26,18 +25,6 @@ export type AppError<T> =
   | { code: 'UNKNOWN'; message: string };
 
 /**
- * An error carrying typed {@link AppError} metadata, thrown from non-tRPC code
- * paths (e.g. a `fetch`-based file upload) so {@link getAppError} can surface it
- * the same way as a tRPC `AppError`.
- */
-class AppErrorException extends Error {
-  constructor(readonly appError: { code: string; message: string } & Record<string, unknown>) {
-    super(appError.message);
-    this.name = 'AppErrorException';
-  }
-}
-
-/**
  * Extracts a typed app-level error from a tRPC error, narrowed to the
  * error type `T`. Returns `{ code: 'UNKNOWN' }` for errors without typed
  * metadata (plain `TRPCError` throws, network failures, permission errors, etc.).
@@ -54,9 +41,6 @@ class AppErrorException extends Error {
  * which require an exhaustive renderer for each variant.
  */
 export function getAppError<T>(error: unknown): AppError<T> | null {
-  if (error instanceof AppErrorException) {
-    return { ...(error.appError as unknown as ResolveAppError<T>), message: error.message };
-  }
   if (error instanceof TRPCClientError) {
     const appError = (error.data as { appError?: ResolveAppError<T> } | undefined)?.appError;
     if (appError) return { ...appError, message: error.message };
@@ -64,35 +48,6 @@ export function getAppError<T>(error: unknown): AppError<T> | null {
   }
   if (error instanceof Error) return { code: 'UNKNOWN', message: error.message };
   return null;
-}
-
-/**
- * Reads a `fetch` Response from a non-tRPC route that mirrors the app-error
- * convention: a non-OK response whose JSON body carries an `appError` is
- * rethrown as an {@link AppErrorException}, so callers narrow it with
- * {@link getAppError} exactly like a tRPC app error. Any other non-OK response
- * throws a plain `Error` (carrying the body's `error` message when present).
- *
- * On success the parsed JSON body is returned. Pass `schema` to validate it at
- * runtime — without one, a 2xx response that isn't the expected JSON (e.g. an
- * HTML login page from an expired session) would be returned as a bare cast.
- */
-export async function unwrapAppResponse<T = unknown>(
-  response: Response,
-  schema?: z.ZodType<T>,
-): Promise<T> {
-  const body: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const appError = (body as { appError?: { code: string; message: string } } | null)?.appError;
-    if (appError) throw new AppErrorException(appError);
-    const message = (body as { error?: unknown } | null)?.error;
-    throw new Error(
-      typeof message === 'string' && message !== ''
-        ? message
-        : `Request failed with status ${response.status}`,
-    );
-  }
-  return schema ? schema.parse(body) : (body as T);
 }
 
 /**

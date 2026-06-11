@@ -22,20 +22,22 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileEditSchema } from '../../lib/db-types.js';
+import { type FileEdit, FileEditSchema } from '../../lib/db-types.js';
 import { computeFileContentHash, readEditableTextFile } from '../../lib/editorUtil.js';
-import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
+import { type EditOutcome, FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
-import { StaffJobSequenceWithJobsSchema } from '../../lib/server-jobs.types.js';
+import {
+  type StaffJobSequenceWithJobs,
+  StaffJobSequenceWithJobsSchema,
+} from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { FileEditor } from './FileEditor.js';
-import type { DraftEdit, FileEditorData } from './instructorFileEditor.types.js';
+import { FileEditor, type FileEditorData } from './FileEditor.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -127,33 +129,42 @@ router.get(
         file_name: editorData.fileName,
       });
 
+      let draftEditResult: {
+        outcome: EditOutcome | undefined;
+        jobSequence: StaffJobSequenceWithJobs | null;
+      } | null = null;
+      let versionChoice: { hasRemoteChanges: boolean } | null = null;
       if (draftEdit != null) {
+        let outcome: EditOutcome | undefined;
+        let jobSequence: StaffJobSequenceWithJobs | null = null;
         if (draftEdit.fileEdit.job_sequence_id != null) {
-          draftEdit.jobSequence = await getJobSequence(
+          const fullJobSequence = await getJobSequence(
             draftEdit.fileEdit.job_sequence_id,
             res.locals.course.id,
           );
-        }
 
-        if (draftEdit.jobSequence) {
-          if (draftEdit.jobSequence.status === 'Running') {
+          if (fullJobSequence.status === 'Running') {
             // Because of the redirect, if the job sequence ends up failing to save,
             // then the corresponding draft will be lost (all drafts are soft-deleted
             // from the database on readDraftEdit).
-            res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
+            res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
             return;
           }
 
           // Note that if using git, we pull before we push, so a failed save
           // still syncs whatever was pulled from the remote repository (with
           // the edit's changes discarded). We ignore that case in the UI.
-          draftEdit.outcome = classifyEditOutcome(draftEdit.jobSequence.jobs[0].data);
+          outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
+          jobSequence = StaffJobSequenceWithJobsSchema.parse(fullJobSequence);
         }
+        draftEditResult = { outcome, jobSequence };
 
-        const editWasSaved = draftEdit.outcome != null && draftEdit.outcome !== 'save_failed';
+        const editWasSaved = outcome != null && outcome !== 'save_failed';
         if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
           // There is a recently saved draft that was not written to disk and that differs from what is on disk.
-          draftEdit.alertChoice = true;
+          versionChoice = {
+            hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
+          };
         }
       }
 
@@ -235,21 +246,8 @@ router.get(
               <FileEditor
                 editorData={editorData}
                 draftContents={draftEdit?.contents}
-                versionChoice={
-                  draftEdit?.alertChoice
-                    ? { hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash }
-                    : null
-                }
-                draftEditResult={
-                  draftEdit != null
-                    ? {
-                        outcome: draftEdit.outcome,
-                        jobSequence: draftEdit.jobSequence
-                          ? StaffJobSequenceWithJobsSchema.parse(draftEdit.jobSequence)
-                          : null,
-                      }
-                    : null
-                }
+                versionChoice={versionChoice}
+                draftEditResult={draftEditResult}
                 timeZone={course.display_timezone}
                 csrfToken={__csrf_token}
                 fileEditorUseGit={config.fileEditorUseGit}
@@ -275,10 +273,9 @@ router.get(
 //
 // Converting this save to a tRPC mutation that stays on the
 // page would let the client keep its contents in React state and receive the
-// job result as a return value, retiring the `file_edits` mechanism, the
-// `DraftEdit` type, and the `versionChoice`/`alertChoice` UI. The concurrent-
-// edit case is already handled cleanly by the `STALE_EDIT` flow in
-// `trpc/shared/ai-draft-files.ts`.
+// job result as a return value, retiring the `file_edits` mechanism and the
+// `versionChoice` UI. The concurrent-edit case is already handled cleanly by
+// the `STALE_EDIT` flow in `trpc/course/ai-draft-files.ts`.
 router.post(
   '/*',
   typedAsyncHandler<'course' | 'course-instance' | 'assessment'>(async (req, res) => {
@@ -346,7 +343,7 @@ async function readDraftEdit({
   dir_name: string;
   file_name: string;
   authn_user_id: string;
-}): Promise<DraftEdit | null> {
+}): Promise<{ fileEdit: FileEdit; contents?: string; hash?: string } | null> {
   const fileEdit = await queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },

@@ -10,16 +10,20 @@
  * sibling pages) must move behind the course-files API. See
  * PrairieLearnInc/sysconf#1487.
  */
+import { HttpStatusError } from '@prairielearn/error';
+
+import { selectQuestionById } from '../../models/question.js';
+import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import {
   type Editor,
   FileDeleteEditor,
-  FileModifyEditor,
   FileRenameEditor,
   FileUploadEditor,
   QuestionModifyEditor,
   runEditorJob,
 } from '../editors.js';
+import { validateShortName } from '../short-name.js';
 
 import { getQuestionRootPath, requireQuestionQid, resolveWithinQuestionRoot } from './paths.js';
 
@@ -50,12 +54,16 @@ export function editJobFailedAppError(
   return { code: 'SYNC_JOB_FAILED', message, jobSequenceId: err.jobSequenceId };
 }
 
+/**
+ * The context the mutations need, with `authz_data` in the shape the file
+ * `Editor` classes expect (`res.locals.authz_data` satisfies it directly).
+ */
 interface DraftQuestionFileMutationContext {
   course: Course;
   question: Question;
   user: User;
-  authn_user: User;
   authz_data: {
+    authn_user: User;
     has_course_permission_edit: boolean;
   };
 }
@@ -73,100 +81,53 @@ async function runDraftEditorJob(editor: Editor): Promise<void> {
 }
 
 /**
- * Builds the `locals` slice the file `Editor` classes require, threading
- * `authn_user` into `authz_data` the way the editors expect.
+ * A draft question file edit: the new contents (`null` deletes the file) and
+ * the stale-edit guard for the contents the editor was opened with.
  */
-function editorLocals({
-  course,
-  user,
-  authn_user,
-  authz_data,
-}: Pick<DraftQuestionFileMutationContext, 'course' | 'user' | 'authn_user' | 'authz_data'>) {
-  return { authz_data: { ...authz_data, authn_user }, course, user };
-}
-
-/**
- * Saves edits to a single draft question file via a `FileModifyEditor` job —
- * the same editor `instructorFileEditor` and the JSON settings editors use.
- *
- * `origHash` is the hash of the contents the editor was opened with (from
- * `readEditableTextFile`). `FileModifyEditor` checks it under the course lock at
- * write time, so a stale tab can't silently clobber another writer's changes: if
- * the file changed or was deleted since it was opened, this throws a
- * `FileModifyConflictError`. Pass `force` to overwrite the conflicting change
- * (and recreate the file if it was deleted).
- *
- * `filePath` is relative to the question root; callers validate it (e.g. via
- * `ModifiableQuestionFilePathSchema`) before calling. `encodedContents` is the
- * base64-encoded new file contents.
- */
-export async function saveDraftQuestionFile({
-  course,
-  question,
-  user,
-  authn_user,
-  authz_data,
-  filePath,
-  encodedContents,
-  origHash,
-  force,
-}: DraftQuestionFileMutationContext & {
-  filePath: string;
-  encodedContents: string;
-  origHash: string;
-  force?: boolean;
-}): Promise<void> {
-  const questionRootPath = getQuestionRootPath(course.path, requireQuestionQid(question));
-  const fullPath = resolveWithinQuestionRoot(questionRootPath, filePath);
-
-  await runDraftEditorJob(
-    new FileModifyEditor({
-      locals: editorLocals({ course, user, authn_user, authz_data }),
-      container: { rootPath: questionRootPath, invalidRootPaths: [] },
-      filePath: fullPath,
-      editContents: encodedContents,
-      origHash,
-      force,
-    }),
-  );
+export interface DraftQuestionFileEdit {
+  /**
+   * Path relative to the question root; callers validate it (e.g. via
+   * `ModifiableQuestionFilePathSchema`) before calling.
+   */
+  path: string;
+  /** Base64-encoded new contents, or `null` to delete the file. */
+  encodedContents: string | null;
+  /**
+   * Hash of the contents the editor was opened with (from `readEditableTextFile`
+   * or `getDraftQuestionFileContents`), or `null` if the file did not exist.
+   */
+  origHash: string | null;
 }
 
 /**
  * Saves edits to one or more draft question files in a single atomic
- * `QuestionModifyEditor` job: every file is written — or deleted, when its
- * contents are `null` — in one git commit. This backs the question-code editor,
- * which edits `question.html` and `server.py` together and deletes `server.py`
- * when the user clears it.
+ * `QuestionModifyEditor` job: every file is written — or deleted — in one git
+ * commit, and every file's `origHash` is checked under the course lock first,
+ * so a stale tab (or a save racing the agent's writes) can't silently clobber
+ * another writer's changes. A conflict on any file throws
+ * `FileModifyConflictError` before anything is written; a file whose contents
+ * still match its `origHash` is skipped entirely, so saving the question-code
+ * editor's two files only ever touches the ones the user actually edited.
  *
- * Unlike {@link saveDraftQuestionFile}, this has no stale-edit guard: the
- * question-code editor always holds the freshly-listed file contents, and
- * `QuestionModifyEditor` writes the whole question atomically.
- *
- * TODO: this leaves the code-editor surface with no conflict contract. The
- * "freshly-listed contents" assumption holds within a single tab, but a
- * concurrent writer — another tab, or the agent racing a manual save — is
- * silently clobbered, and the payload rewrites both files even when only one
- * changed. {@link saveDraftQuestionFile} guards against this with `origHash`;
- * closing the gap would mean threading per-file content hashes through here.
- *
- * `files` maps question-relative paths to base64-encoded contents, or `null` to
- * delete the file. Callers validate the paths (e.g. via
- * `ModifiableQuestionFilePathSchema`) before calling.
+ * Pass `force` to overwrite conflicting changes (recreating deleted files).
  */
 export async function saveDraftQuestionFiles({
   course,
   question,
   user,
-  authn_user,
   authz_data,
   files,
+  force,
 }: DraftQuestionFileMutationContext & {
-  files: Record<string, string | null>;
+  files: DraftQuestionFileEdit[];
+  force?: boolean;
 }): Promise<void> {
   await runDraftEditorJob(
     new QuestionModifyEditor({
-      locals: { ...editorLocals({ course, user, authn_user, authz_data }), question },
-      files,
+      locals: { course, user, authz_data, question },
+      files: Object.fromEntries(files.map((file) => [file.path, file.encodedContents])),
+      origHashes: Object.fromEntries(files.map((file) => [file.path, file.origHash])),
+      force,
     }),
   );
 }
@@ -176,7 +137,6 @@ export async function deleteDraftQuestionFile({
   course,
   question,
   user,
-  authn_user,
   authz_data,
   filePath,
 }: DraftQuestionFileMutationContext & {
@@ -187,7 +147,7 @@ export async function deleteDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileDeleteEditor({
-      locals: editorLocals({ course, user, authn_user, authz_data }),
+      locals: { course, user, authz_data },
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       deletePath: fullPath,
     }),
@@ -202,7 +162,6 @@ export async function renameDraftQuestionFile({
   course,
   question,
   user,
-  authn_user,
   authz_data,
   oldFilePath,
   newFilePath,
@@ -218,7 +177,7 @@ export async function renameDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileRenameEditor({
-      locals: editorLocals({ course, user, authn_user, authz_data }),
+      locals: { course, user, authz_data },
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       oldPath,
       newPath,
@@ -226,12 +185,56 @@ export async function renameDraftQuestionFile({
   );
 }
 
+/**
+ * Renames a draft question's QID and/or title via the course-files API and
+ * returns the updated question. The QID is validated as a short name here so
+ * the finalize and inline-rename flows reject malformed QIDs identically,
+ * throwing an `HttpStatusError(400)` for an invalid QID. An omitted `title`
+ * leaves the question's title unchanged.
+ *
+ * Throws {@link EditJobFailedError} if the rename's sync job fails, so callers
+ * can translate it into a `SYNC_JOB_FAILED` app error (or let it surface as a
+ * standard error page for the full-page finalize flow).
+ */
+export async function renameDraftQuestion({
+  course,
+  question,
+  user,
+  authz_data,
+  qid,
+  title,
+}: DraftQuestionFileMutationContext & {
+  qid: string;
+  title: string | undefined;
+}): Promise<Question> {
+  const validation = validateShortName(qid);
+  if (!validation.valid) {
+    throw new HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
+  }
+
+  const result = await getCourseFilesClient().renameQuestion.mutate({
+    course_id: course.id,
+    user_id: user.id,
+    authn_user_id: authz_data.authn_user.id,
+    has_course_permission_edit: authz_data.has_course_permission_edit,
+    question_id: question.id,
+    qid,
+    title,
+  });
+
+  if (result.status === 'error') {
+    throw new EditJobFailedError(result.job_sequence_id);
+  }
+
+  // Re-fetch the question in case the QID was changed to avoid conflicts.
+  return await selectQuestionById(question.id);
+}
+
 /** Uploads a draft question file. `filePath` is relative to the question root. */
 export async function uploadDraftQuestionFile({
   course,
   question,
   user,
-  authn_user,
   authz_data,
   filePath,
   fileContents,
@@ -244,7 +247,7 @@ export async function uploadDraftQuestionFile({
 
   await runDraftEditorJob(
     new FileUploadEditor({
-      locals: editorLocals({ course, user, authn_user, authz_data }),
+      locals: { course, user, authz_data },
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
       filePath: fullPath,
       fileContents,

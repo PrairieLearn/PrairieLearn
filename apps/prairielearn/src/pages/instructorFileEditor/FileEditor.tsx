@@ -16,12 +16,20 @@ import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
 import type { EditOutcome } from '../../lib/editors.js';
 import type { StaffJobSequenceWithJobs } from '../../lib/server-jobs.types.js';
 
-import type { FileEditorData } from './instructorFileEditor.types.js';
-
 declare global {
   interface Window {
     bootstrap: typeof bootstrap;
   }
+}
+
+export interface FileEditorData {
+  fileName: string;
+  normalizedFileName: string;
+  aceMode: string;
+  diskContents: string;
+  diskHash: string;
+  fileMetadata?: FileMetadata;
+  lintHtmlMustache: boolean;
 }
 
 enum SaveErrorCode {

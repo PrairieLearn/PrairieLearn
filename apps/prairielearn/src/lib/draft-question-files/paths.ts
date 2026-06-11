@@ -6,7 +6,7 @@ import { contains } from '@prairielearn/path-utils';
 
 import type { Question } from '../db-types.js';
 
-import { DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
+import { DRAFT_INFO_JSON_DISABLED_REASON, isSafeQuestionRelativePath } from './paths.shared.js';
 
 /** Whether a question-relative path targets the draft question's `info.json`. */
 export function isDraftQuestionInfoFile(filePath: string): boolean {
@@ -19,21 +19,14 @@ function normalizeRelativePath(value: string): string {
 }
 
 /**
- * Whether `value` is a path that stays within the question directory: non-empty,
- * free of null bytes and backslashes, and not escaping the root via `..` or an
- * absolute path.
+ * Whether `value` (after trimming) is a path that stays within the question
+ * directory, per {@link isSafeQuestionRelativePath} — the same predicate the
+ * client's selection parsing uses — and does not normalize to the root itself.
  */
 function isValidRelativePath(value: string): boolean {
   const trimmed = value.trim();
-  if (trimmed === '' || trimmed.includes('\0') || trimmed.includes('\\')) return false;
-
-  const normalized = path.posix.normalize(trimmed);
-  return (
-    normalized !== '.' &&
-    normalized !== '..' &&
-    !normalized.startsWith('../') &&
-    !path.posix.isAbsolute(normalized)
-  );
+  if (!isSafeQuestionRelativePath(trimmed)) return false;
+  return path.posix.normalize(trimmed) !== '.';
 }
 
 /**

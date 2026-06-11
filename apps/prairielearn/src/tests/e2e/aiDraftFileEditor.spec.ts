@@ -133,6 +133,34 @@ test.describe('AI draft file editor', () => {
     await expect(page.getByRole('row', { name: /server\.py/ })).toBeVisible();
   });
 
+  test('reports a concurrent change in the question-code editor as a recoverable conflict', async ({
+    page,
+    testCoursePath,
+    enableFeatureFlag,
+  }) => {
+    await enableFeatureFlag('ai-question-generation');
+    const htmlPath = path.join(testCoursePath, 'questions', questionQid, 'question.html');
+
+    await page.goto(`${editorUrl}?tab=files`);
+    await setAceEditorContentAt(
+      page.getByTestId('question-html-editor').locator('.ace_editor'),
+      '<p>edited in the browser</p>\n',
+    );
+
+    // Another writer (e.g. the agent) changes the file after it was fetched.
+    await fs.writeFile(htmlPath, '<p>changed on disk</p>\n');
+
+    await page.getByRole('button', { name: 'Save edits' }).click();
+
+    // The save is rejected with a conflict naming the file, not silently clobbered.
+    await expect(page.getByText('changed since you opened it.')).toBeVisible();
+
+    // Overwriting wins over the concurrent change.
+    await page.getByRole('button', { name: 'overwrite anyway' }).click();
+    await expect(page.getByText('No unsaved changes.')).toBeVisible();
+    expect(await fs.readFile(htmlPath, 'utf8')).toBe('<p>edited in the browser</p>\n');
+  });
+
   // Runs last: it deletes and then recreates the shared question's `notes.txt`.
   test('reports a deleted file as a recoverable conflict, not a sync failure', async ({
     page,

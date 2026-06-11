@@ -1,12 +1,4 @@
-import { useChat } from '@ai-sdk/react';
-import {
-  DefaultChatTransport,
-  type ReasoningUIPart,
-  type TextUIPart,
-  type ToolUIPart,
-  type UIMessage,
-  type UIToolInvocation,
-} from 'ai';
+import { type ReasoningUIPart, type TextUIPart, type ToolUIPart, type UIToolInvocation } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from 'react-bootstrap';
@@ -23,10 +15,11 @@ import type {
 
 import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
-
-function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
-  return part.type.startsWith('tool-');
-}
+import {
+  type QuestionGenerationChat,
+  RateLimitError,
+  isToolPart,
+} from './useQuestionGenerationChat.js';
 
 function ProgressStatus({
   state,
@@ -484,12 +477,6 @@ function Messages({
   );
 }
 
-/**
- * This custom error is used to signal that a rate limit has been exceeded, which
- * we'll know happens when we get a 429 response from the server.
- */
-class RateLimitError extends Error {}
-
 function useShowSpinner({
   status,
   messages,
@@ -526,112 +513,36 @@ function useShowSpinner({
 }
 
 export function AiQuestionGenerationChat({
+  chat,
   chatCsrfToken,
-  initialMessages,
-  currentUserName,
   questionId,
   showJobLogsLink,
   urlPrefix,
-  refreshQuestionPreview,
-  onGeneratingChange,
-  onGenerationComplete,
   getHasUnsavedChanges,
   discardUnsavedChanges,
   isQuestionEmpty,
 }: {
+  chat: QuestionGenerationChat;
   chatCsrfToken: string;
-  initialMessages: QuestionGenerationUIMessage[];
-  currentUserName: string | null;
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
-  refreshQuestionPreview: () => void;
-  onGeneratingChange?: (isGenerating: boolean) => void;
-  onGenerationComplete?: () => void;
   getHasUnsavedChanges: () => boolean;
   discardUnsavedChanges: () => void;
   isQuestionEmpty: boolean;
 }) {
-  const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
-    useState(true);
+  const {
+    messages,
+    status,
+    error,
+    isGenerating,
+    sendPrompt,
+    refreshQuestionPreviewAfterChanges,
+    setRefreshQuestionPreviewAfterChanges,
+  } = chat;
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const { messages, sendMessage, resumeStream, status, error } =
-    useChat<QuestionGenerationUIMessage>({
-      // Currently, we assume one chat per question. This should change in the future.
-      id: questionId,
-      messages: initialMessages,
-      transport: new DefaultChatTransport({
-        api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
-        headers: { 'X-CSRF-Token': chatCsrfToken },
-        prepareSendMessagesRequest: ({ messages, headers }) => {
-          // Only send the latest message to the server. The server sources
-          // conversation context from the database, so we don't need to
-          // send the full history.
-          const lastMessage = messages.at(-1);
-          return {
-            body: { message: lastMessage ?? null },
-            headers,
-          };
-        },
-        prepareReconnectToStreamRequest: ({ id }) => {
-          return {
-            api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
-          };
-        },
-        async fetch(input, init) {
-          const res = await fetch(input, init);
-          if (res.status === 429) {
-            throw new RateLimitError();
-          }
-          return res;
-        },
-      }),
-      // Limit the frequency of updates to avoid overwhelming React. This approach
-      // was recommended on https://github.com/vercel/ai/issues/6166.
-      experimental_throttle: 100,
-      onFinish({ messages, message }) {
-        onGeneratingChange?.(false);
-
-        // Resuming a recently-finished stream on page load replays the final
-        // message we already have. In that case, we want to avoid refetching
-        // files or immediately loading a new variant.
-        const isExistingMessage =
-          messages.length === initialMessages.length &&
-          message.parts.length === initialMessages.at(-1)?.parts.length;
-        if (isExistingMessage) return;
-
-        const didWriteFile = message.parts.some((part) => {
-          return (
-            isToolPart(part) && part.type === 'tool-writeFile' && part.state === 'output-available'
-          );
-        });
-
-        if (didWriteFile && refreshQuestionPreviewAfterChanges) {
-          refreshQuestionPreview();
-        }
-
-        onGenerationComplete?.();
-      },
-      onError(error) {
-        console.error('Chat error:', error);
-      },
-    });
-
-  const isGenerating = status === 'streaming' || status === 'submitted';
-
-  // Reconnect to an in-progress generation stream once on mount. We do this
-  // ourselves instead of using `useChat`'s `resume` option so we can clear the
-  // parent's generating state when the attempt settles without a stream to
-  // resume (the server responds 204 and no `useChat` callbacks fire).
-  const resumeAttemptedRef = useRef(false);
-  useEffect(() => {
-    if (resumeAttemptedRef.current) return;
-    resumeAttemptedRef.current = true;
-    if (initialMessages.at(-1)?.metadata?.status !== 'streaming') return;
-    void resumeStream().finally(() => onGeneratingChange?.(false));
-  }, [initialMessages, resumeStream, onGeneratingChange]);
 
   const showSpinner = useShowSpinner({ status, messages });
 
@@ -652,16 +563,7 @@ export function AiQuestionGenerationChat({
   });
 
   const submitPrompt = (text: string) => {
-    onGeneratingChange?.(true);
-    void sendMessage({
-      text,
-      metadata: {
-        job_sequence_id: null,
-        status: 'completed',
-        user_name: currentUserName,
-        created_at: new Date().toISOString(),
-      },
-    });
+    sendPrompt(text);
     void stickToBottom.scrollToBottom();
     setPromptInput('');
   };

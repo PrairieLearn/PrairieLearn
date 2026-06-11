@@ -39,5 +39,5 @@ export async function classifyDraftQuestion({
   if (question.qid == null) {
     return { kind: 'not-found' };
   }
-  return { kind: 'draft', question: { ...question, qid: question.qid } };
+  return { kind: 'draft', question: question as DraftQuestion };
 }

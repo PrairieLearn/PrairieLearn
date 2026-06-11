@@ -1,53 +1,50 @@
 import { useMutation } from '@tanstack/react-query';
-import { type Ref, useImperativeHandle, useState } from 'react';
+import { useState } from 'react';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
-import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
   type AppError,
   getAppError,
   renderAppError,
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
-import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+import type { DraftQuestionFileContent } from '../../../../lib/draft-question-files/browser.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 
-import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
-import { useDraftFiles } from './draftFilesContext.js';
-
-export interface QuestionCodeEditorsHandle {
-  /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */
-  discardChanges: () => void;
-  /** Returns whether the editors currently hold unsaved changes. */
-  getHasChanges: () => boolean;
-}
+import { useDraftFiles, useRegisterDraftEditor } from './draftFilesContext.js';
+import { useRefetchDraftFiles } from './useRefetchDraftFiles.js';
 
 export function QuestionCodeEditors({
-  htmlContents,
-  pythonContents,
+  htmlFile,
+  pythonFile,
   filesError,
   onFileMutated,
-  editorRef,
 }: {
-  htmlContents: string | null;
-  pythonContents: string | null;
-  filesError: AppError<AiDraftFilesError['List']> | null;
+  /** The fetched `question.html`, or `null` if the file doesn't exist. */
+  htmlFile: DraftQuestionFileContent | null;
+  /** The fetched `server.py`, or `null` if the file doesn't exist. */
+  pythonFile: DraftQuestionFileContent | null;
+  filesError: AppError<AiDraftFilesError['Contents']> | null;
   onFileMutated: () => Promise<unknown>;
-  editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
   const trpc = useTRPC();
   const { questionId, urlPrefix, isGenerating } = useDraftFiles();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
-    trpc.aiDraftFiles.saveFiles.mutationOptions({ onSuccess: () => onFileMutated() }),
+    trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFileMutated() }),
   );
 
-  const savedHtml = htmlContents ?? '';
-  const savedPython = pythonContents ?? '';
+  const savedHtml = htmlFile ? b64DecodeUnicode(htmlFile.encodedContents) : '';
+  const savedPython = pythonFile ? b64DecodeUnicode(pythonFile.encodedContents) : '';
 
   const [htmlValue, setHtmlValue] = useState(savedHtml);
   const [pythonValue, setPythonValue] = useState(savedPython);
+  const [isReloading, setIsReloading] = useState(false);
   const isSaving = saveMutation.isPending;
-  const saveError = getAppError<AiDraftFilesError['SaveFiles']>(saveMutation.error);
+  const saveError = getAppError<AiDraftFilesError['Save']>(saveMutation.error);
+  const hasConflict = saveError?.code === 'STALE_EDIT';
 
   // Reset the editors to match the saved files when they change externally
   // (after AI updates or a save), discarding any local edits. This adjusts
@@ -71,30 +68,53 @@ export function QuestionCodeEditors({
   // Derive hasChanges by comparing current editor state to the saved files.
   const hasChanges = htmlValue !== savedHtml || pythonValue !== savedPython;
 
-  useImperativeHandle(editorRef, () => ({
+  useRegisterDraftEditor({
+    getHasChanges: () => hasChanges,
     discardChanges: () => {
       setHtmlValue(savedHtml);
       setPythonValue(savedPython);
       saveMutation.reset();
     },
-    getHasChanges: () => hasChanges,
-  }));
+  });
 
-  function save() {
-    if (isSaving || isGenerating || !hasChanges) return;
+  /** `force` overwrites a concurrent change after a `STALE_EDIT` conflict. */
+  function save(force: boolean) {
+    if (isSaving || isGenerating) return;
+    if (!force && !hasChanges) return;
 
+    // Both files are sent with the hash of the contents they were fetched
+    // with: the server skips an unedited file entirely and rejects the save
+    // if an edited file changed on disk since it was fetched.
     saveMutation.mutate({
       questionId,
       files: [
-        { path: 'question.html', encodedContents: b64EncodeUnicode(htmlValue) },
+        {
+          path: 'question.html',
+          encodedContents: b64EncodeUnicode(htmlValue),
+          origHash: htmlFile?.hash ?? null,
+        },
         // Clearing `server.py` deletes it: a question with no server-side code
         // shouldn't keep an empty file around.
         {
           path: 'server.py',
           encodedContents: pythonValue.trim() === '' ? null : b64EncodeUnicode(pythonValue),
+          origHash: pythonFile?.hash ?? null,
         },
       ],
+      force,
     });
+  }
+
+  /** Drops the conflict and re-fetches; the editors re-sync to the new disk state. */
+  async function handleReload() {
+    if (isReloading) return;
+    setIsReloading(true);
+    try {
+      await refetchDraftFiles();
+      saveMutation.reset();
+    } finally {
+      setIsReloading(false);
+    }
   }
 
   const statusText = isSaving
@@ -137,6 +157,31 @@ export function QuestionCodeEditors({
               {saveError != null
                 ? renderAppError(saveError, {
                     SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+                    STALE_EDIT: ({ filePath, reason }) => (
+                      <>
+                        {filePath ? <code>{filePath}</code> : 'A file'}{' '}
+                        {reason === 'deleted' ? 'was deleted' : 'changed'} since you opened it. Your
+                        edits are kept.{' '}
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 align-baseline"
+                          disabled={isSaving || isReloading}
+                          onClick={() => void handleReload()}
+                        >
+                          Reload files
+                        </button>{' '}
+                        or{' '}
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 align-baseline"
+                          disabled={isSaving || isReloading}
+                          onClick={() => save(true)}
+                        >
+                          overwrite anyway
+                        </button>
+                        .
+                      </>
+                    ),
                     UNKNOWN: ({ message }) => message,
                   })
                 : statusText}
@@ -144,8 +189,8 @@ export function QuestionCodeEditors({
             <button
               type="button"
               className="btn btn-sm btn-primary"
-              disabled={!hasChanges || isSaving}
-              onClick={() => save()}
+              disabled={!hasChanges || isSaving || hasConflict}
+              onClick={() => save(false)}
             >
               {isSaving ? 'Saving...' : 'Save edits'}
             </button>
@@ -155,6 +200,7 @@ export function QuestionCodeEditors({
       <div
         className="editor-pane-html d-flex flex-column border rounded"
         style={{ overflow: 'hidden' }}
+        data-testid="question-html-editor"
       >
         <div className="py-2 px-3 font-monospace bg-light">question.html</div>
         <AceFileEditor
