@@ -1056,7 +1056,12 @@ export function migrateAssessmentJson(
 ): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+  if (!Array.isArray(allowAccess)) return null;
+
+  if (allowAccess.length === 0) {
+    const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', []);
+    return { json: JSON.stringify(migrated), errors: [], notes: [] };
+  }
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
@@ -1084,11 +1089,12 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(allowAccess)) return null;
 
-  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
+  const { errors, notes, hasUidRules } =
+    allowAccess.length === 0
+      ? { errors: [], notes: [], hasUidRules: false }
+      : migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,
@@ -1124,7 +1130,7 @@ export async function analyzeCourseInstanceAssessments(
 }
 
 /**
- * Errors and notes from `migrateAllowAccess` are intentionally discarded
+ * Errors and notes from `migrateAssessmentJson` are intentionally discarded
  * here. The UI runs `analyzeAccessControl` ahead of time, and the errors produced here
  * will match what the user already saw.
  */
@@ -1135,10 +1141,10 @@ export async function applyMigrationToAssessmentFile(
   fallbackReleaseDate: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
-  let data = JSON.parse(content);
+  const data = JSON.parse(content);
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+  if (!Array.isArray(allowAccess)) {
     return;
   }
 
@@ -1153,10 +1159,13 @@ export async function applyMigrationToAssessmentFile(
       delete data.allowAccess;
       break;
     case 'migrate': {
-      const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-      if (errors.length === 0 && accessControl != null) {
-        data = replaceJsonKey(data, 'allowAccess', 'accessControl', [accessControl]);
-      } else if (clearIncompatible) {
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+      if (migrationResult) {
+        const formatted = await formatJsonWithPrettier(migrationResult.json);
+        await fs.writeFile(filePath, formatted);
+        return;
+      }
+      if (clearIncompatible) {
         delete data.allowAccess;
       } else {
         return;
