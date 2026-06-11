@@ -402,7 +402,7 @@ export async function updateAssessmentQuestionRubric({
         AssessmentInstanceIdRowSchema,
       );
       await updateAssessmentInstancesScorePercPending(
-        Array.from(new Set(assessment_instances.map((row) => row.assessment_instance_id))),
+        assessment_instances.map((row) => row.assessment_instance_id),
       );
     }
   });

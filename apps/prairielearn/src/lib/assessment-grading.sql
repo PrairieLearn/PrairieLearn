@@ -167,16 +167,13 @@ WITH
   all_questions AS (
     SELECT
       ai.id AS assessment_instance_id,
-      iq.id AS iq_id,
       z.id AS zone_id,
       a.type AS assessment_type,
       iq.status,
       iq.auto_points,
-      iq.manual_points,
       iq.current_value,
       iq.points_list,
       iq.variants_points_list,
-      aq.max_points,
       aq.max_auto_points,
       aq.max_manual_points,
       aq.init_points,
