@@ -8,15 +8,17 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then click the pencil icon in the "Remaining" column to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then click the pencil icon in the "Remaining" column to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a [student-specific access override](assessment/accessControl.md#add-an-override).
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam by selecting it on the "Students" tab and clicking the "Delete" button above the table. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam by selecting it on the "Students" tab and choosing "Delete" from the "Actions" menu above the table. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a [student-specific access override](assessment/accessControl.md#add-an-override).
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after it is over, you can add an [access rule](assessment/accessControl.md) like this:
+With modern access control, configure [After completion](assessment/accessControl.md#after-completion) visibility for the assessment or for the relevant PrairieTest exam.
+
+With legacy access control, you can add an [access rule](assessment/accessControlLegacy.md) like this:
 
 ```json title="infoAssessment.json"
 {
@@ -51,7 +53,7 @@ Different instructors have different opinions regarding post-exam student access
 
 Three strategies that courses adopt in practice are:
 
-1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
+1. Students cannot review exam contents after the exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
 2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write and test new exam questions every semester.
 3. Limited access post-exam under controlled conditions. For example, the TAM 2XX courses (Introductory Mechanics sequence) at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.illinois.edu/) during exam review sessions with TAs. This is moderately popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. This is the approach that was used by the TAM 2XX courses prior to the CBTF-based review system.
 
@@ -80,7 +82,9 @@ First, for the course instance, create a extension for the student:
 
 This will allow the student to access the course instance beyond the original end date.
 
-Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
+Second, use the assessment **Access** page to add a [student-specific access override](assessment/accessControl.md#add-an-override) for `student@example.com` with the February 2018 access window.
+
+If you're using legacy access control with `allowAccess`, edit the assessment's `infoAssessment.json` to add a section for `student@example.com`:
 
 ```json title="infoAssessment.json"
 {
@@ -100,7 +104,7 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 }
 ```
 
-See [Access control](assessment/accessControl.md) for more details.
+See [Legacy access control](assessment/accessControlLegacy.md) for more details.
 
 ## Why does a user have the role of None?
 
@@ -326,14 +330,14 @@ For more information on this granular technique, see [the documentation for pl-h
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](assessment/accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn legacy access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](assessment/accessControlLegacy.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
 2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
 3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
-4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
+4. Upload the new scores by selecting "Upload total scores" from the "Upload" menu on the "Students" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
 

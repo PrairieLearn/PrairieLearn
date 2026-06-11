@@ -50,8 +50,8 @@ const default_env = {
 
 // Static files
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.use('/xterm', express.static('node_modules/xterm'));
-app.use('/xterm-fit', express.static('node_modules/xterm-addon-fit'));
+app.use('/xterm', express.static('node_modules/@xterm/xterm'));
+app.use('/xterm-fit', express.static('node_modules/@xterm/addon-fit'));
 
 // Create one pseudoterminal that all connections share
 let websockets = {};

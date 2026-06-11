@@ -25,7 +25,7 @@ jobs:
             - **Make sure you disclose if any AI assistance was used, and the extent of its use.** If you fail to do so, your PR may be rejected.
             - Make sure you've read the [contributing guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/CONTRIBUTING.md)
             - Feel free to ask questions here or in the `#pl-dev` channel on [Slack](https://prairielearn.com/slack).
-            - Please briefly introduce yourself, including if/how you are using PrairieLearn and the context of your contribution.
+            - Please briefly introduce yourself, including how you are using PrairieLearn and the context of your contribution.
 
             And also a few tips:
 

@@ -49,11 +49,6 @@ function getDetailPanel(page: Page): Locator {
   return page.locator('#pl-ui-split-pane-detail');
 }
 
-/** Returns the currently visible modal dialog (e.g. delete confirmation). */
-function getVisibleModal(page: Page): Locator {
-  return page.locator('[aria-modal="true"]');
-}
-
 /** Returns the override card containing the given label text. */
 function getOverrideCard(page: Page, labelText: string): Locator {
   return page.getByTestId('override-card').filter({ hasText: labelText });
@@ -156,6 +151,37 @@ test.describe('Access control UI', () => {
     expect(overrideLabels).toContainEqual(['Extra time']);
   });
 
+  test('keeps default validation errors when adding an override', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
+
+    await panel.getByLabel('PrairieTest').check();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeDisabled();
+
+    await page.getByRole('button', { name: /Add override/i }).click();
+
+    await expect(panel.getByText('Applies to')).toBeVisible();
+    await expect(saveButton).toBeDisabled();
+    await expect(page.getByText('Exam UUID is required').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+  });
+
   test('can delete an override', async ({ page, courseInstance, testCoursePath }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
@@ -169,17 +195,7 @@ test.describe('Access control UI', () => {
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
-    // Click "Remove" on the Section A override
     await sectionACard.getByRole('button', { name: /Remove/i }).click();
-
-    // Confirm deletion in modal
-    const modal = getVisibleModal(page);
-    await expect(modal).toBeVisible();
-    await expect(modal.getByText('Delete override')).toBeVisible();
-    await modal.getByRole('button', { name: 'Delete' }).click();
-    await expect(modal).not.toBeVisible();
-
-    // Verify card removed from page
     await expect(page.getByText('No overrides configured')).toBeVisible();
 
     // Save

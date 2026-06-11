@@ -7,7 +7,6 @@ import * as tmp from 'tmp-promise';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { type AnyRowSchema } from '@prairielearn/postgres';
 
 import {
   AlternativeGroupSchema,
@@ -360,7 +359,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * @param schema - The schema of the table to query
  * @returns The rows of the given table
  */
-export async function dumpTableWithSchema<Schema extends AnyRowSchema>(
+export async function dumpTableWithSchema<Schema extends z.ZodType>(
   tableName: string,
   schema: Schema,
 ): Promise<z.infer<Schema>[]> {

@@ -1,7 +1,12 @@
+import { filesize } from 'filesize';
 import { type SubmitEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Form, Spinner } from 'react-bootstrap';
 
 import type { IRSourceBankRef, PLAssessmentQuestion } from '@prairielearn/question-conversion';
+import {
+  defaultTrimmedQtiArchiveName,
+  trimQtiArchive,
+} from '@prairielearn/question-conversion/trimmer';
 
 import { getAppError } from '../../../lib/client/errors.js';
 import {
@@ -13,6 +18,7 @@ import type { QtiImportError } from '../../../trpc/courseInstance/qti-import.js'
 import {
   type CourseInstanceOption,
   type ParseWarning,
+  QTI_IMPORT_MAX_UPLOAD_BYTES,
   type QuestionOverrides,
   type SerializedConversionResult,
   type StrippedAccessRules,
@@ -27,6 +33,7 @@ import {
   ImportSummary,
   MissingBanksStep,
   NonRubricWarnings,
+  type ProcessingPhase,
   QuestionBankDeduplicationWarning,
   UnresolvedBankWarnings,
   UploadStep,
@@ -44,6 +51,10 @@ const FALLBACK_ASSESSMENT_SETS = [
   'Machine Problem',
   'Worksheet',
 ];
+const QTI_IMPORT_MAX_TRIMMED_SIZE_LABEL = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, {
+  round: 0,
+  standard: 'jedec',
+});
 
 function useBeforeUnload(enabled: boolean): () => void {
   const disabledRef = useRef(false);
@@ -54,8 +65,10 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // MDN recommends setting returnValue for legacy browser support:
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -279,7 +292,8 @@ export function QtiImportForm({
     new Map(),
   );
   const [assessmentSetNames, setAssessmentSetNames] = useState<string[]>(FALLBACK_ASSESSMENT_SETS);
-  const [uploading, setUploading] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('idle');
+  const uploading = processingPhase !== 'idle';
   const [uploadingBankKey, setUploadingBankKey] = useState<string | null>(null);
   const [error, setError] = useState<{
     message: string;
@@ -293,6 +307,25 @@ export function QtiImportForm({
 
   const uploadExport = async (form: HTMLFormElement): Promise<UploadResponse> => {
     const formData = new FormData(form);
+    const file = formData.get('file');
+    if (!(file instanceof File)) {
+      throw new Error('No file selected');
+    }
+
+    const trimmed = await trimQtiArchive(file, file.name);
+    if (trimmed.blob.size > QTI_IMPORT_MAX_UPLOAD_BYTES) {
+      const trimmedSizeLabel = filesize(trimmed.blob.size, { round: 0, standard: 'jedec' });
+      throw new Error(
+        `The importable QTI content is ${trimmedSizeLabel}. The maximum import size is ${QTI_IMPORT_MAX_TRIMMED_SIZE_LABEL}.`,
+      );
+    }
+    const trimmedFile = new File([trimmed.blob], defaultTrimmedQtiArchiveName(file.name), {
+      type: 'application/zip',
+      lastModified: Date.now(),
+    });
+    formData.set('file', trimmedFile);
+
+    setProcessingPhase('uploading');
     const baseUrl = getCourseInstanceBaseUrl(selectedCourseInstanceId);
     const response = await fetch(`${baseUrl}/instructor/instance_admin/qti_import/upload`, {
       method: 'POST',
@@ -327,7 +360,7 @@ export function QtiImportForm({
     const form = e.currentTarget;
     setError(null);
     setSupplementalSuccessMessage(null);
-    setUploading(true);
+    setProcessingPhase('trimming');
     setUploadingBankKey(form.dataset.sourceBankKey ?? null);
 
     try {
@@ -337,7 +370,7 @@ export function QtiImportForm({
       setError({ message: err instanceof Error ? err.message : 'Upload failed' });
     } finally {
       setUploadingBankKey(null);
-      setUploading(false);
+      setProcessingPhase('idle');
     }
   };
 
@@ -738,7 +771,11 @@ export function QtiImportForm({
             </div>
           )}
 
-          <NonRubricWarnings warnings={result.warnings} questions={result.questions} />
+          <NonRubricWarnings
+            warnings={result.warnings}
+            questions={result.questions}
+            questionOverrides={questionOverrides}
+          />
 
           <AssessmentQuestionsSection
             questions={result.questions}
@@ -787,6 +824,7 @@ export function QtiImportForm({
         {step === 'upload' && (
           <UploadStep
             uploading={uploading}
+            processingPhase={processingPhase}
             courseInstances={courseInstances}
             selectedCourseInstanceId={selectedCourseInstanceId}
             onSubmit={handleUpload}
@@ -809,6 +847,7 @@ export function QtiImportForm({
           <MissingBanksStep
             results={results}
             uploading={uploading}
+            processingPhase={processingPhase}
             uploadingBankKey={uploadingBankKey}
             successMessage={supplementalSuccessMessage}
             onSubmit={handleBankUpload}

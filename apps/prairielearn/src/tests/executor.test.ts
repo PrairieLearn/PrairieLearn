@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { type ExecutorResults, handleInput } from '../executor-lib.js';
 import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
 /**
  * Smoke tests for the executor image. This code path is similar to the
@@ -9,11 +10,6 @@ import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
  * drop -> element code -> response.
  *
  * TODO: consider creating `CodeCallerContainer` and interacting via that path.
- *
- * Elements are chosen specifically because they import third-party packages
- * NOT in the zygote pre-load list. This is the exact
- * class of failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197 where lazy imports failed because the
- * Python installation was inaccessible after dropping privileges.
  *
  * These tests are designed to run inside the prairielearn/executor Docker
  * container where the `executor` user exists and `dropPrivileges` works.
@@ -40,6 +36,11 @@ describe('executor smoke tests', () => {
     codeCaller.done();
   });
 
+  // These elements are chosen specifically because they import third-party
+  // packages NOT in the zygote pre-load list. This is the exact class of
+  // failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197
+  // where lazy imports failed because the Python installation was inaccessible
+  // after dropping privileges.
   const testCases = [
     {
       element: 'pl-checkbox',
@@ -89,4 +90,15 @@ describe('executor smoke tests', () => {
       extraAssertions?.(result);
     },
   );
+
+  it('generates question that imports non-preloaded stdlib modules', async () => {
+    const testCoursePath = `${REPOSITORY_ROOT_PATH}/testCourse`;
+    await codeCaller.prepareForCourse({ coursePath: testCoursePath, forbiddenModules: [] });
+
+    const { result } = await codeCaller.call('question', 'stdlibImport', 'server', 'generate', [
+      { params: {}, correct_answers: {}, answers_names: {} },
+    ]);
+
+    expect(result.params.stdlib_accessible).toBe(true);
+  });
 });

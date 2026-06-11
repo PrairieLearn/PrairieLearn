@@ -510,9 +510,12 @@ function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
-  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  const afterLastCredit =
+    dateControl.afterLastDeadline?.allowSubmissions === true
+      ? dateControl.afterLastDeadline.credit
+      : 0;
   if (
-    dateControl.afterLastDeadline &&
+    dateControl.afterLastDeadline?.allowSubmissions === true &&
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {
@@ -803,10 +806,17 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   const examRules = rules.filter((r) => r.examUuid);
   if (examRules.length === 0) return null;
 
-  const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
+  const examUuids = [...new Set(examRules.map((r) => r.examUuid!))];
+  const exams = examUuids.map((examUuid) => ({ examUuid }));
   const remainingRules = rules.filter((r) => !r.examUuid);
 
   const notes: string[] = [];
+  const duplicateExamCount = examRules.length - examUuids.length;
+  if (duplicateExamCount > 0) {
+    notes.push(
+      `${duplicateExamCount} duplicate PrairieTest exam rule${duplicateExamCount === 1 ? '' : 's'} collapsed during migration.`,
+    );
+  }
   if (examRules.some((r) => r.password)) {
     notes.push(
       'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',

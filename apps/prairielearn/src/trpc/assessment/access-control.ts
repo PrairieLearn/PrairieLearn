@@ -3,11 +3,9 @@ import * as path from 'path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import {
-  MAX_ACCESS_CONTROL_RULES,
-  MAX_ENROLLMENT_RULES,
-  validateAccessControlRules,
-} from '../../lib/assessment-access-control/validation.js';
+import { IdSchema } from '@prairielearn/zod';
+
+import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
@@ -16,12 +14,18 @@ import {
   selectPrairieTestExamMetadataByUuids,
 } from '../../models/assessment-access-control-rules.js';
 import {
-  selectUsersAndEnrollmentsByUidsInCourseInstance,
   selectUsersAndEnrollmentsForCourseInstance,
   validateEnrollmentIdsInCourseInstance,
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
-import { type AccessControlJson, AccessControlJsonSchema } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
+  MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
+  MAX_ACCESS_CONTROL_RULES,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { throwAppError } from '../app-errors.js';
 
@@ -51,35 +55,6 @@ const students = t.procedure
       }));
   });
 
-const validateUids = t.procedure
-  .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
-  .input(z.object({ uids: z.array(z.string()) }))
-  .query(async (opts) => {
-    const results = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-      uids: opts.input.uids,
-      courseInstance: opts.ctx.course_instance,
-      requiredRole: ['Student Data Viewer'],
-      authzData: opts.ctx.authz_data,
-    });
-
-    const enrollmentMap = new Map(results.map((r) => [r.user.uid, r]));
-
-    return opts.input.uids.map((uid) => {
-      const match = enrollmentMap.get(uid);
-      if (!match) {
-        return { id: null, uid, name: null, enrolled: false, notFound: true };
-      }
-      return {
-        id: match.enrollment.id,
-        uid: match.user.uid,
-        name: match.user.name,
-        enrolled: match.enrollment.status === 'joined',
-        notFound: false,
-      };
-    });
-  });
-
 const studentLabels = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
@@ -91,7 +66,7 @@ const studentLabels = t.procedure
 const prairieTestExamMetadata = t.procedure
   .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
-  .input(z.object({ examUuids: z.array(z.string().uuid()) }))
+  .input(z.object({ examUuids: z.array(z.uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }))
   .query(async (opts) => {
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
@@ -101,6 +76,8 @@ export function formJsonToEnrollmentRuleData(
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;
   const ac = rule.afterComplete;
+  const afterLastDeadline = dc?.afterLastDeadline;
+  const afterLastDeadlineAllowSubmissions = afterLastDeadline?.allowSubmissions ?? null;
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
@@ -110,12 +87,9 @@ export function formJsonToEnrollmentRuleData(
     dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
-    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
-    afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
+    afterLastDeadlineAllowSubmissions,
     afterLastDeadlineCredit:
-      dc?.afterLastDeadline?.allowSubmissions === true
-        ? (dc.afterLastDeadline.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
@@ -131,12 +105,12 @@ export function formJsonToEnrollmentRuleData(
 }
 
 const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
-  id: z.string().optional(),
+  id: IdSchema.optional(),
 }).strip();
 
 const EnrollmentRuleInputSchema = z.object({
-  id: z.string().optional(),
-  enrollmentIds: z.array(z.string()),
+  id: IdSchema.optional(),
+  enrollmentIds: z.array(IdSchema).max(MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE),
   ruleJson: AccessControlJsonInputSchema,
 });
 
@@ -151,7 +125,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits default-valued settings on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -166,7 +140,13 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.dateControl)) {
-      clean.dateControl = rule.dateControl;
+      const dateControl = { ...rule.dateControl };
+      if (index === 0 && dateControl.afterLastDeadline?.allowSubmissions === false) {
+        delete dateControl.afterLastDeadline;
+      }
+      if (isNonEmptyObject(dateControl)) {
+        clean.dateControl = dateControl;
+      }
     }
 
     if (rule.integrations && isNonEmptyObject(rule.integrations)) {
@@ -174,7 +154,22 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.afterComplete)) {
-      clean.afterComplete = rule.afterComplete;
+      const afterComplete = { ...rule.afterComplete };
+      if (index === 0) {
+        if (
+          afterComplete.questions?.hidden === true &&
+          afterComplete.questions.visibleFromDate == null &&
+          afterComplete.questions.visibleUntilDate == null
+        ) {
+          delete afterComplete.questions;
+        }
+        if (afterComplete.score?.hidden === false && afterComplete.score.visibleFromDate == null) {
+          delete afterComplete.score;
+        }
+      }
+      if (isNonEmptyObject(afterComplete)) {
+        clean.afterComplete = afterComplete;
+      }
     }
 
     return clean;
@@ -189,7 +184,10 @@ const saveAllRules = t.procedure
       rules: z.array(AccessControlJsonInputSchema).max(MAX_ACCESS_CONTROL_RULES),
       // Omitted enrollmentRules leave student-specific overrides unchanged;
       // an empty array explicitly removes them.
-      enrollmentRules: z.array(EnrollmentRuleInputSchema).max(MAX_ENROLLMENT_RULES).optional(),
+      enrollmentRules: z
+        .array(EnrollmentRuleInputSchema)
+        .max(MAX_ENROLLMENT_ACCESS_CONTROL_RULES)
+        .optional(),
       origHash: z.string().nullable(),
     }),
   )
@@ -211,6 +209,14 @@ const saveAllRules = t.procedure
     // Validate all rules before writing anything to disk or DB.
     const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
 
+    const { errors: validationErrors } = validateAccessControlRules({
+      rules: rulesToSync,
+      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
+    });
+    if (validationErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
+    }
+
     if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
       if (allEnrollmentIds.size > 0) {
@@ -225,14 +231,6 @@ const saveAllRules = t.procedure
           });
         }
       }
-    }
-
-    const { errors: validationErrors } = validateAccessControlRules({
-      rules: rulesToSync,
-      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
-    });
-    if (validationErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
     const assessmentDir = path.join(
@@ -307,7 +305,6 @@ const saveAllRules = t.procedure
 
 export const accessControlRouter = t.router({
   students,
-  validateUids,
   studentLabels,
   prairieTestExamMetadata,
   saveAllRules,

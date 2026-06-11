@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
@@ -358,7 +358,7 @@ async function pipeCursorToArchive<T>(
   cursor: sqldb.CursorIterator<T>,
   extractFiles: (row: T) => ArchiveFile[] | null,
 ) {
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replaceAll(
     ' ',
     '',

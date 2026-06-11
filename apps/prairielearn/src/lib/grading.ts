@@ -253,7 +253,7 @@ export async function saveSubmission(
     question,
     question_course,
     {
-      effectiveUserId: submission.user_id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
@@ -433,10 +433,7 @@ export async function gradeVariant({
       question,
       question_course,
       {
-        // Grading can run from cron jobs or instructor close actions, in which
-        // cases the request actor would not be the assessed student. Use
-        // `variant.user_id` (NULL on group variants) rather than the actor.
-        effectiveUserId: variant.user_id,
+        userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: variant_course,
       },

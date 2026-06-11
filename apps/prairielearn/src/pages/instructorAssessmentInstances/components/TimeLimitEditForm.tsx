@@ -136,21 +136,27 @@ export function TimeLimitEditForm({
   }
 
   function proposedClosingTime() {
-    if (singleRow?.total_time_sec == null) return null;
-    const totalTime = Math.round(singleRow.total_time_sec);
+    if (singleRow == null || !Number.isFinite(form.time_add)) return null;
+    const totalTime = Math.round(singleRow.total_time_sec ?? 0);
 
-    let startDate = Temporal.Instant.from(singleRow.date).toZonedDateTimeISO(timezone);
-    if (form.action === 'set_total') {
-      startDate = startDate.add({ minutes: form.time_add });
-    } else if (form.action === 'set_rem') {
-      startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
-    } else if (form.action === 'add') {
-      startDate = startDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
-    } else if (form.action === 'subtract') {
-      startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: form.time_add });
+    try {
+      let startDate = Temporal.Instant.from(singleRow.date).toZonedDateTimeISO(timezone);
+      if (form.action === 'set_total') {
+        startDate = startDate.add({ minutes: form.time_add });
+      } else if (form.action === 'set_rem') {
+        startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
+      } else if (form.action === 'add') {
+        startDate = startDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
+      } else if (form.action === 'subtract') {
+        startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: form.time_add });
+      }
+
+      return formatDate(new Date(startDate.epochMilliseconds), timezone);
+    } catch (err) {
+      // Errors here may be due to large values or invalid inputs.
+      console.error('Error calculating proposed closing time:', err);
+      return null;
     }
-
-    return formatDate(new Date(startDate.epochMilliseconds), timezone);
   }
 
   function handleSubmit() {

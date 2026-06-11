@@ -270,7 +270,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Student labels
 
-Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping. Each course instance can have up to 25 student labels.
+Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping. Each course instance can have up to 100 student labels.
 
 To review configured labels and their assigned students, go to **Students → Labels**. Users with student data viewer access can view that page. Users who have both course editor and student data editor access can create, rename, delete, and assign labels there by entering UIDs. Student data editors can also apply existing labels from the main Students page using batch actions, or from an individual student's page.
 
@@ -317,7 +317,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](../assessment/accessControl.md) for more details.
+It is also necessary to add an `allowAccess` rule in `infoCourseInstance.json` with `"institution": "LTI"`. See [controlling access by institution](#controlling-access-by-institution) for more details.
 
 ### LTI linking into an assessment
 

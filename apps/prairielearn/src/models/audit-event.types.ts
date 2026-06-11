@@ -69,7 +69,7 @@ export type SupportedTableActionCombination =
     }
   | {
       tableName: 'institution_settings';
-      actionDetail?: 'course_request_message' | null;
+      actionDetail?: 'course_request_message' | 'github_course_owner' | null;
     }
   | {
       tableName: 'enrollments';

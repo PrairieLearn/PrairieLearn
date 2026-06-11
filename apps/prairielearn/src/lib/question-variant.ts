@@ -66,7 +66,7 @@ export async function makeVariant({
   variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
-  /** The effective user creating the variant. Used to expose user info to `server.py` if the course has opted in. */
+  /** The user that owns the variant, or `null` for group variants. Used to expose user info to `server.py` if the course has opted in. */
   effective_user_id: string | null;
   /** The group the variant belongs to, if this is a group-work variant. */
   group_id: string | null;
@@ -82,7 +82,7 @@ export async function makeVariant({
   }
 
   const caller = {
-    effectiveUserId: effective_user_id,
+    userId: effective_user_id,
     groupId: group_id,
     variantCourse: variant_course,
   };
@@ -169,7 +169,7 @@ export async function getDynamicFile(
     question,
     question_course,
     {
-      effectiveUserId: user_id,
+      userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
@@ -280,18 +280,18 @@ async function makeAndInsertVariant({
     preferences = result ? { ...preferences, ...result } : preferences;
   }
 
-  // Pre-fetch the group for instance-question-backed variants so we can build
-  // the user/group context before the transaction. The group on an assessment
-  // instance is set at instance creation and does not change. This is only
-  // needed when the course exposes user data to questions; otherwise the
-  // context is empty regardless of the group, so we skip the extra query.
+  // Look up the variant's owner and group for instance-question-backed variants
+  // so we can build the user/group context for `generate`/`prepare`, which run
+  // before the variant is persisted (and so before `variant.user_id` exists).
+  let variant_user_id: string | null = user_id;
   let group_id: string | null = null;
-  if (instance_question_id != null && question_course.questions_receive_user_data) {
+  if (instance_question_id != null) {
     const instance_question = await sqldb.queryOptionalRow(
       sql.select_instance_question_data,
       { instance_question_id },
       InstanceQuestionDataSchema,
     );
+    variant_user_id = instance_question?.user_id ?? null;
     group_id = instance_question?.team_id ?? null;
   }
 
@@ -301,7 +301,7 @@ async function makeAndInsertVariant({
     variant_course,
     variant_seed: options.variant_seed,
     preferences,
-    effective_user_id: user_id,
+    effective_user_id: variant_user_id,
     group_id,
   });
 

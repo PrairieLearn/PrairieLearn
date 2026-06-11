@@ -208,12 +208,14 @@ export function AssessmentInstancesTable({
   assessmentSet,
   courseInstance,
   canEdit,
+  isDevMode,
 }: {
   initialRows: AssessmentInstanceRow[];
   assessment: StaffAssessment;
   assessmentSet: StaffAssessmentSet;
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
+  isDevMode: boolean;
 }) {
   const trpc = useTRPC();
 
@@ -456,12 +458,12 @@ export function AssessmentInstancesTable({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <span className="text-nowrap">
-              {row.time_remaining}
+            <span className="text-nowrap d-flex align-items-center">
+              <span className="flex-shrink-1 text-truncate">{row.time_remaining}</span>
               {canEdit ? (
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost text-muted ms-1"
+                  className="btn btn-xs btn-ghost text-muted ms-1 flex-shrink-0"
                   aria-label="Change time limit"
                   onClick={() => setTimeLimitRow(row)}
                 >
@@ -619,7 +621,10 @@ export function AssessmentInstancesTable({
       allRows={data}
       clearSelection={() => setRowSelection({})}
       courseInstanceId={courseInstance.id}
+      assessmentId={assessment.id}
       timezone={courseInstance.display_timezone}
+      groupWork={assessment.team_work}
+      isDevMode={isDevMode}
       onActionSuccess={setSuccessMessage}
     />
   ) : null;

@@ -1,17 +1,5 @@
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 
-/**
- * Maximum number of access control rules (default + overrides) per assessment.
- * Enforced during both JSON sync and tRPC input validation.
- */
-export const MAX_ACCESS_CONTROL_RULES = 50;
-
-/**
- * Maximum number of enrollment-targeted access control rules per assessment.
- * Enrollment rules are per-student overrides, so a lower limit is appropriate.
- */
-export const MAX_ENROLLMENT_RULES = 100;
-
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
 type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
@@ -993,13 +981,6 @@ export function validateRule(
   }
 
   if (
-    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
-    rule.dateControl.afterLastDeadline.credit !== undefined
-  ) {
-    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
-  }
-
-  if (
     rule.afterComplete?.questions?.hidden === false &&
     (rule.afterComplete.questions.visibleFromDate !== undefined ||
       rule.afterComplete.questions.visibleUntilDate !== undefined)
@@ -1076,12 +1057,6 @@ export function validateAccessControlRules({
   // If the feature is completely unused, we can skip all validation and we don't need a default rule.
   if (rules.length === 0 && enrollmentRulesCount === 0) {
     return { errors, warnings };
-  }
-
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
-    errors.push(
-      `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
-    );
   }
 
   // A default rule is identified by the absence of a `labels` key.

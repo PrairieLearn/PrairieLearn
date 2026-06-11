@@ -22,6 +22,7 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
 } from '../lib/db-types.js';
+import { parseGithubRepository } from '../lib/github-utils.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import { insertAuditLog } from './audit-log.js';
@@ -54,16 +55,30 @@ export async function selectCourseByShortName(shortName: string): Promise<Course
   return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
 }
 
-export async function selectOptionalCourseByRepositoryName(
-  repoName: string,
-): Promise<Course | null> {
-  // Escape SQL LIKE wildcards so they are matched literally.
+export async function selectOptionalCourseByGithubRepository({
+  owner,
+  repoName,
+}: {
+  owner: string;
+  repoName: string;
+}): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally in the loose match.
+  const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
-  return await queryOptionalRow(
-    sql.select_course_by_repository_name,
-    { repo_name: escapedRepoName },
+  const candidates = await queryRows(
+    sql.select_course_by_github_repository,
+    { owner: escapedOwner, repo_name: escapedRepoName },
     CourseSchema,
   );
+  const match = candidates.find((c) => {
+    const parsed = c.repository ? parseGithubRepository(c.repository) : null;
+    if (parsed === null) return false;
+    return (
+      parsed.owner.toLowerCase() === owner.toLowerCase() &&
+      parsed.repo.toLowerCase() === repoName.toLowerCase()
+    );
+  });
+  return match ?? null;
 }
 
 export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
@@ -292,6 +307,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
@@ -333,6 +349,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
@@ -381,6 +398,7 @@ export async function updateCourseColumn({
       { course_id: courseId, value },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id: authnUserId,
       action: 'update',

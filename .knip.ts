@@ -46,6 +46,7 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'jquery',
   'mathlive',
   'highlight.js',
+  'web-tree-sitter',
 ];
 
 /**
@@ -85,7 +86,6 @@ const CLI_ONLY_DEPS = [
   'pyright',
   's3rver',
   '@postgres-language-server/cli',
-  '@prairielearn/tree-sitter-htmlmustache',
   '@typescript/native-preview',
 ];
 
@@ -156,14 +156,13 @@ const config: KnipConfig = {
     '.': {
       entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
       project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
-      // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
-      ignore: ['vitest.config.ts'],
       ignoreDependencies: ['@prairielearn/tsconfig', ...CLI_ONLY_DEPS],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
       entry: [
         'assets/scripts/**/*.{ts,tsx}',
+        'src/lib/element-schemas/htmlmustache-plugin.ts',
         'src/{batched-migrations,migrations}/*.{ts,mts}',
         'src/admin_queries/*.ts',
         'src/executor.ts',

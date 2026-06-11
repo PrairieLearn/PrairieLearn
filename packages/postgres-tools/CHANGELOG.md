@@ -1,5 +1,13 @@
 # @prairielearn/postgres-tools
 
+## 3.0.8
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+- Updated dependencies [288ff13]
+  - @prairielearn/postgres@7.0.0
+
 ## 3.0.7
 
 ### Patch Changes

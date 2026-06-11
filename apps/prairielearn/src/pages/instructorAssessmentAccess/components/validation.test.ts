@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AccessControlFormData, OverrideData } from './types.js';
-import { getGlobalDateValidationErrors } from './validation.js';
+import {
+  getAccessControlFormValidationErrors,
+  getGlobalDateValidationErrors,
+} from './validation.js';
 
 const TEST_TIMEZONE = 'America/Chicago';
 
@@ -40,7 +43,7 @@ function makeFormData(
       due: { date: '2024-04-10T00:00:00', credit: null, customCredit: false },
       earlyDeadlines: [],
       lateDeadlines: [],
-      afterLastDeadline: null,
+      afterLastDeadline: { allowSubmissions: false },
       durationMinutes: null,
       password: null,
       prairieTestExams: [],
@@ -263,5 +266,85 @@ describe('getGlobalDateValidationErrors', () => {
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
+  });
+});
+
+describe('getAccessControlFormValidationErrors', () => {
+  it('validates default rule fields independently of mounted editors', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([makeOverride()], {
+        prairieTestExams: [
+          {
+            examUuid: '',
+            readOnly: false,
+            afterCompleteQuestionsHidden: false,
+            afterCompleteScoreHidden: false,
+          },
+        ],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.prairieTestExams.0.examUuid',
+      message: 'Exam UUID is required',
+    });
+  });
+
+  it('does not validate hidden default after-complete date inputs without a completion mechanism', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([], {
+        dateControlEnabled: false,
+        due: { date: null, credit: null, customCredit: false },
+        questionVisibility: { hidden: true, visibleFromDate: '' },
+        scoreVisibility: { hidden: true, visibleFromDate: '' },
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(
+      errors.find(
+        (e) =>
+          e.path === 'defaultRule.questionVisibility.visibleFromDate' ||
+          e.path === 'defaultRule.scoreVisibility.visibleFromDate',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('ignores invalid values for inactive override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: [],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors.find((e) => e.path.startsWith('overrides.0.'))).toBeUndefined();
+  });
+
+  it('validates invalid values for active override fields', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([
+        makeOverride({
+          overriddenFields: ['durationMinutes', 'password'],
+          durationMinutes: 0,
+          password: '',
+        }),
+      ]),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.durationMinutes',
+      message: 'Duration must be at least 1 minute',
+    });
+    expect(errors).toContainEqual({
+      path: 'overrides.0.password',
+      message: 'Password is required',
+    });
   });
 });
