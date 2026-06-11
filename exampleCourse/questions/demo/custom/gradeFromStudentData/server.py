@@ -3,14 +3,6 @@ import math
 import prairielearn as pl
 
 
-def generate(data):
-    # Reference values for the physical measurements. Each student takes their
-    # own measurements, so submissions are graded against these references with
-    # generous tolerances (set on each pl-number-input in question.html).
-    data["correct_answers"]["L"] = 0.5
-    data["correct_answers"]["t"] = 14.2
-
-
 def parse(data):
     # Sanity-check the recorded measurements. Marking implausible values as
     # format errors keeps the submission from being graded (and from using up
@@ -30,13 +22,16 @@ def parse(data):
 
 
 def grade(data):
+    # The measurements themselves have no correct answer and are not graded.
     # The expected value of g is computed from the student's own recorded
-    # measurements, not from the reference values, so any answer consistent
-    # with the recorded data is accepted.
+    # measurements, so any answer consistent with the recorded data is
+    # accepted.
     submitted = data["submitted_answers"]
     period = submitted["t"] / 10
     g = 4 * math.pi**2 * submitted["L"] / period**2
 
+    # The relative tolerance matches the rtol shown on the input in
+    # question.html, since the element itself does not grade this input.
     if math.isclose(submitted["g"], g, rel_tol=1e-3):
         data["partial_scores"]["g"] = {"score": 1, "weight": 1}
     else:
@@ -52,13 +47,15 @@ def test(data):
     if data["test_type"] == "invalid":
         return
 
-    is_correct = data["test_type"] == "correct"
-    correct = data["correct_answers"]
+    # None of the inputs have a correct answer, so pl-number-input defers
+    # generating all of the test data to this function.
+    L = 0.5
+    t = 14.2
+    data["raw_submitted_answers"]["L"] = str(L)
+    data["raw_submitted_answers"]["t"] = str(t)
 
-    # g has no fixed correct answer, so pl-number-input defers generating its
-    # test data to this function.
-    period = correct["t"] / 10
-    g = 4 * math.pi**2 * correct["L"] / period**2
+    is_correct = data["test_type"] == "correct"
+    g = 4 * math.pi**2 * L * (10 / t) ** 2
     offset = 0 if is_correct else 1
     data["raw_submitted_answers"]["g"] = str(g + offset)
 
