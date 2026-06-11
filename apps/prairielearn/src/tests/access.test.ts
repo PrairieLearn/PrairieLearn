@@ -19,7 +19,7 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
-import { withPTReservation } from './helperExam.js';
+import { exam1AutomaticTestSuite, withPTReservation } from './helperExam.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -124,6 +124,7 @@ describe('Access control', { timeout: 20000 }, function () {
         userId: user.id,
         accessStart: new Date('1920-07-07 23:59:59'),
         accessEnd: new Date('2300-07-10 23:59:59'),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       };
     });
   });

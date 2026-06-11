@@ -62,10 +62,12 @@ export async function withPTReservation<T>(
     userId,
     accessStart,
     accessEnd,
+    examUuid,
   }: {
     userId: string;
     accessStart: Date;
     accessEnd: Date;
+    examUuid: string;
   },
   fn: () => Promise<T>,
 ) {
@@ -74,7 +76,7 @@ export async function withPTReservation<T>(
       user_id: userId,
       access_start: accessStart,
       access_end: accessEnd,
-      exam_uuid: exam1AutomaticTestSuite.examUuid,
+      exam_uuid: examUuid,
     });
     return await fn();
   } finally {
