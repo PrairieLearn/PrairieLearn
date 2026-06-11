@@ -320,6 +320,7 @@ export function InstanceQuestionPoints({
               type="button"
               class="btn btn-xs"
               data-bs-toggle="tooltip"
+              aria-label="Not included in grade"
               title="This zone uses only the best questions for score, and this question is not included."
             >
               <i class="far fa-question-circle"></i>
