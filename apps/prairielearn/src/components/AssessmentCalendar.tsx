@@ -329,7 +329,7 @@ function EventPopover({
   );
   return (
     <Popover {...popoverProps} id={`assessment-calendar-popover-${event.assessmentId}`}>
-      <Popover.Header className="d-flex align-items-center gap-2">
+      <Popover.Header className="d-flex flex-wrap align-items-center gap-2">
         <span className={`badge color-${event.color}`}>{event.label}</span>
         <span className="me-auto">{event.title}</span>
         {event.overrideCount > 0 && (
