@@ -2,10 +2,16 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
+import {
+  AssessmentCalendar,
+  type CalendarAssessmentEvent,
+} from '../../components/AssessmentCalendar.js';
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
+import { AssessmentsViewToggle } from '../../components/AssessmentsViewToggle.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { ManualGradingBadgeHtml } from '../../components/ManualGradingBadge.js';
 import { Modal } from '../../components/Modal.js';
@@ -30,6 +36,9 @@ export function InstructorAssessments({
   assessmentModules,
   assessmentsGroupBy,
   qtiImportEnabled,
+  view,
+  calendarEvents,
+  search,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
@@ -39,6 +48,9 @@ export function InstructorAssessments({
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
   qtiImportEnabled: boolean;
+  view: 'list' | 'calendar';
+  calendarEvents: CalendarAssessmentEvent[];
+  search: string;
 }) {
   const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
@@ -64,6 +76,7 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
+          ${AssessmentsViewToggle({ view })}
           ${authz_data.has_course_permission_edit &&
           !course.example_course &&
           (rows.length > 0 || qtiImportEnabled)
@@ -99,129 +112,141 @@ export function InstructorAssessments({
               `
             : ''}
         </div>
-        ${rows.length > 0
-          ? html`
-              <div class="table-responsive">
-                <table class="table table-sm table-hover" aria-label="Assessments">
-                  <thead>
-                    <tr>
-                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
-                      <th><span class="visually-hidden">Title</span></th>
-                      <th>Short name</th>
-                      <th class="text-center">Students</th>
-                      <th class="text-center">Scores</th>
-                      <th class="text-center">Mean Score</th>
-                      <th class="text-center">Mean Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rows.map(
-                      (row) => html`
-                        ${row.start_new_assessment_group
-                          ? html`
-                              <tr>
-                                <th colspan="7" scope="row">
-                                  ${assessmentsGroupBy === 'Set'
-                                    ? AssessmentSetHeadingHtml({
-                                        assessment_set: row.assessment_set,
-                                      })
-                                    : AssessmentModuleHeadingHtml({
-                                        assessment_module: row.assessment_module,
-                                      })}
-                                </th>
-                              </tr>
-                            `
-                          : ''}
-                        <tr id="row-${row.id}">
-                          <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.assessment_set.color}">
-                              ${row.label}
-                            </span>
-                          </td>
-                          <td class="align-middle">
-                            ${row.sync_errors
-                              ? SyncProblemButtonHtml({
-                                  type: 'error',
-                                  output: row.sync_errors,
-                                })
-                              : row.sync_warnings
+        ${view === 'calendar'
+          ? renderHtml(
+              <Hydrate>
+                <AssessmentCalendar
+                  events={calendarEvents}
+                  displayTimezone={course_instance.display_timezone}
+                  now={resLocals.req_date}
+                  search={search}
+                />
+              </Hydrate>,
+            )
+          : rows.length > 0
+            ? html`
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover" aria-label="Assessments">
+                    <thead>
+                      <tr>
+                        <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                        <th><span class="visually-hidden">Title</span></th>
+                        <th>Short name</th>
+                        <th class="text-center">Students</th>
+                        <th class="text-center">Scores</th>
+                        <th class="text-center">Mean Score</th>
+                        <th class="text-center">Mean Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${rows.map(
+                        (row) => html`
+                          ${row.start_new_assessment_group
+                            ? html`
+                                <tr>
+                                  <th colspan="7" scope="row">
+                                    ${assessmentsGroupBy === 'Set'
+                                      ? AssessmentSetHeadingHtml({
+                                          assessment_set: row.assessment_set,
+                                        })
+                                      : AssessmentModuleHeadingHtml({
+                                          assessment_module: row.assessment_module,
+                                        })}
+                                  </th>
+                                </tr>
+                              `
+                            : ''}
+                          <tr id="row-${row.id}">
+                            <td class="align-middle" style="width: 1%">
+                              <span class="badge color-${row.assessment_set.color}">
+                                ${row.label}
+                              </span>
+                            </td>
+                            <td class="align-middle">
+                              ${row.sync_errors
                                 ? SyncProblemButtonHtml({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
+                                    type: 'error',
+                                    output: row.sync_errors,
                                   })
-                                : ''}
-                            <a href="${urlPrefix}/assessment/${row.id}/">
-                              ${row.title}
-                              ${row.team_work
-                                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                : ''}
-                            </a>
-                            ${IssueBadgeHtml({
-                              count: row.open_issue_count,
-                              courseInstanceId: course_instance.id,
-                              issueAid: row.tid,
-                            })}
-                            ${ManualGradingBadgeHtml({
-                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
-                              courseInstanceId: course_instance.id,
-                              assessmentId: row.id,
-                            })}
-                          </td>
+                                : row.sync_warnings
+                                  ? SyncProblemButtonHtml({
+                                      type: 'warning',
+                                      output: row.sync_warnings,
+                                    })
+                                  : ''}
+                              <a href="${urlPrefix}/assessment/${row.id}/">
+                                ${row.title}
+                                ${row.team_work
+                                  ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                  : ''}
+                              </a>
+                              ${IssueBadgeHtml({
+                                count: row.open_issue_count,
+                                courseInstanceId: course_instance.id,
+                                issueAid: row.tid,
+                              })}
+                              ${ManualGradingBadgeHtml({
+                                ungradedSubmissionCount:
+                                  row.ungraded_manual_grading_submission_count,
+                                courseInstanceId: course_instance.id,
+                                assessmentId: row.id,
+                              })}
+                            </td>
 
-                          <td class="align-middle">${row.tid}</td>
+                            <td class="align-middle">${row.tid}</td>
 
-                          ${AssessmentStats({ row })}
-                        </tr>
-                      `,
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div class="card-footer">
-                Download
-                <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                  ${csvFilename}
-                </a>
-                (includes more statistics columns than displayed above)
-              </div>
-            `
-          : html`
-              <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                <p class="fw-bold">No assessments found.</p>
-                <p class="mb-0">
-                  An assessment is a collection of questions to build or assess a student's
-                  knowledge.
-                </p>
-                <p>
-                  Learn more in the
-                  <a
-                    href="https://docs.prairielearn.com/assessment/overview/"
-                    target="_blank"
-                    rel="noreferrer"
-                    >assessments documentation</a
-                  >.
-                </p>
-                ${run(() => {
-                  if (course.example_course) {
-                    return html`<p>You can't add assessments to the example course.</p>`;
-                  }
-                  if (!authz_data.has_course_permission_edit) {
-                    return html`<p>Course Editors can create new assessments.</p>`;
-                  }
-                  return html`
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-primary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#createAssessmentModal"
-                    >
-                      <i class="fa fa-plus" aria-hidden="true"></i>
-                      <span class="d-none d-sm-inline">Add assessment</span>
-                    </button>
-                  `;
-                })}
-              </div>
-            `}
+                            ${AssessmentStats({ row })}
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-footer">
+                  Download
+                  <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
+                    ${csvFilename}
+                  </a>
+                  (includes more statistics columns than displayed above)
+                </div>
+              `
+            : html`
+                <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                  <p class="fw-bold">No assessments found.</p>
+                  <p class="mb-0">
+                    An assessment is a collection of questions to build or assess a student's
+                    knowledge.
+                  </p>
+                  <p>
+                    Learn more in the
+                    <a
+                      href="https://docs.prairielearn.com/assessment/overview/"
+                      target="_blank"
+                      rel="noreferrer"
+                      >assessments documentation</a
+                    >.
+                  </p>
+                  ${run(() => {
+                    if (course.example_course) {
+                      return html`<p>You can't add assessments to the example course.</p>`;
+                    }
+                    if (!authz_data.has_course_permission_edit) {
+                      return html`<p>Course Editors can create new assessments.</p>`;
+                    }
+                    return html`
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createAssessmentModal"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add assessment</span>
+                      </button>
+                    `;
+                  })}
+                </div>
+              `}
       </div>
     `,
     postContent: html`

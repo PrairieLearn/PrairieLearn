@@ -47,6 +47,7 @@ const baseResolverResult: AccessControlResolverResult = {
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: [],
+  dateControl: null,
   nextActiveDate: null,
 };
 

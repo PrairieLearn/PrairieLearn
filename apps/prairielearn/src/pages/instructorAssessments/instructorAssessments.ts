@@ -9,6 +9,9 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import type { CalendarAssessmentEvent } from '../../components/AssessmentCalendar.js';
+import { dateControlToCalendarEvents } from '../../lib/assessment-access-control/calendar.js';
+import { selectAccessControlRulesForCourseInstance } from '../../lib/assessment-access-control/data.js';
 import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
@@ -24,6 +27,7 @@ import { features } from '../../lib/features/index.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { getUrl } from '../../lib/url.js';
 import {
   type AssessmentRow,
   selectAssessments,
@@ -70,6 +74,43 @@ router.get(
 
     const qtiImportEnabled = await features.enabledFromLocals('qti-content-import', res.locals);
 
+    const view = req.query.view === 'calendar' ? 'calendar' : 'list';
+    let calendarEvents: CalendarAssessmentEvent[] = [];
+    if (view === 'calendar') {
+      const rulesByAssessment = await selectAccessControlRulesForCourseInstance(
+        res.locals.course_instance,
+      );
+      calendarEvents = rows.flatMap((row) => {
+        if (!row.modern_access_control) return [];
+        const rules = rulesByAssessment.get(row.id) ?? [];
+        const defaultRule = rules.find((rule) => rule.targetType === 'none');
+        const dates = dateControlToCalendarEvents(
+          defaultRule?.rule.dateControl,
+          res.locals.req_date,
+        );
+        if (!dates) return [];
+        return [
+          {
+            assessmentId: row.id,
+            title: row.title ?? '',
+            label: row.label,
+            color: row.assessment_set.color,
+            assessmentUrl: `${res.locals.urlPrefix}/assessment/${row.id}/`,
+            accessEditUrl: res.locals.authz_data.has_course_permission_edit
+              ? `${res.locals.urlPrefix}/assessment/${row.id}/access`
+              : null,
+            release: dates.release,
+            due: dates.due,
+            windowStart: dates.windowStart,
+            windowEnd: dates.windowEnd,
+            afterLastDeadlineCredit: dates.afterLastDeadlineCredit,
+            overrideCount: rules.length - (defaultRule ? 1 : 0),
+            timeline: dates.timeline,
+          },
+        ];
+      });
+    }
+
     res.send(
       InstructorAssessments({
         resLocals: res.locals,
@@ -80,6 +121,9 @@ router.get(
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         assessmentModules,
         qtiImportEnabled,
+        view,
+        calendarEvents,
+        search: getUrl(req).search,
       }),
     );
   }),

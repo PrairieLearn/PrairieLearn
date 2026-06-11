@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 
+import {
+  AssessmentCalendar,
+  type CalendarAssessmentEvent,
+} from '../../components/AssessmentCalendar.js';
+import { AssessmentsViewToggle } from '../../components/AssessmentsViewToggle.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
@@ -49,9 +56,15 @@ export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowSchema>;
 export function StudentAssessments({
   resLocals,
   rows,
+  view,
+  calendarEvents,
+  search,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
   rows: StudentAssessmentsRow[];
+  view: 'list' | 'calendar';
+  calendarEvents: CalendarAssessmentEvent[];
+  search: string;
 }) {
   const { urlPrefix, authz_data } = resLocals;
   return PageLayout({
@@ -63,73 +76,87 @@ export function StudentAssessments({
     },
     content: html`
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
+          ${AssessmentsViewToggle({ view })}
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Assessments">
-            <thead>
-              <tr>
-                <th style="width: 1%"><span class="visually-hidden">Label</span></th>
-                <th><span class="visually-hidden">Title</span></th>
-                <th class="text-center">Available credit</th>
-                <th class="text-center">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(
-                (row) => html`
-                  ${row.start_new_assessment_group
-                    ? html`
+        ${view === 'calendar'
+          ? renderHtml(
+              <Hydrate>
+                <AssessmentCalendar
+                  events={calendarEvents}
+                  displayTimezone={resLocals.course_instance.display_timezone}
+                  now={resLocals.req_date}
+                  search={search}
+                />
+              </Hydrate>,
+            )
+          : html`
+              <div class="table-responsive">
+                <table class="table table-sm table-hover" aria-label="Assessments">
+                  <thead>
+                    <tr>
+                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                      <th><span class="visually-hidden">Title</span></th>
+                      <th class="text-center">Available credit</th>
+                      <th class="text-center">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows.map(
+                      (row) => html`
+                        ${row.start_new_assessment_group
+                          ? html`
+                              <tr>
+                                <th colspan="4" scope="row" data-testid="assessment-group-heading">
+                                  ${row.assessment_group_heading}
+                                </th>
+                              </tr>
+                            `
+                          : ''}
                         <tr>
-                          <th colspan="4" scope="row" data-testid="assessment-group-heading">
-                            ${row.assessment_group_heading}
-                          </th>
+                          <td class="align-middle" style="width: 1%">
+                            <span
+                              class="badge color-${row.assessment_set_color}"
+                              data-testid="assessment-set-badge"
+                            >
+                              ${row.label}
+                            </span>
+                          </td>
+                          <td class="align-middle">
+                            ${row.show_before_release
+                              ? html`<span class="text-muted">${row.title}</span>`
+                              : row.multiple_instance_header ||
+                                  (!row.active && row.assessment_instance_id == null)
+                                ? row.title
+                                : html`
+                                    <a href="${urlPrefix}${row.link}">
+                                      ${row.title}
+                                      ${row.team_work
+                                        ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                        : ''}
+                                    </a>
+                                  `}
+                          </td>
+                          <td class="text-center align-middle">
+                            ${AvailableCredit({
+                              row,
+                              displayTimezone: resLocals.course_instance.display_timezone,
+                            })}
+                          </td>
+                          <td class="text-center align-middle">
+                            ${row.multiple_instance_header
+                              ? NewInstanceButton({ urlPrefix, row })
+                              : AssessmentScore(row)}
+                          </td>
                         </tr>
-                      `
-                    : ''}
-                  <tr>
-                    <td class="align-middle" style="width: 1%">
-                      <span
-                        class="badge color-${row.assessment_set_color}"
-                        data-testid="assessment-set-badge"
-                      >
-                        ${row.label}
-                      </span>
-                    </td>
-                    <td class="align-middle">
-                      ${row.show_before_release
-                        ? html`<span class="text-muted">${row.title}</span>`
-                        : row.multiple_instance_header ||
-                            (!row.active && row.assessment_instance_id == null)
-                          ? row.title
-                          : html`
-                              <a href="${urlPrefix}${row.link}">
-                                ${row.title}
-                                ${row.team_work
-                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                  : ''}
-                              </a>
-                            `}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${AvailableCredit({
-                        row,
-                        displayTimezone: resLocals.course_instance.display_timezone,
-                      })}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${row.multiple_instance_header
-                        ? NewInstanceButton({ urlPrefix, row })
-                        : AssessmentScore(row)}
-                    </td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
-        </div>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            `}
       </div>
       ${authz_data.mode === 'Exam'
         ? html`

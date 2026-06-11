@@ -50,8 +50,8 @@ Mapping rules, in terms of the timeline:
 
 ### Per-audience inputs
 
-- **Instructor:** the **default rule** is defined as `number === 0 && target_type === 'none'` (per `models/assessment-access-control-rules.ts`). A new model function batch-loads, for one course instance, each modern assessment's default rule plus its count of non-default rules (label + enrollment targeted) in a single query. `overrideCount` = that count. Modern assessments without a default rule are omitted.
-- **Student:** extend `AccessControlResolverResult` (in `lib/assessment-access-control/resolver.ts`) with the resolved date control the resolver already computes internally (raw data; display is a UI concern, consistent with the existing `accessTimeline` field). The `studentAssessments` loader already filters rows to `authorized || show_before_release`; the calendar uses the same filtered rows, so listed-but-undated ("coming soon") assessments appear in the list view but produce no calendar events.
+- **Instructor:** the **default rule** is defined as `number === 0 && target_type === 'none'` (per `models/assessment-access-control-rules.ts`). The existing `selectAccessControlRulesForCourseInstance` already batch-loads every rule per assessment in one query, so no new model function was needed; `overrideCount` = number of non-default rules. Modern assessments without a default rule are omitted.
+- **Student:** extend `AccessControlResolverResult` (in `lib/assessment-access-control/resolver.ts`) with the resolved date control the resolver already computes internally (raw data; display is a UI concern, consistent with the existing `accessTimeline` field). The staff-override path also exposes the merged date control so staff previewing the student page see the same calendar a default student would. The `studentAssessments` loader already filters rows to `authorized || show_before_release`; the calendar uses the same filtered rows, so listed-but-undated ("coming soon") assessments appear in the list view but produce no calendar events.
 
 ### Event shape
 
@@ -63,12 +63,13 @@ interface CalendarAssessmentEvents {
   setAbbr: string; // assessment set abbreviation for the badge
   assessmentUrl: string;
   accessEditUrl?: string; // instructor only, requires course edit permission
-  window: { start: Date; end: Date | null }; // release → final deadline; null end = indefinite
+  windowStart: Date; // release
+  windowEnd: Date | null; // final deadline; null = indefinite
   release: Date; // chip
-  due?: Date; // chip; absent for indefinite due
-  lateUntil?: Date; // popover detail
-  afterLastDeadlineCredit?: number; // popover detail, when submissions continue after the final deadline
-  overrideCount?: number; // instructor only: non-default rules
+  due: Date | null; // chip; null for indefinite due
+  afterLastDeadlineCredit: number | null; // popover note, when submissions continue after the final deadline
+  overrideCount: number; // instructor: non-default rules; 0 for students
+  timeline: AccessTimelineEntry[]; // popover credit table (late/early deadlines appear here)
 }
 ```
 

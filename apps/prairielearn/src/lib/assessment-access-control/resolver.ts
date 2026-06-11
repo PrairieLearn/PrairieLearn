@@ -146,6 +146,12 @@ export interface AccessControlResolverResult {
    */
   accessTimeline: readonly Readonly<AccessTimelineEntry>[];
   /**
+   * The resolved (merged) date control for display, e.g. the assessment
+   * calendar. Raw data — null when no rule applied or when access is governed
+   * by a PrairieTest reservation rather than date control.
+   */
+  dateControl: RuntimeDateControl | null;
+  /**
    * The next date when the assessment becomes active (e.g. the release date
    * when before release). Null when already active or no future open date.
    */
@@ -183,6 +189,7 @@ const UNAUTHORIZED_RESULT = Object.freeze({
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
+  dateControl: null,
   nextActiveDate: null,
 } satisfies Readonly<AccessControlResolverResult>);
 
@@ -200,6 +207,7 @@ const STAFF_OVERRIDE_RESULT = Object.freeze({
   examAccessEnd: null,
   showBeforeRelease: false,
   accessTimeline: EMPTY_ACCESS_TIMELINE,
+  dateControl: null,
   nextActiveDate: null,
 } satisfies Readonly<AccessControlResolverResult>);
 
@@ -441,7 +449,14 @@ export function resolveAccessControl(
     prairieTestReservations,
   } = input;
 
-  if (isStaff(courseRole, courseInstanceRole)) return STAFF_OVERRIDE_RESULT;
+  if (isStaff(courseRole, courseInstanceRole)) {
+    // Access is overridden, but keep the merged date control so display
+    // surfaces (e.g. the assessment calendar) show staff what students see.
+    return {
+      ...STAFF_OVERRIDE_RESULT,
+      dateControl: pickEffectiveRule(rules, enrollment)?.dateControl ?? null,
+    };
+  }
 
   const rule = pickEffectiveRule(rules, enrollment);
   if (!rule) return UNAUTHORIZED_RESULT;
@@ -493,6 +508,7 @@ export function resolveAccessControl(
       // The PT reservation governs access; the date-control timeline is
       // irrelevant under a PT grant, so omit it from the student popover.
       accessTimeline: [],
+      dateControl: null,
       nextActiveDate: null,
     };
   }
@@ -513,6 +529,7 @@ export function resolveAccessControl(
         visibilitySource: 'afterComplete',
         complete: true,
         accessTimeline,
+        dateControl: rule.dateControl ?? null,
         showBeforeRelease: reviewMode ? false : shouldShowBeforeRelease,
       };
     }
@@ -520,6 +537,7 @@ export function resolveAccessControl(
       ...UNAUTHORIZED_RESULT,
       afterCompleteVisibility,
       accessTimeline,
+      dateControl: rule.dateControl ?? null,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: null,
     };
@@ -537,6 +555,7 @@ export function resolveAccessControl(
       ...UNAUTHORIZED_RESULT,
       afterCompleteVisibility,
       accessTimeline,
+      dateControl: rule.dateControl ?? null,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: current.endDate,
     };
@@ -574,6 +593,7 @@ export function resolveAccessControl(
     examAccessEnd: null,
     showBeforeRelease: false,
     accessTimeline,
+    dateControl: rule.dateControl ?? null,
     nextActiveDate: null,
   };
 }

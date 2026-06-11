@@ -2,11 +2,14 @@ import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import type { CalendarAssessmentEvent } from '../../components/AssessmentCalendar.js';
 import {
   resolveModernAssessmentAccessResultsBatch,
   resolverResultToAuthzAssessmentForInstance,
 } from '../../lib/assessment-access-control/authz.js';
+import { dateControlToCalendarEvents } from '../../lib/assessment-access-control/calendar.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getUrl } from '../../lib/url.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import {
@@ -81,7 +84,50 @@ router.get(
         return row.authorized;
       });
 
-    res.send(StudentAssessments({ resLocals: res.locals, rows: resolvedRows }));
+    const view = req.query.view === 'calendar' ? 'calendar' : 'list';
+    const calendarEvents: CalendarAssessmentEvent[] = [];
+    if (view === 'calendar') {
+      const seen = new Set<string>();
+      for (const row of resolvedRows) {
+        if (!row.modern_access_control || seen.has(row.assessment_id)) continue;
+        seen.add(row.assessment_id);
+
+        const dateControl = modernAccessByAssessment?.get(row.assessment_id)?.dateControl;
+        const dates = dateControlToCalendarEvents(dateControl, res.locals.req_date);
+        if (!dates) continue;
+
+        // Match the list view: only link the assessment when the student could
+        // open it from the list (not "coming soon", and either active or
+        // already started).
+        const linked =
+          !row.show_before_release && (row.active || row.assessment_instance_id != null);
+        calendarEvents.push({
+          assessmentId: row.assessment_id,
+          title: row.title ?? '',
+          label: row.label,
+          color: row.assessment_set_color,
+          assessmentUrl: linked ? `${res.locals.urlPrefix}${row.link}` : null,
+          accessEditUrl: null,
+          release: dates.release,
+          due: dates.due,
+          windowStart: dates.windowStart,
+          windowEnd: dates.windowEnd,
+          afterLastDeadlineCredit: dates.afterLastDeadlineCredit,
+          overrideCount: 0,
+          timeline: dates.timeline,
+        });
+      }
+    }
+
+    res.send(
+      StudentAssessments({
+        resLocals: res.locals,
+        rows: resolvedRows,
+        view,
+        calendarEvents,
+        search: getUrl(req).search,
+      }),
+    );
   }),
 );
 
