@@ -278,7 +278,7 @@ describe('getAccessControlFormValidationErrors', () => {
     });
   });
 
-  it('validates visible default after-complete date inputs without an automatic completion mechanism', () => {
+  it('does not skip default after-complete date validation without an automatic completion mechanism', () => {
     const errors = getAccessControlFormValidationErrors(
       makeFormData([], {
         dateControlEnabled: false,
