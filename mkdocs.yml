@@ -68,6 +68,9 @@ plugins:
         - overrides/**
         - mkdocstrings/**
         - pyproject.toml
+        # Internal design docs, not part of the published documentation site.
+        - superpowers/**
+        - adr/**
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
