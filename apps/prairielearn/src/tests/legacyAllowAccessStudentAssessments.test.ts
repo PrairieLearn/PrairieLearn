@@ -3,9 +3,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { type Config, config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectOrInsertUserByUid } from '../models/user.js';
 import type { AssessmentJsonInput } from '../schemas/index.js';
 
 import * as helperClient from './helperClient.js';
+import { withPTReservation } from './helperExam.js';
 import * as helperServer from './helperServer.js';
 import {
   COURSE_INSTANCE_ID as COURSE_INSTANCE_TID,
@@ -19,6 +21,8 @@ interface LegacyAssessmentFixture {
   number: string;
   allowAccess: NonNullable<AssessmentJsonInput['allowAccess']>;
 }
+
+const legacyPrairieTestExamUuid = 'a817e4b9-b1b1-40b6-b076-c3a752dd8e72';
 
 const assessmentFixtures = {
   open: {
@@ -80,6 +84,20 @@ const assessmentFixtures = {
         startDate: '2000-01-01T00:00:00',
         endDate: '3000-01-01T00:00:00',
         password: 'legacy-password',
+        credit: 100,
+      },
+    ],
+  },
+  prairieTest: {
+    tid: 'legacy-prairietest',
+    title: 'Legacy PrairieTest assessment',
+    number: '6',
+    allowAccess: [
+      {
+        mode: 'Exam',
+        examUuid: legacyPrairieTestExamUuid,
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
         credit: 100,
       },
     ],
@@ -171,6 +189,9 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
   const studentHeaders = {
     cookie: 'pl_test_user=test_student; pl_test_date=2024-06-01T00:00:00Z',
   };
+  const examStudentHeaders = {
+    cookie: `${studentHeaders.cookie}; pl_test_mode=Exam`,
+  };
   const otherStudentHeaders = {
     cookie: 'pl_test_date=2024-06-01T00:00:00Z',
   };
@@ -180,9 +201,11 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
+    storedConfig.checkAccessRulesExamUuid = config.checkAccessRulesExamUuid;
     config.authUid = 'other-student@example.com';
     config.authName = 'Other Student';
     config.authUin = '000000002';
+    config.checkAccessRulesExamUuid = false;
 
     const course = getCourseData();
     const courseInstance = course.courseInstances[COURSE_INSTANCE_TID];
@@ -227,6 +250,7 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
     assertLinkedAssessment(response.$, assessmentFixtures.password.title);
     assertPlainAssessment(response.$, assessmentFixtures.inactive.title);
     assertNoAssessment(response.$, assessmentFixtures.future.title);
+    assertNoAssessment(response.$, assessmentFixtures.prairieTest.title);
   });
 
   test.sequential('hides a UID-gated legacy assessment from other students', async () => {
@@ -273,5 +297,57 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
 
     assert.equal(response.status, 302);
     assert.equal(response.headers.get('location'), '/pl/password');
+  });
+
+  test.sequential('requires a matching PrairieTest reservation in Exam mode', async () => {
+    const noReservationAssessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
+      headers: examStudentHeaders,
+    });
+    assert.isTrue(noReservationAssessmentsResponse.ok);
+    assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.open.title);
+    assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.prairieTest.title);
+
+    const noReservationAssessmentResponse = await helperClient.fetchCheerio(
+      assessmentUrls.prairieTest,
+      {
+        headers: examStudentHeaders,
+      },
+    );
+    assert.equal(noReservationAssessmentResponse.status, 403);
+
+    const student = await selectOrInsertUserByUid('student@example.com');
+    await withPTReservation(
+      {
+        userId: student.id,
+        accessStart: new Date('2024-05-31T00:00:00Z'),
+        accessEnd: new Date('2024-06-02T00:00:00Z'),
+        examUuid: legacyPrairieTestExamUuid,
+      },
+      async () => {
+        const assessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
+          headers: examStudentHeaders,
+        });
+        assert.isTrue(assessmentsResponse.ok);
+        assertNoAssessment(assessmentsResponse.$, assessmentFixtures.open.title);
+        assertLinkedAssessment(assessmentsResponse.$, assessmentFixtures.prairieTest.title);
+
+        const publicAssessmentResponse = await helperClient.fetchCheerio(assessmentUrls.open, {
+          headers: examStudentHeaders,
+        });
+        assert.equal(publicAssessmentResponse.status, 403);
+
+        const prairieTestAssessmentResponse = await helperClient.fetchCheerio(
+          assessmentUrls.prairieTest,
+          {
+            headers: examStudentHeaders,
+          },
+        );
+        assert.isTrue(prairieTestAssessmentResponse.ok);
+        assert.equal(
+          prairieTestAssessmentResponse.$('#start-assessment').text().trim(),
+          'Start assessment',
+        );
+      },
+    );
   });
 });
