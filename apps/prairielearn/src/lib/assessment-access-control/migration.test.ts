@@ -95,9 +95,6 @@ describe('migrateAllowAccess', () => {
             release: { date: FALLBACK_RELEASE },
             durationMinutes: 50,
           },
-          afterComplete: {
-            questions: { hidden: true },
-          },
         },
         errors: [],
         notes: [],
@@ -665,7 +662,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -712,7 +708,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -730,7 +726,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -786,7 +782,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -818,7 +814,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -1192,7 +1188,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -2224,6 +2219,19 @@ describe('migrateAssessmentJson', () => {
     assert.isNotNull(result);
     assert.deepEqual(result.notes, []);
     assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
+  });
+
+  it('drops a stale accessControl key when migrating allowAccess', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      accessControl: [{ dateControl: { release: { date: '2020-01-01T00:00:00' } } }],
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
     assert.isUndefined(parsed.allowAccess);
     assert.deepEqual(parsed.accessControl, []);

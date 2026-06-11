@@ -347,6 +347,19 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
     }
   }
 
+  // `questions: { hidden: true }` without reveal dates matches the
+  // afterComplete default, so omit it from the migrated JSON.
+  if (
+    result.questions?.hidden &&
+    result.questions.visibleFromDate == null &&
+    result.questions.visibleUntilDate == null
+  ) {
+    delete result.questions;
+  }
+  if (result.questions === undefined && result.score === undefined) {
+    return { afterComplete: undefined, notes };
+  }
+
   return { afterComplete: result, notes };
 }
 
@@ -1036,7 +1049,8 @@ export function migrateAllowAccess(
 
 /**
  * Replaces `oldKey` with `newKey` (holding `value`) while preserving the
- * original property order.
+ * original property order. If `newKey` already exists alongside `oldKey`, the
+ * stale `newKey` entry is dropped so it can't overwrite the replacement.
  */
 export function replaceJsonKey(
   data: Record<string, unknown>,
@@ -1044,8 +1058,11 @@ export function replaceJsonKey(
   newKey: string,
   value: unknown,
 ): Record<string, unknown> {
+  const hasOldKey = Object.hasOwn(data, oldKey);
   return Object.fromEntries(
-    Object.entries(data).map(([key, val]) => (key === oldKey ? [newKey, value] : [key, val])),
+    Object.entries(data)
+      .filter(([key]) => !(hasOldKey && key === newKey))
+      .map(([key, val]) => (key === oldKey ? [newKey, value] : [key, val])),
   );
 }
 

@@ -43,7 +43,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       heading: 'Module 2',
     },
   ];
-  const accessControl = [{ dateControl: { release: { date: '2000-01-01T00:00:00' } } }];
   course.courseInstances[COURSE_INSTANCE_ID].assessments = {
     'homework-1': {
       uuid: crypto.randomUUID(),
@@ -52,7 +51,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       set: 'Homeworks',
       module: 'Module 1',
       number: '1',
-      accessControl,
     },
     'exam-1': {
       uuid: crypto.randomUUID(),
@@ -61,7 +59,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       set: 'Exams',
       module: 'Module 1',
       number: '1',
-      accessControl,
     },
     'homework-2': {
       uuid: crypto.randomUUID(),
@@ -70,7 +67,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       set: 'Homeworks',
       module: 'Module 2',
       number: '2',
-      accessControl,
     },
     'exam-2': {
       uuid: crypto.randomUUID(),
@@ -79,7 +75,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       set: 'Exams',
       module: 'Module 2',
       number: '2',
-      accessControl,
     },
   };
 
