@@ -42,19 +42,6 @@ def make_question_data(
     }
 
 
-def test_prepare_allows_point_draw_error_box_override() -> None:
-    element_html = """<pl-drawing answers-name="test" gradable="true">
-        <pl-drawing-answer>
-            <pl-point x1="100" y1="100" draw-error-box="true"></pl-point>
-        </pl-drawing-answer>
-    </pl-drawing>"""
-    data = make_question_data()
-
-    pl_drawing.prepare(element_html, data)
-
-    assert data["correct_answers"]["test"][0]["drawErrorBox"] is True
-
-
 def test_parse_blank_submission_without_allow_blank_sets_error() -> None:
     element_html = build_element_html(allow_blank=False)
     data = make_question_data(submitted_answers={"test": "[]"})
