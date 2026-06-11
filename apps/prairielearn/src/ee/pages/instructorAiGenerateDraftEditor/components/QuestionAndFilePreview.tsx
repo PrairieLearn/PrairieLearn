@@ -4,8 +4,6 @@ import { Alert, Tab } from 'react-bootstrap';
 import { executeScripts } from '@prairielearn/browser-utils';
 import { run } from '@prairielearn/run';
 
-import { DraftQuestionFileBrowser } from '../../../../components/DraftQuestionFileBrowser.js';
-import { DraftQuestionFileBrowserBreadcrumb } from '../../../../components/DraftQuestionFileBrowserBreadcrumb.js';
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import { type AppError, renderAppError } from '../../../../lib/client/errors.js';
@@ -17,6 +15,8 @@ import type {
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
+import { DraftQuestionFileBrowser } from './DraftQuestionFileBrowser.js';
+import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
 import {
   SelectedQuestionFileEditor,

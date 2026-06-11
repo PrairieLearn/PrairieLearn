@@ -11,7 +11,7 @@ import { config } from '../config.js';
 import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question, User } from '../db-types.js';
 import { readEditableTextFile } from '../editorUtil.js';
-import { browseDirectory, getBinaryFileKind } from '../file-browser.js';
+import { browseDirectory, getBinaryFileKind, getFileDownloadUrl } from '../file-browser.js';
 import { type InstructorFilePaths, getPaths } from '../instructorFiles.js';
 import { encodePath } from '../uri-util.js';
 
@@ -182,7 +182,11 @@ async function readSelectedQuestionFile({
       selectedFilePreview: {
         path: filePath,
         fileViewUrl: `${paths.urlPrefix}/file_view/${encodedPath}`,
-        downloadUrl: `${fileDownloadUrl}?attachment=${encodeURIComponent(path.basename(filePath))}`,
+        downloadUrl: getFileDownloadUrl({
+          urlPrefix: paths.urlPrefix,
+          path: paths.workingPathRelativeToCourse,
+          name: path.basename(filePath),
+        }),
         content:
           binaryFileKind === 'image'
             ? { kind: 'image', src: fileDownloadUrl }
@@ -354,17 +358,19 @@ async function buildDraftQuestionFileBrowserData({
       id: file.id,
       name: file.name,
       selectedFilePath,
-      downloadUrl: `${paths.urlPrefix}/file_download/${encodePath(file.path)}?attachment=${encodeURIComponent(
-        file.name,
-      )}`,
+      downloadUrl: getFileDownloadUrl({
+        urlPrefix: paths.urlPrefix,
+        path: file.path,
+        name: file.name,
+      }),
       canView: file.canView,
       canEdit: file.canEdit,
       canUpload: file.canUpload,
       canDownload: file.canDownload,
       canRename: file.canRename,
       canDelete: file.canDelete,
-      syncErrors: file.sync_errors,
-      syncWarnings: file.sync_warnings,
+      syncErrors: file.syncErrors,
+      syncWarnings: file.syncWarnings,
       disabledReason: isDraftQuestionInfoFile(selectedFilePath)
         ? DRAFT_INFO_JSON_DISABLED_REASON
         : null,

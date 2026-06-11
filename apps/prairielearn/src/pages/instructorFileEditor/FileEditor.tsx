@@ -444,6 +444,7 @@ export function FileEditor({
                 <Alert
                   variant={getSyncAlert(draftEditResult.outcome, editorData.fileMetadata).variant}
                   className="m-2"
+                  data-testid="save-sync-alert"
                   show={showStatusAlert}
                   dismissible
                   onClose={() => setShowStatusAlert(false)}

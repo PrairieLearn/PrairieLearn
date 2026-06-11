@@ -3,7 +3,6 @@ import { type Ref, type SubmitEvent, useImperativeHandle, useState } from 'react
 import { Modal } from 'react-bootstrap';
 
 import { AceFileEditor } from '../../../../components/AceFileEditor.js';
-import { DraftQuestionFileBrowserBreadcrumb } from '../../../../components/DraftQuestionFileBrowserBreadcrumb.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../../lib/base64-util.js';
 import {
   getAppError,
@@ -16,6 +15,7 @@ import type {
 } from '../../../../lib/draft-question-files/browser.js';
 import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
+import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
 import { useRefetchDraftFiles, useTRPC } from './aiDraftFilesTrpc.js';
 import { useDraftFiles } from './draftFilesContext.js';
 import { useDraftFileNavigation } from './useDraftFileNavigation.js';

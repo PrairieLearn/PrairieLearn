@@ -71,7 +71,12 @@ function AiQuestionGenerationEditorInner({
 }: AiQuestionGenerationEditorProps) {
   const trpc = useTRPC();
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // A generation may already be in progress when the page loads (the chat
+  // resumes its stream); a trailing `streaming` message is the same signal the
+  // server uses to decide whether there is a stream to resume.
+  const [isGenerating, setIsGenerating] = useState(
+    () => initialMessages.at(-1)?.metadata?.status === 'streaming',
+  );
   const [currentTitle, setCurrentTitle] = useState(question.title);
   const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);

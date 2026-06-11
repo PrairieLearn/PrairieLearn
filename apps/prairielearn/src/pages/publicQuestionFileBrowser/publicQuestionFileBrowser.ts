@@ -37,7 +37,6 @@ router.get(
       const fileBrowser = await createFileBrowser({
         paths,
         resLocals: res.locals,
-        isReadOnly: true,
       });
       res.send(fileBrowser);
     } catch (err: any) {

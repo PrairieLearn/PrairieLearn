@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import { Fragment } from 'react';
 
 import { html } from '@prairielearn/html';
@@ -9,8 +8,8 @@ import { config } from '../lib/config.js';
 import {
   type DirectoryListings,
   type FileInfo,
-  browseDirectory,
-  browseFile,
+  browseDirectoryOrFile,
+  getFileDownloadUrl,
 } from '../lib/file-browser.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -24,34 +23,20 @@ import { SyncProblemButton } from './SyncProblemButton.js';
 export async function createFileBrowser({
   resLocals,
   paths,
-  isReadOnly,
 }: {
   resLocals: UntypedResLocals;
   paths: InstructorFilePaths;
-  isReadOnly: boolean;
 }) {
-  const stats = await fs.lstat(paths.workingPath);
-  if (stats.isDirectory()) {
-    return FileBrowser({
-      resLocals,
-      paths,
-      isFile: false,
-      directoryListings: await browseDirectory({ paths }),
-      isReadOnly,
-    });
-  } else if (stats.isFile()) {
-    return FileBrowser({
-      resLocals,
-      paths,
-      isFile: true,
-      fileInfo: await browseFile({ paths }),
-      isReadOnly,
-    });
-  } else {
-    throw new Error(
-      `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
-    );
+  const browseResult = await browseDirectoryOrFile({ paths });
+  if (browseResult.isFile) {
+    return FileBrowser({ resLocals, paths, isFile: true, fileInfo: browseResult.fileInfo });
   }
+  return FileBrowser({
+    resLocals,
+    paths,
+    isFile: false,
+    directoryListings: browseResult.directoryListings,
+  });
 }
 
 function FileBrowser({
@@ -60,8 +45,7 @@ function FileBrowser({
   isFile,
   fileInfo,
   directoryListings,
-  isReadOnly,
-}: { resLocals: UntypedResLocals; paths: InstructorFilePaths; isReadOnly: boolean } & (
+}: { resLocals: UntypedResLocals; paths: InstructorFilePaths } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
@@ -130,13 +114,8 @@ function FileBrowser({
               </div>
               <div className="col-auto">
                 {isFile ? (
-                  <FileBrowserActions
-                    paths={paths}
-                    fileInfo={fileInfo}
-                    isReadOnly={isReadOnly}
-                    csrfToken={csrfToken}
-                  />
-                ) : paths.hasEditPermission && !isReadOnly ? (
+                  <FileBrowserActions paths={paths} fileInfo={fileInfo} csrfToken={csrfToken} />
+                ) : paths.hasEditPermission ? (
                   <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} />
                 ) : null}
               </div>
@@ -151,7 +130,6 @@ function FileBrowser({
             <DirectoryBrowserTable
               paths={paths}
               directoryListings={directoryListings}
-              isReadOnly={isReadOnly}
               csrfToken={csrfToken}
             />
           )}
@@ -164,18 +142,16 @@ function FileBrowser({
 function FileBrowserActions({
   paths,
   fileInfo,
-  isReadOnly,
   csrfToken,
 }: {
   paths: InstructorFilePaths;
   fileInfo: FileInfo;
-  isReadOnly: boolean;
   csrfToken: string;
 }) {
   const encodedPath = encodePath(fileInfo.path);
   return (
     <div className="d-flex flex-wrap gap-2">
-      {isReadOnly ? null : (
+      {!paths.hasEditPermission ? null : (
         <>
           <FileBrowserActionButton
             icon="fa fa-edit"
@@ -207,13 +183,15 @@ function FileBrowserActions({
       <FileBrowserActionButton
         icon="fa fa-arrow-down"
         label="Download"
-        href={`${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
-          fileInfo.name,
-        )}`}
+        href={getFileDownloadUrl({
+          urlPrefix: paths.urlPrefix,
+          path: fileInfo.path,
+          name: fileInfo.name,
+        })}
         className="btn btn-sm btn-light"
         disabled={!fileInfo.canDownload}
       />
-      {isReadOnly ? null : (
+      {!paths.hasEditPermission ? null : (
         <>
           <button
             type="button"
@@ -321,12 +299,10 @@ function getDefaultFileViewUrl({
 function DirectoryBrowserTable({
   paths,
   directoryListings,
-  isReadOnly,
   csrfToken,
 }: {
   paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
-  isReadOnly: boolean;
   csrfToken: string;
 }) {
   return (
@@ -348,17 +324,17 @@ function DirectoryBrowserTable({
                 <td className="align-middle">
                   <div className="d-flex align-items-center">
                     <i className="far fa-file-alt" />
-                    {f.sync_errors ? (
-                      <SyncProblemButton type="error" output={f.sync_errors} />
-                    ) : f.sync_warnings ? (
-                      <SyncProblemButton type="warning" output={f.sync_warnings} />
+                    {f.syncErrors ? (
+                      <SyncProblemButton type="error" output={f.syncErrors} />
+                    ) : f.syncWarnings ? (
+                      <SyncProblemButton type="warning" output={f.syncWarnings} />
                     ) : null}
                     {f.canView ? <a href={fileUrl}>{f.name}</a> : <span>{f.name}</span>}
                   </div>
                 </td>
                 <td className="align-middle">
                   <div className="d-flex gap-2 file-browser-row-actions">
-                    {isReadOnly ? null : (
+                    {!paths.hasEditPermission ? null : (
                       <>
                         <FileBrowserActionButton
                           icon="fa fa-edit"
@@ -390,12 +366,14 @@ function DirectoryBrowserTable({
                     <FileBrowserActionButton
                       icon="fa fa-arrow-down"
                       label="Download"
-                      href={`${paths.urlPrefix}/file_download/${encodePath(f.path)}?attachment=${encodeURIComponent(
-                        f.name,
-                      )}`}
+                      href={getFileDownloadUrl({
+                        urlPrefix: paths.urlPrefix,
+                        path: f.path,
+                        name: f.name,
+                      })}
                       disabled={!f.canDownload}
                     />
-                    {isReadOnly ? null : (
+                    {!paths.hasEditPermission ? null : (
                       <>
                         <button
                           type="button"

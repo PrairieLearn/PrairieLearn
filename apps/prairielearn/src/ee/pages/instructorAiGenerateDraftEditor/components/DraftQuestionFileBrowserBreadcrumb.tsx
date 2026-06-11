@@ -1,7 +1,7 @@
 import { Fragment, type MouseEvent } from 'react';
 
-import type { DraftQuestionFileBrowserBreadcrumbSegment } from '../lib/draft-question-files/browser.js';
-import { getEditorUrlForSelection } from '../lib/draft-question-files/urls.js';
+import type { DraftQuestionFileBrowserBreadcrumbSegment } from '../../../../lib/draft-question-files/browser.js';
+import { getEditorUrlForSelection } from '../../../../lib/draft-question-files/urls.js';
 
 /**
  * Renders the breadcrumb shown above every view of the draft question file

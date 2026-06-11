@@ -2,6 +2,8 @@ import * as path from 'node:path';
 
 import { z } from 'zod';
 
+import { contains } from '@prairielearn/path-utils';
+
 import type { Question } from '../db-types.js';
 
 import { DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
@@ -94,7 +96,7 @@ export function getQuestionRootPath(coursePath: string, qid: string): string {
  */
 export function resolveWithinQuestionRoot(questionRootPath: string, relativePath: string): string {
   const fullPath = path.resolve(questionRootPath, relativePath);
-  if (fullPath !== questionRootPath && !fullPath.startsWith(`${questionRootPath}${path.sep}`)) {
+  if (!contains(questionRootPath, fullPath)) {
     throw new Error(`Resolved path escapes the question directory: ${relativePath}`);
   }
   return fullPath;
