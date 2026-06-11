@@ -26,12 +26,12 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/node": "^24.12.4",
     "@types/yauzl": "^2.10.3",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "vitest": "^4.1.7"
   }
 }

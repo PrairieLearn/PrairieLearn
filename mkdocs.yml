@@ -219,8 +219,6 @@ nav:
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
-          # TODO: unhide once modern access control is generally available.
-          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
@@ -293,6 +291,7 @@ nav:
           - 'Questions': python-reference/prairielearn/question_utils.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'Schema': python-reference/prairielearn/element_schemas.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
@@ -335,6 +334,7 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+      - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
 
 not_in_nav: |
   workshop/lesson1.md
@@ -352,7 +352,6 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
-  assessment/accessControlModern.md
   importingContent.md
 
 validation:
