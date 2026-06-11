@@ -4,16 +4,6 @@
   "title": "Homework to test Active Rule",
   "set": "Homework",
   "number": "8",
-  "zones": [
-    {
-      "title": "Main zone",
-      "questions": [
-        { "id": "partialCredit1", "autoPoints": 10 },
-        { "id": "fossilFuelsRadio", "autoPoints": 2, "maxAutoPoints": 10 },
-        { "id": "positionTimeGraph", "autoPoints": 2, "maxAutoPoints": 10 }
-      ]
-    }
-  ],
   "accessControl": [
     {
       "dateControl": {
@@ -29,6 +19,16 @@
         }
       },
       "beforeRelease": { "listed": true }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Main zone",
+      "questions": [
+        { "id": "partialCredit1", "autoPoints": 10 },
+        { "id": "fossilFuelsRadio", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "positionTimeGraph", "autoPoints": 2, "maxAutoPoints": 10 }
+      ]
     }
   ]
 }

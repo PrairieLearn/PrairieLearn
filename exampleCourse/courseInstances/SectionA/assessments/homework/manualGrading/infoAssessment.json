@@ -5,6 +5,16 @@
   "set": "Homework",
   "module": "IntroModule",
   "number": "3",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2021-01-01T00:00:01" },
+        "due": { "date": "2023-11-15T23:59:59" },
+        "lateDeadlines": [{ "date": "2023-11-30T23:59:59", "credit": 50 }],
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
+      }
+    }
+  ],
   "zones": [
     {
       "title": "Unlimited question variants with one single attempt",
@@ -42,16 +52,6 @@
         { "id": "demo/fileDownloadUpload", "manualPoints": 10 },
         { "id": "demo/markdownEditorLivePreview", "manualPoints": 5 }
       ]
-    }
-  ],
-  "accessControl": [
-    {
-      "dateControl": {
-        "release": { "date": "2021-01-01T00:00:01" },
-        "due": { "date": "2023-11-15T23:59:59" },
-        "lateDeadlines": [{ "date": "2023-11-30T23:59:59", "credit": 50 }],
-        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
-      }
     }
   ]
 }

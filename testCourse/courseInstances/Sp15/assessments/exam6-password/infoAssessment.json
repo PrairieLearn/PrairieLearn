@@ -4,9 +4,6 @@
   "title": "Exam with password diamond",
   "set": "Exam",
   "number": "6",
-  "zones": [
-    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
-  ],
   "accessControl": [
     {
       "dateControl": {
@@ -16,5 +13,8 @@
         "password": "diamond"
       }
     }
+  ],
+  "zones": [
+    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
   ]
 }

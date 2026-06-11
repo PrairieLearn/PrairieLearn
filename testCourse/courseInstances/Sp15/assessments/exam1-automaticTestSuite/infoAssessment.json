@@ -5,6 +5,13 @@
   "set": "Exam",
   "number": "1",
   "module": "Module1",
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": { "exams": [{ "examUuid": "e66122b5-c793-4235-9851-9a3aa80ae39b" }] }
+      }
+    }
+  ],
   "zones": [
     {
       "title": "Hard questions",
@@ -19,12 +26,5 @@
       ]
     }
   ],
-  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"{{ client_files_assessment }}/formulas.pdf\">PDF version</a></li>",
-  "accessControl": [
-    {
-      "integrations": {
-        "prairieTest": { "exams": [{ "examUuid": "e66122b5-c793-4235-9851-9a3aa80ae39b" }] }
-      }
-    }
-  ]
+  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"{{ client_files_assessment }}/formulas.pdf\">PDF version</a></li>"
 }

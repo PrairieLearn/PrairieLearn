@@ -1,5 +1,6 @@
 {
   "uuid": "2fed90ac-05ea-458a-905f-1bd3835f2a94",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "type": "Exam",
   "title": "Exam with assessment tools",
   "set": "Exam",
@@ -15,6 +16,5 @@
       "questions": [{ "id": "partialCredit3", "autoPoints": 10 }]
     }
   ],
-  "tools": { "calculator": { "enabled": true } },
-  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
+  "tools": { "calculator": { "enabled": true } }
 }

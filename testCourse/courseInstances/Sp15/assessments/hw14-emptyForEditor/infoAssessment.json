@@ -4,7 +4,6 @@
   "title": "Empty assessment for editor testing",
   "set": "Homework",
   "number": "14",
-  "zones": [],
   "accessControl": [
     {
       "dateControl": {
@@ -12,5 +11,6 @@
         "due": { "date": "2034-07-10T23:59:59" }
       }
     }
-  ]
+  ],
+  "zones": []
 }

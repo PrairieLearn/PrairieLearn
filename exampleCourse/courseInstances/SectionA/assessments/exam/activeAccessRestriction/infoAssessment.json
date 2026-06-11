@@ -4,16 +4,6 @@
   "title": "Exam with active access restriction",
   "set": "Exam",
   "number": "3",
-  "zones": [
-    {
-      "title": "Math Questions",
-      "questions": [
-        { "id": "demo/calculation", "autoPoints": [10, 9, 8, 7, 6] },
-        { "id": "demo/randomMultipleChoice", "autoPoints": [25, 24, 23, 22, 21] },
-        { "id": "demo/randomCheckbox", "autoPoints": [25, 24, 23, 22, 21] }
-      ]
-    }
-  ],
   "accessControl": [
     {
       "dateControl": {
@@ -25,6 +15,16 @@
         "questions": { "hidden": true, "visibleFromDate": "2030-01-04T00:00:01" }
       },
       "beforeRelease": { "listed": true }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Math Questions",
+      "questions": [
+        { "id": "demo/calculation", "autoPoints": [10, 9, 8, 7, 6] },
+        { "id": "demo/randomMultipleChoice", "autoPoints": [25, 24, 23, 22, 21] },
+        { "id": "demo/randomCheckbox", "autoPoints": [25, 24, 23, 22, 21] }
+      ]
     }
   ]
 }

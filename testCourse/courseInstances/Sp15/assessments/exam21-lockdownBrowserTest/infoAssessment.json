@@ -4,6 +4,13 @@
   "title": "LockDown Browser exam linked to PrairieTest",
   "set": "Exam",
   "number": "21",
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": { "exams": [{ "examUuid": "97f79c3b-154f-48c6-a41b-f812bef0a962" }] }
+      }
+    }
+  ],
   "zones": [
     {
       "title": "Workspace question",
@@ -12,13 +19,6 @@
         { "id": "workspaceVSCode", "autoPoints": [10] },
         { "id": "externalLinks", "autoPoints": [5] }
       ]
-    }
-  ],
-  "accessControl": [
-    {
-      "integrations": {
-        "prairieTest": { "exams": [{ "examUuid": "97f79c3b-154f-48c6-a41b-f812bef0a962" }] }
-      }
     }
   ]
 }

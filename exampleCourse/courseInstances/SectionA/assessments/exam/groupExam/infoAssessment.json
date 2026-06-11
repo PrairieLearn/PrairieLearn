@@ -20,6 +20,12 @@
       "canSubmit": ["Recorder"]
     }
   },
+  "accessControl": [
+    {
+      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } },
+      "afterComplete": { "questions": { "hidden": true } }
+    }
+  ],
   "zones": [
     {
       "title": "Fundamental questions",
@@ -72,11 +78,5 @@
       ]
     }
   ],
-  "text": "For this quiz you can use the <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>.",
-  "accessControl": [
-    {
-      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } },
-      "afterComplete": { "questions": { "hidden": true } }
-    }
-  ]
+  "text": "For this quiz you can use the <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>."
 }

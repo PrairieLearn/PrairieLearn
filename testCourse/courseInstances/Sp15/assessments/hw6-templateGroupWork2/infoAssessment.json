@@ -9,6 +9,15 @@
     "maxMembers": 3,
     "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true }
   },
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2019-01-18T00:00:01" },
+        "due": { "date": "2019-01-28T23:59:59" },
+        "lateDeadlines": [{ "date": "2019-01-30T23:59:59", "credit": 50 }]
+      }
+    }
+  ],
   "zones": [
     {
       "title": "Fundamental questions",
@@ -18,14 +27,5 @@
       ]
     }
   ],
-  "text": "For this homework you can use the <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>.",
-  "accessControl": [
-    {
-      "dateControl": {
-        "release": { "date": "2019-01-18T00:00:01" },
-        "due": { "date": "2019-01-28T23:59:59" },
-        "lateDeadlines": [{ "date": "2019-01-30T23:59:59", "credit": 50 }]
-      }
-    }
-  ]
+  "text": "For this homework you can use the <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>."
 }

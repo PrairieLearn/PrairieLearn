@@ -5,6 +5,7 @@
   "set": "Exam",
   "number": "15",
   "requireHonorCode": false,
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "title": "Questions",
@@ -13,6 +14,5 @@
         { "id": "partialCredit2", "autoPoints": [5, 4, 3, 2, 1] }
       ]
     }
-  ],
-  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
+  ]
 }

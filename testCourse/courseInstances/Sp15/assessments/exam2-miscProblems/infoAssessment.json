@@ -5,10 +5,6 @@
   "set": "Exam",
   "number": "2",
   "module": "Module2",
-  "zones": [
-    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
-  ],
-  "honorCode": "## Honor Code \nI, {{user_name}}, pledge that I am allowed to take the following assessment and will not receive any unauthorized assistance.",
   "accessControl": [
     {
       "dateControl": {
@@ -17,5 +13,9 @@
         "durationMinutes": 50
       }
     }
-  ]
+  ],
+  "zones": [
+    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
+  ],
+  "honorCode": "## Honor Code \nI, {{user_name}}, pledge that I am allowed to take the following assessment and will not receive any unauthorized assistance."
 }

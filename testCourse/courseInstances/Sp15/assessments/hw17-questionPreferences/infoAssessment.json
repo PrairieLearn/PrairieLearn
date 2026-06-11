@@ -4,6 +4,7 @@
   "set": "Homework",
   "number": "17",
   "title": "Question Preferences",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "questions": [
@@ -14,6 +15,5 @@
         }
       ]
     }
-  ],
-  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
+  ]
 }

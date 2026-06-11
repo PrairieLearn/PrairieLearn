@@ -4,6 +4,17 @@
   "title": "Exam including autograded and manually graded questions",
   "set": "Exam",
   "number": "4",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2021-01-01T00:00:01" },
+        "due": { "date": "2323-11-07T23:59:59" },
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 },
+        "durationMinutes": 3
+      },
+      "afterComplete": { "questions": { "hidden": true }, "score": { "hidden": true } }
+    }
+  ],
   "zones": [
     {
       "title": "Auto-graded questions",
@@ -51,16 +62,5 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong> </p><p> The auto-graded questions are graded as students complete the assessment, allowing them to see their scores immediately and retry some of the questions when points are still available.</p> <p> Students can save the manually graded question as they complete the assessment. Instructors will later download the submission files, assign grades, and upload back the scores and feedback. </p><p> The assessment will be closed when the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Students will not be able to see their total score after the assessment is closed. An additional access rule can be used to allow students to see their total score once all the questions are graded.</p>",
-  "accessControl": [
-    {
-      "dateControl": {
-        "release": { "date": "2021-01-01T00:00:01" },
-        "due": { "date": "2323-11-07T23:59:59" },
-        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 },
-        "durationMinutes": 3
-      },
-      "afterComplete": { "questions": { "hidden": true }, "score": { "hidden": true } }
-    }
-  ]
+  "text": "<p><strong>Comments about this assessment:</strong> </p><p> The auto-graded questions are graded as students complete the assessment, allowing them to see their scores immediately and retry some of the questions when points are still available.</p> <p> Students can save the manually graded question as they complete the assessment. Instructors will later download the submission files, assign grades, and upload back the scores and feedback. </p><p> The assessment will be closed when the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Students will not be able to see their total score after the assessment is closed. An additional access rule can be used to allow students to see their total score once all the questions are graded.</p>"
 }

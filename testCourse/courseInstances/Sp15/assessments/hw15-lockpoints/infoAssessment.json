@@ -1,5 +1,6 @@
 {
   "uuid": "5cc9b27d-7068-4a08-ab17-5eaefe0f8d3b",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "type": "Homework",
   "title": "Homework with lockpoints",
   "set": "Homework",
@@ -11,6 +12,5 @@
       "lockpoint": true,
       "questions": [{ "id": "partialCredit2", "autoPoints": 1 }]
     }
-  ],
-  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }]
+  ]
 }

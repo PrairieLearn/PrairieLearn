@@ -5,9 +5,6 @@
   "set": "Exam",
   "number": "13",
   "requireHonorCode": false,
-  "zones": [
-    { "title": "Questions", "questions": [{ "id": "addNumbers", "autoPoints": [5, 3, 1] }] }
-  ],
   "accessControl": [
     {
       "dateControl": {
@@ -15,5 +12,8 @@
         "due": { "date": "2300-07-10T23:59:59" }
       }
     }
+  ],
+  "zones": [
+    { "title": "Questions", "questions": [{ "id": "addNumbers", "autoPoints": [5, 3, 1] }] }
   ]
 }

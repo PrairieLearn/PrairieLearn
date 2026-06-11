@@ -4,20 +4,6 @@
   "title": "Test Active Access Rule",
   "set": "Exam",
   "number": "11",
-  "shuffleQuestions": false,
-  "zones": [
-    {
-      "title": "Hard questions",
-      "questions": [
-        { "id": "addNumbers", "autoPoints": [5, 3, 1] },
-        { "id": "fossilFuelsRadio", "autoPoints": [17, 13, 7, 2] },
-        { "id": "partialCredit1", "autoPoints": [19] },
-        { "id": "partialCredit2", "autoPoints": [9, 7, 5, 3] },
-        { "id": "partialCredit3", "autoPoints": [13, 13, 8, 0.5, 0.1] },
-        { "id": "workspace", "autoPoints": [10] }
-      ]
-    }
-  ],
   "accessControl": [
     {
       "dateControl": {
@@ -30,6 +16,20 @@
         "score": { "hidden": true, "visibleFromDate": "2020-01-01T00:00:01" }
       },
       "beforeRelease": { "listed": true }
+    }
+  ],
+  "shuffleQuestions": false,
+  "zones": [
+    {
+      "title": "Hard questions",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": [5, 3, 1] },
+        { "id": "fossilFuelsRadio", "autoPoints": [17, 13, 7, 2] },
+        { "id": "partialCredit1", "autoPoints": [19] },
+        { "id": "partialCredit2", "autoPoints": [9, 7, 5, 3] },
+        { "id": "partialCredit3", "autoPoints": [13, 13, 8, 0.5, 0.1] },
+        { "id": "workspace", "autoPoints": [10] }
+      ]
     }
   ]
 }
