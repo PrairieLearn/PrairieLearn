@@ -13,21 +13,85 @@ import {
   writeCourseToTempDirectory,
 } from './sync/util.js';
 
-const assessmentTids = {
-  open: 'legacy-open',
-  future: 'legacy-future',
-  inactive: 'legacy-inactive',
-  matchingUid: 'legacy-matching-uid',
-  password: 'legacy-password',
-} as const;
+interface LegacyAssessmentFixture {
+  tid: string;
+  title: string;
+  number: string;
+  allowAccess: NonNullable<AssessmentJsonInput['allowAccess']>;
+}
 
-const assessmentTitles: Record<keyof typeof assessmentTids, string> = {
-  open: 'Legacy open assessment',
-  future: 'Legacy future assessment',
-  inactive: 'Legacy inactive assessment',
-  matchingUid: 'Legacy matching UID assessment',
-  password: 'Legacy password assessment',
-};
+const assessmentFixtures = {
+  open: {
+    tid: 'legacy-open',
+    title: 'Legacy open assessment',
+    number: '1',
+    allowAccess: [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+        credit: 100,
+      },
+    ],
+  },
+  future: {
+    tid: 'legacy-future',
+    title: 'Legacy future assessment',
+    number: '2',
+    allowAccess: [
+      {
+        startDate: '2999-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+        credit: 100,
+      },
+    ],
+  },
+  inactive: {
+    tid: 'legacy-inactive',
+    title: 'Legacy inactive assessment',
+    number: '3',
+    allowAccess: [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+        active: false,
+        credit: 0,
+      },
+    ],
+  },
+  matchingUid: {
+    tid: 'legacy-matching-uid',
+    title: 'Legacy matching UID assessment',
+    number: '4',
+    allowAccess: [
+      {
+        uids: ['student@example.com'],
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+        credit: 100,
+      },
+    ],
+  },
+  password: {
+    tid: 'legacy-password',
+    title: 'Legacy password assessment',
+    number: '5',
+    allowAccess: [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '3000-01-01T00:00:00',
+        password: 'legacy-password',
+        credit: 100,
+      },
+    ],
+  },
+} satisfies Record<string, LegacyAssessmentFixture>;
+
+type AssessmentKey = keyof typeof assessmentFixtures;
+type AssessmentUrls = Record<AssessmentKey, string>;
+
+function assessmentEntries() {
+  return Object.entries(assessmentFixtures) as [AssessmentKey, LegacyAssessmentFixture][];
+}
 
 function makeLegacyAssessment({
   number,
@@ -50,8 +114,8 @@ function makeLegacyAssessment({
 }
 
 function assessmentRows($: cheerio.CheerioAPI, title: string) {
-  return $('table[aria-label="Assessments"] tbody tr').filter((_, elem) =>
-    $(elem).text().includes(title),
+  return $('table[aria-label="Assessments"] tbody tr').filter(
+    (_, elem) => $(elem).children('td').eq(1).text().trim() === title,
   );
 }
 
@@ -59,7 +123,11 @@ function assertLinkedAssessment($: cheerio.CheerioAPI, title: string) {
   const row = assessmentRows($, title);
   assert.lengthOf(row, 1);
   assert.lengthOf(
-    row.find('a').filter((_, elem) => $(elem).text().includes(title)),
+    row
+      .children('td')
+      .eq(1)
+      .find('a')
+      .filter((_, elem) => $(elem).text().trim() === title),
     1,
   );
 }
@@ -68,13 +136,31 @@ function assertPlainAssessment($: cheerio.CheerioAPI, title: string) {
   const row = assessmentRows($, title);
   assert.lengthOf(row, 1);
   assert.lengthOf(
-    row.find('a').filter((_, elem) => $(elem).text().includes(title)),
+    row
+      .children('td')
+      .eq(1)
+      .find('a')
+      .filter((_, elem) => $(elem).text().trim() === title),
     0,
   );
 }
 
 function assertNoAssessment($: cheerio.CheerioAPI, title: string) {
   assert.lengthOf(assessmentRows($, title), 0);
+}
+
+async function buildAssessmentUrls(courseInstanceUrl: string): Promise<AssessmentUrls> {
+  return Object.fromEntries(
+    await Promise.all(
+      assessmentEntries().map(async ([key, { tid }]) => {
+        const assessment = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid,
+        });
+        return [key, `${courseInstanceUrl}/assessment/${assessment.id}/`];
+      }),
+    ),
+  ) as AssessmentUrls;
 }
 
 describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, () => {
@@ -88,7 +174,7 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
   const otherStudentHeaders = {
     cookie: 'pl_test_date=2024-06-01T00:00:00Z',
   };
-  const assessmentUrls: Partial<Record<keyof typeof assessmentTids, string>> = {};
+  let assessmentUrls: AssessmentUrls;
 
   beforeAll(async () => {
     storedConfig.authUid = config.authUid;
@@ -100,80 +186,13 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
 
     const course = getCourseData();
     const courseInstance = course.courseInstances[COURSE_INSTANCE_TID];
-    courseInstance.assessments = {
-      [assessmentTids.open]: makeLegacyAssessment({
-        number: '1',
-        title: assessmentTitles.open,
-        allowAccess: [
-          {
-            startDate: '2000-01-01T00:00:00',
-            endDate: '3000-01-01T00:00:00',
-            credit: 100,
-          },
-        ],
-      }),
-      [assessmentTids.future]: makeLegacyAssessment({
-        number: '2',
-        title: assessmentTitles.future,
-        allowAccess: [
-          {
-            startDate: '2999-01-01T00:00:00',
-            endDate: '3000-01-01T00:00:00',
-            credit: 100,
-          },
-        ],
-      }),
-      [assessmentTids.inactive]: makeLegacyAssessment({
-        number: '3',
-        title: assessmentTitles.inactive,
-        allowAccess: [
-          {
-            startDate: '2000-01-01T00:00:00',
-            endDate: '3000-01-01T00:00:00',
-            active: false,
-            credit: 0,
-          },
-        ],
-      }),
-      [assessmentTids.matchingUid]: makeLegacyAssessment({
-        number: '4',
-        title: assessmentTitles.matchingUid,
-        allowAccess: [
-          {
-            uids: ['student@example.com'],
-            startDate: '2000-01-01T00:00:00',
-            endDate: '3000-01-01T00:00:00',
-            credit: 100,
-          },
-        ],
-      }),
-      [assessmentTids.password]: makeLegacyAssessment({
-        number: '5',
-        title: assessmentTitles.password,
-        allowAccess: [
-          {
-            startDate: '2000-01-01T00:00:00',
-            endDate: '3000-01-01T00:00:00',
-            password: 'legacy-password',
-            credit: 100,
-          },
-        ],
-      }),
-    };
+    courseInstance.assessments = Object.fromEntries(
+      assessmentEntries().map(([, fixture]) => [fixture.tid, makeLegacyAssessment(fixture)]),
+    );
 
     const courseDir = await writeCourseToTempDirectory(course);
     await helperServer.before(courseDir)();
-
-    await Promise.all(
-      Object.entries(assessmentTids).map(async ([key, tid]) => {
-        const assessment = await selectAssessmentByTid({
-          course_instance_id: '1',
-          tid,
-        });
-        assessmentUrls[key as keyof typeof assessmentTids] =
-          `${courseInstanceUrl}/assessment/${assessment.id}/`;
-      }),
-    );
+    assessmentUrls = await buildAssessmentUrls(courseInstanceUrl);
   });
 
   afterAll(async () => {
@@ -185,7 +204,7 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
     'syncs the fixture assessments as legacy access-control assessments',
     async () => {
       await Promise.all(
-        Object.values(assessmentTids).map(async (tid) => {
+        assessmentEntries().map(async ([, { tid }]) => {
           const assessment = await selectAssessmentByTid({
             course_instance_id: '1',
             tid,
@@ -203,11 +222,11 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
     });
 
     assert.isTrue(response.ok);
-    assertLinkedAssessment(response.$, assessmentTitles.open);
-    assertLinkedAssessment(response.$, assessmentTitles.matchingUid);
-    assertLinkedAssessment(response.$, assessmentTitles.password);
-    assertPlainAssessment(response.$, assessmentTitles.inactive);
-    assertNoAssessment(response.$, assessmentTitles.future);
+    assertLinkedAssessment(response.$, assessmentFixtures.open.title);
+    assertLinkedAssessment(response.$, assessmentFixtures.matchingUid.title);
+    assertLinkedAssessment(response.$, assessmentFixtures.password.title);
+    assertPlainAssessment(response.$, assessmentFixtures.inactive.title);
+    assertNoAssessment(response.$, assessmentFixtures.future.title);
   });
 
   test.sequential('hides a UID-gated legacy assessment from other students', async () => {
@@ -216,12 +235,12 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
     });
 
     assert.isTrue(response.ok);
-    assertNoAssessment(response.$, assessmentTitles.matchingUid);
+    assertNoAssessment(response.$, assessmentFixtures.matchingUid.title);
   });
 
   test.sequential('allows direct access when a legacy rule authorizes the student', async () => {
     for (const key of ['open', 'matchingUid'] as const) {
-      const response = await helperClient.fetchCheerio(assessmentUrls[key]!, {
+      const response = await helperClient.fetchCheerio(assessmentUrls[key], {
         headers: studentHeaders,
       });
 
@@ -231,17 +250,15 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
   });
 
   test.sequential('blocks direct access when legacy date, UID, or active checks fail', async () => {
-    const futureResponse = await helperClient.fetchCheerio(assessmentUrls.future!, {
-      headers: studentHeaders,
-    });
-    assert.equal(futureResponse.status, 403);
+    for (const { key, headers } of [
+      { key: 'future', headers: studentHeaders },
+      { key: 'matchingUid', headers: otherStudentHeaders },
+    ] satisfies { key: AssessmentKey; headers: typeof studentHeaders }[]) {
+      const response = await helperClient.fetchCheerio(assessmentUrls[key], { headers });
+      assert.equal(response.status, 403);
+    }
 
-    const nonMatchingUidResponse = await helperClient.fetchCheerio(assessmentUrls.matchingUid!, {
-      headers: otherStudentHeaders,
-    });
-    assert.equal(nonMatchingUidResponse.status, 403);
-
-    const inactiveResponse = await helperClient.fetchCheerio(assessmentUrls.inactive!, {
+    const inactiveResponse = await helperClient.fetchCheerio(assessmentUrls.inactive, {
       headers: studentHeaders,
     });
     assert.equal(inactiveResponse.status, 403);
@@ -249,7 +266,7 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
   });
 
   test.sequential('requires the legacy assessment password before direct access', async () => {
-    const response = await helperClient.fetchCheerio(assessmentUrls.password!, {
+    const response = await helperClient.fetchCheerio(assessmentUrls.password, {
       headers: studentHeaders,
       redirect: 'manual',
     });
