@@ -5,7 +5,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 import {
   FILE_NAME_PATTERN,
   FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR,
-} from '../lib/short-name.js';
+} from '../lib/file-browser.shared.js';
 
 type FileUploadInfo = {
   id: string | number;

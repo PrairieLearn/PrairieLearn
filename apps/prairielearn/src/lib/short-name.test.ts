@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  QUESTION_FILE_NAME_PATTERN,
-  SHORT_NAME_PATTERN,
-  SHORT_NAME_REGEX,
-  validateShortName,
-} from './short-name.js';
+import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX, validateShortName } from './short-name.js';
 
 describe('validateShortName', () => {
   describe('valid short names', () => {
@@ -136,33 +131,6 @@ describe('validateShortName', () => {
         lowercaseMessage: 'cannot start with a slash',
       });
     });
-  });
-});
-
-describe('QUESTION_FILE_NAME_PATTERN', () => {
-  it.each([
-    'server.py',
-    'question.html',
-    'clientFilesQuestion/data.csv',
-    'tests/test_1.py',
-    'data',
-  ])('accepts %s', (value) => {
-    expect(QUESTION_FILE_NAME_PATTERN.test(value)).toBe(true);
-  });
-
-  // The draft editor keeps files inside the question directory, so `..` must be
-  // rejected to stay consistent with the server's `ModifiableQuestionFilePathSchema`.
-  it.each([
-    '',
-    '..',
-    '../escape.py',
-    'foo/../bar.py',
-    'foo/..',
-    '.hidden',
-    'my file.py',
-    '/server.py',
-  ])('rejects %s', (value) => {
-    expect(QUESTION_FILE_NAME_PATTERN.test(value)).toBe(false);
   });
 });
 

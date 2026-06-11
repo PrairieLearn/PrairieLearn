@@ -8,10 +8,7 @@ export interface DraftEditorHandle {
   discardChanges: () => void;
 }
 
-/**
- * Ambient data for the AI draft editor's file panels. Holds only data —
- * navigation and mutations are hooks, not callbacks threaded through context.
- */
+/** Ambient data and page-level operations for the AI draft editor's panels. */
 export interface DraftFilesContextValue {
   questionId: string;
   urlPrefix: string;
@@ -23,6 +20,12 @@ export interface DraftFilesContextValue {
    * cleanup.
    */
   registerEditor: (handle: DraftEditorHandle) => () => void;
+  /** Refetches the file data and reloads the question preview after a file mutation. */
+  onFileMutated: () => Promise<void>;
+  /** Whether any registered file editor holds unsaved changes. */
+  getHasUnsavedChanges: () => boolean;
+  /** Resets every registered file editor to its last saved state. */
+  discardUnsavedChanges: () => void;
 }
 
 const DraftFilesContext = createContext<DraftFilesContextValue | null>(null);

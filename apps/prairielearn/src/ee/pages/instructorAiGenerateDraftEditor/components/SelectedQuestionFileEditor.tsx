@@ -35,13 +35,11 @@ function getSaveStatus({
 
 export function SelectedQuestionFileEditor({
   selectedFile,
-  onFileMutated,
 }: {
   selectedFile: Extract<DraftQuestionSelectedFile, { kind: 'editor' }>;
-  onFileMutated: () => Promise<unknown>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const { questionId, urlPrefix, isGenerating, onFileMutated } = useDraftFiles();
   const { selectDirectory } = useDraftFileNavigation();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(

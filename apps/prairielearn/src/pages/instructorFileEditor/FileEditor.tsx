@@ -448,45 +448,51 @@ export function FileEditor({
           </Collapse>
           <div className="card-body p-0">
             <div className="container-fluid">
-              {draftEditResult != null ? (
-                <Alert
-                  variant={getSyncAlert(draftEditResult.outcome, editorData.fileMetadata).variant}
-                  className="m-2"
-                  data-testid="save-sync-alert"
-                  show={showStatusAlert}
-                  dismissible
-                  onClose={() => setShowStatusAlert(false)}
-                >
-                  <div className="row align-items-center">
-                    <div className="col-auto">
-                      {getSyncAlert(draftEditResult.outcome, editorData.fileMetadata).message}
-                    </div>
-                    {draftEditResult.jobSequence != null ? (
-                      <div className="col-auto">
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          aria-expanded={detailExpanded}
-                          aria-controls="job-sequence-results"
-                          onClick={() => setDetailExpanded((expanded) => !expanded)}
-                        >
-                          {detailExpanded ? 'Hide detail' : 'Show detail'}
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                  {draftEditResult.jobSequence != null ? (
-                    <Collapse in={detailExpanded}>
-                      <div id="job-sequence-results" className="mt-4">
-                        <JobSequenceResults
-                          jobSequence={draftEditResult.jobSequence}
-                          timeZone={timeZone}
-                        />
-                      </div>
-                    </Collapse>
-                  ) : null}
-                </Alert>
-              ) : null}
+              {draftEditResult != null
+                ? run(() => {
+                    const syncAlert = getSyncAlert(
+                      draftEditResult.outcome,
+                      editorData.fileMetadata,
+                    );
+                    return (
+                      <Alert
+                        variant={syncAlert.variant}
+                        className="m-2"
+                        data-testid="save-sync-alert"
+                        show={showStatusAlert}
+                        dismissible
+                        onClose={() => setShowStatusAlert(false)}
+                      >
+                        <div className="row align-items-center">
+                          <div className="col-auto">{syncAlert.message}</div>
+                          {draftEditResult.jobSequence != null ? (
+                            <div className="col-auto">
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                aria-expanded={detailExpanded}
+                                aria-controls="job-sequence-results"
+                                onClick={() => setDetailExpanded((expanded) => !expanded)}
+                              >
+                                {detailExpanded ? 'Hide detail' : 'Show detail'}
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                        {draftEditResult.jobSequence != null ? (
+                          <Collapse in={detailExpanded}>
+                            <div id="job-sequence-results" className="mt-4">
+                              <JobSequenceResults
+                                jobSequence={draftEditResult.jobSequence}
+                                timeZone={timeZone}
+                              />
+                            </div>
+                          </Collapse>
+                        ) : null}
+                      </Alert>
+                    );
+                  })
+                : null}
               {versionChoice != null ? (
                 <Alert
                   variant="danger"

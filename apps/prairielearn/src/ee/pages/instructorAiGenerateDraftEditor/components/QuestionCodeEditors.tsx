@@ -20,17 +20,15 @@ export function QuestionCodeEditors({
   htmlFile,
   pythonFile,
   filesError,
-  onFileMutated,
 }: {
   /** The fetched `question.html`, or `null` if the file doesn't exist. */
   htmlFile: DraftQuestionFileContent | null;
   /** The fetched `server.py`, or `null` if the file doesn't exist. */
   pythonFile: DraftQuestionFileContent | null;
   filesError: AppError<AiDraftFilesError['Contents']> | null;
-  onFileMutated: () => Promise<unknown>;
 }) {
   const trpc = useTRPC();
-  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const { questionId, urlPrefix, isGenerating, onFileMutated } = useDraftFiles();
   const refetchDraftFiles = useRefetchDraftFiles();
   const saveMutation = useMutation(
     trpc.aiDraftFiles.save.mutationOptions({ onSuccess: () => onFileMutated() }),

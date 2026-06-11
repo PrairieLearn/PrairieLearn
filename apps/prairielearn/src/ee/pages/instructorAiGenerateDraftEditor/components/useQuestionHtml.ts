@@ -191,8 +191,6 @@ export function useQuestionHtml({
 
   const previewMutation = useMutation({
     mutationFn: async ({ init }: PreviewRequest) => {
-      // The variant render returns server-rendered HTML, not typed data, so
-      // we avoid using tRPC.
       const response = await fetch(variantUrl, init);
       assertOkResponse(response);
       const variantResponse = (await response.json()) as VariantResponse;

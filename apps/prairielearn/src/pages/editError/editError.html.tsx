@@ -6,6 +6,7 @@ import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import {
   type JobSequenceWithTokens,
   StaffJobSequenceWithJobsSchema,
@@ -16,7 +17,7 @@ export function EditError({
   jobSequence,
   outcome,
 }: {
-  resLocals: any;
+  resLocals: UntypedResLocals;
   jobSequence: JobSequenceWithTokens;
   outcome: EditOutcome;
 }) {

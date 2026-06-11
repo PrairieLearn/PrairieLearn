@@ -7,10 +7,8 @@ import type {
   DraftQuestionFileBrowserDirectory,
   DraftQuestionFileBrowserFile,
 } from '../../../../lib/draft-question-files/browser.js';
-import {
-  CODE_EDITOR_TAB_FILES,
-  getDraftQuestionFileUrls,
-} from '../../../../lib/draft-question-files/urls.js';
+import { CODE_EDITOR_TAB_FILES } from '../../../../lib/draft-question-files/paths.shared.js';
+import { getDraftQuestionFileUrls } from '../../../../lib/draft-question-files/urls.js';
 
 import {
   DeleteFileButton,

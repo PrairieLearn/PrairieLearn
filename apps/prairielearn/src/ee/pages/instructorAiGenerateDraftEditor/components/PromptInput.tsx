@@ -16,7 +16,7 @@ export function PromptInput({
   isGenerating: boolean;
   onStop: () => void;
   refreshQuestionPreviewAfterChanges: boolean;
-  setRefreshQuestionPreviewAfterChanges?: (value: boolean) => void;
+  setRefreshQuestionPreviewAfterChanges: (value: boolean) => void;
   placeholder?: string;
 }) {
   return (
@@ -56,7 +56,7 @@ export function PromptInput({
             type="checkbox"
             id="refresh-question-preview-after-changes"
             checked={refreshQuestionPreviewAfterChanges}
-            onChange={(e) => setRefreshQuestionPreviewAfterChanges?.(e.currentTarget.checked)}
+            onChange={(e) => setRefreshQuestionPreviewAfterChanges(e.currentTarget.checked)}
           />
           <label
             className="form-check-label small text-muted"

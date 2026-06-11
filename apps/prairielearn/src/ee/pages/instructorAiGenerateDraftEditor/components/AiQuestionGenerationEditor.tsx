@@ -15,20 +15,23 @@ import type {
   DraftQuestionBrowseData,
   DraftQuestionFileContents,
 } from '../../../../lib/draft-question-files/browser.js';
+import { CODE_EDITOR_TAB_FILES } from '../../../../lib/draft-question-files/paths.shared.js';
 import {
   parseSelectionQueryParam,
   selectionParser,
 } from '../../../../lib/draft-question-files/selection.js';
-import { CODE_EDITOR_TAB_FILES } from '../../../../lib/draft-question-files/urls.js';
 import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
 import type { CourseRouter } from '../../../../trpc/course/trpc.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
+import RichTextEditor from '../RichTextEditor/index.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
+import { AllQuestionFiles } from './AllQuestionFiles.js';
 import { FinalizeModal } from './FinalizeModal.js';
-import { QuestionAndFilePreview } from './QuestionAndFilePreview.js';
+import { QuestionCodeEditors } from './QuestionCodeEditors.js';
+import { QuestionPreviewPane } from './QuestionPreviewPane.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import {
   DraftFilesContext,
@@ -120,8 +123,8 @@ function AiQuestionGenerationEditorInner({
     ),
   );
   const contentsError = getAppError<AiDraftFilesError['Contents']>(rawContentsError);
-  // Memoized for referential stability: `files` feeds the `isQuestionEmpty`
-  // memo below and child props.
+  // Memoized for referential stability: `files` feeds the `htmlContents` memo
+  // below and child props.
   const files = useMemo(() => fileContents?.files ?? {}, [fileContents]);
 
   const handleTitleAndQidSaved = useCallback(
@@ -153,14 +156,31 @@ function AiQuestionGenerationEditorInner({
     [setActiveTab],
   );
 
-  const isQuestionEmpty = useMemo(
-    () => b64DecodeUnicode(files['question.html']?.encodedContents ?? '').trim() === '',
+  const htmlContents = useMemo(
+    () => b64DecodeUnicode(files['question.html']?.encodedContents ?? ''),
     [files],
   );
+  const isQuestionEmpty = htmlContents.trim() === '';
 
   const draftFilesContextValue = useMemo<DraftFilesContextValue>(
-    () => ({ questionId: question.id, urlPrefix, isGenerating, registerEditor }),
-    [question.id, urlPrefix, isGenerating, registerEditor],
+    () => ({
+      questionId: question.id,
+      urlPrefix,
+      isGenerating,
+      registerEditor,
+      onFileMutated: handleFileMutated,
+      getHasUnsavedChanges,
+      discardUnsavedChanges,
+    }),
+    [
+      question.id,
+      urlPrefix,
+      isGenerating,
+      registerEditor,
+      handleFileMutated,
+      getHasUnsavedChanges,
+      discardUnsavedChanges,
+    ],
   );
 
   return (
@@ -173,8 +193,6 @@ function AiQuestionGenerationEditorInner({
             questionId={question.id}
             showJobLogsLink={showJobLogsLink}
             urlPrefix={urlPrefix}
-            getHasUnsavedChanges={getHasUnsavedChanges}
-            discardUnsavedChanges={discardUnsavedChanges}
             isQuestionEmpty={isQuestionEmpty}
           />
 
@@ -219,19 +237,36 @@ function AiQuestionGenerationEditorInner({
             </div>
           </div>
           <div className="app-preview">
-            <QuestionAndFilePreview
-              files={files}
-              richTextEditorEnabled={richTextEditorEnabled}
-              questionContainerHtml={questionContainerHtml}
-              csrfToken={csrfToken}
-              previewWrapperRef={previewWrapperRef}
-              previewError={previewError}
-              isQuestionEmpty={isQuestionEmpty}
-              contentsError={contentsError}
-              onDismissPreviewError={dismissPreviewError}
-              onFileMutated={handleFileMutated}
-              onSelectTab={(tab) => void setActiveTab(tab)}
-            />
+            <Tab.Content className="h-100">
+              <Tab.Pane eventKey="preview" className="h-100">
+                <QuestionPreviewPane
+                  questionContainerHtml={questionContainerHtml}
+                  previewWrapperRef={previewWrapperRef}
+                  previewError={previewError}
+                  isQuestionEmpty={isQuestionEmpty}
+                  onDismissPreviewError={dismissPreviewError}
+                />
+              </Tab.Pane>
+              <Tab.Pane eventKey="files" className="h-100">
+                <QuestionCodeEditors
+                  htmlFile={files['question.html'] ?? null}
+                  pythonFile={files['server.py'] ?? null}
+                  filesError={contentsError}
+                />
+              </Tab.Pane>
+              <Tab.Pane eventKey="all-files" className="h-100">
+                <AllQuestionFiles />
+              </Tab.Pane>
+              <Tab.Pane eventKey="rich-text-editor" className="h-100">
+                {richTextEditorEnabled && (
+                  <RichTextEditor
+                    htmlContents={htmlContents}
+                    csrfToken={csrfToken}
+                    isGenerating={isGenerating}
+                  />
+                )}
+              </Tab.Pane>
+            </Tab.Content>
           </div>
           <FinalizeModal
             // Key on the current values so the uncontrolled inputs reset when the

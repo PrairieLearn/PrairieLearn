@@ -5,6 +5,7 @@ import {
   QuestionRelativeDirectorySchema,
   QuestionRelativeFilePathSchema,
 } from './paths.js';
+import { QUESTION_FILE_NAME_PATTERN } from './paths.shared.js';
 
 describe('draft question file path schemas', () => {
   describe('QuestionRelativeFilePathSchema', () => {
@@ -57,6 +58,33 @@ describe('draft question file path schemas', () => {
         ModifiableQuestionFilePathSchema.parse('clientFilesQuestion/info.json'),
         'clientFilesQuestion/info.json',
       );
+    });
+  });
+
+  describe('QUESTION_FILE_NAME_PATTERN', () => {
+    it.each([
+      'server.py',
+      'question.html',
+      'clientFilesQuestion/data.csv',
+      'tests/test_1.py',
+      'data',
+    ])('accepts %s', (value) => {
+      assert.isTrue(QUESTION_FILE_NAME_PATTERN.test(value));
+    });
+
+    // The draft editor keeps files inside the question directory, so `..` must be
+    // rejected to stay consistent with `ModifiableQuestionFilePathSchema`.
+    it.each([
+      '',
+      '..',
+      '../escape.py',
+      'foo/../bar.py',
+      'foo/..',
+      '.hidden',
+      'my file.py',
+      '/server.py',
+    ])('rejects %s', (value) => {
+      assert.isFalse(QUESTION_FILE_NAME_PATTERN.test(value));
     });
   });
 });
