@@ -11,7 +11,6 @@ import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { withFeatures } from './utils/config.js';
 
 describe(
   'Modern access control: afterComplete visibility applies only after completion',
@@ -60,11 +59,7 @@ describe(
     }
 
     beforeAll(async function () {
-      // The `enhanced-access-control` feature flag must be enabled during
-      // sync so the assessment is marked `modern_access_control: true`.
-      await withFeatures({ 'enhanced-access-control': true }, async () => {
-        await helperServer.before()();
-      });
+      await helperServer.before()();
       context.homeworkAssessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: 'hw20-afterCompleteVisibility',

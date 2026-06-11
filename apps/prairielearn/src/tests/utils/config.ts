@@ -12,15 +12,3 @@ export async function withConfig<T>(
     Object.assign(config, originalConfig);
   }
 }
-
-/**
- * Runs `fn` with the given feature flags merged into `config.features`. Use
- * this instead of `withConfig({ features: ... })`, which replaces the whole
- * record and thus silently disables any default-enabled features.
- */
-export async function withFeatures<T>(
-  features: Record<string, boolean>,
-  fn: () => T | Promise<T>,
-): Promise<T> {
-  return await withConfig({ features: { ...config.features, ...features } }, fn);
-}

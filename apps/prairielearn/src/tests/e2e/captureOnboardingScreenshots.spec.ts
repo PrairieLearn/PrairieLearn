@@ -18,7 +18,6 @@ import type { Locator, Page } from '@playwright/test';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
 import { test } from './fixtures.js';
@@ -513,7 +512,6 @@ test.describe('Onboarding screenshots', () => {
     // permissions. Grant Owner so the home/course pages render production-equivalent
     // (no admin override required) once we disable admin access below.
     await sqldb.execute(sql.grant_dev_user_owner_on_all_courses);
-    await features.enable('enhanced-access-control');
 
     await disableAdminAccess(page);
 

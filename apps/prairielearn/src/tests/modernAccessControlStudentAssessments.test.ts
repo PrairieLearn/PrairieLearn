@@ -8,7 +8,6 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { ASSESSMENT_ID, getCourseData, writeCourseToTempDirectory } from './sync/util.js';
-import { withConfig } from './utils/config.js';
 
 describe('Modern access control on the student assessments page', { timeout: 60_000 }, () => {
   const siteUrl = `http://localhost:${config.serverPort}`;
@@ -24,9 +23,7 @@ describe('Modern access control on the student assessments page', { timeout: 60_
     };
 
     const courseDir = await writeCourseToTempDirectory(course);
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
-      await helperServer.before(courseDir)();
-    });
+    await helperServer.before(courseDir)();
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
