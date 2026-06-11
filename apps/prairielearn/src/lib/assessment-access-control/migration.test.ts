@@ -1698,7 +1698,7 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
-  it('returns null for empty allowAccess array', async () => {
+  it('analyzes an empty allowAccess array as legacy access control', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1711,7 +1711,12 @@ describe('analyzeAssessmentFile', () => {
           }),
         );
         const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
-        assert.isNull(result);
+        assert.isNotNull(result);
+        assert.equal(result.tid, 'e01');
+        assert.equal(result.ruleCount, 0);
+        assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -1967,6 +1972,29 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy converts empty allowAccess to empty accessControl', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.deepEqual(result.accessControl, []);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrates non-UID rules when mixed with UID rules', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
@@ -2139,6 +2167,22 @@ describe('applyMigrationToAssessmentFile', () => {
       },
       { unsafeCleanup: true },
     );
+  });
+});
+
+describe('migrateAssessmentJson', () => {
+  it('converts empty allowAccess to empty accessControl', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    assert.deepEqual(result.notes, []);
+    assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
   });
 });
 
