@@ -36,16 +36,12 @@ function buildUploadFormData({
 
 /**
  * Wires the draft question file browser's upload/rename/delete actions to the
- * `aiDraftFiles` tRPC router. Each action refreshes the file listing via
- * `onMutated` on success; on failure it rejects with an error the calling form
- * renders.
+ * `aiDraftFiles` tRPC router. Each action refreshes the file data and question
+ * preview via `onFileMutated` on success; on failure it rejects with an error
+ * the calling form renders.
  */
-export function useDraftQuestionFileMutations({
-  onMutated,
-}: {
-  onMutated: () => Promise<unknown>;
-}): DraftQuestionFileBrowserActions {
-  const { questionId } = useDraftFiles();
+export function useDraftQuestionFileMutations(): DraftQuestionFileBrowserActions {
+  const { questionId, onFileMutated } = useDraftFiles();
   const trpc = useTRPC();
   const { mutateAsync: uploadFile } = useMutation(trpc.aiDraftFiles.upload.mutationOptions());
   const { mutateAsync: renameFile } = useMutation(trpc.aiDraftFiles.rename.mutationOptions());
@@ -54,15 +50,15 @@ export function useDraftQuestionFileMutations({
   return {
     onUploadFile: async ({ file, target }) => {
       await uploadFile(buildUploadFormData({ questionId, file, target }));
-      await onMutated();
+      await onFileMutated();
     },
     onRenameFile: async ({ oldFilePath, newFilePath }) => {
       await renameFile({ questionId, oldFilePath, newFilePath });
-      await onMutated();
+      await onFileMutated();
     },
     onDeleteFile: async ({ filePath }) => {
       await deleteFile({ questionId, filePath });
-      await onMutated();
+      await onFileMutated();
     },
   };
 }

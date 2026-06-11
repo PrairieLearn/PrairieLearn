@@ -51,9 +51,8 @@ export function useQuestionGenerationChat({
         api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
         headers: { 'X-CSRF-Token': chatCsrfToken },
         prepareSendMessagesRequest: ({ messages, headers }) => {
-          // Only send the latest message to the server. The server sources
-          // conversation context from the database, so we don't need to
-          // send the full history.
+          // Only send the latest message; the server sources conversation
+          // context from the database.
           const lastMessage = messages.at(-1);
           return {
             body: { message: lastMessage ?? null },

@@ -11,11 +11,11 @@ import {
   renderAppError,
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
-import { getReservedDraftUploadReason } from '../../../../lib/draft-question-files/paths.shared.js';
 import {
   QUESTION_FILE_NAME_PATTERN,
   QUESTION_FILE_NAME_PATTERN_DESCRIPTION,
-} from '../../../../lib/short-name.js';
+  getReservedDraftUploadReason,
+} from '../../../../lib/draft-question-files/paths.shared.js';
 import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 
 import { useDraftFiles } from './draftFilesContext.js';
@@ -312,14 +312,11 @@ function PopoverActionButton({
   renderBody: (close: () => void) => ReactNode;
 }) {
   const [show, setShow] = useState(false);
-  const [wasDisabled, setWasDisabled] = useState(disabled);
 
   // Close the popover if the action becomes disabled while it's open (e.g. an
-  // AI generation starts)
-  if (disabled !== wasDisabled) {
-    setWasDisabled(disabled);
-    if (disabled) setShow(false);
-  }
+  // AI generation starts). This adjusts state during render; see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  if (disabled && show) setShow(false);
 
   return (
     <OverlayTrigger

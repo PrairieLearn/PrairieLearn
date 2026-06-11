@@ -21,9 +21,8 @@ import {
   requireQuestionQid,
   resolveWithinQuestionRoot,
 } from './paths.js';
-import { DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
+import { CODE_EDITOR_TAB_FILES, DRAFT_INFO_JSON_DISABLED_REASON } from './paths.shared.js';
 import type { DraftEditorSelection } from './selection.js';
-import { CODE_EDITOR_TAB_FILES } from './urls.js';
 
 export interface DraftQuestionFileBrowserFile {
   id: string | number;

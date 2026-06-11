@@ -15,51 +15,6 @@ export const SHORT_NAME_REGEX =
  */
 export const SHORT_NAME_PATTERN = SHORT_NAME_REGEX.source;
 
-/**
- * Allowed pattern for renamed or newly created course file paths: path segments
- * of letters, numbers, dashes, and underscores (or `..`), joined by `/`, with an
- * optional extension.
- *
- * It is anchored so it can be used directly with `.test()`. The same anchored
- * source also works as an HTML input `pattern` attribute (via `.source`), since
- * the browser already requires the pattern to match the entire value.
- */
-export const FILE_NAME_PATTERN =
-  /^(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?$/;
-
-/**
- * Help text describing how to name a file. Internal building block for
- * {@link FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR}; see
- * {@link QUESTION_FILE_NAME_PATTERN_DESCRIPTION} for the question-scoped variant.
- */
-const FILE_NAME_PATTERN_DESCRIPTION =
-  'Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. To move the file to a different directory, specify a relative path delimited by forward slashes.';
-
-/**
- * Used by the instructor file browser, where a rename
- * can move a file anywhere in the course tree.
- */
-export const FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR = `${FILE_NAME_PATTERN_DESCRIPTION} Use ".." to refer to the parent directory.`;
-
-/**
- * Like {@link FILE_NAME_PATTERN}, but without the `..` parent-directory segment.
- * Used by the draft question file editor, where files must stay inside the
- * question directory: the server's `ModifiableQuestionFilePathSchema` rejects a
- * path containing `..`, so the client form must reject it too. Anchored for use
- * with `.test()`.
- */
-export const QUESTION_FILE_NAME_PATTERN =
-  /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*(?:\.[A-Za-z0-9_-]+)?$/;
-
-/**
- * Help text for {@link QUESTION_FILE_NAME_PATTERN}. Unlike
- * {@link FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR}, it describes placing a
- * file in a subdirectory rather than moving it elsewhere, since a draft question
- * file cannot escape the question directory.
- */
-export const QUESTION_FILE_NAME_PATTERN_DESCRIPTION =
-  'Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. To place the file in a subdirectory, specify a relative path delimited by forward slashes.';
-
 interface ShortNameValidationSuccess {
   valid: true;
 }

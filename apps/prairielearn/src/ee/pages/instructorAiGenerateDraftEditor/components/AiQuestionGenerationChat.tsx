@@ -15,6 +15,7 @@ import type {
 
 import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
+import { useDraftFiles } from './draftFilesContext.js';
 import {
   type QuestionGenerationChat,
   RateLimitError,
@@ -518,8 +519,6 @@ export function AiQuestionGenerationChat({
   questionId,
   showJobLogsLink,
   urlPrefix,
-  getHasUnsavedChanges,
-  discardUnsavedChanges,
   isQuestionEmpty,
 }: {
   chat: QuestionGenerationChat;
@@ -527,10 +526,9 @@ export function AiQuestionGenerationChat({
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
-  getHasUnsavedChanges: () => boolean;
-  discardUnsavedChanges: () => void;
   isQuestionEmpty: boolean;
 }) {
+  const { getHasUnsavedChanges, discardUnsavedChanges } = useDraftFiles();
   const {
     messages,
     status,
