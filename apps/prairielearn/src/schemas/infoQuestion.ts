@@ -2,20 +2,44 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
+// This schema is intentionally a subset of JSON Schema. The `type`, `default`,
+// and `enum` keys map directly to their JSON Schema equivalents, which allows
+// the syncing code to pass preference field definitions directly to AJV for
+// validation of assessment-level overrides. If new keys are added here, they
+// must either be valid JSON Schema keywords or the AJV validation in
+// `assessments.ts` (`mergeAndValidatePreferences`) must be updated to construct
+// the JSON Schema explicitly.
+//
+// Not expressed as a union of more precise types because `ajv` doesn't present
+// errors in a sensible way if we do that. Instead, we perform validation
+// manually in the syncing code (e.g., checking that `default` matches `type`).
+const QuestionPreferencesFieldSchema = z
+  .object({
+    type: z.enum(['string', 'number', 'boolean']),
+    default: z.union([z.string(), z.number(), z.boolean()]),
+    enum: z.array(z.union([z.string(), z.number()])).optional(),
+  })
+  .strict();
+
+export const QuestionPreferencesSchemaJsonSchema = z.record(
+  z.string().min(1),
+  QuestionPreferencesFieldSchema,
+);
+
+export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
+
 const QuestionDependencyJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
-      )
+      .describe('The styles required by this question from /public/stylesheets.')
+      .meta({ deprecated: true })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
-      )
+      .describe('The scripts required by this question from /public/javascripts.')
+      .meta({ deprecated: true })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -114,15 +138,14 @@ const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the workspace container.')
       .optional()
       .default({}),
     syncIgnore: z
       .array(z.string().describe('A single file or directory that will be excluded from sync.'))
-      .describe(
-        '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
-      )
+      .describe('The list of files or directories that will be excluded from sync.')
+      .meta({ deprecated: true })
       .optional(),
   })
   .strict()
@@ -139,9 +162,10 @@ const ExternalGradingOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
-      .describe('[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.')
+      .describe('Whether the external grader is currently enabled.')
+      .meta({ deprecated: true })
       .optional()
-      .default(false),
+      .default(true),
     image: z
       .string()
       .describe(
@@ -177,7 +201,7 @@ const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the grading container.')
       .optional()
       .default({}),
@@ -185,17 +209,10 @@ const ExternalGradingOptionsJsonSchema = z
   .strict()
   .describe('Options for externally graded questions.');
 
-export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
-  image: ExternalGradingOptionsJsonSchema.shape.image.optional(),
-}).parse({});
-
 export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),
@@ -213,16 +230,21 @@ export const QuestionJsonSchema = z
     authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client.')
+      .describe(
+        'The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.',
+      )
+      .meta({ deprecated: true })
       .optional()
       .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')
+      .meta({ deprecated: true })
       .optional(),
     template: z
       .string()
-      .describe('The QID of a question that serves at the template for this question.')
+      .describe('The QID of a question that serves as the template for this question.')
+      .meta({ deprecated: true })
       .optional(),
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
@@ -249,8 +271,9 @@ export const QuestionJsonSchema = z
       .object({})
       .catchall(z.any())
       .describe(
-        'Options that define how the question will work, specific to the individual question type.',
+        'Options that define how the question will work, specific to the individual question type (not supported for v3 questions).',
       )
+      .meta({ deprecated: true })
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
     dependencies: QuestionDependencyJsonSchema.optional().default({}),
@@ -269,9 +292,11 @@ export const QuestionJsonSchema = z
       .describe("Whether this question's source code is publicly shared.")
       .optional()
       .default(false),
+    preferences: QuestionPreferencesSchemaJsonSchema.optional(),
   })
   .strict()
-  .describe('Info files for questions.');
+  .describe('Info files for questions.')
+  .meta({ title: 'Question Info' });
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;

@@ -1,5 +1,35 @@
 # @prairielearn/aws-imds
 
+## 3.0.6
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+
+## 3.0.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
 ## 3.0.1
 
 ### Patch Changes

@@ -1,4 +1,3 @@
-import { createTRPCClient, httpLink } from '@trpc/client';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import superjson from 'superjson';
@@ -7,15 +6,18 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, InstanceQuestionSchema } from '../lib/db-types.js';
+import { selectJobSequenceStatus } from '../lib/server-jobs.js';
+import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { type ManualGradingAssessmentQuestionRouter } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/trpc.js';
+import { createAssessmentQuestionTrpcClient } from '../trpc/assessmentQuestion/client.js';
 
 import {
   type User,
@@ -27,7 +29,19 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const ExpectedScorePercPendingSchema = z.number();
+const ExpectedScorePercPendingRowSchema = z.object({
+  expected_score_perc_pending: z.number(),
+});
+
+/** Polls a background job sequence until it leaves the "Running" state. */
+async function waitForJobSequence(jobSequenceId: string): Promise<void> {
+  for (let i = 0; i < 100; i++) {
+    const { status } = await selectJobSequenceStatus(jobSequenceId);
+    if (status !== 'Running') return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Job sequence ${jobSequenceId} did not finish in time`);
+}
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -105,7 +119,8 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 }
 
 let iqUrl: string, iqId: string | number;
-let instancesAssessmentUrl: string;
+let assessmentId: string;
+let assessmentsUrl: string;
 let manualGradingAssessmentUrl: string;
 let manualGradingAssessmentQuestionUrl: string;
 let manualGradingIQUrl: string;
@@ -160,23 +175,26 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
   const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
   const trpcCsrfToken = props.trpcCsrfToken;
 
-  return createTRPCClient<ManualGradingAssessmentQuestionRouter>({
-    links: [
-      httpLink({
-        url: assessmentQuestionUrl + '/trpc',
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': trpcCsrfToken,
-        },
-        transformer: superjson,
-      }),
-    ],
+  // Extract IDs from the manual grading page URL to construct the scope-level tRPC URL.
+  const pageUrl = new URL(assessmentQuestionUrl);
+  const match = pageUrl.pathname.match(
+    /\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/manual_grading\/assessment_question\/(\d+)/,
+  );
+  if (!match) throw new Error(`Cannot parse assessment question URL: ${assessmentQuestionUrl}`);
+  const [, courseInstanceId, assessmentId, assessmentQuestionId] = match;
+
+  return createAssessmentQuestionTrpcClient({
+    csrfToken: trpcCsrfToken,
+    courseInstanceId,
+    assessmentId,
+    assessmentQuestionId,
+    urlBase: pageUrl.origin,
   });
 }
 
 async function loadInstances(assessmentQuestionUrl: string) {
   const client = await createTrpcClient(assessmentQuestionUrl);
-  return await client.instances.query();
+  return await client.manualGrading.instances.query();
 }
 
 async function assertScorePercPending(iqId: string | number) {
@@ -185,10 +203,10 @@ async function assertScorePercPending(iqId: string | number) {
     { iqId },
     AssessmentInstanceSchema,
   );
-  const expected_score_perc_pending = await sqldb.queryRow(
+  const { expected_score_perc_pending } = await sqldb.queryRow(
     sql.get_expected_score_perc_pending_for_iq,
     { iqId },
-    ExpectedScorePercPendingSchema,
+    ExpectedScorePercPendingRowSchema,
   );
   assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
 }
@@ -236,6 +254,20 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     assert.closeTo(instanceList[0].instance_question.manual_points!, score_points, 0.01);
     assert.closeTo(instanceList[0].instance_question.auto_points!, 0, 0.01);
   });
+
+  test.sequential(
+    'assessments listing page should not show manual grading badge after grading',
+    async () => {
+      setUser(defaultUser);
+      const res = await fetch(assessmentsUrl);
+      assert.equal(res.ok, true);
+      const $ = cheerio.load(await res.text());
+      const row = $(`tr:contains("${assessmentTitle}")`);
+      assert.equal(row.length, 1);
+      const badge = row.find('[data-testid="manual-grading-badge"]');
+      assert.equal(badge.length, 0);
+    },
+  );
 
   test.sequential(
     'manual grading page for assessment does NOT show graded instance for grading',
@@ -471,8 +503,9 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
+    assessmentId = assessment.id;
+    assessmentsUrl = `${baseUrl}/course_instance/1/instructor/instance_admin/assessments`;
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
   });
 
   beforeAll(async () => {
@@ -541,6 +574,20 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           InstanceQuestionSchema,
         );
         assert.equal(instanceQuestion.requires_manual_grading, true);
+      });
+
+      test.sequential('assessments listing page should show manual grading badge', async () => {
+        setUser(defaultUser);
+        const res = await fetch(assessmentsUrl);
+        assert.equal(res.ok, true);
+        const $ = cheerio.load(await res.text());
+        const row = $(`tr:contains("${assessmentTitle}")`);
+        assert.equal(row.length, 1);
+        const badge = row.find('[data-testid="manual-grading-badge"]');
+        assert.equal(badge.length, 1);
+        assert.include(badge.attr('href'), '/manual_grading');
+        assert.equal(badge.attr('aria-label'), '1 submission requires manual grading');
+        assert.include(badge.text(), '1');
       });
 
       test.sequential(
@@ -617,18 +664,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('Manual grading behaviour when instance is closed', () => {
       test.sequential('close assessment', async () => {
         setUser(defaultUser);
-        const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
-        const $instancesBody = cheerio.load(instancesBody);
-        const token =
-          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
-        await fetch(instancesAssessmentUrl, {
-          method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            __action: 'close_all',
-            __csrf_token: token,
-          }).toString(),
+        const jobSequenceId = await gradeAllAssessmentInstances({
+          assessment_id: assessmentId,
+          user_id: '1',
+          authn_user_id: '1',
+          close: true,
+          ignoreGradeRateLimit: true,
+          ignoreRealTimeGradingDisabled: true,
         });
+        await waitForJobSequence(jobSequenceId);
       });
 
       test.sequential('manual grading page should NOT warn about an open instance', async () => {
@@ -683,7 +727,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential('tag question to specific grader', async () => {
         setUser(defaultUser);
         const client = await createTrpcClient(manualGradingAssessmentQuestionUrl);
-        await client.setAssignedGrader.mutate({
+        await client.manualGrading.setAssignedGrader.mutate({
           assigned_grader: mockStaff[0].id!,
           instance_question_ids: [iqId.toString()],
         });
@@ -1152,21 +1196,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('New submission after manual grading', () => {
       test.sequential('re-open assessment', async () => {
         setUser(defaultUser);
-        const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
-        const $instancesBody = cheerio.load(instancesBody);
-        const token = $instancesBody('input[name=__csrf_token]').attr('value') || '';
-        const response = await fetch(instancesAssessmentUrl, {
-          method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            __action: 'set_time_limit_all',
-            __csrf_token: token,
-            action: 'remove',
-            time_add: '0',
-            reopen_closed: 'on',
-          }).toString(),
+        await updateAssessmentInstancesTimeLimit({
+          assessment_id: assessmentId,
+          assessment_instance_ids: null,
+          base_time: 'null',
+          time_add: 0,
+          exact_date: new Date(),
+          reopen_closed: true,
+          authn_user_id: '1',
         });
-        assert.equal(response.status, 200);
       });
 
       test.sequential('load page as student', async () => {

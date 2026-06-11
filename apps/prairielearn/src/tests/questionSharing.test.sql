@@ -1,11 +1,9 @@
--- BLOCK get_question_id
-SELECT
-  id
-FROM
-  questions
+-- BLOCK update_course_example_course
+UPDATE courses
+SET
+  example_course = $example_course
 WHERE
-  course_id = $course_id
-  AND qid = $qid;
+  id = $course_id;
 
 -- BLOCK select_sharing_set
 SELECT
@@ -15,20 +13,14 @@ FROM
 WHERE
   name = $sharing_set_name;
 
--- BLOCK select_course_instance
+-- BLOCK select_sharing_set_question
 SELECT
-  id
+  ssq.id
 FROM
-  course_instances
+  sharing_set_questions AS ssq
+  JOIN sharing_sets AS ss ON ss.id = ssq.sharing_set_id
+  JOIN questions AS q ON q.id = ssq.question_id
 WHERE
-  short_name = $short_name
-  AND course_id = $course_id;
-
--- BLOCK select_assessment
-SELECT
-  id
-FROM
-  assessments
-WHERE
-  tid = $tid
-  AND course_instance_id = $course_instance_id;
+  ss.name = $sharing_set_name
+  AND q.qid = $qid
+  AND q.course_id = $course_id;

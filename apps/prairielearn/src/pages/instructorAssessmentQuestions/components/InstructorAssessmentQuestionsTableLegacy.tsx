@@ -15,11 +15,12 @@ import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
-import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type { StaffCourse, StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+import { ViewSwitcherDropdown } from './ViewSwitcherDropdown.js';
 
 function Title({
   questionRow,
@@ -30,13 +31,15 @@ function Title({
   hasCoursePermissionPreview: boolean;
   urlPrefix: string;
 }) {
-  const { question, assessment_question, alternative_group, alternative_group_size } = questionRow;
+  const { question, assessment_question, alternative_pool, alternative_pool_size } = questionRow;
   const title = (
     <>
       <AssessmentQuestionNumber
-        alternativeGroupSize={alternative_group_size}
-        alternativeGroupNumber={alternative_group.number}
-        numberInAlternativeGroup={assessment_question.number_in_alternative_group}
+        questionNumber={alternative_pool.number}
+        alternativeNumber={
+          alternative_pool_size > 1 ? assessment_question.number_in_alternative_group : undefined
+        }
+        className="me-2"
       />
       {question.title}
     </>
@@ -51,12 +54,14 @@ export function InstructorAssessmentQuestionsTableLegacy({
   course,
   questionRows,
   urlPrefix,
+  courseInstance,
   assessmentType,
   assessmentSetName,
   assessmentNumber,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   csrfToken,
+  switchViewUrl,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -64,9 +69,11 @@ export function InstructorAssessmentQuestionsTableLegacy({
   assessmentSetName: string;
   assessmentNumber: string;
   urlPrefix: string;
+  courseInstance: StaffCourseInstance;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
+  switchViewUrl: string | null;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -94,7 +101,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
     points_list: number[] | null;
     init_points: number | null;
   }) {
-    if (max_auto_points || !max_manual_points) {
+    if (max_auto_points != null || !max_manual_points) {
       switch (assessmentType) {
         case 'Exam':
           return (points_list || [max_manual_points])
@@ -117,6 +124,12 @@ export function InstructorAssessmentQuestionsTableLegacy({
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
+          <ViewSwitcherDropdown
+            currentView="classic"
+            switchViewUrl={switchViewUrl}
+            className="ms-auto"
+            toggleClassName="text-white"
+          />
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-hover" aria-label="Assessment questions">
@@ -152,7 +165,8 @@ export function InstructorAssessmentQuestionsTableLegacy({
                           urlPrefix={urlPrefix}
                         />
                         <IssueBadge
-                          urlPrefix={urlPrefix}
+                          courseId={course.id}
+                          courseInstanceId={courseInstance.id}
                           count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />
@@ -266,9 +280,14 @@ export function InstructorAssessmentQuestionsTableLegacy({
           assessmentQuestionId={resetAssessmentQuestionId}
           show={showResetModal}
           onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
         />
       ) : (
-        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+        <ExamResetNotSupportedModal
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
+        />
       )}
     </>
   );

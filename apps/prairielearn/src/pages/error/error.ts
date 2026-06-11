@@ -5,6 +5,7 @@ import { AugmentedError, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
 import { config } from '../../lib/config.js';
+import { isTrpcRequest } from '../../lib/trpc.js';
 
 import { ErrorPage } from './error.html.js';
 
@@ -62,7 +63,7 @@ export default (function (err, req, res, _next) {
 
   // Handle errors for tRPC requests (e.g., CSRF failures before tRPC middleware runs).
   // Format the response to match tRPC's expected JSON-RPC 2.0 error structure.
-  if (req.header('X-TRPC') === 'true') {
+  if (isTrpcRequest(req)) {
     const trpcError = HTTP_TO_TRPC_CODE[err.status] ?? HTTP_TO_TRPC_CODE[500]!;
 
     res.json({
@@ -85,7 +86,6 @@ export default (function (err, req, res, _next) {
     return;
   }
 
-  // Check if the client only accepts JSON
   if (req.accepts('application/json') && !req.accepts('html')) {
     res.send({
       error: err.message,

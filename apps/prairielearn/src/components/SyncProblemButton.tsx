@@ -11,7 +11,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
     <pre
       className="text-white rounded p-3 mb-0"
       style={{ backgroundColor: 'black' }}
-      // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+      // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
       dangerouslySetInnerHTML={{ __html: ansiToHtml(output) }}
     />
   );

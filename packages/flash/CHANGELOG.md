@@ -1,5 +1,46 @@
 # @prairielearn/flash
 
+## 3.0.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 3.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
+## 3.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+  - @prairielearn/html@5.0.2
+
 ## 3.0.1
 
 ### Patch Changes

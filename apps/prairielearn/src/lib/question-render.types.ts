@@ -1,7 +1,6 @@
 import z from 'zod';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
-import type { EffectiveQuestionType } from '../question-servers/types.js';
 
 import { IssueSchema, type Variant } from './db-types.js';
 import type { RubricData } from './manualGrading.types.js';
@@ -17,7 +16,6 @@ export interface SubmissionPanels {
 }
 
 export const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string(),
   // Nullable from left join.
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
@@ -47,10 +45,9 @@ export interface QuestionUrls {
 export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
   question_is_shared: boolean;
   variant: Variant;
-  showTrueAnswer: boolean;
+  showCorrectAnswer: boolean;
   submission: SubmissionForRender | null;
   submissions: SubmissionForRender[];
-  effectiveQuestionType: EffectiveQuestionType;
   extraHeadersHtml: string;
   questionHtml: string;
   submissionHtmls: string[];
@@ -60,18 +57,18 @@ export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
 }
 
 export interface ResLocalsInstanceQuestionRenderAdded {
-  rubric_data: RubricData | null;
+  rubric_data: RubricData | null | undefined;
   allowGradeLeftMs: number;
 }
 
-export interface ResLocalsBuildLocals {
+interface ResLocalsBuildLocals {
   showGradeButton: boolean;
   showSaveButton: boolean;
   disableGradeButton: boolean;
   disableSaveButton: boolean;
   showNewVariantButton: boolean;
   showTryAgainButton: boolean;
-  showTrueAnswer: boolean;
+  showCorrectAnswer: boolean;
   showGradingRequested: boolean;
   allowAnswerEditing: boolean;
   hasAttemptsOtherVariants: boolean;

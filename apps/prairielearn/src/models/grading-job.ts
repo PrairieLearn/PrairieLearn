@@ -8,7 +8,10 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
+import {
+  updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePercPending,
+} from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
@@ -72,18 +75,11 @@ export async function insertGradingJob({
   return await runInTransactionAsync(async () => {
     await lockSubmission({ submission_id });
 
-    const { assessment_instance_id, credit, ...grading_job } = await queryRow(
+    return await queryRow(
       sql.insert_grading_job,
       { submission_id, authn_user_id },
-      GradingJobSchema.extend({
-        assessment_instance_id: IdSchema.nullable(),
-        credit: SubmissionSchema.shape.credit,
-      }),
+      GradingJobSchema,
     );
-    if (assessment_instance_id != null) {
-      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
-    }
-    return grading_job;
   });
 }
 
@@ -198,6 +194,8 @@ export async function updateGradingJobAfterGrading({
         authn_user_id: gradingJob.auth_user_id,
         credit,
       });
+    } else if (assessment_instance_id != null) {
+      await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
     }
 
     return gradingJob;

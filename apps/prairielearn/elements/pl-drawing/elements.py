@@ -95,6 +95,8 @@ class ControlledLine(BaseElement):
             "heightErrorBox": hbox,
             "offset_x": offset_x,
             "offset_y": offset_y,
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -181,6 +183,8 @@ class ControlledCurvedLine(BaseElement):
             "offset_y": offset_y,
             "offset_control_x": offset_control_x,
             "offset_control_y": offset_control_y,
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -2113,6 +2117,8 @@ class GraphLine(BaseElement):
             "offset_y": offset_y,
             "offset_control_x": offset_control_x,
             "offset_control_y": offset_control_y,
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
         if not curved_line:
@@ -2518,6 +2524,7 @@ class DrawingElement(UnplaceableBaseElement):
         return [
             "gradable",
             "answers-name",
+            "weight",
             "aria-label",
             "aria-description",
             "width",
@@ -2530,7 +2537,9 @@ class DrawingElement(UnplaceableBaseElement):
             "show-tolerance-hint",
             "tolerance-hint",
             "disregard-extra-elements",
+            "allow-blank",
             "hide-answer-panel",
+            "show-score",
         ]
 
 

@@ -190,17 +190,6 @@ RETURNING
 
 -- BLOCK update_instance_question_post_submission
 WITH
-  prior_instance_question AS (
-    SELECT
-      iq.id,
-      iq.requires_manual_grading AS old_requires_manual_grading
-    FROM
-      instance_questions AS iq
-    WHERE
-      iq.id = $instance_question_id
-    FOR NO KEY UPDATE OF
-      iq
-  ),
   updated_instance_question AS (
     UPDATE instance_questions AS iq
     SET
@@ -213,16 +202,10 @@ WITH
         OR $requires_manual_grading
       ),
       is_ai_graded = FALSE
-    FROM
-      prior_instance_question AS piq
     WHERE
-      iq.id = piq.id
+      iq.id = $instance_question_id
     RETURNING
-      iq.*,
-      (
-        NOT piq.old_requires_manual_grading
-        AND $requires_manual_grading
-      ) AS newly_requires_manual_grading
+      iq.*
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances

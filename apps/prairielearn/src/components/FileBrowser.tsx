@@ -740,6 +740,8 @@ function FileRenameForm({
   csrfToken: string;
   isViewingFile: boolean;
 }) {
+  const FILE_NAME_PATTERN =
+    /(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?/;
   return html`
     <form
       name="instructor-file-rename-form-${file.id}"
@@ -768,7 +770,7 @@ function FileRenameForm({
           value="${file.name}"
           data-original-value="${file.name}"
           size="${1.5 * file.name.length}"
-          pattern="(?:[\\-A-Za-z0-9_]+|\\.\\.)(?:\\/(?:[\\-A-Za-z0-9_]+|\\.\\.))*(?:\\.[\\-A-Za-z0-9_]+)?"
+          pattern="${FILE_NAME_PATTERN.source}"
           required
         />
       </div>

@@ -53,10 +53,6 @@ const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_open: z.boolean().nullable(),
 });
 
-const UpdatedInstanceQuestionPostSubmissionSchema = InstanceQuestionSchema.extend({
-  newly_requires_manual_grading: z.boolean(),
-});
-
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
@@ -131,13 +127,13 @@ async function insertSubmission({
       });
     }
 
-    const delta = await sqldb.queryOptionalRow(
+    const delta = await sqldb.queryOptionalScalar(
       sql.select_and_update_last_access,
       { user_id: variant.user_id, group_id: variant.team_id },
       IntervalSchema.nullable(),
     );
 
-    const submission_id = await sqldb.queryRow(
+    const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
       {
         variant_id,
@@ -170,14 +166,11 @@ async function insertSubmission({
           status: gradable ? 'saved' : 'invalid',
           requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
         },
-        UpdatedInstanceQuestionPostSubmissionSchema,
+        InstanceQuestionSchema,
       );
       await updateInstanceQuestionStats({ instanceQuestion: updatedInstanceQuestion });
 
-      if (
-        variant.assessment_instance_id != null &&
-        updatedInstanceQuestion.newly_requires_manual_grading
-      ) {
+      if (variant.assessment_instance_id != null) {
         await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
       }
     }
@@ -209,7 +202,7 @@ export async function saveSubmission(
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
-    const workspace_id = await sqldb.queryOptionalRow(
+    const workspace_id = await sqldb.queryOptionalScalar(
       sql.select_workspace_id,
       { variant_id: submission.variant_id },
       IdSchema,
@@ -259,6 +252,11 @@ export async function saveSubmission(
     variant,
     question,
     question_course,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -401,7 +399,10 @@ export async function gradeVariant({
     if (nextGradingAllowedMs > 0) return;
   }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+  const grading_job = await insertGradingJob({
+    submission_id: submission.id,
+    authn_user_id,
+  });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -421,6 +422,7 @@ export async function gradeVariant({
       { type: 'elementExtensions' },
     ]);
     await externalGrader.beginGradingJob(grading_job.id);
+    return;
   } else {
     // For Internal grading we call the grading code. For Manual grading, if the question
     // reached this point, it has auto points, so it should be treated like Internal.
@@ -430,6 +432,11 @@ export async function gradeVariant({
       variant,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
@@ -466,7 +473,7 @@ export async function gradeVariant({
     // LTI updates.
     if (!grading_job_post_update.gradable) return;
 
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_submission,
       { submission_id: submission.id },
       IdSchema.nullable(),

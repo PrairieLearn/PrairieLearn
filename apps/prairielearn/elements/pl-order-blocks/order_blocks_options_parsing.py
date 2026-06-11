@@ -12,6 +12,15 @@ class GroupInfo(TypedDict):
     depends: list[str] | None
 
 
+class DisplayBlocksType(Enum):
+    VERTICAL = "vertical"
+    INLINE_WRAP = "inline-wrap"
+    INLINE_NOWRAP = "inline-nowrap"
+
+    def is_inline(self) -> bool:
+        return self in {DisplayBlocksType.INLINE_WRAP, DisplayBlocksType.INLINE_NOWRAP}
+
+
 class GradingMethodType(Enum):
     UNORDERED = "unordered"
     ORDERED = "ordered"
@@ -24,6 +33,7 @@ class SourceBlocksOrderType(Enum):
     RANDOM = "random"
     ALPHABETIZED = "alphabetized"
     ORDERED = "ordered"
+    RANDOM_SECTIONS = "random-sections"
 
 
 class DistractorOrderType(Enum):
@@ -64,10 +74,12 @@ MAX_INDENTATION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ANSWER_CORRECT_DEFAULT = True
+INITIALLY_PLACED_DEFAULT = False
 ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
+DISPLAY_BLOCKS_DEFAULT = DisplayBlocksType.VERTICAL
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -131,6 +143,7 @@ class AnswerOptions:
     tag: str
     depends: Edges | ColoredEdges
     correct: bool
+    initially_placed: bool
     ranking: int
     indent: int | None
     distractor_for: str | None
@@ -155,6 +168,9 @@ class AnswerOptions:
             self.final = False
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
+        )
+        self.initially_placed = pl.get_boolean_attrib(
+            html_element, "initially-placed", INITIALLY_PLACED_DEFAULT
         )
         self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
         self.indent = pl.get_integer_attrib(
@@ -183,7 +199,9 @@ class AnswerOptions:
 
         if grading_method is GradingMethodType.EXTERNAL:
             pl.check_attribs(
-                html_element, required_attribs=[], optional_attribs=["correct"]
+                html_element,
+                required_attribs=[],
+                optional_attribs=["correct", "initially-placed"],
             )
         elif grading_method in [
             GradingMethodType.UNORDERED,
@@ -192,7 +210,12 @@ class AnswerOptions:
             pl.check_attribs(
                 html_element,
                 required_attribs=[],
-                optional_attribs=["correct", "indent", "distractor-feedback"],
+                optional_attribs=[
+                    "correct",
+                    "initially-placed",
+                    "indent",
+                    "distractor-feedback",
+                ],
             )
         elif grading_method is GradingMethodType.RANKING:
             pl.check_attribs(
@@ -200,6 +223,7 @@ class AnswerOptions:
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
+                    "initially-placed",
                     "tag",
                     "ranking",
                     "indent",
@@ -214,6 +238,7 @@ class AnswerOptions:
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
+                    "initially-placed",
                     "tag",
                     "depends",
                     "comment",
@@ -249,6 +274,7 @@ class OrderBlocksOptions:
     format: FormatType
     code_language: str | None
     inline: bool
+    display_blocks: DisplayBlocksType
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -309,6 +335,12 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.display_blocks = pl.get_enum_attrib(
+            html_element,
+            "display-blocks",
+            DisplayBlocksType,
+            DISPLAY_BLOCKS_DEFAULT,
+        )
         self.has_optional_blocks = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
@@ -345,6 +377,7 @@ class OrderBlocksOptions:
             "min-incorrect",
             "weight",
             "inline",
+            "display-blocks",
             "max-indent",
             "feedback",
             "partial-credit",
@@ -418,9 +451,9 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if self.inline and self.indentation:
+        if (self.inline or self.display_blocks.is_inline()) and self.indentation:
             raise ValueError(
-                "The indentation attribute may not be used when inline is true."
+                'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".'
             )
 
         if (
@@ -434,6 +467,11 @@ class OrderBlocksOptions:
     def _validate_answer_options(self) -> None:
         used_tags = []
         used_groups = []
+        distractor_tags = [
+            answer_options.distractor_for
+            for answer_options in self.answer_options
+            if answer_options.distractor_for is not None
+        ]
 
         for answer_options in self.answer_options:
             if (
@@ -476,6 +514,15 @@ class OrderBlocksOptions:
                         f'Tag "{answer_options.tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                     )
                 used_tags.append(answer_options.tag)
+                if (
+                    answer_options.initially_placed
+                    and answer_options.tag in distractor_tags
+                ):
+                    raise ValueError(
+                        "A block with distractors cannot be initially placed."
+                    )
+            elif answer_options.initially_placed:
+                raise ValueError("Incorrect blocks cannot be initially placed.")
 
             if (
                 answer_options.group_info["tag"] in used_tags

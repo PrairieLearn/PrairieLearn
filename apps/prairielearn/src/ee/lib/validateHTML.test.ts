@@ -105,8 +105,8 @@ describe('isValidMustacheTemplateName', () => {
 });
 
 describe('validateHTML forbidden document tags', () => {
-  it('rejects <html> tag', () => {
-    const { errors } = validateHTML(
+  it('rejects <html> tag', async () => {
+    const { errors } = await validateHTML(
       '<html><pl-question-panel>Hello</pl-question-panel></html>',
       true,
     );
@@ -114,8 +114,8 @@ describe('validateHTML forbidden document tags', () => {
     assert.include(errors[0], '<html>');
   });
 
-  it('rejects <body> tag', () => {
-    const { errors } = validateHTML(
+  it('rejects <body> tag', async () => {
+    const { errors } = await validateHTML(
       '<body><pl-question-panel>Hello</pl-question-panel></body>',
       true,
     );
@@ -123,8 +123,8 @@ describe('validateHTML forbidden document tags', () => {
     assert.include(errors[0], '<body>');
   });
 
-  it('rejects <head> tag', () => {
-    const { errors } = validateHTML(
+  it('rejects <head> tag', async () => {
+    const { errors } = await validateHTML(
       '<head><meta charset="utf-8"></head><pl-question-panel>Hello</pl-question-panel>',
       true,
     );
@@ -132,8 +132,8 @@ describe('validateHTML forbidden document tags', () => {
     assert.include(errors[0], '<head>');
   });
 
-  it('rejects <!DOCTYPE> declaration', () => {
-    const { errors } = validateHTML(
+  it('rejects <!DOCTYPE> declaration', async () => {
+    const { errors } = await validateHTML(
       '<!DOCTYPE html>\n<pl-question-panel>Hello</pl-question-panel>',
       true,
     );
@@ -141,8 +141,8 @@ describe('validateHTML forbidden document tags', () => {
     assert.include(errors[0], '<!DOCTYPE>');
   });
 
-  it('rejects case-insensitive variants', () => {
-    const { errors } = validateHTML(
+  it('rejects case-insensitive variants', async () => {
+    const { errors } = await validateHTML(
       '<HTML><BODY><pl-question-panel>Hello</pl-question-panel></BODY></HTML>',
       true,
     );
@@ -150,8 +150,8 @@ describe('validateHTML forbidden document tags', () => {
     assert.include(errors[0], '<html>');
   });
 
-  it('accepts valid content without document tags', () => {
-    const { errors } = validateHTML(
+  it('accepts valid content without document tags', async () => {
+    const { errors } = await validateHTML(
       '<pl-question-panel><p>What is 2+2?</p></pl-question-panel><pl-integer-input answers-name="ans" correct-answer="4"></pl-integer-input>',
       true,
     );
@@ -161,54 +161,56 @@ describe('validateHTML forbidden document tags', () => {
 
 describe('validateHTML integer attributes', () => {
   /** Test integer validation via pl-integer-input's weight attribute */
-  function validateIntegerAttr(value: string): string[] {
-    return validateHTML(
-      `<pl-integer-input answers-name="x" weight="${value}"></pl-integer-input>`,
-      true,
+  async function validateIntegerAttr(value: string): Promise<string[]> {
+    return (
+      await validateHTML(
+        `<pl-integer-input answers-name="x" weight="${value}"></pl-integer-input>`,
+        true,
+      )
     ).errors;
   }
 
-  it('accepts positive integers', () => {
-    assert.deepEqual(validateIntegerAttr('1'), []);
-    assert.deepEqual(validateIntegerAttr('42'), []);
-    assert.deepEqual(validateIntegerAttr('12345'), []);
+  it('accepts positive integers', async () => {
+    assert.deepEqual(await validateIntegerAttr('1'), []);
+    assert.deepEqual(await validateIntegerAttr('42'), []);
+    assert.deepEqual(await validateIntegerAttr('12345'), []);
   });
 
-  it('accepts zero', () => {
-    assert.deepEqual(validateIntegerAttr('0'), []);
+  it('accepts zero', async () => {
+    assert.deepEqual(await validateIntegerAttr('0'), []);
   });
 
-  it('accepts negative integers', () => {
-    assert.deepEqual(validateIntegerAttr('-1'), []);
-    assert.deepEqual(validateIntegerAttr('-42'), []);
-    assert.deepEqual(validateIntegerAttr('-12345'), []);
+  it('accepts negative integers', async () => {
+    assert.deepEqual(await validateIntegerAttr('-1'), []);
+    assert.deepEqual(await validateIntegerAttr('-42'), []);
+    assert.deepEqual(await validateIntegerAttr('-12345'), []);
   });
 
-  it('accepts mustache templates', () => {
-    assert.deepEqual(validateIntegerAttr('{{weight}}'), []);
-    assert.deepEqual(validateIntegerAttr('{{params.weight}}'), []);
+  it('accepts mustache templates', async () => {
+    assert.deepEqual(await validateIntegerAttr('{{weight}}'), []);
+    assert.deepEqual(await validateIntegerAttr('{{params.weight}}'), []);
   });
 
-  it('rejects floating-point numbers', () => {
-    const errors = validateIntegerAttr('1.5');
+  it('rejects floating-point numbers', async () => {
+    const errors = await validateIntegerAttr('1.5');
     assert.isNotEmpty(errors);
     assert.isTrue(errors.some((e) => e.includes('must be an integer')));
   });
 
-  it('rejects scientific notation', () => {
-    const errors = validateIntegerAttr('1e5');
+  it('rejects scientific notation', async () => {
+    const errors = await validateIntegerAttr('1e5');
     assert.isNotEmpty(errors);
     assert.isTrue(errors.some((e) => e.includes('must be an integer')));
   });
 
-  it('rejects non-numeric strings', () => {
-    const errors = validateIntegerAttr('abc');
+  it('rejects non-numeric strings', async () => {
+    const errors = await validateIntegerAttr('abc');
     assert.isNotEmpty(errors);
     assert.isTrue(errors.some((e) => e.includes('must be an integer')));
   });
 
-  it('rejects empty string', () => {
-    const errors = validateIntegerAttr('');
+  it('rejects empty string', async () => {
+    const errors = await validateIntegerAttr('');
     assert.isNotEmpty(errors);
     assert.isTrue(errors.some((e) => e.includes('must be an integer')));
   });
@@ -217,94 +219,96 @@ describe('validateHTML integer attributes', () => {
 describe('validateHTML float attributes', () => {
   // Test float validation via pl-number-input's rtol attribute
   /** (correct-answer specifically forbids mustache templates, so we use rtol instead) */
-  function validateFloatAttr(value: string): string[] {
-    return validateHTML(
-      `<pl-number-input answers-name="x" rtol="${value}"></pl-number-input>`,
-      true,
+  async function validateFloatAttr(value: string): Promise<string[]> {
+    return (
+      await validateHTML(
+        `<pl-number-input answers-name="x" rtol="${value}"></pl-number-input>`,
+        true,
+      )
     ).errors;
   }
 
-  it('accepts positive integers', () => {
-    assert.deepEqual(validateFloatAttr('1'), []);
-    assert.deepEqual(validateFloatAttr('42'), []);
+  it('accepts positive integers', async () => {
+    assert.deepEqual(await validateFloatAttr('1'), []);
+    assert.deepEqual(await validateFloatAttr('42'), []);
   });
 
-  it('accepts zero', () => {
-    assert.deepEqual(validateFloatAttr('0'), []);
+  it('accepts zero', async () => {
+    assert.deepEqual(await validateFloatAttr('0'), []);
   });
 
-  it('accepts negative integers', () => {
-    assert.deepEqual(validateFloatAttr('-1'), []);
-    assert.deepEqual(validateFloatAttr('-42'), []);
+  it('accepts negative integers', async () => {
+    assert.deepEqual(await validateFloatAttr('-1'), []);
+    assert.deepEqual(await validateFloatAttr('-42'), []);
   });
 
-  it('accepts positive decimals', () => {
-    assert.deepEqual(validateFloatAttr('1.5'), []);
-    assert.deepEqual(validateFloatAttr('3.14159'), []);
-    assert.deepEqual(validateFloatAttr('0.5'), []);
+  it('accepts positive decimals', async () => {
+    assert.deepEqual(await validateFloatAttr('1.5'), []);
+    assert.deepEqual(await validateFloatAttr('3.14159'), []);
+    assert.deepEqual(await validateFloatAttr('0.5'), []);
   });
 
-  it('accepts negative decimals', () => {
-    assert.deepEqual(validateFloatAttr('-1.5'), []);
-    assert.deepEqual(validateFloatAttr('-3.14159'), []);
-    assert.deepEqual(validateFloatAttr('-0.5'), []);
+  it('accepts negative decimals', async () => {
+    assert.deepEqual(await validateFloatAttr('-1.5'), []);
+    assert.deepEqual(await validateFloatAttr('-3.14159'), []);
+    assert.deepEqual(await validateFloatAttr('-0.5'), []);
   });
 
-  it('accepts numbers starting with decimal point', () => {
-    assert.deepEqual(validateFloatAttr('.5'), []);
-    assert.deepEqual(validateFloatAttr('.123'), []);
-    assert.deepEqual(validateFloatAttr('-.5'), []);
+  it('accepts numbers starting with decimal point', async () => {
+    assert.deepEqual(await validateFloatAttr('.5'), []);
+    assert.deepEqual(await validateFloatAttr('.123'), []);
+    assert.deepEqual(await validateFloatAttr('-.5'), []);
   });
 
-  it('accepts scientific notation with positive exponent', () => {
-    assert.deepEqual(validateFloatAttr('1e5'), []);
-    assert.deepEqual(validateFloatAttr('1E5'), []);
-    assert.deepEqual(validateFloatAttr('1e+5'), []);
-    assert.deepEqual(validateFloatAttr('2.5e10'), []);
+  it('accepts scientific notation with positive exponent', async () => {
+    assert.deepEqual(await validateFloatAttr('1e5'), []);
+    assert.deepEqual(await validateFloatAttr('1E5'), []);
+    assert.deepEqual(await validateFloatAttr('1e+5'), []);
+    assert.deepEqual(await validateFloatAttr('2.5e10'), []);
   });
 
-  it('accepts scientific notation with negative exponent', () => {
-    assert.deepEqual(validateFloatAttr('1e-5'), []);
-    assert.deepEqual(validateFloatAttr('1E-5'), []);
-    assert.deepEqual(validateFloatAttr('2.5e-10'), []);
+  it('accepts scientific notation with negative exponent', async () => {
+    assert.deepEqual(await validateFloatAttr('1e-5'), []);
+    assert.deepEqual(await validateFloatAttr('1E-5'), []);
+    assert.deepEqual(await validateFloatAttr('2.5e-10'), []);
   });
 
-  it('accepts negative numbers with scientific notation', () => {
-    assert.deepEqual(validateFloatAttr('-1e5'), []);
-    assert.deepEqual(validateFloatAttr('-2.5e-10'), []);
+  it('accepts negative numbers with scientific notation', async () => {
+    assert.deepEqual(await validateFloatAttr('-1e5'), []);
+    assert.deepEqual(await validateFloatAttr('-2.5e-10'), []);
   });
 
-  it('accepts mustache templates', () => {
-    assert.deepEqual(validateFloatAttr('{{answer}}'), []);
-    assert.deepEqual(validateFloatAttr('{{params.answer}}'), []);
+  it('accepts mustache templates', async () => {
+    assert.deepEqual(await validateFloatAttr('{{answer}}'), []);
+    assert.deepEqual(await validateFloatAttr('{{params.answer}}'), []);
   });
 
-  it('rejects non-numeric strings', () => {
-    const errors = validateFloatAttr('abc');
+  it('rejects non-numeric strings', async () => {
+    const errors = await validateFloatAttr('abc');
     assert.isNotEmpty(errors);
-    assert.isTrue(errors.some((e) => e.includes('must be an floating-point number')));
+    assert.isTrue(errors.some((e) => e.includes('must be a floating-point number')));
   });
 
-  it('rejects empty string', () => {
-    const errors = validateFloatAttr('');
+  it('rejects empty string', async () => {
+    const errors = await validateFloatAttr('');
     assert.isNotEmpty(errors);
-    assert.isTrue(errors.some((e) => e.includes('must be an floating-point number')));
+    assert.isTrue(errors.some((e) => e.includes('must be a floating-point number')));
   });
 
-  it('rejects malformed scientific notation', () => {
-    const errors1 = validateFloatAttr('1e');
+  it('rejects malformed scientific notation', async () => {
+    const errors1 = await validateFloatAttr('1e');
     assert.isNotEmpty(errors1);
-    assert.isTrue(errors1.some((e) => e.includes('must be an floating-point number')));
+    assert.isTrue(errors1.some((e) => e.includes('must be a floating-point number')));
 
-    const errors2 = validateFloatAttr('e5');
+    const errors2 = await validateFloatAttr('e5');
     assert.isNotEmpty(errors2);
-    assert.isTrue(errors2.some((e) => e.includes('must be an floating-point number')));
+    assert.isTrue(errors2.some((e) => e.includes('must be a floating-point number')));
   });
 });
 
 describe('validateHTML panel nesting', () => {
-  it('warns about input element inside pl-submission-panel', () => {
-    const { warnings } = validateHTML(
+  it('warns about input element inside pl-submission-panel', async () => {
+    const { warnings } = await validateHTML(
       '<pl-submission-panel><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></pl-submission-panel>',
       true,
     );
@@ -313,8 +317,8 @@ describe('validateHTML panel nesting', () => {
     );
   });
 
-  it('warns about input element inside pl-answer-panel', () => {
-    const { warnings } = validateHTML(
+  it('warns about input element inside pl-answer-panel', async () => {
+    const { warnings } = await validateHTML(
       '<pl-answer-panel><pl-number-input answers-name="ans"></pl-number-input></pl-answer-panel>',
       true,
     );
@@ -323,8 +327,8 @@ describe('validateHTML panel nesting', () => {
     );
   });
 
-  it('warns about input element inside pl-question-panel', () => {
-    const { warnings } = validateHTML(
+  it('warns about input element inside pl-question-panel', async () => {
+    const { warnings } = await validateHTML(
       '<pl-question-panel><pl-integer-input answers-name="ans" correct-answer="42"></pl-integer-input></pl-question-panel>',
       true,
     );
@@ -333,8 +337,8 @@ describe('validateHTML panel nesting', () => {
     );
   });
 
-  it('accepts input element at top level', () => {
-    const { errors, warnings } = validateHTML(
+  it('accepts input element at top level', async () => {
+    const { errors, warnings } = await validateHTML(
       '<pl-question-panel><p>Question</p></pl-question-panel>' +
         '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>',
       true,
@@ -343,8 +347,8 @@ describe('validateHTML panel nesting', () => {
     assert.deepEqual(warnings, []);
   });
 
-  it('warns about input element deeply nested inside panel', () => {
-    const { warnings } = validateHTML(
+  it('warns about input element deeply nested inside panel', async () => {
+    const { warnings } = await validateHTML(
       '<pl-submission-panel><div><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></div></pl-submission-panel>',
       true,
     );
@@ -353,12 +357,48 @@ describe('validateHTML panel nesting', () => {
     );
   });
 
-  it('accepts non-input content inside pl-submission-panel', () => {
-    const { errors, warnings } = validateHTML(
+  it('accepts non-input content inside pl-submission-panel', async () => {
+    const { errors, warnings } = await validateHTML(
       '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>' +
         '<pl-submission-panel><p>Your answer was submitted.</p></pl-submission-panel>',
       true,
     );
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+});
+
+describe('validateHTML htmlmustache schema diagnostics', () => {
+  it('surfaces pl-multiple-choice schema errors', async () => {
+    const { errors } = await validateHTML(
+      '<pl-multiple-choice answers-name="choice" bogus="true"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+
+    assert.isTrue(errors.some((error) => error.includes('bogus')));
+  });
+
+  it('surfaces pl-multiple-choice semantic validator errors', async () => {
+    const { errors } = await validateHTML(
+      '<pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1"><pl-answer>A</pl-answer></pl-multiple-choice>',
+      true,
+    );
+
+    assert.isTrue(
+      errors.some((error) =>
+        error.includes(
+          'Attribute "weight" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
+        ),
+      ),
+    );
+  });
+
+  it('does not surface non-schema htmlmustache diagnostics', async () => {
+    const { errors, warnings } = await validateHTML(
+      '<pl-question-panel><img src="foo.png"></pl-question-panel>',
+      true,
+    );
+
     assert.deepEqual(errors, []);
     assert.deepEqual(warnings, []);
   });

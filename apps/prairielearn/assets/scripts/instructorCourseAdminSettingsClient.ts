@@ -1,7 +1,6 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
-import './lib/clipboardPopover.js';
 
 onDocumentReady(() => {
   const courseSettingsForm = document.querySelector<HTMLFormElement>(
@@ -12,4 +11,7 @@ onDocumentReady(() => {
   if (!courseSettingsForm || !saveButton) return;
 
   saveButtonEnabling(courseSettingsForm, saveButton);
+
+  const cancelButton = document.querySelector<HTMLButtonElement>('#cancel-button');
+  cancelButton?.addEventListener('click', () => window.location.reload());
 });

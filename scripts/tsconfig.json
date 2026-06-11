@@ -1,6 +1,15 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "noEmit": true
-  }
+    "noEmit": true,
+    // The element schema generator imports code that is also loaded directly as
+    // TypeScript by the HTMLMustache pluginModule in `.htmlmustache.jsonc`.
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "exclude": [
+    // This script reaches into `apps/prairielearn/dist` to access migration code.
+    // TypeScript does not like this, so we just exclude it from compilation.
+    "./migration-harness.mts"
+  ]
 }

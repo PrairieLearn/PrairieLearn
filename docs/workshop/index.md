@@ -1,5 +1,9 @@
 # PrairieLearn Workshop
 
+!!! warning "Outdated content"
+
+    This workshop was last offered in Summer 2020. UI screenshots, element options, and recommended workflows have changed since then. Use it for conceptual orientation, but cross-check specifics against the current docs (start with [Getting started](../getting-started/index.md)).
+
 In this training course, we will provide an introduction to the following topics:
 
 - how to create questions and assessments
@@ -13,7 +17,7 @@ In this training course, we will provide an introduction to the following topics
 
 2. **Make sure you have access to a course space.** If you have not created a space for your course, you can use this [course request](https://us.prairielearn.com/pl/request_course) link. If you are a graduate teaching assistant or co-instructor, ask the main instructor to give you course access as "Editor" in the [Staff page](../course/index.md#course-staff).
 
-3. **Complete the ["Get Started" tutorial](../getStarted.md)**, which will show you how to create course instances, assessments, and questions.
+3. **Complete the ["Getting started" tutorial](../getting-started/index.md)**, which will show you how to create course instances, assessments, and questions.
 
 ## Workshop Schedule
 

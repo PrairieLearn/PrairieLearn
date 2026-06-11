@@ -8,3 +8,12 @@
   width: 200px;
   height: 200px;
 }
+
+.pl-image-capture-no-pointer-events {
+  pointer-events: none;
+}
+
+.pl-image-capture-rotation-slider {
+  max-width: 200px;
+  min-width: 100px;
+}

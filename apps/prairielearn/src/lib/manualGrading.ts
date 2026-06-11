@@ -2,9 +2,9 @@ import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
 import { omit, sum, sumBy } from 'es-toolkit';
-import mustache from 'mustache';
 import { z } from 'zod';
 
+import { html } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -38,8 +38,10 @@ import {
   type RubricItemInput,
   SubmissionForScoreUpdateSchema,
 } from './manualGrading.types.js';
+import { safeMustacheRender } from './mustache.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
 
 /**
  * Builds the URL of an instance question tagged to be manually graded for a particular
@@ -79,7 +81,7 @@ export async function nextInstanceQuestionUrl({
       return null;
     }
     if (prior_instance_question_id) {
-      return await sqldb.queryOptionalRow(
+      return await sqldb.queryOptionalScalar(
         sql.instance_question_group_id_for_instance_question,
         {
           instance_question_id: prior_instance_question_id,
@@ -94,7 +96,7 @@ export async function nextInstanceQuestionUrl({
     }
   });
 
-  let next_instance_question_id = await sqldb.queryOptionalRow(
+  let next_instance_question_id = await sqldb.queryOptionalScalar(
     sql.select_next_instance_question,
     {
       assessment_id,
@@ -114,7 +116,7 @@ export async function nextInstanceQuestionUrl({
     next_instance_question_id == null &&
     prior_instance_question_group_id != null
   ) {
-    const next_instance_question_group_id = await sqldb.queryOptionalRow(
+    const next_instance_question_group_id = await sqldb.queryOptionalScalar(
       sql.select_next_instance_question_group_id,
       {
         assessment_question_id,
@@ -124,7 +126,7 @@ export async function nextInstanceQuestionUrl({
     );
 
     // Check if there exists another instance question in the next instance question group
-    next_instance_question_id = await sqldb.queryOptionalRow(
+    next_instance_question_id = await sqldb.queryOptionalScalar(
       sql.select_next_instance_question,
       {
         assessment_id,
@@ -173,33 +175,54 @@ export async function selectRubricData({
     RubricDataSchema,
   );
 
-  if (submission) {
-    // Render rubric items: description, explanation and grader note
+  if (submission && rubric_data) {
     const mustacheParams = {
       correct_answers: submission.true_answer ?? {},
       params: submission.params ?? {},
       submitted_answers: submission.submitted_answer,
     };
 
-    for (const item of rubric_data?.rubric_items || []) {
-      item.description_rendered = item.rubric_item.description
-        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustacheParams), {
-            inline: true,
-          })
-        : '';
-      item.explanation_rendered = item.rubric_item.explanation
-        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustacheParams))
-        : '';
-      item.grader_note_rendered = item.rubric_item.grader_note
-        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustacheParams))
-        : '';
-
+    for (const item of rubric_data.rubric_items) {
+      renderRubricItemFields(item, mustacheParams);
       // Yield to the event loop to avoid blocking too long.
       await setImmediate();
     }
   }
 
   return rubric_data;
+}
+
+/**
+ * Render Mustache + Markdown for a single rubric item's `description`,
+ * `explanation`, and `grader_note` fields, mutating the item in place to set
+ * the corresponding `*_rendered` fields. On a Mustache syntax error, the raw
+ * template is rendered as Markdown and a small red `(template error: …)` note
+ * is appended so the instructor can see what went wrong without the page
+ * crashing.
+ */
+export function renderRubricItemFields(
+  item: RubricData['rubric_items'][number],
+  mustacheParams: Record<string, unknown>,
+): void {
+  const renderField = (template: string, options?: { inline?: boolean }) => {
+    const { rendered, error } = safeMustacheRender(template, mustacheParams);
+    const renderedHtml = markdownToHtml(rendered, options);
+    if (!error) return renderedHtml;
+    return (
+      renderedHtml +
+      html` <span class="text-danger small">(template error: ${error})</span>`.toString()
+    );
+  };
+
+  item.description_rendered = item.rubric_item.description
+    ? renderField(item.rubric_item.description, { inline: true })
+    : '';
+  item.explanation_rendered = item.rubric_item.explanation
+    ? renderField(item.rubric_item.explanation)
+    : '';
+  item.grader_note_rendered = item.rubric_item.grader_note
+    ? renderField(item.rubric_item.grader_note)
+    : '';
 }
 
 /**
@@ -315,7 +338,7 @@ export async function updateAssessmentQuestionRubric({
       new_rubric_id = null;
     } else if (current_rubric_id === null) {
       // Rubric does not exist yet, but should, insert new rubric
-      new_rubric_id = await sqldb.queryRow(
+      new_rubric_id = await sqldb.queryScalar(
         sql.insert_rubric,
         { starting_points, min_points, max_extra_points, replace_auto_points, grader_guidelines },
         IdSchema,
@@ -364,7 +387,7 @@ export async function updateAssessmentQuestionRubric({
           if (item.id == null) {
             await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, omit(item, ['order']), IdSchema);
+            await sqldb.queryScalar(sql.update_rubric_item, omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -373,12 +396,14 @@ export async function updateAssessmentQuestionRubric({
     }
 
     if (tag_for_manual_grading) {
-      const assessment_instance_ids = await sqldb.queryRows(
+      const assessment_instances = await sqldb.queryRows(
         sql.tag_for_manual_grading,
         { assessment_question_id },
-        IdSchema,
+        AssessmentInstanceIdRowSchema,
       );
-      await updateAssessmentInstancesScorePercPending(assessment_instance_ids);
+      await updateAssessmentInstancesScorePercPending(
+        Array.from(new Set(assessment_instances.map((row) => row.assessment_instance_id))),
+      );
     }
   });
 }
@@ -456,7 +481,7 @@ export async function insertRubricGrading(
           rubric_data.max_extra_points,
       ) + Number(adjust_points || 0);
 
-    const rubric_grading_id = await sqldb.queryRow(
+    const rubric_grading_id = await sqldb.queryScalar(
       sql.insert_rubric_grading,
       {
         rubric_id,
@@ -666,6 +691,16 @@ export async function updateInstanceQuestionScore({
     }
 
     let grading_job_id: string | null = null;
+    const shouldUpdateInstanceQuestionScore =
+      new_score_perc != null &&
+      (current_submission.requires_manual_grading ||
+        score.auto_points != null ||
+        score.auto_score_perc != null ||
+        score.manual_points != null ||
+        score.manual_score_perc != null ||
+        score.points != null ||
+        score.score_perc != null ||
+        score.partial_scores != null);
 
     // if we were originally provided a submission_id or we have feedback or partial scores, create a
     // grading job and update the submission
@@ -676,7 +711,7 @@ export async function updateInstanceQuestionScore({
         score.feedback ||
         score.partial_scores)
     ) {
-      grading_job_id = await sqldb.queryRow(
+      grading_job_id = await sqldb.queryScalar(
         sql.insert_grading_job,
         {
           submission_id: current_submission.submission_id,
@@ -708,7 +743,7 @@ export async function updateInstanceQuestionScore({
 
     // do the score update of the instance_question, log it, and update the assessment_instance, if we
     // have a new_score
-    if (new_score_perc != null && !current_submission.modified_at_conflict) {
+    if (shouldUpdateInstanceQuestionScore && !current_submission.modified_at_conflict) {
       await sqldb.execute(sql.update_instance_question_score, {
         instance_question_id: current_submission.instance_question_id,
         points: new_points,

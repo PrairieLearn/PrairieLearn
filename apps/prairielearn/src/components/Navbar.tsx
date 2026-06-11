@@ -5,7 +5,9 @@ import { run } from '@prairielearn/run';
 import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
+import { Modal } from './Modal.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 
 export function Navbar({
@@ -50,6 +52,8 @@ export function Navbar({
       <a
         href="https://docs.prairielearn.com/student-guide/accessibility/"
         class="d-inline-flex p-2 m-2 text-white"
+        target="_blank"
+        rel="noreferrer"
       >
         Accessibility guide
       </a>
@@ -118,7 +122,7 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${EndExamControl({ resLocals })} ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
@@ -132,6 +136,83 @@ export function Navbar({
       : ''}
     ${FlashMessages()}
   `;
+}
+
+/**
+ * Renders an "End exam" control when the user is in a LockDown Browser
+ * session. The button opens a confirmation modal whose form POSTs to
+ * `/pl/end-exam`; that handler looks up the student's active
+ * LDB-required reservation, mints a short-lived JWT, calls PT
+ * server-to-server to end the reservation, and redirects into PT's
+ * close flow to exit LockDown Browser.
+ *
+ * PL's CSRF token is bound to the request URL, so we mint one specifically
+ * for `/pl/end-exam` rather than reusing `resLocals.__csrf_token` (which
+ * is bound to the current page's URL and would be rejected on submit).
+ */
+function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
+  if (!resLocals.lockdown_browser) return '';
+  const endExamCsrfToken = generateCsrfToken({
+    url: '/pl/end-exam',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#endExamModal"
+    >
+      End exam
+    </button>
+    ${EndExamModal({ csrfToken: endExamCsrfToken })}
+  `;
+}
+
+function EndExamModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'End exam',
+    id: 'endExamModal',
+    formAction: '/pl/end-exam',
+    formClass: 'js-end-exam-form',
+    body: html`
+      <p class="js-end-exam-confirm">
+        Are you sure you want to end your exam? Only do this after you have completed your entire
+        exam. This will close LockDown Browser.
+      </p>
+      <div
+        class="js-end-exam-loading d-none d-flex align-items-center text-muted"
+        aria-live="polite"
+      >
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Ending exam…
+      </div>
+      <div class="js-end-exam-error alert alert-danger d-flex mb-0 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5" aria-hidden="true"></i>
+        <div>
+          <strong>We couldn't end your exam.</strong>
+          <div>
+            This can happen if PrairieTest is temporarily unavailable. Try again, or ask your
+            proctor to end the exam for you.
+          </div>
+        </div>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary js-end-exam-cancel" data-bs-dismiss="modal">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger js-end-exam-submit">
+        <span
+          class="spinner-border spinner-border-sm me-1 js-end-exam-submit-spinner d-none"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <span class="js-end-exam-submit-label">End exam</span>
+      </button>
+    `,
+  });
 }
 
 function NavbarByType({

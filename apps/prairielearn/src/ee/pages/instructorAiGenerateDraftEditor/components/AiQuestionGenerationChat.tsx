@@ -8,11 +8,12 @@ import {
   type UIToolInvocation,
 } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
+import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import type {
@@ -312,6 +313,39 @@ function ScrollToBottomButton({
   );
 }
 
+const noopSubscribe = () => () => {};
+
+/**
+ * Renders a message's timestamp in the viewer's local timezone, with a leading
+ * separator. The server can't know the viewer's timezone, so we render nothing
+ * during SSR and the initial hydration pass, then render once on the client.
+ * This avoids a hydration mismatch without an effect, and keeps the separator
+ * from dangling while the timestamp is absent.
+ */
+function MessageTimestamp({ createdAt }: { createdAt: string }) {
+  const isClient = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+
+  if (!isClient) return null;
+
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(createdAt));
+
+  return (
+    <>
+      <span aria-hidden="true">&middot;</span>
+      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatted}</span>
+    </>
+  );
+}
+
 function Message({
   message,
   isLastMessage,
@@ -331,13 +365,20 @@ function Message({
       .map((part) => part.text)
       .join('\n');
 
+    const userName = message.metadata?.user_name;
+    const createdAt = message.metadata?.created_at;
+
     return (
-      <div className="d-flex flex-row-reverse mb-3">
+      <div className="d-flex flex-column align-items-end mb-3">
         <div
           className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
           style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
         >
           {textContent}
+        </div>
+        <div className="d-flex align-items-center gap-2 small text-muted mb-1 px-1">
+          <span className="fw-medium">{userName ?? 'Unknown user'}</span>
+          {createdAt && <MessageTimestamp createdAt={createdAt} />}
         </div>
       </div>
     );
@@ -462,7 +503,7 @@ function useShowSpinner({
 
   // The effect manages the timeout: it resets and starts a new timer when dependencies change.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
     setTimerElapsed(false);
 
     if (!isActive) return;
@@ -487,6 +528,7 @@ function useShowSpinner({
 export function AiQuestionGenerationChat({
   chatCsrfToken,
   initialMessages,
+  currentUserName,
   questionId,
   showJobLogsLink,
   urlPrefix,
@@ -499,6 +541,7 @@ export function AiQuestionGenerationChat({
 }: {
   chatCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
+  currentUserName: string | null;
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
@@ -586,22 +629,19 @@ export function AiQuestionGenerationChat({
       prevIsGeneratingRef.current = isGenerating;
       // If we're already generating on mount (e.g., resuming a stream), notify parent
 
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (isGenerating) {
         onGeneratingChange?.(true);
       }
       return;
     }
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
 
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (!isGenerating) {
         onGenerationComplete?.();
       }
@@ -611,7 +651,6 @@ export function AiQuestionGenerationChat({
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const resizerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useStickToBottom({
     initial: 'smooth',
     // The experience with animated collapsible sections is currently janky.
@@ -620,54 +659,17 @@ export function AiQuestionGenerationChat({
     resize: 'smooth',
   });
 
-  // Chat width resizing
-  useEffect(() => {
-    const container = containerRef.current?.closest<HTMLElement>('.app-container');
-    const resizer = resizerRef.current;
-
-    if (!container || !resizer) return;
-
-    const minWidth = 260;
-    const maxWidth = 800;
-    let startX = 0;
-    let startWidth = 0;
-
-    const onMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - startX;
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth - dx));
-      container.style.setProperty('--chat-width', `${newWidth}px`);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.classList.remove('user-select-none');
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      startX = e.clientX;
-      const styles = getComputedStyle(container);
-      const current = styles.getPropertyValue('--chat-width').trim() || '500px';
-      startWidth =
-        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 500;
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-      document.body.classList.add('user-select-none');
-    };
-
-    resizer.addEventListener('mousedown', onMouseDown);
-
-    return () => {
-      resizer.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
+  const { width: chatWidth, separatorProps: resizerProps } = useResizeHandle({
+    initialWidth: 500,
+    minWidth: 260,
+    maxWidth: 800,
+    ariaLabel: 'Resize chat',
+  });
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="app-chat-container">
+    <div className="app-chat-container" style={{ width: chatWidth }}>
       <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">
         <div
           className={clsx('app-chat-history', {
@@ -729,7 +731,15 @@ export function AiQuestionGenerationChat({
               if (hasUnsavedChanges) {
                 setShowUnsavedChangesModal(true);
               } else {
-                void sendMessage({ text });
+                void sendMessage({
+                  text,
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
+                });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
               }
@@ -742,12 +752,7 @@ export function AiQuestionGenerationChat({
             }}
           />
         </div>
-        <div
-          ref={resizerRef}
-          className="app-chat-resizer"
-          aria-label="Resize chat"
-          role="separator"
-        />
+        <div className="app-chat-resizer" {...resizerProps} />
       </div>
 
       <Modal show={showUnsavedChangesModal} onHide={() => setShowUnsavedChangesModal(false)}>
@@ -778,7 +783,15 @@ export function AiQuestionGenerationChat({
               discardUnsavedChanges();
               const text = promptInput.trim();
               if (text) {
-                void sendMessage({ text });
+                void sendMessage({
+                  text,
+                  metadata: {
+                    job_sequence_id: null,
+                    status: 'completed',
+                    user_name: currentUserName,
+                    created_at: new Date().toISOString(),
+                  },
+                });
                 void stickToBottom.scrollToBottom();
                 setPromptInput('');
               }

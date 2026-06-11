@@ -25,7 +25,7 @@ import klaw from 'klaw';
 import memoize from 'p-memoize';
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -73,6 +73,13 @@ interface QuestionGenerationUIMessageMetadata {
   job_sequence_id: string | null;
   status: EnumAiQuestionGenerationMessageStatus;
   include_in_context?: boolean;
+  // `user_name` and `created_at` are optional because the streaming assistant
+  // metadata doesn't include them; they're populated for messages loaded from
+  // the database and for optimistic user messages sent by the client.
+  /** Display name of the user who sent the message. Null for assistant messages. */
+  user_name?: string | null;
+  /** ISO timestamp of when the message was sent. */
+  created_at?: string;
 }
 
 const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
@@ -89,6 +96,7 @@ const QUESTION_GENERATION_TOOLS = {
       path: z.enum(['question.html', 'server.py']),
       content: z.string(),
     }),
+    outputSchema: z.null(),
   }),
   getElementDocumentation: tool({
     inputSchema: z.object({
@@ -134,7 +142,7 @@ const QUESTION_GENERATION_TOOLS = {
   }),
 } satisfies ToolSet;
 
-export type QuestionGenerationUIMessageTools = InferUITools<typeof QUESTION_GENERATION_TOOLS>;
+type QuestionGenerationUIMessageTools = InferUITools<typeof QUESTION_GENERATION_TOOLS>;
 
 export type QuestionGenerationUIMessage = UIMessage<
   QuestionGenerationUIMessageMetadata,
@@ -355,7 +363,7 @@ async function createQuestionGenerationAgent({
 
   // Create a cancellation check function that queries the database
   const checkCancellation = async () => {
-    const status = await queryOptionalRow(
+    const status = await queryOptionalScalar(
       sql.select_message_status,
       { id: messageId },
       EnumAiQuestionGenerationMessageStatusSchema,
@@ -407,6 +415,14 @@ async function createQuestionGenerationAgent({
         ...QUESTION_GENERATION_TOOLS.writeFile,
         execute: ({ path, content }) => {
           files[path] = content;
+          // TODO: see the following issue and PR. If they're ever resolved,
+          // we can consider removing this return value.
+          // https://github.com/vercel/ai/issues/15854
+          // https://github.com/vercel/ai/pull/15855
+          //
+          // We return `null` (the value also backfilled for historical
+          // output-less parts on load) so old and new data share a shape.
+          return null;
         },
       }),
       getElementDocumentation: tool({
@@ -464,7 +480,10 @@ async function createQuestionGenerationAgent({
             return { errors: ['You must generate a question.html file.'], warnings: [] };
           }
 
-          const { errors, warnings } = validateHTML(files['question.html'], !!files['server.py']);
+          const { errors, warnings } = await validateHTML(
+            files['question.html'],
+            !!files['server.py'],
+          );
 
           // When creating a new question, treat warnings as errors — the AI
           // agent should always fix these issues for freshly generated HTML.

@@ -479,6 +479,7 @@ SELECT
   s.id AS submission_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,
+  iq.requires_manual_grading,
   aq.max_points,
   aq.max_auto_points,
   aq.max_manual_points,

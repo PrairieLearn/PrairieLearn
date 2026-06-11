@@ -1,6 +1,12 @@
 import mustache from 'mustache';
 import * as parse5 from 'parse5';
 
+import {
+  BOOLEAN_TRUE_VALUES,
+  BOOLEAN_VALUES,
+} from '../../lib/element-schemas/htmlmustache-plugin-utils.js';
+import { lintQuestionHtml } from '../../lib/question-html-linter.js';
+
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
@@ -20,10 +26,6 @@ const INPUT_ELEMENTS = new Set([
 ]);
 
 export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
-
-const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
-const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
-const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
@@ -128,7 +130,7 @@ function assertInt(tag: string, key: string, val: string, errors: string[]) {
 function assertFloat(tag: string, key: string, val: string, errors: string[]) {
   if (!(/^-?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
-      `${tag}: value for attribute ${key} must be an floating-point number, but value provided is "${val}"`,
+      `${tag}: value for attribute ${key} must be a floating-point number, but value provided is "${val}"`,
     );
   }
 }
@@ -183,8 +185,6 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
     // The elements supported here should be kept in sync with those in
     // `context-parsers/documentation.ts`.
     switch (ast.tagName) {
-      case 'pl-multiple-choice':
-        return checkMultipleChoice(ast);
       case 'pl-integer-input':
         return checkIntegerInput(ast);
       case 'pl-number-input':
@@ -195,6 +195,7 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
         return checkCheckbox(ast);
       case 'pl-symbolic-input':
         return checkSymbolicInput(ast);
+      case 'pl-multiple-choice':
       case 'pl-question-panel':
       case 'pl-answer-panel':
       case 'pl-submission-panel':
@@ -213,125 +214,6 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
     }
   }
   return { errors: [] };
-}
-
-/**
- * Checks that a `pl-multiple-choice` element has valid attributes.
- * @param ast The tree to consider, rooted at the tag.
- * @returns The list of errors for the tag, if any.
- */
-function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResult {
-  const errors: string[] = [];
-  let usedAnswersName = false;
-  let displayDropdown = false;
-  let usedAllOfTheAbove = false;
-  let usedNoneOfTheAbove = false;
-  let usedAllOfTheAboveFeedback = false;
-  let usedNoneOfTheAboveFeedback = false;
-  let usedSize = false;
-  const optionsOfTheAbove = ['false', 'random', 'correct', 'incorrect'];
-  if ('attrs' in ast) {
-    for (const attr of ast.attrs) {
-      const key = attr.name;
-      const val = attr.value;
-      switch (key) {
-        case 'answers-name':
-          usedAnswersName = true;
-          break;
-        case 'weight':
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        case 'display':
-          assertInChoices('pl-multiple-choice', key, val, ['block', 'inline', 'dropdown'], errors);
-          if (val === 'dropdown') {
-            displayDropdown = true;
-          }
-          break;
-        case 'number-answers':
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        case 'order':
-          assertInChoices(
-            'pl-multiple-choice',
-            key,
-            val,
-            ['random', 'ascend', 'descend', 'fixed'],
-            errors,
-          );
-          break;
-        case 'hide-letter-keys':
-        case 'hide-score-badge':
-        case 'fixed-order':
-        case 'inline':
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'placeholder':
-        case 'aria-label':
-        case 'external-json':
-        case 'external-json-correct-key':
-        case 'external-json-incorrect-key':
-          break;
-        case 'all-of-the-above':
-          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          if (optionsOfTheAbove.includes(val) && val !== 'false') {
-            usedAllOfTheAbove = true;
-          }
-          break;
-        case 'none-of-the-above':
-          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-          if (optionsOfTheAbove.includes(val) && val !== 'false') {
-            usedNoneOfTheAbove = true;
-          }
-          break;
-        case 'all-of-the-above-feedback':
-          usedAllOfTheAboveFeedback = true;
-          break;
-        case 'none-of-the-above-feedback':
-          usedNoneOfTheAboveFeedback = true;
-          break;
-        case 'allow-blank':
-          assertBool('pl-multiple-choice', key, val, errors);
-          break;
-        case 'size':
-          usedSize = true;
-          assertInt('pl-multiple-choice', key, val, errors);
-          break;
-        default:
-          errors.push(`pl-multiple-choice: ${key} is not a valid attribute.`);
-      }
-    }
-  }
-  if (!usedAnswersName) {
-    errors.push('pl-multiple-choice: answers-name is a required attribute.');
-  }
-  if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
-    errors.push(
-      'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
-    );
-  }
-  if (!usedNoneOfTheAbove && usedNoneOfTheAboveFeedback) {
-    errors.push(
-      'pl-multiple-choice: if using none-of-the-above-feedback, you must also use none-of-the-above.',
-    );
-  }
-  if (!displayDropdown && usedSize) {
-    errors.push('pl-multiple-choice: if using size, you must also use set display to "dropdown".');
-  }
-
-  let errorsChildren: string[] = [];
-  if ('childNodes' in ast) {
-    for (const child of ast.childNodes) {
-      if ('tagName' in child && child.tagName) {
-        if (child.tagName === 'pl-answer') {
-          errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
-        } else {
-          errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
-        }
-      }
-    }
-  }
-
-  return { errors: errors.concat(errorsChildren) };
 }
 
 /**
@@ -419,6 +301,8 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   const errors: string[] = [];
   let answersName: string | null = null;
   let allowBlank = false;
+  let allowSets = false;
+  let usedAdditionalSimplifications = false;
   let usedBlankValue = false;
   let usedCorrectAnswer = false;
 
@@ -448,7 +332,9 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
         case 'placeholder':
         case 'custom-functions':
         case 'suffix':
+          break;
         case 'additional-simplifications':
+          usedAdditionalSimplifications = true;
           break;
         case 'display':
           assertInChoices('pl-symbolic-input', key, val, ['block', 'inline'], errors);
@@ -458,12 +344,16 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           break;
         case 'allow-complex':
         case 'allow-trig-functions':
+        case 'allow-sets':
         case 'show-help-text':
         case 'show-score':
         case 'formula-editor':
         case 'display-log-as-ln':
         case 'display-simplified-expression':
           assertBool('pl-symbolic-input', key, val, errors);
+          if (key === 'allow-sets') {
+            allowSets = isBooleanTrue(val);
+          }
           break;
         case 'allow-blank':
           assertBool('pl-symbolic-input', key, val, errors);
@@ -479,6 +369,11 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   }
   if (!answersName) {
     errors.push('pl-symbolic-input: answers-name is a required attribute.');
+  }
+  if (allowSets && usedAdditionalSimplifications) {
+    errors.push(
+      "The 'additional-simplifications' attribute cannot be used when 'allow-sets' is true.",
+    );
   }
   if (usedBlankValue && !allowBlank) {
     errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
@@ -604,32 +499,6 @@ function checkNumberInput(ast: DocumentFragment | ChildNode): ValidationResult {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
-  const errors: string[] = [];
-  if ('attrs' in ast) {
-    for (const attr of ast.attrs) {
-      switch (attr.name) {
-        case 'correct':
-          assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-          break;
-        case 'feedback':
-          break;
-        case 'score':
-          assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-          break;
-        default:
-          errors.push(`pl-answer (for pl-multiple-choice): ${attr.name} is not a valid attribute.`);
-      }
-    }
-  }
-  return errors;
-}
-
-/**
- * Checks that a `pl-answer` element in a multiple choice tag has valid attributes.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
 function checkAnswerCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   if ('attrs' in ast) {
@@ -671,6 +540,9 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
           break;
         case 'correct-answer':
           usedCorrectAnswer = true;
+          break;
+        case 'correct-answer-format':
+          assertInChoices('pl-string-input', key, val, ['exact', 'regex'], errors);
           break;
         case 'label':
         case 'aria-label':
@@ -857,7 +729,10 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
  * @param hasServerPy True if a server.py file is present, else false.
  * @returns Errors that must be fixed and warnings about likely issues.
  */
-export function validateHTML(file: string, hasServerPy: boolean): HTMLValidationResult {
+export async function validateHTML(
+  file: string,
+  hasServerPy: boolean,
+): Promise<HTMLValidationResult> {
   const forbiddenTagMatch = file.match(/^\s*<(!doctype|html|body|head)[\s>]/i);
   if (forbiddenTagMatch) {
     const tag = forbiddenTagMatch[1].toLowerCase();
@@ -879,6 +754,14 @@ export function validateHTML(file: string, hasServerPy: boolean): HTMLValidation
 
   const tree = parse5.parseFragment(file);
   const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
+
+  const diagnostics = await lintQuestionHtml(file);
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.ruleName !== 'customTagSchema' && !diagnostic.ruleName?.startsWith('pl/')) {
+      continue;
+    }
+    (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);
+  }
 
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [

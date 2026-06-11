@@ -7,21 +7,38 @@ export const SamlTest = ({
   uid,
   uin,
   name,
+  givenName,
+  familyName,
   email,
   uidAttribute,
   uinAttribute,
   nameAttribute,
+  givenNameAttribute,
+  familyNameAttribute,
   emailAttribute,
   attributes,
   resLocals,
 }: {
+  /** Resolved UID value from the SAML response. */
   uid: string | null;
+  /** Resolved UIN value from the SAML response. */
   uin: string | null;
+  /** The assembled display name (from either `name_attribute` or `given_name + family_name`). */
   name: string | null;
+  /** The raw given name value, if a split name mapping is configured. */
+  givenName: string | null;
+  /** The raw family name value, if a split name mapping is configured. */
+  familyName: string | null;
   email: string | null;
+  /** Configured UID attribute mapping name from the SAML provider. */
   uidAttribute: string | null;
+  /** Configured UIN attribute mapping name from the SAML provider. */
   uinAttribute: string | null;
   nameAttribute: string | null;
+  /** Configured together with `familyNameAttribute` as an alternative to `nameAttribute`. */
+  givenNameAttribute: string | null;
+  /** Configured together with `givenNameAttribute` as an alternative to `nameAttribute`. */
+  familyNameAttribute: string | null;
   emailAttribute: string | null;
   attributes: Record<string, any>;
   resLocals: UntypedResLocals;
@@ -29,12 +46,21 @@ export const SamlTest = ({
   const hasUidAttribute = !!uidAttribute;
   const hasUinAttribute = !!uinAttribute;
   const hasNameAttribute = !!nameAttribute;
+  const hasGivenNameAttribute = !!givenNameAttribute;
+  const hasFamilyNameAttribute = !!familyNameAttribute;
+  const hasSplitNameMapping = hasGivenNameAttribute && hasFamilyNameAttribute;
+  const hasNameMapping = hasNameAttribute || hasSplitNameMapping;
   const hasEmailAttribute = !!emailAttribute;
 
   const hasUid = !!uid;
   const hasUin = !!uin;
   const hasName = !!name;
+  const hasGivenName = !!givenName;
+  const hasFamilyName = !!familyName;
+  const hasSplitNameValues = hasGivenName && hasFamilyName;
   const hasEmail = !!email;
+  const usedNameFallback =
+    hasSplitNameMapping && !hasSplitNameValues && hasNameAttribute && hasName;
 
   // Note that even though the normal login flow doesn't yet validate the
   // presence of an email, we want to make it obvious during all future SAML
@@ -43,7 +69,7 @@ export const SamlTest = ({
   const hasError =
     !hasUidAttribute ||
     !hasUinAttribute ||
-    !hasNameAttribute ||
+    !hasNameMapping ||
     !hasEmailAttribute ||
     !hasUid ||
     !hasUin ||
@@ -58,6 +84,18 @@ export const SamlTest = ({
       </head>
       <body>
         <main id="content" class="container mb-4">
+          ${usedNameFallback
+            ? html`
+                <div class="alert alert-warning">
+                  <h2 class="h4">Using fallback name attribute</h2>
+                  <p class="mb-0">
+                    Given name and family name mappings are configured, but one or more values were
+                    missing in this SAML response. PrairieLearn used the configured name attribute
+                    (<code>${nameAttribute}</code>) as a fallback.
+                  </p>
+                </div>
+              `
+            : ''}
           ${hasError
             ? html`
                 <div class="alert alert-danger">
@@ -71,7 +109,7 @@ export const SamlTest = ({
                     ${!hasUinAttribute
                       ? html`<li>No UIN attribute mapping is configured for this institution</li>`
                       : ''}
-                    ${!hasNameAttribute
+                    ${!hasNameMapping
                       ? html`<li>No name attribute mapping is configured for this institution</li>`
                       : ''}
                     ${!hasEmailAttribute
@@ -79,7 +117,7 @@ export const SamlTest = ({
                       : ''}
                     ${hasUidAttribute && !hasUid
                       ? html`<li>
-                          No value fond for configured UID attribute (<code>${uidAttribute}</code>)
+                          No value found for configured UID attribute (<code>${uidAttribute}</code>)
                         </li>`
                       : ''}
                     ${hasUinAttribute && !hasUin
@@ -91,6 +129,18 @@ export const SamlTest = ({
                       ? html`<li>
                           No value found for configured name attribute
                           (<code>${nameAttribute}</code>)
+                        </li>`
+                      : ''}
+                    ${hasGivenNameAttribute && !hasGivenName
+                      ? html`<li>
+                          No value found for configured given name attribute
+                          (<code>${givenNameAttribute}</code>)
+                        </li>`
+                      : ''}
+                    ${hasFamilyNameAttribute && !hasFamilyName
+                      ? html`<li>
+                          No value found for configured family name attribute
+                          (<code>${familyNameAttribute}</code>)
                         </li>`
                       : ''}
                     ${hasEmailAttribute && !hasEmail
@@ -114,7 +164,15 @@ export const SamlTest = ({
                     ? html`<li><strong>UIN:</strong> ${uin} (<code>${uinAttribute}</code>)</li>`
                     : ''}
                   ${hasName
-                    ? html`<li><strong>Name:</strong> ${name} (<code>${nameAttribute}</code>)</li>`
+                    ? html`<li>
+                        <strong>Name:</strong> ${name}
+                        ${hasSplitNameValues
+                          ? html`(<code>${givenNameAttribute}</code> +
+                              <code>${familyNameAttribute}</code>)`
+                          : usedNameFallback
+                            ? html`(<code>${nameAttribute}</code>, fallback)`
+                            : html`(<code>${nameAttribute}</code>)`}
+                      </li>`
                     : ''}
                   ${hasEmail
                     ? html`<li>

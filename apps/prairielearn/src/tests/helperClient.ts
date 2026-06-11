@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import fetch, { type RequestInit, type Response } from 'node-fetch';
 import { assert } from 'vitest';
+import z from 'zod';
 
 import { config } from '../lib/config.js';
 
@@ -66,29 +67,6 @@ export function extractAndSaveCSRFToken(
   const csrfToken = getCSRFToken($(parentSelector));
   context.__csrf_token = csrfToken;
   return csrfToken;
-}
-
-/**
- * Utility function that extracts a CSRF token from a `__csrf_token` input
- * that is inside the `data-bs-content` attribute of the parentSelector.
- * The token will also be persisted to `context.__csrf_token`.
- */
-export function extractAndSaveCSRFTokenFromDataContent(
-  context: Record<string, any>,
-  $: cheerio.CheerioAPI,
-  parentSelector: string,
-): string {
-  const parent = $(parentSelector);
-  assert.lengthOf(parent, 1);
-  const content = parent.attr('data-bs-content');
-  assert(content);
-  const inner$ = cheerio.load(content);
-  const csrfTokenInput = inner$('input[name="__csrf_token"]');
-  assert.lengthOf(csrfTokenInput, 1);
-  const csrfToken = csrfTokenInput.val();
-  assert.isString(csrfToken);
-  context.__csrf_token = csrfToken;
-  return csrfToken as string;
 }
 
 /**
@@ -215,7 +193,20 @@ export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength 
   assert.lengthOf(alerts, expectedLength);
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/**
+ * Asserts that a response redirected to an edit error page and that the
+ * job output contains the expected text.
+ */
+export async function assertEditError(response: Response, expectedText: string) {
+  assert.equal(response.status, 200);
+  const editErrorMatch = response.url.match(/\/edit_error\/\d+$/);
+  assert.isNotNull(editErrorMatch, `Expected redirect to edit_error page, got ${response.url}`);
+
+  const editErrorPage = await fetchCheerio(response.url);
+  assert.equal(editErrorPage.status, 200);
+  const jobOutput = editErrorPage.$('#job-sequence-results pre').text();
+  assert.include(jobOutput, expectedText);
+}
 
 /**
  * Generates an API access token for testing by navigating through the settings UI.
@@ -270,7 +261,7 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
   const token = tokenContainer.text().trim();
 
   // Validate token format (UUID)
-  if (!UUID_REGEX.test(token)) {
+  if (!z.uuid().safeParse(token).success) {
     throw new Error(`Generated token does not match expected UUID format: ${token}`);
   }
 

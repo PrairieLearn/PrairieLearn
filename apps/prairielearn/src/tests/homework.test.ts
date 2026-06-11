@@ -1188,7 +1188,9 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         assert.equal(page, 'This data is specific to the question.');
       });
       it('should contain a new tab link to clientFilesQuestion/data.txt', function () {
-        elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
+        elemList = locals.$(
+          'a[href*="clientFilesQuestion/data.txt"][target="_blank"]:not([download])',
+        );
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the new tab link to clientFilesQuestion/data.txt', async () => {
@@ -1196,9 +1198,19 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         const res = await fetch(fileUrl);
         assert.equal(res.status, 200);
         page = await res.text();
-      });
-      it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
+      });
+      it('should contain a new tab link to name&gt;"weird.txt with properly escaped URL and label', function () {
+        elemList = locals.$('a[href*="name%26gt%3B%22weird.txt"][target="_blank"]:not([download])');
+        assert.lengthOf(elemList, 1);
+        assert.equal(elemList.text().trim(), 'name&gt;"weird.txt');
+      });
+      it('should download something with the new tab link to name&gt;"weird.txt', async () => {
+        const fileUrl = locals.siteUrl + elemList[0].attribs.href;
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
+        assert.equal(page.trim(), 'If you see this, it worked.');
       });
     });
     describe('downloading dynamic text file', function () {

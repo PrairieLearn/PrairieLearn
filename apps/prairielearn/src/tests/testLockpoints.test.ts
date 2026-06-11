@@ -10,6 +10,8 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { type AuthUser, withUser } from './utils/auth.js';
+import { enrollUser } from './utils/enrollments.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -70,7 +72,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       })
     ).id;
     context.lockpointZoneIds = (
-      await sqldb.queryRows(
+      await sqldb.queryScalars(
         sql.select_lockpoint_zone_ids,
         { assessment_id: context.assessmentId },
         IdSchema,
@@ -167,45 +169,6 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     });
   }
 
-  async function fetchAssessmentInstancePageWithLockpointModal() {
-    const assessmentInstanceResponse = await helperClient.fetchCheerio(
-      context.assessmentInstanceUrl,
-    );
-    assert.isTrue(assessmentInstanceResponse.ok);
-
-    const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
-    assert.lengthOf(lockpointModal, 1);
-
-    const csrfToken = lockpointModal.find('input[name="__csrf_token"]').attr('value');
-    assert.isString(csrfToken);
-    context.__csrf_token = csrfToken!;
-
-    return assessmentInstanceResponse;
-  }
-
-  async function postCrossLockpoint(zoneId: string) {
-    return await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'cross_lockpoint',
-        __csrf_token: context.__csrf_token,
-        zone_id: zoneId,
-      }),
-    });
-  }
-
-  async function crossNextLockpoint() {
-    const assessmentInstanceResponse = await fetchAssessmentInstancePageWithLockpointModal();
-    const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
-
-    const zoneId = lockpointModal.find('input[name="zone_id"]').attr('value');
-    assert.isString(zoneId);
-
-    const response = await postCrossLockpoint(zoneId!);
-    assert.isTrue(response.ok);
-    return response;
-  }
-
   test.sequential(
     'creates an assessment instance and initializes lockpoint state',
     async function () {
@@ -231,8 +194,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   );
 
   test.sequential('lockpoints cannot be crossed out of order', async function () {
-    await fetchAssessmentInstancePageWithLockpointModal();
-    const response = await postCrossLockpoint(context.lockpointZoneIds[1]);
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[1],
+    );
     assert.isFalse(response.ok);
     assert.equal(response.status, 403);
 
@@ -243,14 +208,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     );
   });
 
-  test.sequential(
-    'lockpoint-not-yet-crossed question is not directly accessible',
-    async function () {
-      const response = await helperClient.fetchCheerio(context.questionStates[1].url);
-      assert.isFalse(response.ok);
-      assert.equal(response.status, 403);
-    },
-  );
+  test.sequential('instructor can access lockpoint-blocked question', async function () {
+    const response = await helperClient.fetchCheerio(context.questionStates[1].url);
+    assert.isTrue(response.ok);
+  });
 
   test.sequential('next-question navigation explains lockpoint requirement', async function () {
     const response = await helperClient.fetchCheerio(context.questionStates[0].url);
@@ -265,13 +226,22 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   test.sequential(
     'crossing the first lockpoint makes previous questions read-only',
     async function () {
-      const response = await crossNextLockpoint();
+      const response = await postCrossLockpointForInstance(
+        context.assessmentInstanceUrl,
+        context.lockpointZoneIds[0],
+      );
+      assert.isTrue(response.ok);
       await refreshQuestionStates();
 
       assert.deepEqual(
         context.questionStates.map((row) => row.question_access_mode),
         ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
       );
+
+      // The read_only_lockpoint question should have a lock icon button.
+      // (blocked_lockpoint shows status in the Status column on exams, so
+      // only the one read_only_lockpoint row produces this button.)
+      assert.equal(response.$('[data-testid="locked-instance-question-row"]').length, 1);
 
       assert.include(
         response.$.html(),
@@ -281,8 +251,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   );
 
   test.sequential('crossing an already crossed lockpoint is idempotent', async function () {
-    await fetchAssessmentInstancePageWithLockpointModal();
-    const response = await postCrossLockpoint(context.lockpointZoneIds[0]);
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[0],
+    );
     assert.isTrue(response.ok);
 
     await refreshQuestionStates();
@@ -320,7 +292,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   test.sequential(
     'crossing subsequent lockpoints is sequential and updates read-only state',
     async function () {
-      await crossNextLockpoint();
+      const response = await postCrossLockpointForInstance(
+        context.assessmentInstanceUrl,
+        context.lockpointZoneIds[1],
+      );
+      assert.isTrue(response.ok);
       await refreshQuestionStates();
 
       assert.deepEqual(
@@ -372,7 +348,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       helperClient.setUser(testUsers[1]);
       try {
         const advanceLockpointZoneIds = (
-          await sqldb.queryRows(
+          await sqldb.queryScalars(
             sql.select_lockpoint_zone_ids,
             { assessment_id: context.lockpointAdvanceAssessmentId },
             IdSchema,
@@ -456,7 +432,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       helperClient.setUser(testUsers[2]);
       try {
         const homeworkLockpointZoneIds = (
-          await sqldb.queryRows(
+          await sqldb.queryScalars(
             sql.select_lockpoint_zone_ids,
             { assessment_id: context.lockpointHomeworkAssessmentId },
             IdSchema,
@@ -488,4 +464,30 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       }
     },
   );
+
+  test.sequential('student cannot access lockpoint-blocked question', async function () {
+    const studentUser: AuthUser = {
+      uid: 'lockpoint-student@example.com',
+      name: 'Lockpoint Student',
+      uin: '000000099',
+      email: 'lockpoint-student@example.com',
+    };
+    await enrollUser('1', studentUser);
+    await withUser(studentUser, async () => {
+      const created = await createAssessmentInstance(context.assessmentId);
+      const questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      const unlockedQuestion = questionStates.find((q) => q.question_access_mode === 'default');
+      assert.isDefined(unlockedQuestion);
+      const unlockedResponse = await helperClient.fetchCheerio(unlockedQuestion.url);
+      assert.isTrue(unlockedResponse.ok);
+
+      const lockedQuestion = questionStates.find(
+        (q) => q.question_access_mode === 'blocked_lockpoint',
+      );
+      assert.isDefined(lockedQuestion);
+      const lockedResponse = await helperClient.fetchCheerio(lockedQuestion.url);
+      assert.isFalse(lockedResponse.ok);
+      assert.equal(lockedResponse.status, 403);
+    });
+  });
 });
