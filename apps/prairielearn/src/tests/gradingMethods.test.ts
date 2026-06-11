@@ -100,7 +100,7 @@ function assertQuestionActionButtons(
 describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body: cheerio.CheerioAPI;
   let iqUrl: string;
-  let gradeRes: Response = null!;
+  let gradeRes: Response;
   let iqId: number;
   let questionsPage: string;
   let $questionsPage: cheerio.CheerioAPI;
