@@ -323,7 +323,7 @@ export function InstanceQuestionPoints({
               aria-label="Not included in grade"
               title="This zone uses only the best questions for score, and this question is not included."
             >
-              <i class="far fa-question-circle"></i>
+              <i class="far fa-question-circle" aria-hidden="true"></i>
             </button>
           `
         : ''}
