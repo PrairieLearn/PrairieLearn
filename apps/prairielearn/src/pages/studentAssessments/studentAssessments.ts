@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import type { CalendarAssessmentEvent } from '../../components/AssessmentCalendar.js';
 import {
@@ -87,34 +88,43 @@ router.get(
     const view = req.query.view === 'calendar' ? 'calendar' : 'list';
     const calendarEvents: CalendarAssessmentEvent[] = [];
     if (view === 'calendar') {
-      const seen = new Set<string>();
+      // Group each assessment's rows (multiple-instance assessments have a
+      // header row first — NULLS FIRST in the query — then one row per
+      // instance) so link selection can consider all of them.
+      const rowsByAssessment = new Map<string, StudentAssessmentsRow[]>();
       for (const row of resolvedRows) {
-        if (!row.modern_access_control || seen.has(row.assessment_id)) continue;
-        seen.add(row.assessment_id);
+        if (!row.modern_access_control) continue;
+        const group = rowsByAssessment.get(row.assessment_id);
+        if (group) {
+          group.push(row);
+        } else {
+          rowsByAssessment.set(row.assessment_id, [row]);
+        }
+      }
 
-        const dateControl = modernAccessByAssessment?.get(row.assessment_id)?.dateControl;
+      for (const [assessmentId, group] of rowsByAssessment) {
+        const dateControl = modernAccessByAssessment?.get(assessmentId)?.dateControl;
         const dates = dateControlToCalendarEvents(dateControl, res.locals.req_date);
         if (!dates) continue;
 
-        // Match the list view: only link the assessment when the student could
-        // open it from the list (not "coming soon", and either active or
-        // already started).
-        const linked =
-          !row.show_before_release && (row.active || row.assessment_instance_id != null);
+        // Match the list view's linking: an active assessment links its main
+        // page (the "new instance" target for multiple-instance assessments);
+        // an inactive one still links an existing instance when there is one.
+        const header = group[0];
+        const linkedRow = run(() => {
+          if (header.show_before_release) return null;
+          if (header.active) return header;
+          return group.find((row) => row.assessment_instance_id != null) ?? null;
+        });
         calendarEvents.push({
-          assessmentId: row.assessment_id,
-          title: row.title ?? '',
-          label: row.label,
-          color: row.assessment_set_color,
-          assessmentUrl: linked ? `${res.locals.urlPrefix}${row.link}` : null,
+          ...dates,
+          assessmentId,
+          title: header.title ?? '',
+          label: header.label,
+          color: header.assessment_set_color,
+          assessmentUrl: linkedRow ? `${res.locals.urlPrefix}${linkedRow.link}` : null,
           accessEditUrl: null,
-          release: dates.release,
-          due: dates.due,
-          windowStart: dates.windowStart,
-          windowEnd: dates.windowEnd,
-          afterLastDeadlineCredit: dates.afterLastDeadlineCredit,
           overrideCount: 0,
-          timeline: dates.timeline,
         });
       }
     }

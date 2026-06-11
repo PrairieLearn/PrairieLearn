@@ -6,6 +6,7 @@ import {
   clampMonth,
   computeWeekLanes,
   dateToPlainDate,
+  exclusiveEndToPlainDate,
   weeksOfMonth,
 } from './assessment-calendar.js';
 
@@ -24,6 +25,19 @@ describe('dateToPlainDate', () => {
     // The US spring-forward gap (2026-03-08 02:00 Chicago) does not shift days.
     const date = new Date('2026-03-08T08:30:00Z'); // 02:30 CST → 03:30 CDT
     expect(dateToPlainDate(date, 'America/Chicago').toString()).toBe('2026-03-08');
+  });
+});
+
+describe('exclusiveEndToPlainDate', () => {
+  it('places an exact-midnight deadline on the preceding day', () => {
+    // Midnight Mar 8 Chicago: submissions end at the end of Mar 7.
+    const date = new Date('2026-03-08T06:00:00Z'); // 00:00:00 CST
+    expect(exclusiveEndToPlainDate(date, 'America/Chicago').toString()).toBe('2026-03-07');
+  });
+
+  it('keeps a same-day deadline on its day', () => {
+    const date = new Date('2026-03-21T04:59:00Z'); // 23:59 Mar 20 Chicago
+    expect(exclusiveEndToPlainDate(date, 'America/Chicago').toString()).toBe('2026-03-20');
   });
 });
 

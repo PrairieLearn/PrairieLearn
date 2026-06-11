@@ -76,7 +76,7 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${AssessmentsViewToggle({ view })}
+          ${rows.length > 0 ? AssessmentsViewToggle({ view, search }) : ''}
           ${authz_data.has_course_permission_edit &&
           !course.example_course &&
           (rows.length > 0 || qtiImportEnabled)
@@ -112,7 +112,7 @@ export function InstructorAssessments({
               `
             : ''}
         </div>
-        ${view === 'calendar'
+        ${view === 'calendar' && rows.length > 0
           ? renderHtml(
               <Hydrate>
                 <AssessmentCalendar

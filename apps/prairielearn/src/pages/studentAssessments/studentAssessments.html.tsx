@@ -78,10 +78,10 @@ export function StudentAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${AssessmentsViewToggle({ view })}
+          ${rows.length > 0 ? AssessmentsViewToggle({ view, search }) : ''}
         </div>
 
-        ${view === 'calendar'
+        ${view === 'calendar' && rows.length > 0
           ? renderHtml(
               <Hydrate>
                 <AssessmentCalendar

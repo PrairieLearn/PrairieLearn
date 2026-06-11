@@ -278,11 +278,16 @@ function matchesOverride(override: OverrideRule, enrollment: EnrollmentContext):
  * `enrollment` overrides (more specific, win); within each type, lower `number`
  * applies first.
  */
+/** The default rule applies to students not covered by an override. */
+export function getDefaultRule(rules: AccessControlRuleInput[]): DefaultRule | undefined {
+  return rules.find((r): r is DefaultRule => r.targetType === 'none');
+}
+
 function pickEffectiveRule(
   rules: AccessControlRuleInput[],
   enrollment: EnrollmentContext | null,
 ): DefaultRuleBody | null {
-  const defaultRule = rules.find((r): r is DefaultRule => r.targetType === 'none');
+  const defaultRule = getDefaultRule(rules);
   if (!defaultRule) return null;
   if (!enrollment) return defaultRule.rule;
 
@@ -450,11 +455,14 @@ export function resolveAccessControl(
   } = input;
 
   if (isStaff(courseRole, courseInstanceRole)) {
-    // Access is overridden, but keep the merged date control so display
-    // surfaces (e.g. the assessment calendar) show staff what students see.
+    // Access is overridden, but keep the default rule's date control so
+    // display surfaces (e.g. the assessment calendar) show staff what a
+    // default student sees. Deliberately not merged with the staff member's
+    // own enrollment overrides — staff previewing the student view should see
+    // the class schedule, not their personal one.
     return {
       ...STAFF_OVERRIDE_RESULT,
-      dateControl: pickEffectiveRule(rules, enrollment)?.dateControl ?? null,
+      dateControl: getDefaultRule(rules)?.rule.dateControl ?? null,
     };
   }
 
@@ -547,7 +555,12 @@ export function resolveAccessControl(
   const currentIdx = accessTimeline.findIndex((e) => e.current);
   const current = currentIdx !== -1 ? accessTimeline[currentIdx] : undefined;
   if (!current) {
-    return { ...UNAUTHORIZED_RESULT, afterCompleteVisibility, accessTimeline };
+    return {
+      ...UNAUTHORIZED_RESULT,
+      afterCompleteVisibility,
+      accessTimeline,
+      dateControl: rule.dateControl ?? null,
+    };
   }
 
   if (current.startDate === null) {

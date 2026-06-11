@@ -1,25 +1,26 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
 
-import { formatDate } from '@prairielearn/formatter';
+import { formatDate, formatDateFriendly, formatDateRangeFriendly } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
+import type { CalendarEventDates } from '../lib/assessment-access-control/calendar.js';
 import {
   type CalendarSpanInput,
   type PositionedSpan,
   clampMonth,
   computeWeekLanes,
   dateToPlainDate,
+  exclusiveEndToPlainDate,
   weeksOfMonth,
 } from '../lib/client/assessment-calendar.js';
 
-export interface CalendarAssessmentEvent {
+export interface CalendarAssessmentEvent extends CalendarEventDates {
   assessmentId: string;
   title: string;
   /** Assessment label for badges, e.g. "HW3". */
@@ -30,16 +31,8 @@ export interface CalendarAssessmentEvent {
   assessmentUrl: string | null;
   /** Link target for "Edit access"; instructors with edit permission only. */
   accessEditUrl: string | null;
-  release: Date;
-  due: Date | null;
-  windowStart: Date;
-  /** Null for an open-ended availability window (e.g. no due date). */
-  windowEnd: Date | null;
-  /** Credit for submissions after the final deadline, when still allowed. */
-  afterLastDeadlineCredit: number | null;
   /** Number of non-default access rules; 0 for student views. */
   overrideCount: number;
-  timeline: AccessTimelineEntry[];
 }
 
 interface SpanPayload {
@@ -68,6 +61,32 @@ export function AssessmentCalendar({
 }
 AssessmentCalendar.displayName = 'AssessmentCalendar';
 
+function buildSpans(
+  events: CalendarAssessmentEvent[],
+  displayTimezone: string,
+): CalendarSpanInput<SpanPayload>[] {
+  const spans: CalendarSpanInput<SpanPayload>[] = [];
+  for (const event of events) {
+    const releaseDay = dateToPlainDate(event.release, displayTimezone);
+    spans.push({
+      item: { event, variant: 'window' },
+      start: releaseDay,
+      end: event.windowEnd ? exclusiveEndToPlainDate(event.windowEnd, displayTimezone) : null,
+      kind: 'window',
+    }, {
+      item: { event, variant: 'release' },
+      start: releaseDay,
+      end: releaseDay,
+      kind: 'chip',
+    });
+    if (event.due) {
+      const dueDay = exclusiveEndToPlainDate(event.due, displayTimezone);
+      spans.push({ item: { event, variant: 'due' }, start: dueDay, end: dueDay, kind: 'chip' });
+    }
+  }
+  return spans;
+}
+
 function AssessmentCalendarInner({
   events,
   displayTimezone,
@@ -77,50 +96,50 @@ function AssessmentCalendarInner({
   displayTimezone: string;
   now: Date;
 }) {
-  const [monthParam, setMonthParam] = useQueryState('month', parseAsString);
+  const [monthParam, setMonthParam] = useQueryState(
+    'month',
+    // Month navigation is the primary gesture of this view, so each step gets
+    // a history entry and the browser Back button steps back a month.
+    parseAsString.withOptions({ history: 'push' }),
+  );
   const [expandedWeeks, setExpandedWeeks] = useState<ReadonlySet<string>>(new Set());
 
   const today = dateToPlainDate(now, displayTimezone);
   const currentMonth = today.toPlainYearMonth();
 
-  const spans = events.flatMap((event): CalendarSpanInput<SpanPayload>[] => [
-    {
-      item: { event, variant: 'window' },
-      start: dateToPlainDate(event.windowStart, displayTimezone),
-      end: event.windowEnd ? dateToPlainDate(event.windowEnd, displayTimezone) : null,
-      kind: 'window',
-    },
-    {
-      item: { event, variant: 'release' },
-      start: dateToPlainDate(event.release, displayTimezone),
-      end: dateToPlainDate(event.release, displayTimezone),
-      kind: 'chip',
-    },
-    ...(event.due
-      ? [
-          {
-            item: { event, variant: 'due' } satisfies SpanPayload,
-            start: dateToPlainDate(event.due, displayTimezone),
-            end: dateToPlainDate(event.due, displayTimezone),
-            kind: 'chip' as const,
-          },
-        ]
-      : []),
-  ]);
+  // Each event yields ~5 Temporal timezone conversions; memoized so month
+  // navigation and week expansion don't redo them for every assessment.
+  const spans = useMemo(() => buildSpans(events, displayTimezone), [events, displayTimezone]);
+
+  if (events.length === 0) {
+    return (
+      <div className="alert alert-secondary mb-0" role="status">
+        No assessments have scheduled dates to show on the calendar.
+      </div>
+    );
+  }
 
   // Navigation bounds: from the earliest release to the latest bounded date,
-  // widened to include the current month so "Today" is always reachable.
-  const [minMonth, maxMonth] = run(() => {
-    let min = currentMonth;
-    let max = currentMonth;
-    for (const span of spans) {
-      const startMonth = span.start.toPlainYearMonth();
-      const endMonth = (span.end ?? span.start).toPlainYearMonth();
-      if (Temporal.PlainYearMonth.compare(startMonth, min) < 0) min = startMonth;
-      if (Temporal.PlainYearMonth.compare(endMonth, max) > 0) max = endMonth;
-    }
-    return [min, max];
-  });
+  // widened to include the current month so "Today" is always reachable. An
+  // open-ended window removes the upper bound entirely — its bar continues
+  // into every future month, so navigation must too.
+  const [minMonth, maxMonth] = run(
+    (): [Temporal.PlainYearMonth, Temporal.PlainYearMonth | null] => {
+      let min = currentMonth;
+      let max: Temporal.PlainYearMonth | null = currentMonth;
+      for (const span of spans) {
+        const startMonth = span.start.toPlainYearMonth();
+        if (Temporal.PlainYearMonth.compare(startMonth, min) < 0) min = startMonth;
+        if (span.end === null) {
+          max = null;
+        } else if (max !== null) {
+          const endMonth = span.end.toPlainYearMonth();
+          if (Temporal.PlainYearMonth.compare(endMonth, max) > 0) max = endMonth;
+        }
+      }
+      return [min, max];
+    },
+  );
 
   const requestedMonth = run(() => {
     if (!monthParam) return null;
@@ -132,19 +151,9 @@ function AssessmentCalendarInner({
   });
   const month = clampMonth(requestedMonth ?? currentMonth, minMonth, maxMonth);
 
-  const monthTitle = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(month.year, month.month - 1, 1)));
-
-  if (events.length === 0) {
-    return (
-      <div className="alert alert-secondary mb-0" role="status">
-        No assessments have scheduled dates to show on the calendar.
-      </div>
-    );
-  }
+  const monthTitle = month
+    .toPlainDate({ day: 1 })
+    .toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <div>
@@ -166,7 +175,7 @@ function AssessmentCalendarInner({
             type="button"
             className="btn btn-sm btn-outline-secondary"
             aria-label="Next month"
-            disabled={Temporal.PlainYearMonth.compare(month, maxMonth) >= 0}
+            disabled={maxMonth !== null && Temporal.PlainYearMonth.compare(month, maxMonth) >= 0}
             onClick={() => setMonthParam(month.add({ months: 1 }).toString())}
           >
             <i className="bi bi-chevron-right" aria-hidden="true" />
@@ -211,6 +220,7 @@ function AssessmentCalendarInner({
                     )}
                   >
                     {day.day}
+                    {day.equals(today) && <span className="visually-hidden"> (today)</span>}
                   </span>
                 </div>
               ))}
@@ -223,7 +233,9 @@ function AssessmentCalendarInner({
                 <CalendarSpan
                   key={`${span.item.event.assessmentId}-${span.item.variant}`}
                   span={span}
+                  weekKey={weekKey}
                   displayTimezone={displayTimezone}
+                  now={now}
                 />
               ))}
             </div>
@@ -255,16 +267,23 @@ function AssessmentCalendarInner({
 
 function CalendarSpan({
   span,
+  weekKey,
   displayTimezone,
+  now,
 }: {
   span: PositionedSpan<SpanPayload>;
+  weekKey: string;
   displayTimezone: string;
+  now: Date;
 }) {
   const { event, variant } = span.item;
   const gridStyle = {
     gridColumn: `${span.startCol} / ${span.endCol + 1}`,
     gridRow: span.lane + 1,
   };
+  // Fall back to a neutral gray when an assessment set uses a color outside
+  // the palette in colors.css — an unresolvable var() would void the styles.
+  const setColor = `var(--color-${event.color}, var(--color-gray2))`;
 
   const trigger =
     variant === 'window' ? (
@@ -273,11 +292,15 @@ function CalendarSpan({
         className="btn border-0 rounded-1 px-1 py-0 small text-start text-truncate d-block"
         style={{
           ...gridStyle,
-          backgroundColor: `color-mix(in srgb, var(--color-${event.color}) 35%, var(--bs-body-bg))`,
-          borderLeft: span.continuesBefore ? undefined : `3px solid var(--color-${event.color})`,
+          backgroundColor: `color-mix(in srgb, ${setColor} 35%, var(--bs-body-bg))`,
+          borderLeft: span.continuesBefore ? undefined : `3px solid ${setColor}`,
         }}
-        aria-label={`${event.label} ${event.title}, available ${formatDate(event.windowStart, displayTimezone)}${
-          event.windowEnd ? ` to ${formatDate(event.windowEnd, displayTimezone)}` : ', no end date'
+        aria-label={`${event.label} ${event.title}, available ${
+          event.windowEnd
+            ? formatDateRangeFriendly(event.release, event.windowEnd, displayTimezone, {
+                baseDate: now,
+              })
+            : `from ${formatDateFriendly(event.release, displayTimezone, { baseDate: now })}, no end date`
         }`}
       >
         {span.continuesBefore ? '◂ ' : ''}
@@ -291,8 +314,16 @@ function CalendarSpan({
         style={gridStyle}
         aria-label={
           variant === 'due'
-            ? `${event.label} ${event.title}, due ${formatDate(event.due ?? event.release, displayTimezone)}`
-            : `${event.label} ${event.title}, opens ${formatDate(event.release, displayTimezone)}`
+            ? `${event.label} ${event.title}, due ${formatDateFriendly(
+                event.due ?? event.release,
+                displayTimezone,
+                { baseDate: now },
+              )}`
+            : `${event.label} ${event.title}, opens ${formatDateFriendly(
+                event.release,
+                displayTimezone,
+                { baseDate: now },
+              )}`
         }
       >
         <i
@@ -307,7 +338,13 @@ function CalendarSpan({
     <OverlayTrigger
       trigger="click"
       placement="auto"
-      overlay={<EventPopover event={event} displayTimezone={displayTimezone} />}
+      overlay={
+        <EventPopover
+          event={event}
+          popoverId={`assessment-calendar-popover-${event.assessmentId}-${variant}-${weekKey}`}
+          displayTimezone={displayTimezone}
+        />
+      }
       rootClose
     >
       {trigger}
@@ -317,10 +354,12 @@ function CalendarSpan({
 
 function EventPopover({
   event,
+  popoverId,
   displayTimezone,
   ...popoverProps
 }: {
   event: CalendarAssessmentEvent;
+  popoverId: string;
   displayTimezone: string;
 }) {
   // The after-last-deadline segment is described by the note below the table.
@@ -328,7 +367,7 @@ function EventPopover({
     (entry) => entry.submittable && entry.kind !== 'afterLastDeadline',
   );
   return (
-    <Popover {...popoverProps} id={`assessment-calendar-popover-${event.assessmentId}`}>
+    <Popover {...popoverProps} id={popoverId}>
       <Popover.Header className="d-flex flex-wrap align-items-center gap-2">
         <span className={`badge color-${event.color}`}>{event.label}</span>
         <span className="me-auto">{event.title}</span>
@@ -350,7 +389,10 @@ function EventPopover({
             </thead>
             <tbody>
               {submittableEntries.map((entry) => (
-                <tr key={`${entry.credit}-${entry.endDate?.getTime() ?? 'open'}`}>
+                <tr
+                  key={`${entry.credit}-${entry.endDate?.getTime() ?? 'open'}`}
+                  className={clsx(entry.current && 'fw-bold')}
+                >
                   <td>{entry.credit}%</td>
                   <td>{entry.endDate ? formatDate(entry.endDate, displayTimezone) : '—'}</td>
                 </tr>

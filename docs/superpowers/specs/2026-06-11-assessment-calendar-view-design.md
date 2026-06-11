@@ -55,23 +55,31 @@ Mapping rules, in terms of the timeline:
 
 ### Event shape
 
+The mapper produces the shared date fields; each page adds identity/link fields:
+
 ```ts
-interface CalendarAssessmentEvents {
-  assessment_id: string;
-  title: string;
-  color: string; // assessment set color
-  setAbbr: string; // assessment set abbreviation for the badge
-  assessmentUrl: string;
-  accessEditUrl?: string; // instructor only, requires course edit permission
-  windowStart: Date; // release
-  windowEnd: Date | null; // final deadline; null = indefinite
-  release: Date; // chip
+interface CalendarEventDates {
+  release: Date; // chip; also the availability window's start
   due: Date | null; // chip; null for indefinite due
+  windowEnd: Date | null; // final deadline; null = indefinite
   afterLastDeadlineCredit: number | null; // popover note, when submissions continue after the final deadline
-  overrideCount: number; // instructor: non-default rules; 0 for students
   timeline: AccessTimelineEntry[]; // popover credit table (late/early deadlines appear here)
 }
+
+interface CalendarAssessmentEvent extends CalendarEventDates {
+  assessmentId: string;
+  title: string;
+  label: string; // assessment set badge text, e.g. "HW3"
+  color: string; // assessment set color
+  assessmentUrl: string | null; // null when the viewer can't open it yet
+  accessEditUrl: string | null; // instructor with course edit permission only
+  overrideCount: number; // instructor: non-default rules; 0 for students
+}
 ```
+
+Deadlines are exclusive instants (credit applies strictly before them), so day
+bucketing for due chips and window ends uses `deadline - 1ms` — an
+exact-midnight deadline renders on the preceding day.
 
 ## Timezones
 
@@ -83,7 +91,7 @@ All in `apps/prairielearn/src/components/` (app-specific; uses app types):
 
 - `AssessmentCalendar` — hydrated wrapper. Header with month title, prev/next/today; `?month=YYYY-MM` in nuqs; navigation clamped to [first event month, last event month]; default month = current month in course timezone. Registered in `assets/scripts/esm-bundles/hydrated-components`.
 - `MonthGrid` / `WeekRow` — CSS-grid weeks; each week renders day numbers plus lane-stacked bar/chip rows.
-- `computeWeekLanes(events, week)` — pure function: splits availability windows at week boundaries, assigns lane indices so overlapping bars stack, collapses past a max lane count (3 lanes per week) into a "+N more" expander. Lives outside React; unit-tested.
+- `computeWeekLanes(spans, week)` — pure function: splits availability windows at week boundaries and assigns lane indices so overlapping bars stack. The component collapses lanes past a max (3 per week) into a "+N more" expander. Lives outside React; unit-tested.
 - `WindowBar`, `EventChip` — window bars use the assessment set color at low opacity with a solid left edge; due chips solid; release chips solid with distinct icon. Both render as buttons with complete accessible labels (e.g. "Homework 3, due Friday, March 20, 11:59 PM"), since the visual bar/chip text is truncated.
 - Detail popover — react-bootstrap `OverlayTrigger`, following the existing `StudentAccessPopovers` pattern: set badge, override-count badge (instructor), opens/due/late/after-deadline rows from the credit timeline, "View assessment" and (instructor, with edit permission) "Edit access" links.
 - Colors reuse existing assessment-set color classes.

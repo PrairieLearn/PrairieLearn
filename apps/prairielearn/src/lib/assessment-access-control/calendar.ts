@@ -5,14 +5,15 @@ import {
 } from './timeline.js';
 
 export interface CalendarEventDates {
+  /** The release date; also the start of the availability window. */
   release: Date;
   /** The due date; null when no due date is configured or due is indefinite. */
   due: Date | null;
-  windowStart: Date;
-  /** End of the final deadline segment; null when the window is open-ended. */
+  /**
+   * End of the final deadline segment (the availability window's end); null
+   * when the window is open-ended.
+   */
   windowEnd: Date | null;
-  /** The final deadline, when it falls after the due date (late deadlines). */
-  lateUntil: Date | null;
   /** Credit for submissions after the final deadline, when still allowed. */
   afterLastDeadlineCredit: number | null;
   /** Credit segments for the detail popover. */
@@ -47,17 +48,8 @@ export function dateControlToCalendarEvents(
   const windowEnd = lastEntry.kind === 'noDeadline' ? null : lastDeadline;
 
   const due = dateControl?.due?.date ?? null;
-  const lateUntil = due != null && windowEnd != null && windowEnd > due ? windowEnd : null;
   const afterLastDeadlineCredit =
     lastEntry.kind === 'afterLastDeadline' && lastEntry.submittable ? lastEntry.credit : null;
 
-  return {
-    release,
-    due,
-    windowStart: release,
-    windowEnd,
-    lateUntil,
-    afterLastDeadlineCredit,
-    timeline,
-  };
+  return { release, due, windowEnd, afterLastDeadlineCredit, timeline };
 }

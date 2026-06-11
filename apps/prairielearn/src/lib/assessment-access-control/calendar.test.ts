@@ -31,9 +31,7 @@ describe('dateControlToCalendarEvents', () => {
     expect(result).toMatchObject({
       release: RELEASE,
       due: DUE,
-      windowStart: RELEASE,
       windowEnd: DUE,
-      lateUntil: null,
       afterLastDeadlineCredit: null,
     });
   });
@@ -50,7 +48,6 @@ describe('dateControlToCalendarEvents', () => {
     expect(result).toMatchObject({
       due: DUE,
       windowEnd: LATE,
-      lateUntil: LATE,
     });
   });
 
@@ -63,7 +60,6 @@ describe('dateControlToCalendarEvents', () => {
       release: RELEASE,
       due: null,
       windowEnd: null,
-      lateUntil: null,
     });
   });
 

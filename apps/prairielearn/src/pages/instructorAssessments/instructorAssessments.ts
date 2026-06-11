@@ -12,10 +12,12 @@ import { IdSchema } from '@prairielearn/zod';
 import type { CalendarAssessmentEvent } from '../../components/AssessmentCalendar.js';
 import { dateControlToCalendarEvents } from '../../lib/assessment-access-control/calendar.js';
 import { selectAccessControlRulesForCourseInstance } from '../../lib/assessment-access-control/data.js';
+import { getDefaultRule } from '../../lib/assessment-access-control/resolver.js';
 import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
+import { getAssessmentUrl } from '../../lib/client/url.js';
 import {
   type AssessmentModule,
   AssessmentModuleSchema,
@@ -83,29 +85,28 @@ router.get(
       calendarEvents = rows.flatMap((row) => {
         if (!row.modern_access_control) return [];
         const rules = rulesByAssessment.get(row.id) ?? [];
-        const defaultRule = rules.find((rule) => rule.targetType === 'none');
+        const defaultRule = getDefaultRule(rules);
         const dates = dateControlToCalendarEvents(
           defaultRule?.rule.dateControl,
           res.locals.req_date,
         );
         if (!dates) return [];
+        const assessmentUrl = getAssessmentUrl({
+          urlPrefix: res.locals.urlPrefix,
+          assessmentId: row.id,
+        });
         return [
           {
+            ...dates,
             assessmentId: row.id,
             title: row.title ?? '',
             label: row.label,
             color: row.assessment_set.color,
-            assessmentUrl: `${res.locals.urlPrefix}/assessment/${row.id}/`,
+            assessmentUrl,
             accessEditUrl: res.locals.authz_data.has_course_permission_edit
-              ? `${res.locals.urlPrefix}/assessment/${row.id}/access`
+              ? `${assessmentUrl}/access`
               : null,
-            release: dates.release,
-            due: dates.due,
-            windowStart: dates.windowStart,
-            windowEnd: dates.windowEnd,
-            afterLastDeadlineCredit: dates.afterLastDeadlineCredit,
             overrideCount: rules.length - (defaultRule ? 1 : 0),
-            timeline: dates.timeline,
           },
         ];
       });
@@ -115,7 +116,9 @@ router.get(
       InstructorAssessments({
         resLocals: res.locals,
         rows,
-        assessmentIdsNeedingStatsUpdate,
+        // The stats-update client script targets table rows that don't exist
+        // in calendar view; skip the (expensive) per-assessment stat fetches.
+        assessmentIdsNeedingStatsUpdate: view === 'calendar' ? [] : assessmentIdsNeedingStatsUpdate,
         csvFilename,
         assessmentSets,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,

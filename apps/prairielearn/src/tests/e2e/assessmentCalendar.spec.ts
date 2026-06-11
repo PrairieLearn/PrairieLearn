@@ -45,9 +45,14 @@ test.describe('Assessment calendar view', () => {
     await expect(page.getByRole('heading', { name: 'April 2026' })).toBeVisible();
     await expect(page.getByRole('button', { name: /HW19.*available/ }).first()).toBeVisible();
 
-    // The release chip may be collapsed behind a "+N more" expander.
-    for (const expander of await page.getByRole('button', { name: /\+\d+ more/ }).all()) {
-      await expander.click();
+    // The release chip may be collapsed behind "+N more" expanders. Re-query
+    // after each click: an expanded button's name changes to "Show less",
+    // which would leave index-based locators stale.
+    while ((await page.getByRole('button', { name: /\+\d+ more/ }).count()) > 0) {
+      await page
+        .getByRole('button', { name: /\+\d+ more/ })
+        .first()
+        .click();
     }
     await expect(page.getByRole('button', { name: /HW19.*opens/ }).first()).toBeVisible();
 

@@ -34,6 +34,15 @@ export function dateToPlainDate(date: Date, timeZone: string): Temporal.PlainDat
     .toPlainDate();
 }
 
+/**
+ * The calendar day a deadline belongs on. Deadline credit applies strictly
+ * before the instant, so an exact-midnight deadline belongs on the preceding
+ * day — otherwise the calendar would paint a fully inaccessible day as open.
+ */
+export function exclusiveEndToPlainDate(date: Date, timeZone: string): Temporal.PlainDate {
+  return dateToPlainDate(new Date(date.getTime() - 1), timeZone);
+}
+
 /** Sunday-start weeks covering the month, each exactly 7 days. */
 export function weeksOfMonth(month: Temporal.PlainYearMonth): Temporal.PlainDate[][] {
   const first = month.toPlainDate({ day: 1 });
