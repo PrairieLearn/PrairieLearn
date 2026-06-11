@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import migration from './20260228154800_assessment_instances__score_perc_pending__backfill.js';
 
 const MIGRATION_NAME = '20260228154800_assessment_instances__score_perc_pending__backfill';
+const BigIntIdSchema = z.bigint({ coerce: true });
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('assessment_instances score_perc_pending backfill migration', { timeout: 60_000 }, () => {
@@ -23,7 +23,7 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             short_name: 'SPB',
             title: 'Score pending backfill',
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const courseInstanceId = await sqldb.queryScalar(
@@ -34,7 +34,7 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             long_name: 'Score Pending Backfill CI',
             enrollment_code: 'spb-code',
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const assessmentId = await sqldb.queryScalar(
@@ -44,7 +44,7 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             title: 'Backfill test assessment',
             type: 'Homework',
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examAssessmentId = await sqldb.queryScalar(
@@ -54,49 +54,49 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             title: 'Backfill exam assessment',
             type: 'Exam',
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const zoneId = await sqldb.queryScalar(
           sql.insert_zone,
           { assessment_id: assessmentId, number: 1, title: 'Zone 1' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const alternativeGroupId = await sqldb.queryScalar(
           sql.insert_alternative_group,
           { assessment_id: assessmentId, zone_id: zoneId, number: 1 },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examZoneId = await sqldb.queryScalar(
           sql.insert_zone,
           { assessment_id: examAssessmentId, number: 1, title: 'Exam zone' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examAlternativeGroupId = await sqldb.queryScalar(
           sql.insert_alternative_group,
           { assessment_id: examAssessmentId, zone_id: examZoneId, number: 1 },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const questionId = await sqldb.queryScalar(
           sql.insert_question,
           { course_id: courseId, qid: 'spb-q1', title: 'Backfill question' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const autoQuestionId = await sqldb.queryScalar(
           sql.insert_question,
           { course_id: courseId, qid: 'spb-q2', title: 'Backfill auto question' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examQuestionId = await sqldb.queryScalar(
           sql.insert_question,
           { course_id: courseId, qid: 'spb-q3', title: 'Backfill exam question' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const assessmentQuestionId = await sqldb.queryScalar(
@@ -109,7 +109,7 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             max_manual_points: 20,
             max_auto_points: 30,
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const autoAssessmentQuestionId = await sqldb.queryScalar(
@@ -122,7 +122,7 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             max_manual_points: 0,
             max_auto_points: 30,
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examAssessmentQuestionId = await sqldb.queryScalar(
@@ -135,31 +135,31 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
             max_manual_points: 0,
             max_auto_points: 10,
           },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const userId = await sqldb.queryScalar(
           sql.insert_user,
           { uid: 'spb-user', name: 'Score Pending Backfill User' },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const assessmentInstanceId = await sqldb.queryScalar(
           sql.insert_assessment_instance,
           { assessment_id: assessmentId, user_id: userId, number: 1, max_points: 80 },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const zeroMaxAssessmentInstanceId = await sqldb.queryScalar(
           sql.insert_assessment_instance,
           { assessment_id: assessmentId, user_id: userId, number: 2, max_points: 0 },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         const examAssessmentInstanceId = await sqldb.queryScalar(
           sql.insert_assessment_instance,
           { assessment_id: examAssessmentId, user_id: userId, number: 1, max_points: 10 },
-          IdSchema,
+          BigIntIdSchema,
         );
 
         await sqldb.execute(sql.insert_manual_instance_questions, {
