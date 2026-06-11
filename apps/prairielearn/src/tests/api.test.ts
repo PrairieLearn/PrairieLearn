@@ -321,8 +321,10 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
+      // This endpoint only reports legacy `allowAccess` rules. The test course
+      // uses modern `accessControl`, which is not exposed here.
       const json = (await res.json()) as any;
-      assert.lengthOf(json, 1);
+      assert.lengthOf(json, 0);
     });
 
     test.sequential('GET to API for course instance access rules succeeds', async function () {
@@ -335,8 +337,10 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
+      // This endpoint only reports legacy `allowAccess` rules. The test course
+      // uses modern `publishing` dates, which are not exposed here.
       const json = (await res.json()) as any;
-      assert.lengthOf(json, 1);
+      assert.lengthOf(json, 0);
     });
 
     test.sequential('GET to API for course instance info succeeds', async function () {

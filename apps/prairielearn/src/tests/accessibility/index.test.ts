@@ -116,6 +116,11 @@ const ROUTE_RULE_OVERRIDES: Record<string, RuleConfig> = {
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
     'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'button'] }],
   },
+  // The access control summary uses `role="table"` on a CSS grid so that
+  // columns can span and collapse responsively, which a native <table> can't do.
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access': {
+    'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'table'] }],
+  },
 };
 
 const A11Y_RULE_OVERRIDES: Record<string, RuleObject> = {

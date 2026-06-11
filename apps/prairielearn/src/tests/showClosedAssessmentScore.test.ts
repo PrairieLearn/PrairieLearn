@@ -16,7 +16,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe(
-  'Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules',
+  'Exam assessment with questions and scores hidden after completion',
   { timeout: 60_000 },
   function () {
     const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
@@ -28,9 +28,6 @@ describe(
     const headers = {
       cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T00:00:01',
       // need student mode to get a timed exam (instructor override bypasses this)
-    };
-    const headersTimeLimit = {
-      cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
     };
 
     beforeAll(async function () {
@@ -99,19 +96,23 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
     });
 
-    test.sequential('simulate a time limit expiration', async () => {
+    test.sequential('finish the exam', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'timeLimitFinish',
+          __action: 'finish',
           __csrf_token: context.__csrf_token,
         }),
-        headers: headersTimeLimit,
+        headers,
       });
+
+      // Once the exam is finished, questions are hidden after completion
+      // (`afterComplete.questions.hidden`), so the redirect back to the
+      // assessment instance renders the "assessment closed" page.
       assert.equal(response.status, 403);
 
       // We should have been redirected back to the same assessment instance
-      assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
+      assert.equal(response.url, context.assessmentInstanceUrl);
 
       // we should not have any questions
       assert.lengthOf(response.$('a:contains("Question 1")'), 0);

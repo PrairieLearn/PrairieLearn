@@ -17,8 +17,17 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+// The exam (exam11-activeAccessRestriction) has:
+//   release 2010-01-01, due 2010-01-01T23:59:59, durationMinutes 50,
+//   afterComplete questions/score hidden until 2020-01-01,
+//   beforeRelease.listed true.
+//
+// The homework (hw8-activeAccessRestriction) has:
+//   release 2020-01-01, due 2020-12-31, late deadline 2030-12-31 at 75% credit,
+//   afterComplete questions hidden except between 2040-01-01 and 2049-12-31,
+//   beforeRelease.listed true.
 describe(
-  'Exam and homework assessment with active access restriction',
+  'Exam and homework assessment with date control and after-complete restrictions',
   { timeout: 60_000 },
   function () {
     const storedConfig: Record<string, any> = {};
@@ -85,28 +94,7 @@ describe(
     });
 
     test.sequential(
-      'ensure that the exam is not visible on the assessments page when no access rule applies',
-      async () => {
-        headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
-
-        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
-        assert.isTrue(response.ok);
-
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0);
-      },
-    );
-
-    test.sequential('try to access the exam when no access rule applies', async () => {
-      headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
-
-      const response = await helperClient.fetchCheerio(context.examUrl, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-    });
-
-    test.sequential(
-      'ensure that the exam is visible without a link on the assessments page if student has not started the exam and active is false',
+      'ensure that the exam is visible without a link on the assessments page before it is released',
       async () => {
         headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
@@ -118,7 +106,7 @@ describe(
       },
     );
 
-    test.sequential('try to access the exam when it is not active', async () => {
+    test.sequential('try to access the exam before it is released', async () => {
       headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -126,9 +114,9 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      const msg = response.$('[data-testid="assessment-closed-message"]');
-      assert.lengthOf(msg, 1);
-      assert.match(msg.text(), /Assessment will become available on 2010-01-01 00:00:01/);
+      // Before the release date the student is not authorized at all, so the
+      // generic "Assessment unavailable" page is shown.
+      assert.lengthOf(response.$('div.card-header:contains("Assessment unavailable")'), 1);
     });
 
     test.sequential('check that an assessment instance was not created', async () => {
@@ -140,7 +128,7 @@ describe(
     });
 
     test.sequential(
-      'ensure that a link to the exam is visible on the assessments page if active is true',
+      'ensure that a link to the exam is visible on the assessments page during the access window',
       async () => {
         headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
@@ -151,7 +139,7 @@ describe(
       },
     );
 
-    test.sequential('visit start exam page when the exam is active', async () => {
+    test.sequential('visit start exam page during the access window', async () => {
       headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -220,58 +208,52 @@ describe(
       assert.equal(context.numberOfVariants, 2);
     });
 
-    test.sequential('simulate a time limit expiration', async () => {
-      const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'timeLimitFinish',
-          __csrf_token: context.__csrf_token,
-        }),
-        headers,
-      });
+    test.sequential('access the exam after the time limit has expired', async () => {
+      // The exam was started at 23:50 with a 50-minute duration, so the time
+      // limit has expired one hour later. Questions and score are hidden
+      // after completion until 2020-01-01.
+      headers.cookie = 'pl_test_date=2010-01-02T00:50:01Z';
 
-      // At this time, showClosedAssessment is true, so the status of the HTTP response should be 200
-      assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
+      assert.equal(response.status, 403);
 
-      // We should have been redirected back to the same assessment instance
-      assert.equal(response.url, `${context.examInstanceUrl}?timeLimitExpired=true`);
+      const msg = response.$('[data-testid="assessment-closed-message"]');
+      assert.lengthOf(msg, 1);
+      assert.match(msg.text(), /Assessment is no longer available\./);
 
-      // Since showClosedAssessment is true, Question 1 is visible.
-      assert.lengthOf(response.$('a:contains("Question 1")'), 1);
+      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 
-    test.sequential('check that the assessment instance is closed', async () => {
+    test.sequential(
+      'a timeLimitFinish POST is rejected after the time limit has expired',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'timeLimitFinish',
+            __csrf_token: context.__csrf_token,
+          }),
+          headers,
+        });
+        assert.equal(response.status, 403);
+      },
+    );
+
+    test.sequential('check that the assessment instance remains open', async () => {
+      // The student can no longer interact with the assessment, but the
+      // instance itself is only closed later by the `autoFinishExams` cron job.
       const results = await sqldb.queryRows(
         sql.select_assessment_instances,
         AssessmentInstanceSchema,
       );
       assert.equal(results.length, 1);
-      assert.equal(results[0].open, false);
-    });
-
-    test.sequential('access question with existing variant when exam is closed', async () => {
-      const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-
-      // There should be no save or grade buttons
-      assert.lengthOf(response.$('button.question-save'), 0);
-      assert.lengthOf(response.$('button.question-grade'), 0);
-    });
-
-    test.sequential('access question without existing variant when exam is closed', async () => {
-      const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-      assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+      assert.equal(results[0].open, true);
     });
 
     test.sequential(
-      'ensure that a link to the exam is visible on the assessments page if student has started the exam and active is false',
+      'ensure that a link to the exam is visible on the assessments page after the student has started the exam',
       async () => {
-        headers.cookie = 'pl_test_date=2010-01-02T00:01:01Z';
+        headers.cookie = 'pl_test_date=2010-01-02T00:50:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -280,35 +262,60 @@ describe(
       },
     );
 
-    test.sequential('access the exam when it is no longer active', async () => {
-      headers.cookie = 'pl_test_date=2010-01-10T00:00:01Z';
+    test.sequential(
+      'access a question with an existing variant while questions are hidden',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+          headers,
+        });
+        assert.equal(response.status, 403);
 
-      const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
+        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+      },
+    );
 
-      const msg = response.$('p.small.mb-0');
-      assert.lengthOf(msg, 1);
-      assert.match(
-        msg.text(),
-        /Notes can't be added or deleted because the assessment is closed\./,
-      );
-    });
+    test.sequential('access a workspace while questions are hidden', async () => {
+      const response = await helperClient.fetchCheerio(context.examWorkspaceUrl, { headers });
+      assert.equal(response.status, 403);
 
-    test.sequential('access question with existing variant when exam is not active', async () => {
-      const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-
-      // There should be no save or grade buttons
-      assert.lengthOf(response.$('button.question-save'), 0);
-      assert.lengthOf(response.$('button.question-grade'), 0);
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
     });
 
     test.sequential(
-      'access question without existing variant when exam is not active',
+      'access the exam instance once questions become visible after completion',
+      async () => {
+        headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
+          headers,
+        });
+        assert.isTrue(response.ok);
+
+        const msg = response.$('p.small.mb-0');
+        assert.lengthOf(msg, 1);
+        assert.match(
+          msg.text(),
+          /Notes can't be added or deleted because the assessment is closed\./,
+        );
+      },
+    );
+
+    test.sequential(
+      'access a question with an existing variant during the review window',
+      async () => {
+        const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+          headers,
+        });
+        assert.isTrue(response.ok);
+
+        // There should be no save or grade buttons
+        assert.lengthOf(response.$('button.question-save'), 0);
+        assert.lengthOf(response.$('button.question-grade'), 0);
+      },
+    );
+
+    test.sequential(
+      'access a question without an existing variant during the review window',
       async () => {
         const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
           headers,
@@ -318,7 +325,7 @@ describe(
       },
     );
 
-    test.sequential('access clientFilesCourse when exam is not active', async () => {
+    test.sequential('access clientFilesCourse during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesCourse/data.txt`, {
         headers,
       });
@@ -326,7 +333,7 @@ describe(
       assert.equal(await response.text(), 'This data is specific to the course.');
     });
 
-    test.sequential('access clientFilesCourseInstance when exam is not active', async () => {
+    test.sequential('access clientFilesCourseInstance during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesCourseInstance/data.txt`, {
         headers,
       });
@@ -334,7 +341,7 @@ describe(
       assert.equal(await response.text(), 'This data is specific to the course instance.');
     });
 
-    test.sequential('access clientFilesAssessment when exam is not active', async () => {
+    test.sequential('access clientFilesAssessment during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesAssessment/data.txt`, {
         headers,
       });
@@ -351,41 +358,7 @@ describe(
       assert.equal(countVariantsResult, context.numberOfVariants);
     });
 
-    test.sequential('access the exam when active and showClosedAssessment are false', async () => {
-      headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
-
-      const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
-      assert.equal(response.status, 403);
-
-      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-      assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-    });
-
-    test.sequential(
-      'access a workspace when active and showClosedAssessment are false',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.examWorkspaceUrl, { headers });
-        assert.equal(response.status, 403);
-
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
-
-    test.sequential(
-      'access the exam when active, showClosedAssessment, and showClosedAssessmentScore are false',
-      async () => {
-        headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
-
-        const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
-        assert.equal(response.status, 403);
-
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-        assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
-      },
-    );
-
-    test.sequential('try to access the homework when it is not active', async () => {
+    test.sequential('try to access the homework before it is released', async () => {
       headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -393,12 +366,12 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      const msg = response.$('[data-testid="assessment-closed-message"]');
-      assert.lengthOf(msg, 1);
-      assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
+      // Before the release date the student is not authorized at all, so the
+      // generic "Assessment unavailable" page is shown.
+      assert.lengthOf(response.$('div.card-header:contains("Assessment unavailable")'), 1);
     });
 
-    test.sequential('access the homework when it is active', async () => {
+    test.sequential('access the homework during the access window', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -422,7 +395,7 @@ describe(
       context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
     });
 
-    test.sequential('access a question when homework is active', async () => {
+    test.sequential('access a question during the access window', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       // Access the question to create a variant.
@@ -444,7 +417,7 @@ describe(
       assert.equal(context.numberOfVariants, 1);
     });
 
-    test.sequential('access the homework when it is no longer active', async () => {
+    test.sequential('access the homework during the after-complete review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -461,7 +434,7 @@ describe(
     });
 
     test.sequential(
-      'access question with existing variant when homework is not active',
+      'access a question with an existing variant during the review window',
       async () => {
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
           headers,
@@ -475,7 +448,7 @@ describe(
     );
 
     test.sequential(
-      'access question without existing variant when homework is not active',
+      'access a question without an existing variant during the review window',
       async () => {
         const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
           headers,
@@ -505,7 +478,7 @@ describe(
     });
 
     test.sequential(
-      'access the homework when active and showClosedAssessment are false, and the homework will never be active again',
+      'access the homework when it is complete and questions are hidden',
       async () => {
         headers.cookie = 'pl_test_date=2036-06-01T00:00:01Z';
 
@@ -522,7 +495,25 @@ describe(
       },
     );
 
-    test.sequential('submit an answer to a question when active is false', async () => {
+    test.sequential(
+      'access the homework after the after-complete review window has ended',
+      async () => {
+        headers.cookie = 'pl_test_date=2050-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+          headers,
+        });
+        assert.equal(response.status, 403);
+
+        const msg = response.$('[data-testid="assessment-closed-message"]');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /Assessment is no longer available\./);
+
+        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+      },
+    );
+
+    test.sequential('submit an answer to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -539,7 +530,7 @@ describe(
     });
 
     test.sequential(
-      'check that no credit is received for an answer submitted when active is false',
+      'check that no credit is received for an answer submitted during the review window',
       async () => {
         const points = await sqldb.queryScalar(
           sql.read_assessment_instance_points,
@@ -565,7 +556,7 @@ describe(
       },
     );
 
-    test.sequential('try to attach a file to a question when active is false', async () => {
+    test.sequential('try to attach a file to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -593,7 +584,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
     });
 
-    test.sequential('try to attach a file to the assessment when active is false', async () => {
+    test.sequential('try to attach a file to the assessment during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -625,7 +616,7 @@ describe(
       },
     );
 
-    test.sequential('try to attach text to a question when active is false', async () => {
+    test.sequential('try to attach text to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -653,7 +644,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
     });
 
-    test.sequential('try to attach text to the assessment when active is false', async () => {
+    test.sequential('try to attach text to the assessment during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
