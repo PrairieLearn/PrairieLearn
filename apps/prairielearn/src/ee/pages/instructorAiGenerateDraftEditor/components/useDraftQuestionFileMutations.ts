@@ -1,71 +1,59 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { unwrapAppResponse } from '../../../../lib/client/errors.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 
 import type {
   DraftQuestionFileBrowserActions,
   DraftUploadTarget,
 } from './DraftQuestionFileBrowserActions.js';
-import { useTRPC } from './aiDraftFilesTrpc.js';
+import { useDraftFiles } from './draftFilesContext.js';
 
-async function uploadDraftFile({
-  uploadUrl,
-  uploadCsrfToken,
+/**
+ * Builds the `multipart/form-data` body for the `upload` tRPC mutation, which
+ * accepts `FormData` (tRPC has no JSON encoding for file payloads). The field
+ * names mirror the server's `UploadFieldsSchema`.
+ */
+function buildUploadFormData({
+  questionId,
   file,
   target,
 }: {
-  uploadUrl: string;
-  uploadCsrfToken: string;
+  questionId: string;
   file: File;
   target: DraftUploadTarget;
-}): Promise<void> {
+}): FormData {
   const formData = new FormData();
+  formData.append('questionId', questionId);
   formData.append('file', file);
-  formData.append('__csrf_token', uploadCsrfToken);
   formData.append('kind', target.kind);
   if (target.kind === 'replace') {
-    formData.append('file_path', target.filePath);
+    formData.append('filePath', target.filePath);
   } else if (target.directory != null) {
     formData.append('directory', target.directory);
   }
-
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    body: formData,
-    headers: { Accept: 'application/json' },
-  });
-
-  // A failed sync job comes back as a `SYNC_JOB_FAILED` app error, surfaced the
-  // same way the tRPC mutations' errors are so the file browser renders it
-  // identically.
-  await unwrapAppResponse(response);
+  return formData;
 }
 
 /**
  * Wires the draft question file browser's upload/rename/delete actions to the
- * `aiDraftFiles` tRPC router and the editor's multipart upload endpoint. Each
- * action refreshes the file listing via `onMutated` on success; on failure it
- * rejects with an error the calling form renders.
+ * `aiDraftFiles` tRPC router. Each action refreshes the file listing via
+ * `onMutated` on success; on failure it rejects with an error the calling form
+ * renders.
  */
 export function useDraftQuestionFileMutations({
-  questionId,
-  urlPrefix,
-  uploadCsrfToken,
   onMutated,
 }: {
-  questionId: string;
-  urlPrefix: string;
-  uploadCsrfToken: string;
   onMutated: () => Promise<unknown>;
 }): DraftQuestionFileBrowserActions {
+  const { questionId } = useDraftFiles();
   const trpc = useTRPC();
+  const { mutateAsync: uploadFile } = useMutation(trpc.aiDraftFiles.upload.mutationOptions());
   const { mutateAsync: renameFile } = useMutation(trpc.aiDraftFiles.rename.mutationOptions());
   const { mutateAsync: deleteFile } = useMutation(trpc.aiDraftFiles.delete.mutationOptions());
-  const uploadUrl = `${urlPrefix}/ai_generate_editor/${questionId}/files`;
 
   return {
     onUploadFile: async ({ file, target }) => {
-      await uploadDraftFile({ uploadUrl, uploadCsrfToken, file, target });
+      await uploadFile(buildUploadFormData({ questionId, file, target }));
       await onMutated();
     },
     onRenameFile: async ({ oldFilePath, newFilePath }) => {

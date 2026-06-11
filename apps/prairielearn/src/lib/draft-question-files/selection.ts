@@ -1,5 +1,7 @@
 import { createParser } from 'nuqs';
 
+import { isSafeQuestionRelativePath } from './paths.shared.js';
+
 /**
  * The draft editor's selection state. Either a single file is open (in the
  * editor or preview), or a directory is being browsed. The question root is
@@ -15,26 +17,16 @@ export const ROOT_SELECTION: DraftEditorSelection = { kind: 'dir', path: null };
 const FILE_PREFIX = 'file:';
 const DIR_PREFIX = 'dir:';
 
-/**
- * Checks that a selection path stays within the question root without
- * pulling `node:path` into the client bundle.
- */
-function isSafeSelectionPath(value: string): boolean {
-  if (value === '' || value.includes('\0') || value.includes('\\')) return false;
-  if (value.startsWith('/')) return false;
-  return !value.split('/').includes('..');
-}
-
 function decodeSelection(value: string): DraftEditorSelection | null {
   if (value.startsWith(FILE_PREFIX)) {
     const path = value.slice(FILE_PREFIX.length);
-    if (!isSafeSelectionPath(path)) return null;
+    if (!isSafeQuestionRelativePath(path)) return null;
     return { kind: 'file', path };
   }
   if (value.startsWith(DIR_PREFIX)) {
     const path = value.slice(DIR_PREFIX.length);
     if (path === '') return { kind: 'dir', path: null };
-    if (!isSafeSelectionPath(path)) return null;
+    if (!isSafeQuestionRelativePath(path)) return null;
     return { kind: 'dir', path };
   }
   return null;
@@ -62,8 +54,8 @@ export const selectionParser = createParser({
 
 /**
  * Parses `?selection=` from a raw query value (server-side or from a search
- * string). Malformed values fall back to the root, matching the lenient
- * treatment of the previous `?file=` / `?dir=` params.
+ * string). Malformed values — including non-string values Express's query
+ * parser can produce — fall back to the root.
  */
 export function parseSelectionQueryParam(raw: unknown): DraftEditorSelection {
   if (typeof raw !== 'string') return ROOT_SELECTION;

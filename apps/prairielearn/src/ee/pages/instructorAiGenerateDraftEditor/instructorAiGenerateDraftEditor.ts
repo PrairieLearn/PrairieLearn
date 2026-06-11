@@ -1,10 +1,8 @@
-import * as path from 'node:path';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { type Response, Router } from 'express';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -14,20 +12,16 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { config } from '../../../lib/config.js';
-import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
   type EnumAiQuestionGenerationMessageStatus,
   type Question,
 } from '../../../lib/db-types.js';
-import { getQuestionFilesData } from '../../../lib/draft-question-files/browser.js';
 import {
-  EditJobFailedError,
-  editJobFailedAppError,
-  uploadDraftQuestionFile,
-} from '../../../lib/draft-question-files/mutations.js';
-import { ModifiableQuestionFilePathSchema } from '../../../lib/draft-question-files/paths.js';
-import { getReservedDraftUploadReason } from '../../../lib/draft-question-files/paths.shared.js';
+  browseDraftQuestionFiles,
+  getDraftQuestionFileContents,
+} from '../../../lib/draft-question-files/browser.js';
+import { renameDraftQuestion } from '../../../lib/draft-question-files/mutations.js';
 import { classifyDraftQuestion } from '../../../lib/draft-question-files/question.js';
 import { parseSelectionQueryParam } from '../../../lib/draft-question-files/selection.js';
 import { features } from '../../../lib/features/index.js';
@@ -36,10 +30,8 @@ import type { ResLocalsQuestionRender } from '../../../lib/question-render.types
 import { processSubmission } from '../../../lib/question-submission.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
-import { validateShortName } from '../../../lib/short-name.js';
 import { getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectQuestionById } from '../../../models/question.js';
 import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
@@ -145,48 +137,6 @@ async function renderQuestionPreview(
   };
 }
 
-/**
- * Renames a draft question's QID and/or title via the course-files API and
- * returns the updated question. The QID is validated as a short name here so
- * the finalize (`save_question`) and inline-rename (`rename_draft_question`)
- * flows reject malformed QIDs identically.
- *
- * Throws {@link EditJobFailedError} if the rename's sync job fails, so callers
- * can translate it into a `SYNC_JOB_FAILED` app error (or let it surface as a
- * standard error page for the full-page finalize flow).
- */
-async function renameDraftQuestion({
-  resLocals,
-  qid,
-  title,
-}: {
-  resLocals: InstructorQuestionLocals;
-  qid: string;
-  title: string;
-}): Promise<Question> {
-  const validation = validateShortName(qid);
-  if (!validation.valid) {
-    throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
-  }
-
-  const result = await getCourseFilesClient().renameQuestion.mutate({
-    course_id: resLocals.course.id,
-    user_id: resLocals.user.id,
-    authn_user_id: resLocals.authn_user.id,
-    has_course_permission_edit: resLocals.authz_data.has_course_permission_edit,
-    question_id: resLocals.question.id,
-    qid,
-    title,
-  });
-
-  if (result.status === 'error') {
-    throw new EditJobFailedError(result.job_sequence_id);
-  }
-
-  // Re-fetch the question in case the QID was changed to avoid conflicts.
-  return await selectQuestionById(resLocals.question.id);
-}
-
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
@@ -244,13 +194,15 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const editorUrl = getEditorUrl(res.locals);
-    const [richTextEditorEnabled, messages, questionFilesData] = await Promise.all([
+    const [richTextEditorEnabled, messages, fileContents, browseData] = await Promise.all([
       features.enabledFromLocals('rich-text-editor', res.locals),
       getValidatedInitialMessages(res.locals.question),
-      getQuestionFilesData({
+      getDraftQuestionFileContents({
+        courseId: res.locals.course.id,
+        questionId: res.locals.question.id,
+      }),
+      browseDraftQuestionFiles({
         resLocals: res.locals,
-        editorUrl,
         selection: parseSelectionQueryParam(req.query.selection),
       }),
     ]);
@@ -266,7 +218,8 @@ router.get(
         resLocals: res.locals,
         question: res.locals.question,
         messages,
-        questionFilesData,
+        fileContents,
+        browseData,
         richTextEditorEnabled,
         questionContainerHtml,
         search: getUrl(req).search,
@@ -366,77 +319,15 @@ router.post(
   }),
 );
 
-const UploadDraftFileBodySchema = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('replace'),
-    file_path: z.string().min(1),
-  }),
-  z.object({
-    kind: z.literal('new'),
-    directory: z.string().optional(),
-  }),
-]);
-
-router.post(
-  '/files',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    assertCanCreateQuestion(res.locals);
-
-    if (!req.file) {
-      throw new error.HttpStatusError(400, 'No file uploaded');
-    }
-
-    const body = UploadDraftFileBodySchema.parse(req.body);
-    const requestedPath =
-      body.kind === 'replace'
-        ? body.file_path
-        : path.posix.join(body.directory ?? '', req.file.originalname);
-    const filePath = ModifiableQuestionFilePathSchema.safeParse(requestedPath);
-    if (!filePath.success) {
-      throw new error.HttpStatusError(
-        400,
-        filePath.error.issues[0]?.message ?? 'Invalid file path',
-      );
-    }
-    const reservedReason = getReservedDraftUploadReason(filePath.data);
-    if (reservedReason != null) {
-      throw new error.HttpStatusError(400, reservedReason);
-    }
-
-    // A failed sync job is an expected outcome rather than a crash: report it
-    // as an HTTP 400 carrying a `SYNC_JOB_FAILED` app error — the same shape the
-    // tRPC file mutations raise via `throwAppError` — so the client narrows on
-    // it identically (see `unwrapAppResponse`).
-    try {
-      await uploadDraftQuestionFile({
-        course: res.locals.course,
-        question: res.locals.question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        filePath: filePath.data,
-        fileContents: req.file.buffer,
-      });
-    } catch (err) {
-      if (err instanceof EditJobFailedError) {
-        res
-          .status(400)
-          .json({ appError: editJobFailedAppError(err, 'The file upload failed to sync.') });
-        return;
-      }
-      throw err;
-    }
-
-    res.json({});
-  }),
-);
-
 router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {
       const updatedQuestion = await renameDraftQuestion({
-        resLocals: res.locals,
+        course: res.locals.course,
+        question: res.locals.question,
+        user: res.locals.user,
+        authz_data: res.locals.authz_data,
         qid: req.body.qid,
         title: req.body.title,
       });
@@ -444,41 +335,6 @@ router.post(
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
       res.redirect(`${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`);
-    } else if (req.body.__action === 'rename_draft_question') {
-      if (req.accepts('html')) {
-        throw new error.HttpStatusError(406, 'Not Acceptable');
-      }
-
-      // An empty QID or title field leaves that value unchanged, so the inline
-      // editor can update the QID and title independently.
-      const qid =
-        typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
-          ? req.body.qid
-          : res.locals.question.qid;
-      const title =
-        typeof req.body.title === 'string' && req.body.title.trim() !== ''
-          ? req.body.title
-          : res.locals.question.title;
-
-      try {
-        const updatedQuestion = await renameDraftQuestion({
-          resLocals: res.locals,
-          qid,
-          title,
-        });
-        res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
-      } catch (err) {
-        // A failed sync job is reported as a `SYNC_JOB_FAILED` app error, the
-        // same shape the tRPC file mutations raise; other errors (e.g. an
-        // invalid QID) propagate to the standard error handler.
-        if (err instanceof EditJobFailedError) {
-          res.status(400).json({
-            appError: editJobFailedAppError(err, 'Renaming the question failed to sync.'),
-          });
-          return;
-        }
-        throw err;
-      }
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(

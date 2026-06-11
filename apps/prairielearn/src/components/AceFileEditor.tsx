@@ -1,6 +1,24 @@
 import ace from 'ace-builds';
 import { type Ref, useEffect, useImperativeHandle, useRef } from 'react';
 
+/**
+ * Ace loads modes/themes/workers dynamically as needed, but it's unable to
+ * identify the base path implicitly when using compiled assets. We explicitly
+ * set the paths based on the `ace-base-path` meta tag, which is computed
+ * server-side from the asset path for the `ace-builds` module.
+ */
+function configureAceBasePaths() {
+  const aceBasePath = document.querySelector<HTMLMetaElement>(
+    'meta[name="ace-base-path"]',
+  )?.content;
+  if (!aceBasePath) return;
+
+  ace.config.set('basePath', aceBasePath);
+  ace.config.set('modePath', aceBasePath);
+  ace.config.set('workerPath', aceBasePath);
+  ace.config.set('themePath', aceBasePath);
+}
+
 export interface AceFileEditorHandle {
   readonly editor: ace.Ace.Editor | null;
   focus: () => void;
@@ -53,12 +71,7 @@ export function AceFileEditor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const aceBasePath = document.querySelector<HTMLMetaElement>(
-      'meta[name="ace-base-path"]',
-    )?.content;
-    if (aceBasePath) {
-      ace.config.set('basePath', aceBasePath);
-    }
+    configureAceBasePaths();
 
     const editor = ace.edit(containerRef.current, {
       enableKeyboardAccessibility: true,

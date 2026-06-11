@@ -23,33 +23,25 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 const router = Router();
 
-const FileActionSchema = z.object({
-  __action: z.string(),
-});
-
-const DeleteFileActionSchema = z.object({
-  __action: z.literal('delete_file'),
-  file_path: z.string(),
-});
-
-const RenameFileActionSchema = z.object({
-  __action: z.literal('rename_file'),
-  working_path: z.string(),
-  old_file_name: z.string(),
-  new_file_name: z.string().min(1),
-  was_viewing_file: z.string().optional(),
-});
-
-const UploadFileActionSchema = z.union([
+const BodySchema = z.discriminatedUnion('__action', [
   z.object({
-    __action: z.literal('upload_file'),
-    file_path: z.string().min(1),
-    working_path: z.string().optional(),
+    __action: z.literal('delete_file'),
+    file_path: z.string(),
   }),
   z.object({
+    __action: z.literal('rename_file'),
+    working_path: z.string(),
+    old_file_name: z.string(),
+    new_file_name: z.string().min(1),
+    was_viewing_file: z.string().optional(),
+  }),
+  // The upload form posts exactly one of `file_path` (replace an existing
+  // file) or `working_path` (add a new file, uploaded under its original
+  // name); the handler checks that one is present.
+  z.object({
     __action: z.literal('upload_file'),
-    file_path: z.undefined().optional(),
-    working_path: z.string().min(1),
+    file_path: z.string().min(1).optional(),
+    working_path: z.string().min(1).optional(),
   }),
 ]);
 
@@ -114,113 +106,92 @@ router.post(
         rootPath: paths.rootPath,
         invalidRootPaths: paths.invalidRootPaths,
       };
-      const actionBody = FileActionSchema.parse(req.body);
+      const body = BodySchema.parse(req.body);
 
       // NOTE: All actions are meant to do things to *files* and not to directories
       // (or anything else). However, nowhere do we check that it is actually being
       // applied to a file and not to a directory.
 
-      if (actionBody.__action === 'delete_file') {
-        const body = DeleteFileActionSchema.parse(req.body);
-        let deletePath: string;
-        try {
-          deletePath = path.join(res.locals.course.path, body.file_path);
-        } catch {
-          throw new Error(`Invalid file path: ${body.file_path}`);
-        }
-
-        const result = await runEditorJob(
-          new FileDeleteEditor({
-            locals: res.locals,
-            container,
-            deletePath,
-          }),
-        );
-        if (result.status === 'error') {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + result.jobSequenceId);
-          return;
-        }
-        res.redirect(req.originalUrl);
-      } else if (actionBody.__action === 'rename_file') {
-        const body = RenameFileActionSchema.parse(req.body);
-        let oldPath: string;
-        try {
-          oldPath = path.join(body.working_path, body.old_file_name);
-        } catch {
-          throw new Error(`Invalid old file path: ${body.working_path} / ${body.old_file_name}`);
-        }
-        if (!FILE_NAME_PATTERN.test(body.new_file_name)) {
-          throw new Error(
-            `Invalid new file name (did not match required pattern): ${body.new_file_name}`,
+      switch (body.__action) {
+        case 'delete_file': {
+          const result = await runEditorJob(
+            new FileDeleteEditor({
+              locals: res.locals,
+              container,
+              deletePath: path.join(res.locals.course.path, body.file_path),
+            }),
           );
-        }
-
-        let newPath: string;
-        try {
-          newPath = path.join(body.working_path, body.new_file_name);
-        } catch {
-          throw new Error(`Invalid new file path: ${body.working_path} / ${body.new_file_name}`);
-        }
-
-        if (oldPath === newPath) {
+          if (result.status === 'error') {
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + result.jobSequenceId);
+            return;
+          }
           res.redirect(req.originalUrl);
           return;
         }
+        case 'rename_file': {
+          if (!FILE_NAME_PATTERN.test(body.new_file_name)) {
+            throw new Error(
+              `Invalid new file name (did not match required pattern): ${body.new_file_name}`,
+            );
+          }
 
-        const result = await runEditorJob(
-          new FileRenameEditor({
-            locals: res.locals,
-            container,
-            oldPath,
-            newPath,
-          }),
-        );
-        if (result.status === 'error') {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
-          return;
-        }
-        if (body.was_viewing_file) {
-          res.redirect(
-            `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-              path.relative(res.locals.course.path, newPath),
-            )}`,
+          const oldPath = path.join(body.working_path, body.old_file_name);
+          const newPath = path.join(body.working_path, body.new_file_name);
+          if (oldPath === newPath) {
+            res.redirect(req.originalUrl);
+            return;
+          }
+
+          const result = await runEditorJob(
+            new FileRenameEditor({
+              locals: res.locals,
+              container,
+              oldPath,
+              newPath,
+            }),
           );
-        } else {
-          res.redirect(req.originalUrl);
-        }
-      } else if (actionBody.__action === 'upload_file') {
-        const body = UploadFileActionSchema.parse(req.body);
-        if (!req.file) throw new Error('No file uploaded');
-        let filePath: string;
-        if (body.file_path != null) {
-          try {
-            filePath = path.join(res.locals.course.path, body.file_path);
-          } catch {
-            throw new Error(`Invalid file path: ${body.file_path}`);
+          if (result.status === 'error') {
+            res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
+            return;
           }
-        } else {
-          try {
-            filePath = path.join(body.working_path, req.file.originalname);
-          } catch {
-            throw new Error(`Invalid file path: ${body.working_path} / ${req.file.originalname}`);
+          if (body.was_viewing_file) {
+            res.redirect(
+              `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
+                path.relative(res.locals.course.path, newPath),
+              )}`,
+            );
+          } else {
+            res.redirect(req.originalUrl);
           }
-        }
-
-        const result = await runEditorJob(
-          new FileUploadEditor({
-            locals: res.locals,
-            container,
-            filePath,
-            fileContents: req.file.buffer,
-          }),
-        );
-        if (result.status === 'error') {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
           return;
         }
-        res.redirect(req.originalUrl);
-      } else {
-        throw new Error(`unknown __action: ${actionBody.__action}`);
+        case 'upload_file': {
+          if (!req.file) throw new Error('No file uploaded');
+          const filePath =
+            body.file_path != null
+              ? path.join(res.locals.course.path, body.file_path)
+              : body.working_path != null
+                ? path.join(body.working_path, req.file.originalname)
+                : null;
+          if (filePath == null) {
+            throw new Error('Either file_path or working_path must be provided');
+          }
+
+          const result = await runEditorJob(
+            new FileUploadEditor({
+              locals: res.locals,
+              container,
+              filePath,
+              fileContents: req.file.buffer,
+            }),
+          );
+          if (result.status === 'error') {
+            res.redirect(`${res.locals.urlPrefix}/edit_error/${result.jobSequenceId}`);
+            return;
+          }
+          res.redirect(req.originalUrl);
+          return;
+        }
       }
     },
   ),

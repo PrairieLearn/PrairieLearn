@@ -6,19 +6,20 @@ import { type ReactNode, type SubmitEvent, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { getAppError, renderAppError, syncJobFailedRenderer } from '../../../../lib/client/errors.js';
+import {
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../../../lib/client/errors.js';
 import { getReservedDraftUploadReason } from '../../../../lib/draft-question-files/paths.shared.js';
 import {
   QUESTION_FILE_NAME_PATTERN,
   QUESTION_FILE_NAME_PATTERN_DESCRIPTION,
 } from '../../../../lib/short-name.js';
-import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 
-/**
- * Callbacks that perform draft question file mutations. Each resolves on
- * success and rejects on failure; the rejection is rendered in the action's
- * popover via {@link getAppError}.
- */
+import { useDraftFiles } from './draftFilesContext.js';
+
 /**
  * Where a draft file upload lands: either replacing an exact existing file, or
  * creating a new file under its original name in `directory` (or the question
@@ -28,6 +29,11 @@ export type DraftUploadTarget =
   | { kind: 'replace'; filePath: string }
   | { kind: 'new'; directory: string | null };
 
+/**
+ * Callbacks that perform draft question file mutations. Each resolves on
+ * success and rejects on failure; the rejection is rendered in the action's
+ * popover via {@link getAppError}.
+ */
 export interface DraftQuestionFileBrowserActions {
   onUploadFile: (args: { file: File; target: DraftUploadTarget }) => Promise<void>;
   onRenameFile: (args: { oldFilePath: string; newFilePath: string }) => Promise<void>;
@@ -45,7 +51,6 @@ function DraftFileUploadForm({
   infoDirectory,
   maxFileSizeBytes,
   target,
-  urlPrefix,
   onCancel,
   onSubmit,
 }: {
@@ -54,10 +59,10 @@ function DraftFileUploadForm({
   infoDirectory: string | null;
   maxFileSizeBytes: number;
   target: DraftUploadTarget;
-  urlPrefix: string;
   onCancel: () => void;
   onSubmit: (file: File) => Promise<void>;
 }) {
+  const { urlPrefix } = useDraftFiles();
   const inputId = `${idPrefix}-file`;
   const errorId = `${idPrefix}-error`;
   const [file, setFile] = useState<File | null>(null);
@@ -142,17 +147,16 @@ function DraftFileRenameForm({
   idPrefix,
   fileName,
   oldFilePath,
-  urlPrefix,
   onCancel,
   onSubmit,
 }: {
   idPrefix: string;
   fileName: string;
   oldFilePath: string;
-  urlPrefix: string;
   onCancel: () => void;
   onSubmit: (newFilePath: string) => Promise<void>;
 }) {
+  const { urlPrefix } = useDraftFiles();
   const inputId = `${idPrefix}-input`;
   const errorId = `${idPrefix}-error`;
   const [value, setValue] = useState(fileName);
@@ -234,16 +238,15 @@ function DraftFileRenameForm({
 function DraftFileDeleteForm({
   idPrefix,
   fileName,
-  urlPrefix,
   onCancel,
   onSubmit,
 }: {
   idPrefix: string;
   fileName: string;
-  urlPrefix: string;
   onCancel: () => void;
   onSubmit: () => Promise<void>;
 }) {
+  const { urlPrefix } = useDraftFiles();
   const errorId = `${idPrefix}-error`;
   const deleteMutation = useMutation({ mutationFn: onSubmit });
   const error = getAppError<AiDraftFilesError['Delete']>(deleteMutation.error);
@@ -347,7 +350,6 @@ export function UploadFileButton({
   infoDirectory,
   maxFileSizeBytes,
   target,
-  urlPrefix,
   onUploadFile,
 }: {
   id: string;
@@ -358,7 +360,6 @@ export function UploadFileButton({
   infoDirectory?: string | null;
   maxFileSizeBytes: number;
   target: DraftUploadTarget;
-  urlPrefix: string;
   onUploadFile: DraftQuestionFileBrowserActions['onUploadFile'];
 }) {
   return (
@@ -375,7 +376,6 @@ export function UploadFileButton({
           infoDirectory={infoDirectory ?? null}
           maxFileSizeBytes={maxFileSizeBytes}
           target={target}
-          urlPrefix={urlPrefix}
           onCancel={close}
           onSubmit={async (file) => {
             await onUploadFile({ file, target });
@@ -392,14 +392,12 @@ export function RenameFileButton({
   fileName,
   oldFilePath,
   disabled,
-  urlPrefix,
   onRenameFile,
 }: {
   id: string;
   fileName: string;
   oldFilePath: string;
   disabled?: boolean;
-  urlPrefix: string;
   onRenameFile: DraftQuestionFileBrowserActions['onRenameFile'];
 }) {
   return (
@@ -416,7 +414,6 @@ export function RenameFileButton({
           idPrefix={id}
           fileName={fileName}
           oldFilePath={oldFilePath}
-          urlPrefix={urlPrefix}
           onCancel={close}
           onSubmit={async (newFilePath) => {
             await onRenameFile({ oldFilePath, newFilePath });
@@ -433,14 +430,12 @@ export function DeleteFileButton({
   fileName,
   filePath,
   disabled,
-  urlPrefix,
   onDeleteFile,
 }: {
   id: string;
   fileName: string;
   filePath: string;
   disabled?: boolean;
-  urlPrefix: string;
   onDeleteFile: DraftQuestionFileBrowserActions['onDeleteFile'];
 }) {
   return (
@@ -456,7 +451,6 @@ export function DeleteFileButton({
         <DraftFileDeleteForm
           idPrefix={id}
           fileName={fileName}
-          urlPrefix={urlPrefix}
           onCancel={close}
           onSubmit={async () => {
             await onDeleteFile({ filePath });

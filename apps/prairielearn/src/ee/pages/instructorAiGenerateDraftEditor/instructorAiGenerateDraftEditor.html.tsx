@@ -12,7 +12,10 @@ import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
-import type { QuestionFilesData } from '../../../lib/draft-question-files/browser.js';
+import type {
+  DraftQuestionBrowseData,
+  DraftQuestionFileContents,
+} from '../../../lib/draft-question-files/browser.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -24,7 +27,8 @@ export function InstructorAiGenerateDraftEditor({
   resLocals,
   question,
   messages,
-  questionFilesData,
+  fileContents,
+  browseData,
   richTextEditorEnabled,
   questionContainerHtml,
   search,
@@ -32,7 +36,8 @@ export function InstructorAiGenerateDraftEditor({
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
-  questionFilesData: QuestionFilesData;
+  fileContents: DraftQuestionFileContents;
+  browseData: DraftQuestionBrowseData;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   search: string;
@@ -48,10 +53,6 @@ export function InstructorAiGenerateDraftEditor({
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
-    authnUserId: resLocals.authn_user.id,
-  });
-  const uploadCsrfToken = generateCsrfToken({
-    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/files`,
     authnUserId: resLocals.authn_user.id,
   });
   const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
@@ -110,10 +111,11 @@ export function InstructorAiGenerateDraftEditor({
         <AiQuestionGenerationEditor
           chatCsrfToken={chatCsrfToken}
           trpcCsrfToken={trpcCsrfToken}
-          trpcUrl={trpcUrl}
+          courseId={resLocals.course.id}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
-          questionFilesData={questionFilesData}
+          fileContents={fileContents}
+          browseData={browseData}
           currentUserName={resLocals.authn_user.name}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
@@ -122,7 +124,6 @@ export function InstructorAiGenerateDraftEditor({
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
-          uploadCsrfToken={uploadCsrfToken}
           search={search}
         />
       </Hydrate>

@@ -9,8 +9,24 @@ import { isBinaryFile } from 'isbinaryfile';
 import { contains } from '@prairielearn/path-utils';
 
 import * as editorUtil from './editorUtil.js';
-import type { InstructorFilePaths } from './instructorFiles.js';
 import { encodePath } from './uri-util.js';
+
+/**
+ * The slice of path/permission context the browse functions need. The
+ * instructor file browser's `InstructorFilePaths` satisfies this; other callers
+ * (e.g. the draft question file browser) can construct it directly.
+ */
+export interface FileBrowserPaths {
+  coursePath: string;
+  courseId: string;
+  /** Absolute path of the file or directory being browsed. */
+  workingPath: string;
+  hasEditPermission: boolean;
+  /** Absolute paths that may not be renamed or deleted (e.g. metadata files). */
+  cannotMove: string[];
+  /** Absolute paths whose contents may not be viewed in this context. */
+  invalidRootPaths: string[];
+}
 
 export interface FileInfo {
   id: number;
@@ -66,7 +82,7 @@ export type BrowseResult =
 export async function browseDirectoryOrFile({
   paths,
 }: {
-  paths: InstructorFilePaths;
+  paths: FileBrowserPaths;
 }): Promise<BrowseResult> {
   const stats = await fs.lstat(paths.workingPath);
   if (stats.isDirectory()) {
@@ -109,7 +125,7 @@ export async function getBinaryFileKind(filePath: string): Promise<'image' | 'pd
 export async function browseDirectory({
   paths,
 }: {
-  paths: InstructorFilePaths;
+  paths: FileBrowserPaths;
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
   const all_files = await async.mapLimit(
@@ -165,7 +181,7 @@ export async function browseDirectory({
   };
 }
 
-export async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
+export async function browseFile({ paths }: { paths: FileBrowserPaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {

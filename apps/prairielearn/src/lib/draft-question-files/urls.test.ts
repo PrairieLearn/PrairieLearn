@@ -1,79 +1,72 @@
 import { assert, describe, it } from 'vitest';
 
-import { getEditorUrlForSelection } from './urls.js';
+import { getDraftQuestionFileUrls, resolveSelectionNavigation } from './urls.js';
 
-describe('getEditorUrlForSelection', () => {
-  it('builds file URLs', () => {
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'file', path: 'clientFilesQuestion/data set.csv' },
-        search: '',
+describe('resolveSelectionNavigation', () => {
+  it('routes files and directories to the All files tab', () => {
+    assert.deepEqual(
+      resolveSelectionNavigation({ kind: 'file', path: 'clientFilesQuestion/data.csv' }),
+      { tab: 'all-files', selection: { kind: 'file', path: 'clientFilesQuestion/data.csv' } },
+    );
+    assert.deepEqual(resolveSelectionNavigation({ kind: 'dir', path: 'tests' }), {
+      tab: 'all-files',
+      selection: { kind: 'dir', path: 'tests' },
+    });
+    assert.deepEqual(resolveSelectionNavigation({ kind: 'dir', path: null }), {
+      tab: 'all-files',
+      selection: { kind: 'dir', path: null },
+    });
+  });
+
+  it('routes question.html and server.py to the Files tab with the selection cleared', () => {
+    assert.deepEqual(resolveSelectionNavigation({ kind: 'file', path: 'question.html' }), {
+      tab: 'files',
+      selection: { kind: 'dir', path: null },
+    });
+    assert.deepEqual(resolveSelectionNavigation({ kind: 'file', path: 'server.py' }), {
+      tab: 'files',
+      selection: { kind: 'dir', path: null },
+    });
+  });
+
+  it('does not special-case nested files with reserved names', () => {
+    assert.deepEqual(resolveSelectionNavigation({ kind: 'file', path: 'tests/server.py' }), {
+      tab: 'all-files',
+      selection: { kind: 'file', path: 'tests/server.py' },
+    });
+  });
+});
+
+describe('getDraftQuestionFileUrls', () => {
+  it('builds question-scoped file URLs', () => {
+    assert.deepEqual(
+      getDraftQuestionFileUrls({
+        urlPrefix: '/pl/course/1',
+        questionId: '2',
+        qid: '__drafts__/draft_3',
+        filePath: 'notes.txt',
       }),
-      '/pl/course/1/ai_generate_editor/2?tab=all-files&selection=file%3AclientFilesQuestion%2Fdata+set.csv',
+      {
+        downloadUrl:
+          '/pl/course/1/question/2/file_download/questions/__drafts__/draft_3/notes.txt?attachment=notes.txt',
+        fileViewUrl: '/pl/course/1/question/2/file_view/questions/__drafts__/draft_3/notes.txt',
+        imageUrl: '/pl/course/1/question/2/file_download/questions/__drafts__/draft_3/notes.txt',
+        pdfUrl:
+          '/pl/course/1/question/2/file_download/questions/__drafts__/draft_3/notes.txt?type=application/pdf#view=FitH',
+      },
     );
   });
 
-  it('builds directory URLs', () => {
+  it('percent-encodes path segments without encoding slashes', () => {
+    const { downloadUrl } = getDraftQuestionFileUrls({
+      urlPrefix: '/pl/course/1',
+      questionId: '2',
+      qid: 'q1',
+      filePath: 'clientFilesQuestion/data set.csv',
+    });
     assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'dir', path: 'clientFilesQuestion/assets' },
-        search: '',
-      }),
-      '/pl/course/1/ai_generate_editor/2?tab=all-files&selection=dir%3AclientFilesQuestion%2Fassets',
-    );
-  });
-
-  it('omits the selection parameter for the question root', () => {
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'dir', path: null },
-        search: '',
-      }),
-      '/pl/course/1/ai_generate_editor/2?tab=all-files',
-    );
-  });
-
-  it('preserves unrelated query params when selecting a file', () => {
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'file', path: 'clientFilesQuestion/data.csv' },
-        search: '?variant_id=5&tab=preview',
-      }),
-      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&selection=file%3AclientFilesQuestion%2Fdata.csv',
-    );
-  });
-
-  it('routes question.html and server.py to the Files tab with no selection', () => {
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'file', path: 'question.html' },
-        search: '?variant_id=5&selection=file%3Atests%2Ffoo.html&tab=all-files',
-      }),
-      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=files',
-    );
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'file', path: 'server.py' },
-        search: '',
-      }),
-      '/pl/course/1/ai_generate_editor/2?tab=files',
-    );
-  });
-
-  it('replaces a stale selection param when selecting a directory', () => {
-    assert.equal(
-      getEditorUrlForSelection({
-        editorUrl: '/pl/course/1/ai_generate_editor/2',
-        selection: { kind: 'dir', path: 'tests' },
-        search: '?variant_id=5&selection=file%3Aserver.py',
-      }),
-      '/pl/course/1/ai_generate_editor/2?variant_id=5&tab=all-files&selection=dir%3Atests',
+      downloadUrl,
+      '/pl/course/1/question/2/file_download/questions/q1/clientFilesQuestion/data%20set.csv?attachment=data%20set.csv',
     );
   });
 });

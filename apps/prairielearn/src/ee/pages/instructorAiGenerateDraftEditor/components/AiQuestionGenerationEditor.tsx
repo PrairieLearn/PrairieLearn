@@ -1,6 +1,7 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
+import { useQueryState } from 'nuqs';
+import { useCallback, useMemo, useState } from 'react';
 import { Nav, Tab } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -10,38 +11,47 @@ import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import { getAppError } from '../../../../lib/client/errors.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
-import type { QuestionFilesData } from '../../../../lib/draft-question-files/browser.js';
+import type {
+  DraftQuestionBrowseData,
+  DraftQuestionFileContents,
+} from '../../../../lib/draft-question-files/browser.js';
 import {
   parseSelectionQueryParam,
-  selectionEquals,
+  selectionParser,
 } from '../../../../lib/draft-question-files/selection.js';
-import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+import { CODE_EDITOR_TAB_FILES } from '../../../../lib/draft-question-files/urls.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
+import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
+import type { CourseRouter } from '../../../../trpc/course/trpc.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';
-import {
-  type NewVariantHandle,
-  QuestionAndFilePreview,
-  type UnsavedChangesHandle,
-} from './QuestionAndFilePreview.js';
+import { QuestionAndFilePreview } from './QuestionAndFilePreview.js';
 import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
-import { TRPCProvider, createAiDraftFilesTrpcClient, useTRPC } from './aiDraftFilesTrpc.js';
-import { DraftFilesContext, type DraftFilesContextValue } from './draftFilesContext.js';
+import {
+  DraftFilesContext,
+  type DraftFilesContextValue,
+  useDraftEditorRegistry,
+} from './draftFilesContext.js';
 import {
   AI_DRAFT_EDITOR_TABS,
   type AiDraftEditorTab,
-  useDraftFileNavigation,
+  tabParser,
 } from './useDraftFileNavigation.js';
+import { useQuestionGenerationChat } from './useQuestionGenerationChat.js';
+import { useQuestionHtml } from './useQuestionHtml.js';
+import { useRefetchDraftFiles } from './useRefetchDraftFiles.js';
 
 interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   trpcCsrfToken: string;
-  trpcUrl: string;
-  uploadCsrfToken: string;
+  courseId: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
-  questionFilesData: QuestionFilesData;
+  fileContents: DraftQuestionFileContents;
+  browseData: DraftQuestionBrowseData;
   currentUserName: string | null;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
@@ -57,77 +67,80 @@ function AiQuestionGenerationEditorInner({
   chatCsrfToken,
   question,
   initialMessages,
-  questionFilesData: initialQuestionFilesData,
   currentUserName,
   richTextEditorEnabled,
   urlPrefix,
   csrfToken,
-  uploadCsrfToken,
   questionContainerHtml,
   showJobLogsLink,
   variantUrl,
   variantCsrfToken,
-  search,
 }: AiQuestionGenerationEditorProps) {
   const trpc = useTRPC();
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
-  // A generation may already be in progress when the page loads (the chat
-  // resumes its stream); a trailing `streaming` message is the same signal the
-  // server uses to decide whether there is a stream to resume.
-  const [isGenerating, setIsGenerating] = useState(
-    () => initialMessages.at(-1)?.metadata?.status === 'streaming',
-  );
   const [currentTitle, setCurrentTitle] = useState(question.title);
   const [currentQid, setCurrentQid] = useState(question.qid);
-  const newVariantRef = useRef<NewVariantHandle>(null);
-  const unsavedChangesRef = useRef<UnsavedChangesHandle>(null);
-  const { selection } = useDraftFileNavigation();
-  const initialSelection = parseSelectionQueryParam(new URLSearchParams(search).get('selection'));
-  const selectionMatchesInitial = selectionEquals(selection, initialSelection);
+  const refetchDraftFiles = useRefetchDraftFiles();
+  const [selection] = useQueryState('selection', selectionParser);
+
+  const { registerEditor, getHasUnsavedChanges, discardUnsavedChanges } = useDraftEditorRegistry();
 
   const {
-    data: questionFilesData,
-    error: rawFilesError,
-    refetch: refetchFiles,
-  } = useQuery({
-    ...trpc.aiDraftFiles.list.queryOptions(
-      {
-        questionId: question.id,
-        selection,
-      },
+    wrapperRef: previewWrapperRef,
+    newVariant,
+    previewError,
+    dismissPreviewError,
+  } = useQuestionHtml({ variantUrl, variantCsrfToken });
+
+  const chat = useQuestionGenerationChat({
+    chatCsrfToken,
+    questionId: question.id,
+    urlPrefix,
+    currentUserName,
+    initialMessages,
+    refreshQuestionPreview: newVariant,
+    onFilesChanged: () => void refetchDraftFiles(),
+  });
+  const isGenerating = chat.isGenerating;
+
+  // After a file mutation: refresh the file data, then reload the preview.
+  const handleFileMutated = useCallback(async () => {
+    await refetchDraftFiles();
+    newVariant();
+  }, [refetchDraftFiles, newVariant]);
+
+  const { data: fileContents, error: rawContentsError } = useQuery(
+    trpc.aiDraftFiles.contents.queryOptions(
+      { questionId: question.id },
       {
         staleTime: Infinity,
-        initialData: selectionMatchesInitial ? initialQuestionFilesData : undefined,
-        placeholderData: (previousData) => previousData ?? initialQuestionFilesData,
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
       },
     ),
-  });
-
-  const filesError = getAppError<AiDraftFilesError['List']>(rawFilesError);
-  const currentQuestionFilesData = questionFilesData ?? initialQuestionFilesData;
+  );
+  const contentsError = getAppError<AiDraftFilesError['Contents']>(rawContentsError);
+  // Memoized for referential stability: `files` feeds the `isQuestionEmpty`
+  // memo below and child props.
+  const files = useMemo(() => fileContents?.files ?? {}, [fileContents]);
 
   const handleTitleAndQidSaved = useCallback(
     (update: { qid: string | null; title: string | null }) => {
       setCurrentQid(update.qid);
       setCurrentTitle(update.title);
-      void refetchFiles();
+      void refetchDraftFiles();
     },
-    [refetchFiles],
+    [refetchDraftFiles],
   );
 
-  const [activeTab, setActiveTab] = useQueryState(
-    'tab',
-    parseAsStringLiteral(AI_DRAFT_EDITOR_TABS)
-      .withDefault(
-        currentQuestionFilesData.selectedFile == null &&
-          currentQuestionFilesData.selectedFilePreview == null
-          ? 'preview'
-          : 'all-files',
-      )
-      .withOptions({ clearOnDefault: false }),
-  );
+  // The `tab` param has no parser-level default: when absent, fall back based
+  // on the URL selection (a file selection opens the "All files" tab).
+  const [tabParam, setActiveTab] = useQueryState('tab', tabParser);
+  const defaultTab =
+    selection.kind === 'file' && !CODE_EDITOR_TAB_FILES.has(selection.path)
+      ? 'all-files'
+      : 'preview';
+  const activeTab = tabParam ?? defaultTab;
   const activeTabKey =
     activeTab === 'rich-text-editor' && !richTextEditorEnabled ? 'preview' : activeTab;
 
@@ -141,13 +154,13 @@ function AiQuestionGenerationEditorInner({
   );
 
   const isQuestionEmpty = useMemo(
-    () => b64DecodeUnicode(currentQuestionFilesData.files['question.html'] ?? '').trim() === '',
-    [currentQuestionFilesData],
+    () => b64DecodeUnicode(files['question.html']?.encodedContents ?? '').trim() === '',
+    [files],
   );
 
   const draftFilesContextValue = useMemo<DraftFilesContextValue>(
-    () => ({ questionId: question.id, urlPrefix, search, isGenerating, uploadCsrfToken }),
-    [question.id, urlPrefix, search, isGenerating, uploadCsrfToken],
+    () => ({ questionId: question.id, urlPrefix, isGenerating, registerEditor }),
+    [question.id, urlPrefix, isGenerating, registerEditor],
   );
 
   return (
@@ -155,26 +168,20 @@ function AiQuestionGenerationEditorInner({
       <Tab.Container activeKey={activeTabKey} onSelect={handleSelectTab}>
         <div className="app-content">
           <AiQuestionGenerationChat
+            chat={chat}
             chatCsrfToken={chatCsrfToken}
-            initialMessages={initialMessages}
-            currentUserName={currentUserName}
             questionId={question.id}
             showJobLogsLink={showJobLogsLink}
             urlPrefix={urlPrefix}
-            refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
-            getHasUnsavedChanges={() => unsavedChangesRef.current?.getHasUnsavedChanges() ?? false}
-            discardUnsavedChanges={() => unsavedChangesRef.current?.discardChanges()}
+            getHasUnsavedChanges={getHasUnsavedChanges}
+            discardUnsavedChanges={discardUnsavedChanges}
             isQuestionEmpty={isQuestionEmpty}
-            onGeneratingChange={setIsGenerating}
-            onGenerationComplete={() => refetchFiles()}
           />
 
           <div className="app-preview-tabs z-1">
             <QuestionTitleAndQid
               currentQid={currentQid}
               currentTitle={currentTitle}
-              csrfToken={csrfToken}
-              urlPrefix={urlPrefix}
               onSaved={handleTitleAndQidSaved}
             />
             <div className="d-flex flex-row align-items-stretch bg-light">
@@ -213,17 +220,16 @@ function AiQuestionGenerationEditorInner({
           </div>
           <div className="app-preview">
             <QuestionAndFilePreview
-              questionFilesData={currentQuestionFilesData}
+              files={files}
               richTextEditorEnabled={richTextEditorEnabled}
               questionContainerHtml={questionContainerHtml}
               csrfToken={csrfToken}
-              qid={currentQid}
-              variantUrl={variantUrl}
-              variantCsrfToken={variantCsrfToken}
-              newVariantRef={newVariantRef}
-              unsavedChangesRef={unsavedChangesRef}
+              previewWrapperRef={previewWrapperRef}
+              previewError={previewError}
               isQuestionEmpty={isQuestionEmpty}
-              filesError={filesError}
+              contentsError={contentsError}
+              onDismissPreviewError={dismissPreviewError}
+              onFileMutated={handleFileMutated}
               onSelectTab={(tab) => void setActiveTab(tab)}
             />
           </div>
@@ -257,9 +263,34 @@ function AiQuestionGenerationEditorInner({
 
 export function AiQuestionGenerationEditor(props: AiQuestionGenerationEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() =>
-    createAiDraftFilesTrpcClient({ csrfToken: props.trpcCsrfToken, trpcUrl: props.trpcUrl }),
-  );
+  const [trpcClient] = useState(() => {
+    const trpcClient = createCourseTrpcClient({
+      csrfToken: props.trpcCsrfToken,
+      courseId: props.courseId,
+    });
+
+    // Seed the cache with the server-rendered data so the initial render
+    // doesn't refetch. The `browse` entry is keyed by the selection the server
+    // rendered (the page URL's), which is also the selection the hydrated
+    // client starts from; navigating to other selections fetches fresh data.
+    const trpc = createTRPCOptionsProxy<CourseRouter>({ client: trpcClient, queryClient });
+    const initialSelection = parseSelectionQueryParam(
+      new URLSearchParams(props.search).get('selection'),
+    );
+    queryClient.setQueryData(
+      trpc.aiDraftFiles.contents.queryKey({ questionId: props.question.id }),
+      props.fileContents,
+    );
+    queryClient.setQueryData(
+      trpc.aiDraftFiles.browse.queryKey({
+        questionId: props.question.id,
+        selection: initialSelection,
+      }),
+      props.browseData,
+    );
+
+    return trpcClient;
+  });
 
   return (
     <QueryClientProviderDebug client={queryClient}>

@@ -1,4 +1,5 @@
-import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { type Ref, useEffect, useRef } from 'react';
 import { Alert, Tab } from 'react-bootstrap';
 
 import { executeScripts } from '@prairielearn/browser-utils';
@@ -6,41 +7,25 @@ import { run } from '@prairielearn/run';
 
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
-import { type AppError, renderAppError } from '../../../../lib/client/errors.js';
+import { type AppError, getAppError, renderAppError } from '../../../../lib/client/errors.js';
 import type {
-  DraftQuestionFileBrowserBreadcrumbSegment,
-  QuestionFilesData,
-  SelectedQuestionFilePreview,
+  DraftQuestionFileContent,
+  DraftQuestionSelectedFile,
 } from '../../../../lib/draft-question-files/browser.js';
-import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
+import { getDraftQuestionFileUrls } from '../../../../lib/draft-question-files/urls.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { DraftQuestionFileBrowser } from './DraftQuestionFileBrowser.js';
 import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
-import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
-import {
-  SelectedQuestionFileEditor,
-  type SelectedQuestionFileEditorHandle,
-} from './SelectedQuestionFileEditor.js';
-import { useRefetchDraftFiles } from './aiDraftFilesTrpc.js';
+import { QuestionCodeEditors } from './QuestionCodeEditors.js';
+import { SelectedQuestionFileEditor } from './SelectedQuestionFileEditor.js';
 import { useDraftFiles } from './draftFilesContext.js';
 import { useDraftFileNavigation } from './useDraftFileNavigation.js';
 import { useDraftQuestionFileMutations } from './useDraftQuestionFileMutations.js';
-import { useQuestionHtml } from './useQuestionHtml.js';
-
-export interface NewVariantHandle {
-  newVariant: () => void;
-}
-
-/**
- * Aggregates the unsaved-changes state of both file editors — the question code
- * editors and the selected-file editor — so the parent can guard navigation.
- */
-export interface UnsavedChangesHandle {
-  discardChanges: () => void;
-  /** Whether either editor currently holds unsaved changes. */
-  getHasUnsavedChanges: () => boolean;
-}
+import type { QuestionPreviewError } from './useQuestionHtml.js';
+import { useRefetchDraftFiles } from './useRefetchDraftFiles.js';
 
 function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -57,89 +42,96 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
   return <div ref={ref} suppressHydrationWarning />;
 }
 
-function AllQuestionFiles({
-  questionFilesData,
-  qid,
-  filesError,
-  onFileMutated,
-  editorRef,
+function FilesErrorBanner({
+  error,
+  onRetry,
 }: {
-  questionFilesData: QuestionFilesData;
-  qid: string | null;
-  filesError: AppError<AiDraftFilesError['List']> | null;
-  onFileMutated: () => Promise<unknown>;
-  editorRef?: Ref<SelectedQuestionFileEditorHandle>;
+  error: AppError<never>;
+  onRetry: () => Promise<unknown>;
 }) {
-  const { questionId, urlPrefix, uploadCsrfToken, search, isGenerating } = useDraftFiles();
-  const { selectFile, selectDirectory } = useDraftFileNavigation();
-  const refetchDraftFiles = useRefetchDraftFiles();
-  const { fileBrowser, selectedFile, selectedFilePreview, breadcrumb } = questionFilesData;
-  const fileBrowserActions = useDraftQuestionFileMutations({
-    questionId,
-    urlPrefix,
-    uploadCsrfToken,
-    onMutated: onFileMutated,
-  });
-
-  if (!qid) return null;
-
-  // Surfacing the list-query error keeps the previously-rendered selection
-  // (placeholder data) interactive while still telling the user the latest
-  // navigation failed; replacing the pane would hide the only working view.
-  const errorBanner = filesError ? (
+  return (
     <div
       className="alert alert-danger mb-0 rounded-0 py-2 d-flex align-items-center justify-content-between"
       role="alert"
     >
       <span>
         <strong>Error loading files:</strong>{' '}
-        {renderAppError(filesError, { UNKNOWN: ({ message }) => message })}
+        {renderAppError(error, { UNKNOWN: ({ message }) => message })}
       </span>
       <button
         type="button"
         className="btn btn-sm btn-outline-danger"
-        onClick={() => void refetchDraftFiles()}
+        onClick={() => void onRetry()}
       >
         <i className="fa fa-refresh me-1" aria-hidden="true" />
         Retry
       </button>
     </div>
+  );
+}
+
+function AllQuestionFiles({ onFileMutated }: { onFileMutated: () => Promise<unknown> }) {
+  const { questionId } = useDraftFiles();
+  const trpc = useTRPC();
+  const { selection, selectFile, selectDirectory } = useDraftFileNavigation();
+  const refetchDraftFiles = useRefetchDraftFiles();
+  const fileBrowserActions = useDraftQuestionFileMutations({ onMutated: onFileMutated });
+
+  const { data: browseData, error: rawBrowseError } = useQuery(
+    trpc.aiDraftFiles.browse.queryOptions(
+      { questionId, selection },
+      {
+        staleTime: Infinity,
+        // Keep the previously rendered listing interactive while a navigation
+        // loads, instead of flashing an empty pane.
+        placeholderData: keepPreviousData,
+        retry: 2,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+      },
+    ),
+  );
+  const browseError = getAppError<AiDraftFilesError['Browse']>(rawBrowseError);
+
+  // Surfacing the browse error keeps the previously-rendered selection
+  // (placeholder data) interactive while still telling the user the latest
+  // navigation failed; replacing the pane would hide the only working view.
+  const errorBanner = browseError ? (
+    <FilesErrorBanner error={browseError} onRetry={refetchDraftFiles} />
   ) : null;
 
   const body = run(() => {
-    if (selectedFile != null) {
+    if (browseData == null) {
+      return (
+        <div className="d-flex align-items-center justify-content-center h-100">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading files...</span>
+          </div>
+        </div>
+      );
+    }
+
+    const { fileBrowser, selected } = browseData;
+
+    if (selected?.kind === 'editor') {
       return (
         // Remount when a different file is opened or the file changes on disk, so
         // the editor resets to the saved contents and drops local edits.
         <SelectedQuestionFileEditor
-          key={`${selectedFile.path}:${selectedFile.contentHash}`}
-          selectedFile={selectedFile}
-          breadcrumb={breadcrumb}
-          editorUrl={fileBrowser.editorUrl}
-          editorRef={editorRef}
+          key={`${selected.path}:${selected.contentHash}`}
+          selectedFile={selected}
           onFileMutated={onFileMutated}
         />
       );
     }
 
-    if (selectedFilePreview != null) {
-      return (
-        <SelectedQuestionFilePreviewPanel
-          selectedFilePreview={selectedFilePreview}
-          breadcrumb={breadcrumb}
-          editorUrl={fileBrowser.editorUrl}
-        />
-      );
+    if (selected?.kind === 'preview') {
+      return <SelectedQuestionFilePreviewPanel selectedFile={selected} qid={fileBrowser.qid} />;
     }
 
     return (
       <DraftQuestionFileBrowser
         data={fileBrowser}
-        breadcrumb={breadcrumb}
         actions={fileBrowserActions}
-        search={search}
-        // Don't let manual file edits race the agent's file writes.
-        disableActions={isGenerating}
         onSelectFile={selectFile}
         onSelectDirectory={selectDirectory}
       />
@@ -155,19 +147,21 @@ function AllQuestionFiles({
 }
 
 function FilePreviewContent({
-  content,
+  preview,
+  src,
   fileName,
 }: {
-  content: SelectedQuestionFilePreview['content'];
+  preview: Extract<DraftQuestionSelectedFile, { kind: 'preview' }>['preview'];
+  src: { imageUrl: string; pdfUrl: string };
   fileName: string;
 }) {
-  if (content.kind === 'image') {
-    return <img src={content.src} className="img-fluid" alt={`Preview of ${fileName}`} />;
+  if (preview === 'image') {
+    return <img src={src.imageUrl} className="img-fluid" alt={`Preview of ${fileName}`} />;
   }
-  if (content.kind === 'pdf') {
+  if (preview === 'pdf') {
     return (
       <div className="ratio ratio-4x3">
-        <iframe src={content.src} title={`PDF preview of ${fileName}`}>
+        <iframe src={src.pdfUrl} title={`PDF preview of ${fileName}`}>
           This PDF cannot be displayed.
         </iframe>
       </div>
@@ -181,43 +175,46 @@ function FilePreviewContent({
 }
 
 function SelectedQuestionFilePreviewPanel({
-  selectedFilePreview,
-  breadcrumb,
-  editorUrl,
+  selectedFile,
+  qid,
 }: {
-  selectedFilePreview: SelectedQuestionFilePreview;
-  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
-  editorUrl: string;
+  selectedFile: Extract<DraftQuestionSelectedFile, { kind: 'preview' }>;
+  qid: string;
 }) {
-  const { search } = useDraftFiles();
+  const { questionId, urlPrefix } = useDraftFiles();
   const { selectDirectory } = useDraftFileNavigation();
+  const urls = getDraftQuestionFileUrls({
+    urlPrefix,
+    questionId,
+    qid,
+    filePath: selectedFile.path,
+  });
 
   return (
     <div className="selected-file-editor h-100 d-flex flex-column">
       <div className="selected-file-editor-toolbar d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <div className="min-width-0">
           <DraftQuestionFileBrowserBreadcrumb
-            segments={breadcrumb}
-            editorUrl={editorUrl}
-            search={search}
+            selection={{ kind: 'file', path: selectedFile.path }}
             ariaLabel="Selected file breadcrumb"
             onSelectDirectory={(directory) => void selectDirectory(directory)}
           />
           <div className="small text-muted">Preview</div>
         </div>
         <div className="d-flex align-items-center gap-2">
-          <a className="btn btn-sm btn-outline-secondary" href={selectedFilePreview.fileViewUrl}>
+          <a className="btn btn-sm btn-outline-secondary" href={urls.fileViewUrl}>
             Open full view
           </a>
-          <a className="btn btn-sm btn-outline-secondary" href={selectedFilePreview.downloadUrl}>
+          <a className="btn btn-sm btn-outline-secondary" href={urls.downloadUrl}>
             Download
           </a>
         </div>
       </div>
       <div className="flex-grow-1 overflow-auto p-3">
         <FilePreviewContent
-          content={selectedFilePreview.content}
-          fileName={selectedFilePreview.path.split('/').at(-1) ?? selectedFilePreview.path}
+          preview={selectedFile.preview}
+          src={urls}
+          fileName={selectedFile.path.split('/').at(-1) ?? selectedFile.path}
         />
       </div>
     </div>
@@ -225,68 +222,41 @@ function SelectedQuestionFilePreviewPanel({
 }
 
 export function QuestionAndFilePreview({
-  questionFilesData,
+  files,
   richTextEditorEnabled,
   questionContainerHtml,
   csrfToken,
-  qid,
-  variantUrl,
-  variantCsrfToken,
-  newVariantRef,
-  unsavedChangesRef,
+  previewWrapperRef,
+  previewError,
+  onDismissPreviewError,
+  onFileMutated,
   isQuestionEmpty,
-  filesError,
+  contentsError,
   onSelectTab,
 }: {
-  questionFilesData: QuestionFilesData;
+  /** File contents keyed by question-relative path. */
+  files: Partial<Record<string, DraftQuestionFileContent>>;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
   csrfToken: string;
-  qid: string | null;
-  variantUrl: string;
-  variantCsrfToken: string;
-  newVariantRef: Ref<NewVariantHandle>;
-  unsavedChangesRef?: Ref<UnsavedChangesHandle>;
+  /** Wrapper element `useQuestionHtml` swaps the question preview into. */
+  previewWrapperRef: Ref<HTMLDivElement>;
+  previewError: QuestionPreviewError | null;
+  onDismissPreviewError: () => void;
+  onFileMutated: () => Promise<unknown>;
   isQuestionEmpty: boolean;
-  filesError: AppError<AiDraftFilesError['List']> | null;
+  contentsError: AppError<AiDraftFilesError['Contents']> | null;
   onSelectTab: (tab: 'files') => void;
 }) {
   const { isGenerating } = useDraftFiles();
-  const refetchDraftFiles = useRefetchDraftFiles();
-  const { wrapperRef, newVariant, previewError, dismissPreviewError } = useQuestionHtml({
-    variantUrl,
-    variantCsrfToken,
-  });
-  const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
-  const selectedFileEditorRef = useRef<SelectedQuestionFileEditorHandle>(null);
-  const htmlContents = b64DecodeUnicode(questionFilesData.files['question.html'] || '');
-
-  // Allow the caller to request a new variant.
-  useImperativeHandle(newVariantRef, () => ({ newVariant }));
-
-  // Allow the caller to discard editor changes and query for unsaved changes
-  // across both the code editors and the selected-file editor.
-  useImperativeHandle(unsavedChangesRef, () => ({
-    discardChanges: () => {
-      internalCodeEditorsRef.current?.discardChanges();
-      selectedFileEditorRef.current?.discardChanges();
-    },
-    getHasUnsavedChanges: () =>
-      (internalCodeEditorsRef.current?.getHasChanges() ?? false) ||
-      (selectedFileEditorRef.current?.getHasChanges() ?? false),
-  }));
-
-  // After a file mutation: refresh the file data, then reload the preview.
-  const handleFileMutated = useCallback(async () => {
-    await refetchDraftFiles();
-    newVariant();
-  }, [refetchDraftFiles, newVariant]);
+  const htmlFile = files['question.html'] ?? null;
+  const htmlContents = htmlFile ? b64DecodeUnicode(htmlFile.encodedContents) : '';
 
   return (
     <Tab.Content className="h-100">
       <Tab.Pane eventKey="preview" className="h-100">
         {previewError && (
-          <Alert variant="danger" className="m-3 mb-0" dismissible onClose={dismissPreviewError}>
+          <Alert variant="danger" className="m-3 mb-0" dismissible onClose={onDismissPreviewError}>
             <span className="me-2">{previewError.message}</span>
             <button
               type="button"
@@ -333,7 +303,7 @@ export function QuestionAndFilePreview({
           </div>
         )}
         <div
-          ref={wrapperRef}
+          ref={previewWrapperRef}
           className="question-wrapper mx-auto p-3"
           style={isQuestionEmpty ? { display: 'none' } : undefined}
         >
@@ -342,21 +312,14 @@ export function QuestionAndFilePreview({
       </Tab.Pane>
       <Tab.Pane eventKey="files" className="h-100">
         <QuestionCodeEditors
-          htmlContents={htmlContents}
-          pythonContents={b64DecodeUnicode(questionFilesData.files['server.py'] || '')}
-          filesError={filesError}
-          editorRef={internalCodeEditorsRef}
-          onFileMutated={handleFileMutated}
+          htmlFile={htmlFile}
+          pythonFile={files['server.py'] ?? null}
+          filesError={contentsError}
+          onFileMutated={onFileMutated}
         />
       </Tab.Pane>
       <Tab.Pane eventKey="all-files" className="h-100">
-        <AllQuestionFiles
-          questionFilesData={questionFilesData}
-          qid={qid}
-          filesError={filesError}
-          editorRef={selectedFileEditorRef}
-          onFileMutated={handleFileMutated}
-        />
+        <AllQuestionFiles onFileMutated={onFileMutated} />
       </Tab.Pane>
       <Tab.Pane eventKey="rich-text-editor" className="h-100">
         {richTextEditorEnabled && (

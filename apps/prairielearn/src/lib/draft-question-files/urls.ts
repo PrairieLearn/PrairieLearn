@@ -1,9 +1,4 @@
-import {
-  type DraftEditorSelection,
-  ROOT_SELECTION,
-  selectionEquals,
-  selectionParser,
-} from './selection.js';
+import { type DraftEditorSelection, ROOT_SELECTION } from './selection.js';
 
 /**
  * Files edited through the dedicated "Files" tab rather than the per-file
@@ -14,34 +9,67 @@ import {
 export const CODE_EDITOR_TAB_FILES = new Set(['question.html', 'server.py']);
 
 /**
- * Builds the draft editor URL that opens `selection`. `editorUrl` is the base
- * editor URL (e.g. `/pl/course/1/ai_generate_editor/2`). `search` is the
- * current page query string; params unrelated to the selection / tab (e.g.
- * `variant_id`) are carried over.
- *
- * Files in {@link CODE_EDITOR_TAB_FILES} resolve to the "Files" tab with no
- * `selection` param, since that tab is the dedicated editor for them.
+ * Resolves where opening `selection` should land: files in
+ * {@link CODE_EDITOR_TAB_FILES} route to the dedicated "Files" tab with the
+ * selection cleared (that tab is their editor), everything else opens on the
+ * "All files" tab. This is the single routing rule shared by in-app navigation
+ * and href building.
  */
-export function getEditorUrlForSelection({
-  editorUrl,
-  selection,
-  search,
-}: {
-  editorUrl: string;
+export function resolveSelectionNavigation(selection: DraftEditorSelection): {
+  tab: 'files' | 'all-files';
   selection: DraftEditorSelection;
-  search: string;
-}) {
-  const params = new URLSearchParams(search);
-  params.delete('selection');
-
+} {
   if (selection.kind === 'file' && CODE_EDITOR_TAB_FILES.has(selection.path)) {
-    params.set('tab', 'files');
-  } else {
-    params.set('tab', 'all-files');
-    if (!selectionEquals(selection, ROOT_SELECTION)) {
-      params.set('selection', selectionParser.serialize(selection));
-    }
+    return { tab: 'files', selection: ROOT_SELECTION };
   }
-  const queryString = params.toString();
-  return queryString === '' ? editorUrl : `${editorUrl}?${queryString}`;
+  return { tab: 'all-files', selection };
+}
+
+/** The draft editor's base URL for a question. */
+export function getDraftEditorUrl({
+  urlPrefix,
+  questionId,
+}: {
+  urlPrefix: string;
+  questionId: string;
+}): string {
+  return `${urlPrefix}/ai_generate_editor/${questionId}`;
+}
+
+/**
+ * Encodes a course-relative POSIX path for use in a URL, preserving slashes.
+ * Client-safe equivalent of `encodePath` in `lib/uri-util.ts` for paths that
+ * are already normalized.
+ */
+function encodeCourseRelativePath(courseRelativePath: string): string {
+  return courseRelativePath.split('/').map(encodeURIComponent).join('/');
+}
+
+/**
+ * URLs for viewing and downloading a draft question file, served by the
+ * question-scoped `file_view` / `file_download` routes. `filePath` is relative
+ * to the question root; `qid` comes from the browse data fetched alongside the
+ * file so the two cannot drift after a rename.
+ */
+export function getDraftQuestionFileUrls({
+  urlPrefix,
+  questionId,
+  qid,
+  filePath,
+}: {
+  urlPrefix: string;
+  questionId: string;
+  qid: string;
+  filePath: string;
+}) {
+  const questionUrl = `${urlPrefix}/question/${questionId}`;
+  const encodedPath = encodeCourseRelativePath(`questions/${qid}/${filePath}`);
+  const rawDownloadUrl = `${questionUrl}/file_download/${encodedPath}`;
+  const fileName = filePath.split('/').at(-1) ?? filePath;
+  return {
+    downloadUrl: `${rawDownloadUrl}?attachment=${encodeURIComponent(fileName)}`,
+    fileViewUrl: `${questionUrl}/file_view/${encodedPath}`,
+    imageUrl: rawDownloadUrl,
+    pdfUrl: `${rawDownloadUrl}?type=application/pdf#view=FitH`,
+  };
 }

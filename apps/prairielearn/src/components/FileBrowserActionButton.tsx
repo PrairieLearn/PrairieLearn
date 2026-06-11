@@ -18,7 +18,8 @@ export function FileBrowserActionButton({
   /** Font Awesome icon class, e.g. `fa fa-edit`. */
   icon: string;
   label: string;
-  href: string;
+  /** Unused (and may be omitted) when `disabled`, which renders a button instead. */
+  href?: string;
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
   disabled?: boolean;
   /** Tooltip explaining why the action is unavailable. */

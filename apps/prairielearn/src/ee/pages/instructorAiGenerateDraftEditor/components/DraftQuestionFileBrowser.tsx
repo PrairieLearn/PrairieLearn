@@ -3,14 +3,13 @@ import { type MouseEvent } from 'react';
 import { FileBrowserActionButton } from '../../../../components/FileBrowserActionButton.js';
 import { SyncProblemButton } from '../../../../components/SyncProblemButton.js';
 import type {
-  DraftQuestionFileBrowserBreadcrumbSegment,
   DraftQuestionFileBrowserData,
   DraftQuestionFileBrowserDirectory,
   DraftQuestionFileBrowserFile,
 } from '../../../../lib/draft-question-files/browser.js';
 import {
   CODE_EDITOR_TAB_FILES,
-  getEditorUrlForSelection,
+  getDraftQuestionFileUrls,
 } from '../../../../lib/draft-question-files/urls.js';
 
 import {
@@ -20,16 +19,17 @@ import {
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
 import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
+import { useDraftFiles } from './draftFilesContext.js';
+import { useDraftFileNavigation } from './useDraftFileNavigation.js';
 
 function DraftQuestionDirectoryActions({
   data,
   actions,
-  disableActions,
 }: {
   data: DraftQuestionFileBrowserData;
   actions: DraftQuestionFileBrowserActions;
-  disableActions: boolean;
 }) {
+  const { isGenerating } = useDraftFiles();
   return (
     <div className="d-flex flex-wrap gap-2">
       {data.specialDirs.map((d) => (
@@ -39,11 +39,10 @@ function DraftQuestionDirectoryActions({
           label={`Add new ${d.label.toLowerCase()} file`}
           iconClass="fa fa-plus"
           className="btn btn-sm btn-outline-secondary"
-          disabled={disableActions}
+          disabled={isGenerating}
           infoDirectory={d.directory}
           maxFileSizeBytes={data.maxFileSizeBytes}
           target={{ kind: 'new', directory: d.directory }}
-          urlPrefix={data.urlPrefix}
           onUploadFile={actions.onUploadFile}
         />
       ))}
@@ -52,10 +51,9 @@ function DraftQuestionDirectoryActions({
         label="Add new file"
         iconClass="fa fa-plus"
         className="btn btn-sm btn-outline-secondary"
-        disabled={disableActions}
+        disabled={isGenerating}
         maxFileSizeBytes={data.maxFileSizeBytes}
         target={{ kind: 'new', directory: data.selectedDirectory }}
-        urlPrefix={data.urlPrefix}
         onUploadFile={actions.onUploadFile}
       />
     </div>
@@ -66,31 +64,33 @@ function DraftQuestionFileRow({
   data,
   file,
   actions,
-  search,
-  disableActions,
   onSelectFile,
 }: {
   data: DraftQuestionFileBrowserData;
   file: DraftQuestionFileBrowserFile;
   actions: DraftQuestionFileBrowserActions;
-  search: string;
-  disableActions: boolean;
   onSelectFile: (filePath: string) => void;
 }) {
-  const fileUrl = getEditorUrlForSelection({
-    editorUrl: data.editorUrl,
-    selection: { kind: 'file', path: file.selectedFilePath },
-    search,
+  const { questionId, urlPrefix, isGenerating } = useDraftFiles();
+  const { getSelectionUrl } = useDraftFileNavigation();
+  const fileUrl = getSelectionUrl({ kind: 'file', path: file.selectedFilePath });
+  const { downloadUrl } = getDraftQuestionFileUrls({
+    urlPrefix,
+    questionId,
+    qid: data.qid,
+    filePath: file.selectedFilePath,
   });
   const isDisabled = file.disabledReason != null;
   // `question.html` and `server.py` are edited via the dedicated "Files" tab,
   // so the per-file editor / upload / rename / delete don't apply here. The
-  // "Edit" link's URL routes to that tab; download is still allowed.
+  // "Edit" link's URL routes to that tab; download is still allowed. The
+  // mutations are also disabled while a generation runs, so manual edits can't
+  // race the agent's file writes.
   const isManagedByCodeEditorTab = CODE_EDITOR_TAB_FILES.has(file.selectedFilePath);
   const canEdit = file.canEdit && !isDisabled;
-  const canUpload = file.canUpload && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
-  const canRename = file.canRename && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
-  const canDelete = file.canDelete && !isDisabled && !disableActions && !isManagedByCodeEditorTab;
+  const canUpload = file.canUpload && !isDisabled && !isGenerating && !isManagedByCodeEditorTab;
+  const canRename = file.canRename && !isDisabled && !isGenerating && !isManagedByCodeEditorTab;
+  const canDelete = file.canDelete && !isDisabled && !isGenerating && !isManagedByCodeEditorTab;
 
   const selectFile = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -139,13 +139,12 @@ function DraftQuestionFileRow({
             disabled={!canUpload}
             maxFileSizeBytes={data.maxFileSizeBytes}
             target={{ kind: 'replace', filePath: file.selectedFilePath }}
-            urlPrefix={data.urlPrefix}
             onUploadFile={actions.onUploadFile}
           />
           <FileBrowserActionButton
             icon="fa fa-arrow-down"
             label="Download"
-            href={file.downloadUrl}
+            href={downloadUrl}
             disabled={!file.canDownload}
           />
           <RenameFileButton
@@ -153,7 +152,6 @@ function DraftQuestionFileRow({
             fileName={file.name}
             oldFilePath={file.selectedFilePath}
             disabled={!canRename}
-            urlPrefix={data.urlPrefix}
             onRenameFile={actions.onRenameFile}
           />
           <DeleteFileButton
@@ -161,7 +159,6 @@ function DraftQuestionFileRow({
             fileName={file.name}
             filePath={file.selectedFilePath}
             disabled={!canDelete}
-            urlPrefix={data.urlPrefix}
             onDeleteFile={actions.onDeleteFile}
           />
         </div>
@@ -172,20 +169,13 @@ function DraftQuestionFileRow({
 
 function DraftQuestionDirectoryRow({
   directory,
-  editorUrl,
-  search,
   onSelectDirectory,
 }: {
   directory: DraftQuestionFileBrowserDirectory;
-  editorUrl: string;
-  search: string;
   onSelectDirectory: (directory: string | null) => void;
 }) {
-  const directoryUrl = getEditorUrlForSelection({
-    editorUrl,
-    selection: { kind: 'dir', path: directory.selectedDirectory },
-    search,
-  });
+  const { getSelectionUrl } = useDraftFileNavigation();
+  const directoryUrl = getSelectionUrl({ kind: 'dir', path: directory.selectedDirectory });
 
   return (
     <tr>
@@ -211,20 +201,12 @@ function DraftQuestionDirectoryRow({
 
 export function DraftQuestionFileBrowser({
   data,
-  breadcrumb,
   actions,
-  search,
-  disableActions = false,
   onSelectFile,
   onSelectDirectory,
 }: {
   data: DraftQuestionFileBrowserData;
-  breadcrumb: DraftQuestionFileBrowserBreadcrumbSegment[];
   actions: DraftQuestionFileBrowserActions;
-  /** Current page query string, whose unrelated params the file links preserve. */
-  search: string;
-  /** Disables the upload/rename/delete actions (e.g. while a generation runs). */
-  disableActions?: boolean;
   onSelectFile: (filePath: string) => void;
   onSelectDirectory: (directory: string | null) => void;
 }) {
@@ -232,18 +214,12 @@ export function DraftQuestionFileBrowser({
     <div className="h-100 d-flex flex-column">
       <div className="d-flex align-items-center justify-content-between gap-2 border-bottom bg-light px-3 py-2">
         <DraftQuestionFileBrowserBreadcrumb
-          segments={breadcrumb}
-          editorUrl={data.editorUrl}
-          search={search}
+          selection={{ kind: 'dir', path: data.selectedDirectory }}
           ariaLabel="File browser breadcrumb"
           onSelectDirectory={onSelectDirectory}
         />
         {data.hasEditPermission ? (
-          <DraftQuestionDirectoryActions
-            data={data}
-            actions={actions}
-            disableActions={disableActions}
-          />
+          <DraftQuestionDirectoryActions data={data} actions={actions} />
         ) : null}
       </div>
       <div className="flex-grow-1 overflow-auto table-responsive">
@@ -261,17 +237,13 @@ export function DraftQuestionFileBrowser({
                 data={data}
                 file={file}
                 actions={actions}
-                search={search}
-                disableActions={disableActions}
                 onSelectFile={onSelectFile}
               />
             ))}
             {data.dirs.map((directory) => (
               <DraftQuestionDirectoryRow
-                key={`dir-${directory.selectedDirectory ?? ''}`}
+                key={`dir-${directory.selectedDirectory}`}
                 directory={directory}
-                editorUrl={data.editorUrl}
-                search={search}
                 onSelectDirectory={onSelectDirectory}
               />
             ))}
