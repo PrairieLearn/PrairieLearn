@@ -83,7 +83,8 @@ WITH
         PARTITION BY
           z.id
         ORDER BY
-          aq.max_points DESC
+          aq.max_points DESC,
+          aq.id ASC
       ) AS max_points_rank,
       z.best_questions,
       z.max_points AS zone_max_points
@@ -185,7 +186,8 @@ WITH
           ai.id,
           z.id
         ORDER BY
-          aq.max_points DESC
+          aq.max_points DESC,
+          aq.id ASC
       ) AS max_points_rank,
       z.best_questions,
       z.max_points AS zone_max_points
