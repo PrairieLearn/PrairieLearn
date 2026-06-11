@@ -33,7 +33,6 @@ import {
   requireCourseInstancePermissionView,
   requireCoursePermissionEdit,
   requireCoursePermissionEditOrCourseInstancePermissionView,
-  requireEnhancedAccessControl,
   t,
 } from './init.js';
 
@@ -41,22 +40,18 @@ export interface AccessControlError {
   SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
-const students = t.procedure
-  .use(requireEnhancedAccessControl)
-  .use(requireCourseInstancePermissionView)
-  .query(async (opts) => {
-    const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
-    return rows
-      .filter((r) => r.enrollment.status === 'joined' && r.user != null)
-      .map((r) => ({
-        id: r.enrollment.id,
-        uid: r.user!.uid,
-        name: r.user!.name,
-      }));
-  });
+const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
+  const rows = await selectUsersAndEnrollmentsForCourseInstance(opts.ctx.course_instance);
+  return rows
+    .filter((r) => r.enrollment.status === 'joined' && r.user != null)
+    .map((r) => ({
+      id: r.enrollment.id,
+      uid: r.user!.uid,
+      name: r.user!.name,
+    }));
+});
 
 const studentLabels = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
   .query(async (opts) => {
     const labels = await selectStudentLabelsInCourseInstance(opts.ctx.course_instance);
@@ -64,11 +59,8 @@ const studentLabels = t.procedure
   });
 
 const prairieTestExamMetadata = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEditOrCourseInstancePermissionView)
-  .input(
-    z.object({ examUuids: z.array(z.string().uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }),
-  )
+  .input(z.object({ examUuids: z.array(z.uuid()).max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS) }))
   .query(async (opts) => {
     return await selectPrairieTestExamMetadataByUuids(opts.input.examUuids);
   });
@@ -78,6 +70,8 @@ export function formJsonToEnrollmentRuleData(
 ): EnrollmentAccessControlRuleData {
   const dc = rule.dateControl;
   const ac = rule.afterComplete;
+  const afterLastDeadline = dc?.afterLastDeadline;
+  const afterLastDeadlineAllowSubmissions = afterLastDeadline?.allowSubmissions ?? null;
   return {
     id: rule.id,
     beforeReleaseListed: rule.beforeRelease?.listed ?? null,
@@ -87,12 +81,9 @@ export function formJsonToEnrollmentRuleData(
     dueCredit: dc?.due?.credit ?? null,
     earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
     lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
-    afterLastDeadlineOverridden: dc?.afterLastDeadline !== undefined,
-    afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
+    afterLastDeadlineAllowSubmissions,
     afterLastDeadlineCredit:
-      dc?.afterLastDeadline?.allowSubmissions === true
-        ? (dc.afterLastDeadline.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     durationMinutesOverridden: dc?.durationMinutes !== undefined,
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
@@ -128,7 +119,7 @@ function isNonEmptyObject(value: unknown): boolean {
 
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
- * Removes empty objects and omits beforeRelease: { listed: false } on the default rule.
+ * Removes empty objects and omits default-valued settings on the default rule.
  */
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
@@ -143,7 +134,13 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.dateControl)) {
-      clean.dateControl = rule.dateControl;
+      const dateControl = { ...rule.dateControl };
+      if (index === 0 && dateControl.afterLastDeadline?.allowSubmissions === false) {
+        delete dateControl.afterLastDeadline;
+      }
+      if (isNonEmptyObject(dateControl)) {
+        clean.dateControl = dateControl;
+      }
     }
 
     if (rule.integrations && isNonEmptyObject(rule.integrations)) {
@@ -151,7 +148,22 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
     }
 
     if (isNonEmptyObject(rule.afterComplete)) {
-      clean.afterComplete = rule.afterComplete;
+      const afterComplete = { ...rule.afterComplete };
+      if (index === 0) {
+        if (
+          afterComplete.questions?.hidden === true &&
+          afterComplete.questions.visibleFromDate == null &&
+          afterComplete.questions.visibleUntilDate == null
+        ) {
+          delete afterComplete.questions;
+        }
+        if (afterComplete.score?.hidden === false && afterComplete.score.visibleFromDate == null) {
+          delete afterComplete.score;
+        }
+      }
+      if (isNonEmptyObject(afterComplete)) {
+        clean.afterComplete = afterComplete;
+      }
     }
 
     return clean;
@@ -159,7 +171,6 @@ export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): Acce
 }
 
 const saveAllRules = t.procedure
-  .use(requireEnhancedAccessControl)
   .use(requireCoursePermissionEdit)
   .input(
     z.object({

@@ -1,8 +1,8 @@
 import assert from 'node:assert';
+import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -64,6 +64,10 @@ function todayAsDatetimeLocal(
   return `${today.toString()}T00:00:00`;
 }
 
+export function getHash(contents: string | Buffer) {
+  return crypto.createHash('sha256').update(contents).digest('hex');
+}
+
 async function syncCourseFromDisk(
   course: Course,
   startGitHash: string,
@@ -91,9 +95,43 @@ async function syncCourseFromDisk(
 
   await updateCourseCommitHash(course);
 
+  // JSON errors mean individual entities failed to sync (e.g., a question has
+  // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
+  // on `job.data` before throwing so the file editor can distinguish this
+  // from a hard failure.
   if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+    job.data.hadJsonErrors = true;
+    throw new Error('One or more JSON files contained errors and were unable to be synced.');
   }
+}
+
+/**
+ * The outcome of a "save and sync" edit, derived from the flags that
+ * {@link Editor.executeWithServerJob} records on `job.data`.
+ *
+ * A save-and-sync writes the file to disk (and pushes to git in production),
+ * then syncs the entire course from disk to the database:
+ *
+ * - `save_failed`: the write/push failed; nothing reached the database.
+ * - `sync_failed`: the save succeeded but the sync hard-failed.
+ * - `sync_json_errors`: the save succeeded and the sync ran to completion, but
+ *   one or more entities had invalid JSON. {@link syncCourseFromDisk} sets
+ *   `hadJsonErrors` and throws, so `syncSucceeded` is never set in this case.
+ * - `success`: the save and sync both completed cleanly.
+ */
+export type EditOutcome = 'save_failed' | 'sync_failed' | 'sync_json_errors' | 'success';
+
+/**
+ * Interpret the flags an edit job records on `job.data` into a single outcome.
+ * This is the canonical reading of that (otherwise untyped) blob; pages that
+ * render edit results should dispatch on the returned value rather than
+ * re-deriving the meaning of the individual flags.
+ */
+export function classifyEditOutcome(data: Record<string, unknown>): EditOutcome {
+  if (!data.saveSucceeded) return 'save_failed';
+  if (data.hadJsonErrors) return 'sync_json_errors';
+  if (!data.syncSucceeded) return 'sync_failed';
+  return 'success';
 }
 
 async function cleanAndResetRepository(
@@ -778,7 +816,7 @@ export class AssessmentAddEditor extends Editor {
       set: this.set,
       module: this.module,
       number: nextAssessmentNumber.toString(),
-      allowAccess: [],
+      accessControl: [],
       zones: [],
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
@@ -2247,10 +2285,6 @@ export class FileUploadEditor extends Editor {
     this.fileContents = fileContents;
   }
 
-  getHashFromBuffer(buffer: Buffer) {
-    return sha256(buffer.toString('utf8')).toString();
-  }
-
   async shouldEdit() {
     debug('look for old contents');
     let contents;
@@ -2266,8 +2300,8 @@ export class FileUploadEditor extends Editor {
     }
 
     debug('get hash of old contents and of new contents');
-    const oldHash = this.getHashFromBuffer(contents);
-    const newHash = this.getHashFromBuffer(this.fileContents);
+    const oldHash = getHash(contents);
+    const newHash = getHash(this.fileContents);
     debug('oldHash: ' + oldHash);
     debug('newHash: ' + newHash);
     if (oldHash === newHash) {
@@ -2383,13 +2417,9 @@ export class FileModifyEditor extends Editor {
     this.origHash = origHash;
   }
 
-  getHash(contents: string) {
-    return sha256(contents).toString();
-  }
-
   shouldEdit() {
     debug('get hash of edit contents');
-    const editHash = this.getHash(this.editContents);
+    const editHash = getHash(this.editContents);
     debug('editHash: ' + editHash);
     debug('origHash: ' + this.origHash);
     if (this.origHash === editHash) {
@@ -2447,7 +2477,7 @@ export class FileModifyEditor extends Editor {
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
     const diskContents = b64EncodeUnicode(diskContentsUTF);
-    const diskHash = this.getHash(diskContents);
+    const diskHash = getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }

@@ -26,7 +26,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 }
 
 const JSON_RULE_START = 0;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Validates constraints that require database state: student label existence
@@ -92,7 +91,11 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineField = mapField(afterLastDeadline);
+  // Only materialize the default `afterLastDeadline: false` when date control
+  // actually exists. Otherwise `null` keeps the date-control section absent.
+  const defaultRuleHasDateControl = isDefaultRule && dateControl.release != null;
+  const afterLastDeadlineAllowSubmissions =
+    afterLastDeadline?.allowSubmissions ?? (defaultRuleHasDateControl ? false : null);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -115,13 +118,9 @@ function prepareRuleRow(
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
-    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
-    date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineField.value?.allowSubmissions ?? null,
+    date_control_after_last_deadline_allow_submissions: afterLastDeadlineAllowSubmissions,
     date_control_after_last_deadline_credit:
-      afterLastDeadlineField.value?.allowSubmissions === true
-        ? (afterLastDeadlineField.value.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
@@ -186,7 +185,7 @@ async function selectInvalidExamUuids(
   for (const { rules } of assessments) {
     for (const rule of rules) {
       for (const e of rule.integrations?.prairieTest?.exams ?? []) {
-        if (UUID_REGEX.test(e.examUuid)) {
+        if (z.uuid().safeParse(e.examUuid).success) {
           allExamUuids.add(e.examUuid);
         }
       }

@@ -6,14 +6,14 @@ import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/u
 import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
-import { validateActiveOverrideField } from './overrideFields.js';
 import {
   type AccessControlFormData,
+  type DefaultRuleData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
+import { DATE_REQUIRED_MESSAGE, isDateFieldEmpty } from './validation.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -64,6 +64,18 @@ const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   },
 ];
 
+function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  > & { hasExamAutoClose: boolean },
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0 || rule.hasExamAutoClose;
+}
+
 function getHideQuestionsMode(value: QuestionVisibilityValue): HideQuestionsMode {
   if (!value.hidden) return 'show_questions';
   if (value.visibleFromDate === undefined) return 'hide_questions_forever';
@@ -75,19 +87,6 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   if (!value.hidden) return 'show_score';
   if (value.visibleFromDate === undefined) return 'hide_score_forever';
   return 'hide_score_until_date';
-}
-
-const DATE_REQUIRED_MESSAGE = 'Date is required';
-
-function isDateFieldEmpty(value: string | undefined): boolean {
-  return value !== undefined && !value;
-}
-
-function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  if (isDateFieldEmpty(value.visibleUntilDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
 }
 
 function QuestionVisibilityInput({
@@ -272,12 +271,6 @@ function QuestionVisibilityInput({
   );
 }
 
-function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function ScoreVisibilityInput({
   value,
   onChange,
@@ -366,9 +359,10 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is complete when students can no longer answer questions — for example, after
-        the due date and any late deadlines pass, after a time limit expires, or once their
-        assessment instance is closed (manually or via autoclose).
+        These settings apply once submissions are no longer allowed: after the final deadline, when
+        a time limit expires, or when a student's assessment instance is closed manually or by Exam
+        auto-close. If after-deadline submissions are allowed, these settings apply only after the
+        student's assessment instance closes or its time limit expires.
       </p>
       <p>
         The completion time can vary between students based on when they started or any
@@ -418,20 +412,23 @@ function AfterCompleteCard({
 export function DefaultAfterCompleteForm({
   title,
   displayTimezone,
+  isExam,
+  hasExamAutoClose,
 }: {
   title?: string;
   displayTimezone: string;
+  isExam: boolean;
+  hasExamAutoClose: boolean;
 }) {
   const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
     {
       name: 'defaultRule.questionVisibility',
-      rules: { validate: validateQuestionVisibility },
     },
   );
 
   const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
     name: 'defaultRule.scoreVisibility',
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
@@ -468,10 +465,20 @@ export function DefaultAfterCompleteForm({
     lateDeadlines,
     durationMinutes,
     prairieTestExams,
+    hasExamAutoClose,
   });
+  const automaticCompletionMechanisms = isExam
+    ? 'a due date, time limit, late deadline, PrairieTest exam, or Exam auto-close'
+    : 'a due date, time limit, late deadline, or PrairieTest exam';
 
   return (
     <AfterCompleteCard title={title}>
+      {!hasCompletionMechanism && (
+        <Alert variant="info" className="mb-0">
+          Without {automaticCompletionMechanisms}, these settings will only take effect if an
+          instructor manually closes a student's assessment instance.
+        </Alert>
+      )}
       <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
@@ -512,6 +519,7 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
     name: 'defaultRule.questionVisibility',
   });
@@ -537,8 +545,6 @@ export function OverrideAfterCompleteForm({
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
 
-  const { clearErrors } = useFormContext<AccessControlFormData>();
-
   const {
     isOverridden: qvOverridden,
     addOverride: addQvOverride,
@@ -555,22 +561,13 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'questionVisibility', (value) =>
-        validateQuestionVisibility(value),
-      ),
-    },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: {
-      validate: validateActiveOverrideField(index, 'scoreVisibility', (value) =>
-        validateScoreVisibility(value),
-      ),
-    },
+    rules: { deps: qvField.name },
   });
 
   return (
@@ -582,8 +579,12 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
+            void trigger(svField.name);
           }}
-          onRemoveOverride={removeQvOverride}
+          onRemoveOverride={() => {
+            removeQvOverride();
+            void trigger(svField.name);
+          }}
         >
           <QuestionVisibilityInput
             value={qvField.value}
@@ -603,10 +604,11 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
+            void trigger(qvField.name);
           }}
           onRemoveOverride={() => {
             removeSvOverride();
-            clearErrors(`overrides.${index}.questionVisibility`);
+            void trigger(qvField.name);
           }}
         >
           <ScoreVisibilityInput

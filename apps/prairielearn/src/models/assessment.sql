@@ -83,6 +83,23 @@ WITH
       AND i.open
     GROUP BY
       a.id
+  ),
+  manual_grading_count AS (
+    SELECT
+      aq.assessment_id,
+      count(*) AS ungraded_manual_grading_submission_count
+    FROM
+      assessments AS a
+      JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
+      JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+    WHERE
+      a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
+      AND aq.deleted_at IS NULL
+      AND iq.requires_manual_grading
+      AND iq.status != 'unanswered'
+    GROUP BY
+      aq.assessment_id
   )
 SELECT
   a.*,
@@ -119,12 +136,14 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  coalesce(ic.open_issue_count, 0) AS open_issue_count
+  coalesce(ic.open_issue_count, 0) AS open_issue_count,
+  coalesce(mgc.ungraded_manual_grading_submission_count, 0) AS ungraded_manual_grading_submission_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
+  LEFT JOIN manual_grading_count AS mgc ON (mgc.assessment_id = a.id)
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
   ci.id = $course_instance_id

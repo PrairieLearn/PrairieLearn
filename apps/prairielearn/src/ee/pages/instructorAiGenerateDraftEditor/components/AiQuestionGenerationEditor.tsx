@@ -33,6 +33,7 @@ interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
+  currentUserName: string | null;
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
@@ -47,6 +48,7 @@ function AiQuestionGenerationEditorInner({
   chatCsrfToken,
   question,
   initialMessages,
+  currentUserName,
   questionFiles: initialQuestionFiles,
   richTextEditorEnabled,
   urlPrefix,
@@ -95,6 +97,7 @@ function AiQuestionGenerationEditorInner({
       <AiQuestionGenerationChat
         chatCsrfToken={chatCsrfToken}
         initialMessages={initialMessages}
+        currentUserName={currentUserName}
         questionId={question.id}
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}

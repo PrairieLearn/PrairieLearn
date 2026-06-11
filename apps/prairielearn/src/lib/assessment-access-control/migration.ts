@@ -510,9 +510,12 @@ function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
-  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  const afterLastCredit =
+    dateControl.afterLastDeadline?.allowSubmissions === true
+      ? dateControl.afterLastDeadline.credit
+      : 0;
   if (
-    dateControl.afterLastDeadline &&
+    dateControl.afterLastDeadline?.allowSubmissions === true &&
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {
@@ -1034,7 +1037,13 @@ export function migrateAssessmentJson(
 ): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+  if (!Array.isArray(allowAccess)) return null;
+
+  if (allowAccess.length === 0) {
+    data.accessControl = [];
+    delete data.allowAccess;
+    return { json: JSON.stringify(data), errors: [], notes: [] };
+  }
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
@@ -1063,11 +1072,12 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(allowAccess)) return null;
 
-  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
+  const { errors, notes, hasUidRules } =
+    allowAccess.length === 0
+      ? { errors: [], notes: [], hasUidRules: false }
+      : migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,
@@ -1103,7 +1113,7 @@ export async function analyzeCourseInstanceAssessments(
 }
 
 /**
- * Errors and notes from `migrateAllowAccess` are intentionally discarded
+ * Errors and notes from `migrateAssessmentJson` are intentionally discarded
  * here. The UI runs `analyzeAccessControl` ahead of time, and the errors produced here
  * will match what the user already saw.
  */
@@ -1117,7 +1127,7 @@ export async function applyMigrationToAssessmentFile(
   const data = JSON.parse(content);
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+  if (!Array.isArray(allowAccess)) {
     return;
   }
 
@@ -1132,11 +1142,13 @@ export async function applyMigrationToAssessmentFile(
       delete data.allowAccess;
       break;
     case 'migrate': {
-      const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-      if (errors.length === 0 && accessControl != null) {
-        data.accessControl = [accessControl];
-        delete data.allowAccess;
-      } else if (clearIncompatible) {
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+      if (migrationResult) {
+        const formatted = await formatJsonWithPrettier(migrationResult.json);
+        await fs.writeFile(filePath, formatted);
+        return;
+      }
+      if (clearIncompatible) {
         delete data.allowAccess;
       } else {
         return;

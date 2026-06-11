@@ -10,8 +10,16 @@ import * as helperServer from '../tests/helperServer.js';
 
 import { buildQuestionUserContext } from './user-context.js';
 
-function makeQuestion(course_id: string): Pick<Question, 'course_id'> {
-  return { course_id };
+function makeQuestion({
+  course_id,
+  share_publicly = false,
+  share_source_publicly = false,
+}: {
+  course_id: string;
+  share_publicly?: boolean;
+  share_source_publicly?: boolean;
+}): Pick<Question, 'course_id' | 'share_publicly' | 'share_source_publicly'> {
+  return { course_id, share_publicly, share_source_publicly };
 }
 
 function makeVariantCourse(id: string): Pick<Course, 'id'> {
@@ -24,15 +32,23 @@ function call({
   courseOptedIn,
   userId,
   groupId,
+  sharePublicly = false,
+  shareSourcePublicly = false,
 }: {
   questionCourseId?: string;
   variantCourseId?: string;
   courseOptedIn: boolean;
   userId: string | null;
   groupId: string | null;
+  sharePublicly?: boolean;
+  shareSourcePublicly?: boolean;
 }) {
   return buildQuestionUserContext({
-    question: makeQuestion(questionCourseId),
+    question: makeQuestion({
+      course_id: questionCourseId,
+      share_publicly: sharePublicly,
+      share_source_publicly: shareSourcePublicly,
+    }),
     course: { questions_receive_user_data: courseOptedIn },
     caller: {
       userId,
@@ -77,6 +93,26 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
 
   it('returns null user/group when no effective user is provided', async () => {
     const ctx = await call({ courseOptedIn: true, userId: null, groupId: null });
+    assert.deepEqual(ctx, { user: null, group: null });
+  });
+
+  it('returns null user/group for a publicly shared question, even when otherwise gated through', async () => {
+    const ctx = await call({
+      courseOptedIn: true,
+      userId,
+      groupId: null,
+      sharePublicly: true,
+    });
+    assert.deepEqual(ctx, { user: null, group: null });
+  });
+
+  it('returns null user/group for a source-publicly shared question, even when otherwise gated through', async () => {
+    const ctx = await call({
+      courseOptedIn: true,
+      userId,
+      groupId: null,
+      shareSourcePublicly: true,
+    });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 

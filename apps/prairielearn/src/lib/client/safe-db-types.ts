@@ -45,7 +45,7 @@ import {
   SprocAuthzAssessmentInstanceSchema as RawSprocAuthzAssessmentInstanceSchema,
   StudentLabelSchema as RawStudentLabelSchema,
   TagSchema as RawTagSchema,
-  TeamSchema as RawTeamSchema,
+  GroupSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,

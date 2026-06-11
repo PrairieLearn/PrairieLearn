@@ -5,7 +5,7 @@
  * `CAPTURE_SCREENSHOTS=1` is set so normal e2e runs do not
  * rewrite documentation images.
  *
- * Usage: `yarn capture-access-control-screenshots`
+ * Usage: `pnpm capture-access-control-screenshots`
  */
 
 import fs from 'node:fs';
@@ -17,7 +17,6 @@ import type { Locator, Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import type { Assessment, CourseInstance } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { replaceEnrollmentAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -87,7 +86,7 @@ async function writeScreenshotAssessmentConfig({
       dateControl: {
         release: { date: screenshotDate(displayTimezone, -7, '00:00:01') },
         due: { date: screenshotDate(displayTimezone, 14, '23:59:59') },
-        afterLastDeadline: { allowSubmissions: true },
+        afterLastDeadline: { allowSubmissions: true, credit: 0 },
       },
       afterComplete: { questions: { hidden: false } },
     },
@@ -308,7 +307,6 @@ test.describe('Modern access control docs screenshots', () => {
     await page.setViewportSize(VIEWPORT);
     if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
-    await features.enable('enhanced-access-control');
     await writeScreenshotAssessmentConfig({
       testCoursePath,
       displayTimezone: courseInstance.display_timezone,

@@ -231,7 +231,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -1005,6 +1004,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
+/* eslint-disable @typescript-eslint/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -1090,6 +1090,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
+/* eslint-enable @typescript-eslint/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),

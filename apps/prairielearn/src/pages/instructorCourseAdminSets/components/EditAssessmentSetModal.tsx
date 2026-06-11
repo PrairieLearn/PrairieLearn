@@ -36,7 +36,7 @@ export function EditAssessmentSetsModal({
     onExited();
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!assessmentSet) return;
     onSave(assessmentSet);
