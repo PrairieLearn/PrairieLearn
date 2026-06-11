@@ -12,6 +12,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
   analyzeAssessmentFile,
   migrateAssessmentJson,
+  replaceJsonKey,
 } from '../../lib/assessment-access-control/migration.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
@@ -226,9 +227,7 @@ router.post(
       if (migrationResult) {
         formattedJson = await formatJsonWithPrettier(migrationResult.json);
       } else if (req.body.migrate_strategy === 'clear') {
-        const data = JSON.parse(content);
-        delete data.allowAccess;
-        data.accessControl = [];
+        const data = replaceJsonKey(JSON.parse(content), 'allowAccess', 'accessControl', []);
         formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
       } else {
         flash('error', 'This assessment cannot be automatically migrated.');

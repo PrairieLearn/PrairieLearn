@@ -1034,6 +1034,21 @@ export function migrateAllowAccess(
 // File-level operations
 // ---------------------------------------------------------------------------
 
+/**
+ * Replaces `oldKey` with `newKey` (holding `value`) while preserving the
+ * original property order.
+ */
+export function replaceJsonKey(
+  data: Record<string, unknown>,
+  oldKey: string,
+  newKey: string,
+  value: unknown,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, val]) => (key === oldKey ? [newKey, value] : [key, val])),
+  );
+}
+
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
   jsonContent: string,
@@ -1047,9 +1062,8 @@ export function migrateAssessmentJson(
 
   if (errors.length > 0 || accessControl == null) return null;
 
-  data.accessControl = [accessControl];
-  delete data.allowAccess;
-  return { json: JSON.stringify(data), errors, notes };
+  const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', [accessControl]);
+  return { json: JSON.stringify(migrated), errors, notes };
 }
 
 export async function analyzeAssessmentFile(
@@ -1121,7 +1135,7 @@ export async function applyMigrationToAssessmentFile(
   fallbackReleaseDate: string,
 ): Promise<void> {
   const content = await fs.readFile(filePath, 'utf-8');
-  const data = JSON.parse(content);
+  let data = JSON.parse(content);
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
   if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
@@ -1141,8 +1155,7 @@ export async function applyMigrationToAssessmentFile(
     case 'migrate': {
       const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
       if (errors.length === 0 && accessControl != null) {
-        data.accessControl = [accessControl];
-        delete data.allowAccess;
+        data = replaceJsonKey(data, 'allowAccess', 'accessControl', [accessControl]);
       } else if (clearIncompatible) {
         delete data.allowAccess;
       } else {

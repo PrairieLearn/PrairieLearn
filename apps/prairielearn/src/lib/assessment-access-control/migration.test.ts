@@ -1895,6 +1895,32 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy preserves property order', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            uuid: '00000000-0000-0000-0000-000000000000',
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-06-01T00:00:00' },
+            ],
+            zones: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.deepEqual(Object.keys(result), ['uuid', 'type', 'title', 'accessControl', 'zones']);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
