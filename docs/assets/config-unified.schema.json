@@ -1580,9 +1580,7 @@
       ]
     },
     "features": {
-      "default": {
-        "enhanced-access-control": true
-      },
+      "default": {},
       "type": "object",
       "propertyNames": {
         "type": "string"
