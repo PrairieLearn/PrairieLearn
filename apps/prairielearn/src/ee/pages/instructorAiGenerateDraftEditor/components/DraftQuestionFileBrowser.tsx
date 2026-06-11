@@ -1,15 +1,17 @@
 import { type MouseEvent } from 'react';
 
+import { FileBrowserActionButton } from '../../../../components/FileBrowserActionButton.js';
+import { SyncProblemButton } from '../../../../components/SyncProblemButton.js';
 import type {
   DraftQuestionFileBrowserBreadcrumbSegment,
   DraftQuestionFileBrowserData,
   DraftQuestionFileBrowserDirectory,
   DraftQuestionFileBrowserFile,
-} from '../lib/draft-question-files/browser.js';
+} from '../../../../lib/draft-question-files/browser.js';
 import {
   CODE_EDITOR_TAB_FILES,
   getEditorUrlForSelection,
-} from '../lib/draft-question-files/urls.js';
+} from '../../../../lib/draft-question-files/urls.js';
 
 import {
   DeleteFileButton,
@@ -18,8 +20,6 @@ import {
   UploadFileButton,
 } from './DraftQuestionFileBrowserActions.js';
 import { DraftQuestionFileBrowserBreadcrumb } from './DraftQuestionFileBrowserBreadcrumb.js';
-import { FileBrowserActionButton } from './FileBrowserActionButton.js';
-import { SyncProblemButton } from './SyncProblemButton.js';
 
 function DraftQuestionDirectoryActions({
   data,

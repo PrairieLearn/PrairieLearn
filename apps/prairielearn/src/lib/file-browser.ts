@@ -10,6 +10,7 @@ import { contains } from '@prairielearn/path-utils';
 
 import * as editorUtil from './editorUtil.js';
 import type { InstructorFilePaths } from './instructorFiles.js';
+import { encodePath } from './uri-util.js';
 
 export interface FileInfo {
   id: number;
@@ -48,14 +49,49 @@ interface DirectoryEntryFile extends DirectoryEntry {
   canDownload: boolean;
   canRename: boolean;
   canDelete: boolean;
-  sync_errors: string | null;
-  sync_warnings: string | null;
-  uuid: string | null;
+  syncErrors: string | null;
+  syncWarnings: string | null;
 }
 
 export interface DirectoryListings {
   dirs: DirectoryEntryDirectory[];
   files: DirectoryEntryFile[];
+}
+
+export type BrowseResult =
+  | { isFile: true; fileInfo: FileInfo }
+  | { isFile: false; directoryListings: DirectoryListings };
+
+/** Browses the working path, dispatching on whether it is a directory or a file. */
+export async function browseDirectoryOrFile({
+  paths,
+}: {
+  paths: InstructorFilePaths;
+}): Promise<BrowseResult> {
+  const stats = await fs.lstat(paths.workingPath);
+  if (stats.isDirectory()) {
+    return { isFile: false, directoryListings: await browseDirectory({ paths }) };
+  } else if (stats.isFile()) {
+    return { isFile: true, fileInfo: await browseFile({ paths }) };
+  } else {
+    throw new Error(
+      `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
+    );
+  }
+}
+
+/** URL that downloads a course file as an attachment. */
+export function getFileDownloadUrl({
+  urlPrefix,
+  path: filePath,
+  name,
+}: {
+  urlPrefix: string;
+  /** Path relative to the course root. */
+  path: string;
+  name: string;
+}): string {
+  return `${urlPrefix}/file_download/${encodePath(filePath)}?attachment=${encodeURIComponent(name)}`;
 }
 
 /**
@@ -101,9 +137,8 @@ export async function browseDirectory({
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-          sync_errors: fileMetadata.syncErrors,
-          sync_warnings: fileMetadata.syncWarnings,
-          uuid: fileMetadata.uuid,
+          syncErrors: fileMetadata.syncErrors,
+          syncWarnings: fileMetadata.syncWarnings,
         };
         return result;
       } else if (stats.isDirectory()) {

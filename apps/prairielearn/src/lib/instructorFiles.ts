@@ -110,8 +110,9 @@ export function getPaths(
 ): InstructorFilePaths {
   const coursePath: string = locals.course.path;
   const courseId: string = locals.course.id;
-  const hasEditPermission: boolean =
-    locals.authz_data.has_course_permission_edit && !locals.course.example_course;
+  const hasEditPermission = Boolean(
+    locals.authz_data.has_course_permission_edit && !locals.course.example_course,
+  );
 
   const { rootPath, invalidRootPaths, cannotMove, clientDir, serverDir, testsDir, urlPrefix } =
     getContextPaths(locals);

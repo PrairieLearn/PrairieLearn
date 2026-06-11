@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 
+import { unwrapAppResponse } from '../../../../lib/client/errors.js';
+
 import type {
   DraftQuestionFileBrowserActions,
   DraftUploadTarget,
-} from '../../../../components/DraftQuestionFileBrowserActions.js';
-import { unwrapAppResponse } from '../../../../lib/client/errors.js';
-
+} from './DraftQuestionFileBrowserActions.js';
 import { useTRPC } from './aiDraftFilesTrpc.js';
 
 async function uploadDraftFile({

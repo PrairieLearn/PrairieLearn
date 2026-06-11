@@ -6,13 +6,13 @@ import { type ReactNode, type SubmitEvent, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { getAppError, renderAppError, syncJobFailedRenderer } from '../lib/client/errors.js';
-import { getReservedDraftUploadReason } from '../lib/draft-question-files/paths.shared.js';
+import { getAppError, renderAppError, syncJobFailedRenderer } from '../../../../lib/client/errors.js';
+import { getReservedDraftUploadReason } from '../../../../lib/draft-question-files/paths.shared.js';
 import {
   QUESTION_FILE_NAME_PATTERN,
   QUESTION_FILE_NAME_PATTERN_DESCRIPTION,
-} from '../lib/short-name.js';
-import type { AiDraftFilesError } from '../trpc/shared/ai-draft-files.js';
+} from '../../../../lib/short-name.js';
+import type { AiDraftFilesError } from '../../../../trpc/shared/ai-draft-files.js';
 
 /**
  * Callbacks that perform draft question file mutations. Each resolves on
