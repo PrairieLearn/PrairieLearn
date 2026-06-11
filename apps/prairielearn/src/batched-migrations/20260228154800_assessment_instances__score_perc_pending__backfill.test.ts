@@ -191,8 +191,8 @@ describe('assessment_instances score_perc_pending backfill migration', { timeout
           zeroMaxAssessmentInstanceId,
           examAssessmentInstanceId,
         ];
-        const start = instanceIds.reduce((min, id) => (id < min ? id : min));
-        const end = instanceIds.reduce((max, id) => (id > max ? id : max));
+        const start = instanceIds.reduce((min, id) => BigInt(Math.min(Number(min), Number(id))));
+        const end = instanceIds.reduce((max, id) => BigInt(Math.max(Number(max), Number(id))));
 
         await migration.execute(start, end);
 
