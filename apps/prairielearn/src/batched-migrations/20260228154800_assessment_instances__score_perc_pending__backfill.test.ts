@@ -2,168 +2,241 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import migration from './20260228154800_assessment_instances__score_perc_pending__backfill.js';
 
 const MIGRATION_NAME = '20260228154800_assessment_instances__score_perc_pending__backfill';
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('assessment_instances score_perc_pending backfill migration', { timeout: 60_000 }, () => {
   it('backfills pending score and is idempotent', async () => {
     await helperDb.testMigration({
       name: MIGRATION_NAME,
       beforeMigration: async () => {
-        const courseId = await sqldb.queryRow(
-          `INSERT INTO courses (path, short_name, title, display_timezone, institution_id)
-           VALUES ('score-pending-backfill', 'SPB', 'Score pending backfill', 'America/Chicago', 1)
-           RETURNING id`,
-          {},
-          z.bigint({ coerce: true }),
+        const courseId = await sqldb.queryScalar(
+          sql.insert_course,
+          {
+            path: 'score-pending-backfill',
+            short_name: 'SPB',
+            title: 'Score pending backfill',
+          },
+          IdSchema,
         );
 
-        const courseInstanceId = await sqldb.queryRow(
-          `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
-           VALUES ($course_id, 'SPB CI', 'Score Pending Backfill CI', 'America/Chicago', 'spb-code')
-           RETURNING id`,
-          { course_id: courseId },
-          z.bigint({ coerce: true }),
+        const courseInstanceId = await sqldb.queryScalar(
+          sql.insert_course_instance,
+          {
+            course_id: courseId,
+            short_name: 'SPB CI',
+            long_name: 'Score Pending Backfill CI',
+            enrollment_code: 'spb-code',
+          },
+          IdSchema,
         );
 
-        const assessmentId = await sqldb.queryRow(
-          `INSERT INTO assessments (course_instance_id, title)
-           VALUES ($course_instance_id, 'Backfill test assessment')
-           RETURNING id`,
-          { course_instance_id: courseInstanceId },
-          z.bigint({ coerce: true }),
+        const assessmentId = await sqldb.queryScalar(
+          sql.insert_assessment,
+          {
+            course_instance_id: courseInstanceId,
+            title: 'Backfill test assessment',
+            type: 'Homework',
+          },
+          IdSchema,
         );
 
-        const zoneId = await sqldb.queryRow(
-          `INSERT INTO zones (assessment_id, number, title)
-           VALUES ($assessment_id, 1, 'Zone 1')
-           RETURNING id`,
-          { assessment_id: assessmentId },
-          z.bigint({ coerce: true }),
+        const examAssessmentId = await sqldb.queryScalar(
+          sql.insert_assessment,
+          {
+            course_instance_id: courseInstanceId,
+            title: 'Backfill exam assessment',
+            type: 'Exam',
+          },
+          IdSchema,
         );
 
-        const alternativeGroupId = await sqldb.queryRow(
-          `INSERT INTO alternative_groups (assessment_id, zone_id, number)
-           VALUES ($assessment_id, $zone_id, 1)
-           RETURNING id`,
-          { assessment_id: assessmentId, zone_id: zoneId },
-          z.bigint({ coerce: true }),
+        const zoneId = await sqldb.queryScalar(
+          sql.insert_zone,
+          { assessment_id: assessmentId, number: 1, title: 'Zone 1' },
+          IdSchema,
         );
 
-        const questionId = await sqldb.queryRow(
-          `INSERT INTO questions (course_id, qid, title)
-           VALUES ($course_id, 'spb-q1', 'Backfill question')
-           RETURNING id`,
-          { course_id: courseId },
-          z.bigint({ coerce: true }),
+        const alternativeGroupId = await sqldb.queryScalar(
+          sql.insert_alternative_group,
+          { assessment_id: assessmentId, zone_id: zoneId, number: 1 },
+          IdSchema,
         );
 
-        const assessmentQuestionId = await sqldb.queryRow(
-          `INSERT INTO assessment_questions (
-              assessment_id,
-              question_id,
-              alternative_group_id,
-              allow_real_time_grading,
-              max_points,
-              max_manual_points,
-              max_auto_points
-            )
-           VALUES ($assessment_id, $question_id, $alternative_group_id, TRUE, 50, 20, 30)
-           RETURNING id`,
+        const examZoneId = await sqldb.queryScalar(
+          sql.insert_zone,
+          { assessment_id: examAssessmentId, number: 1, title: 'Exam zone' },
+          IdSchema,
+        );
+
+        const examAlternativeGroupId = await sqldb.queryScalar(
+          sql.insert_alternative_group,
+          { assessment_id: examAssessmentId, zone_id: examZoneId, number: 1 },
+          IdSchema,
+        );
+
+        const questionId = await sqldb.queryScalar(
+          sql.insert_question,
+          { course_id: courseId, qid: 'spb-q1', title: 'Backfill question' },
+          IdSchema,
+        );
+
+        const autoQuestionId = await sqldb.queryScalar(
+          sql.insert_question,
+          { course_id: courseId, qid: 'spb-q2', title: 'Backfill auto question' },
+          IdSchema,
+        );
+
+        const examQuestionId = await sqldb.queryScalar(
+          sql.insert_question,
+          { course_id: courseId, qid: 'spb-q3', title: 'Backfill exam question' },
+          IdSchema,
+        );
+
+        const assessmentQuestionId = await sqldb.queryScalar(
+          sql.insert_assessment_question,
           {
             assessment_id: assessmentId,
             question_id: questionId,
             alternative_group_id: alternativeGroupId,
+            max_points: 50,
+            max_manual_points: 20,
+            max_auto_points: 30,
           },
-          z.bigint({ coerce: true }),
+          IdSchema,
         );
 
-        const userId = await sqldb.queryRow(
-          `INSERT INTO users (uid, name, institution_id)
-           VALUES ('spb-user', 'Score Pending Backfill User', 1)
-           RETURNING id`,
-          {},
-          z.bigint({ coerce: true }),
-        );
-
-        const assessmentInstanceId = await sqldb.queryRow(
-          `INSERT INTO assessment_instances (assessment_id, user_id, number, max_points, score_perc_pending)
-           VALUES ($assessment_id, $user_id, 1, 50, 0)
-           RETURNING id`,
-          { assessment_id: assessmentId, user_id: userId },
-          z.bigint({ coerce: true }),
-        );
-
-        const zeroMaxAssessmentInstanceId = await sqldb.queryRow(
-          `INSERT INTO assessment_instances (assessment_id, user_id, number, max_points, score_perc_pending)
-           VALUES ($assessment_id, $user_id, 2, 0, 0)
-           RETURNING id`,
-          { assessment_id: assessmentId, user_id: userId },
-          z.bigint({ coerce: true }),
-        );
-
-        await sqldb.execute(
-          `INSERT INTO instance_questions (
-              assessment_instance_id,
-              assessment_question_id,
-              requires_manual_grading
-            )
-           VALUES
-             ($assessment_instance_id, $assessment_question_id, TRUE),
-             ($zero_max_assessment_instance_id, $assessment_question_id, TRUE)`,
+        const autoAssessmentQuestionId = await sqldb.queryScalar(
+          sql.insert_assessment_question,
           {
-            assessment_instance_id: assessmentInstanceId,
-            zero_max_assessment_instance_id: zeroMaxAssessmentInstanceId,
-            assessment_question_id: assessmentQuestionId,
+            assessment_id: assessmentId,
+            question_id: autoQuestionId,
+            alternative_group_id: alternativeGroupId,
+            max_points: 30,
+            max_manual_points: 0,
+            max_auto_points: 30,
           },
+          IdSchema,
         );
 
-        return { assessmentInstanceId, zeroMaxAssessmentInstanceId };
+        const examAssessmentQuestionId = await sqldb.queryScalar(
+          sql.insert_assessment_question,
+          {
+            assessment_id: examAssessmentId,
+            question_id: examQuestionId,
+            alternative_group_id: examAlternativeGroupId,
+            max_points: 10,
+            max_manual_points: 0,
+            max_auto_points: 10,
+          },
+          IdSchema,
+        );
+
+        const userId = await sqldb.queryScalar(
+          sql.insert_user,
+          { uid: 'spb-user', name: 'Score Pending Backfill User' },
+          IdSchema,
+        );
+
+        const assessmentInstanceId = await sqldb.queryScalar(
+          sql.insert_assessment_instance,
+          { assessment_id: assessmentId, user_id: userId, number: 1, max_points: 80 },
+          IdSchema,
+        );
+
+        const zeroMaxAssessmentInstanceId = await sqldb.queryScalar(
+          sql.insert_assessment_instance,
+          { assessment_id: assessmentId, user_id: userId, number: 2, max_points: 0 },
+          IdSchema,
+        );
+
+        const examAssessmentInstanceId = await sqldb.queryScalar(
+          sql.insert_assessment_instance,
+          { assessment_id: examAssessmentId, user_id: userId, number: 1, max_points: 10 },
+          IdSchema,
+        );
+
+        await sqldb.execute(sql.insert_manual_instance_questions, {
+          assessment_instance_id: assessmentInstanceId,
+          zero_max_assessment_instance_id: zeroMaxAssessmentInstanceId,
+          assessment_question_id: assessmentQuestionId,
+        });
+
+        await sqldb.execute(sql.insert_auto_instance_questions, {
+          assessment_instance_id: assessmentInstanceId,
+          zero_max_assessment_instance_id: zeroMaxAssessmentInstanceId,
+          assessment_question_id: autoAssessmentQuestionId,
+        });
+
+        await sqldb.execute(sql.insert_exam_auto_instance_question, {
+          assessment_instance_id: examAssessmentInstanceId,
+          assessment_question_id: examAssessmentQuestionId,
+        });
+
+        return { assessmentInstanceId, zeroMaxAssessmentInstanceId, examAssessmentInstanceId };
       },
-      afterMigration: async ({ assessmentInstanceId, zeroMaxAssessmentInstanceId }) => {
-        let start = assessmentInstanceId;
-        let end = zeroMaxAssessmentInstanceId;
-        if (start > end) {
-          const tmp = start;
-          start = end;
-          end = tmp;
-        }
+      afterMigration: async ({
+        assessmentInstanceId,
+        zeroMaxAssessmentInstanceId,
+        examAssessmentInstanceId,
+      }) => {
+        const instanceIds = [
+          assessmentInstanceId,
+          zeroMaxAssessmentInstanceId,
+          examAssessmentInstanceId,
+        ];
+        const start = instanceIds.reduce((min, id) => (id < min ? id : min));
+        const end = instanceIds.reduce((max, id) => (id > max ? id : max));
 
         await migration.execute(start, end);
 
-        const firstAssessmentInstancePending = await sqldb.queryRow(
-          'SELECT score_perc_pending FROM assessment_instances WHERE id = $id',
+        const firstAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
           { id: assessmentInstanceId },
           z.number(),
         );
-        const zeroMaxAssessmentInstancePending = await sqldb.queryRow(
-          'SELECT score_perc_pending FROM assessment_instances WHERE id = $id',
+        const zeroMaxAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
           { id: zeroMaxAssessmentInstanceId },
           z.number(),
         );
+        const examAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
+          { id: examAssessmentInstanceId },
+          z.number(),
+        );
 
-        expect(firstAssessmentInstancePending).toBeCloseTo(40, 4);
+        expect(firstAssessmentInstancePending).toBeCloseTo(56.25, 4);
         expect(zeroMaxAssessmentInstancePending).toBe(0);
+        expect(examAssessmentInstancePending).toBeCloseTo(60, 4);
 
         await migration.execute(start, end);
 
-        const secondAssessmentInstancePending = await sqldb.queryRow(
-          'SELECT score_perc_pending FROM assessment_instances WHERE id = $id',
+        const secondAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
           { id: assessmentInstanceId },
           z.number(),
         );
-        const secondZeroMaxAssessmentInstancePending = await sqldb.queryRow(
-          'SELECT score_perc_pending FROM assessment_instances WHERE id = $id',
+        const secondZeroMaxAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
           { id: zeroMaxAssessmentInstanceId },
           z.number(),
         );
+        const secondExamAssessmentInstancePending = await sqldb.queryScalar(
+          sql.select_score_perc_pending,
+          { id: examAssessmentInstanceId },
+          z.number(),
+        );
 
-        expect(secondAssessmentInstancePending).toBeCloseTo(40, 4);
+        expect(secondAssessmentInstancePending).toBeCloseTo(56.25, 4);
         expect(secondZeroMaxAssessmentInstancePending).toBe(0);
+        expect(secondExamAssessmentInstancePending).toBeCloseTo(60, 4);
       },
     });
   });

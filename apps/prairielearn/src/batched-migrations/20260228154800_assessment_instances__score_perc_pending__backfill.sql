@@ -21,8 +21,17 @@ WITH
       tai.id AS assessment_instance_id,
       iq.id AS iq_id,
       z.id AS zone_id,
+      a.type AS assessment_type,
+      iq.status,
+      iq.auto_points,
+      iq.manual_points,
+      iq.current_value,
+      iq.points_list,
+      iq.variants_points_list,
       aq.max_points,
+      aq.max_auto_points,
       aq.max_manual_points,
+      aq.init_points,
       iq.requires_manual_grading,
       row_number() OVER (
         PARTITION BY
@@ -58,35 +67,92 @@ WITH
         OR (allq.best_questions IS NULL)
       )
   ),
-  pending_by_zone AS (
+  pending_question_inputs AS (
     SELECT
       mpq.assessment_instance_id,
       mpq.zone_id,
-      CASE
-        WHEN mpq.zone_max_points IS NULL THEN sum(
-          CASE
-            WHEN COALESCE(mpq.max_manual_points, 0) > 0
-            AND mpq.requires_manual_grading THEN COALESCE(mpq.max_manual_points, 0)
-            ELSE 0
-          END
-        )
-        ELSE LEAST(
-          sum(
-            CASE
-              WHEN COALESCE(mpq.max_manual_points, 0) > 0
-              AND mpq.requires_manual_grading THEN COALESCE(mpq.max_manual_points, 0)
-              ELSE 0
-            END
-          ),
-          mpq.zone_max_points
-        )
-      END AS pending_points
+      mpq.assessment_type,
+      mpq.status,
+      mpq.requires_manual_grading,
+      COALESCE(mpq.max_auto_points, 0) AS max_auto_points,
+      COALESCE(mpq.max_manual_points, 0) AS max_manual_points,
+      COALESCE(mpq.auto_points, 0) AS auto_points,
+      GREATEST(
+        0,
+        COALESCE(mpq.current_value, 0) - COALESCE(mpq.max_manual_points, 0)
+      ) AS current_auto_value,
+      GREATEST(
+        0,
+        COALESCE(mpq.init_points, 0) - COALESCE(mpq.max_manual_points, 0)
+      ) AS init_auto_value,
+      COALESCE(array_length(mpq.variants_points_list, 1), 0) AS variants_points_count,
+      COALESCE(
+        mpq.variants_points_list[array_length(mpq.variants_points_list, 1)],
+        0
+      ) AS last_variant_points,
+      GREATEST(
+        0,
+        COALESCE(mpq.points_list[1], mpq.current_value, 0) - COALESCE(mpq.max_manual_points, 0)
+      ) AS next_exam_auto_value,
+      mpq.zone_max_points
     FROM
       max_points_questions AS mpq
+  ),
+  pending_question_amounts AS (
+    SELECT
+      pqi.assessment_instance_id,
+      pqi.zone_id,
+      pqi.status,
+      CASE
+        WHEN pqi.max_manual_points > 0
+        AND pqi.requires_manual_grading THEN pqi.max_manual_points
+        ELSE 0
+      END AS manual_pending_points,
+      GREATEST(0, pqi.max_auto_points - pqi.auto_points) AS remaining_auto_points,
+      CASE
+        WHEN pqi.assessment_type = 'Homework' THEN (
+          CASE
+            WHEN pqi.variants_points_count = 0
+            OR pqi.last_variant_points >= pqi.init_auto_value THEN pqi.current_auto_value
+            ELSE pqi.current_auto_value - pqi.last_variant_points
+          END
+        )
+        ELSE pqi.next_exam_auto_value
+      END AS auto_pending_limit,
+      pqi.max_auto_points,
+      pqi.zone_max_points
+    FROM
+      pending_question_inputs AS pqi
+  ),
+  pending_by_question AS (
+    SELECT
+      pqa.assessment_instance_id,
+      pqa.zone_id,
+      pqa.manual_pending_points + (
+        CASE
+          WHEN pqa.status IN ('saved', 'grading')
+          AND pqa.max_auto_points > 0 THEN LEAST(pqa.remaining_auto_points, pqa.auto_pending_limit)
+          ELSE 0
+        END
+      ) AS pending_points,
+      pqa.zone_max_points
+    FROM
+      pending_question_amounts AS pqa
+  ),
+  pending_by_zone AS (
+    SELECT
+      pbq.assessment_instance_id,
+      pbq.zone_id,
+      CASE
+        WHEN pbq.zone_max_points IS NULL THEN sum(pbq.pending_points)
+        ELSE LEAST(sum(pbq.pending_points), pbq.zone_max_points)
+      END AS pending_points
+    FROM
+      pending_by_question AS pbq
     GROUP BY
-      mpq.assessment_instance_id,
-      mpq.zone_id,
-      mpq.zone_max_points
+      pbq.assessment_instance_id,
+      pbq.zone_id,
+      pbq.zone_max_points
   ),
   pending_total AS (
     SELECT
