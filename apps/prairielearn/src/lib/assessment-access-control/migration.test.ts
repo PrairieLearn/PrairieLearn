@@ -1972,6 +1972,29 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy converts empty allowAccess to empty accessControl', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.deepEqual(result.accessControl, []);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrates non-UID rules when mixed with UID rules', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
