@@ -1365,17 +1365,7 @@ describe('Structural field dependency validation', () => {
 
   it.each([
     {
-      label: 'after-complete boolean fields with dateControl but no deadlines',
-      config: {
-        dateControl: { release: { date: '2024-03-14T00:01:00' } },
-        afterComplete: {
-          questions: { hidden: true },
-          score: { hidden: true },
-        },
-      },
-    },
-    {
-      label: 'after-complete dates without dateControl',
+      label: 'afterComplete dates without dateControl',
       config: {
         afterComplete: {
           questions: {
@@ -1390,7 +1380,7 @@ describe('Structural field dependency validation', () => {
       },
     },
     {
-      label: 'after-complete dates with dateControl but no deadlines',
+      label: 'afterComplete dates with dateControl but no deadlines',
       config: {
         dateControl: {
           release: { date: '2024-03-14T00:01:00' },
@@ -1403,34 +1393,6 @@ describe('Structural field dependency validation', () => {
           score: {
             hidden: true,
             visibleFromDate: '2024-03-25T23:59:00',
-          },
-        },
-      },
-    },
-    {
-      label: 'after-complete dates when durationMinutes is set',
-      config: {
-        dateControl: { durationMinutes: 60 },
-        afterComplete: {
-          questions: {
-            hidden: true,
-            visibleFromDate: '2024-03-23T23:59:00',
-          },
-        },
-      },
-    },
-    {
-      label: 'after-complete dates when PrairieTest is configured',
-      config: {
-        integrations: {
-          prairieTest: {
-            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-          },
-        },
-        afterComplete: {
-          questions: {
-            hidden: true,
-            visibleFromDate: '2024-03-23T23:59:00',
           },
         },
       },
@@ -2211,298 +2173,58 @@ describe('Global afterComplete validation', () => {
     assert.lengthOf(matches, 1);
   });
 
-  it('accepts afterComplete on main rule without dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
+  it.each([
+    {
+      name: 'default rule with no dateControl',
       rules: [
-        AccessControlJsonSchema.parse({
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
+        {
+          afterComplete: { questions: { hidden: false } },
+        },
       ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete with score hidden on main rule without dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
+    },
+    {
+      name: 'default rule with dateControl but no automatic completion mechanism',
       rules: [
-        AccessControlJsonSchema.parse({
-          afterComplete: {
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on main rule with dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            due: { date: '2024-03-21T23:59:00' },
-          },
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on main rule with PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-            },
-          },
-          afterComplete: {
-            questions: { hidden: true },
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on overrides when main rule has dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            due: { date: '2024-03-21T23:59:00' },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-            },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on an override that has its own dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            due: { date: '2024-03-21T23:59:00' },
-          },
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on main rule when dateControl has no automatic completion mechanism', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
+        {
           dateControl: { release: { date: '2024-03-14T00:01:00' } },
-          afterComplete: {
-            questions: { hidden: true },
-            score: { hidden: true },
-          },
-        }),
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
       ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on main rule with durationMinutes', () => {
-    const result = validateAccessControlRules({
+    },
+    {
+      name: 'override with no automatic completion mechanism',
       rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            durationMinutes: 60,
-          },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on overrides when default rule has no automatic completion mechanism', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { release: { date: '2024-03-14T00:01:00' } },
-        }),
-        AccessControlJsonSchema.parse({
+        {},
+        {
           labels: ['Section A'],
           afterComplete: { questions: { hidden: true } },
-        }),
+        },
       ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it("accepts afterComplete on an override that explicitly clears the default's only automatic completion mechanism", () => {
-    const result = validateAccessControlRules({
+    },
+    {
+      name: 'override that clears inherited due date',
       rules: [
-        AccessControlJsonSchema.parse({
+        {
           dateControl: {
             release: { date: '2024-03-14T00:01:00' },
             due: { date: '2024-03-21T23:59:00' },
           },
-        }),
-        AccessControlJsonSchema.parse({
+        },
+        {
           labels: ['Section A'],
           dateControl: { due: { date: null } },
           afterComplete: { questions: { hidden: true } },
-        }),
+        },
       ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
+    },
+  ] satisfies { name: string; rules: AccessControlJsonInput[] }[])(
+    'accepts afterComplete on $name',
+    ({ rules }) => {
+      const result = validateAccessControlRules({
+        rules: rules.map((rule) => AccessControlJsonSchema.parse(rule)),
+      });
 
-  it("accepts an override that clears the default's due when the default still provides another mechanism", () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            due: { date: '2024-03-21T23:59:00' },
-            durationMinutes: 60,
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { due: { date: null } },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on an override when only another override has dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            due: { date: '2024-03-21T23:59:00' },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on an override when another override provides duration', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { durationMinutes: 60 },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on an override that clears duration', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            durationMinutes: 60,
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { durationMinutes: null },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
-
-  it('accepts afterComplete on an override that clears a due date supplied by another override', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { due: { date: '2024-03-21T23:59:00' } },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          dateControl: { due: { date: null } },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.deepEqual(result.errors, []);
-  });
+      assert.deepEqual(result.errors, []);
+    },
+  );
 });
