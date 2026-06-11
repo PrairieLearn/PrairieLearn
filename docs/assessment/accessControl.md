@@ -22,7 +22,7 @@ From an assessment, open the **Access** tab. The page has two sections:
 - **Defaults**: settings that apply to all students.
 - **Overrides**: settings that apply only to selected student labels or specific students.
 
-![Access control page showing Defaults and Overrides](accessControlModern/01-overview.png)
+![Access control page showing Defaults and Overrides](accessControl/01-overview.png)
 /// caption
 The Access page summarizes the active configuration and lists every override that applies to the assessment.
 ///
@@ -33,7 +33,7 @@ The summary card shows the current access state, the release/due timeline, credi
 
 Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
-![Defaults editor panel for access control](accessControlModern/02-defaults-editor.png)
+![Defaults editor panel for access control](accessControl/02-defaults-editor.png)
 /// caption
 Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
 ///
@@ -182,7 +182,7 @@ Common override uses include:
 
 Existing overrides appear as cards under **Overrides for student labels** or **Overrides for specific students**. Click **Edit** to change the target or overridden fields.
 
-![Student-specific override editor with an overridden release date](accessControlModern/03-student-override.png)
+![Student-specific override editor with an overridden release date](accessControl/03-student-override.png)
 /// caption
 Each override starts with every field inherited from the defaults; click **Override** next to a field to set a different value just for the targeted students.
 ///
