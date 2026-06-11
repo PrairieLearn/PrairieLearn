@@ -4,7 +4,7 @@ import { assertNever } from '@prairielearn/utils';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
@@ -346,6 +346,7 @@ export function InstructorFileEditor({
                 ? JSON.stringify(editorData.fileMetadata)
                 : ''}"
               data-lint-html-mustache="${editorData.lintHtmlMustache}"
+              data-ace-linters-worker-path="${compiledScriptPath('aceLintersWorker.ts')}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice

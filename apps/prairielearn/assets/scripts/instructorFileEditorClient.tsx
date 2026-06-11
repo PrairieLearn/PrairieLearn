@@ -1,4 +1,8 @@
 import ace from 'ace-builds';
+// Defines the `enableBasicAutocompletion` and `enableLiveAutocompletion`
+// editor options that ace-linters enables for its completion popup.
+import 'ace-builds/src-noconflict/ext-language_tools';
+import { LanguageProvider } from 'ace-linters/build/ace-linters';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -9,9 +13,26 @@ import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
 import { type FileMetadata, FileType } from '../../src/lib/editorUtil.shared.js';
+import infoAssessmentSchema from '../../src/schemas/schemas/infoAssessment.json';
+import infoCourseSchema from '../../src/schemas/schemas/infoCourse.json';
+import infoCourseInstanceSchema from '../../src/schemas/schemas/infoCourseInstance.json';
+import infoQuestionSchema from '../../src/schemas/schemas/infoQuestion.json';
 
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
+
+/**
+ * JSON schemas for the known course JSON files, keyed by file type.
+ */
+const JSON_SCHEMAS: Partial<Record<FileType, { uri: string; schema: unknown }>> = {
+  [FileType.Course]: { uri: 'infoCourse.schema.json', schema: infoCourseSchema },
+  [FileType.CourseInstance]: {
+    uri: 'infoCourseInstance.schema.json',
+    schema: infoCourseInstanceSchema,
+  },
+  [FileType.Assessment]: { uri: 'infoAssessment.schema.json', schema: infoAssessmentSchema },
+  [FileType.Question]: { uri: 'infoQuestion.schema.json', schema: infoQuestionSchema },
+};
 
 /**
  * Error codes for save validation issues.
@@ -176,6 +197,10 @@ class InstructorFileEditor {
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
         ?.addEventListener('click', async () => await this.reformatJSONFile());
+
+      if (!readOnly) {
+        this.setUpJsonSchemaLanguageService();
+      }
     }
 
     if (element.dataset.lintHtmlMustache === 'true') {
@@ -188,6 +213,33 @@ class InstructorFileEditor {
 
     // Override the save button click to show confirmation modal if needed
     this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
+  }
+
+  /**
+   * Attaches schema-based validation, autocomplete, and hover documentation
+   * for known course JSON files (infoCourse.json, infoAssessment.json, etc.)
+   * via ace-linters, which runs a JSON language service in a web worker.
+   */
+  setUpJsonSchemaLanguageService() {
+    const workerPath = this.element.dataset.aceLintersWorkerPath;
+    const schemaInfo = this.fileMetadata ? JSON_SCHEMAS[this.fileMetadata.type] : undefined;
+    if (!workerPath || !schemaInfo) return;
+
+    // The JSON language service reports syntax errors itself, so disable Ace's
+    // built-in JSON worker to avoid duplicate annotations.
+    this.editor.getSession().setOption('useWorker', false);
+    this.editor.setOptions({
+      enableBasicAutocompletion: true,
+      enableLiveAutocompletion: true,
+    });
+
+    const worker = new Worker(workerPath);
+    const provider = LanguageProvider.create(worker);
+    provider.setGlobalOptions('json', {
+      schemas: [{ uri: schemaInfo.uri, schema: JSON.stringify(schemaInfo.schema) }],
+    });
+    provider.registerEditor(this.editor);
+    provider.setDocumentOptions(this.editor.getSession(), { schemaUri: schemaInfo.uri });
   }
 
   /**

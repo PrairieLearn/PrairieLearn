@@ -22,6 +22,7 @@
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "skipLibCheck": true
