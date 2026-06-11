@@ -8,6 +8,9 @@ def parse(data):
     # format errors keeps the submission from being graded (and from using up
     # one of the student's attempts).
     for name in ["L", "t", "g"]:
+        if name in data["format_errors"]:
+            continue
+
         var = data["submitted_answers"].get(name)
         if var is None:
             data["format_errors"][name] = f"Variable {name} is not defined"
