@@ -194,14 +194,14 @@ describe('getGlobalDateValidationErrors', () => {
     });
   });
 
-  it('maps after-complete mechanism errors to visible override fields', () => {
+  it('allows after-complete overrides without an automatic completion mechanism', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData(
         [
           makeOverride({
             overriddenFields: ['questionVisibility', 'scoreVisibility'],
             questionVisibility: { hidden: false },
-            scoreVisibility: { hidden: true },
+            scoreVisibility: { hidden: false },
           }),
         ],
         {
@@ -212,20 +212,7 @@ describe('getGlobalDateValidationErrors', () => {
       TEST_TIMEZONE,
     );
 
-    expect(errors).toContainEqual({
-      path: 'overrides.0.questionVisibility',
-      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
-    });
-    expect(errors).toContainEqual({
-      path: 'overrides.0.scoreVisibility',
-      message: 'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
-    });
-    expect(errors.find((e) => e.path === 'overrides.0.questionVisibility.visibleFromDate')).toBe(
-      undefined,
-    );
-    expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility.visibleFromDate')).toBe(
-      undefined,
-    );
+    expect(errors).toEqual([]);
   });
 
   it('maps inherited after-complete conflicts to an active override field', () => {
@@ -291,7 +278,7 @@ describe('getAccessControlFormValidationErrors', () => {
     });
   });
 
-  it('does not validate hidden default after-complete date inputs without a completion mechanism', () => {
+  it('does not skip default after-complete date validation without an automatic completion mechanism', () => {
     const errors = getAccessControlFormValidationErrors(
       makeFormData([], {
         dateControlEnabled: false,
@@ -302,13 +289,14 @@ describe('getAccessControlFormValidationErrors', () => {
       TEST_TIMEZONE,
     );
 
-    expect(
-      errors.find(
-        (e) =>
-          e.path === 'defaultRule.questionVisibility.visibleFromDate' ||
-          e.path === 'defaultRule.scoreVisibility.visibleFromDate',
-      ),
-    ).toBeUndefined();
+    expect(errors).toContainEqual({
+      path: 'defaultRule.questionVisibility.visibleFromDate',
+      message: 'Date is required',
+    });
+    expect(errors).toContainEqual({
+      path: 'defaultRule.scoreVisibility.visibleFromDate',
+      message: 'Date is required',
+    });
   });
 
   it('ignores invalid values for inactive override fields', () => {

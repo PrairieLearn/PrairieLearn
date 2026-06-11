@@ -282,7 +282,7 @@ describe('formDataToJson', () => {
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
-  it('omits default afterComplete when dateControl is on but no due date, late deadline, or duration is set', () => {
+  it('emits default afterComplete when dateControl is on but no due date, late deadline, or duration is set', () => {
     const result = formDataToJson({
       defaultRule: {
         ...defaultRuleFixture,
@@ -297,7 +297,10 @@ describe('formDataToJson', () => {
       overrides: [],
     });
 
-    expect(result[0].afterComplete).toBeUndefined();
+    expect(result[0].afterComplete).toEqual({
+      questions: { hidden: false },
+      score: { hidden: true },
+    });
   });
 
   it('omits afterComplete when neither visibility is overridden', () => {
