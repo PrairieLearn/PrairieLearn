@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import { keyBy } from 'es-toolkit';
-import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 

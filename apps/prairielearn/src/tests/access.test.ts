@@ -1,7 +1,6 @@
 import * as cheerio from 'cheerio';
 import type { DataNode, Element } from 'domhandler';
 import fetchCookie, { type CookieJar } from 'fetch-cookie';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';

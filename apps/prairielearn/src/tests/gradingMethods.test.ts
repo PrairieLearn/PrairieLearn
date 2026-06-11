@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch, { type Response } from 'node-fetch';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -101,7 +100,7 @@ function assertQuestionActionButtons(
 describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body: cheerio.CheerioAPI;
   let iqUrl: string;
-  let gradeRes: Response;
+  let gradeRes: Response = null!;
   let iqId: number;
   let questionsPage: string;
   let $questionsPage: cheerio.CheerioAPI;

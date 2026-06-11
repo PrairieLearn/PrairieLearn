@@ -2,7 +2,6 @@
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import type { Element } from 'domhandler';
-import fetch from 'node-fetch';
 import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 

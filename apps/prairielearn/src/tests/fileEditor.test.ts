@@ -7,7 +7,6 @@ import * as cheerio from 'cheerio';
 import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch, { FormData } from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
