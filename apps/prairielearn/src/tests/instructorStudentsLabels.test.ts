@@ -44,7 +44,7 @@ import {
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser } from './utils/auth.js';
-import { withConfig } from './utils/config.js';
+import { withFeatures } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const labelsUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/students/labels`;
@@ -77,7 +77,7 @@ describe('Instructor student labels page', () => {
   let courseInstanceShortName: string;
 
   beforeAll(async () => {
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+    await withFeatures({ 'enhanced-access-control': true }, async () => {
       courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
       await helperServer.before(courseRepo.courseLiveDir)();
       await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
@@ -439,7 +439,7 @@ describe('Instructor student labels page', () => {
   });
 
   test.sequential('renames propagate to accessControl entries in infoAssessment.json', async () => {
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+    await withFeatures({ 'enhanced-access-control': true }, async () => {
       const trpcClient = createTrpcClient();
       const assessmentJsonPath = path.join(
         courseRepo.courseLiveDir,
@@ -476,7 +476,7 @@ describe('Instructor student labels page', () => {
   });
 
   test.sequential('deletes propagate to accessControl entries, leaving labels: []', async () => {
-    await withConfig({ features: { 'enhanced-access-control': true } }, async () => {
+    await withFeatures({ 'enhanced-access-control': true }, async () => {
       const trpcClient = createTrpcClient();
       const assessmentJsonPath = path.join(
         courseRepo.courseLiveDir,

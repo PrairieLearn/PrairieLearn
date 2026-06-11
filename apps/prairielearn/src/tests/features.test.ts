@@ -6,7 +6,7 @@ import { FeatureManager } from '../lib/features/manager.js';
 
 import * as helperCourse from './helperCourse.js';
 import * as helperDb from './helperDb.js';
-import { withConfig } from './utils/config.js';
+import { withFeatures } from './utils/config.js';
 
 describe('features', () => {
   beforeAll(async function () {
@@ -154,7 +154,7 @@ describe('features', () => {
   it('allows DB grants to override config-enabled features', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
 
-    await withConfig({ features: { 'test:example-feature-flag': true } }, async () => {
+    await withFeatures({ 'test:example-feature-flag': true }, async () => {
       // Config enables the feature globally.
       assert.isTrue(await features.enabled('test:example-feature-flag'));
 
@@ -174,7 +174,7 @@ describe('features', () => {
   it('allows DB grants to override config-disabled features', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
 
-    await withConfig({ features: { 'test:example-feature-flag': false } }, async () => {
+    await withFeatures({ 'test:example-feature-flag': false }, async () => {
       // Config disables the feature globally.
       assert.isFalse(await features.enabled('test:example-feature-flag'));
 
