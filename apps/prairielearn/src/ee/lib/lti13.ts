@@ -658,7 +658,7 @@ export async function fetchRetry(
       (err instanceof TypeError &&
         err.cause &&
         ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENETUNREACH'].includes(
-          (err.cause as any).code,
+          (err.cause as { code: string }).code,
         ))
     ) {
       // Retry logic
