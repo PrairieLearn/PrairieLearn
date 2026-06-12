@@ -676,6 +676,7 @@ export async function fetchRetry(
         'UND_ERR_BODY_TIMEOUT', // Undici-specific timeout while receiving response body.
         'UND_ERR_SOCKET', // Undici reported a generic socket-level failure.
       ].includes(err.cause?.code ?? err.code) ||
+      // HTTP parser errors
       (err.cause?.code ?? err.code)?.startsWith('HPE_')
     ) {
       // Retry logic
