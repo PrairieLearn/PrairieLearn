@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -127,7 +126,7 @@ describe('API', { timeout: 60_000 }, function () {
         });
         assert.equal(res.status, 200);
 
-        const json = (await res.json()) as any;
+        const json = await res.json();
 
         const assessment = json.find((o: any) => o.assessment_name === 'exam1-automaticTestSuite');
         assert.exists(assessment);
@@ -148,7 +147,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
 
       assert.equal(json.assessment_id, locals.assessmentId);
       assert.equal(json.assessment_label, 'E1');
@@ -165,7 +164,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       const assessmentInstance = json[0];
       assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
@@ -187,7 +186,7 @@ describe('API', { timeout: 60_000 }, function () {
 
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.equal(json.assessment_instance_id, locals.assessmentInstanceId);
       assert.equal(json.assessment_id, locals.assessmentId);
       assert.equal(json.user_uid, 'dev@example.com');
@@ -207,7 +206,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.lengthOf(json, 1);
       assert.equal(json[0].instance_question_points, assessmentPoints);
 
@@ -225,7 +224,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.equal(json.submission_id, locals.submissionId);
       assert.equal(json.assessment_instance_id, locals.assessmentInstanceId);
       assert.equal(json.assessment_id, locals.assessmentId);
@@ -241,7 +240,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       const user = json.find((o: any) => o.user_uid === 'dev@example.com');
       assert.exists(user);
       const assessment = user.assessments.find((o: any) => o.assessment_label === 'E1');
@@ -261,7 +260,7 @@ describe('API', { timeout: 60_000 }, function () {
         },
       });
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.lengthOf(json, 7);
     });
 
@@ -276,7 +275,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.isArray(json);
     });
 
@@ -290,7 +289,7 @@ describe('API', { timeout: 60_000 }, function () {
         });
         assert.equal(res.status, 404);
 
-        const json = (await res.json()) as any;
+        const json = await res.json();
         assert.equal(json.message, 'Not Found');
       },
     );
@@ -305,7 +304,7 @@ describe('API', { timeout: 60_000 }, function () {
         });
         assert.equal(res.status, 404);
 
-        const json = (await res.json()) as any;
+        const json = await res.json();
         assert.equal(json.message, 'Not Found');
       },
     );
@@ -323,7 +322,7 @@ describe('API', { timeout: 60_000 }, function () {
 
       // This endpoint only reports legacy `allowAccess` rules. The test course
       // uses modern `accessControl`, which is not exposed here.
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.lengthOf(json, 0);
     });
 
@@ -339,7 +338,7 @@ describe('API', { timeout: 60_000 }, function () {
 
       // This endpoint only reports legacy `allowAccess` rules. The test course
       // uses modern `publishing` dates, which are not exposed here.
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.lengthOf(json, 0);
     });
 
@@ -351,7 +350,7 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+      const json = await res.json();
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
     });
@@ -413,7 +412,7 @@ describe('API course sync', { timeout: 60_000 }, function () {
     });
     assert.equal(res.status, 200);
 
-    const json = (await res.json()) as any;
+    const json = await res.json();
     assert.exists(json.job_sequence_id);
     courseSyncJobSequenceId = json.job_sequence_id;
   });
@@ -430,7 +429,7 @@ describe('API course sync', { timeout: 60_000 }, function () {
     });
     assert.equal(res.status, 200);
 
-    const json = (await res.json()) as any;
+    const json = await res.json();
     assert.exists(json.job_sequence_id);
     assert.equal(json.job_sequence_id, courseSyncJobSequenceId);
     assert.exists(json.status);

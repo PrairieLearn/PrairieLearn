@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch, { type RequestInit, type Response } from 'node-fetch';
 import { assert } from 'vitest';
 import z from 'zod';
 
@@ -10,7 +9,7 @@ export interface CheerioResponse extends Response {
 }
 
 /**
- * A wrapper around node-fetch that provides a few features:
+ * A wrapper around fetch that provides a few features:
  *
  * - Automatic parsing with cheerio
  * - A `form` option akin to that from the `request` library

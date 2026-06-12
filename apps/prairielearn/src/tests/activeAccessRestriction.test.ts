@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
@@ -227,7 +226,7 @@ describe(
     });
 
     test.sequential(
-      'a timeLimitFinish POST is rejected after the time limit has expired',
+      'a timeLimitFinish POST closes the assessment after the time limit has expired',
       async () => {
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
           method: 'POST',
@@ -238,18 +237,17 @@ describe(
           headers,
         });
         assert.equal(response.status, 403);
+        assert.equal(response.url, `${context.examInstanceUrl}?timeLimitExpired=true`);
       },
     );
 
-    test.sequential('check that the assessment instance remains open', async () => {
-      // The student can no longer interact with the assessment, but the
-      // instance itself is only closed later by the `autoFinishExams` cron job.
+    test.sequential('check that the assessment instance is closed', async () => {
       const results = await sqldb.queryRows(
         sql.select_assessment_instances,
         AssessmentInstanceSchema,
       );
       assert.equal(results.length, 1);
-      assert.equal(results[0].open, true);
+      assert.equal(results[0].open, false);
     });
 
     test.sequential(

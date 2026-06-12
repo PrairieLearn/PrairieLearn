@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 

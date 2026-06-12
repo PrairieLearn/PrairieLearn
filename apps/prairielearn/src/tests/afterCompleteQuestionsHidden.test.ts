@@ -94,11 +94,13 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
     });
 
-    test.sequential('finish the exam', async () => {
+    test.sequential('timeLimitFinish closes the exam', async () => {
+      headers.cookie = 'pl_test_user=test_student; pl_test_date=2000-01-19T00:51:01';
+
       const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'finish',
+          __action: 'timeLimitFinish',
           __csrf_token: context.__csrf_token,
         }),
         headers,
@@ -110,7 +112,7 @@ describe(
       assert.equal(response.status, 403);
 
       // We should have been redirected back to the same assessment instance
-      assert.equal(response.url, context.assessmentInstanceUrl);
+      assert.equal(response.url, `${context.assessmentInstanceUrl}?timeLimitExpired=true`);
 
       // we should not have any questions
       assert.lengthOf(response.$('a:contains("Question 1")'), 0);
