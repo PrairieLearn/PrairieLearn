@@ -654,12 +654,16 @@ export async function fetchRetry(
       // Common retry codes
       [403, 429, 502, 503, 504].includes(err.status) ||
       // Network failures may be triggered by a lower-level socket failure, so
-      // we check the code on the error's cause (if it exists)
-      (err instanceof TypeError &&
-        err.cause &&
-        ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENETUNREACH'].includes(
-          (err.cause as { code: string }).code,
-        ))
+      // we check the code on the error code or the code of its cause (if it exists)
+      [
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ETIMEDOUT',
+        'ENETUNREACH',
+        'EADDRINUSE',
+        'EPIPE',
+        'EAI_AGAIN',
+      ].includes(err.cause?.code ?? err.code)
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
@@ -667,7 +671,11 @@ export async function fetchRetry(
         throw err;
       }
       await sleep(fetchRetryOpts.sleepMs);
-      return await fetchRetry(input, opts, fetchRetryOpts);
+      return await fetchRetry(input, opts, {
+        ...fetchRetryOpts,
+        // Exponential backoff
+        sleepMs: fetchRetryOpts.sleepMs * 2,
+      });
     } else {
       // Error immediately
       throw err;
