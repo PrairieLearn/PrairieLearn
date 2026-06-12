@@ -9,6 +9,15 @@ import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
+async function waitForBrowserFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 async function enterEditMode(page: Page, ciId: string, aId: string): Promise<void> {
   await page.goto(`/pl/course_instance/${ciId}/instructor/assessment/${aId}/questions`);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
@@ -25,15 +34,16 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   await source.focus();
   await page.keyboard.press(' ');
   await expect(source).toHaveAttribute('aria-pressed', 'true');
+  await waitForBrowserFrames(page);
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
     // dnd-kit's sortableKeyboardCoordinates reads DOM rects to compute
-    // the next drop position. Yield to the event loop so React can
-    // commit the state update and dnd-kit can re-measure rects before
-    // the next arrow press.
-    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    // the next drop position. Wait for layout/measurement work to settle
+    // before sending the next key or dropping the item.
+    await waitForBrowserFrames(page);
   }
   await page.keyboard.press(' ');
+  await expect(source).not.toHaveAttribute('aria-pressed', 'true');
 }
 
 async function expectHiddenZoneQuestionIds(
