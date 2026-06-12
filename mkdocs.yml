@@ -223,6 +223,7 @@ nav:
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
+          - 'AI question generation': 'question/ai-generation.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Preferences': 'question/preferences.md'
