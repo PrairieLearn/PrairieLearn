@@ -240,14 +240,14 @@ export function AccessControlSummary({
       )}
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0 d-flex align-items-center">
+          <h2 className="h5 mb-0 d-flex align-items-center">
             Defaults
             {defaultRuleErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
                 {defaultRuleErrorCount} {defaultRuleErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
-          </h5>
+          </h2>
           <div className="d-flex gap-2">
             <Button
               variant="outline-primary"
@@ -294,14 +294,14 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0 d-flex align-items-center">
+          <h2 className="h5 mb-0 d-flex align-items-center">
             Overrides
             {overridesErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
                 {overridesErrorCount} {overridesErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
-          </h5>
+          </h2>
           {canEditAccessSettings && (
             <Button
               variant="primary"
