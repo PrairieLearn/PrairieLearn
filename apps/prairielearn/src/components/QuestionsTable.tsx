@@ -410,7 +410,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             },
             { name: 'Workspace image', value: row.workspace_image },
             { name: 'Single variant', value: row.single_variant ? 'Yes' : 'No' },
-            { name: 'Preferences', value: row.has_preferences ? 'Yes' : 'No' },
+            { name: 'Has preferences', value: row.has_preferences ? 'Yes' : 'No' },
           ],
           mapRowToJsonData: (row: SafeQuestionsPageData) => ({
             qid: displayQid(row, qidPrefix),

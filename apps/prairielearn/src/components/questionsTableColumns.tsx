@@ -287,7 +287,7 @@ export function createQuestionsTableColumns({
 
     columnHelper.accessor('has_preferences', {
       id: 'has_preferences',
-      header: 'Preferences',
+      header: 'Has preferences',
       cell: (info) => (info.getValue() ? 'Yes' : 'No'),
       filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
         return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
