@@ -1,6 +1,5 @@
 import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
-import { writeFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
@@ -217,7 +216,7 @@ async function controlContainer(
 
     debug(`controlContainer: saving ${zipPath}`);
 
-    await writeFile(zipPath, body);
+    await fsPromises.writeFile(zipPath, body);
     return zipPath;
   }
 
