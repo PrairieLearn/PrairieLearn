@@ -1,10 +1,6 @@
 import type { Column } from '@tanstack/react-table';
 
-import {
-  MultiSelectColumnFilter,
-  type MultiSelectFilterValue,
-  applyMultiSelectFilter,
-} from './MultiSelectColumnFilter.js';
+import { MultiSelectColumnFilter, type MultiSelectFilterValue } from './MultiSelectColumnFilter.js';
 
 export type BooleanFilterOption = 'Yes' | 'No';
 
@@ -39,5 +35,8 @@ export function applyBooleanFilter(
   filter: MultiSelectFilterValue<BooleanFilterOption> | undefined,
   value: boolean,
 ): boolean {
-  return applyMultiSelectFilter(filter, (values) => values.includes(value ? 'Yes' : 'No'));
+  if (!filter || filter.values.length === 0) return true;
+  // Boolean filters reuse MultiSelectFilterValue for URL compatibility, but the
+  // UI is include-only, so ignore any exclude-mode state parsed from the URL.
+  return filter.values.includes(value ? 'Yes' : 'No');
 }
