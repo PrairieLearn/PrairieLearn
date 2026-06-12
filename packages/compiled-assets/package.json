@@ -36,7 +36,6 @@
     "@vitest/coverage-v8": "^4.1.7",
     "express": "^4.22.1 <5",
     "get-port": "^7.2.0",
-    "node-fetch": "^3.3.2",
     "vitest": "^4.1.7"
   }
 }

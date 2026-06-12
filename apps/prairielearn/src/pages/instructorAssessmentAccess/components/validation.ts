@@ -10,7 +10,6 @@ import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
   validateAfterCompleteCrossFieldIssues,
-  validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
@@ -34,7 +33,6 @@ import {
   type OverridableFieldName,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  defaultRuleHasCompletionMechanism,
   formDataToJson,
   isReleasedNow,
 } from './types.js';
@@ -240,11 +238,6 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
-    // Run the "no completion mechanism" check before the cross-field check —
-    // both target the same questionVisibility path, but the mechanism error
-    // is more fundamental (cross-field consistency is moot when there's no
-    // mechanism at all).
-    validateGlobalAfterCompleteIssues(validationRules),
     validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
@@ -528,14 +521,13 @@ function validateRuleFields(
 
 function validateDefaultRule(formData: AccessControlFormData, addError: AddValidationError) {
   const rule = formData.defaultRule;
-  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
 
   validateRuleFields(
     rule,
     'defaultRule',
     (fieldName) =>
       fieldName === 'questionVisibility' || fieldName === 'scoreVisibility'
-        ? hasCompletionMechanism
+        ? true
         : rule.dateControlEnabled,
     addError,
   );

@@ -19,7 +19,7 @@ ruleTester.run('require-trpc-permission-middleware', rule, {
     },
     {
       code: `const m = t.procedure
-        .use(requireEnhancedAccessControl)
+        .use(requireAiGradingFeature)
         .use(requireCourseInstancePermissionView)
         .query(async () => {});`,
     },
@@ -80,10 +80,6 @@ ruleTester.run('require-trpc-permission-middleware', rule, {
       errors: [{ messageId: 'missingPermissionMiddleware' }],
     },
     // Feature gate alone is not a permission gate
-    {
-      code: 'const m = t.procedure.use(requireEnhancedAccessControl).mutation(async () => {});',
-      errors: [{ messageId: 'missingPermissionMiddleware' }],
-    },
     {
       code: 'const m = t.procedure.use(requireAiGradingFeature).mutation(async () => {});',
       errors: [{ messageId: 'missingPermissionMiddleware' }],

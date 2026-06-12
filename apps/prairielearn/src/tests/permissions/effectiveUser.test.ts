@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
