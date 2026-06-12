@@ -1116,6 +1116,7 @@ More information about the grading attributes in the Grading section below.
 | `arrow-head-length`   | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                          |
 | `disregard-sense`     | boolean | false   | When `disregard-sense=true`, the correctness of the arc vector only considers the position of the anchor point.                                                                         |
 | `draw-error-box`      | boolean | -       | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                             |
+| `optional-grading`    | boolean | false   | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                           |
 
 #### Example implementations
 
@@ -1184,6 +1185,7 @@ More information about the grading attributes in the Grading section below.
 | `draw-error-box`    | boolean | -                   | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
 | `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.                                                                                                                                                                                                        |
 | `offset-backward`   | float   | `max(w1, w2) * 1.1` | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.                                                                                                                                                                                                    |
+| `optional-grading`  | boolean | false               | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                     |
 
 #### Example implementations
 

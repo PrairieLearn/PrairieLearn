@@ -1044,14 +1044,9 @@ class ArcVector(BaseElement):
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
-
         grid_size = pl.get_integer_attrib(el, "grid-size", 20)
         tol = pl.get_float_attrib(el, "tol", grid_size / 2)
-        pc, hbox, wbox, _, _ = get_error_box(
-            x1, y1, 0, tol, offset_forward, offset_backward
-        )
+        pc, hbox, wbox, _, _ = get_error_box(x1, y1, 0, tol, 0, 0)
 
         return {
             "left": x1,
@@ -1080,8 +1075,6 @@ class ArcVector(BaseElement):
             "YcenterErrorBox": pc[1] if pc is not None else pc,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
-            "offset_forward": offset_forward,
-            "offset_backward": offset_backward,
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
             "clockwiseDirection": clockwise_direction,
@@ -1126,6 +1119,7 @@ class ArcVector(BaseElement):
             "arrow-head-length",
             "disregard-sense",
             "draw-error-box",
+            "optional-grading",
             "anchor-is-tail",
         ]
 
@@ -1297,6 +1291,7 @@ class DistributedLoad(BaseElement):
             "draw-error-box",
             "offset-forward",
             "offset-backward",
+            "optional-grading",
         ]
 
 
@@ -1313,14 +1308,9 @@ class Point(BaseElement):
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
-
         grid_size = pl.get_integer_attrib(el, "grid-size", 20)
         tol = pl.get_float_attrib(el, "tol", grid_size / 2)
-        pc, hbox, wbox, _, _ = get_error_box(
-            x1, y1, 0, tol, offset_forward, offset_backward
-        )
+        pc, hbox, wbox, _, _ = get_error_box(x1, y1, 0, tol, 0, 0)
 
         return {
             "left": pl.get_float_attrib(el, "x1", 20),
@@ -1331,8 +1321,6 @@ class Point(BaseElement):
             "YcenterErrorBox": pc[1] if pc is not None else pc,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
-            "offset_forward": offset_forward,
-            "offset_backward": offset_backward,
             "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
             "offsetx": pl.get_float_attrib(el, "offsetx", 5),
             "offsety": pl.get_float_attrib(el, "offsety", 5),
