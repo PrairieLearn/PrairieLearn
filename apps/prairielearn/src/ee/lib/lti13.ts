@@ -640,19 +640,24 @@ export async function fetchRetry(
       errorMsg = resString;
     }
 
+    // Rate Limit Exceeded may return 403 or 429 depending on Canvas settings.
+    // https://github.com/instructure/canvas-lms/blob/1c9f0bb8013ed69c4f2efe11fd483025469b7e6c/app/middleware/request_throttle.rb#L298-L305
+    // Change to 429 to simplify handling of both cases.
+    let status = response.status;
+    if (response.status === 403 && response.statusText.includes('Rate Limit Exceeded')) {
+      status = 429;
+    }
+
     throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
-      status: response.status,
+      status,
       data: {
         statusText: response.statusText,
         body: resString,
       },
     });
   } catch (err: any) {
-    // https://developerdocs.instructure.com/services/canvas/basics/file.throttling
-    // 403 Forbidden (Rate Limit Exceeded)
     if (
-      // Common retry codes
-      [403, 429, 502, 503, 504].includes(err.status) ||
+      [429, 502, 503, 504].includes(err.status) ||
       // Network failures may be triggered by a lower-level socket failure, so
       // we check the code on the error code or the code of its cause (if it exists)
       [
