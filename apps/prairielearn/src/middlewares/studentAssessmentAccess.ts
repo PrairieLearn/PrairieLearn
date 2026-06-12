@@ -18,7 +18,11 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
   const assessmentActive = res.locals.authz_result?.active ?? true;
 
-  if (!showClosedAssessment && (!assessmentInstanceOpen || !assessmentActive)) {
+  if (
+    !showClosedAssessment &&
+    (!assessmentInstanceOpen || !assessmentActive) &&
+    !isExpiredTimeLimitFinish(req, res)
+  ) {
     // We're here because we want to hide closed assessments and one of the following is true:
     //
     // - The assessment instance is closed
@@ -57,6 +61,15 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   }
 
   return true;
+}
+
+function isExpiredTimeLimitFinish(req: Request, res: Response): boolean {
+  return (
+    req.method === 'POST' &&
+    req.body?.__action === 'timeLimitFinish' &&
+    res.locals.assessment_instance?.open === true &&
+    res.locals.assessment_instance_time_limit_expired === true
+  );
 }
 
 export default asyncHandler(async (req, res, next) => {
