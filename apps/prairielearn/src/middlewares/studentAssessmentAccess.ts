@@ -18,28 +18,25 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
   const assessmentActive = res.locals.authz_result?.active ?? true;
 
+  // Show the blocked assessment view when the selected access rule says the
+  // completed assessment should be hidden and either:
+  //
+  // - the assessment instance is closed, or
+  // - the assessment is inactive for this request.
+  //
+  // The inactive case is intentional. Legacy access rules can use `active: false`
+  // together with `showClosedAssessment: false` to fully hide an assessment
+  // outside an allowed window instead of showing a read-only instance.
+  //
+  // The expired time-limit finish POST is a narrow exception: modern access
+  // control marks the assessment inactive before the browser's auto-finish
+  // request reaches the page handler. Let that cleanup POST through so the
+  // handler can verify the expiry and close the still-open instance.
   if (
     !showClosedAssessment &&
     (!assessmentInstanceOpen || !assessmentActive) &&
     !isExpiredTimeLimitFinish(req, res)
   ) {
-    // We're here because we want to hide closed assessments and one of the following is true:
-    //
-    // - The assessment instance is closed
-    // - There is no assessment instance, or the assessment is not active
-    //
-    // The first case is trivial.
-    //
-    // The second case isn't entirely obvious. One could assume that if the assessment instance
-    // is open, even if the assessment is not active, the student should be able to access it.
-    // However, this is not the case. If one is using `showClosedAssessment: false` with a date
-    // range that *grants* access in a certain time frame, they need to pair that with another
-    // access rule that will also apply `showClosedAssessment: false` outside of that time
-    // frame to ensure that students still can't see it. They need to add `active: false` to
-    // that same access rule to override the default, which would otherwise allow students to
-    // start the assessment when that access rule applies, even though they'd have no credit.
-    // We rely on completely blocking access when `active: false` and `showClosedAssessment: false`
-    // are both used, as there's otherwise no way to totally block access.
     res.status(403).send(
       StudentAssessmentAccess({
         // @ts-expect-error The types on checkStudentAssessmentAccess aren't perfect
