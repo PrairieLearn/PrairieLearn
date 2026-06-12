@@ -113,11 +113,11 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      // Because the assessment is listed before release, the unavailable page
-      // tells the student when it will become available.
-      const msg = response.$('[data-testid="assessment-next-active-time"]');
-      assert.lengthOf(msg, 1);
-      assert.match(msg.text(), /The assessment will become available on 00:00, Fri, Jan 1/);
+      const cardBodyText = response.$('.card-body').text();
+      assert.include(
+        cardBodyText,
+        "This assessment's configuration does not allow you to access it right now.",
+      );
     });
 
     test.sequential('check that an assessment instance was not created', async () => {
@@ -366,11 +366,11 @@ describe(
       });
       assert.equal(response.status, 403);
 
-      // Because the assessment is listed before release, the unavailable page
-      // tells the student when it will become available.
-      const msg = response.$('[data-testid="assessment-next-active-time"]');
-      assert.lengthOf(msg, 1);
-      assert.match(msg.text(), /The assessment will become available on 00:00, Wed, Jan 1/);
+      const cardBodyText = response.$('.card-body').text();
+      assert.include(
+        cardBodyText,
+        "This assessment's configuration does not allow you to access it right now.",
+      );
     });
 
     test.sequential('access the homework during the access window', async () => {

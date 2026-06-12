@@ -59,16 +59,7 @@ export default asyncHandler(async (req, res, next) => {
     if (isTrpcRequest(req)) {
       throw new HttpStatusError(403, 'Access denied');
     }
-    res.status(403).send(
-      AccessDenied({
-        resLocals: res.locals,
-        // Only reveal when the assessment becomes available if the assessment
-        // is shown to students before its release date.
-        nextActiveTime: row.authz_result.show_before_release
-          ? row.authz_result.next_active_time
-          : null,
-      }),
-    );
+    res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
   Object.assign(res.locals, row);
