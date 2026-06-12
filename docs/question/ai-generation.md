@@ -8,7 +8,7 @@ AI question generation helps instructors create PrairieLearn questions from a na
 
 ## Enabling AI question generation
 
-While AI question generation is in development, it remains opt-in by course owners/editors. To enable it for a course:
+AI question generation is currently opt-in at the course level. To enable it for a course:
 
 1. Open the course as an instructor with editor permissions.
 2. Go to **Course settings**.
