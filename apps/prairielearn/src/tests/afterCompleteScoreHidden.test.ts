@@ -29,6 +29,9 @@ describe(
       cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T00:00:01',
       // need student mode to get a timed exam (instructor override bypasses this)
     };
+    const headersTimeLimit = {
+      cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
+    };
 
     beforeAll(async function () {
       await helperServer.before()();
@@ -96,25 +99,19 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
     });
 
-    test.sequential('timeLimitFinish closes the exam', async () => {
-      headers.cookie = 'pl_test_user=test_student; pl_test_date=2000-01-19T00:51:01';
-
+    test.sequential('simulate a time limit expiration', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'timeLimitFinish',
           __csrf_token: context.__csrf_token,
         }),
-        headers,
+        headers: headersTimeLimit,
       });
-
-      // Once the exam is finished, questions are hidden after completion
-      // (`afterComplete.questions.hidden`), so the redirect back to the
-      // assessment instance renders the "assessment closed" page.
       assert.equal(response.status, 403);
 
       // We should have been redirected back to the same assessment instance
-      assert.equal(response.url, `${context.assessmentInstanceUrl}?timeLimitExpired=true`);
+      assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
 
       // we should not have any questions
       assert.lengthOf(response.$('a:contains("Question 1")'), 0);
