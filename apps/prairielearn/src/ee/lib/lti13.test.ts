@@ -78,13 +78,13 @@ describe('fetchRetry()', () => {
   });
 
   app.get('/403all', (req, res) => {
-    res.statusMessage = 'Rate Limit Exceeded';
+    res.statusMessage = 'Forbidden: Rate Limit Exceeded';
     res.status(403).json([]);
   });
 
   app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
-      res.statusMessage = 'Rate Limit Exceeded';
+      res.statusMessage = 'Forbidden: Rate Limit Exceeded';
       res.status(403).json([]);
     } else {
       productApi(req, res);
