@@ -91,7 +91,7 @@ describe('fetchRetry()', () => {
 
   app.get('/socketCloseOdd', (req, res) => {
     if (apiCount % 2 === 1) {
-      res.socket?.destroy(new Error('Simulated socket close'));
+      res.socket!.destroy(new Error('Simulated socket close'));
     } else {
       productApi(req, res);
     }
