@@ -664,14 +664,19 @@ export async function fetchRetry(
       // Network failures may be triggered by a lower-level socket failure, so
       // we check the code on the error code or the code of its cause (if it exists)
       [
-        'ECONNRESET',
-        'ECONNREFUSED',
-        'ETIMEDOUT',
-        'ENETUNREACH',
-        'EADDRINUSE',
-        'EPIPE',
-        'EAI_AGAIN',
-      ].includes(err.cause?.code ?? err.code)
+        'ECONNRESET', // Existing TCP connection was forcibly closed by the peer.
+        'ECONNREFUSED', // Target host actively refused the connection request.
+        'ETIMEDOUT', // Connection or request timed out before completion.
+        'ENETUNREACH', // Network path to the target host is unreachable.
+        'EADDRINUSE', // No available local ports to bind for the outgoing connection.
+        'EPIPE', // Connection closed/broken pipe while sending request data.
+        'EAI_AGAIN', // DNS lookup failed temporarily; retry may succeed.
+        'UND_ERR_CONNECT_TIMEOUT', // Undici-specific timeout while establishing connection.
+        'UND_ERR_HEADERS_TIMEOUT', // Undici-specific timeout waiting for response headers.
+        'UND_ERR_BODY_TIMEOUT', // Undici-specific timeout while receiving response body.
+        'UND_ERR_SOCKET', // Undici reported a generic socket-level failure.
+      ].includes(err.cause?.code ?? err.code) ||
+      (err.cause?.code ?? err.code)?.startsWith('HPE_')
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
