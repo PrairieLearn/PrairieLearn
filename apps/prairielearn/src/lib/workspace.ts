@@ -1,5 +1,6 @@
 import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
+import { writeFile } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
@@ -10,7 +11,6 @@ import type { Entry } from 'fast-glob';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
-import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -201,7 +201,7 @@ async function controlContainer(
 
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError(((await res.json()) as any).message);
+      throw new SubmissionFormatError((await res.json()).message);
     }
 
     const body = res.body;
@@ -216,26 +216,15 @@ async function controlContainer(
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    const stream = fs.createWriteStream(zipPath);
 
-    return new Promise((resolve, reject) => {
-      stream
-        .on('open', () => {
-          body.pipe(stream);
-        })
-        .on('error', (err) => {
-          reject(err);
-        })
-        .on('finish', () => {
-          resolve(zipPath);
-        });
-    });
+    await writeFile(zipPath, body);
+    return zipPath;
   }
 
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = (await res.json()) as any;
+  const json = await res.json();
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 

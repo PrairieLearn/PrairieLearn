@@ -4,7 +4,6 @@ import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import { get } from 'es-toolkit/compat';
 import type { Request } from 'express';
 import * as jose from 'jose';
-import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
 import * as client from 'openid-client';
 import { z } from 'zod';
 
@@ -649,14 +648,18 @@ export async function fetchRetry(
       },
     });
   } catch (err: any) {
-    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // https://developerdocs.instructure.com/services/canvas/basics/file.throttling
     // 403 Forbidden (Rate Limit Exceeded)
     if (
       // Common retry codes
       [403, 429, 502, 503, 504].includes(err.status) ||
-      // node-fetch transient errors
-      err.name === 'FetchError' ||
-      err.code === 'ECONNRESET'
+      // Network failures may be triggered by a lower-level socket failure, so
+      // we check the code on the error's cause (if it exists)
+      (err instanceof TypeError &&
+        err.cause &&
+        ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENETUNREACH'].includes(
+          (err.cause as any).code,
+        ))
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
