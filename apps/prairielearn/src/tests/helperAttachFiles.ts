@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
-import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
