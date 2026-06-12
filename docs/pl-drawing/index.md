@@ -224,17 +224,17 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute        | Type    | Default | Description                                                                                                                                            |
-| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`             | float   | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`             | float   | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `radius`         | float   | 4       | Radius of the circle that defines the point.                                                                                                           |
-| `label`          | string  | -       | Text to label the point.                                                                                                                               |
-| `offsetx`        | float   | 5       | Horizontal distance of `label` from the point.                                                                                                         |
-| `offsety`        | float   | 5       | Vertical distance of `label` from the point.                                                                                                           |
-| `opacity`        | float   | 1       | Set the opacity of the point.                                                                                                                          |
-| `color`          | string  | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `draw-error-box` | boolean | -       | Override the parent `draw-error-box` setting for this point. The error box is centered at the point and uses the parent `pl-drawing` `tol`.            |
+| Attribute        | Type    | Default | Description                                                                                                                                             |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`             | float   | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                            |
+| `y1`             | float   | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                               |
+| `radius`         | float   | 4       | Radius of the circle that defines the point.                                                                                                            |
+| `label`          | string  | -       | Text to label the point.                                                                                                                                |
+| `offsetx`        | float   | 5       | Horizontal distance of `label` from the point.                                                                                                          |
+| `offsety`        | float   | 5       | Vertical distance of `label` from the point.                                                                                                            |
+| `opacity`        | float   | 1       | Set the opacity of the point.                                                                                                                           |
+| `color`          | string  | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).  |
+| `draw-error-box` | boolean | -       | Override the parent `draw-error-box` setting for this point. When enabled, draw the error bounding box where the point location is accepted as correct. |
 
 #### Example implementations
 
