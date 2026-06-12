@@ -41,6 +41,13 @@ const GRADING_METHOD_ANSWER_ATTRIBUTES: Partial<Record<string, Set<string>>> = {
 const LCS_GRADABLE_METHODS = new Set(['dag', 'ordered', 'ranking']);
 const FEEDBACK_METHODS = new Set(['dag', 'ranking']);
 const TAG_SPECIAL_CHARACTERS = new Set('*&^$@!~[]{}()|:@?/\\'.split(''));
+const SPEC_CHAR_STR = '*&^$@!~[]{}()|:@?/\\';
+
+interface AnswerEntry {
+  answer: TagElement;
+  group?: TagElement;
+  groupKey?: string;
+}
 
 function isLiteralTrueAttribute(element: TagElement, attribute: string): boolean {
   const value = attr(element, attribute).literal();
@@ -71,20 +78,49 @@ function optionalLiteralStringAttribute(
   return typeof value === 'string' ? value : undefined;
 }
 
+function optionalLiteralTrimmedStringAttribute(
+  element: TagElement,
+  attribute: string,
+): string | undefined {
+  const value = optionalLiteralStringAttribute(element, attribute);
+  return value?.trim();
+}
+
+function answerEntries(element: TagElement): AnswerEntry[] {
+  const entries: AnswerEntry[] = [];
+  for (const child of element.children) {
+    if (child.tag === 'pl-answer') {
+      entries.push({ answer: child });
+    } else if (child.tag === 'pl-block-group') {
+      const groupTag = optionalLiteralTrimmedStringAttribute(child, 'tag');
+      const groupDepends = optionalLiteralStringAttribute(child, 'depends') ?? '';
+      const groupKey =
+        groupTag === undefined
+          ? undefined
+          : JSON.stringify({
+              tag: groupTag,
+              depends: groupDepends
+                ? groupDepends.split(',').map((dependency) => dependency.trim())
+                : [],
+            });
+      for (const answer of child.childrenWithTag('pl-answer')) {
+        entries.push({ answer, group: child, groupKey });
+      }
+    }
+  }
+  return entries;
+}
+
 function allAnswers(element: TagElement): TagElement[] {
-  return [
-    ...element.childrenWithTag('pl-answer'),
-    ...element
-      .childrenWithTag('pl-block-group')
-      .flatMap((group) => [...group.childrenWithTag('pl-answer')]),
-  ];
+  return answerEntries(element).map((entry) => entry.answer);
 }
 
 function hasOptionalBlocks(element: TagElement): boolean {
-  return [
-    ...allAnswers(element).map((answer) => attr(answer, 'depends').literal()),
-    ...element.childrenWithTag('pl-block-group').map((group) => attr(group, 'depends').literal()),
-  ].some((depends) => typeof depends === 'string' && depends.includes('|'));
+  return element.children.some((child) => {
+    if (child.tag !== 'pl-answer' && child.tag !== 'pl-block-group') return false;
+    const depends = attr(child, 'depends').literal();
+    return typeof depends === 'string' && depends.includes('|');
+  });
 }
 
 function validateAnswerAttributes(
@@ -106,16 +142,81 @@ function validateAnswerAttributes(
 }
 
 function validateTagCharacters(element: TagElement, context: ValidatorContext) {
-  const taggedElements = [...allAnswers(element), ...element.childrenWithTag('pl-block-group')];
-  for (const child of taggedElements) {
+  for (const child of allAnswers(element)) {
     const tag = attr(child, 'tag').literal();
     if (typeof tag !== 'string') continue;
-    if ([...tag].some((char) => TAG_SPECIAL_CHARACTERS.has(char))) {
+    const trimmedTag = tag.trim();
+    if ([...trimmedTag].some((char) => TAG_SPECIAL_CHARACTERS.has(char))) {
       context.reportAttribute(
         child,
         'tag',
-        'The tag attribute may not contain special characters: "*&^$@!~[]{}()|:@?/\\\\".',
+        `<pl-answer tag="${trimmedTag}"> tag attribute may not contain special characters: "${SPEC_CHAR_STR}"`,
       );
+    }
+  }
+}
+
+function isDefinitelyCorrectAnswer(answer: TagElement): boolean {
+  if (!attr(answer, 'correct').present()) return true;
+  return isLiteralTrueAttribute(answer, 'correct');
+}
+
+function hasPossibleCorrectAnswer(answer: TagElement): boolean {
+  return !isLiteralFalseAttribute(answer, 'correct');
+}
+
+function validateAnswerRelationships(element: TagElement, context: ValidatorContext) {
+  const usedTags = new Set<string>();
+  const usedGroups = new Set<string>();
+  const distractorTags = new Set(
+    allAnswers(element)
+      .map((answer) => attr(answer, 'distractor-for').literal())
+      .filter((value): value is string => typeof value === 'string'),
+  );
+
+  for (const { answer, group, groupKey } of answerEntries(element)) {
+    const answerTag = optionalLiteralTrimmedStringAttribute(answer, 'tag');
+    const isCorrect = isDefinitelyCorrectAnswer(answer);
+
+    if (isCorrect && answerTag !== undefined) {
+      if (usedTags.has(answerTag)) {
+        context.reportAttribute(
+          answer,
+          'tag',
+          `Tag "${answerTag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.`,
+        );
+      }
+      usedTags.add(answerTag);
+
+      if (isLiteralTrueAttribute(answer, 'initially-placed') && distractorTags.has(answerTag)) {
+        context.reportAttribute(
+          answer,
+          'initially-placed',
+          'A block with distractors cannot be initially placed.',
+        );
+      }
+    } else if (
+      isLiteralFalseAttribute(answer, 'correct') &&
+      isLiteralTrueAttribute(answer, 'initially-placed')
+    ) {
+      context.reportAttribute(
+        answer,
+        'initially-placed',
+        'Incorrect blocks cannot be initially placed.',
+      );
+    }
+
+    const groupTag = group ? optionalLiteralTrimmedStringAttribute(group, 'tag') : undefined;
+    if (group && groupTag !== undefined && groupKey !== undefined) {
+      if (usedTags.has(groupTag) && !usedGroups.has(groupKey)) {
+        context.reportAttribute(
+          group,
+          'tag',
+          `Tag "${groupTag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.`,
+        );
+      }
+      usedTags.add(groupTag);
+      usedGroups.add(groupKey);
     }
   }
 }
@@ -157,15 +258,19 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
       context.reportAttribute(
         element,
         'code-language',
-        'code-language attribute may only be used with format="code".',
+        'code-language attribute may only be used with format="code"',
       );
     }
 
-    if (partialCredit !== undefined && !LCS_GRADABLE_METHODS.has(gradingMethod)) {
+    if (
+      partialCredit !== undefined &&
+      partialCredit !== 'none' &&
+      !LCS_GRADABLE_METHODS.has(gradingMethod)
+    ) {
       context.reportAttribute(
         element,
         'partial-credit',
-        'partial-credit may only be used in the dag, ordered, and ranking grading modes.',
+        'You may only specify partial credit options in the DAG, ordered, and ranking grading modes.',
       );
     }
 
@@ -200,6 +305,16 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
     }
   },
 
+  'pl/order-blocks-correct-answer'(element, context) {
+    const gradingMethod = literalStringAttribute(element, 'grading-method', 'ordered');
+    const answers = allAnswers(element);
+    if (gradingMethod === 'external') return;
+    if (answers.length === 0) return;
+    if (answers.some((answer) => hasPossibleCorrectAnswer(answer))) return;
+
+    context.reportElement(element, 'There are no correct answers specified for this question.');
+  },
+
   'pl/order-blocks-answer-options'(element, context) {
     if (!isLiteralTrueAttribute(element, 'indentation')) {
       for (const answer of allAnswers(element)) {
@@ -221,23 +336,13 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
         context.reportAttribute(
           answer,
           'ordering-feedback',
-          'ordering-feedback may only be used on blocks with correct=true.',
-        );
-      }
-
-      if (
-        isLiteralTrueAttribute(answer, 'initially-placed') &&
-        isLiteralFalseAttribute(answer, 'correct')
-      ) {
-        context.reportAttribute(
-          answer,
-          'initially-placed',
-          'Incorrect blocks cannot be initially placed.',
+          'The ordering-feedback attribute may only be used on blocks with correct=true.',
         );
       }
     }
 
     validateTagCharacters(element, context);
+    validateAnswerRelationships(element, context);
   },
 
   'pl/order-blocks-incorrect-counts'(element, context) {
@@ -251,21 +356,21 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
       context.reportAttribute(
         element,
         'min-incorrect',
-        'min-incorrect may not exceed the number of incorrect <pl-answer> blocks.',
+        'The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.',
       );
     }
     if (maxIncorrect !== undefined && maxIncorrect > incorrectAnswerCount) {
       context.reportAttribute(
         element,
         'max-incorrect',
-        'max-incorrect may not exceed the number of incorrect <pl-answer> blocks.',
+        'The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.',
       );
     }
     if (minIncorrect !== undefined && maxIncorrect !== undefined && minIncorrect > maxIncorrect) {
       context.reportAttribute(
         element,
         'min-incorrect',
-        'min-incorrect must be smaller than max-incorrect.',
+        'The attribute min-incorrect must be smaller than max-incorrect.',
       );
     }
   },
@@ -280,7 +385,7 @@ export const validators: TagValidator[] = defineTagValidators('pl-order-blocks',
     if (!allAnswers(element).some((answer) => isLiteralTrueAttribute(answer, 'final'))) {
       context.reportElement(
         element,
-        "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appear at the end of a valid ordering.",
+        "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
       );
     }
   },
