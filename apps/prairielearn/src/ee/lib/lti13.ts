@@ -644,7 +644,10 @@ export async function fetchRetry(
     // https://github.com/instructure/canvas-lms/blob/1c9f0bb8013ed69c4f2efe11fd483025469b7e6c/app/middleware/request_throttle.rb#L298-L305
     // Change to 429 to simplify handling of both cases.
     let status = response.status;
-    if (response.status === 403 && response.statusText.includes('Rate Limit Exceeded')) {
+    if (
+      response.status === 403 &&
+      Number(response.headers.get('x-rate-limit-remaining') ?? 'NaN') === 0
+    ) {
       status = 429;
     }
 
