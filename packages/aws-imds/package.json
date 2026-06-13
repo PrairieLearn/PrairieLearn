@@ -16,7 +16,6 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2",
     "zod": "^4.3.0"
   },
   "devDependencies": {
