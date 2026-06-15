@@ -4,9 +4,17 @@
   "title": "Exam with real-time autograding linked to PrairieTest",
   "set": "Exam",
   "number": "0",
-  "allowAccess": [
-    { "examUuid": "9c1b3e5c-9caa-4c82-9445-ac564d51c40d", "credit": 100 },
-    { "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046", "credit": 100 }
+  "accessControl": [
+    {
+      "integrations": {
+        "prairieTest": {
+          "exams": [
+            { "examUuid": "9c1b3e5c-9caa-4c82-9445-ac564d51c40d" },
+            { "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046" }
+          ]
+        }
+      }
+    }
   ],
   "zones": [
     { "questions": [{ "id": "template/number-input/random-prompt", "autoPoints": [3, 1] }] },

@@ -7,11 +7,7 @@
   "groups": {
     "minMembers": 1,
     "maxMembers": 5,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    },
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
     "roles": [
       { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
       { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
@@ -24,7 +20,11 @@
       "canSubmit": ["Recorder"]
     }
   },
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
+  "accessControl": [
+    {
+      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } }
+    }
+  ],
   "zones": [
     {
       "title": "Fundamental questions",

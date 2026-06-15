@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
@@ -268,7 +267,6 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
           __action: 'new_instance',
           __csrf_token: secondUserCsrfToken,
         }),
-        follow: 1,
       });
       assert.isOk(response.ok);
       $ = cheerio.load(await response.text());
@@ -348,7 +346,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
         __action: 'new_instance',
         __csrf_token: secondUserCsrfToken,
       }),
-      follow: 1,
     });
     assert.isOk(response.ok);
     $ = cheerio.load(await response.text());

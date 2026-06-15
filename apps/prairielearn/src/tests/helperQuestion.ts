@@ -1,7 +1,6 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 

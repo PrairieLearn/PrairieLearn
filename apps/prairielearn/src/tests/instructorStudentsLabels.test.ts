@@ -2,7 +2,6 @@ import * as crypto from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { queryOptionalRow } from '@prairielearn/postgres';

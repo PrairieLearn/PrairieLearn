@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
@@ -235,7 +234,6 @@ async function prepareGroup() {
       __action: 'new_instance',
       __csrf_token: firstUserCsrfToken,
     }),
-    follow: 1,
   });
   assert.isOk(response.ok);
   $ = cheerio.load(await response.text());
