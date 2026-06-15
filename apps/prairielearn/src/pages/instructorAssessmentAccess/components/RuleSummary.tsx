@@ -833,7 +833,9 @@ function SummaryCardHeader({
   return (
     <div className="access-summary-card-header">
       <i className={`bi ${icon} text-body-secondary`} aria-hidden="true" />
-      <h6 id={headingId}>{title}</h6>
+      <h3 className="h6" id={headingId}>
+        {title}
+      </h3>
     </div>
   );
 }

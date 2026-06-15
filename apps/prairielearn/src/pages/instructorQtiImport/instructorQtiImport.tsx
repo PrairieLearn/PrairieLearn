@@ -55,6 +55,7 @@ import {
   type StoredSerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
 
 const router = Router();
@@ -656,20 +657,25 @@ export function deduplicateIdenticalQuestions(
     };
 
     if (result.sourceType === 'assessment') {
+      const canonicalZones = result.assessment.infoJson.zones.map((zone) => ({
+        ...zone,
+        questions: zone.questions.map((question) => ({
+          ...question,
+          id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+        })),
+      }));
+      // Collapsing identical questions can leave the same canonical question
+      // referenced multiple times within the assessment; keep only the first.
+      const { zones, warnings } = deduplicateAssessmentZoneQuestions(canonicalZones);
       return {
         ...deduped,
         sourceType: 'assessment' as const,
+        warnings: [...deduped.warnings, ...warnings],
         assessment: {
           ...result.assessment,
           infoJson: {
             ...result.assessment.infoJson,
-            zones: result.assessment.infoJson.zones.map((zone) => ({
-              ...zone,
-              questions: zone.questions.map((question) => ({
-                ...question,
-                id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
-              })),
-            })),
+            zones,
           },
         },
       };

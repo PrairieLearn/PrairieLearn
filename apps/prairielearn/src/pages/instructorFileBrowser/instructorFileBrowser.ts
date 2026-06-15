@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { countBy } from 'es-toolkit';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -166,23 +167,45 @@ router.post(
           return;
         }
         case 'upload_file': {
-          if (!req.file) throw new Error('No file uploaded');
-          const filePath =
+          if (!Array.isArray(req.files) || req.files.length === 0) {
+            throw new Error('No file uploaded');
+          }
+          if (body.file_path != null && req.files.length > 1) {
+            throw new Error('Cannot upload multiple files when file path is specified');
+          }
+          const uploadTarget =
             body.file_path != null
-              ? path.join(res.locals.course.path, body.file_path)
+              ? ({ type: 'file', path: body.file_path } as const)
               : body.working_path != null
-                ? path.join(body.working_path, req.file.originalname)
+                ? ({ type: 'directory', path: body.working_path } as const)
                 : null;
-          if (filePath == null) {
+          if (uploadTarget == null) {
             throw new Error('Either file_path or working_path must be provided');
           }
+          const duplicateNames = Object.entries(countBy(req.files, (file) => file.originalname))
+            .filter(([, count]) => count > 1)
+            .map(([name]) => name);
+          if (duplicateNames.length > 0) {
+            throw new Error(
+              `Duplicate file names in upload: ${duplicateNames.join(', ')}. Please rename files to have unique names and try again.`,
+            );
+          }
+
+          const files = Object.fromEntries(
+            req.files.map((file) => {
+              const filePath =
+                uploadTarget.type === 'file'
+                  ? path.join(res.locals.course.path, uploadTarget.path)
+                  : path.join(uploadTarget.path, file.originalname);
+              return [filePath, file.buffer];
+            }),
+          );
 
           const result = await runEditorJob(
             new FileUploadEditor({
               locals: res.locals,
               container,
-              filePath,
-              fileContents: req.file.buffer,
+              files,
             }),
           );
           if (result.status === 'error') {

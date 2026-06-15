@@ -33,7 +33,6 @@ describe('LTI 1.3 course instance linking', () => {
 
   beforeAll(async () => {
     config.isEnterprise = true;
-    config.features.lti13 = true;
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
@@ -82,7 +81,6 @@ describe('LTI 1.3 course instance linking', () => {
   afterAll(async () => {
     await helperServer.after();
     config.isEnterprise = false;
-    config.features = {};
   });
 
   test.sequential('linkLtiContext helper creates link record', async () => {

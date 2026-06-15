@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import { queryScalar } from '@prairielearn/postgres';

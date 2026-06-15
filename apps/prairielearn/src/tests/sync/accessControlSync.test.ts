@@ -20,7 +20,6 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
@@ -145,7 +144,6 @@ const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
 describe('Access control syncing', () => {
   beforeAll(async () => {
     await helperDb.before();
-    await features.enable('enhanced-access-control');
     await sqldb.executeRow(sql.insert_pt_exam, { uuid: TEST_EXAM_UUID });
   });
 

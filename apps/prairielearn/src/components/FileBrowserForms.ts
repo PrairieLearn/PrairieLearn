@@ -2,6 +2,7 @@ import { filesize } from 'filesize';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
+import { config } from '../lib/config.js';
 import {
   FILE_NAME_PATTERN,
   FILE_NAME_PATTERN_DESCRIPTION_WITH_PARENT_DIR,
@@ -42,6 +43,7 @@ export function FileUploadForm({
   csrfToken: string;
   maxFileSizeBytes: number;
 }) {
+  const maxFileSizeFormatted = filesize(maxFileSizeBytes, { base: 10, round: 0 });
   return html`
     <form
       class="needs-validation"
@@ -53,16 +55,24 @@ export function FileUploadForm({
       ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
 
       <div class="mb-3">
-        <label class="form-label" for="attachFileInput-${file.id}">Choose file</label>
+        <label class="form-label" for="attachFileInput-${file.id}"
+          >Choose ${file.path == null ? 'files' : 'file'}</label
+        >
         <input
           type="file"
-          name="file"
+          name="files"
+          ${file.path == null
+            ? html`multiple data-max-file-count="${config.fileUploadMaxFiles}"`
+            : ''}
+          data-max-file-size="${maxFileSizeBytes}"
+          data-max-file-size-formatted="${maxFileSizeFormatted}"
           class="form-control"
           id="attachFileInput-${file.id}"
           required
         />
         <small class="form-text text-muted">
-          Max file size: ${filesize(maxFileSizeBytes, { base: 10, round: 0 })}
+          Max file size: ${maxFileSizeFormatted}
+          ${file.path == null ? `per file (at most ${config.fileUploadMaxFiles} files)` : ''}
         </small>
       </div>
 
@@ -74,7 +84,9 @@ export function FileUploadForm({
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-end justify-content-end gap-2 d-flex flex-wrap">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-          <button type="submit" class="btn btn-primary">Upload file</button>
+          <button type="submit" class="btn btn-primary">
+            Upload ${file.path == null ? 'files' : 'file'}
+          </button>
         </div>
       </div>
     </form>

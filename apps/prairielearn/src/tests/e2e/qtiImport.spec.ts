@@ -1,4 +1,5 @@
 import { createWriteStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
@@ -802,6 +803,48 @@ test.describe('QTI Import', () => {
 
     await expect(page.getByText('1 assessment imported successfully.')).toBeVisible();
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
+
+    // The written files should contain only the necessary properties; schema
+    // defaults (sharePublicly, dependencies, groupWork, ...) must not be
+    // materialized into imported info.json files.
+    const questionInfo = JSON.parse(
+      await readFile(
+        path.join(testCoursePath, 'questions/imported/e2e-import-quiz/sample-mc/info.json'),
+        'utf8',
+      ),
+    );
+    expect(questionInfo).toEqual({
+      uuid: expect.any(String),
+      title: 'Sample MC Question',
+      topic: 'E2E Import Quiz',
+      tags: ['imported'],
+      type: 'v3',
+      singleVariant: true,
+    });
+
+    const assessmentInfo = JSON.parse(
+      await readFile(
+        path.join(
+          testCoursePath,
+          'courseInstances/Sp15/assessments/e2e-import-quiz/infoAssessment.json',
+        ),
+        'utf8',
+      ),
+    );
+    expect(assessmentInfo).toEqual({
+      uuid: expect.any(String),
+      type: 'Homework',
+      title: 'E2E Import Quiz',
+      set: 'Homework',
+      number: expect.any(String),
+      allowAccess: [],
+      zones: [
+        {
+          title: 'Questions',
+          questions: [{ id: 'imported/e2e-import-quiz/sample-mc', autoPoints: 1 }],
+        },
+      ],
+    });
   });
 
   test('shows a clear error when review draft files have expired', async ({
