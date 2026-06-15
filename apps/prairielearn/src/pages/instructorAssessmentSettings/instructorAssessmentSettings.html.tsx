@@ -796,6 +796,11 @@ function InstructorAssessmentSettingsInner({
       {
         onSuccess: (result) => {
           setCurrentOrigHash(result.origHash);
+          // The sharing card reflects `assessment.share_source_publicly` (not form
+          // state), and the mutation returns only the new hash, so mirror the saved
+          // value onto `assessment` to avoid showing stale sharing status until the
+          // next page load. `??` keeps the current value when the field was omitted
+          // (e.g. a disabled checkbox).
           setAssessment({
             ...assessment,
             share_source_publicly: data.share_source_publicly ?? assessment.share_source_publicly,
