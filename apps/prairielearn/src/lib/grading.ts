@@ -13,6 +13,7 @@ import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js'
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { updateAssessmentInstancesScorePercPending } from './assessment-grading.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -168,6 +169,10 @@ async function insertSubmission({
         InstanceQuestionSchema,
       );
       await updateInstanceQuestionStats({ instanceQuestion });
+
+      if (variant.assessment_instance_id != null) {
+        await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
+      }
     }
 
     return { submission_id, variant };

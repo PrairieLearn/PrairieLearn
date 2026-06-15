@@ -23,6 +23,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment-grading.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
@@ -697,6 +698,9 @@ router.post(
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
       const actionPrompt = body.__action.slice(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
+      const requires_manual_grading = actionPrompt !== 'graded';
+      const recomputePending =
+        res.locals.instance_question.requires_manual_grading !== requires_manual_grading;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
           courseInstance: res.locals.course_instance,
@@ -711,8 +715,11 @@ router.post(
       await sqldb.execute(sql.update_assigned_grader, {
         instance_question_id: res.locals.instance_question.id,
         assigned_grader,
-        requires_manual_grading: actionPrompt !== 'graded',
+        requires_manual_grading,
       });
+      if (recomputePending) {
+        await updateAssessmentInstancesScorePercPending([res.locals.assessment_instance.id]);
+      }
 
       const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);
 
