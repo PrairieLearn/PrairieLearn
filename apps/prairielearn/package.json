@@ -247,7 +247,7 @@
     "stripe": "^22.2.0",
     "superjson": "^2.2.6",
     "tablesorter": "^2.32.0",
-    "tar": "^7.5.15",
+    "tar": "^7.5.16",
     "tmp": "^0.2.7",
     "tmp-promise": "^3.0.3",
     "tom-select": "^2.6.1",

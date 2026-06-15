@@ -921,8 +921,8 @@ importers:
         specifier: ^2.32.0
         version: 2.32.0
       tar:
-        specifier: ^7.5.15
-        version: 7.5.15
+        specifier: ^7.5.16
+        version: 7.5.16
       tmp:
         specifier: ^0.2.7
         version: 0.2.7
@@ -9908,8 +9908,8 @@ packages:
   tar-stream@3.2.0:
     resolution: {integrity: sha512-ojzvCvVaNp6aOTFmG7jaRD0meowIAuPc3cMMhSgKiVWws1GyHbGd/xvnyuRKcKlMpt3qvxx6r0hreCNITP9hIg==}
 
-  tar@7.5.15:
-    resolution: {integrity: sha512-dzGK0boVlC4W5QFuQN1EFSl3bIDYsk7Tj40U6eIBnK2k/8ml7TZ5agbI5j5+qnoVcAA+rNtBml8SEiLxZpNqRQ==}
+  tar@7.5.16:
+    resolution: {integrity: sha512-56adEpPMouktRlBLXiaYFFzZ/3+JXa8P9n7WbR+ibIjtviN55mEaOkiysCnPnWm+7kkui1Dn8J9l+g6zV8731w==}
     engines: {node: '>=18'}
 
   teex@1.0.1:
@@ -17277,7 +17277,7 @@ snapshots:
       nopt: 9.0.0
       proc-log: 6.1.0
       semver: 7.8.1
-      tar: 7.5.15
+      tar: 7.5.16
       tinyglobby: 0.2.17
       undici: 6.26.0
       which: 6.0.1
@@ -18741,7 +18741,7 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
-  tar@7.5.15:
+  tar@7.5.16:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
@@ -18901,7 +18901,7 @@ snapshots:
       globby: 11.1.0
       lodash: 4.18.1
       rimraf: 5.0.10
-      tar: 7.5.15
+      tar: 7.5.16
       typescript: 6.0.3
 
   typescript-eslint@8.60.0(eslint@10.4.1(jiti@2.7.0))(typescript@6.0.3):
