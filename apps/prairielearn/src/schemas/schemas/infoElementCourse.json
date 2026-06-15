@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    },
+    "controller": {
+      "type": "string",
+      "description": "The name of the element's controller file."
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "coreStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in /public/stylesheets."
+          },
+          "description": "The styles required by this element from /public/stylesheets.",
+          "deprecated": true
+        },
+        "coreScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in /public/javascripts."
+          },
+          "description": "The scripts required by this element from /public/javascripts.",
+          "deprecated": true
+        },
+        "nodeModulesStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in /node_modules."
+          },
+          "description": "The styles required by this element from /node_modules."
+        },
+        "nodeModulesScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in /node_modules."
+          },
+          "description": "The scripts required by this element from /node_modules."
+        },
+        "clientFilesCourseStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in clientFilesCourse."
+          },
+          "description": "The styles required by this element from clientFilesCourse."
+        },
+        "clientFilesCourseScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in clientFilesCourse."
+          },
+          "description": "The scripts required by this element from clientFilesCourse."
+        },
+        "elementStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in the element's directory."
+          },
+          "description": "The styles required by this element from the element's directory."
+        },
+        "elementScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in the element's directory."
+          },
+          "description": "The scripts required by this element from the element's directory."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The element's client-side dependencies."
+    },
+    "dynamicDependencies": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "nodeModulesScripts": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The scripts required by this element from /node_modules as an importmap."
+        },
+        "clientFilesCourseScripts": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The scripts required by this element from clientFilesCourse as an importmap."
+        },
+        "elementScripts": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The scripts required by this element from the element's directory as an importmap."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The element's client-side dynamic dependencies."
+    }
+  },
+  "required": ["controller"],
+  "additionalProperties": false,
+  "description": "Info files for v3 elements.",
+  "title": "Element Info",
+  "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    }
+  }
+}

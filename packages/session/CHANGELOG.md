@@ -1,0 +1,297 @@
+# @prairielearn/session
+
+## 4.0.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- e4a5a84: Persist regenerated sessions to the store immediately, mirroring `loadSession()`'s behavior for new sessions. This ensures the new session ID is available to other queries within the same request after `req.session.regenerate()`.
+
+## 4.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
+## 4.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 373afc1: Pin Express 4-era dependencies to current major versions
+
+## 4.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 3.0.26
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 3.0.25
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 3.0.24
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 3.0.23
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 3.0.22
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 3.0.21
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 3.0.20
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 3.0.19
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 3.0.18
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 3.0.17
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 3.0.16
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 3.0.15
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 3.0.14
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
+## 3.0.13
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+
+## 3.0.12
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
+## 3.0.11
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+
+## 3.0.10
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+
+## 3.0.9
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+
+## 3.0.8
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 4ab7483: Remove remnants of `express-session` package
+
+## 3.0.5
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 3.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+## 2.0.6
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+
+## 2.0.5
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+
+## 2.0.3
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
+## 2.0.0
+
+### Major Changes
+
+- bcab4e950: Remove `canSetCookie` option
+
+### Minor Changes
+
+- 83778d1a0: Immediately persist newly-created sessions to store
+
+## 1.3.1
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
+## 1.3.0
+
+### Minor Changes
+
+- 72a35b3c4: Allow specifying a domain for the session cookie
+
+## 1.2.0
+
+### Minor Changes
+
+- d73dcb40f: Add cookie rotation
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
+## 1.1.0
+
+### Minor Changes
+
+- a697ad01d: Export `SessionStore` type
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies

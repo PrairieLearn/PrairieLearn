@@ -1,0 +1,27 @@
+{
+  "uuid": "ac1973c7-e3d0-4df4-93f6-e40808c06713",
+  "type": "Exam",
+  "title": "Test disabling real-time grading and withholding grades",
+  "set": "Exam",
+  "number": "9",
+  "allowRealTimeGrading": false,
+  "accessControl": [
+    {
+      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } },
+      "afterComplete": { "score": { "hidden": true } }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Hard questions",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": 5 },
+        { "id": "fossilFuelsRadio", "autoPoints": 17 },
+        { "id": "partialCredit1", "autoPoints": 19 },
+        { "id": "partialCredit2", "autoPoints": 9 },
+        { "id": "partialCredit3", "autoPoints": 13 },
+        { "id": "brokenGeneration", "autoPoints": 10 }
+      ]
+    }
+  ]
+}

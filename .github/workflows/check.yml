@@ -1,0 +1,279 @@
+name: Check
+
+on:
+  push:
+    branches:
+      - master
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  # Ensure that we only run one concurrent job for Pull Requests. This ensures
+  # that someone can't kill our throughput by pushing a bunch of commits to a
+  # single branch in rapid succession.
+  #
+  # However, for master builds, we allow maximum concurrency. This is achieved
+  # because `github.head_ref` isn't defined there, and `github.run_id` is
+  # globally unique in this repo.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  check-js:
+    name: JavaScript
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
+          fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
+
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
+
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - name: Install Node dependencies
+        run: pnpm install
+
+      - name: Set up Turborepo cache
+        uses: actions/cache@v5
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Build all code
+        run: make build
+
+      - name: Report bundle sizes
+        uses: ./packages/actions-report-bundle-sizes
+        with:
+          sizes-path: apps/prairielearn/public/build/sizes.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+          report-path: ${{ runner.temp }}/bundle-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-report-bundle-sizes
+          path: ${{ runner.temp }}/bundle-sizes-section.md
+          retention-days: 1
+
+      - name: Restore lint caches
+        uses: actions/cache@v5
+        with:
+          path: |
+            .eslintcache
+            node_modules/.cache/prettier
+          key: >-
+            lint-${{ runner.os }}-${{ hashFiles(
+              'pnpm-lock.yaml',
+              'Makefile',
+              'eslint.config.mjs',
+              'packages/eslint-config/**',
+              'packages/eslint-plugin-prairielearn/**',
+              '.prettierrc.json',
+              '.prettierignore'
+            ) }}
+
+      - name: Run the JavaScript linter
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: make lint-js-cached
+      - name: Run the Mustache linter
+        run: make lint-mustache
+      - name: Run the links linter
+        run: make lint-links
+
+      - name: Check dependency structure
+        run: make lint-dependencies
+      - name: Check that JSON schema is up-to-date
+        run: make check-jsonschema
+      - name: Check that element schemas are up-to-date
+        run: make check-element-schemas
+      - name: Check that all packages exist on npm
+        run: make check-npm-packages
+      - name: Check badge color contrast
+        run: make check-badge-contrast
+      # The rest of our code is typechecked in the `build` Makefile target, which
+      # is run above.
+      - name: Run the TypeScript typechecker for contrib
+        run: make typecheck-contrib
+      - name: Run the TypeScript typechecker for scripts
+        run: make typecheck-scripts
+      # We must migrate our database before we can typecheck the SQL.
+      - name: Run the SQL typechecker
+        run: |
+          pnpm migrate
+          make typecheck-sql
+      # Requires `make build` so that `actions-report-image-sizes` is built.
+      - name: Run the GitHub Actions linter
+        run: make lint-actions
+      # Requires Git history and pnpm install. Not using the make version
+      # because the base ref is potentially different. Does not run in
+      # changeset-release or dependabot PRs, since they are expected to change
+      # packages without creating a changeset. Also does not run in merge_group
+      # events due to issues with the check for changeset, which can be tricky
+      # in merge branches.
+      - name: Check if a changeset is required
+        if: ${{github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.head.ref, 'changeset-release')
+          && github.event.pull_request.user.login != 'dependabot[bot]' }}
+        run: pnpm changeset status --since origin/${{ github.base_ref || 'master' }}
+      # This step runs at the end, since it is common for it to fail in
+      # dependabot PRs, but we still want all other tests above to run
+      # in those cases.
+      - name: Check for duplicate Node dependencies
+        run: pnpm dedupe --check
+
+  check-python:
+    name: Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          show-progress: false
+
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
+      - name: Install OS packages
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev
+
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+      - name: Install all Python dependencies
+        env:
+          UV_LOCKED: 1
+        run: make python-deps
+
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Install Node dependencies
+        # We only install root dependencies to avoid installing workspaces that
+        # are not used by these checks.
+        run: pnpm --filter . install
+      - name: Run the Python typechecker
+        run: make typecheck-python
+      - name: Run the Python linter
+        run: make lint-python
+      - name: Check Python helper package dependencies
+        run: make check-python-helper-dependencies
+      - name: Run the Python tests
+        run: make test-python
+        timeout-minutes: 5
+      - name: Run the Markdown linter
+        run: make lint-markdown
+      - name: Run the d2 diagram linter
+        run: make lint-d2
+      - name: Check for warnings in documentation
+        run: make build-docs
+      # Ran after the docs build, so we can lint the generated HTML.
+      - name: Run the HTML linter
+        run: make lint-html
+      - name: Upload Python coverage report to Codecov
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v6.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: apps/prairielearn/python
+          flags: python
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  check-other:
+    name: Other
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          show-progress: false
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo chmod +x /bin/hadolint
+
+      - uses: vegardit/fast-apt-mirror.sh@v1
+        with:
+          exclude-current: true # Don't include the current APT mirror since it is unreliable.
+
+      - name: Install OS packages
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev shellcheck
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: 'dev'
+      - name: Install Python dependencies
+        env:
+          UV_LOCKED: 1
+        run: make python-deps-dev
+
+      - name: Run the Dockerfile linter
+        run: make lint-docker
+      - name: Run the Shellcheck linter
+        run: make lint-shell
+      - name: Run the SQL query linter
+        run: make lint-sql
+      - name: Run the SQL migrations linter
+        run: make lint-sql-migrations

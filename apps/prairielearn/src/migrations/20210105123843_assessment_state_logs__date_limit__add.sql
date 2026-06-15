@@ -1,0 +1,2 @@
+ALTER TABLE assessment_state_logs
+ADD COLUMN date_limit TIMESTAMP WITH TIME ZONE DEFAULT NULL;

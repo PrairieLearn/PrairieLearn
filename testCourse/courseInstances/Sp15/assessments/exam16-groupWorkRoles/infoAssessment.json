@@ -1,0 +1,40 @@
+{
+  "uuid": "d1959584-48c6-477a-8a4a-d50e1a4a95c9",
+  "type": "Exam",
+  "title": "Group Activity Exam with Roles",
+  "set": "Exam",
+  "number": "16",
+  "shuffleQuestions": false,
+  "groups": {
+    "minMembers": 2,
+    "maxMembers": 4,
+    "roles": [
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Contributor" }
+    ],
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
+    "rolePermissions": {
+      "canAssignRoles": ["Manager"],
+      "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
+    }
+  },
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
+  "zones": [
+    {
+      "canSubmit": ["Recorder"],
+      "title": "Hard questions",
+      "questions": [
+        { "id": "demo/demoNewton-page1", "autoPoints": 1 },
+        { "id": "demo/demoNewton-page2", "autoPoints": 1, "canView": ["Recorder"] },
+        {
+          "id": "addNumbers",
+          "autoPoints": 1,
+          "canView": ["Reflector"],
+          "canSubmit": ["Reflector"]
+        }
+      ]
+    }
+  ]
+}

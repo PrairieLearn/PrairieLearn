@@ -1,0 +1,12 @@
+{
+  "controller": "pl-xss-safe.py",
+  "dependencies": {
+    "nodeModulesScripts": ["dompurify/dist/purify.min.js"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "marked": "marked/lib/marked.esm.js",
+      "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/dist/index.js"
+    }
+  }
+}

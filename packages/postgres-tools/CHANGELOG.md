@@ -1,0 +1,466 @@
+# @prairielearn/postgres-tools
+
+## 3.0.8
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+- Updated dependencies [288ff13]
+  - @prairielearn/postgres@7.0.0
+
+## 3.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [e80a5a5]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/postgres@6.0.2
+
+## 3.0.4
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+- Updated dependencies [144cd19]
+  - @prairielearn/postgres@6.0.1
+
+## 3.0.3
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+- Updated dependencies [b7885cd]
+- Updated dependencies [2f9d39b]
+  - @prairielearn/postgres@6.0.0
+
+## 3.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/postgres@5.0.2
+
+## 3.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+- Updated dependencies [f929a68]
+  - @prairielearn/postgres@5.0.1
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/postgres@5.0.0
+
+## 2.0.29
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/postgres@4.5.2
+
+## 2.0.28
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/postgres@4.5.1
+
+## 2.0.27
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/postgres@4.4.3
+
+## 2.0.26
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/postgres@4.4.2
+
+## 2.0.25
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/postgres@4.4.1
+
+## 2.0.24
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/postgres@4.1.1
+
+## 2.0.23
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 2.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/postgres@4.0.1
+
+## 2.0.21
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [cd5ed49]
+- Updated dependencies [2c19e43]
+- Updated dependencies [23adb05]
+  - @prairielearn/postgres@4.0.0
+
+## 2.0.20
+
+### Patch Changes
+
+- Updated dependencies [b911b61]
+  - @prairielearn/postgres@3.0.0
+
+## 2.0.19
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/postgres@2.1.15
+
+## 2.0.18
+
+### Patch Changes
+
+- Updated dependencies [d97b97a]
+  - @prairielearn/postgres@2.1.14
+
+## 2.0.17
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/postgres@2.1.13
+
+## 2.0.16
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/postgres@2.1.12
+
+## 2.0.15
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/postgres@2.1.11
+
+## 2.0.14
+
+### Patch Changes
+
+- c24120e: Minor changes to reduce dependency on lodash
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [c24120e]
+- Updated dependencies [03f1008]
+  - @prairielearn/postgres@2.1.10
+
+## 2.0.13
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+- Updated dependencies [984dc62]
+  - @prairielearn/postgres@2.1.9
+
+## 2.0.12
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/postgres@2.1.8
+
+## 2.0.11
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- Updated dependencies [4a8b376]
+  - @prairielearn/postgres@2.1.7
+
+## 2.0.10
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+- Updated dependencies [9d7d790]
+  - @prairielearn/postgres@2.1.6
+
+## 2.0.9
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/postgres@2.1.5
+
+## 2.0.8
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/postgres@2.1.4
+
+## 2.0.7
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+- Updated dependencies [852c2e2]
+  - @prairielearn/postgres@2.1.3
+
+## 2.0.6
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/postgres@2.1.2
+
+## 2.0.5
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+- Updated dependencies [24a93b8]
+  - @prairielearn/postgres@2.1.1
+
+## 2.0.4
+
+### Patch Changes
+
+- Updated dependencies [1de33d9]
+  - @prairielearn/postgres@2.1.0
+
+## 2.0.3
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+- Updated dependencies [0f7c90f]
+  - @prairielearn/postgres@2.0.3
+
+## 2.0.2
+
+### Patch Changes
+
+- Updated dependencies [fd8f6e6]
+  - @prairielearn/postgres@2.0.2
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- Updated dependencies [901fce8]
+  - @prairielearn/postgres@2.0.1
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Patch Changes
+
+- Updated dependencies [4f30b7e]
+  - @prairielearn/postgres@2.0.0
+
+## 1.1.17
+
+### Patch Changes
+
+- c7e6553: Upgrade all JavaScript dependencies
+- Updated dependencies [c7e6553]
+  - @prairielearn/postgres@1.9.4
+
+## 1.1.16
+
+### Patch Changes
+
+- 207602a: Upgrade all JavaScript dependencies
+- Updated dependencies [207602a]
+  - @prairielearn/postgres@1.9.3
+
+## 1.1.15
+
+### Patch Changes
+
+- 3395c25: Upgrade all JavaScript dependencies
+- Updated dependencies [3395c25]
+  - @prairielearn/postgres@1.9.2
+
+## 1.1.14
+
+### Patch Changes
+
+- dce0fa3: Upgrade all JavaScript dependencies
+- Updated dependencies [dce0fa3]
+  - @prairielearn/postgres@1.9.1
+
+## 1.1.13
+
+### Patch Changes
+
+- abfd5cc: Upgrade all JavaScript dependencies
+- Updated dependencies [abfd5cc]
+- Updated dependencies [3249e13]
+  - @prairielearn/postgres@1.9.0
+
+## 1.1.12
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+- Updated dependencies [2da23ab]
+  - @prairielearn/postgres@1.8.1
+
+## 1.1.11
+
+### Patch Changes
+
+- Updated dependencies [3d1c40c16]
+  - @prairielearn/postgres@1.8.0
+
+## 1.1.10
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+- Updated dependencies [1523b97b0]
+  - @prairielearn/postgres@1.7.9
+
+## 1.1.9
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+- Updated dependencies [8dd894623]
+  - @prairielearn/postgres@1.7.8
+
+## 1.1.8
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+- Updated dependencies [bd0053577]
+  - @prairielearn/postgres@1.7.7
+
+## 1.1.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+- Updated dependencies [f03853d90]
+  - @prairielearn/postgres@1.7.6
+
+## 1.1.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+- Updated dependencies [6cad75197]
+  - @prairielearn/postgres@1.7.5
+
+## 1.1.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+- Updated dependencies [10cc07dcc]
+  - @prairielearn/postgres@1.7.4
+
+## 1.1.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/postgres@1.7.3
+
+## 1.1.3
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+- Updated dependencies [2b003b4d9]
+  - @prairielearn/postgres@1.7.2
+
+## 1.1.2
+
+### Patch Changes
+
+- 8fd47d928: Upgrade all dependencies
+- Updated dependencies [8fd47d928]
+  - @prairielearn/postgres@1.7.1
+
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [16d0068d8]
+  - @prairielearn/postgres@1.7.0
+
+## 1.1.0
+
+### Minor Changes
+
+- c121ed133: Improve formatting of database diffs
+
+## 1.0.1
+
+### Patch Changes
+
+- 2fb5d87cc: Add missing `yargs` dependency
+- Updated dependencies [00d1b045d]
+  - @prairielearn/postgres@1.6.1

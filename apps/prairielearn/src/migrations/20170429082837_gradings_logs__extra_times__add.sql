@@ -1,0 +1,8 @@
+ALTER TABLE grading_logs
+ADD COLUMN IF NOT EXISTS grading_submitted_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE grading_logs
+ADD COLUMN IF NOT EXISTS grading_started_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE grading_logs
+ADD COLUMN IF NOT EXISTS grading_finished_at TIMESTAMP WITH TIME ZONE;

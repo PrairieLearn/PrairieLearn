@@ -1,0 +1,170 @@
+version: 2
+
+# The Python strategy comes from this comment:
+# https://github.com/dependabot/dependabot-core/issues/12609#issuecomment-3407284321
+multi-ecosystem-groups:
+  python:
+    schedule:
+      interval: monthly
+
+updates:
+  - package-ecosystem: docker
+    directories:
+      - '/'
+      - '/graders/*'
+      - '/images/*'
+      - '/workspaces/*'
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    ignore:
+      # See note in welcome.yml for more details on this.
+      - dependency-name: 'actions/first-interaction'
+        versions: ['>=2']
+    groups:
+      github-actions:
+        patterns:
+          - 'actions/*'
+          - 'docker/*'
+
+  - package-ecosystem: npm
+    directories:
+      - '/'
+      - '/workspaces/xtermjs/src'
+    schedule:
+      interval: monthly
+    rebase-strategy: disabled
+    ignore:
+      # We're putting off this upgrade for now:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/6835
+      - dependency-name: 'fabric'
+
+      # novnc 1.5.0+ no longer publishes ESM files:
+      # https://github.com/novnc/noVNC/issues/1792
+      - dependency-name: '@novnc/novnc'
+
+      # ua-parser-js 2.x changes its license to a less permissive license:
+      # https://github.com/faisalman/ua-parser-js/issues/680
+      - dependency-name: 'ua-parser-js'
+        versions: ['>=2']
+
+      # Express 5 made significant breaking changes, and we are not yet
+      # ready to upgrade to it.
+      - dependency-name: 'express'
+        versions: ['>=5']
+      - dependency-name: '@types/express'
+        versions: ['>=5']
+      - dependency-name: '@types/express-serve-static-core'
+        versions: ['>=5']
+
+      # Keep Express-adjacent packages on versions compatible with our current
+      # Express 4 stack until we intentionally migrate to Express 5.
+      - dependency-name: 'body-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/body-parser'
+        versions: ['>=2']
+      - dependency-name: 'cookie'
+        versions: ['>=1']
+      - dependency-name: '@types/cookie'
+        versions: ['>=1']
+      - dependency-name: 'cookie-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/cookie-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/serve-static'
+        versions: ['>=3']
+      - dependency-name: 'express-static-gzip'
+        versions: ['>=3']
+
+      # PrairieLearn itself no longer uses `dropzone`, but there are a variety
+      # of course elements that use it, so we leave it installed at a pinned
+      # version so as not to break them.
+      - dependency-name: 'dropzone'
+        versions: ['>=6']
+
+      # JQuery 4 made significant breaking changes. We are migrating code to
+      # vanilla JS where possible and only keeping it for backwards
+      # compatibility, so we don't want to upgrade.
+      - dependency-name: 'jquery'
+        versions: ['>=4']
+      - dependency-name: '@types/jquery'
+        versions: ['>=4']
+
+      # We're not ready to upgrade to Zod 4 yet.
+      - dependency-name: 'zod'
+        versions: ['>=4']
+
+      # quill 2.0.3 regressed getSemanticHTML() by converting spaces to &nbsp;,
+      # which breaks wrapping and stored HTML from pl-rich-text-editor:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/11281
+      # https://github.com/slab/quill/issues/4509
+      - dependency-name: 'quill'
+        versions: ['>2.0.2']
+    cooldown:
+      # Dependabot does not understand the minimumReleaseAge setting in
+      # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
+      # effect. Once https://github.com/dependabot/dependabot-core/issues/13405
+      # is resolved, we can remove this cooldown and rely on dependabot
+      # respecting the pnpm setting.
+      default-days: 3
+
+    groups:
+      # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
+      # be considered patch/minor updates. We always want to bump these all
+      # together, so we'll include a special group for them. Dependabot evaluates
+      # groups in the order that they're listed, so this will take precedence over
+      # the catch-all patch/minor group below.
+      #
+      # These upgrades are currently ignored, see the note above.
+      opentelemetry:
+        patterns:
+          - '@opentelemetry/*'
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'
+
+  - package-ecosystem: pip
+    multi-ecosystem-group: python
+    patterns: ['*']
+    directories:
+      - '/'
+      - '/docs'
+      - '/graders/c'
+      - '/graders/python'
+      - '/workspaces/jupyterlab-base'
+      - '/workspaces/jupyterlab-python'
+      - '/workspaces/vscode-python'
+    rebase-strategy: disabled
+    groups:
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'
+    ignore:
+      # clang needs to match the version of clang installed on the graders, so we want to avoid automatic updates here.
+      - dependency-name: 'clang'
+        versions: ['>=19']
+      # We are not yet ready to upgrade to pandas 3.0, which has some breaking changes.
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']
+
+  - package-ecosystem: uv
+    multi-ecosystem-group: python
+    patterns: ['*']
+    # Currently we only have a `uv.lock` in the root directory.
+    directories:
+      - '/'
+    ignore:
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']

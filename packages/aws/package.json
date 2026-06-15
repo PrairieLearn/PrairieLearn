@@ -1,0 +1,27 @@
+{
+  "name": "@prairielearn/aws",
+  "version": "3.0.7",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/aws"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@smithy/property-provider": "^4.3.5",
+    "@smithy/types": "^4.14.2"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta"
+  }
+}

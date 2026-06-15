@@ -1,0 +1,33 @@
+{
+  "uuid": "d5f8c334-983a-4225-a7a0-4f951b88ce78",
+  "type": "Exam",
+  "title": "Exam to test per-zone grading",
+  "set": "Exam",
+  "number": "5",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "1900-07-07T23:59:59" },
+        "due": { "date": "2300-07-10T23:59:59" },
+        "durationMinutes": 50
+      }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Questions to test maxPoints",
+      "maxPoints": 5,
+      "questions": [{ "id": "partialCredit1", "autoPoints": [10, 5, 1] }]
+    },
+    {
+      "title": "Questions to test maxPoints and bestQuestions together",
+      "bestQuestions": 2,
+      "maxPoints": 15,
+      "questions": [
+        { "id": "partialCredit2", "autoPoints": [10, 5, 1] },
+        { "id": "partialCredit3", "autoPoints": [15, 10, 5, 1] },
+        { "id": "partialCredit4_v2", "autoPoints": [20, 15, 10, 5, 1] }
+      ]
+    }
+  ]
+}

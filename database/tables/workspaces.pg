@@ -1,0 +1,34 @@
+columns
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    disk_usage_bytes: bigint
+    heartbeat_at: timestamp with time zone
+    hostname: text
+    id: bigint not null default nextval('workspaces_id_seq'::regclass)
+    launch_port: bigint
+    launch_uuid: text
+    launched_at: timestamp with time zone
+    launching_duration: interval default '00:00:00'::interval
+    message: text
+    message_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    rebooted_at: timestamp with time zone
+    reset_at: timestamp with time zone
+    running_at: timestamp with time zone
+    running_duration: interval default '00:00:00'::interval
+    state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
+    state_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    stopped_at: timestamp with time zone
+    version: bigint not null default 1
+    workspace_host_id: bigint
+
+indexes
+    workspaces_pkey: PRIMARY KEY (id) USING btree (id)
+    workspaces_created_at_key: USING btree (created_at)
+    workspaces_state_launched_at_key: USING btree (state, launched_at)
+    workspaces_workspace_host_id_state_key: USING btree (workspace_host_id, state)
+
+foreign-key constraints
+    workspaces_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    variants: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
+    workspace_logs: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE

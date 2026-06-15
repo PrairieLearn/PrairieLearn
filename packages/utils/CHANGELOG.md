@@ -1,0 +1,97 @@
+# @prairielearn/utils
+
+## 3.2.1
+
+### Patch Changes
+
+- 1053fc5: Update the archiver test dependency to v8.
+
+## 3.2.0
+
+### Minor Changes
+
+- fdfca12: Add a Node-only `@prairielearn/utils/zip` subpath for zip extraction with entry-count, expanded-size, and symlink validation.
+
+## 3.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.1.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.1.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
+## 3.1.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- 5b466e0: Add type utilities: `WithRequiredKeys`, `ExpandRecursively`, `assertNever`, `Result`, `Brand`, `withBrand`, `IsUnion`, `Prettify`, and `MergeUnion`
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.0.5
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 2.0.4
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 2.0.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 2.0.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 2.0.0
+
+### Major Changes
+
+- 3eb682b: Introduce `@prairielearn/utils` package

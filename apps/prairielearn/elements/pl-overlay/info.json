@@ -1,0 +1,6 @@
+{
+  "controller": "pl-overlay.py",
+  "dependencies": {
+    "elementStyles": ["pl-overlay.css"]
+  }
+}

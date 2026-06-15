@@ -1,0 +1,187 @@
+import assert from 'node:assert';
+
+import { html, unsafeHtml } from '@prairielearn/html';
+
+import {
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { type CopyTarget } from '../../lib/copy-content.js';
+import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+export function InstructorQuestionPreview({
+  normalPreviewUrl,
+  questionRenderContext,
+  manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
+  renderSubmissionSearchParams,
+  readmeHtml,
+  questionCopyTargets,
+  resLocals,
+}: {
+  normalPreviewUrl: string;
+  questionRenderContext: 'manual_grading' | 'ai_grading' | undefined;
+  manualGradingPreviewUrl: string;
+  aiGradingPreviewUrl?: string;
+  renderSubmissionSearchParams: URLSearchParams;
+  readmeHtml: string;
+  questionCopyTargets: CopyTarget[] | null;
+  resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
+}) {
+  assert(resLocals.question.qid !== null);
+
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Question Preview',
+    navContext: {
+      type: 'instructor',
+      page: 'question',
+      subPage: 'preview',
+    },
+    options: {
+      pageNote: resLocals.question.qid,
+    },
+    headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
+      ${compiledScriptTag('question.ts')} ${CalculatorDrawerHeadScripts()}
+      <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
+      <script>
+        document.urlPrefix = '${resLocals.urlPrefix}';
+      </script>
+      ${resLocals.question.type !== 'Freeform'
+        ? html`
+            <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+            <script src="${assetPath('javascripts/require.js')}"></script>
+            <script src="${assetPath('localscripts/question.js')}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+          `
+        : ''}
+      ${unsafeHtml(resLocals.extraHeadersHtml)}
+      <style>
+        .markdown-body :last-child {
+          margin-bottom: 0;
+        }
+
+        .reveal-fade {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 6rem;
+          background: linear-gradient(to bottom, transparent, var(--bs-light));
+          pointer-events: none;
+        }
+
+        .max-height {
+          max-height: 150px;
+        }
+      </style>
+    `,
+    postContent: CalculatorDrawer({
+      storageKey: `calculator-preview-${resLocals.question.id}`,
+    }),
+    content: html`
+      ${questionRenderContext === 'manual_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear in the manual grading interface.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
+      ${questionRenderContext === 'ai_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
+      <div class="row">
+        <div class="col-lg-9 col-sm-12">
+          ${readmeHtml
+            ? html`
+                <div class="card mb-3 js-readme-card overflow-hidden">
+                  <div class="card-header d-flex align-items-center collapsible-card-header">
+                    <h2 class="me-auto">
+                      README <span class="small text-muted">(not visible to students)</span>
+                    </h2>
+                    <button
+                      type="button"
+                      class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#readme-card-body"
+                      aria-expanded="true"
+                      aria-controls="#readme-card-body"
+                    >
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                    </button>
+                  </div>
+                  <div class="show js-collapsible-card-body" id="readme-card-body">
+                    <div
+                      class="card-body position-relative markdown-body overflow-hidden max-height"
+                    >
+                      ${unsafeHtml(readmeHtml)}
+                    </div>
+                    <div class="reveal-fade d-none"></div>
+                    <div
+                      class="py-1 z-1 position-relative d-none justify-content-center bg-light js-expand-button-container"
+                    >
+                      <button type="button" class="btn btn-sm btn-link">Expand</button>
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
+          ${QuestionContainer({
+            resLocals,
+            showFooter: questionRenderContext != null ? false : undefined,
+            questionContext: 'instructor',
+            questionRenderContext,
+            manualGradingPreviewUrl:
+              questionRenderContext === 'manual_grading' ? undefined : manualGradingPreviewUrl,
+            aiGradingPreviewUrl:
+              questionRenderContext === 'ai_grading' ? undefined : aiGradingPreviewUrl,
+            renderSubmissionSearchParams,
+            questionCopyTargets,
+          })}
+        </div>
+
+        <div class="col-lg-3 col-sm-12">
+          <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+              <h2>Student view placeholder</h2>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-center">
+                In student views this area is used for assessment and score info.
+              </div>
+            </div>
+          </div>
+          ${CalculatorDrawerToggle({ showInfoPopover: true })}
+          ${InstructorInfoPanel({
+            course: resLocals.course,
+            course_instance: resLocals.course_instance,
+            question: resLocals.question,
+            variant: resLocals.variant,
+            authz_data: resLocals.authz_data,
+            question_is_shared: resLocals.question_is_shared,
+            questionContext: 'instructor',
+            csrfToken: resLocals.__csrf_token,
+          })}
+        </div>
+      </div>
+    `,
+  });
+}

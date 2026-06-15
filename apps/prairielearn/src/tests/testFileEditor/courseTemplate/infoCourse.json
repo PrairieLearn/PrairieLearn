@@ -1,0 +1,19 @@
+{
+    "name": "TEST 101",
+    "title": "Test Course",
+    "assessmentSets": [],
+    "topics": [
+        {
+            "name": "Test",
+            "color": "gray3",
+            "description": "Feature examples"
+        }
+    ],
+    "tags": [
+        {
+            "name": "tbretl",
+            "color": "blue1",
+            "description": "Question originally written by tbretl"
+        }
+    ]
+}

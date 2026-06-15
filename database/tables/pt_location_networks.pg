@@ -1,0 +1,10 @@
+columns
+    id: bigint not null default nextval('pt_location_networks_id_seq'::regclass)
+    location_id: bigint not null
+    network: cidr not null
+
+indexes
+    pt_location_networks_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pt_location_networks_location_id_fkey: FOREIGN KEY (location_id) REFERENCES pt_locations(id) ON UPDATE CASCADE ON DELETE CASCADE

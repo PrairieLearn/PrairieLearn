@@ -1,0 +1,38 @@
+# Forbid everything by default.
+*
+
+# Allow specific patterns.
+!.editorconfig
+!.eslintignore
+!.eslintrc.js
+!.htmlhintrc
+!.prettierignore
+!.prettierrc.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!pyproject.toml
+!tsconfig.json
+!turbo.json
+!vitest.config.ts
+!pyproject.toml
+!apps/
+!contrib/
+!database/
+!docs/
+!exampleCourse/
+!Makefile
+!package.json
+!packages/
+!scripts/
+!testCourse/
+
+# Forbid specific patterns.
+.DS_Store
+/config.json
+apps/*/dist/
+apps/*/config.json
+apps/*/coverage/
+apps/prairielearn/public/build
+apps/prairielearn/server.log
+packages/*/coverage/
+packages/*/dist/

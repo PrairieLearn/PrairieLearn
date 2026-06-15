@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "rootDir": "../../",
+    "outDir": "../../public/build/scripts",
+    "types": [
+      "jquery",
+      "bootstrap",
+      // This is necessary to augment the Express `Request` type with a
+      // `session` property. We of course don't actually use Express on the
+      // client, but we rely on importing server-side types for end to end
+      // type safety, e.g. with tRPC.
+      "@prairielearn/session",
+      // Similarly, multer augments the Express namespace with `Multer.File`.
+      // Server-side types referenced via tRPC transitively depend on it.
+      "multer"
+    ],
+    "strict": true,
+    // Support native ESM, which esbuild supports.
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "skipLibCheck": true
+  },
+  "include": ["**/*"]
+}

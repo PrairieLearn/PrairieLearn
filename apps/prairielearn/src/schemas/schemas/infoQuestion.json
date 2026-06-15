@@ -1,0 +1,442 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+      "description": "Unique identifier (UUID)."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
+      "description": "Type of the question. This should be set to \"v3\" for new questions."
+    },
+    "title": {
+      "type": "string",
+      "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates')."
+    },
+    "topic": {
+      "type": "string",
+      "description": "The category of question (e.g., 'Vectors', 'Energy')."
+    },
+    "tags": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "A tag associated with a question."
+      },
+      "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken')."
+    },
+    "authors": {
+      "default": [],
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255,
+            "description": "A human-readable name of a question author."
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "An email address to contact a question author."
+          },
+          "orcid": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$",
+            "description": "An ORCID identifier that uniquely identifies an individual question author."
+          },
+          "originCourse": {
+            "type": "string",
+            "description": "The sharing name of a course whose staff is a question author."
+          }
+        },
+        "additionalProperties": false,
+        "description": "An author (individual person, or staff of a course of origin) credited with creating a question."
+      }
+    },
+    "clientFiles": {
+      "default": ["client.js", "question.html", "answer.html"],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "A single file accessible by the client."
+      },
+      "description": "The list of question files accessible by the client. v3 questions should serve files from `clientFilesQuestion/` instead.",
+      "deprecated": true
+    },
+    "clientTemplates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "A single template file accessible by the client."
+      },
+      "description": "List of client-accessible templates to render server-side.",
+      "deprecated": true
+    },
+    "template": {
+      "type": "string",
+      "description": "The QID of a question that serves as the template for this question.",
+      "deprecated": true
+    },
+    "gradingMethod": {
+      "default": "Internal",
+      "type": "string",
+      "enum": ["Internal", "External", "Manual"],
+      "description": "The grading method used for this question."
+    },
+    "singleVariant": {
+      "default": false,
+      "type": "boolean",
+      "description": "Whether the question is not randomized and only generates a single variant."
+    },
+    "showCorrectAnswer": {
+      "default": true,
+      "type": "boolean",
+      "description": "Whether to show the correct answer panel."
+    },
+    "partialCredit": {
+      "type": "boolean",
+      "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.)."
+    },
+    "options": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {},
+      "description": "Options that define how the question will work, specific to the individual question type (not supported for v3 questions).",
+      "deprecated": true
+    },
+    "externalGradingOptions": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean",
+          "description": "Whether the external grader is currently enabled.",
+          "deprecated": true
+        },
+        "image": {
+          "type": "string",
+          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image."
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Program or command to run as the entrypoint to your grader. If not provided, the default entrypoint for the image will be used."
+        },
+        "serverFilesCourse": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A single file or directory that will be copied to the external grader."
+          },
+          "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "The number of seconds after which the grading job will timeout."
+        },
+        "enableNetworking": {
+          "default": false,
+          "type": "boolean",
+          "description": "Whether the grading containers should have network access. Access is disabled by default."
+        },
+        "environment": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables to set inside the grading container."
+        }
+      },
+      "required": ["image"],
+      "additionalProperties": false,
+      "description": "Options for externally graded questions."
+    },
+    "dependencies": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "coreStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in /public/stylesheets."
+          },
+          "description": "The styles required by this question from /public/stylesheets.",
+          "deprecated": true
+        },
+        "coreScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in /public/javascripts."
+          },
+          "description": "The scripts required by this question from /public/javascripts.",
+          "deprecated": true
+        },
+        "nodeModulesStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in /node_modules."
+          },
+          "description": "The styles required by this question from /node_modules."
+        },
+        "nodeModulesScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in /node_modules."
+          },
+          "description": "The scripts required by this question from /node_modules."
+        },
+        "clientFilesCourseStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in clientFilesCourse."
+          },
+          "description": "The styles required by this question from clientFilesCourse."
+        },
+        "clientFilesCourseScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in clientFilesCourse."
+          },
+          "description": "The scripts required by this question from clientFilesCourse."
+        },
+        "clientFilesQuestionStyles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .css file located in the clientFilesQuestion."
+          },
+          "description": "The styles required by this question from clientFilesQuestion."
+        },
+        "clientFilesQuestionScripts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A .js file located in the clientFilesQuestion."
+          },
+          "description": "The scripts required by this question from clientFilesQuestion."
+        }
+      },
+      "additionalProperties": false,
+      "description": "The question's client-side dependencies."
+    },
+    "workspaceOptions": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "image": {
+          "type": "string",
+          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "The port number used in the Docker image."
+        },
+        "home": {
+          "type": "string",
+          "description": "The home directory of the workspace container."
+        },
+        "args": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Command line arguments to pass to the Docker container."
+        },
+        "rewriteUrl": {
+          "default": true,
+          "type": "boolean",
+          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /."
+        },
+        "gradedFiles": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A single file or directory that will be copied out of the workspace container when saving a submission."
+          },
+          "description": "The list of files or directories that will be copied out of the workspace container when saving a submission."
+        },
+        "enableNetworking": {
+          "default": false,
+          "type": "boolean",
+          "description": "Whether the workspace should have network access. Access is disabled by default."
+        },
+        "environment": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables to set inside the workspace container."
+        },
+        "syncIgnore": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A single file or directory that will be excluded from sync."
+          },
+          "description": "The list of files or directories that will be excluded from sync.",
+          "deprecated": true
+        }
+      },
+      "required": ["image", "port", "home"],
+      "additionalProperties": false,
+      "description": "Options for workspace questions."
+    },
+    "sharingSets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "The name of a sharing set"
+      },
+      "description": "The list of sharing sets that this question belongs to."
+    },
+    "sharePublicly": {
+      "default": false,
+      "type": "boolean",
+      "description": "Whether this question is publicly shared."
+    },
+    "shareSourcePublicly": {
+      "default": false,
+      "type": "boolean",
+      "description": "Whether this question's source code is publicly shared."
+    },
+    "preferences": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean"]
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "enum": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "required": ["type", "default"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["uuid", "type", "title", "topic"],
+  "additionalProperties": false,
+  "description": "Info files for questions.",
+  "title": "Question Info",
+  "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    }
+  }
+}

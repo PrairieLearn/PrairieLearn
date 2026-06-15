@@ -1,0 +1,59 @@
+# check=skip=CopyIgnoredFile
+# TODO: remove once the following issue is fixed:
+# https://github.com/moby/buildkit/issues/6512
+
+FROM amazonlinux:2023
+ARG CACHEBUST=2026-05-15-14-49-21
+
+WORKDIR /PrairieLearn
+
+COPY --parents scripts/pl-install.sh /PrairieLearn/
+
+RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
+
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
+
+# - Ensure that all `uv` commands compile Python source files to bytecode.
+# - Ensure that all `uv` commands do not use any caching.
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+
+# We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
+COPY --parents pyproject.toml Makefile /PrairieLearn/
+
+RUN make python-deps-core
+
+# This copies in all the `package.json` files in `apps` and `packages`, which
+# pnpm needs to correctly install all dependencies in our workspaces.
+#
+# We also need to copy the `pnpm-workspace.yaml` file, which is necessary for
+# pnpm to correctly install dependencies.
+#
+# Finally, we copy `packages/bind-mount/` since this package contains native
+# code that will be built during the install process.
+COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ packages/*/bin/ /PrairieLearn/
+
+# Install Node dependencies.
+RUN pnpm install --frozen-lockfile && pnpm store prune
+
+# NOTE: Modify .dockerignore to allowlist files/directories to copy.
+COPY . .
+
+# set up PrairieLearn and run migrations to initialize the DB
+# hadolint ignore=SC3009
+RUN chmod +x /PrairieLearn/scripts/init.sh \
+    && mkdir /course{,{2..9}} \
+    && mkdir -p /workspace_{main,host}_zips \
+    && mkdir -p /jobs \
+    && /PrairieLearn/scripts/start_postgres.sh \
+    && make build \
+    && node apps/prairielearn/dist/server.js --migrate-and-exit \
+    && su postgres -c "createuser -s root" \
+    && /PrairieLearn/scripts/start_postgres.sh stop \
+    && /PrairieLearn/scripts/gen_ssl.sh \
+    && git config --global user.email "dev@example.com" \
+    && git config --global user.name "Dev User" \
+    && git config --global safe.directory '*'
+
+HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
+CMD [ "/PrairieLearn/scripts/init.sh" ]

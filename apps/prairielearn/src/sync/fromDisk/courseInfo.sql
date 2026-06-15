@@ -1,0 +1,32 @@
+-- BLOCK update_course
+UPDATE courses AS c
+SET
+  short_name = $short_name,
+  title = $title,
+  display_timezone = CASE
+    WHEN $display_timezone::text IS NOT NULL THEN $display_timezone::text
+    ELSE display_timezone
+  END,
+  example_course = $example_course,
+  options = $options,
+  questions_receive_user_data = COALESCE(
+    $questions_receive_user_data::boolean,
+    questions_receive_user_data
+  ),
+  json_comment = $comment::jsonb,
+  sync_errors = NULL,
+  sync_warnings = $sync_warnings
+WHERE
+  c.id = $course_id
+RETURNING
+  c.*;
+
+-- BLOCK update_course_errors
+UPDATE courses AS c
+SET
+  sync_errors = $sync_errors,
+  sync_warnings = $sync_warnings
+WHERE
+  c.id = $course_id
+RETURNING
+  c.*;

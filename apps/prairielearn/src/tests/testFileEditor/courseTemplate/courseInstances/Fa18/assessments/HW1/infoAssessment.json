@@ -1,0 +1,26 @@
+{
+    "uuid": "c2f20e45-0449-46c6-9418-b65a734870bd",
+    "type": "Homework",
+    "title": "Homework for file editor test",
+    "set": "Homework",
+    "number": "1",
+    "accessControl": [
+        {
+            "dateControl": {
+                "release": {
+                    "date": "2000-01-01T00:00:00"
+                }
+            }
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {
+                    "id": "test/question",
+                    "points": 10
+                }
+            ]
+        }
+    ]
+}

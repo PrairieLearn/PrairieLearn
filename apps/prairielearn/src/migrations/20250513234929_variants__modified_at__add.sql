@@ -1,0 +1,2 @@
+ALTER TABLE variants
+ADD COLUMN modified_at TIMESTAMPTZ;

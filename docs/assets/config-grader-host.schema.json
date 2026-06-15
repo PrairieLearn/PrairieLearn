@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "maxConcurrentJobs": {
+      "default": 5,
+      "type": "number"
+    },
+    "useEc2MetadataService": {
+      "default": true,
+      "type": "boolean"
+    },
+    "useConsoleLoggingForJobs": {
+      "default": true,
+      "type": "boolean"
+    },
+    "useImagePreloading": {
+      "default": false,
+      "type": "boolean"
+    },
+    "useHealthCheck": {
+      "default": true,
+      "type": "boolean"
+    },
+    "cacheImageRegistry": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "parallelInitPulls": {
+      "default": 5,
+      "type": "number"
+    },
+    "lifecycleHeartbeatIntervalMS": {
+      "default": 300000,
+      "type": "number"
+    },
+    "jobLogGroup": {
+      "default": "grading-jobs-debug",
+      "type": "string"
+    },
+    "reportLoad": {
+      "default": false,
+      "type": "boolean"
+    },
+    "reportIntervalSec": {
+      "default": 10,
+      "type": "number"
+    },
+    "graderDockerMemory": {
+      "default": 2147483648,
+      "type": "number"
+    },
+    "graderDockerMemorySwap": {
+      "default": 2147483648,
+      "type": "number"
+    },
+    "graderDockerKernelMemory": {
+      "default": 536870912,
+      "type": "number"
+    },
+    "graderDockerDiskQuota": {
+      "default": 1073741824,
+      "type": "number"
+    },
+    "graderDockerCpuPeriod": {
+      "default": 100000,
+      "type": "number"
+    },
+    "graderDockerCpuQuota": {
+      "default": 90000,
+      "type": "number"
+    },
+    "graderDockerPidsLimit": {
+      "default": 1024,
+      "type": "number"
+    },
+    "healthCheckPort": {
+      "default": 4000,
+      "type": "number"
+    },
+    "healthCheckInterval": {
+      "default": 30000,
+      "type": "number"
+    },
+    "jobsQueueName": {
+      "default": "grading_jobs_dev",
+      "type": "string"
+    },
+    "jobsQueueUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "resultsQueueName": {
+      "default": "grading_results_dev",
+      "type": "string"
+    },
+    "resultsQueueUrl": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timeoutOverhead": {
+      "default": 300,
+      "type": "number"
+    },
+    "postgresqlHost": {
+      "default": "localhost",
+      "type": "string"
+    },
+    "postgresqlDatabase": {
+      "default": "postgres",
+      "type": "string"
+    },
+    "postgresqlUser": {
+      "default": "postgres",
+      "type": "string"
+    },
+    "postgresqlPassword": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "postgresqlPoolSize": {
+      "default": 2,
+      "type": "number"
+    },
+    "postgresqlIdleTimeoutMillis": {
+      "default": 30000,
+      "type": "number"
+    },
+    "autoScalingGroupName": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "instanceId": {
+      "default": "server",
+      "type": "string"
+    },
+    "sentryDsn": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sentryEnvironment": {
+      "default": "development",
+      "type": "string"
+    },
+    "awsRegion": {
+      "default": "us-east-2",
+      "type": "string"
+    },
+    "visibilityTimeout": {
+      "default": 60,
+      "type": "number"
+    },
+    "visibilityTimeoutHeartbeatIntervalSec": {
+      "default": 30,
+      "type": "number"
+    }
+  },
+  "additionalProperties": false
+}

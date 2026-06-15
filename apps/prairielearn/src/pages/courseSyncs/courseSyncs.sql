@@ -1,0 +1,124 @@
+-- BLOCK select_sync_job_sequences
+SELECT
+  js.*,
+  u.uid AS user_uid
+FROM
+  job_sequences AS js
+  LEFT JOIN users AS u ON (u.id = js.user_id)
+WHERE
+  js.course_id = $course_id
+  AND js.type IN ('sync', 'git_status', 'images_sync')
+ORDER BY
+  js.start_date DESC,
+  js.id ASC
+LIMIT
+  $limit;
+
+-- BLOCK count_sync_job_sequences
+SELECT
+  COUNT(*)::integer AS count
+FROM
+  job_sequences AS js
+WHERE
+  js.course_id = $course_id
+  AND js.type IN ('sync', 'git_status', 'images_sync');
+
+-- BLOCK question_images
+WITH
+  questions_list AS (
+    SELECT
+      *
+    FROM
+      questions
+    WHERE
+      course_id = $course_id
+      AND deleted_at IS NULL
+  ),
+  question_image_uses AS (
+    SELECT
+      id,
+      qid,
+      external_grading_image AS image,
+      'external_grading' AS image_type
+    FROM
+      questions_list
+    WHERE
+      external_grading_image IS NOT NULL
+    UNION ALL
+    SELECT
+      id,
+      qid,
+      workspace_image AS image,
+      'workspace' AS image_type
+    FROM
+      questions_list
+    WHERE
+      workspace_image IS NOT NULL
+  ),
+  image_question_uses AS (
+    SELECT
+      image,
+      id,
+      qid,
+      bool_or(image_type = 'external_grading') AS uses_external_grading_image,
+      bool_or(image_type = 'workspace') AS uses_workspace_image
+    FROM
+      question_image_uses
+    GROUP BY
+      image,
+      id,
+      qid
+  )
+SELECT
+  image,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', id, 'qid', qid)
+      ORDER BY
+        qid
+    ),
+    '[]'::jsonb
+  ) AS questions,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', id, 'qid', qid)
+      ORDER BY
+        qid
+    ) FILTER (
+      WHERE
+        uses_external_grading_image
+    ),
+    '[]'::jsonb
+  ) AS external_grading_questions,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', id, 'qid', qid)
+      ORDER BY
+        qid
+    ) FILTER (
+      WHERE
+        uses_workspace_image
+    ),
+    '[]'::jsonb
+  ) AS workspace_questions
+FROM
+  image_question_uses
+GROUP BY
+  image
+ORDER BY
+  image;
+
+-- BLOCK check_question_with_image
+SELECT
+  id
+FROM
+  questions
+WHERE
+  course_id = $course_id
+  AND deleted_at IS NULL
+  AND (
+    external_grading_image = $image
+    OR workspace_image = $image
+  )
+LIMIT
+  1;

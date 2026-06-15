@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    // This is a safe shared baseline between our Node version and reasonably modern browsers.
+    "lib": ["ES2022"],
+    "target": "ES2022",
+    // Checking the types for *all* our dependencies is unnecessarily slow in
+    // CI, so we'll only check the types our code actually refers to.
+    "skipLibCheck": true,
+    // Ensure source maps are generated for easier debugging.
+    "sourceMap": true,
+    "inlineSources": true,
+    // Provides more consistent behavior when transpiling.
+    "verbatimModuleSyntax": true,
+    // Catch common mistakes.
+    "allowUnreachableCode": false
+  }
+}

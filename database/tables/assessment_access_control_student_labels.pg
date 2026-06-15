@@ -1,0 +1,18 @@
+columns
+    assessment_access_control_rule_id: bigint not null
+    id: bigint not null default nextval('assessment_access_control_student_labels_id_seq'::regclass)
+    student_label_id: bigint not null
+    target_type: enum_assessment_access_control_target_type not null default 'student_label'::enum_assessment_access_control_target_type
+
+indexes
+    assessment_access_control_student_labels_pkey: PRIMARY KEY (id) USING btree (id)
+    aac_student_labels_rule_id_student_label_id_unique: UNIQUE (assessment_access_control_rule_id, student_label_id) USING btree (assessment_access_control_rule_id, student_label_id)
+    aac_student_labels_rule_id_idx: USING btree (assessment_access_control_rule_id)
+    aac_student_labels_student_label_id_idx: USING btree (student_label_id)
+
+check constraints
+    assessment_access_control_student_labels_target_type_check: CHECK (target_type = 'student_label'::enum_assessment_access_control_target_type)
+
+foreign-key constraints
+    aac_student_labels_rule_id_target_type_fkey: FOREIGN KEY (assessment_access_control_rule_id, target_type) REFERENCES assessment_access_control_rules(id, target_type) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_control_student_labels_student_label_id_fkey: FOREIGN KEY (student_label_id) REFERENCES student_labels(id) ON UPDATE CASCADE ON DELETE CASCADE

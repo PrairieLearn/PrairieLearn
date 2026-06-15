@@ -1,0 +1,35 @@
+{
+  "name": "@prairielearn/workspace-utils",
+  "version": "1.0.23",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/workspace-utils"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch"
+  },
+  "dependencies": {
+    "@prairielearn/path-utils": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/zod": "workspace:^",
+    "@socket.io/redis-emitter": "^5.1.0",
+    "fast-glob": "^3.3.3",
+    "filesize": "^11.0.17",
+    "socket.io": "^4.8.3",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "typescript-cp": "^0.1.9"
+  }
+}

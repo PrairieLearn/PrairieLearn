@@ -1,0 +1,113 @@
+import clsx from 'clsx';
+
+import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
+
+import type { EnumEnrollmentStatus } from '../lib/db-types.js';
+
+interface EnrollmentStatusIconProps {
+  status: EnumEnrollmentStatus;
+  type: 'badge' | 'text';
+  className?: string;
+}
+
+function getIconClass(status: EnumEnrollmentStatus): string {
+  switch (status) {
+    case 'invited':
+      return 'bi-envelope';
+    case 'joined':
+      return 'bi-person-check';
+    case 'left':
+      return 'bi-person-dash';
+    case 'removed':
+      return 'bi-person-dash';
+    case 'rejected':
+      return 'bi-x-circle';
+    case 'blocked':
+      return 'bi-slash-circle';
+    default:
+      return 'bi-question-circle';
+  }
+}
+
+function getFriendlyStatus(status: EnumEnrollmentStatus): string {
+  switch (status) {
+    case 'invited':
+      return 'Invited';
+    case 'joined':
+      return 'Joined';
+    case 'left':
+      return 'Left';
+    case 'removed':
+      return 'Removed';
+    case 'rejected':
+      return 'Rejected';
+    case 'blocked':
+      return 'Blocked';
+    case 'lti13_pending':
+      return 'Invited via LTI';
+    default:
+      assertNever(status);
+  }
+}
+
+function getBadgeClass(status: EnumEnrollmentStatus): string {
+  switch (status) {
+    case 'joined':
+      return 'badge bg-success';
+    case 'left':
+      return 'badge bg-danger';
+    case 'removed':
+      return 'badge bg-danger';
+    case 'rejected':
+      return 'badge bg-danger';
+    case 'blocked':
+      return 'badge bg-danger';
+    case 'lti13_pending':
+      return 'badge bg-secondary';
+    case 'invited':
+      return 'badge bg-secondary';
+    default:
+      assertNever(status);
+  }
+}
+
+function capitalize(word: string): string {
+  if (word.length === 0) return word;
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+export function EnrollmentStatusIcon({
+  status,
+  type = 'text',
+  className,
+}: EnrollmentStatusIconProps) {
+  const iconClass = getIconClass(status);
+  return (
+    <span
+      className={clsx(
+        'd-inline-flex align-items-center gap-1',
+        type === 'badge' && getBadgeClass(status),
+        className,
+      )}
+    >
+      <i className={clsx('bi', iconClass)} aria-hidden="true" />
+      <span className="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
+      {status === 'rejected' && (
+        <OverlayTrigger
+          tooltip={{
+            body: (
+              <div>
+                This student has rejected the invitation to join the course. They can still join
+                while self-enrollment is enabled.
+              </div>
+            ),
+            props: { id: 'rejected-info-tooltip' },
+          }}
+        >
+          <i className="bi bi-info-circle" aria-hidden="true" />
+        </OverlayTrigger>
+      )}
+    </span>
+  );
+}

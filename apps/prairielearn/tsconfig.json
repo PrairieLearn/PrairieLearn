@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    // @typescript-eslint requires this to be set at the root `tsconfig.json` file.
+    "strictNullChecks": true
+  },
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./src/tsconfig.json" }, { "path": "./assets/scripts/tsconfig.json" }]
+}

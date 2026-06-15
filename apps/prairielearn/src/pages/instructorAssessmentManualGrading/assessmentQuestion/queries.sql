@@ -1,0 +1,156 @@
+-- BLOCK select_instance_questions_manual_grading
+WITH
+  issue_count AS (
+    SELECT
+      i.instance_question_id,
+      count(*)::integer AS open_issue_count
+    FROM
+      issues AS i
+    WHERE
+      i.assessment_id = $assessment_id
+      AND i.course_caused
+      AND i.open
+    GROUP BY
+      i.instance_question_id
+  ),
+  -- MATERIALIZED forces these CTEs to be computed once instead of being
+  -- inlined into the outer query's nested loop join, where they would be
+  -- re-executed once per outer row.
+  latest_submissions AS MATERIALIZED (
+    SELECT DISTINCT
+      ON (iq.id) iq.id AS instance_question_id,
+      s.id AS submission_id,
+      s.manual_rubric_grading_id
+    FROM
+      instance_questions AS iq
+      JOIN variants AS v ON iq.id = v.instance_question_id
+      JOIN submissions AS s ON v.id = s.variant_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+    ORDER BY
+      iq.id ASC,
+      s.date DESC
+  ),
+  rubric_items_agg AS MATERIALIZED (
+    SELECT
+      ls.instance_question_id,
+      COALESCE(
+        jsonb_agg(rgi.rubric_item_id) FILTER (
+          WHERE
+            rgi.rubric_item_id IS NOT NULL
+        ),
+        '[]'::jsonb
+      ) AS rubric_grading_item_ids
+    FROM
+      latest_submissions AS ls
+      LEFT JOIN rubric_grading_items AS rgi ON (
+        rgi.rubric_grading_id = ls.manual_rubric_grading_id
+      )
+    GROUP BY
+      ls.instance_question_id
+  ),
+  team_members AS (
+    SELECT
+      tu.team_id,
+      jsonb_agg(
+        to_jsonb(tmu.*)
+        ORDER BY
+          tmu.uid
+      ) AS members
+    FROM
+      team_users AS tu
+      JOIN users AS tmu ON tmu.id = tu.user_id
+    GROUP BY
+      tu.team_id
+  )
+SELECT
+  to_jsonb(iq.*) AS instance_question,
+  ai.open AS assessment_open,
+  COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
+  COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
+  to_jsonb(u.*) AS user,
+  COALESCE(tm.members, '[]'::jsonb) AS group_members,
+  COALESCE(agu.name, agu.uid) AS assigned_grader_name,
+  COALESCE(lgu.name, lgu.uid) AS last_grader_name,
+  to_jsonb(agu.*) AS assigned_grader,
+  to_jsonb(lgu.*) AS last_grader,
+  to_jsonb(aq.*) AS assessment_question,
+  COALESCE(g.name, u.name) AS user_or_group_name,
+  ic.open_issue_count,
+  -- Pseudo-random deterministic stable order of instance questions. This will
+  -- always return the same set of instance questions in the same order, but it
+  -- is designed to reduce the impact of the order of the instance questions on
+  -- individual students, which reduces bias. See
+  -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
+  ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
+  COALESCE(ri.rubric_grading_item_ids, '[]'::jsonb) AS rubric_grading_item_ids,
+  e.id AS enrollment_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN teams_uid_list (g.id) AS gul ON TRUE
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = ai.user_id
+    AND e.course_instance_id = a.course_instance_id
+  )
+  LEFT JOIN team_members AS tm ON (tm.team_id = g.id)
+  LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
+  LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
+  LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
+  LEFT JOIN rubric_items_agg AS ri ON ri.instance_question_id = iq.id
+WHERE
+  ai.assessment_id = $assessment_id
+  AND iq.assessment_question_id = $assessment_question_id
+  AND iq.status != 'unanswered'
+ORDER BY
+  iq_stable_order,
+  iq.id;
+
+-- BLOCK update_instance_questions
+UPDATE instance_questions AS iq
+SET
+  requires_manual_grading = CASE
+    WHEN $update_requires_manual_grading THEN $requires_manual_grading
+    ELSE requires_manual_grading
+  END,
+  assigned_grader = CASE
+    WHEN $update_assigned_grader THEN $assigned_grader
+    ELSE assigned_grader
+  END
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+  AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_rubric_settings_context_keys
+SELECT DISTINCT
+  ON (v.id) ARRAY(
+    SELECT
+      jsonb_object_keys(v.params)
+  ) AS params_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(v.true_answer)
+  ) AS true_answer_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(s.submitted_answer)
+  ) AS submitted_answer_keys
+FROM
+  instance_questions AS iq
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+ORDER BY
+  v.id ASC,
+  s.date DESC,
+  s.id DESC
+  -- We're only retrieving a small subset of the variants, as we only need to
+  -- know common params/answer keys that are not expected to change
+  -- significantly between variants.
+LIMIT
+  5;

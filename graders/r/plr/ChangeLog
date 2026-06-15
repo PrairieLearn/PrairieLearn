@@ -1,0 +1,60 @@
+2023-01-24  Alton Barbehenn    <barbehe2@illinois.edu>
+
+	* DESCRIPTION: Version bump and adding David Dalpiaz as author
+	* README.md: Adding usage examples
+	* R/questions.R: Typo fixes
+
+2023-01-16  David Dalpiaz      <dalpiaz2@illinois.edu>
+
+	* R/source.R: Adding functions to source files as a specific user
+
+2021-08-31  Dirk Eddelbuettel  <edd@debian.org>
+
+	* NAMESPACE: Also export message_to_test_result
+
+2021-08-17  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
+
+	* NAMESPACE: Export new function too
+
+2021-08-15  Dirk Eddelbuettel  <edd@debian.org>
+
+	* R/source_eval.R (source_and_eval_safe_with_hiding): New variant
+	with optional 'hiding' of a given file
+	* man/source_and_eval_safe.Rd: Documentation
+
+2019-09-14  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
+
+	* R/questions.R (message_to_test_result): New helper function
+	* man/message_to_test_result.Rd: Documentation
+
+2019-09-08  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
+
+	* R/questions.R (test_question): New function
+	* man/test_question.Rd: Documentation
+
+2019-09-02  Dirk Eddelbuettel  <edd@debian.org>
+
+	* R/questions.R (get_question_details): New function
+	* man/get_question_details.Rd: Documentation
+
+2019-09-01  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Release 0.0.2
+
+	* R/source_eval.R (source_and_eval_safe): Set the uid argument to
+	NULL so that non-root user can run this (without a uid change, of
+	course). Otherwise the functions are limited to root use.
+
+	* R/source_eval.R (eval_safe_as): New helper function without file
+
+	* inst/tinytest/test_eval.R: Adjusted tests to not require uid
+
+2019-08-31  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Initial version 0.0.1

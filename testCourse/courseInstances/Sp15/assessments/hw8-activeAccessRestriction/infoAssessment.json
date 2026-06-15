@@ -1,0 +1,34 @@
+{
+  "uuid": "1f7b004e-1431-48ba-8bac-ca5c14a80cfb",
+  "type": "Homework",
+  "title": "Homework to test Active Rule",
+  "set": "Homework",
+  "number": "8",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2020-01-01T00:00:01" },
+        "due": { "date": "2020-12-31T23:59:59" },
+        "lateDeadlines": [{ "date": "2030-12-31T23:59:59", "credit": 75 }]
+      },
+      "afterComplete": {
+        "questions": {
+          "hidden": true,
+          "visibleFromDate": "2040-01-01T00:00:01",
+          "visibleUntilDate": "2049-12-31T23:59:59"
+        }
+      },
+      "beforeRelease": { "listed": true }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Main zone",
+      "questions": [
+        { "id": "partialCredit1", "autoPoints": 10 },
+        { "id": "fossilFuelsRadio", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "positionTimeGraph", "autoPoints": 2, "maxAutoPoints": 10 }
+      ]
+    }
+  ]
+}

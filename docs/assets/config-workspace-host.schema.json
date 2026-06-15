@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "postgresqlUser": {
+      "default": "postgres",
+      "type": "string"
+    },
+    "postgresqlPassword": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "postgresqlDatabase": {
+      "default": "postgres",
+      "type": "string"
+    },
+    "postgresqlHost": {
+      "default": "localhost",
+      "type": "string"
+    },
+    "postgresqlPoolSize": {
+      "default": 100,
+      "type": "number"
+    },
+    "postgresqlIdleTimeoutMillis": {
+      "default": 30000,
+      "type": "number"
+    },
+    "cacheType": {
+      "default": "none",
+      "type": "string",
+      "enum": ["none", "redis", "memory"]
+    },
+    "cacheKeyPrefix": {
+      "default": "workspace-host-cache:",
+      "type": "string"
+    },
+    "redisUrl": {
+      "default": "redis://localhost:6379/",
+      "type": "string"
+    },
+    "runningInEc2": {
+      "default": false,
+      "type": "boolean"
+    },
+    "cacheImageRegistry": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "awsRegion": {
+      "default": "us-east-2",
+      "type": "string"
+    },
+    "instanceId": {
+      "default": "server",
+      "type": "string"
+    },
+    "hostname": {
+      "default": "localhost",
+      "type": "string"
+    },
+    "sentryDsn": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sentryEnvironment": {
+      "default": "development",
+      "type": "string"
+    },
+    "workspaceDevHostInstanceId": {
+      "default": "devWSHost1",
+      "type": "string"
+    },
+    "workspaceDevHostHostname": {
+      "default": "localhost",
+      "type": "string"
+    },
+    "workspaceDevContainerHostname": {
+      "default": "host.docker.internal",
+      "type": "string"
+    },
+    "workspaceHostPort": {
+      "default": 8081,
+      "type": "number"
+    },
+    "workspaceHostPruneContainersSec": {
+      "default": 60,
+      "type": "number"
+    },
+    "workspaceHostMinPortRange": {
+      "default": 1024,
+      "type": "number"
+    },
+    "workspaceHostMaxPortRange": {
+      "default": 45000,
+      "type": "number"
+    },
+    "workspaceHostMaxPortAllocationAttempts": {
+      "default": 0,
+      "type": "number"
+    },
+    "workspacePullImagesFromDockerHub": {
+      "default": true,
+      "type": "boolean"
+    },
+    "workspacePercentMessageRateLimitSec": {
+      "default": 1,
+      "type": "number"
+    },
+    "workspaceSupportNoInternet": {
+      "default": false,
+      "type": "boolean"
+    },
+    "workspaceHostHomeDirRoot": {
+      "default": "/jobs/workspaces",
+      "type": "string"
+    },
+    "workspaceJobsDirectoryOwnerUid": {
+      "default": 0,
+      "type": "number"
+    },
+    "workspaceJobsDirectoryOwnerGid": {
+      "default": 0,
+      "type": "number"
+    },
+    "workspaceDockerMemory": {
+      "default": 1073741824,
+      "type": "number"
+    },
+    "workspaceDockerMemorySwap": {
+      "default": 1073741824,
+      "type": "number"
+    },
+    "workspaceDockerKernelMemory": {
+      "default": 536870912,
+      "type": "number"
+    },
+    "workspaceDockerDiskQuota": {
+      "default": 1073741824,
+      "type": "number"
+    },
+    "workspaceDockerCpuPeriod": {
+      "default": 100000,
+      "type": "number"
+    },
+    "workspaceDockerCpuQuota": {
+      "default": 90000,
+      "type": "number"
+    },
+    "workspaceDockerPidsLimit": {
+      "default": 1024,
+      "type": "number"
+    },
+    "workspaceMaxGradedFilesCount": {
+      "default": 100,
+      "type": "number"
+    },
+    "workspaceMaxGradedFilesSize": {
+      "default": 104857600,
+      "type": "number"
+    },
+    "workspaceLogsS3Bucket": {
+      "default": "workspace-logs",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "workspaceStartTimeoutSec": {
+      "default": 30,
+      "type": "number"
+    },
+    "workspaceHealthCheckIntervalSec": {
+      "default": 1,
+      "type": "number"
+    },
+    "workspaceHealthCheckTimeoutSec": {
+      "default": 10,
+      "type": "number"
+    }
+  },
+  "additionalProperties": false
+}

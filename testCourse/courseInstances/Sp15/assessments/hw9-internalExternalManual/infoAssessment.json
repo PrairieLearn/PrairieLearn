@@ -1,0 +1,34 @@
+{
+  "uuid": "294e5841-b705-4720-b5d4-266d82e9c6d8",
+  "type": "Homework",
+  "title": "Homework for Internal, External, Manual grading methods",
+  "set": "Homework",
+  "number": "9",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2000-01-01T00:00:00" }
+      },
+      "afterComplete": { "questions": { "hidden": false } }
+    }
+  ],
+  "zones": [
+    {
+      "comment": "Generic points, use default grading method",
+      "questions": [
+        { "id": "internalGrade/addingNumbers", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "manualGrade/codeUpload", "manualPoints": 6 },
+        { "id": "externalGrade/alpine", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "externalGrade/entrypointArgs", "autoPoints": 2, "maxAutoPoints": 6 }
+      ]
+    },
+    {
+      "comment": "Behavior based on separate points for manual and auto",
+      "questions": [
+        { "id": "internalGrade/addingNumbers2", "manualPoints": 2 },
+        { "id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "addNumbers", "autoPoints": 0, "maxAutoPoints": 0, "manualPoints": 0 }
+      ]
+    }
+  ]
+}

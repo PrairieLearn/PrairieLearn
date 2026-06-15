@@ -1,0 +1,566 @@
+import assert from 'assert';
+
+import { execa } from 'execa';
+import z from 'zod';
+
+import * as error from '@prairielearn/error';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+
+import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
+import {
+  type Course,
+  CourseSchema,
+  type EnumCourseRole,
+  EnumCourseRoleSchema,
+} from '../lib/db-types.js';
+import { parseGithubRepository } from '../lib/github-utils.js';
+
+import { insertAuditEvent } from './audit-event.js';
+import { insertAuditLog } from './audit-log.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+const CourseWithPermissionsSchema = z.object({
+  course: CourseSchema,
+  course_role: EnumCourseRoleSchema,
+});
+type CourseWithPermissions = Course & {
+  permissions_course: {
+    course_role: EnumCourseRole;
+    has_course_permission_own: boolean;
+    has_course_permission_edit: boolean;
+    has_course_permission_view: boolean;
+    has_course_permission_preview: boolean;
+  };
+};
+
+export async function selectCourseById(course_id: string): Promise<Course> {
+  return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
+}
+
+export async function selectOptionalCourseById(course_id: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_id, { course_id }, CourseSchema);
+}
+
+export async function selectCourseByShortName(shortName: string): Promise<Course> {
+  return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
+}
+
+export async function selectOptionalCourseByGithubRepository({
+  owner,
+  repoName,
+}: {
+  owner: string;
+  repoName: string;
+}): Promise<Course | null> {
+  // Escape SQL LIKE wildcards so they are matched literally in the loose match.
+  const escapedOwner = owner.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  const candidates = await queryRows(
+    sql.select_course_by_github_repository,
+    { owner: escapedOwner, repo_name: escapedRepoName },
+    CourseSchema,
+  );
+  const match = candidates.find((c) => {
+    const parsed = c.repository ? parseGithubRepository(c.repository) : null;
+    if (parsed === null) return false;
+    return (
+      parsed.owner.toLowerCase() === owner.toLowerCase() &&
+      parsed.repo.toLowerCase() === repoName.toLowerCase()
+    );
+  });
+  return match ?? null;
+}
+
+export async function selectOptionalCourseByPath(path: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_path, { path }, CourseSchema);
+}
+
+interface CourseFieldCheck {
+  exists: boolean;
+  owned: boolean;
+}
+
+const CourseFieldCheckRowSchema = z.object({
+  exists: z.boolean(),
+  owned: z.boolean().nullable(),
+});
+
+export async function checkCourseTitleInInstitution({
+  title,
+  institutionId,
+  userId,
+}: {
+  title: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_title_in_institution,
+    { title, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export async function checkCourseShortNameInInstitution({
+  shortName,
+  institutionId,
+  userId,
+}: {
+  shortName: string;
+  institutionId: string;
+  userId: string;
+}): Promise<CourseFieldCheck> {
+  const row = await queryOptionalRow(
+    sql.check_course_short_name_in_institution,
+    { short_name: shortName, institution_id: institutionId, user_id: userId },
+    CourseFieldCheckRowSchema,
+  );
+  return { exists: row?.exists ?? false, owned: row?.owned ?? false };
+}
+
+export function getLockNameForCoursePath(coursePath: string): string {
+  return `coursedir:${coursePath}`;
+}
+
+export async function getCourseCommitHash(coursePath: string): Promise<string> {
+  try {
+    const { stdout } = await execa('git', ['rev-parse', 'HEAD'], {
+      cwd: coursePath,
+      env: process.env,
+    });
+    return stdout.trim();
+  } catch (err: any) {
+    throw new error.AugmentedError(`Could not get git status; exited with code ${err.exitCode}`, {
+      data: {
+        stdout: err.stdout,
+        stderr: err.stderr,
+      },
+    });
+  }
+}
+
+/**
+ * Gets the default branch from a git repository by querying origin/HEAD.
+ * Returns 'master' as fallback if the query fails.
+ */
+export async function getGitDefaultBranch(coursePath: string): Promise<string> {
+  try {
+    const { stdout } = await execa('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], {
+      cwd: coursePath,
+      env: process.env,
+    });
+    // Strip 'origin/' prefix if present
+    const branch = stdout.trim().replace(/^origin\//, '');
+    return branch || 'master';
+  } catch {
+    return 'master';
+  }
+}
+
+/**
+ * Gets the remote URL for 'origin' from a git repository.
+ * Returns null if the query fails.
+ */
+export async function getGitRemoteUrl(coursePath: string): Promise<string | null> {
+  try {
+    const { stdout } = await execa('git', ['remote', 'get-url', 'origin'], {
+      cwd: coursePath,
+      env: process.env,
+    });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Loads the current commit hash from disk and stores it in the database. This
+ * will also add the `commit_hash` property to the given course object.
+ */
+export async function updateCourseCommitHash(course: {
+  id: string;
+  path: string;
+}): Promise<string> {
+  const hash = await getCourseCommitHash(course.path);
+  await execute(sql.update_course_commit_hash, {
+    course_id: course.id,
+    commit_hash: hash,
+  });
+  return hash;
+}
+
+/**
+ * If the provided course object contains a commit hash, that will be used;
+ * otherwise, the commit hash will be loaded from disk and stored in the
+ * database.
+ *
+ * This should only ever really need to happen at max once per course - in the
+ * future, the commit hash will already be in the course object and will be
+ * updated during course sync.
+ */
+export async function getOrUpdateCourseCommitHash(course: {
+  id: string;
+  path: string;
+  commit_hash?: string | null;
+}): Promise<string> {
+  return course.commit_hash ?? (await updateCourseCommitHash(course));
+}
+
+/**
+ * Returns all courses to which the given user has staff access.
+ *
+ * Note that this does not take into account any effective user overrides that
+ * may be in place. It is the caller's responsibility to further restrict
+ * the results if necessary.
+ */
+export async function selectCoursesWithStaffAccess({
+  user_id,
+  is_administrator,
+}: {
+  user_id: string;
+  is_administrator: boolean;
+}): Promise<CourseWithPermissions[]> {
+  const rawCourses = await run(async () => {
+    if (is_administrator) {
+      // Administrators have Owner permission in all courses, so we can skip the
+      // complex query and just return all courses
+      const courses = await queryRows(sql.select_all_courses, CourseSchema);
+      return courses.map((course) => ({ course, course_role: 'Owner' as const }));
+    }
+
+    return await queryRows(
+      sql.select_courses_with_staff_access,
+      { user_id },
+      CourseWithPermissionsSchema,
+    );
+  });
+
+  return rawCourses.map(({ course_role, course }) => ({
+    ...course,
+    permissions_course: {
+      course_role,
+      ...calculateCourseRolePermissions(course_role),
+    },
+  }));
+}
+
+/**
+ * Returns all courses to which the given user has edit access.
+ *
+ * Note that this does not take into account any effective user overrides that
+ * may be in place. It is the caller's responsibility to further restrict
+ * the results if necessary.
+ */
+export async function selectCoursesWithEditAccess({
+  user_id,
+  is_administrator,
+}: {
+  user_id: string;
+  is_administrator: boolean;
+}) {
+  const courses = await selectCoursesWithStaffAccess({
+    user_id,
+    is_administrator,
+  });
+  return courses.filter((c) => c.permissions_course.has_course_permission_edit);
+}
+
+/**
+ * Selects a course by its path. If it doesn't already exist, it is created
+ * using the provided options, if specified.
+ */
+export async function selectOrInsertCourseByPath(
+  coursePath: string,
+  options?: { branch?: string; repository?: string | null },
+): Promise<Course> {
+  return await queryRow(
+    sql.select_or_insert_course_by_path,
+    {
+      path: coursePath,
+      branch: options?.branch ?? 'master',
+      repository: options?.repository ?? null,
+    },
+    CourseSchema,
+  );
+}
+
+export async function deleteCourse({
+  course_id,
+  authn_user_id,
+}: {
+  course_id: string;
+  authn_user_id: string;
+}) {
+  await runInTransactionAsync(async () => {
+    const deletedCourse = await queryOptionalRow(sql.delete_course, { course_id }, CourseSchema);
+    if (deletedCourse == null) {
+      throw new Error('Course to delete not found');
+    }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    await insertAuditLog({
+      authn_user_id,
+      action: 'soft_delete',
+      table_name: 'courses',
+      row_id: course_id,
+      new_state: deletedCourse,
+      course_id,
+      institution_id: deletedCourse.institution_id,
+    });
+  });
+}
+
+export async function insertCourse({
+  institution_id,
+  short_name,
+  title,
+  display_timezone,
+  path,
+  repository,
+  branch,
+  authn_user_id,
+}: Pick<
+  Course,
+  'institution_id' | 'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch'
+> & {
+  authn_user_id: string;
+}): Promise<Course> {
+  return await runInTransactionAsync(async () => {
+    const course = await queryRow(
+      sql.insert_course,
+      {
+        institution_id,
+        short_name,
+        title,
+        display_timezone,
+        path,
+        repository,
+        branch,
+      },
+      CourseSchema,
+    );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    await insertAuditLog({
+      authn_user_id,
+      action: 'insert',
+      table_name: 'courses',
+      row_id: course.id,
+      new_state: course,
+      institution_id,
+      course_id: course.id,
+    });
+    return course;
+  });
+}
+
+const updateCourseColumnSqlMap = {
+  short_name: sql.update_course_column_short_name,
+  title: sql.update_course_column_title,
+  display_timezone: sql.update_course_column_display_timezone,
+  path: sql.update_course_column_path,
+  repository: sql.update_course_column_repository,
+  branch: sql.update_course_column_branch,
+  institution_id: sql.update_course_column_institution_id,
+} as const;
+
+export async function updateCourseColumn({
+  courseId,
+  columnName,
+  value,
+  authnUserId,
+}: {
+  courseId: string;
+  columnName:
+    | 'short_name'
+    | 'title'
+    | 'display_timezone'
+    | 'path'
+    | 'repository'
+    | 'branch'
+    | 'institution_id';
+  value: string;
+  authnUserId: string;
+}): Promise<Course> {
+  return await runInTransactionAsync(async () => {
+    const oldCourse = await selectCourseById(courseId);
+    const course = await queryRow(
+      updateCourseColumnSqlMap[columnName],
+      { course_id: courseId, value },
+      CourseSchema,
+    );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    await insertAuditLog({
+      authn_user_id: authnUserId,
+      action: 'update',
+      table_name: 'courses',
+      column_name: columnName,
+      row_id: courseId,
+      parameters: { [columnName]: value },
+      old_state: oldCourse,
+      new_state: course,
+      course_id: courseId,
+      institution_id: course.institution_id,
+    });
+    return course;
+  });
+}
+
+/**
+ * Update the `show_getting_started` column for a course.
+ */
+export async function updateCourseShowGettingStarted({
+  course_id,
+  show_getting_started,
+}: {
+  course_id: string;
+  show_getting_started: boolean;
+}) {
+  await execute(sql.update_course_show_getting_started, {
+    course_id,
+    show_getting_started,
+  });
+}
+
+/**
+ * Update the `questions_receive_user_data` column for a course, and record an
+ * audit event in the same transaction.
+ */
+export async function updateCourseQuestionsReceiveUserData({
+  course_id,
+  questions_receive_user_data,
+  authn_user_id,
+  user_id,
+  old_questions_receive_user_data,
+}: {
+  course_id: string;
+  questions_receive_user_data: boolean;
+  authn_user_id: string;
+  user_id: string;
+  /**
+   * The value observed before this save began. A sync triggered by saving
+   * `infoCourse.json` may have already written the column in dev mode, so we
+   * compare against this rather than a fresh read to detect the real change.
+   */
+  old_questions_receive_user_data: boolean;
+}): Promise<Course> {
+  if (old_questions_receive_user_data === questions_receive_user_data) {
+    return await selectCourseById(course_id);
+  }
+  return await runInTransactionAsync(async () => {
+    const newCourse = await queryRow(
+      sql.update_course_questions_receive_user_data,
+      { course_id, questions_receive_user_data },
+      CourseSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'courses',
+      action: 'update',
+      actionDetail: 'questions_receive_user_data',
+      rowId: course_id,
+      agentAuthnUserId: authn_user_id,
+      agentUserId: user_id,
+      courseId: course_id,
+      institutionId: newCourse.institution_id,
+      oldRow: { questions_receive_user_data: old_questions_receive_user_data },
+      newRow: { questions_receive_user_data: newCourse.questions_receive_user_data },
+    });
+    return newCourse;
+  });
+}
+
+/**
+ * Returns `true` if the course can still pick/change its sharing name — i.e.
+ * no sharing name has been set yet, or no questions have been shared publicly
+ * or through a sharing set. Changing the sharing name after questions have
+ * been shared would break consuming courses that imported those questions.
+ */
+export async function selectCanChooseSharingName(course: {
+  id: string;
+  sharing_name: string | null;
+}): Promise<boolean> {
+  return (
+    course.sharing_name === null ||
+    !(await queryScalar(sql.select_shared_question_exists, { course_id: course.id }, z.boolean()))
+  );
+}
+
+export async function selectOptionalCourseBySharingToken(
+  sharing_token: string,
+): Promise<Course | null> {
+  return await queryOptionalRow(
+    sql.select_course_by_sharing_token,
+    { sharing_token },
+    CourseSchema,
+  );
+}
+
+/**
+ * Update the `sharing_name` column for a course.
+ */
+export async function updateCourseSharingName({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<void> {
+  await execute(sql.update_course_sharing_name, {
+    course_id,
+    sharing_name,
+  });
+}
+
+/**
+ * Updates `sharing_name` only if the course is still allowed to change it
+ * (i.e., no sharing name yet, or no shared questions). The check and the
+ * write run in one transaction with `SELECT ... FOR UPDATE` on the courses
+ * row, so concurrent calls serialize and a question being shared between
+ * page-load and submit cannot slip past the guard. Returns `true` on
+ * success, `false` if the check failed at the time of the write.
+ */
+export async function updateCourseSharingNameIfAllowed({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<boolean> {
+  return await runInTransactionAsync(async () => {
+    const course = await queryRow(sql.select_course_by_id_for_update, { course_id }, CourseSchema);
+    if (!(await selectCanChooseSharingName(course))) return false;
+    await execute(sql.update_course_sharing_name, { course_id, sharing_name });
+    return true;
+  });
+}
+
+/**
+ * Look up courses by sharing names (may return null if non-existent)
+ */
+export async function findCoursesBySharingNames(
+  sharing_names: string[],
+): Promise<Map<string, Course | null>> {
+  const rows = await queryRows(sql.find_courses_by_sharing_names, { sharing_names }, CourseSchema);
+
+  const result = new Map<string, Course | null>();
+  for (const name of sharing_names) result.set(name, null);
+
+  for (const row of rows) {
+    // We looked up the courses by sharing name, so this should hold for all courses
+    assert(row.sharing_name);
+
+    if (row.sharing_name) {
+      result.set(row.sharing_name, row);
+    }
+  }
+  return result;
+}

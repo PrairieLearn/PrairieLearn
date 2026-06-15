@@ -1,0 +1,50 @@
+import clsx from 'clsx';
+
+import { renderHtml } from '@prairielearn/react';
+
+import { ansiToHtml } from '../lib/chalk.js';
+
+export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
+  const title = type === 'error' ? 'Sync Errors' : 'Sync Warnings';
+
+  const popoverContent = (
+    <pre
+      className="text-white rounded p-3 mb-0"
+      style={{ backgroundColor: 'black' }}
+      // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+      dangerouslySetInnerHTML={{ __html: ansiToHtml(output) }}
+    />
+  );
+
+  return (
+    <button
+      className="btn btn-xs btn-ghost me-1"
+      type="button"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title={title}
+      data-bs-content={renderHtml(popoverContent).toString()}
+      data-bs-custom-class="popover-wide"
+    >
+      <i
+        className={clsx({
+          fa: true,
+          'fa-times text-danger': type === 'error',
+          'fa-exclamation-triangle text-warning': type === 'warning',
+        })}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
+
+export function SyncProblemButtonHtml({
+  output,
+  type,
+}: {
+  output: string;
+  type: 'error' | 'warning';
+}) {
+  return renderHtml(<SyncProblemButton output={output} type={type} />);
+}

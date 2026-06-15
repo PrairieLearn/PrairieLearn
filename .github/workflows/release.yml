@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  release:
+    name: Release
+    if: github.repository == 'PrairieLearn/PrairieLearn'
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed for OIDC trusted publishing
+      id-token: write
+    steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout Repo
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      # We need to be running the latest version of `npm` to support OIDC trusted publishing
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      # `changesets` will use Prettier to format our changelogs. Because our
+      # config points to a custom plugin, we need to build that plugin first.
+      # We'll build everything for good measure.
+      - name: Build Packages
+        run: make build
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This invokes the `version` script in `package.json`, which will run
+          # `changeset version` and then `pnpm install`. We need to run `pnpm install`
+          # in order to update `pnpm-lock.yaml`: https://pnpm.io/10.x/using-changesets
+          version: pnpm run version
+          # This invokes the `release` script in `package.json`, which will build
+          # all the packages and then invoke `changeset publish`.
+          publish: pnpm run release
+          # Avoid creating GitHub releaseses, as we don't need them.
+          # This complements `--no-git-tag` in the `release` script in `package.json`.
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

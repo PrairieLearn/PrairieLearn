@@ -1,0 +1,22 @@
+details.pl-hidden-hint {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  padding: 0.5em 0.5em 0;
+  margin: 15px 0px;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.pl-hidden-hint summary {
+  font-weight: bold;
+  margin: -0.5em -0.5em 0;
+  padding: 0.5em;
+  outline: none;
+}
+
+details.pl-hidden-hint[open] {
+  padding: 0.5em;
+}
+
+details.pl-hidden-hint[open] summary {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  margin-bottom: 0.5em;
+}

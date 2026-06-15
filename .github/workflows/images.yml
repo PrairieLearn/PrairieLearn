@@ -1,0 +1,110 @@
+name: Images
+
+on:
+  push:
+    branches:
+      - 'master'
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
+  pull_request:
+  merge_group:
+
+concurrency:
+  # Ensure that we only run one concurrent job for Pull Requests. This ensures
+  # that someone can't kill our throughput by pushing a bunch of commits to a
+  # single branch in rapid succession.
+  #
+  # However, for master builds, we allow maximum concurrency. This is achieved
+  # because `github.head_ref` isn't defined there, and `github.run_id` is
+  # globally unique in this repo.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  build-workspace-images:
+    name: Workspaces
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: workspaces
+      images: prairielearn/workspace-jupyterlab-base,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-jupyterlab-r,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
+    secrets: inherit
+
+  build-grader-images:
+    name: Graders
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: graders
+      images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
+      cache_images: prairielearn/grader-c,prairielearn/grader-python
+    secrets: inherit
+
+  build-core-images:
+    name: Core
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: core
+      images: prairielearn/prairielearn,prairielearn/executor
+      cache_images: prairielearn/prairielearn
+    secrets: inherit
+
+  report-image-sizes:
+    runs-on: ubuntu-latest
+    needs:
+      - build-workspace-images
+      - build-grader-images
+      - build-core-images
+    if: ${{ !cancelled() }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create directory for metadata
+        run: mkdir -p ${{ runner.temp }}/image-metadata
+
+      - name: Download metadata
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: image-metadata-*-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata
+          merge-multiple: true
+
+      - name: Collect image sizes
+        run: python3 scripts/build_images/collect_sizes.py
+        env:
+          METADATA_DIR: ${{ runner.temp }}/image-metadata
+          OUTPUT_PATH: ${{ runner.temp }}/image-sizes.json
+
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Node dependencies
+        run: pnpm --filter @prairielearn/actions-report-image-sizes... install
+
+      - name: Build
+        run: pnpm build
+        working-directory: packages/actions-report-image-sizes
+
+      - name: Report image sizes
+        uses: ./packages/actions-report-image-sizes
+        with:
+          title: All images
+          sha: ${{ env.COMMIT_SHA }}
+          pushed: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          sizes-path: ${{ runner.temp }}/image-sizes.json
+          report-path: ${{ runner.temp }}/image-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-report-image-sizes
+          path: ${{ runner.temp }}/image-sizes-section.md
+          retention-days: 1

@@ -1,0 +1,23 @@
+pg_version = "16.0"
+assume_in_transaction = true
+excluded_rules = [
+  "prefer-identity",                   # Serial types make schema, dependency, and permission management difficult
+  "prefer-text-field",                 # Changing the size of a `varchar` field requires an `ACCESS EXCLUSIVE` lock, that will prevent all reads and writes to the table
+  "prefer-bigint-over-int",            # Using 32-bit integer fields can result in hitting the max `int` limit
+  "adding-not-nullable-field",         # Setting a column `NOT NULL` blocks reads while the table is scanned
+  "adding-required-field",             # Adding a new column that is `NOT NULL` and has no default value to an existing table effectively makes it required
+  "require-concurrent-index-deletion", # These happen in a transaction, so they can't be concurrent.
+  "require-concurrent-index-creation", # These happen in a transaction, so they can't be concurrent.
+  "require-timeout-settings",          # TODO: consider enabling this
+  # Backward compatibility rules
+  "ban-drop-column",
+  "ban-drop-not-null",
+  "ban-drop-table",
+  "renaming-column",
+  "renaming-table",
+]
+excluded_paths = [
+  "apps/prairielearn/src/migrations/*.test.sql",
+  "apps/prairielearn/src/migrations/201*.sql",
+  "apps/prairielearn/src/migrations/202[0-4]*.sql",
+]

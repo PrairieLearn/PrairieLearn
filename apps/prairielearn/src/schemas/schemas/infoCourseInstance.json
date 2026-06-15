@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+      "description": "Unique identifier (UUID)."
+    },
+    "longName": {
+      "type": "string",
+      "description": "The long name of this course instance (e.g., 'Spring 2015')."
+    },
+    "shortName": {
+      "type": "string",
+      "deprecated": true
+    },
+    "timezone": {
+      "type": "string",
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used."
+    },
+    "allowIssueReporting": {
+      "type": "boolean",
+      "deprecated": true
+    },
+    "selfEnrollment": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean",
+          "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment."
+        },
+        "restrictToInstitution": {
+          "default": true,
+          "type": "boolean",
+          "description": "If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll."
+        },
+        "beforeDate": {
+          "type": "string",
+          "description": "If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property."
+        },
+        "useEnrollmentCode": {
+          "default": false,
+          "type": "boolean",
+          "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment."
+        }
+      },
+      "additionalProperties": false
+    },
+    "hideInEnrollPage": {
+      "type": "boolean",
+      "description": "The enrollment listing page has been removed. This setting is no longer used.",
+      "deprecated": true
+    },
+    "userRoles": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {},
+      "deprecated": true
+    },
+    "publishing": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "type": "string",
+          "description": "When the course instance is published. If specified, endDate must also be specified."
+        },
+        "endDate": {
+          "type": "string",
+          "description": "When the course instance is unpublished. If specified, startDate must also be specified."
+        }
+      },
+      "additionalProperties": false
+    },
+    "allowAccess": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": ["Student", "TA", "Instructor", "Superuser"],
+            "deprecated": true
+          },
+          "uids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of UIDs (like 'username@example.com'), one of which is required for access."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "The earliest date on which access is permitted."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "The latest date on which access is permitted."
+          },
+          "institution": {
+            "type": "string",
+            "description": "The institution from which access is permitted."
+          }
+        },
+        "additionalProperties": false,
+        "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access."
+      },
+      "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied."
+    },
+    "groupAssessmentsBy": {
+      "default": "Set",
+      "type": "string",
+      "enum": ["Set", "Module"],
+      "description": "Determines which assessment category will be used to group assessments on the student assessments page."
+    },
+    "shareSourcePublicly": {
+      "default": false,
+      "type": "boolean",
+      "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy."
+    },
+    "studentLabels": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+            "description": "Unique identifier (UUID)."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "The name of the student label."
+          },
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
+        },
+        "required": ["uuid", "name", "color"],
+        "additionalProperties": false,
+        "description": "A single student label, can represent a collection of students (e.g. \"Section A\")."
+      },
+      "description": "Student labels."
+    }
+  },
+  "required": ["uuid", "longName"],
+  "additionalProperties": false,
+  "description": "The specification file for a course instance.",
+  "title": "Course instance information",
+  "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    },
+    "ColorJsonSchema": {
+      "type": "string",
+      "enum": [
+        "red1",
+        "red2",
+        "red3",
+        "pink1",
+        "pink2",
+        "pink3",
+        "purple1",
+        "purple2",
+        "purple3",
+        "blue1",
+        "blue2",
+        "blue3",
+        "turquoise1",
+        "turquoise2",
+        "turquoise3",
+        "green1",
+        "green2",
+        "green3",
+        "yellow1",
+        "yellow2",
+        "yellow3",
+        "orange1",
+        "orange2",
+        "orange3",
+        "brown1",
+        "brown2",
+        "brown3",
+        "gray1",
+        "gray2",
+        "gray3"
+      ],
+      "description": "A color name."
+    }
+  }
+}

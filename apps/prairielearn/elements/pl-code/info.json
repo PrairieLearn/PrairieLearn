@@ -1,0 +1,6 @@
+{
+  "controller": "pl-code.py",
+  "dependencies": {
+    "elementStyles": ["pl-code.css"]
+  }
+}

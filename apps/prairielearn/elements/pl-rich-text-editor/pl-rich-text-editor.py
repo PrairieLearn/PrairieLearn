@@ -1,0 +1,356 @@
+import base64
+import binascii
+import hashlib
+import json
+import os
+import re
+from enum import Enum
+from typing import assert_never
+
+import chevron
+import lxml.html
+import prairielearn as pl
+
+
+class Counter(Enum):
+    NONE = "none"
+    CHARACTER = "character"
+    WORD = "word"
+
+
+class InputFormat(Enum):
+    HTML = "html"
+    MARKDOWN = "markdown"
+
+
+FILE_NAME_DEFAULT = "answer.html"
+QUILL_THEME_DEFAULT = "snow"
+PLACEHOLDER_DEFAULT = "Your answer here"
+ALLOW_BLANK_DEFAULT = False
+SOURCE_FILE_NAME_DEFAULT = None
+DIRECTORY_DEFAULT = "."
+MARKDOWN_SHORTCUTS_DEFAULT = True
+CLIPBOARD_ENABLED_DEFAULT = True
+MIN_WORD_COUNT_DEFAULT = None
+MAX_WORD_COUNT_DEFAULT = None
+
+
+def get_answer_name(file_name: str) -> str:
+    return "_rich_text_editor_{}".format(
+        hashlib.sha1(file_name.encode("utf-8")).hexdigest()
+    )
+
+
+def element_inner_html(element: lxml.html.HtmlElement) -> str:
+    return (element.text or "") + "".join([
+        str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()
+    ])
+
+
+def count_words_from_html_base64(file_contents_b64: str) -> int:
+    """Count words from base64-encoded HTML contents stored by the element.
+
+    Uses sanitized HTML as input: replaces tags and &nbsp; with spaces, then
+    splits on ASCII whitespace. No HTML parsing; matches the JS logic.
+
+    Returns:
+        the number of words in the contents.
+    """
+    if not file_contents_b64:
+        return 0
+    html = base64.b64decode(file_contents_b64, validate=True).decode("utf-8")
+
+    text = re.sub(r"<[^>]+>", " ", html)
+    text = re.sub(r"&nbsp;|&#160;|&#xA0;|\u00A0", " ", text)
+    tokens = [t for t in re.split(r"\s+", text.strip(), flags=re.ASCII) if t]
+    return len(tokens)
+
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = []
+    optional_attribs = [
+        "file-name",
+        "quill-theme",
+        "source-file-name",
+        "directory",
+        "placeholder",
+        "allow-blank",
+        "format",
+        "markdown-shortcuts",
+        "counter",
+        "clipboard-enabled",
+        "min-word-count",
+        "max-word-count",
+    ]
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    source_file_name = pl.get_string_attrib(
+        element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
+    )
+    element_text = element_inner_html(element)
+
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+    if "_required_file_names" not in data["params"]:
+        data["params"]["_required_file_names"] = []
+    elif file_name in data["params"]["_required_file_names"]:
+        if not pl.has_attrib(element, "file-name"):
+            # This is a special-case of the uniqueness test with a special message for the default file name.
+            raise RuntimeError(
+                "There is more than one rich-text editor. File names must be provided and unique."
+            )
+        raise RuntimeError(
+            "There is more than one file editor with the same file name."
+        )
+    data["params"]["_required_file_names"].append(file_name)
+
+    if (
+        source_file_name is not None
+        and element_text
+        and not str(element_text).isspace()
+    ):
+        raise ValueError(
+            'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
+        )
+
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+    if min_wc is not None and min_wc < 0:
+        raise ValueError(
+            'Attribute "min-word-count" must be larger than or equal to 0.'
+        )
+    if max_wc is not None and max_wc <= 0:
+        raise ValueError('Attribute "max-word-count" must be larger than 0.')
+    if min_wc is not None and max_wc is not None and min_wc > max_wc:
+        raise ValueError(
+            f"Invalid bounds: min-word-count ({min_wc}) cannot exceed max-word-count ({max_wc})."
+        )
+    if (min_wc is not None or max_wc is not None) and (
+        pl.get_enum_attrib(element, "counter", Counter, Counter.WORD) != Counter.WORD
+    ):
+        raise ValueError(
+            'When "min-word-count" or "max-word-count" is set, "counter" must be set to "word".'
+        )
+    if (
+        min_wc is not None
+        and min_wc > 0
+        and pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    ):
+        raise ValueError(
+            'Attribute "allow-blank" cannot be true when "min-word-count" is greater than 0.'
+        )
+
+
+def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "answer":
+        return ""
+
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+    answer_name = get_answer_name(file_name)
+    quill_theme = pl.get_string_attrib(element, "quill-theme", QUILL_THEME_DEFAULT)
+    placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+    uuid = pl.get_uuid()
+    source_file_name = pl.get_string_attrib(
+        element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
+    )
+    directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
+    input_format = pl.get_enum_attrib(element, "format", InputFormat, InputFormat.HTML)
+    markdown_shortcuts = pl.get_boolean_attrib(
+        element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
+    )
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+    counter = (
+        Counter.WORD
+        if min_wc is not None or max_wc is not None
+        else pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
+    )
+    clipboard_enabled = pl.get_boolean_attrib(
+        element, "clipboard-enabled", CLIPBOARD_ENABLED_DEFAULT
+    )
+    element_text = element_inner_html(element)
+
+    submitted_files = data["submitted_answers"].get("_files", [])
+    submitted_file = next(
+        (f for f in submitted_files if f.get("name", None) == file_name), None
+    )
+
+    if data["ai_grading"]:
+        if data["panel"] != "submission" or not submitted_file:
+            return f'<div data-file-name="{file_name}"></div>'
+
+        contents = submitted_file.get("contents", "")
+        contents = base64.b64decode(contents).decode("utf-8")
+
+        # MathJax gets embedded as `span.ql-formula` elements. This is fine;
+        # we'll just remove all attributes to save on tokens.
+        html_doc = lxml.html.fragments_fromstring(contents)
+        for fragment in html_doc:
+            if isinstance(fragment, str):
+                continue
+
+            for span in fragment.xpath('.//span[@class="ql-formula"]'):
+                span.attrib.clear()
+
+        # Reconstruct the HTML content
+        contents = "".join(
+            str(lxml.html.tostring(fragment, encoding="unicode"))
+            if not isinstance(fragment, str)
+            else str(fragment)
+            for fragment in html_doc
+        )
+
+        return f'<div data-file-name="{file_name}">\n{contents}\n</div>'
+
+    if data["panel"] == "question" or data["panel"] == "submission":
+        quill_options = {
+            "readOnly": data["panel"] == "submission" or not data["editable"],
+            "placeholder": placeholder,
+            "format": input_format.value,
+            "markdownShortcuts": markdown_shortcuts,
+            "counter": counter.value,
+            "modules": {"clipboard": {} if clipboard_enabled else {"enabled": False}},
+            "theme": quill_theme or None,
+        }
+        if min_wc is None and max_wc is None:
+            word_count_requirements_text = None
+        elif min_wc is not None and max_wc is not None:
+            word_count_requirements_text = f"Required {min_wc}\u2013{max_wc} words"
+        elif min_wc is not None:
+            word_count_requirements_text = f"Minimum {min_wc} words"
+        else:
+            word_count_requirements_text = f"Maximum {max_wc} words"
+
+        html_params = {
+            "name": answer_name,
+            "file_name": file_name,
+            "editor_uuid": uuid,
+            "quill_options_json": json.dumps(quill_options),
+            "counter_enabled": counter != Counter.NONE,
+            "clipboard_enabled": clipboard_enabled,
+            "min_word_count": min_wc or 0,
+            "max_word_count": max_wc or 0,
+            "word_count_requirements_text": word_count_requirements_text,
+            "footer_enabled": counter != Counter.NONE
+            or min_wc is not None
+            or max_wc is not None,
+        }
+
+        if submitted_file:
+            html_params["current_file_contents"] = submitted_file.get("contents")
+            # If the mimetype is provided, override the input format
+            if submitted_file.get("mimetype"):
+                html_params["format"] = (
+                    "html"
+                    if submitted_file.get("mimetype") == "text/html"
+                    else "markdown"
+                )
+        else:
+            if source_file_name is not None:
+                if directory == "serverFilesCourse":
+                    directory = data["options"]["server_files_course_path"]
+                elif directory == "clientFilesCourse":
+                    directory = data["options"]["client_files_course_path"]
+                else:
+                    directory = os.path.join(
+                        data["options"]["question_path"], directory
+                    )
+                file_path = os.path.join(directory, source_file_name)
+                with open(file_path) as f:
+                    text_display = f.read()
+            else:
+                text_display = element_text
+
+            html_params["current_file_contents"] = base64.b64encode(
+                text_display.encode("UTF-8").strip()
+            ).decode()
+
+        html_params["question"] = data["panel"] == "question"
+        with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
+    assert_never(data["panel"])
+
+
+def parse(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+    answer_name = get_answer_name(file_name)
+
+    # Get submitted answer or return parse_error if it does not exist
+    file_contents = data["submitted_answers"].get(answer_name, "")
+    if not file_contents and not allow_blank:
+        pl.add_files_format_error(data, f"No submitted answer for {file_name}")
+        return
+
+    # Validate format before persisting; reject malformed base64/UTF-8
+    try:
+        word_count = count_words_from_html_base64(file_contents)
+    except (binascii.Error, UnicodeDecodeError):
+        pl.add_files_format_error(
+            data,
+            f"Failed to decode submission for {file_name}. The file may be corrupted or invalid.",
+        )
+        return
+
+    # We will store the files in the submitted_answer["_files"] key,
+    # so delete the original submitted answer format to avoid
+    # duplication
+    data["submitted_answers"].pop(answer_name, None)
+    # Mimetype is explicitly set to ensure that we can distinguish newer
+    # submissions (stored as HTML) from submissions using the older version of
+    # pl-rich-text-editor (potentially stored in Markdown)
+    pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
+
+    # Word count validation after adding the file so that the file is stored in the submitted_answers["_files"] key even if validation fails.
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+
+    # If content exists, enforce min/max word count
+    if file_contents and (min_wc is not None or max_wc is not None):
+        if min_wc is not None and word_count < min_wc:
+            pl.add_files_format_error(
+                data,
+                f"{file_name} is too short: {word_count} words (minimum {min_wc}).",
+            )
+            return
+
+        if max_wc is not None and word_count > max_wc:
+            pl.add_files_format_error(
+                data, f"{file_name} is too long: {word_count} words (maximum {max_wc})."
+            )
+            return
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+    answer_name = get_answer_name(file_name)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+    result = data["test_type"]
+
+    def html_for(label: str) -> str:
+        target = max(min_wc or 0, 2)
+        if max_wc is not None:
+            target = min(target, max_wc)
+        words = (["Test", label] + [f"word{i}" for i in range(target)])[:target]
+        return f"<p>{' '.join(words)}</p>"
+
+    if result in {"correct", "incorrect"}:
+        data["raw_submitted_answers"][answer_name] = base64.b64encode(
+            html_for(result).encode("utf-8")
+        ).decode("utf-8")
+    elif result == "invalid":
+        if allow_blank:
+            # When blank is allowed, there is no truly invalid submission, so
+            # we provide valid content. The grading pipeline will treat this
+            # the same as a correct submission.
+            data["raw_submitted_answers"][answer_name] = base64.b64encode(
+                html_for("blank-allowed").encode("utf-8")
+            ).decode("utf-8")
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            pl.add_files_format_error(data, f"No submitted answer for {file_name}")

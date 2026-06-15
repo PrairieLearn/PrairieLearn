@@ -1,0 +1,53 @@
+-- BLOCK qids
+SELECT
+  q.qid AS qids
+FROM
+  questions AS q
+WHERE
+  q.course_id = $course_id
+  AND q.deleted_at IS NULL
+  AND q.qid IS NOT NULL;
+
+-- BLOCK select_assessments_with_question_for_display
+SELECT
+  result.course_short_name AS short_name,
+  result.course_long_name AS long_name,
+  result.course_instance_id,
+  result.matched_assessments AS assessments
+FROM
+  (
+    SELECT
+      ci.short_name AS course_short_name,
+      ci.long_name AS course_long_name,
+      ci.id AS course_instance_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'label',
+          aset.abbreviation || a.number,
+          'assessment_id',
+          a.id,
+          'color',
+          aset.color,
+          'title',
+          a.title,
+          'type',
+          a.type
+        )
+        ORDER BY
+          (aset.number, a.order_by, a.id)
+      ) AS matched_assessments
+    FROM
+      assessment_questions AS aq
+      JOIN assessments AS a ON (a.id = aq.assessment_id)
+      JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    WHERE
+      aq.question_id = $question_id
+      AND aq.deleted_at IS NULL
+      AND a.deleted_at IS NULL
+      AND ci.deleted_at IS NULL
+    GROUP BY
+      ci.id
+    ORDER BY
+      ci.id
+  ) AS result;

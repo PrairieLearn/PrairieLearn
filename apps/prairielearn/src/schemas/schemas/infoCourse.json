@@ -1,0 +1,270 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "comment": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+      "description": "Unique identifier (UUID).",
+      "deprecated": true
+    },
+    "name": {
+      "type": "string",
+      "description": "The course name (e.g., 'TAM 212')."
+    },
+    "title": {
+      "type": "string",
+      "description": "The course title (e.g., 'Introductory Dynamics')."
+    },
+    "timezone": {
+      "type": "string",
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred."
+    },
+    "options": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "comment": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
+        },
+        "useNewQuestionRenderer": {
+          "type": "boolean",
+          "description": "Feature flag to enable the new question renderer.",
+          "deprecated": true
+        },
+        "devModeFeatures": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "A single feature flag."
+              },
+              "description": "Legacy format; use an object instead."
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
+          ],
+          "description": "Feature flags to enable/disable in development mode."
+        },
+        "questionsReceiveUserData": {
+          "type": "boolean",
+          "description": "If true, server.py receives the variant owner's identity (UID, UIN, name) and group data (if applicable) via `data[\"options\"][\"user\"]` and `data[\"options\"][\"group\"]`. The user value is null for group variants. Only takes effect when the question is rendered in its owning course; data is omitted for questions imported via sharing. This JSON setting is honored only in development mode. In production, configure this on the course settings page; sync reports a warning if the JSON value differs from the production setting."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Options for this course."
+    },
+    "assessmentSets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
+          },
+          "abbreviation": {
+            "type": "string",
+            "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."
+          },
+          "name": {
+            "type": "string",
+            "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'."
+          },
+          "heading": {
+            "type": "string",
+            "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'."
+          },
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          }
+        },
+        "required": ["abbreviation", "name", "heading", "color"],
+        "description": "A single assessment set description."
+      },
+      "description": "Assessment sets."
+    },
+    "assessmentModules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'."
+          },
+          "heading": {
+            "type": "string",
+            "description": "Full name of the module (visible to students)"
+          }
+        },
+        "required": ["name", "heading"],
+        "description": "A single course module description."
+      },
+      "description": "Course modules."
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Long descriptive name (preferably less than 10 words)."
+          },
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the topic."
+          }
+        },
+        "required": ["name", "color"],
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors')."
+      },
+      "description": "Question topics (visible to students)."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
+          },
+          "shortName": {
+            "type": "string",
+            "description": "Short name (preferably 2 to 7 characters)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Long descriptive name (preferably less than 10 words)."
+          },
+          "color": {
+            "$ref": "#/definitions/ColorJsonSchema"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the tag."
+          }
+        },
+        "required": ["name", "color"],
+        "description": "A single tag description."
+      },
+      "description": "Question tags (not visible to students)."
+    },
+    "sharingSets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the sharing set."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the sharing set."
+          }
+        },
+        "required": ["name"],
+        "description": "A sharing set description."
+      },
+      "description": "Sharing sets."
+    }
+  },
+  "required": ["name", "title", "topics"],
+  "additionalProperties": false,
+  "description": "The specification file for a course.",
+  "title": "Course information",
+  "definitions": {
+    "CommentJsonSchema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {}
+        }
+      ],
+      "description": "Arbitrary comment for reference purposes."
+    },
+    "ColorJsonSchema": {
+      "type": "string",
+      "enum": [
+        "red1",
+        "red2",
+        "red3",
+        "pink1",
+        "pink2",
+        "pink3",
+        "purple1",
+        "purple2",
+        "purple3",
+        "blue1",
+        "blue2",
+        "blue3",
+        "turquoise1",
+        "turquoise2",
+        "turquoise3",
+        "green1",
+        "green2",
+        "green3",
+        "yellow1",
+        "yellow2",
+        "yellow3",
+        "orange1",
+        "orange2",
+        "orange3",
+        "brown1",
+        "brown2",
+        "brown3",
+        "gray1",
+        "gray2",
+        "gray3"
+      ],
+      "description": "A color name."
+    }
+  }
+}

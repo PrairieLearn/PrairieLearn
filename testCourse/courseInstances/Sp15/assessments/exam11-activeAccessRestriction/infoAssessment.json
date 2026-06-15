@@ -1,0 +1,35 @@
+{
+  "uuid": "db241fb7-8ca4-4316-a92d-85c7753c6d9c",
+  "type": "Exam",
+  "title": "Test Active Access Rule",
+  "set": "Exam",
+  "number": "11",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2010-01-01T00:00:01" },
+        "due": { "date": "2010-01-01T23:59:59" },
+        "durationMinutes": 50
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2020-01-01T00:00:01" },
+        "score": { "hidden": true, "visibleFromDate": "2020-01-01T00:00:01" }
+      },
+      "beforeRelease": { "listed": true }
+    }
+  ],
+  "shuffleQuestions": false,
+  "zones": [
+    {
+      "title": "Hard questions",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": [5, 3, 1] },
+        { "id": "fossilFuelsRadio", "autoPoints": [17, 13, 7, 2] },
+        { "id": "partialCredit1", "autoPoints": [19] },
+        { "id": "partialCredit2", "autoPoints": [9, 7, 5, 3] },
+        { "id": "partialCredit3", "autoPoints": [13, 13, 8, 0.5, 0.1] },
+        { "id": "workspace", "autoPoints": [10] }
+      ]
+    }
+  ]
+}

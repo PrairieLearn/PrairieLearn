@@ -1,0 +1,1 @@
+This file contains the value {{params.random_value}}, which is a random value between 0 and 1000.

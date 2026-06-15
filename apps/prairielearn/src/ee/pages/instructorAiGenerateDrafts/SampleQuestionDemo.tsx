@@ -1,0 +1,332 @@
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import CardBody from 'react-bootstrap/CardBody';
+import CardFooter from 'react-bootstrap/CardFooter';
+import CardHeader from 'react-bootstrap/CardHeader';
+import FormCheck from 'react-bootstrap/FormCheck';
+import FormControl from 'react-bootstrap/FormControl';
+import InputGroup from 'react-bootstrap/InputGroup';
+import InputGroupText from 'react-bootstrap/InputGroupText';
+
+import { run } from '@prairielearn/run';
+
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
+
+import {
+  type ExamplePromptWithId,
+  type SampleQuestionVariant,
+  type VariantOption,
+  generateSampleQuestionVariant,
+  variantOptionToString,
+} from './aiGeneratedQuestionSamples.js';
+
+export function SampleQuestionDemo({
+  prompt,
+  initialVariant,
+  header,
+}: {
+  prompt: ExamplePromptWithId;
+  initialVariant?: SampleQuestionVariant;
+  header?: ReactNode;
+}) {
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
+
+  // Used if the question receives a number or string response
+  const [userInputResponse, setUserInputResponse] = useState('');
+
+  // Used if the question has a checkbox or multiple choice response
+  const [selectedOptions, setSelectedOptions] = useState<Set<string>>(() => new Set<string>());
+
+  const [grade, setGrade] = useState<number | null>(null);
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSelectOption = (option: string) => {
+    if (prompt.answerType === 'radio') {
+      // The user can only select one option.
+      setSelectedOptions(new Set([option]));
+      return;
+    }
+    setSelectedOptions((prevSelectedOptions) => {
+      const newSelectedOptions = new Set(prevSelectedOptions);
+      if (newSelectedOptions.has(option)) {
+        newSelectedOptions.delete(option);
+      } else {
+        newSelectedOptions.add(option);
+      }
+      return newSelectedOptions;
+    });
+  };
+
+  const handleGenerateNewVariant = () => {
+    // Clear the grade shown to the user
+    setGrade(null);
+
+    // Clear the user input response
+    setUserInputResponse('');
+
+    // Clear the user's selected options
+    setSelectedOptions(new Set<string>());
+
+    // Generate a new question variant
+    const questionVariant = generateSampleQuestionVariant(prompt.id);
+    setVariant(questionVariant);
+  };
+
+  // When a new variant is loaded, typeset the MathJax content.
+  useLayoutEffect(() => {
+    if (cardRef.current) {
+      void mathjaxTypeset([cardRef.current]);
+    }
+  }, [variant.question]);
+
+  const handleGrade = () => {
+    if (variant.answerType === 'number' && prompt.answerType === 'number') {
+      const responseNum = Number.parseFloat(userInputResponse);
+
+      const rtol = prompt.rtol;
+      const atol = prompt.atol;
+
+      // Do not use relative error if the answer is 0 to avoid division by zero
+      const relativeError =
+        variant.correctAnswer !== 0
+          ? Math.abs((responseNum - variant.correctAnswer) / variant.correctAnswer)
+          : 0;
+
+      const absoluteError = Math.abs(responseNum - variant.correctAnswer);
+
+      const relativeErrorValid =
+        rtol && variant.correctAnswer !== 0 ? relativeError <= rtol : false;
+      const absoluteErrorValid = atol ? absoluteError <= atol : false;
+
+      const isValid =
+        responseNum === variant.correctAnswer ||
+        (rtol && relativeErrorValid) ||
+        (atol && absoluteErrorValid);
+
+      if (isValid) {
+        setGrade(100);
+      } else {
+        setGrade(0);
+      }
+    } else if (variant.answerType === 'string') {
+      const isValid = userInputResponse === variant.correctAnswer;
+      setGrade(isValid ? 100 : 0);
+    } else if (variant.answerType === 'radio') {
+      const correctAnswer = variant.correctAnswer[0].value;
+      const isValid = selectedOptions.has(correctAnswer);
+      setGrade(isValid ? 100 : 0);
+    } else if (variant.answerType === 'checkbox') {
+      // For checkbox grading, every selected correct and unselected incorrect answer counts as 1 point.
+      // The final grade is the sum of the points earned divided by the number of options.
+
+      const numCorrectSelectedAnswers = variant.correctAnswer.reduce((acc, option) => {
+        if (selectedOptions.has(option.value)) {
+          return acc + 1;
+        }
+        return acc;
+      }, 0);
+
+      const correctAnswers = new Set(variant.correctAnswer.map((option) => option.value));
+
+      const numCorrectUnselectedAnswers = variant.options.reduce((acc, option) => {
+        if (!correctAnswers.has(option.value) && !selectedOptions.has(option.value)) {
+          return acc + 1;
+        }
+        return acc;
+      }, 0);
+
+      setGrade(
+        100 * ((numCorrectSelectedAnswers + numCorrectUnselectedAnswers) / variant.options.length),
+      );
+    }
+  };
+
+  // The correct answer to the problem, displayed to the user
+  const answerText = run((): string => {
+    if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
+      return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
+    }
+    if (variant.answerType === 'number') {
+      // Round the answer to 4 decimal places
+      return String(Math.round(variant.correctAnswer * 1e4) / 1e4);
+    }
+    return String(variant.correctAnswer);
+  });
+
+  const placeholder = run(() => {
+    const placeholderText: string = prompt.answerType;
+    if (prompt.answerType === 'number') {
+      // Add relative and absolute tolerance if available
+      if (prompt.rtol && prompt.atol) {
+        return `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
+      } else if (prompt.rtol) {
+        return `${placeholderText} (rtol=${prompt.rtol})`;
+      } else if (prompt.atol) {
+        return `${placeholderText} (atol=${prompt.atol})`;
+      }
+    }
+    return placeholderText;
+  });
+
+  return (
+    <Card ref={cardRef}>
+      {header && <CardHeader>{header}</CardHeader>}
+      <CardBody>
+        {/* Index keys are needed to disambiguate duplicate math expressions (e.g. two "$ c $")
+            while content in the key forces DOM recreation when values change between variants. */}
+        {
+          /* eslint-disable @eslint-react/no-array-index-key */
+          variant.question
+            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+            .filter(Boolean)
+            .map((part, index) => {
+              // Bold text
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return (
+                  <strong key={`bold-${index}-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>
+                );
+              }
+
+              // MathJax
+              if (
+                (part.startsWith('$$') && part.endsWith('$$')) ||
+                (part.startsWith('$') && part.endsWith('$'))
+              ) {
+                return <span key={`math-${index}-${part.slice(2, -2)}`}>{part}</span>;
+              }
+
+              // Regular text
+              return <span key={`text-${index}`}>{part}</span>;
+            })
+          /* eslint-enable @eslint-react/no-array-index-key */
+        }
+        {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
+          <NumericOrStringInput
+            userInputResponse={userInputResponse}
+            placeholder={placeholder}
+            grade={grade}
+            answerLabel={prompt.answerLabel}
+            answerUnits={prompt.answerUnits}
+            onChange={setUserInputResponse}
+          />
+        )}
+        {(variant.answerType === 'checkbox' || variant.answerType === 'radio') && (
+          <CheckboxOrRadioInput
+            selectedOptions={selectedOptions}
+            options={variant.options}
+            grade={grade}
+            answerType={variant.answerType}
+            onSelectOption={handleSelectOption}
+          />
+        )}
+      </CardBody>
+      <CardFooter>
+        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+          <i>Answer: {answerText}</i>
+          <div className="flex-grow-1" />
+          <div className="d-flex align-items-center gap-2">
+            <Button onClick={handleGenerateNewVariant}>
+              <span className="text-nowrap">New variant</span>
+            </Button>
+
+            <Button onClick={handleGrade}>Grade</Button>
+          </div>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function FeedbackBadge({ grade }: { grade: number }) {
+  const badgeType = run(() => {
+    if (grade === 100) {
+      return 'bg-success';
+    } else if (grade > 0) {
+      return 'bg-warning';
+    } else {
+      return 'bg-danger';
+    }
+  });
+  return <span className={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
+}
+
+function NumericOrStringInput({
+  userInputResponse,
+  placeholder,
+  grade,
+  answerLabel,
+  answerUnits,
+  onChange,
+}: {
+  userInputResponse: string;
+  placeholder: string;
+  grade: number | null;
+  answerLabel: string;
+  answerUnits?: string;
+  onChange: (text: string) => void;
+}) {
+  return (
+    <InputGroup className="mt-2">
+      <InputGroupText
+        key={answerLabel}
+        as="label"
+        htmlFor="sample-question-response"
+        id="answer-label"
+      >
+        {answerLabel}
+      </InputGroupText>
+      <FormControl
+        id="sample-question-response"
+        value={userInputResponse}
+        type="text"
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.currentTarget.value)}
+      />
+      {(answerUnits || grade !== null) && (
+        <InputGroupText>
+          {answerUnits && <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
+          {grade !== null && <FeedbackBadge grade={grade} />}
+        </InputGroupText>
+      )}
+    </InputGroup>
+  );
+}
+
+function CheckboxOrRadioInput({
+  selectedOptions,
+  options,
+  grade,
+  answerType,
+  onSelectOption,
+}: {
+  selectedOptions: Set<string>;
+  options: VariantOption[];
+  grade: number | null;
+  answerType: 'checkbox' | 'radio';
+  onSelectOption: (option: string) => void;
+}) {
+  return (
+    <div className="mt-2">
+      {options.map((option) => (
+        <FormCheck
+          key={option.value}
+          id={`check-${option.value}`}
+          type={answerType}
+          label={variantOptionToString(option)}
+          value={option.value}
+          checked={selectedOptions.has(option.value)}
+          onChange={() => onSelectOption(option.value)}
+        />
+      ))}
+      {grade !== null && (
+        <div className="mt-2">
+          <FeedbackBadge grade={grade} />
+        </div>
+      )}
+    </div>
+  );
+}

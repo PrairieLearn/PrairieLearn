@@ -1,0 +1,30 @@
+{
+  "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
+  "type": "Exam",
+  "title": "Exam with active access restriction",
+  "set": "Exam",
+  "number": "3",
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2030-01-01T00:00:01" },
+        "due": { "date": "2030-01-01T23:59:59" },
+        "durationMinutes": 50
+      },
+      "afterComplete": {
+        "questions": { "hidden": true, "visibleFromDate": "2030-01-04T00:00:01" }
+      },
+      "beforeRelease": { "listed": true }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Math Questions",
+      "questions": [
+        { "id": "demo/calculation", "autoPoints": [10, 9, 8, 7, 6] },
+        { "id": "demo/randomMultipleChoice", "autoPoints": [25, 24, 23, 22, 21] },
+        { "id": "demo/randomCheckbox", "autoPoints": [25, 24, 23, 22, 21] }
+      ]
+    }
+  ]
+}

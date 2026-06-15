@@ -1,0 +1,36 @@
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "Exam",
+  "title": "Test mixed real-time grading control",
+  "set": "Exam",
+  "number": "17",
+  "shuffleQuestions": false,
+  "accessControl": [
+    { "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } } }
+  ],
+  "zones": [
+    {
+      "title": "Auto-graded questions with real-time grading disabled",
+      "questions": [{ "id": "partialCredit1", "autoPoints": 5, "allowRealTimeGrading": false }]
+    },
+    {
+      "title": "Auto-graded questions with real-time grading enabled",
+      "questions": [
+        { "id": "partialCredit2", "autoPoints": 5, "allowRealTimeGrading": true },
+        { "id": "partialCredit3", "autoPoints": 5, "allowRealTimeGrading": true }
+      ]
+    },
+    {
+      "title": "Manually-graded questions with real-time grading disabled",
+      "questions": [
+        { "id": "manualGrade/shortAnswer", "manualPoints": 5, "allowRealTimeGrading": false }
+      ]
+    },
+    {
+      "title": "Questions with mixed manual and auto grading with real-time grading disabled",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": 5, "manualPoints": 5, "allowRealTimeGrading": false }
+      ]
+    }
+  ]
+}

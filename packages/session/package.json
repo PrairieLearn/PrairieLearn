@@ -1,0 +1,42 @@
+{
+  "name": "@prairielearn/session",
+  "version": "4.0.8",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/session"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.25 <5",
+    "cookie": "^0.7.2 <1",
+    "cookie-signature": "^1.2.2",
+    "express-async-handler": "^1.2.0",
+    "on-headers": "^1.1.0",
+    "uid-safe": "^2.1.5"
+  },
+  "devDependencies": {
+    "@prairielearn/express-test-utils": "workspace:^",
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/cookie": "^0.6.0 <1",
+    "@types/cookie-signature": "^1.1.2",
+    "@types/node": "^24.12.4",
+    "@types/on-headers": "^1.0.4",
+    "@types/uid-safe": "^2.1.5",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "express": "^4.22.1 <5",
+    "fetch-cookie": "^3.2.0",
+    "set-cookie-parser": "^3.1.0",
+    "vitest": "^4.1.7"
+  }
+}

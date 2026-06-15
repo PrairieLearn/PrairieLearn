@@ -1,0 +1,16 @@
+columns
+    average_jobs: double precision not null
+    config: jsonb
+    date: timestamp with time zone not null default now()
+    healthy: boolean
+    id: bigint not null default nextval('grader_loads_id_seq'::regclass)
+    instance_id: text not null
+    lifecycle_state: text
+    max_jobs: double precision not null
+    queue_name: text not null
+    started_at: timestamp with time zone
+
+indexes
+    grader_loads_pkey: PRIMARY KEY (id) USING btree (id)
+    grader_loads_instance_id_key: UNIQUE (instance_id) USING btree (instance_id)
+    grader_loads_date_idx: USING btree (date)

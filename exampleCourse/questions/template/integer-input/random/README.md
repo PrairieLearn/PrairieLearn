@@ -1,0 +1,1 @@
+This question uses `<pl-integer-input>` with a randomly generated prompt and correct answer. An angle in radians is randomly selected from a pre-defined list, and the corresponding angle in degrees is selected as the correct answer.

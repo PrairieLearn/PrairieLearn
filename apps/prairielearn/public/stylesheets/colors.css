@@ -1,0 +1,427 @@
+:root {
+  --color-red1: #ffccbc;
+  --color-red2: #ff6c5c;
+  --color-red3: #c72c1c;
+  --color-pink1: #ffbcd8;
+  --color-pink2: #fa5c98;
+  --color-pink3: #ba1c58;
+  --color-purple1: #dcc6e0;
+  --color-purple2: #9b59b6;
+  --color-purple3: #5e147d;
+  --color-blue1: #39d5ff;
+  --color-blue2: #1297e0;
+  --color-blue3: #0057a0;
+  --color-turquoise1: #5efaf7;
+  --color-turquoise2: #27cbc0;
+  --color-turquoise3: #008b80;
+  --color-green1: #8effc1;
+  --color-green2: #2ecc71;
+  --color-green3: #008c31;
+  --color-yellow1: #fdeea5;
+  --color-yellow2: #f5ce32;
+  --color-yellow3: #d6a100;
+  --color-orange1: #ffdcb5;
+  --color-orange2: #ff926b;
+  --color-orange3: #c3522b;
+  --color-brown1: #e6bfa8;
+  --color-brown2: #c0957c;
+  --color-brown3: #7d5640;
+  --color-gray1: #e0e0e0;
+  --color-gray2: #909090;
+  --color-gray3: #505050;
+}
+
+.btn.btn-badge {
+  --bs-badge-padding-x: 0.65em;
+  --bs-badge-padding-y: 0.35em;
+  --bs-badge-font-size: 0.75em;
+  --bs-badge-font-weight: 700;
+  --bs-badge-color: #fff;
+  --bs-badge-border-radius: var(--bs-border-radius);
+  padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+  font-size: var(--bs-badge-font-size);
+  font-weight: var(--bs-badge-font-weight);
+  line-height: 1;
+  border-radius: var(--bs-badge-border-radius);
+  color: var(--pl-badge-text);
+  background-color: var(--pl-badge-bg);
+  border-color: var(--pl-badge-border);
+}
+.btn.btn-badge:hover {
+  background-color: color-mix(in srgb, var(--pl-badge-bg), black 7%);
+  border-color: color-mix(in srgb, var(--pl-badge-border), black 12%);
+}
+.btn.btn-badge:active,
+.btn.btn-badge.active {
+  background-color: color-mix(in srgb, var(--pl-badge-bg), black 14%);
+  border-color: color-mix(in srgb, var(--pl-badge-border), black 22%);
+}
+.btn.btn-badge:disabled,
+.btn.btn-badge.disabled {
+  background-color: var(--pl-badge-bg);
+  border-color: var(--pl-badge-border);
+}
+.btn.btn-badge:focus-visible {
+  outline: 2px solid var(--pl-badge-text);
+  outline-offset: 1px;
+}
+
+.badge.color-red1 {
+  color: #c73000;
+  background-color: #ffebe4;
+  border: 1px solid #ffccbc;
+}
+
+.btn.btn-badge.color-red1 {
+  --pl-badge-text: #c73000;
+  --pl-badge-bg: #ffebe4;
+  --pl-badge-border: #ffccbc;
+}
+
+.badge.color-red2 {
+  color: #9c0f00;
+  background-color: #ffc4be;
+  border: 1px solid #ff6c5c;
+}
+
+.btn.btn-badge.color-red2 {
+  --pl-badge-text: #9c0f00;
+  --pl-badge-bg: #ffc4be;
+  --pl-badge-border: #ff6c5c;
+}
+
+.badge.color-red3 {
+  color: #5a140d;
+  background-color: #f2aba3;
+  border: 1px solid #c72c1c;
+}
+
+.btn.btn-badge.color-red3 {
+  --pl-badge-text: #5a140d;
+  --pl-badge-bg: #f2aba3;
+  --pl-badge-border: #c72c1c;
+}
+
+.badge.color-pink1 {
+  color: #c70053;
+  background-color: #ffe4ef;
+  border: 1px solid #ffbcd8;
+}
+
+.btn.btn-badge.color-pink1 {
+  --pl-badge-text: #c70053;
+  --pl-badge-bg: #ffe4ef;
+  --pl-badge-border: #ffbcd8;
+}
+
+.badge.color-pink2 {
+  color: #95053c;
+  background-color: #fdbed6;
+  border: 1px solid #fa5c98;
+}
+
+.btn.btn-badge.color-pink2 {
+  --pl-badge-text: #95053c;
+  --pl-badge-bg: #fdbed6;
+  --pl-badge-border: #fa5c98;
+}
+
+.badge.color-pink3 {
+  color: #540d28;
+  background-color: #f2a8c4;
+  border: 1px solid #ba1c58;
+}
+
+.btn.btn-badge.color-pink3 {
+  --pl-badge-text: #540d28;
+  --pl-badge-bg: #f2a8c4;
+  --pl-badge-border: #ba1c58;
+}
+
+.badge.color-purple1 {
+  color: #72437b;
+  background-color: #f1e8f3;
+  border: 1px solid #dcc6e0;
+}
+
+.btn.btn-badge.color-purple1 {
+  --pl-badge-text: #72437b;
+  --pl-badge-bg: #f1e8f3;
+  --pl-badge-border: #dcc6e0;
+}
+
+.badge.color-purple2 {
+  color: #472555;
+  background-color: #d7bde2;
+  border: 1px solid #9b59b6;
+}
+
+.btn.btn-badge.color-purple2 {
+  --pl-badge-text: #472555;
+  --pl-badge-bg: #d7bde2;
+  --pl-badge-border: #9b59b6;
+}
+
+.badge.color-purple3 {
+  color: #2a0938;
+  background-color: #dcaaf1;
+  border: 1px solid #5e147d;
+}
+
+.btn.btn-badge.color-purple3 {
+  --pl-badge-text: #2a0938;
+  --pl-badge-bg: #dcaaf1;
+  --pl-badge-border: #5e147d;
+}
+
+.badge.color-blue1 {
+  color: #006f8c;
+  background-color: #b0eeff;
+  border: 1px solid #39d5ff;
+}
+
+.btn.btn-badge.color-blue1 {
+  --pl-badge-text: #006f8c;
+  --pl-badge-bg: #b0eeff;
+  --pl-badge-border: #39d5ff;
+}
+
+.badge.color-blue2 {
+  color: #084465;
+  background-color: #9cd7f7;
+  border: 1px solid #1297e0;
+}
+
+.btn.btn-badge.color-blue2 {
+  --pl-badge-text: #084465;
+  --pl-badge-bg: #9cd7f7;
+  --pl-badge-border: #1297e0;
+}
+
+.badge.color-blue3 {
+  color: #002748;
+  background-color: #7ec4ff;
+  border: 1px solid #0057a0;
+}
+
+.btn.btn-badge.color-blue3 {
+  --pl-badge-text: #002748;
+  --pl-badge-bg: #7ec4ff;
+  --pl-badge-border: #0057a0;
+}
+
+.badge.color-turquoise1 {
+  color: #047573;
+  background-color: #bffdfc;
+  border: 1px solid #5efaf7;
+}
+
+.btn.btn-badge.color-turquoise1 {
+  --pl-badge-text: #047573;
+  --pl-badge-bg: #bffdfc;
+  --pl-badge-border: #5efaf7;
+}
+
+.badge.color-turquoise2 {
+  color: #125b56;
+  background-color: #a5eee9;
+  border: 1px solid #27cbc0;
+}
+
+.btn.btn-badge.color-turquoise2 {
+  --pl-badge-text: #125b56;
+  --pl-badge-bg: #a5eee9;
+  --pl-badge-border: #27cbc0;
+}
+
+.badge.color-turquoise3 {
+  color: #003f3a;
+  background-color: #6bfff3;
+  border: 1px solid #008b80;
+}
+
+.btn.btn-badge.color-turquoise3 {
+  --pl-badge-text: #003f3a;
+  --pl-badge-bg: #6bfff3;
+  --pl-badge-border: #008b80;
+}
+
+.badge.color-green1 {
+  color: #00632d;
+  background-color: #d2ffe6;
+  border: 1px solid #8effc1;
+}
+
+.btn.btn-badge.color-green1 {
+  --pl-badge-text: #00632d;
+  --pl-badge-bg: #d2ffe6;
+  --pl-badge-border: #8effc1;
+}
+
+.badge.color-green2 {
+  color: #155c33;
+  background-color: #aaecc6;
+  border: 1px solid #2ecc71;
+}
+
+.btn.btn-badge.color-green2 {
+  --pl-badge-text: #155c33;
+  --pl-badge-bg: #aaecc6;
+  --pl-badge-border: #2ecc71;
+}
+
+.badge.color-green3 {
+  color: #003f16;
+  background-color: #6bff9f;
+  border: 1px solid #008c31;
+}
+
+.btn.btn-badge.color-green3 {
+  --pl-badge-text: #003f16;
+  --pl-badge-bg: #6bff9f;
+  --pl-badge-border: #008c31;
+}
+
+.badge.color-yellow1 {
+  color: #665502;
+  background-color: #fef8db;
+  border: 1px solid #fdeea5;
+}
+
+.btn.btn-badge.color-yellow1 {
+  --pl-badge-text: #665502;
+  --pl-badge-bg: #fef8db;
+  --pl-badge-border: #fdeea5;
+}
+
+.badge.color-yellow2 {
+  color: #7f6606;
+  background-color: #fbebad;
+  border: 1px solid #f5ce32;
+}
+
+.btn.btn-badge.color-yellow2 {
+  --pl-badge-text: #7f6606;
+  --pl-badge-bg: #fbebad;
+  --pl-badge-border: #f5ce32;
+}
+
+.badge.color-yellow3 {
+  color: #604800;
+  background-color: #ffe289;
+  border: 1px solid #d6a100;
+}
+
+.btn.btn-badge.color-yellow3 {
+  --pl-badge-text: #604800;
+  --pl-badge-bg: #ffe289;
+  --pl-badge-border: #d6a100;
+}
+
+.badge.color-orange1 {
+  color: #995000;
+  background-color: #fff1e1;
+  border: 1px solid #ffdcb5;
+}
+
+.btn.btn-badge.color-orange1 {
+  --pl-badge-text: #995000;
+  --pl-badge-bg: #fff1e1;
+  --pl-badge-border: #ffdcb5;
+}
+
+.badge.color-orange2 {
+  color: #a32b00;
+  background-color: #ffd3c4;
+  border: 1px solid #ff926b;
+}
+
+.btn.btn-badge.color-orange2 {
+  --pl-badge-text: #a32b00;
+  --pl-badge-bg: #ffd3c4;
+  --pl-badge-border: #ff926b;
+}
+
+.badge.color-orange3 {
+  color: #582513;
+  background-color: #ebb8a6;
+  border: 1px solid #c3522b;
+}
+
+.btn.btn-badge.color-orange3 {
+  --pl-badge-text: #582513;
+  --pl-badge-bg: #ebb8a6;
+  --pl-badge-border: #c3522b;
+}
+
+.badge.color-brown1 {
+  color: #8b4d28;
+  background-color: #f5e5dc;
+  border: 1px solid #e6bfa8;
+}
+
+.btn.btn-badge.color-brown1 {
+  --pl-badge-text: #8b4d28;
+  --pl-badge-bg: #f5e5dc;
+  --pl-badge-border: #e6bfa8;
+}
+
+.badge.color-brown2 {
+  color: #60412e;
+  background-color: #e6d5cb;
+  border: 1px solid #c0957c;
+}
+
+.btn.btn-badge.color-brown2 {
+  --pl-badge-text: #60412e;
+  --pl-badge-bg: #e6d5cb;
+  --pl-badge-border: #c0957c;
+}
+
+.badge.color-brown3 {
+  color: #38271d;
+  background-color: #d4b9aa;
+  border: 1px solid #7d5640;
+}
+
+.btn.btn-badge.color-brown3 {
+  --pl-badge-text: #38271d;
+  --pl-badge-bg: #d4b9aa;
+  --pl-badge-border: #7d5640;
+}
+
+.badge.color-gray1 {
+  color: #656565;
+  background-color: #f3f3f3;
+  border: 1px solid #e0e0e0;
+}
+
+.btn.btn-badge.color-gray1 {
+  --pl-badge-text: #656565;
+  --pl-badge-bg: #f3f3f3;
+  --pl-badge-border: #e0e0e0;
+}
+
+.badge.color-gray2 {
+  color: #414141;
+  background-color: #d3d3d3;
+  border: 1px solid #909090;
+}
+
+.btn.btn-badge.color-gray2 {
+  --pl-badge-text: #414141;
+  --pl-badge-bg: #d3d3d3;
+  --pl-badge-border: #909090;
+}
+
+.badge.color-gray3 {
+  color: #242424;
+  background-color: #bdbdbd;
+  border: 1px solid #505050;
+}
+
+.btn.btn-badge.color-gray3 {
+  --pl-badge-text: #242424;
+  --pl-badge-bg: #bdbdbd;
+  --pl-badge-border: #505050;
+}

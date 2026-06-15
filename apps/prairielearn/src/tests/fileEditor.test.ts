@@ -1,0 +1,1224 @@
+import { readFileSync } from 'node:fs';
+import http from 'node:http';
+import nodeUrl from 'node:url';
+import * as path from 'path';
+
+import * as cheerio from 'cheerio';
+import { type Element } from 'domhandler';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+
+import { withoutLogging } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+
+import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
+import { config } from '../lib/config.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { encodePath } from '../lib/uri-util.js';
+
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const locals: Record<string, any> = {};
+let page: string;
+let elemList: cheerio.Cheerio<Element>;
+
+// Uses course within tests/testFileEditor
+const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
+
+let courseRepo: CourseRepoFixture;
+
+const courseInstancePath = path.join('courseInstances', 'Fa18');
+const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
+const infoCoursePath = 'infoCourse.json';
+const infoCourseInstancePath = path.join(courseInstancePath, 'infoCourseInstance.json');
+const infoAssessmentPath = path.join(assessmentPath, 'infoAssessment.json');
+const questionPath = path.join('questions', 'test', 'question');
+const questionJsonPath = path.join(questionPath, 'info.json');
+const questionHtmlPath = path.join(questionPath, 'question.html');
+const questionPythonPath = path.join(questionPath, 'server.py');
+
+const infoCourseJsonA = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+);
+const infoCourseJsonB = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+);
+infoCourseJsonB.title = 'Test Course (Renamed)';
+const infoCourseJsonC = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+);
+infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
+
+const infoCourseInstanceJsonA = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
+);
+const infoCourseInstanceJsonB = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
+);
+infoCourseInstanceJsonB.longName = 'Fall 2019';
+const infoCourseInstanceJsonC = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
+);
+infoCourseInstanceJsonC.longName = 'Spring 2020';
+
+const infoAssessmentJsonA = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+);
+const infoAssessmentJsonB = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+);
+infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
+const infoAssessmentJsonC = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+);
+infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Again)';
+
+const questionJsonA = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+);
+const questionJsonB = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+);
+questionJsonB.title = 'Test question (Renamed)';
+const questionJsonC = JSON.parse(
+  readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+);
+questionJsonC.title = 'Test question (Renamed Yet Again)';
+
+const questionHtmlA = readFileSync(path.join(courseTemplateDir, questionHtmlPath), 'utf-8');
+const questionHtmlB = questionHtmlA + '\nAnother line of text.\n\n';
+const questionHtmlC = questionHtmlB + '\nYet another line of text.\n\n';
+
+const questionPythonA = readFileSync(path.join(courseTemplateDir, questionPythonPath), 'utf-8');
+const questionPythonB = questionPythonA + '\n# Comment.\n\n';
+const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
+
+const siteUrl = 'http://localhost:' + config.serverPort;
+const baseUrl = siteUrl + '/pl';
+const courseAdminUrl = baseUrl + '/course/1/course_admin';
+const courseAdminSettingsUrl = courseAdminUrl + '/settings';
+const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
+const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
+const courseInstanceCourseAdminUrl = courseInstanceUrl + '/course_admin';
+const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/settings';
+const courseInstanceCourseAdminEditUrl =
+  courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
+const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
+const courseInstanceInstanceAdminEditUrl =
+  courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
+const assessmentUrl = courseInstanceUrl + '/assessment/1';
+const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
+const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
+const courseInstanceQuestionJsonEditUrl =
+  courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
+const courseInstanceQuestionHtmlEditUrl =
+  courseInstanceUrl + `/question/1/file_edit/${encodePath(questionHtmlPath)}`;
+const courseInstanceQuestionPythonEditUrl =
+  courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
+const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const gitPathUrl = courseAdminUrl + '/file_edit/' + encodePath('.git/HEAD');
+const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
+
+const findEditUrlData = [
+  {
+    name: 'course admin via course instance',
+    selector: '[data-testid="edit-course-configuration-link"]',
+    url: courseInstanceCourseAdminSettingsUrl,
+    expectedEditUrl: courseInstanceCourseAdminEditUrl,
+  },
+  {
+    name: 'course admin',
+    selector: '[data-testid="edit-course-configuration-link"]',
+    url: courseAdminSettingsUrl,
+    expectedEditUrl: courseAdminEditUrl,
+  },
+];
+
+const verifyEditData = [
+  {
+    isJson: true,
+    url: courseAdminEditUrl,
+    path: infoCoursePath,
+    contentsA: jsonToContents(infoCourseJsonA),
+    contentsB: jsonToContents(infoCourseJsonB),
+    contentsC: jsonToContents(infoCourseJsonC),
+    contentsX: 'garbage',
+  },
+  {
+    isJson: true,
+    url: courseInstanceInstanceAdminEditUrl,
+    path: infoCourseInstancePath,
+    contentsA: jsonToContents(infoCourseInstanceJsonA),
+    contentsB: jsonToContents(infoCourseInstanceJsonB),
+    contentsC: jsonToContents(infoCourseInstanceJsonC),
+    contentsX: 'garbage',
+  },
+  {
+    isJson: true,
+    url: assessmentEditUrl,
+    path: infoAssessmentPath,
+    contentsA: jsonToContents(infoAssessmentJsonA),
+    contentsB: jsonToContents(infoAssessmentJsonB),
+    contentsC: jsonToContents(infoAssessmentJsonC),
+    contentsX: 'garbage',
+  },
+  {
+    isJson: true,
+    url: courseInstanceQuestionJsonEditUrl,
+    path: questionJsonPath,
+    contentsA: jsonToContents(questionJsonA),
+    contentsB: jsonToContents(questionJsonB),
+    contentsC: jsonToContents(questionJsonC),
+    contentsX: 'garbage',
+  },
+  {
+    isJson: false,
+    url: courseInstanceQuestionHtmlEditUrl,
+    path: questionHtmlPath,
+    contentsA: questionHtmlA,
+    contentsB: questionHtmlB,
+    contentsC: questionHtmlC,
+    contentsX: 'garbage',
+  },
+  {
+    isJson: false,
+    url: courseInstanceQuestionPythonEditUrl,
+    path: questionPythonPath,
+    contentsA: questionPythonA,
+    contentsB: questionPythonB,
+    contentsC: questionPythonC,
+    contentsX: 'garbage',
+  },
+];
+
+const verifyFileData = [
+  {
+    title: 'question',
+    url: courseInstanceQuestionUrl + '/file_view',
+    path: questionPath,
+    clientFilesDir: 'clientFilesQuestion',
+    testFilesDir: 'tests',
+  },
+  {
+    title: 'assessment',
+    url: assessmentUrl + '/file_view',
+    path: assessmentPath,
+    clientFilesDir: 'clientFilesAssessment',
+  },
+  {
+    title: 'course instance',
+    url: courseInstanceInstanceAdminUrl + '/file_view',
+    path: courseInstancePath,
+    clientFilesDir: 'clientFilesCourseInstance',
+  },
+  {
+    title: 'course (through course instance)',
+    url: courseInstanceCourseAdminUrl + '/file_view',
+    path: '',
+    clientFilesDir: 'clientFilesCourse',
+    serverFilesDir: 'serverFilesCourse',
+  },
+  {
+    title: 'course',
+    url: courseAdminUrl + '/file_view',
+    path: '',
+    clientFilesDir: 'clientFilesCourse',
+    serverFilesDir: 'serverFilesCourse',
+  },
+];
+
+describe('test file editor', { timeout: 20_000 }, function () {
+  describe('not the test course', function () {
+    beforeAll(async () => {
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    });
+    afterAll(helperServer.after);
+
+    describe('the locals object', function () {
+      it('should be cleared', function () {
+        for (const prop in locals) {
+          delete locals[prop];
+        }
+      });
+    });
+
+    describe('verify existence of edit links', function () {
+      findEditUrlData.forEach((element) => {
+        findEditUrl(element.name, element.selector, element.url, element.expectedEditUrl);
+      });
+    });
+
+    describe('verify edits', function () {
+      verifyEditData.forEach((element) => {
+        doEdits(element);
+      });
+    });
+
+    describe('hadJsonErrors warning when another file has errors', function () {
+      // Break the question JSON by committing garbage directly in the live repo
+      // and pushing it to origin. The push is necessary because in git mode, the
+      // editor resets to origin before syncing, which would discard a local-only
+      // commit. Then save a valid edit to question.html. The sync will complete
+      // with hadJsonErrors (because of the broken question JSON), but
+      // question.html is not a JSON entity file, so fileMetadata.syncErrors will
+      // be null. The alert should be a warning, not an error.
+      writeAndCommitFileInLive(questionJsonPath, 'garbage');
+      pushFromLive();
+
+      editGet(courseInstanceQuestionHtmlEditUrl, false, false, questionHtmlB, null);
+      editPost(
+        'save_and_sync',
+        questionHtmlC,
+        courseInstanceQuestionHtmlEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Error');
+
+      verifyAlert('alert-warning', 'Other files in this course have sync errors');
+
+      // Cleanup: fix the broken question JSON through the editor.
+      editGet(courseInstanceQuestionJsonEditUrl, false, false, 'garbage', null);
+      editPost(
+        'save_and_sync',
+        jsonToContents(questionJsonA),
+        courseInstanceQuestionJsonEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Success');
+    });
+
+    describe('disallow edits outside course directory', function () {
+      badGet(badPathUrl, 500, false);
+    });
+
+    describe('disallow edits in .git directory', function () {
+      badGet(gitPathUrl, 500, false);
+    });
+
+    describe('verify file handlers', function () {
+      verifyFileData.forEach((element) => {
+        doFiles(element);
+      });
+    });
+  });
+
+  describe('the exampleCourse', function () {
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+
+    afterAll(helperServer.after);
+
+    describe('disallow edits inside exampleCourse', function () {
+      badGet(badExampleCoursePathUrl, 403, true);
+    });
+  });
+});
+
+function badGet(url: string, expected_status: number, should_parse: boolean) {
+  describe('GET to edit url with bad path', function () {
+    it(`should load with status ${expected_status}`, async () => {
+      // `fetch()` pre-normalizes the URL, which means we can't use it to test
+      // path traversal attacks. In this specific case, we'll use `http.request()`
+      // directly to avoid this normalization.
+      await withoutLogging(async () => {
+        const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+          (resolve, reject) => {
+            // We deliberately use the deprecated `node:url#parse()` instead of
+            // `new URL()` to avoid path normalization.
+            const parsedUrl = nodeUrl.parse(url);
+            const req = http.request(
+              {
+                hostname: 'localhost',
+                port: config.serverPort,
+                path: parsedUrl.path,
+                method: 'GET',
+              },
+              (res) => {
+                let data = '';
+
+                res.on('data', (chunk) => {
+                  data += chunk;
+                });
+
+                res.on('end', () => {
+                  resolve({
+                    status: res.statusCode ?? 500,
+                    text: () => Promise.resolve(data),
+                  });
+                });
+              },
+            );
+
+            req.on('error', (err) => {
+              reject(err);
+            });
+
+            req.end();
+          },
+        );
+
+        assert.equal(res.status, expected_status);
+        page = await res.text();
+      });
+    });
+    if (should_parse) {
+      it('should parse', function () {
+        locals.$ = cheerio.load(page);
+      });
+      it('should not have an editor-form', function () {
+        elemList = locals.$('form[name="editor-form"]');
+        assert.lengthOf(elemList, 0);
+      });
+    }
+  });
+}
+
+function editPost(
+  action: string,
+  fileEditContents: string,
+  url: string,
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDiskContents: string | null,
+) {
+  describe(`POST to edit url with action ${action}`, function () {
+    it('should load successfully', async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: action,
+          __csrf_token: locals.__csrf_token,
+          file_edit_contents: b64EncodeUnicode(fileEditContents),
+          file_edit_orig_hash: locals.file_edit_orig_hash,
+        }),
+      });
+      assert.equal(res.status, 200);
+      page = await res.text();
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    if (action === 'save_and_sync') {
+      verifyEdit(
+        expectedToFindResults,
+        expectedToFindChoice,
+        fileEditContents,
+        expectedDiskContents,
+      );
+    }
+  });
+}
+
+function jsonToContents(json: Record<string, any>) {
+  return JSON.stringify(json, null, 4) + '\n';
+}
+
+function findEditUrl(name: string, selector: string, url: string, expectedEditUrl: string) {
+  describe(`GET to ${name}`, function () {
+    it('should load successfully', async () => {
+      const res = await fetch(url);
+      assert.equal(res.status, 200);
+      page = await res.text();
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it(`should contain edit link at ${selector}`, function () {
+      elemList = locals.$(selector);
+      assert.lengthOf(elemList, 1);
+    });
+    it('should match expected url in edit link', function () {
+      assert.equal(siteUrl + elemList[0].attribs.href, expectedEditUrl);
+    });
+  });
+}
+
+function verifyEdit(
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDraftContents: string,
+  expectedDiskContents: string | null,
+) {
+  it('should have a CSRF token', function () {
+    elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
+    assert.lengthOf(elemList, 1);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.__csrf_token = elemList[0].attribs.value;
+    assert.isString(locals.__csrf_token);
+  });
+  it('should have a file_edit_orig_hash', function () {
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
+    assert.lengthOf(elemList, 1);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.file_edit_orig_hash = elemList[0].attribs.value;
+    assert.isString(locals.file_edit_orig_hash);
+  });
+  it('editor element should match expected draft file contents', function () {
+    const editor = locals.$('#file-editor-draft');
+    assert.lengthOf(editor, 1);
+    const fileContents = b64DecodeUnicode(editor.data('contents'));
+    assert.strictEqual(fileContents, expectedDraftContents);
+  });
+  it(`should have save results - ${expectedToFindResults}`, function () {
+    elemList = locals.$('form[name="editor-form"] #job-sequence-results');
+    if (expectedToFindResults) {
+      assert.lengthOf(elemList, 1);
+    } else {
+      assert.lengthOf(elemList, 0);
+    }
+  });
+  it(`should ${expectedToFindChoice ? '' : 'not '}have an editor with disk file contents`, function () {
+    const editor = locals.$('#file-editor-disk');
+    if (expectedToFindChoice) {
+      assert.lengthOf(editor, 1);
+      const fileContents = b64DecodeUnicode(editor.data('contents'));
+      assert.strictEqual(fileContents, expectedDiskContents);
+    } else {
+      assert.lengthOf(editor, 0);
+    }
+  });
+}
+
+function editGet(
+  url: string,
+  expectedToFindResults: boolean,
+  expectedToFindChoice: boolean,
+  expectedDraftContents: string,
+  expectedDiskContents: string | null,
+) {
+  describe('GET to edit url', function () {
+    it('should load successfully', async () => {
+      const res = await fetch(url);
+      assert.equal(res.status, 200);
+      page = await res.text();
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    verifyEdit(
+      expectedToFindResults,
+      expectedToFindChoice,
+      expectedDraftContents,
+      expectedDiskContents,
+    );
+  });
+}
+
+function doEdits(data: {
+  url: string;
+  path: string;
+  contentsA: string;
+  contentsB: string;
+  contentsC: string;
+  contentsX: string;
+  isJson: boolean;
+}) {
+  describe(`edit ${data.path}`, function () {
+    // "live" is a clone of origin (this is what's on the production server)
+    // "dev" is a clone of origin (this is what's on someone's laptop)
+    // "origin" is the bare git repo
+    //
+    // in LIVE
+    // - writeAndCommitFileInLive does git commit
+    // - pullInLive does git pull
+    // in DEV
+    // - pullAndVerifyFileInDev does git pull
+    // - writeAndPushFileInDev does git push
+    //
+    // Remember that "origHash" has whatever was on disk at last GET.
+    //
+    // The below tests are annotated with state of the file under test in
+    // several locations:
+    //
+    // (live at last GET, live, dev, origin)
+    //
+    // Note that "live at last GET" refers to the fact that GET responses
+    // include the hash of the file on disk at the time of the GET, which
+    // is used to detect concurrent modifications. `editGet` and `editPost`
+    // store this hash in `locals` and include it in subsequent `POST` requests.
+
+    editGet(data.url, false, false, data.contentsA, null);
+    // (A, A, A, A)
+
+    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (B, B, A, B)
+
+    verifyAlert('alert-success', 'File was saved and synced successfully.');
+
+    pullAndVerifyFileInDev(data.path, data.contentsB);
+    // (B, B, B, B)
+
+    editGet(data.url, false, false, data.contentsB, null);
+    // (B, B, B, B)
+
+    writeAndCommitFileInLive(data.path, data.contentsA);
+    // (B, A, B, B)
+
+    editGet(data.url, false, false, data.contentsA, null);
+    // (A, A, B, B)
+
+    writeAndCommitFileInLive(data.path, data.contentsB);
+    // (A, B, B, B)
+
+    editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
+    waitForJobSequence(locals, 'Error');
+    // (B, B, B, B)
+
+    pullAndVerifyFileInDev(data.path, data.contentsB);
+    // (B, B, B, B)
+
+    editGet(data.url, false, false, data.contentsB, null);
+    // (B, B, B, B)
+
+    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (A, A, B, A)
+
+    pullAndVerifyFileInDev(data.path, data.contentsA);
+    // (A, A, A, A)
+
+    writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
+    // (A, A, A*, A*)
+
+    editGet(data.url, false, false, data.contentsA, null);
+    // (A, A, A*, A*)
+
+    editPost('save_and_sync', data.contentsC, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (C, C, A*, C)
+
+    pullAndVerifyFileInDev(data.path, data.contentsC);
+    // (C, C, C, C)
+
+    writeAndPushFileInDev('README.md', `Another new readme to test edit of ${data.path}`);
+    // (C, C, C*, C*)
+
+    editGet(data.url, false, false, data.contentsC, null);
+    // (C, C, C*, C*)
+
+    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (B, B, C*, B)
+
+    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (A, A, C*, A)
+
+    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    waitForJobSequence(locals, 'Success');
+    // (B, B, C*, B)
+
+    if (data.isJson) {
+      editPost('save_and_sync', data.contentsX, data.url, true, false, null);
+      waitForJobSequence(locals, 'Error');
+      // (X, X, C*, X) <- successful push, sync completed with per-entity errors
+
+      verifyAlert(
+        'alert-danger',
+        'File was saved, but it contains errors that prevented it from syncing.',
+      );
+
+      pullAndVerifyFileInDev(data.path, data.contentsX);
+      // (X, X, X, X)
+
+      editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+      waitForJobSequence(locals, 'Success');
+      // (A, A, X, A)
+
+      pullAndVerifyFileInDev(data.path, data.contentsA);
+      // (A, A, A, A)
+    }
+  });
+}
+
+function writeAndCommitFileInLive(fileName: string, fileContents: string) {
+  describe(`commit a change to ${fileName} by exec`, function () {
+    it('should write', async () => {
+      await fs.writeFile(path.join(courseRepo.courseLiveDir, fileName), fileContents);
+    });
+    it('should add', async () => {
+      await execa('git', ['add', '-A'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+    it('should commit', async () => {
+      await execa('git', ['commit', '-m', 'commit from writeFile'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function pushFromLive() {
+  describe('push live repo to origin', function () {
+    it('should push', async () => {
+      await execa('git', ['push'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
+  describe(`pull in dev and verify contents of ${fileName}`, function () {
+    it('should pull', async () => {
+      await execa('git', ['pull'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
+    });
+    it('should match contents', function () {
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'),
+        fileContents,
+      );
+    });
+  });
+}
+
+function pullAndVerifyFileNotInDev(fileName: string) {
+  describe(`pull in dev and verify ${fileName} does not exist`, function () {
+    it('should pull', async () => {
+      await execa('git', ['pull'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
+    });
+    it('should not exist', async () => {
+      assert.isFalse(await fs.pathExists(path.join(courseRepo.courseDevDir, fileName)));
+    });
+  });
+}
+
+function writeAndPushFileInDev(fileName: string, fileContents: string) {
+  describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
+    it('should write', async () => {
+      await fs.writeFile(path.join(courseRepo.courseDevDir, fileName), fileContents);
+    });
+    it('should add', async () => {
+      await execa('git', ['add', '-A'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
+    });
+    it('should commit', async () => {
+      await execa('git', ['commit', '-m', 'commit from writeFile'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
+    });
+    it('should push', async () => {
+      await execa('git', ['push'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function verifyAlert(expectedClass: string, expectedMessage: string) {
+  describe('verify alert banner', function () {
+    it(`should show ${expectedClass}`, function () {
+      const alert = locals.$('[data-testid="save-sync-alert"]');
+      assert.lengthOf(alert, 1);
+      assert.isTrue(alert.hasClass(expectedClass));
+      assert.include(alert.text(), expectedMessage);
+    });
+  });
+}
+
+function waitForJobSequence(
+  locals: { job_sequence_id?: string },
+  expectedResult: 'Success' | 'Error',
+) {
+  describe('The job sequence', function () {
+    it('should have an id', async () => {
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      locals.job_sequence_id = jobSequence.id;
+    });
+    it('should complete', async () => {
+      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id!, expectedResult);
+    });
+  });
+}
+
+function doFiles(data: {
+  title: string;
+  url: string;
+  path: string;
+  clientFilesDir: string;
+  serverFilesDir?: string;
+  testFilesDir?: string;
+}) {
+  describe(`test file handlers for ${data.title}`, function () {
+    describe('Files', function () {
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'testfile.txt'),
+        newButtonId: 'New',
+        contents: 'This is a line of text.',
+        filename: 'testfile.txt',
+      });
+
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'testfile.txt'),
+        contents: 'This is a different line of text.',
+        filename: 'anotherfile.txt',
+      });
+
+      testRenameFile({
+        url: data.url,
+        path: path.join(data.path, 'subdir', 'testfile.txt'),
+        contents: 'This is a different line of text.',
+        new_file_name: path.join('subdir', 'testfile.txt'),
+      });
+
+      testDeleteFile({
+        url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
+        path: path.join(data.path, 'subdir', 'testfile.txt'),
+      });
+
+      testUploadMultipleFiles({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        workingDirPath: data.path,
+        newButtonId: 'New',
+        files: [
+          {
+            filename: 'multi-file-1.txt',
+            contents: 'First file uploaded in a single request.',
+          },
+          {
+            filename: 'multi-file-2.txt',
+            contents: 'Second file uploaded in a single request.',
+          },
+        ],
+      });
+    });
+    describe('Client Files', function () {
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
+        newButtonId: 'NewClient',
+        contents: 'This is a line of text.',
+        filename: 'testfile.txt',
+      });
+
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
+        path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
+        contents: 'This is a different line of text.',
+        filename: 'anotherfile.txt',
+      });
+
+      testRenameFile({
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
+        path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
+        contents: 'This is a different line of text.',
+        new_file_name: path.join('subdir', 'testfile.txt'),
+      });
+
+      testDeleteFile({
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
+        path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
+      });
+    });
+    describe('Server Files', function () {
+      if (data.serverFilesDir) {
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url,
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          newButtonId: 'NewServer',
+          contents: 'This is a line of text.',
+          filename: 'testfile.txt',
+        });
+
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          filename: 'anotherfile.txt',
+        });
+
+        testRenameFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          new_file_name: path.join('subdir', 'testfile.txt'),
+        });
+
+        testDeleteFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+        });
+      }
+    });
+    if (data.testFilesDir) {
+      describe('Test Files', function () {
+        if (data.testFilesDir) {
+          testUploadFile({
+            fileViewBaseUrl: data.url,
+            url: data.url,
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            newButtonId: 'NewTest',
+            contents: 'This is a line of text.',
+            filename: 'testfile.txt',
+          });
+
+          testUploadFile({
+            fileViewBaseUrl: data.url,
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            filename: 'anotherfile.txt',
+          });
+
+          testRenameFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+            contents: 'This is a different line of text.',
+            new_file_name: path.join('subdir', 'testfile.txt'),
+          });
+
+          testDeleteFile({
+            url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
+            path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+          });
+        }
+      });
+    }
+    describe('Files with % in name', function () {
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        newButtonId: 'New',
+        contents: 'This is a line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      testUploadFile({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        path: path.join(data.path, 'test%file.txt'),
+        contents: 'This is a different line of text in a file with percent.',
+        filename: 'test%file.txt',
+      });
+
+      // TODO Rename currently has very restrictive naming conventions that
+      // don't allow for this kind of name. Once this is removed it should be
+      // possible to enable the test below.
+
+      // testRenameFile({
+      //   url: data.url,
+      //   path: path.join(data.path, 'sub%dir', 'test%file.txt'),
+      //   contents: 'This is a line of text in a file with percent.',
+      //   new_file_name: path.join('sub%dir', 'test%file.txt'),
+      // });
+
+      testDeleteFile({
+        url: data.url + '/' + encodePath(data.path),
+        path: path.join(data.path, 'test%file.txt'),
+      });
+    });
+  });
+}
+
+function testUploadFile(params: {
+  fileViewBaseUrl: string;
+  url: string;
+  path: string;
+  newButtonId?: string;
+  contents: string;
+  filename: string;
+}) {
+  describe(`GET to ${params.url}`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token and either a file_path or a working_path', () => {
+      if (params.newButtonId) {
+        elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      } else {
+        const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+        elemList = row.find('button[id^="instructorFileUploadForm-"]');
+      }
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      // __csrf_token
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+      // file_path or working_path
+      if (!params.newButtonId) {
+        elemList = $('input[name="file_path"]');
+        assert.lengthOf(elemList, 1);
+        assert.nestedProperty(elemList[0], 'attribs.value');
+        locals.file_path = elemList[0].attribs.value;
+        locals.working_path = undefined;
+      } else {
+        elemList = $('input[name="working_path"]');
+        assert.lengthOf(elemList, 1);
+        assert.nestedProperty(elemList[0], 'attribs.value');
+        locals.working_path = elemList[0].attribs.value;
+        locals.file_path = undefined;
+      }
+    });
+  });
+
+  describe(`POST to ${params.url} with action upload_file`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('files', new Blob([Buffer.from(params.contents)]), params.filename);
+
+      if (locals.file_path) {
+        formData.append('file_path', locals.file_path);
+      } else if (locals.working_path) {
+        formData.append('working_path', locals.working_path);
+      } else {
+        assert.fail('found neither file_path nor working_path');
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+  });
+
+  describe('Uploaded file is available', function () {
+    it('file view should match contents', async () => {
+      const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(params.path)}`);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+      const pre = locals.$('.card-body pre');
+      assert.lengthOf(pre, 1);
+      assert.strictEqual(pre.text(), params.contents);
+    });
+
+    it('file download should match contents', async () => {
+      const downloadUrl = locals.$('.card-header a:contains("Download")').attr('href');
+      const res = await fetch(`${siteUrl}${downloadUrl}`);
+      assert.isOk(res.ok);
+      assert.strictEqual(await res.text(), params.contents);
+    });
+  });
+
+  pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testUploadMultipleFiles(params: {
+  fileViewBaseUrl: string;
+  url: string;
+  workingDirPath: string;
+  newButtonId: string;
+  files: { filename: string; contents: string }[];
+}) {
+  describe(`GET to ${params.url} for multi-file upload`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token and a working_path', () => {
+      elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+
+      elemList = $('input[name="working_path"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.working_path = elemList[0].attribs.value;
+    });
+  });
+
+  describe(`POST to ${params.url} with action upload_file and multiple files`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+  });
+
+  describe('Uploaded files are available', function () {
+    params.files.forEach((file) => {
+      const uploadedPath = path.join(params.workingDirPath, file.filename);
+
+      it(`file view for ${file.filename} should match contents`, async () => {
+        const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(uploadedPath)}`);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+        const pre = locals.$('.card-body pre');
+        assert.lengthOf(pre, 1);
+        assert.strictEqual(pre.text(), file.contents);
+      });
+
+      pullAndVerifyFileInDev(uploadedPath, file.contents);
+    });
+  });
+
+  describe(`POST to ${params.url} with duplicate file names`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+        formData.append('files', new Blob([Buffer.from(file.contents + ' (copy)')]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isNotOk(res.ok);
+      const text = await res.text();
+      assert.include(text, 'Duplicate file names in upload');
+    });
+  });
+}
+
+function testRenameFile(params: {
+  url: string;
+  path: string;
+  contents: string;
+  new_file_name: string;
+}) {
+  describe(`GET to ${params.url}`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token, old_file_name, working_path', () => {
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find('button[data-testid="rename-file-button"]');
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      // __csrf_token
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+      // old_file_name
+      elemList = $('input[name="old_file_name"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.old_file_name = elemList[0].attribs.value;
+      assert.equal(locals.old_file_name, params.path.split('/').pop());
+      // working_path
+      elemList = $('input[name="working_path"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.working_path = elemList[0].attribs.value;
+    });
+  });
+
+  describe(`POST to ${params.url} with action rename_file`, function () {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'rename_file',
+          __csrf_token: locals.__csrf_token,
+          working_path: locals.working_path,
+          old_file_name: locals.old_file_name,
+          new_file_name: params.new_file_name,
+        }),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+  });
+
+  pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testDeleteFile(params: { url: string; path: string }) {
+  describe(`GET to ${params.url}`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token and a file_path', () => {
+      const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
+      elemList = row.find('button[data-testid="delete-file-button"]');
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      // __csrf_token
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+      // file_path
+      elemList = $('input[name="file_path"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.file_path = elemList[0].attribs.value;
+      assert.equal(locals.file_path, params.path);
+    });
+  });
+
+  describe(`POST to ${params.url} with action delete_file`, function () {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'delete_file',
+          __csrf_token: locals.__csrf_token,
+          file_path: locals.file_path,
+        }),
+      });
+      assert.isOk(res.ok);
+    });
+  });
+
+  pullAndVerifyFileNotInDev(params.path);
+}

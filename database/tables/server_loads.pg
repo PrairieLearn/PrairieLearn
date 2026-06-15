@@ -1,0 +1,12 @@
+columns
+    average_jobs: double precision not null
+    date: timestamp with time zone not null default now()
+    group_name: text not null
+    id: bigint not null default nextval('server_loads_id_seq'::regclass)
+    instance_id: text not null
+    job_type: text not null
+    max_jobs: double precision not null
+
+indexes
+    server_loads_pkey: PRIMARY KEY (id) USING btree (id)
+    server_loads_instance_id_job_type_key: UNIQUE (instance_id, job_type) USING btree (instance_id, job_type)

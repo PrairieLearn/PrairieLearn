@@ -1,0 +1,13 @@
+columns
+    id: bigint not null default nextval('sharing_set_questions_id_seq'::regclass)
+    question_id: bigint not null
+    sharing_set_id: bigint not null
+
+indexes
+    sharing_set_questions_pkey: PRIMARY KEY (id) USING btree (id)
+    sharing_set_questions_sharing_set_id_question_id_key: UNIQUE (sharing_set_id, question_id) USING btree (sharing_set_id, question_id)
+    sharing_set_questions_question_id_idx: USING btree (question_id)
+
+foreign-key constraints
+    sharing_set_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    sharing_set_questions_sharing_set_id_fkey: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE

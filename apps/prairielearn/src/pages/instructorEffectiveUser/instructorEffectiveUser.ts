@@ -1,0 +1,91 @@
+import { isValid, parseISO } from 'date-fns';
+import { Router } from 'express';
+
+import { HttpStatusError } from '@prairielearn/error';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
+import { clearCookie, setCookie } from '../../lib/cookie.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+
+import { CourseRolesSchema, InstructorEffectiveUser } from './instructorEffectiveUser.html.js';
+
+const router = Router();
+const sql = loadSqlEquiv(import.meta.url);
+
+router.get(
+  '/',
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
+    const courseRoles = await queryRow(
+      sql.select,
+      {
+        course_id: res.locals.course.id,
+        authn_course_role: res.locals.authz_data.authn_course_role,
+        authn_course_instance_role:
+          'authn_course_instance_role' in res.locals.authz_data
+            ? res.locals.authz_data.authn_course_instance_role
+            : 'None',
+      },
+      CourseRolesSchema,
+    );
+
+    let ipAddress = req.ip;
+    // Trim out IPv6 wrapper on IPv4 addresses
+    if (ipAddress?.slice(0, 7) === '::ffff:') {
+      ipAddress = ipAddress.slice(7);
+    }
+
+    res.send(InstructorEffectiveUser({ resLocals: res.locals, ipAddress, courseRoles }));
+  }),
+);
+
+router.post(
+  '/',
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
+    if (req.body.__action === 'reset') {
+      clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
+      clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
+      clearCookie(res, ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
+      clearCookie(res, ['pl_requested_date', 'pl2_requested_date']);
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeUid') {
+      setCookie(res, ['pl_requested_uid', 'pl2_requested_uid'], req.body.pl_requested_uid, {
+        maxAge: 60 * 60 * 1000,
+      });
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeCourseRole') {
+      setCookie(
+        res,
+        ['pl_requested_course_role', 'pl2_requested_course_role'],
+        req.body.pl_requested_course_role,
+        { maxAge: 60 * 60 * 1000 },
+      );
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeCourseInstanceRole') {
+      setCookie(
+        res,
+        ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role'],
+        req.body.pl_requested_course_instance_role,
+        { maxAge: 60 * 60 * 1000 },
+      );
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeDate') {
+      const date = parseISO(req.body.pl_requested_date);
+      if (!isValid(date)) {
+        throw new HttpStatusError(400, `invalid requested date: ${req.body.pl_requested_date}`);
+      }
+      setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
+        maxAge: 60 * 60 * 1000,
+      });
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else {
+      throw new HttpStatusError(400, 'unknown action: ' + req.body.__action);
+    }
+  }),
+);
+
+export default router;

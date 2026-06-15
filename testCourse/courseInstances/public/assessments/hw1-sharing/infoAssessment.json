@@ -1,0 +1,17 @@
+{
+  "uuid": "72923adc-e363-4f7c-bb88-d06196186faa",
+  "type": "Homework",
+  "title": "Homework to demonstrate assessment sharing",
+  "set": "Homework",
+  "number": "1",
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
+  "shareSourcePublicly": true,
+  "zones": [
+    {
+      "questions": [
+        { "id": "orderBlocks", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "partialCredit1", "autoPoints": 2, "maxAutoPoints": 6 }
+      ]
+    }
+  ]
+}

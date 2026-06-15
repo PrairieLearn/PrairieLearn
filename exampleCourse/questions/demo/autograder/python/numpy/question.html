@@ -1,0 +1,34 @@
+<pl-question-panel>
+    <p>
+        <i>
+            This question uses the built-in methods in <code>code_feedback.py</code> to check NumPy arrays. In addition, specific library functions can be disabled by hooking them in the setup autograder code.
+        </i>
+    </p>
+
+    <p>
+        Given a full rank matrix ${\bf A} \in \mathbb{R}^{n \times n}$ and vector ${\bf b} \in \mathbb{R}^n$, compute ${\bf x}$ such that ${\bf x} = {\bf A}^{-1}{\bf b}$.  You may use any NumPy function except for <code>numpy.linalg.inv()</code> and <code>numpy.linalg.pinv()</code>.
+    </p>
+
+    <p>The setup code gives the following variables:</p>
+    <p>
+        <pl-external-grader-variables params-name="names_for_user">
+            <pl-variable name="n" type="integer">Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.</pl-variable>
+            <pl-variable name="A" type="numpy array ($n \times n$)">Matrix $\mathbf{A}$.</pl-variable>
+            <pl-variable name="b" type="numpy array (length $n$)">Vector $\mathbf{b}$.</pl-variable>
+        </pl-external-grader-variables>
+    </p>
+
+    <p>Your code snippet should define the following variables:</p>
+    <pl-external-grader-variables params-name="names_from_user">
+        <pl-variable name="x" type="numpy array (length $n$)">Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable>
+    </pl-external-grader-variables>
+    <pl-file-editor
+        file-name="user_code.py"
+        ace-mode="ace/mode/python"
+        source-file-name="tests/initial_code.py"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

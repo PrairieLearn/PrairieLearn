@@ -1,0 +1,797 @@
+import itertools as it
+import json
+import pathlib
+import random
+from collections import Counter
+from enum import Enum
+from typing import NamedTuple, assert_never
+
+import chevron
+import lxml.etree
+import lxml.html
+import prairielearn as pl
+
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+    DROPDOWN = "dropdown"
+
+
+class AotaNotaType(Enum):
+    FALSE = 1
+    RANDOM = 2
+    INCORRECT = 3
+    CORRECT = 4
+
+
+class OrderType(Enum):
+    RANDOM = "random"
+    ASCEND = "ascend"
+    DESCEND = "descend"
+    FIXED = "fixed"
+
+
+class AnswerTuple(NamedTuple):
+    idx: int
+    correct: bool
+    html: str
+    feedback: str | None
+    score: float | None
+
+
+SCORE_INCORRECT_DEFAULT = 0.0
+SCORE_CORRECT_DEFAULT = 1.0
+WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
+INLINE_DEFAULT = False
+ARIA_LABEL_DEFAULT = "Multiple choice options"
+NONE_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
+ALL_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
+EXTERNAL_JSON_DEFAULT = None
+HIDE_LETTER_KEYS_DEFAULT = False
+EXTERNAL_JSON_CORRECT_KEY_DEFAULT = "correct"
+EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
+FEEDBACK_DEFAULT = None
+HIDE_SCORE_BADGE_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
+BUILTIN_GRADING_DEFAULT = True
+SIZE_DEFAULT = None
+PLACEHOLDER_DEFAULT = "Select an option"
+SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
+
+MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-multiple-choice.json"
+ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
+
+
+def categorize_options(
+    element: lxml.html.HtmlElement, data: pl.QuestionData
+) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
+    """Get provided correct and incorrect answers"""
+    correct_answers = []
+    incorrect_answers = []
+    index_counter = it.count(0)
+
+    # First, check internal HTML for answer choices
+    for child in element:
+        if child.tag in {"pl-answer", "pl_answer"}:
+            pl.validate_element(
+                child, ANSWER_SCHEMA_PATH, parent_tag="pl-multiple-choice"
+            )
+            correct = pl.get_boolean_attrib(child, "correct", False)
+            child_html = pl.inner_html(child)
+            child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
+
+            score = pl.get_float_attrib(child, "score", None)
+
+            if score is not None and not (
+                SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
+            ):
+                raise ValueError(
+                    'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
+                    "must be a number in the range [0.0, 1.0]."
+                )
+
+            answer_tuple = AnswerTuple(
+                next(index_counter), correct, child_html, child_feedback, score
+            )
+            if correct:
+                correct_answers.append(answer_tuple)
+            else:
+                incorrect_answers.append(answer_tuple)
+
+        elif isinstance(child, lxml.etree._Comment):
+            continue
+
+        else:
+            raise ValueError(
+                "<pl-multiple-choice> only allows these child elements: <pl-answer>."
+            )
+
+    # NOTE Reading in answer choices from JSON is deprecated.
+    file_path = pl.get_string_attrib(element, "external-json", EXTERNAL_JSON_DEFAULT)
+    if file_path is not None:
+        correct_attrib = pl.get_string_attrib(
+            element, "external-json-correct-key", EXTERNAL_JSON_CORRECT_KEY_DEFAULT
+        )
+        incorrect_attrib = pl.get_string_attrib(
+            element, "external-json-incorrect-key", EXTERNAL_JSON_INCORRECT_KEY_DEFAULT
+        )
+
+        if pathlib.PurePath(file_path).is_absolute():
+            json_file = file_path
+        else:
+            json_file = pathlib.PurePath(data["options"]["question_path"]).joinpath(
+                file_path
+            )
+
+        with open(json_file, encoding="utf-8") as f:
+            obj = json.load(f)
+
+        for text in obj.get(correct_attrib, []):
+            correct_answers.append(  # noqa: PERF401
+                AnswerTuple(
+                    next(index_counter),
+                    correct=True,
+                    html=text,
+                    feedback=None,
+                    score=None,
+                )
+            )
+
+        for text in obj.get(incorrect_attrib, []):
+            incorrect_answers.append(  # noqa: PERF401
+                AnswerTuple(
+                    next(index_counter),
+                    correct=False,
+                    html=text,
+                    feedback=None,
+                    score=None,
+                )
+            )
+
+    return correct_answers, incorrect_answers
+
+
+def get_nota_aota_attrib(
+    element: lxml.html.HtmlElement, name: str, default: AotaNotaType
+) -> AotaNotaType:
+    """
+    NOTA and AOTA used to be boolean values, but are changed to
+    special strings. To ensure backwards compatibility, values
+    interpreted as true or false are assumed to be older
+    interpretations. If the value cannot be interpreted as boolean,
+    the string representation is used.
+
+    Returns:
+        The NOTA or AOTA attribute value
+    """
+    try:
+        boolean_value = pl.get_boolean_attrib(
+            element, name, default != AotaNotaType.FALSE
+        )
+        return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
+    except Exception:
+        return pl.get_enum_attrib(element, name, AotaNotaType, default)
+
+
+def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
+    """Get order type in a backwards-compatible way. New display overwrites old."""
+    if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
+        raise ValueError(
+            'Attributes "order" and "fixed-order" on <pl-multiple-choice> '
+            'cannot be set together. Use "order".'
+        )
+
+    fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
+    order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
+
+    return pl.get_enum_attrib(element, "order", OrderType, order_type_default)
+
+
+def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
+    """Get display type in a backwards-compatible way. New display overwrites old."""
+    if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
+        raise ValueError(
+            'Attributes "display" and "inline" on <pl-multiple-choice> '
+            'cannot be set together. Use "display"; "inline" is deprecated.'
+        )
+
+    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
+    display_default = DisplayType.INLINE if inline else DisplayType.BLOCK
+
+    return pl.get_enum_attrib(element, "display", DisplayType, display_default)
+
+
+def prepare_answers_to_display(
+    correct_answers: list[AnswerTuple],
+    incorrect_answers: list[AnswerTuple],
+    *,
+    number_answers: int | None,
+    aota: AotaNotaType,
+    nota: AotaNotaType,
+    aota_feedback: str | None,
+    nota_feedback: str | None,
+    order_type: OrderType,
+    display_type: DisplayType,
+    builtin_grading: bool,
+) -> list[AnswerTuple]:
+    len_correct = len(correct_answers)
+    len_incorrect = len(incorrect_answers)
+    len_total = len_correct + len_incorrect
+
+    if len_total == 0:
+        raise ValueError("<pl-multiple-choice> must have at least 1 answer choice.")
+
+    # When builtin grading is disabled, NOTA/AOTA just controls display
+    # (show/hide) with no correctness semantics.
+    if not builtin_grading:
+        if aota is not AotaNotaType.FALSE:
+            aota = AotaNotaType.INCORRECT
+        if nota is not AotaNotaType.FALSE:
+            nota = AotaNotaType.INCORRECT
+
+    if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
+        raise ValueError(
+            '<pl-multiple-choice> cannot have both "all-of-the-above" and '
+            '"none-of-the-above" set to "correct".'
+        )
+
+    if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
+        # To prevent confusion on the client side
+        raise ValueError(
+            "<pl-multiple-choice> must have at least 2 correct answers when "
+            '"all-of-the-above" is "correct" or "random".'
+        )
+
+    if (
+        builtin_grading
+        and nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE}
+        and len_correct < 1
+    ):
+        # There must be a correct answer
+        raise ValueError(
+            "<pl-multiple-choice> must have at least 1 correct answer, or set "
+            '"none-of-the-above" to "correct" or "random".'
+        )
+
+    # If no correct option is provided, a random 'None of the above' will be
+    # treated as correct
+    if len_correct == 0 and nota is AotaNotaType.RANDOM:
+        nota = AotaNotaType.CORRECT
+
+    # If no incorrect option is provided, a random 'All of the above' will be
+    # treated as correct
+    if len_incorrect == 0 and aota is AotaNotaType.RANDOM:
+        aota = AotaNotaType.CORRECT
+
+    # 'All of the above' and 'None of the above' cannot both be correct.
+    if aota is AotaNotaType.CORRECT and nota is not AotaNotaType.FALSE:
+        nota = AotaNotaType.INCORRECT
+    if nota is AotaNotaType.CORRECT and aota is not AotaNotaType.FALSE:
+        aota = AotaNotaType.INCORRECT
+
+    # 1. Pick the choice(s) to display
+    # determine if user provides number-answers
+    if number_answers is None:
+        set_num_answers = False
+        number_answers = len_total
+    else:
+        set_num_answers = True
+        # figure out how many choice(s) to choose from the *provided* choices,
+        # excluding 'none-of-the-above' and 'all-of-the-above'
+        number_answers -= (1 if nota is not AotaNotaType.FALSE else 0) + (
+            1 if aota is not AotaNotaType.FALSE else 0
+        )
+
+    expected_num_answers = number_answers
+
+    if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
+        # max number if 'All of the above' is correct
+        number_answers = min(len_correct, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise ValueError(
+                "<pl-multiple-choice> does not have enough correct choices for "
+                f'"all-of-the-above". Need {expected_num_answers - number_answers} more.'
+            )
+    if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
+        # max number if 'None of the above' is correct
+        number_answers = min(len_incorrect, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise ValueError(
+                "<pl-multiple-choice> does not have enough incorrect choices for "
+                f'"none-of-the-above". Need {expected_num_answers - number_answers} more.'
+            )
+    elif aota is not AotaNotaType.CORRECT:
+        # 'None of the above' does not exist or is not correct, so:
+        # - If 'All of the above' is correct, we rely on the limits set by the
+        #   previous conditional.
+        # - If 'All of the above' is incorrect or not used, we limit ourselves
+        #   to one correct answer and as many incorrect answers as needed.
+        # - If 'All of the above' is random, we choose the lower bound, so that
+        #   the number of answers is stable regardless of the random choice.
+        number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
+
+    if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
+        # Either 'None of the above' or 'All of the above' is correct
+        # with probability 1/(number_correct + nota + aota).
+        prob_space = (
+            len_correct
+            + (1 if nota is AotaNotaType.RANDOM else 0)
+            + (1 if aota is AotaNotaType.RANDOM else 0)
+        )
+        rand_int = random.randint(1, prob_space)
+        if nota is AotaNotaType.RANDOM:
+            nota = AotaNotaType.CORRECT if rand_int == 1 else AotaNotaType.INCORRECT
+        if aota is AotaNotaType.RANDOM:
+            aota = AotaNotaType.CORRECT if rand_int == 2 else AotaNotaType.INCORRECT
+
+    if aota is AotaNotaType.CORRECT:
+        # when 'All of the above' is correct, we choose all from correct
+        # and none from incorrect
+        number_correct = number_answers
+        number_incorrect = 0
+    elif nota is AotaNotaType.CORRECT:
+        # when 'None of the above' is correct, we choose all from incorrect
+        # and none from correct
+        number_correct = 0
+        number_incorrect = number_answers
+    else:
+        number_correct = min(1, len_correct)
+        number_incorrect = max(0, number_answers - number_correct)
+
+    if not (0 <= number_incorrect <= len_incorrect):
+        raise ValueError(
+            f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
+        )
+
+    # 2. Sample correct and incorrect choices
+    sampled_correct = random.sample(correct_answers, number_correct)
+    sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
+
+    sampled_answers = sampled_correct + sampled_incorrect
+
+    # If 'All of the above' is correct, set all other answers to incorrect.
+    if aota is AotaNotaType.CORRECT:
+        sampled_answers = [
+            AnswerTuple(a.idx, False, a.html, a.feedback, a.score)
+            for a in sampled_answers
+        ]
+
+    # 3. Sort sampled choices based on user preference.
+    if order_type is OrderType.FIXED:
+        sampled_answers.sort(key=lambda a: a.idx)
+    elif order_type is OrderType.DESCEND:
+        sampled_answers.sort(key=lambda a: a.html, reverse=True)
+    elif order_type is OrderType.ASCEND:
+        sampled_answers.sort(key=lambda a: a.html, reverse=False)
+    elif order_type is OrderType.RANDOM:
+        random.shuffle(sampled_answers)
+    else:
+        assert_never(order_type)
+
+    use_inline_display = display_type is DisplayType.INLINE
+
+    # Add 'All of the above' option after shuffling
+    if aota is not AotaNotaType.FALSE:
+        aota_text = "All of these" if use_inline_display else "All of the above"
+        sampled_answers.append(
+            AnswerTuple(
+                len_total,
+                aota is AotaNotaType.CORRECT,
+                aota_text,
+                aota_feedback,
+                None,
+            )
+        )
+
+    # Add 'None of the above' option after shuffling
+    if nota is not AotaNotaType.FALSE:
+        nota_text = "None of these" if use_inline_display else "None of the above"
+        sampled_answers.append(
+            AnswerTuple(
+                len_total + 1,
+                nota is AotaNotaType.CORRECT,
+                nota_text,
+                nota_feedback,
+                None,
+            )
+        )
+
+    # Set the score for each answer that does not have an explicit score.
+    return [
+        AnswerTuple(
+            a.idx,
+            a.correct,
+            a.html,
+            a.feedback,
+            a.score
+            if a.score is not None
+            else (SCORE_CORRECT_DEFAULT if a.correct else SCORE_INCORRECT_DEFAULT),
+        )
+        for a in sampled_answers
+    ]
+
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.validate_element(element, SCHEMA_PATH)
+    # Before going to the trouble of preparing answers list, check for name duplication
+    name = pl.get_string_attrib(element, "answers-name")
+
+    if get_display_type(element) is not DisplayType.DROPDOWN:
+        if pl.has_attrib(element, "size"):
+            raise ValueError(
+                'Attribute "size" on <pl-multiple-choice> is only allowed when '
+                '"display" is "dropdown".'
+            )
+        if pl.has_attrib(element, "placeholder"):
+            raise ValueError(
+                'Attribute "placeholder" on <pl-multiple-choice> is only allowed when '
+                '"display" is "dropdown".'
+            )
+
+    if name in data["params"]:
+        raise ValueError(f"Duplicate params variable name: {name}")
+    if name in data["correct_answers"]:
+        raise ValueError(f"Duplicate correct_answers variable name: {name}")
+
+    builtin_grading = pl.get_boolean_attrib(
+        element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+    )
+
+    if not builtin_grading:
+        if pl.has_attrib(element, "weight"):
+            raise ValueError(
+                'Attribute "weight" on <pl-multiple-choice> is only allowed when '
+                '"builtin-grading" is true.'
+            )
+        restricted_aota_nota_values = {"correct", "incorrect", "random"}
+        aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
+        if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
+            raise ValueError(
+                'Attribute "all-of-the-above" on <pl-multiple-choice> cannot use the '
+                'grading values "correct", "incorrect", or "random" when '
+                '"builtin-grading" is false.'
+            )
+        nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
+        if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
+            raise ValueError(
+                'Attribute "none-of-the-above" on <pl-multiple-choice> cannot use the '
+                'grading values "correct", "incorrect", or "random" when '
+                '"builtin-grading" is false.'
+            )
+        if pl.has_attrib(element, "hide-score-badge"):
+            raise ValueError(
+                'Attribute "hide-score-badge" on <pl-multiple-choice> is only allowed '
+                'when "builtin-grading" is true.'
+            )
+        for child in element:
+            if child.tag in {"pl-answer", "pl_answer"}:
+                if pl.has_attrib(child, "score"):
+                    raise ValueError(
+                        'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
+                        'is only allowed when "builtin-grading" is true.'
+                    )
+                if pl.has_attrib(child, "feedback"):
+                    raise ValueError(
+                        'Attribute "feedback" on <pl-answer> inside <pl-multiple-choice> '
+                        'is only allowed when "builtin-grading" is true.'
+                    )
+
+    correct_answers, incorrect_answers = categorize_options(element, data)
+
+    # Check for duplicate answers. Ignore trailing/leading whitespace
+    # Making a conscious choice *NOT* to apply .lower() to all list elements in case
+    # instructors want to explicitly have matrix M vs. vector m as possible options.
+
+    choices_dict = Counter(
+        choice.html.strip() for choice in it.chain(correct_answers, incorrect_answers)
+    )
+
+    duplicates = [item for item, count in choices_dict.items() if count > 1]
+
+    if duplicates:
+        raise ValueError(
+            f"<pl-multiple-choice> has duplicate answer choices: {duplicates}."
+        )
+
+    # Get answers to display to student, using a helper function to separate out logic.
+    answers_to_display = prepare_answers_to_display(
+        correct_answers,
+        incorrect_answers,
+        number_answers=pl.get_integer_attrib(element, "number-answers", None),
+        aota=get_nota_aota_attrib(
+            element, "all-of-the-above", ALL_OF_THE_ABOVE_DEFAULT
+        ),
+        nota=get_nota_aota_attrib(
+            element, "none-of-the-above", NONE_OF_THE_ABOVE_DEFAULT
+        ),
+        aota_feedback=pl.get_string_attrib(
+            element, "all-of-the-above-feedback", FEEDBACK_DEFAULT
+        ),
+        nota_feedback=pl.get_string_attrib(
+            element, "none-of-the-above-feedback", FEEDBACK_DEFAULT
+        ),
+        order_type=get_order_type(element),
+        display_type=get_display_type(element),
+        builtin_grading=builtin_grading,
+    )
+
+    # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
+    display_answers = []
+    correct_answer = None
+    for key, answer in zip(pl.iter_keys(), answers_to_display, strict=False):
+        keyed_answer = {
+            "key": key,
+            "html": answer.html,
+            "feedback": answer.feedback,
+            "score": answer.score,
+        }
+        display_answers.append(keyed_answer)
+        if answer.correct:
+            correct_answer = keyed_answer
+
+    data["params"][name] = display_answers
+    data["correct_answers"][name] = correct_answer
+
+
+def render(element_html: str, data: pl.QuestionData) -> str:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers-name")
+
+    hide_score_badge = pl.get_boolean_attrib(
+        element, "hide-score-badge", HIDE_SCORE_BADGE_DEFAULT
+    )
+
+    answers = data["params"].get(name, [])
+    display_type = get_display_type(element)
+
+    inline = display_type is not DisplayType.BLOCK
+    display_radio = display_type in {DisplayType.BLOCK, DisplayType.INLINE}
+    submitted_key = data["submitted_answers"].get(name, None)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+
+    if data["panel"] == "question":
+        editable = data["editable"]
+        partial_score = data["partial_scores"].get(name, {"score": None})
+        score = partial_score.get("score", None)
+        display_score = score is not None
+        feedback = partial_score.get("feedback", None)
+
+        # Set up the templating for each answer
+        answerset = []
+        for answer in answers:
+            is_submitted_answer = submitted_key == answer["key"]
+            should_display_badge = is_submitted_answer and not hide_score_badge
+
+            answer_html = {
+                "key": answer["key"],
+                "selected": is_submitted_answer,
+                "html": answer["html"],
+                "display_score_badge": should_display_badge and display_score,
+                "display_feedback": is_submitted_answer and feedback,
+                "feedback": feedback,
+            }
+
+            if should_display_badge and display_score:
+                score_type, _ = pl.determine_score_params(score)
+                answer_html[score_type] = True
+
+            answerset.append(answer_html)
+
+        size = SIZE_DEFAULT
+        if pl.has_attrib(element, "size"):
+            # Convert from character width to pixels for consistency with other elements
+            # https://www.unitconverters.net/typography/character-x-to-pixel-x.htm
+            size = pl.get_integer_attrib(element, "size") * 8
+
+        placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+
+        html_params = {
+            "question": True,
+            "inline": inline,
+            "feedback": feedback,
+            "radio": display_radio,
+            "size": size,
+            "placeholder": placeholder,
+            "allow_blank": allow_blank,
+            "uuid": pl.get_uuid(),
+            "name": name,
+            "editable": editable,
+            "display_score_badge": display_score,
+            "answers": answerset,
+            "aria_label": aria_label,
+            "hide_letter_keys": pl.get_boolean_attrib(
+                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+            ),
+        }
+
+        # Display the score badge if necessary
+        if not hide_score_badge and display_score:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
+    elif data["panel"] == "submission":
+        parse_error = data["format_errors"].get(name, None)
+        hide_letter_keys = pl.get_boolean_attrib(
+            element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+        )
+        html_params = {
+            "submission": True,
+            "parse_error": parse_error,
+            "inline": inline,
+            "uuid": pl.get_uuid(),
+            "hide_letter_keys": hide_letter_keys or submitted_key is None,
+        }
+
+        if parse_error is None:
+            submitted_answer = next(
+                filter(lambda a: a["key"] == submitted_key, answers),
+                SUBMITTED_ANSWER_BLANK,
+            )
+            html_params["submitted_key"] = submitted_key
+            html_params["submitted_answer"] = submitted_answer
+
+            partial_score = data["partial_scores"].get(name, {"score": None})
+            feedback = partial_score.get("feedback", None)
+            score = partial_score.get("score", None)
+            if score is not None:
+                html_params["display_score_badge"] = True
+                score_type, score_value = pl.determine_score_params(score)
+                html_params[score_type] = score_value
+
+            if feedback is not None:
+                html_params["display_feedback"] = True
+                html_params["feedback"] = feedback
+
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
+    elif data["panel"] == "answer":
+        if not pl.get_boolean_attrib(
+            element, "builtin-grading", BUILTIN_GRADING_DEFAULT
+        ):
+            return ""
+
+        correct_answer = data["correct_answers"].get(name, None)
+
+        if correct_answer is None:
+            raise ValueError("No true answer.")
+
+        html_params = {
+            "answer": True,
+            "answers": correct_answer,
+            "key": correct_answer["key"],
+            "html": correct_answer["html"],
+            "inline": inline,
+            "radio": display_radio,
+            "hide_letter_keys": pl.get_boolean_attrib(
+                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+            ),
+        }
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
+    assert_never(data["panel"])
+
+
+def parse(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers-name")
+
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    # Unselected wouldn't be in submitted_answers, but "Clear" would submit as an empty string.
+    submitted_key = data["submitted_answers"].get(name, "") or ""
+
+    all_keys = {a["key"] for a in data["params"][name]}
+
+    if not allow_blank and submitted_key == "":
+        data["format_errors"][name] = "No answer was submitted."
+        return
+
+    if submitted_key not in all_keys and submitted_key != "":
+        data["format_errors"][name] = (
+            f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        )
+        return
+
+
+def grade(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers-name")
+
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
+        return
+
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+
+    submitted_key = data["submitted_answers"].get(name, None)
+    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    default_score = (
+        SCORE_CORRECT_DEFAULT
+        if submitted_key == correct_key
+        else SCORE_INCORRECT_DEFAULT
+    )
+
+    def grade_multiple_choice(submitted_key: str) -> tuple[float, str | None]:
+        for option in data["params"][name]:
+            if option["key"] == submitted_key:
+                return option.get("score", default_score), option.get("feedback", "")
+
+        return 0.0, "No correct answer."
+
+    pl.grade_answer_parameterized(data, name, grade_multiple_choice, weight)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers-name")
+
+    number_answers = len(data["params"][name])
+    all_keys = list(it.islice(pl.iter_keys(), number_answers))
+
+    # If the author disables builtin-grading, we want to start randomly picking an option
+    if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
+        # Still test that valid and invalid submissions are handled correctly
+        result = data["test_type"]
+        if result in {"correct", "incorrect"}:
+            data["raw_submitted_answers"][name] = random.choice(all_keys)
+        elif result == "invalid":
+            data["raw_submitted_answers"][name] = "0"
+            data["format_errors"][name] = "INVALID choice"
+        else:
+            assert_never(result)  # type: ignore[arg-type]
+        return
+
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+
+    correct_key = data["correct_answers"][name].get("key", None)
+    if correct_key is None:
+        raise ValueError("could not determine correct_key")
+
+    incorrect_keys = list(set(all_keys) - {correct_key})
+
+    result = data["test_type"]
+    if result == "correct":
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]["key"]
+        data["partial_scores"][name] = {"score": 1.0, "weight": weight}
+
+        feedback = data["correct_answers"][name].get("feedback", None)
+        if feedback is not None:
+            data["partial_scores"][name]["feedback"] = feedback
+
+    elif result == "incorrect":
+        if len(incorrect_keys) > 0:
+            random_key = random.choice(incorrect_keys)
+            data["raw_submitted_answers"][name] = random_key
+
+            score, feedback = next(
+                (option.get("score", 0.0), option.get("feedback"))
+                for option in data["params"][name]
+                if option["key"] == random_key
+            )
+
+            data["partial_scores"][name] = {"score": score, "weight": weight}
+
+            if feedback is not None:
+                data["partial_scores"][name]["feedback"] = feedback
+
+        else:
+            # actually an invalid submission
+            data["raw_submitted_answers"][name] = "0"
+            data["format_errors"][name] = "INVALID choice"
+    elif result == "invalid":
+        data["raw_submitted_answers"][name] = "0"
+        data["format_errors"][name] = "INVALID choice"
+
+        # FIXME: add more invalid choices
+    else:
+        assert_never(result)

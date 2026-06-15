@@ -1,0 +1,20 @@
+import { Router } from 'express';
+
+import adminsRouter from '../pages/institutionAdminAdmins/institutionAdminAdmins.js';
+import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses.js';
+import generalRouter from '../pages/institutionAdminGeneral/institutionAdminGeneral.js';
+
+const router = Router({ mergeParams: true });
+
+router.use(async (req, res, next) => {
+  // The navbar relies on this property.
+  res.locals.urlPrefix = req.baseUrl;
+
+  next();
+});
+
+router.use('/', generalRouter);
+router.use('/admins', adminsRouter);
+router.use('/courses', coursesRouter);
+
+export default router;

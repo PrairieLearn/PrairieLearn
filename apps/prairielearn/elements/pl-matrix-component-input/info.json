@@ -1,0 +1,6 @@
+{
+  "controller": "pl-matrix-component-input.py",
+  "dependencies": {
+    "elementStyles": ["pl-matrix-component-input.css"]
+  }
+}

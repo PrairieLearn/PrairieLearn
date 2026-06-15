@@ -1,0 +1,127 @@
+# Ignore test course draft questions to make local testing of AI question generation easier.
+/testCourse/questions/__drafts__
+
+# Development
+
+## Custom scripts
+/start-custom.sh
+scripts/migration-report.html
+
+## s3rver S3 emulation data directory
+/s3rver
+
+### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
+docker-compose.override.yml
+
+## Editors
+
+### JetBrains
+/.idea/
+
+### VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+### tmux
+.tmux.conf
+
+### Claude Code
+.claude/worktrees/
+.claude/commands/
+.claude/settings.local.json
+
+## Backup files
+
+### vi
+**/*.swp
+**/*.swo
+**/*~
+
+### emacs
+**/[#]*[#]
+
+### jupyter
+.ipynb_checkpoints
+
+# PrairieLearn
+
+## Config
+/config.json
+/apps/*/config.json
+/ssl/
+
+## Generated HTML
+
+### mkdocs
+/site/
+
+## Runtime artifacts
+
+### Logs
+/server.log
+/apps/prairielearn/server.log
+
+## pnpm
+node_modules
+
+## Programming languages
+
+### Python
+.venv/
+__pycache__/
+*.egg-info
+*.py[cod]
+*$py.class
+.coverage
+
+### R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+## macOS files
+.DS_Store
+
+## s3rver file store
+/s3rver
+
+## Turborepo caches
+.turbo
+
+## Compiled files
+apps/*/dist
+apps/prairielearn/public/build
+packages/*/dist
+
+## Coverage reports
+coverage/
+apps/*/coverage
+packages/*/coverage
+coverage.xml
+
+## Vitest
+.vitest-reports
+
+## Playwright
+test-results/
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
+.playwright-mcp/
+
+## TypeScript cache
+*.tsbuildinfo
+
+## Question HTML snapshots
+/new-renderer/
+/old-renderer/
+
+## d2 cache
+.cache
+
+## v8 crash reports
+isolate-*-v8.log
+
+## ESLint cache
+.eslintcache

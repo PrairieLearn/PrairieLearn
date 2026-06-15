@@ -1,0 +1,328 @@
+import { z } from 'zod';
+
+import { run } from '@prairielearn/run';
+
+import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
+import { SelectUserSchema } from '../authn.types.js';
+import { CourseInstancePageAuthzDataSchema, CoursePageAuthzDataSchema } from '../authz-data-lib.js';
+import type { UntypedResLocals } from '../res-locals.types.js';
+
+import {
+  RawStaffAssessmentSchema,
+  RawStaffCourseInstanceSchema,
+  RawStaffCourseSchema,
+  RawStudentCourseInstanceSchema,
+  RawStudentCourseSchema,
+  StaffAssessmentQuestionSchema,
+  StaffAssessmentSetSchema,
+  StaffInstitutionSchema,
+  StaffQuestionSchema,
+  StaffUserSchema,
+  StudentUserSchema,
+} from './safe-db-types.js';
+
+/* Plain page context */
+
+const BasePageContextSchema = z.object({
+  __csrf_token: z.string(),
+  urlPrefix: z.string(),
+  authn_provider_name: z.string(),
+  authn_is_administrator: SelectUserSchema.shape.is_administrator,
+  access_as_administrator: z.boolean(),
+  is_administrator: z.boolean(),
+  is_institution_administrator: z.boolean(),
+  lockdown_browser: z.boolean(),
+  navPage: NavPageSchema,
+  /** You should prefer to set the navbarType instead of using this value. */
+  navbarType: NavbarTypeSchema,
+});
+
+const StudentPlainPageContextSchema = BasePageContextSchema.extend({
+  authn_user: StudentUserSchema,
+  authn_institution: StaffInstitutionSchema,
+}).brand<'StudentPlainPageContext'>();
+type StudentPlainPageContext = z.infer<typeof StudentPlainPageContextSchema>;
+
+const StaffPlainPageContextSchema = BasePageContextSchema.extend({
+  authn_user: StaffUserSchema,
+  authn_institution: StaffInstitutionSchema,
+}).brand<'StaffPlainPageContext'>();
+type StaffPlainPageContext = z.infer<typeof StaffPlainPageContextSchema>;
+
+/* Authz data page context */
+
+const CourseAuthzDataPageContextSchema = z
+  .object({
+    authz_data: CoursePageAuthzDataSchema,
+  })
+  .brand<'CourseAuthzDataPageContext'>();
+type CourseAuthzDataPageContext = z.infer<typeof CourseAuthzDataPageContextSchema>;
+
+const CourseInstanceAuthzDataPageContextSchema = z
+  .object({
+    authz_data: CourseInstancePageAuthzDataSchema,
+  })
+  .brand<'CourseInstanceAuthzDataPageContext'>();
+type CourseInstanceAuthzDataPageContext = z.infer<typeof CourseInstanceAuthzDataPageContextSchema>;
+
+// Since this data comes from res.locals and not the database, we can make certain guarantees
+// about the data.
+
+/* Course context */
+
+const StudentCourseContextSchema = z
+  .object({
+    course: z
+      .object({
+        ...RawStudentCourseSchema.shape,
+        // `short_name` will never be null for non-deleted courses.
+        short_name: z.string(),
+      })
+      .brand('StudentCourse'),
+  })
+  .brand<'StudentCourseContext'>();
+type StudentCourseContext = z.infer<typeof StudentCourseContextSchema>;
+
+const StaffCourseContextSchema = z
+  .object({
+    course: z
+      .object({
+        ...RawStaffCourseSchema.shape,
+        // `short_name` will never be null for non-deleted courses.
+        short_name: z.string(),
+      })
+      .brand('StaffCourse'),
+    institution: StaffInstitutionSchema,
+  })
+  .brand<'StaffCourseContext'>();
+type StaffCourseContext = z.infer<typeof StaffCourseContextSchema>;
+
+/* Course instance context */
+
+const StudentCourseInstanceContextSchema = z
+  .object({
+    course_instance: z
+      .object({
+        ...RawStudentCourseInstanceSchema.shape,
+        // `short_name` will never be null for non-deleted course instances.
+        short_name: z.string(),
+      })
+      .brand('StudentCourseInstance'),
+  })
+  .brand<'StudentCourseInstanceContext'>();
+
+type StudentCourseInstanceContext = z.infer<typeof StudentCourseInstanceContextSchema>;
+
+const StaffCourseInstanceContextSchema = z
+  .object({
+    course_instance: z
+      .object({
+        ...RawStaffCourseInstanceSchema.shape,
+        // `short_name` will never be null for non-deleted course instances.
+        short_name: z.string(),
+      })
+      .brand('StaffCourseInstance'),
+  })
+  .brand<'StaffCourseInstanceContext'>();
+
+type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
+
+/* Assessment context */
+
+const StaffAssessmentContextSchema = z
+  .object({
+    assessment: RawStaffAssessmentSchema.extend({
+      // `type` will always be one of these values
+      type: z.enum(['Exam', 'Homework']),
+    }).brand('StaffAssessment'),
+    assessment_set: StaffAssessmentSetSchema,
+  })
+  .brand<'StaffAssessmentContext'>();
+type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
+
+/* Assessment question context */
+
+const StaffAssessmentQuestionContextSchema = z
+  .object({
+    assessment_question: StaffAssessmentQuestionSchema,
+    question: StaffQuestionSchema,
+    number_in_alternative_group: z.string(),
+    num_open_instances: z.number(),
+  })
+  .brand<'StaffAssessmentQuestionContext'>();
+type StaffAssessmentQuestionContext = z.infer<typeof StaffAssessmentQuestionContextSchema>;
+
+// Merged page contexts
+
+type StudentCourseInstancePageContext = StudentPlainPageContext &
+  StudentCourseContext &
+  StudentCourseInstanceContext;
+
+type StaffCoursePageContext = StaffPlainPageContext & StaffCourseContext;
+type StaffCourseInstancePageContext = StaffCoursePageContext & StaffCourseInstanceContext;
+type StaffAssessmentPageContext = StaffCourseInstancePageContext & StaffAssessmentContext;
+type StaffAssessmentQuestionPageContext = StaffAssessmentPageContext &
+  StaffAssessmentQuestionContext;
+
+/* All possible page contexts for a given page and access type */
+interface PageTypeReturnMap {
+  student: {
+    plain: StudentPlainPageContext;
+    course: never;
+    courseInstance: StudentCourseInstancePageContext;
+    assessment: never;
+    assessmentQuestion: never;
+  };
+  instructor: {
+    plain: StaffPlainPageContext;
+    course: StaffCoursePageContext;
+    courseInstance: StaffCourseInstancePageContext;
+    assessment: StaffAssessmentPageContext;
+    assessmentQuestion: StaffAssessmentQuestionPageContext;
+  };
+}
+
+interface AuthzDataForPageType {
+  /**
+   * A `pageType: 'course'` page may be reached from
+   * `/pl/course_instance/:course_instance_id/instructor`, and we
+   * want to preserve CI authz fields
+   */
+  course: CourseAuthzDataPageContext | CourseInstanceAuthzDataPageContext;
+  courseInstance: CourseInstanceAuthzDataPageContext;
+  assessment: CourseInstanceAuthzDataPageContext;
+  assessmentQuestion: CourseInstanceAuthzDataPageContext;
+}
+
+export type PageContext<
+  PageType extends 'plain' | 'course' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
+  AccessType extends 'student' | 'instructor',
+  WithAuthz extends boolean = true,
+> = PageType extends 'plain'
+  ? PageTypeReturnMap[AccessType][PageType]
+  : WithAuthz extends true
+    ? PageTypeReturnMap[AccessType][PageType] & AuthzDataForPageType[Exclude<PageType, 'plain'>]
+    : PageTypeReturnMap[AccessType][PageType];
+
+/**
+ * Extract page context from res.locals with hierarchical inclusion.
+ * - pageType 'plain': returns base page context
+ * - pageType 'course': returns base + course context
+ * - pageType 'courseInstance': returns base + course context + course instance context
+ * - pageType 'assessment': returns base + course instance + assessment context
+ * - pageType 'assessmentQuestion': returns base + course instance + assessment + assessment question context
+ */
+export function extractPageContext<
+  PageType extends 'plain' | 'course' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
+  AccessType extends 'student' | 'instructor',
+  WithAuthz extends boolean = true,
+>(
+  resLocals: UntypedResLocals,
+  options: {
+    pageType: PageType;
+    accessType: AccessType;
+  } & (PageType extends 'plain' ? { withAuthzData?: false } : { withAuthzData?: WithAuthz }),
+): PageContext<PageType, AccessType, WithAuthz> {
+  type ReturnType = PageContext<PageType, AccessType, WithAuthz>;
+
+  const { pageType, accessType, withAuthzData = true } = options;
+
+  const baseData = run(() => {
+    if (accessType === 'student') {
+      return StudentPlainPageContextSchema.parse(resLocals);
+    } else {
+      return StaffPlainPageContextSchema.parse(resLocals);
+    }
+  });
+
+  const authzData = run(() => {
+    // Plain pages never include authz_data in the result, even when withAuthzData is true.
+    if (!withAuthzData || pageType === 'plain') return null;
+    if (
+      pageType === 'course' &&
+      // We don't want to strip course instance authz fields when we're on a course page
+      // mounted from a course-instance route -- we need them for role checks.
+      !('has_course_instance_permission_view' in (resLocals.authz_data ?? {}))
+    ) {
+      return CourseAuthzDataPageContextSchema.parse(resLocals);
+    }
+    return CourseInstanceAuthzDataPageContextSchema.parse(resLocals);
+  });
+
+  if (pageType === 'plain') {
+    return {
+      ...baseData,
+      ...authzData,
+    } as ReturnType;
+  }
+
+  const courseData = run(() => {
+    if (accessType === 'student') {
+      return StudentCourseContextSchema.parse(resLocals);
+    } else {
+      return StaffCourseContextSchema.parse(resLocals);
+    }
+  });
+
+  if (pageType === 'course') {
+    return {
+      ...baseData,
+      ...authzData,
+      ...courseData,
+    } as ReturnType;
+  }
+
+  const ciData = run(() => {
+    if (accessType === 'student') {
+      return StudentCourseInstanceContextSchema.parse(resLocals);
+    } else {
+      return StaffCourseInstanceContextSchema.parse(resLocals);
+    }
+  });
+
+  if (pageType === 'courseInstance') {
+    return {
+      ...baseData,
+      ...authzData,
+      ...courseData,
+      ...ciData,
+    } as ReturnType;
+  }
+
+  const assessmentData = run(() => {
+    if (accessType === 'student') {
+      throw new Error('Assessment context is only available for instructors');
+    }
+    return StaffAssessmentContextSchema.parse(resLocals);
+  });
+
+  if (pageType === 'assessment') {
+    return {
+      ...baseData,
+      ...authzData,
+      ...courseData,
+      ...ciData,
+      ...assessmentData,
+    } as ReturnType;
+  }
+
+  const assessmentQuestionData = run(() => {
+    if (accessType === 'student') {
+      throw new Error('Assessment question context is only available for instructors');
+    }
+    return StaffAssessmentQuestionContextSchema.parse(resLocals);
+  });
+
+  if (pageType === 'assessmentQuestion') {
+    return {
+      ...baseData,
+      ...authzData,
+      ...courseData,
+      ...ciData,
+      ...assessmentData,
+      ...assessmentQuestionData,
+    } as ReturnType;
+  }
+
+  throw new Error(`Unknown pageType: ${String(pageType)}`);
+}

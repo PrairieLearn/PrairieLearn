@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: en
+reviews:
+  profile: chill
+  request_changes_workflow: false # Do not approve after comments resolved
+  high_level_summary: false
+  review_status: false # Do not make comments on PRs that are not ready for review
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  labeling_instructions: []
+  path_filters: []
+  path_instructions: []
+  auto_review:
+    ignore_title_keywords: []
+    drafts: false
+    base_branches:
+      - master
+    ignore_usernames:
+      - dependabot[bot]
+      - dependabot-preview[bot]
+      - github-actions[bot]
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
+    title:
+      requirements: 'Use sentence case, start with a verb, and be concise.'
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+  tools:
+    # Our ESLint config relies on a package that exists in this repository but
+    # must be built and linked first, which it doesn't know how to do. To
+    # prevent spurious warnings, we just disable ESLint for now.
+    eslint:
+      enabled: false
+    # Biome is flagging issues in our test suite that aren't relevant (lint/suspicious/noDuplicateTestHooks)
+    biome:
+      enabled: false
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: local # Repository-specific learnings
+  issues:
+    scope: local # Repository-specific issues
+  pull_requests:
+    scope: local # Repository-specific pull requests
