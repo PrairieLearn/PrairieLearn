@@ -133,7 +133,7 @@ export function getPaths(
     specialDirs.push({
       label: 'Client',
       path: clientDir,
-      info: html`This file will be placed in the subdirectory
+      info: html`These files will be placed in the subdirectory
         <code>${path.basename(clientDir)}</code> and will be accessible from the student's web
         browser.`,
     });
@@ -141,8 +141,8 @@ export function getPaths(
       specialDirs.push({
         label: 'Server',
         path: serverDir,
-        info: html`This file will be placed in the subdirectory
-          <code>${path.basename(serverDir)}</code> and will be accessible only from the server. It
+        info: html`These files will be placed in the subdirectory
+          <code>${path.basename(serverDir)}</code> and will be accessible only from the server. They
           will not be accessible from the student's web browser.`,
       });
     }
@@ -150,8 +150,8 @@ export function getPaths(
       specialDirs.push({
         label: 'Test',
         path: testsDir,
-        info: html`This file will be placed in the subdirectory
-          <code>${path.basename(testsDir)}</code> and will be accessible only from the server. It
+        info: html`These files will be placed in the subdirectory
+          <code>${path.basename(testsDir)}</code> and will be accessible only from the server. They
           will not be accessible from the student's web browser. This is appropriate for code to
           support
           <a href="https://docs.prairielearn.com/externalGrading/" target="_blank" rel="noreferrer">
