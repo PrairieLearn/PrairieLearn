@@ -48,14 +48,14 @@ describe('date formatting', () => {
     });
     it('formats dates with the long timezone name', () => {
       const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
-      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 20, 59, 32));
       assert.equal(
         formatDate(date1, 'America/Chicago', { longTz: true }),
         '2018-01-01 06:00:00 (Central Standard Time)',
       );
       assert.equal(
         formatDate(date2, 'America/Chicago', { longTz: true }),
-        '2023-01-01 12:59:32 (Central Standard Time)',
+        '2023-01-01 14:59:32 (Central Standard Time)',
       );
     });
   });
@@ -74,9 +74,9 @@ describe('date formatting', () => {
 
     it('formats a CST date with timezone offset', () => {
       const date1 = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
-      const date2 = new Date(Date.UTC(2023, 0, 1, 18, 59, 32));
+      const date2 = new Date(Date.UTC(2023, 0, 1, 20, 59, 32));
       assert.equal(formatDateISO(date1, 'America/Chicago'), '2018-01-01T06:00:00-06:00');
-      assert.equal(formatDateISO(date2, 'America/Chicago'), '2023-01-01T12:59:32-06:00');
+      assert.equal(formatDateISO(date2, 'America/Chicago'), '2023-01-01T14:59:32-06:00');
     });
 
     it('formats a date in Asia/Kolkata with timezone offset', () => {
