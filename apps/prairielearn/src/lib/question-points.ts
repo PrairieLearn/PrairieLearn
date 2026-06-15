@@ -104,6 +104,7 @@ export async function updateInstanceQuestionGrade({
       points,
       score_perc: (points / (assessmentQuestion.max_points || 1)) * 100,
       max_auto_points: assessmentQuestion.max_auto_points,
+      max_manual_points: assessmentQuestion.max_manual_points,
       max_points: assessmentQuestion.max_points,
       grading_job_id,
       authn_user_id,

@@ -23,6 +23,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment-grading.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
@@ -48,6 +49,7 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
 
 async function computeUseInstanceQuestionGroups(resLocals: Record<string, any>): Promise<boolean> {
   const groupingAvailable =
@@ -708,10 +710,20 @@ router.post(
           );
         }
       }
-      await sqldb.execute(sql.update_assigned_grader, {
-        instance_question_id: res.locals.instance_question.id,
-        assigned_grader,
-        requires_manual_grading: actionPrompt !== 'graded',
+      await sqldb.runInTransactionAsync(async () => {
+        const assessment_instance = await sqldb.queryOptionalRow(
+          sql.update_assigned_grader,
+          {
+            instance_question_id: res.locals.instance_question.id,
+            assigned_grader,
+            requires_manual_grading: actionPrompt !== 'graded',
+          },
+          AssessmentInstanceIdRowSchema,
+        );
+        const assessmentInstanceId = assessment_instance?.assessment_instance_id;
+        if (assessmentInstanceId != null) {
+          await updateAssessmentInstancesScorePercPending([assessmentInstanceId]);
+        }
       });
 
       const use_instance_question_groups = await computeUseInstanceQuestionGroups(res.locals);

@@ -13,6 +13,7 @@ import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js'
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { updateAssessmentInstancesScorePercPending } from './assessment-grading.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -156,7 +157,7 @@ async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.instance_question_id != null) {
-      const instanceQuestion = await sqldb.queryRow(
+      const updatedInstanceQuestion = await sqldb.queryRow(
         sql.update_instance_question_post_submission,
         {
           instance_question_id: variant.instance_question_id,
@@ -167,7 +168,11 @@ async function insertSubmission({
         },
         InstanceQuestionSchema,
       );
-      await updateInstanceQuestionStats({ instanceQuestion });
+      await updateInstanceQuestionStats({ instanceQuestion: updatedInstanceQuestion });
+
+      if (variant.assessment_instance_id != null) {
+        await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
+      }
     }
 
     return { submission_id, variant };
@@ -394,7 +399,10 @@ export async function gradeVariant({
     if (nextGradingAllowedMs > 0) return;
   }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+  const grading_job = await insertGradingJob({
+    submission_id: submission.id,
+    authn_user_id,
+  });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -414,6 +422,7 @@ export async function gradeVariant({
       { type: 'elementExtensions' },
     ]);
     await externalGrader.beginGradingJob(grading_job.id);
+    return;
   } else {
     // For Internal grading we call the grading code. For Manual grading, if the question
     // reached this point, it has auto points, so it should be treated like Internal.

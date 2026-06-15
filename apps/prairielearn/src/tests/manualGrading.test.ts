@@ -1,13 +1,14 @@
 import * as cheerio from 'cheerio';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { InstanceQuestionSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -27,6 +28,9 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const ExpectedScorePercPendingRowSchema = z.object({
+  expected_score_perc_pending: z.number(),
+});
 
 /** Polls a background job sequence until it leaves the "Running" state. */
 async function waitForJobSequence(jobSequenceId: string): Promise<void> {
@@ -190,6 +194,20 @@ async function createTrpcClient(assessmentQuestionUrl: string) {
 async function loadInstances(assessmentQuestionUrl: string) {
   const client = await createTrpcClient(assessmentQuestionUrl);
   return await client.manualGrading.instances.query();
+}
+
+async function assertScorePercPending(iqId: string | number) {
+  const assessmentInstance = await sqldb.queryRow(
+    sql.get_assessment_instance_for_iq,
+    { iqId },
+    AssessmentInstanceSchema,
+  );
+  const { expected_score_perc_pending } = await sqldb.queryRow(
+    sql.get_expected_score_perc_pending_for_iq,
+    { iqId },
+    ExpectedScorePercPendingRowSchema,
+  );
+  assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
 }
 
 function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void {
@@ -527,6 +545,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
+      test.sequential(
+        'score_perc_pending should be 0 before manual grading is requested',
+        async () => {
+          await assertScorePercPending(iqId);
+        },
+      );
+
       test.sequential('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
           { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
@@ -563,6 +588,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(badge.attr('aria-label'), '1 submission requires manual grading');
         assert.include(badge.text(), '1');
       });
+
+      test.sequential(
+        'score_perc_pending should reflect a newly pending manual question after submission',
+        async () => {
+          await assertScorePercPending(iqId);
+        },
+      );
     });
 
     describe('Manual grading behavior while instance is open', () => {
@@ -784,6 +816,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         feedback_note = 'Test feedback note';
         await submitGradeForm('percentage');
       });
+
+      test.sequential(
+        'score_perc_pending should drop after manual grading is completed',
+        async () => {
+          await assertScorePercPending(iqId);
+        },
+      );
 
       checkGradingResults(mockStaff[0], mockStaff[2]);
     });

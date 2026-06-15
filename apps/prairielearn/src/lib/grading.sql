@@ -191,7 +191,7 @@ RETURNING
 -- BLOCK update_instance_question_post_submission
 WITH
   updated_instance_question AS (
-    UPDATE instance_questions
+    UPDATE instance_questions AS iq
     SET
       status = $status,
       duration = duration + ($delta * interval '1 ms'),
@@ -203,9 +203,9 @@ WITH
       ),
       is_ai_graded = FALSE
     WHERE
-      id = $instance_question_id
+      iq.id = $instance_question_id
     RETURNING
-      *
+      iq.*
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances
