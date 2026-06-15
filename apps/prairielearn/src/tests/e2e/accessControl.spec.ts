@@ -6,7 +6,6 @@ import type { Locator, Page } from '@playwright/test';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
@@ -70,7 +69,6 @@ test.describe('Access control UI', () => {
       path.join(TEST_COURSE_PATH, relativePath),
       path.join(testCoursePath, relativePath),
     );
-    await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
 

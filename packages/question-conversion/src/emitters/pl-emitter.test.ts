@@ -46,6 +46,11 @@ describe('PLEmitter', () => {
     assert.doesNotThrow(() => z.uuid().parse(q.infoJson.uuid));
   });
 
+  it('omits properties that match the PrairieLearn schema defaults', () => {
+    const result = emitter.emit(makeAssessment([makeQuestion()]));
+    assert.notProperty(result.questions[0].infoJson, 'gradingMethod');
+  });
+
   it('generates multiple choice HTML', () => {
     const result = emitter.emit(makeAssessment([makeQuestion()]));
     assert.equal(
@@ -862,11 +867,11 @@ describe('PLEmitter', () => {
       assert.include(serverPy, '# tolerance: 0.01');
     });
 
-    it('sets singleVariant to false for calculated questions', () => {
-      // Calculated questions vary each time — should NOT be singleVariant
+    it('omits singleVariant for calculated questions', () => {
+      // Calculated questions vary each time — singleVariant stays at the
+      // schema default (false), so it is omitted from info.json entirely.
       const result = emitter.emit(makeAssessment([makeCalcQuestion()]));
-      // singleVariant is true for all questions currently; calculated questions generate
-      // dynamic content via generate() — verify generate() is present instead
+      assert.notProperty(result.questions[0].infoJson, 'singleVariant');
       assert.include(
         result.questions[0].serverPy ?? '',
         'def generate(data):',

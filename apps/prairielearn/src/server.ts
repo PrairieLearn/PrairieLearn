@@ -213,6 +213,7 @@ export async function initExpress(): Promise<Express> {
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
+      files: config.fileUploadMaxFiles,
       fieldSize: config.fileUploadMaxBytes,
       fileSize: config.fileUploadMaxBytes,
       parts: config.fileUploadMaxParts,
@@ -233,11 +234,11 @@ export async function initExpress(): Promise<Express> {
   app.post('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', upload.single('file'));
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
@@ -257,39 +258,39 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post('/pl/course/:course_id(\\d+)/course_admin/settings', upload.single('file'));
-  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view', upload.single('file'));
-  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view/*', upload.single('file'));
+  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view', upload.array('files'));
+  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view/*', upload.array('files'));
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',

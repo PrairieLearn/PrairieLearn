@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
+import { someLimit } from 'async';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -45,7 +46,6 @@ import {
 import { discoverInfoDirs } from './discover-info-dirs.js';
 import { computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
-import { features } from './features/index.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -835,13 +835,6 @@ export class AssessmentAddEditor extends Editor {
 
     debug('Write infoAssessment.json');
 
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: this.course.institution_id,
-      course_id: this.course.id,
-      course_instance_id: this.course_instance.id,
-      user_id: this.user.id,
-    });
-
     const infoJson = {
       uuid: this.uuid,
       type: this.type,
@@ -849,7 +842,7 @@ export class AssessmentAddEditor extends Editor {
       set: this.set,
       module: this.module,
       number: nextAssessmentNumber.toString(),
-      ...(enhancedAccessControlEnabled ? { accessControl: [] } : { allowAccess: [] }),
+      accessControl: [],
       zones: [],
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
@@ -2359,95 +2352,99 @@ export class FileRenameEditor extends Editor {
 
 export class FileUploadEditor extends Editor {
   private container: { rootPath: string; invalidRootPaths: string[] };
-  private filePath: string;
-  private fileContents: Buffer;
+  private files: Record<string, Buffer>;
 
   constructor(
     params: BaseEditorOptions & {
       container: { rootPath: string; invalidRootPaths: string[] };
-      filePath: string;
-      fileContents: Buffer;
+      files: Record<string, Buffer>;
     },
   ) {
     const {
       locals: { course },
       container,
-      filePath,
-      fileContents,
+      files,
     } = params;
 
     let prefix = '';
     if (course.path !== container.rootPath) {
       prefix = `${path.basename(container.rootPath)}: `;
     }
-    super({
-      ...params,
-      description: `${prefix}Upload ${path.relative(container.rootPath, params.filePath)}`,
-    });
+
+    const description = `${prefix}Upload ${Object.keys(files)
+      .slice(0, 3)
+      .map((filePath) => path.relative(container.rootPath, filePath))
+      .join(
+        ', ',
+      )}${Object.keys(files).length > 3 ? ` and ${Object.keys(files).length - 3} more` : ''}`;
+    super({ ...params, description });
 
     this.container = container;
-    this.filePath = filePath;
-    this.fileContents = fileContents;
+    this.files = files;
   }
 
   async shouldEdit() {
     debug('look for old contents');
-    let contents;
-    try {
-      contents = await fs.readFile(this.filePath);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
-        debug('no old contents, so continue with upload');
-        return true;
+    return await someLimit(Object.entries(this.files), 5, async ([filePath, fileContents]) => {
+      let contents;
+      try {
+        contents = await fs.readFile(filePath);
+      } catch (err: any) {
+        if (err.code === 'ENOENT') {
+          debug('no old contents, so continue with upload');
+          return true;
+        }
+
+        throw err;
       }
 
-      throw err;
-    }
-
-    debug('get hash of old contents and of new contents');
-    const oldHash = getHash(contents);
-    const newHash = getHash(this.fileContents);
-    debug('oldHash: ' + oldHash);
-    debug('newHash: ' + newHash);
-    if (oldHash === newHash) {
-      debug('new contents are the same as old contents, so abort upload');
-      return false;
-    } else {
-      debug('new contents are different from old contents, so continue with upload');
-      return true;
-    }
+      debug('get hash of old contents and of new contents');
+      const oldHash = getHash(contents);
+      const newHash = getHash(fileContents);
+      debug('oldHash: ' + oldHash);
+      debug('newHash: ' + newHash);
+      if (oldHash === newHash) {
+        debug('new contents are the same as old contents, so abort upload');
+        return false;
+      } else {
+        debug('new contents are different from old contents, so continue with upload');
+        return true;
+      }
+    });
   }
 
   assertCanEdit() {
-    if (!contains(this.container.rootPath, this.filePath)) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
-          </div>
-        `,
-      });
-    }
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(this.container.rootPath, filePath)) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+            </div>
+          `,
+        });
+      }
 
-    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.filePath),
-    );
-    if (found) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must <em>not</em> be inside the directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `,
-      });
+      const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+        contains(invalidRootPath, filePath),
+      );
+      if (found) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must <em>not</em> be inside the directory</p>
+            <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+          `,
+        });
+      }
     }
 
     super.assertCanEdit();
@@ -2458,14 +2455,16 @@ export class FileUploadEditor extends Editor {
 
     if (!(await this.shouldEdit())) return null;
 
-    debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
+      debug('ensure path exists');
+      await fs.ensureDir(path.dirname(filePath));
 
-    debug('write file');
-    await fs.writeFile(this.filePath, this.fileContents);
+      debug('write file');
+      await fs.writeFile(filePath, fileContents);
+    }
 
     return {
-      pathsToAdd: [this.filePath],
+      pathsToAdd: Object.keys(this.files),
       commitMessage: this.description,
     };
   }

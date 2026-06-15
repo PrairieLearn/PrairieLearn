@@ -9,22 +9,16 @@
   "groups": {
     "minMembers": 1,
     "maxMembers": 5,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    },
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
     "roles": [
       { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
       { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
       { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
       { "name": "Contributor" }
     ],
-    "rolePermissions": {
-      "canAssignRoles": ["Manager"]
-    }
+    "rolePermissions": { "canAssignRoles": ["Manager"] }
   },
-  "allowAccess": [{ "credit": 100 }],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "title": "Fundamental questions",

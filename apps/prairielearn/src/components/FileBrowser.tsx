@@ -250,7 +250,7 @@ function DirectoryBrowserActions({
           data-bs-container="body"
           data-bs-html="true"
           data-bs-placement="auto"
-          data-bs-title="Upload file"
+          data-bs-title="Upload files"
           data-bs-content={FileUploadForm({
             file: { id: `New${d.label}`, info: d.info, working_path: d.path },
             csrfToken,
@@ -258,7 +258,7 @@ function DirectoryBrowserActions({
           }).toString()}
         >
           <i className="fa fa-plus" />
-          <span>Add new {d.label.toLowerCase()} file</span>
+          <span>Add new {d.label.toLowerCase()} files</span>
         </button>
       ))}
       <button
@@ -269,7 +269,7 @@ function DirectoryBrowserActions({
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
-        data-bs-title="Upload file"
+        data-bs-title="Upload files"
         data-bs-content={FileUploadForm({
           file: { id: 'New', working_path: paths.workingPath },
           csrfToken,
@@ -277,7 +277,7 @@ function DirectoryBrowserActions({
         }).toString()}
       >
         <i className="fa fa-plus" />
-        <span>Add new file</span>
+        <span>Add new files</span>
       </button>
     </div>
   );
