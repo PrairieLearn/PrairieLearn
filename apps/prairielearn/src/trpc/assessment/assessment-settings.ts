@@ -364,18 +364,26 @@ const updateAssessment = t.procedure
       });
     }
 
-    if (
-      locals.question_sharing_enabled &&
-      input.share_source_publicly &&
-      !assessment.share_source_publicly
-    ) {
-      try {
-        await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
-      } catch (err) {
-        if (err instanceof HttpStatusError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+    if (locals.question_sharing_enabled) {
+      if (input.share_source_publicly === true && !assessment.share_source_publicly) {
+        try {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof HttpStatusError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
         }
-        throw err;
+      } else if (
+        input.share_source_publicly === false &&
+        assessment.share_source_publicly &&
+        course_instance.share_source_publicly
+      ) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'Cannot un-share this assessment publicly because its course instance is publicly shared. Un-share the course instance first.',
+        });
       }
     }
 
@@ -507,8 +515,9 @@ const updateAssessment = t.procedure
         if (locals.question_sharing_enabled) {
           assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
             assessmentInfo.shareSourcePublicly,
-            // If source is already public, preserve that setting regardless of the submitted value.
-            assessment.share_source_publicly || (input.share_source_publicly ?? false),
+            // An omitted value (e.g. disabled checkbox) preserves the current setting;
+            // an explicit value shares or un-shares (validated above).
+            input.share_source_publicly ?? assessment.share_source_publicly,
             false,
           );
         }
