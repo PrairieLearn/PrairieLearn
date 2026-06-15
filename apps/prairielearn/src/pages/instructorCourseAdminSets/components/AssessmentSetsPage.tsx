@@ -5,11 +5,11 @@ import { useModalState } from '@prairielearn/ui';
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import { AssessmentUsageModal } from '../../../components/AssessmentUsageModal.js';
 import {
-  SortableRowActionsCell,
-  SortableRowsContext,
+  ReorderableRowActionsCell,
+  ReorderableRowsContext,
   getDuplicateNames,
-  useSortableRow,
-} from '../../../components/SortableTable.js';
+  useReorderableRow,
+} from '../../../components/ReorderableTable.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
 import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.types.js';
 
@@ -46,12 +46,12 @@ function AssessmentSetRow({
   onDelete: () => void;
   onShowUsage: () => void;
 }) {
-  const { ref, style, dragHandleProps } = useSortableRow(assessmentSet.trackingId);
+  const { ref, style, dragHandleProps } = useReorderableRow(assessmentSet.trackingId);
 
   return (
     <tr ref={ref} style={style}>
       {editMode && allowEdit && (
-        <SortableRowActionsCell
+        <ReorderableRowActionsCell
           trackingId={assessmentSet.trackingId}
           dragHandleProps={dragHandleProps}
           editLabel={`Edit assessment set ${assessmentSet.name}`}
@@ -106,7 +106,7 @@ function AssessmentSetsTable({
   handleShowUsage: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
 }) {
   return (
-    <SortableRowsContext rows={rows} onReorder={onReorder}>
+    <ReorderableRowsContext rows={rows} onReorder={onReorder}>
       <table className="table table-sm table-hover table-striped" aria-label="Assessment sets">
         <thead>
           <tr>
@@ -146,7 +146,7 @@ function AssessmentSetsTable({
           )}
         </tbody>
       </table>
-    </SortableRowsContext>
+    </ReorderableRowsContext>
   );
 }
 

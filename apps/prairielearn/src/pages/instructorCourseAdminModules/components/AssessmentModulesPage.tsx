@@ -7,11 +7,11 @@ import { useModalState } from '@prairielearn/ui';
 import { AssessmentModuleHeading } from '../../../components/AssessmentModuleHeading.js';
 import { AssessmentUsageModal } from '../../../components/AssessmentUsageModal.js';
 import {
-  SortableRowActionsCell,
-  SortableRowsContext,
+  ReorderableRowActionsCell,
+  ReorderableRowsContext,
   getDuplicateNames,
-  useSortableRow,
-} from '../../../components/SortableTable.js';
+  useReorderableRow,
+} from '../../../components/ReorderableTable.js';
 import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../../lib/assessment-modules.shared.js';
 import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
@@ -72,12 +72,12 @@ function AssessmentModuleRow({
   onDelete: () => void;
   onShowUsage: () => void;
 }) {
-  const { ref, style, dragHandleProps } = useSortableRow(module.trackingId);
+  const { ref, style, dragHandleProps } = useReorderableRow(module.trackingId);
 
   return (
     <tr ref={ref} style={style}>
       {editMode && allowEdit && (
-        <SortableRowActionsCell
+        <ReorderableRowActionsCell
           trackingId={module.trackingId}
           dragHandleProps={dragHandleProps}
           editLabel={`Edit module ${module.name}`}
@@ -129,7 +129,7 @@ function AssessmentModulesTable({
   handleShowUsage: (module: AssessmentModuleFormRow) => void;
 }) {
   return (
-    <SortableRowsContext rows={rows} onReorder={onReorder}>
+    <ReorderableRowsContext rows={rows} onReorder={onReorder}>
       <table className="table table-sm table-hover table-striped" aria-label="Assessment modules">
         <thead>
           <tr>
@@ -166,7 +166,7 @@ function AssessmentModulesTable({
           )}
         </tbody>
       </table>
-    </SortableRowsContext>
+    </ReorderableRowsContext>
   );
 }
 

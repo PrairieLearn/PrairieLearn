@@ -70,7 +70,9 @@ function SortableOverrideCard({
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
-    transform: CSS.Transform.toString(transform ? { ...transform, scaleX: 1, scaleY: 1 } : null),
+    // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+    // which visually warps variable-height rows. See https://github.com/clauderic/dnd-kit/issues/44.
+    transform: CSS.Translate.toString(transform),
     transition,
   };
 

@@ -21,9 +21,9 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 /**
  * Drag-and-drop context for a table whose rows can be reordered. Rows are
- * identified by `trackingId` and must use `useSortableRow` to participate.
+ * identified by `trackingId` and must use `useReorderableRow` to participate.
  */
-export function SortableRowsContext<T extends { trackingId: string }>({
+export function ReorderableRowsContext<T extends { trackingId: string }>({
   rows,
   onReorder,
   children,
@@ -59,8 +59,8 @@ export function SortableRowsContext<T extends { trackingId: string }>({
   );
 }
 
-/** Sortable behavior and drag styling for a `<tr>` inside `SortableRowsContext`. */
-export function useSortableRow(trackingId: string) {
+/** Drag-reorder behavior and styling for a `<tr>` inside `ReorderableRowsContext`. */
+export function useReorderableRow(trackingId: string) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: trackingId,
   });
@@ -69,6 +69,8 @@ export function useSortableRow(trackingId: string) {
     ref: setNodeRef,
     style: {
       opacity: isDragging ? 0.6 : 1,
+      // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+      // which visually warps variable-height rows. See https://github.com/clauderic/dnd-kit/issues/44.
       transform: CSS.Translate.toString(transform),
       transition,
       background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
@@ -77,14 +79,14 @@ export function useSortableRow(trackingId: string) {
   };
 }
 
-type SortableRowHandle = ReturnType<typeof useSortableRow>;
+type ReorderableRowHandle = ReturnType<typeof useReorderableRow>;
 
 /**
- * The drag/edit/delete actions cell of a sortable row. When
+ * The drag/edit/delete actions cell of a reorderable row. When
  * `deleteDisabledReason` is set, the delete button is inert and explains why
  * in a click tooltip instead.
  */
-export function SortableRowActionsCell({
+export function ReorderableRowActionsCell({
   trackingId,
   dragHandleProps,
   editLabel,
@@ -94,7 +96,7 @@ export function SortableRowActionsCell({
   onDelete,
 }: {
   trackingId: string;
-  dragHandleProps: SortableRowHandle['dragHandleProps'];
+  dragHandleProps: ReorderableRowHandle['dragHandleProps'];
   editLabel: string;
   deleteLabel: string;
   deleteDisabledReason?: string | null;
