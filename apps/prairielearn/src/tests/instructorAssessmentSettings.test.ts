@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
@@ -504,27 +504,22 @@ describe('Editing assessment settings', () => {
       try {
         const trpcClient = await createTrpcClient('1');
         const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        await trpcClient.assessmentSettings.updateAssessment.mutate({
-          title: assessmentInfo.title,
-          set: assessmentInfo.set,
-          number: assessmentInfo.number,
-          module: assessmentInfo.module ?? 'Default',
-          aid: 'A1',
-          ...defaultMutationFields,
-          share_source_publicly: false,
-          origHash: await getOrigHash(assessmentLiveInfoPath),
-        });
-        assert.fail('Expected mutation to throw');
-      } catch (err: unknown) {
-        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
-        assert.isNotNull(appError);
-        assert.equal(appError.code, 'UNKNOWN');
-        assert.include(
-          appError.message,
+        await expect(
+          trpcClient.assessmentSettings.updateAssessment.mutate({
+            title: assessmentInfo.title,
+            set: assessmentInfo.set,
+            number: assessmentInfo.number,
+            module: assessmentInfo.module ?? 'Default',
+            aid: 'A1',
+            ...defaultMutationFields,
+            share_source_publicly: false,
+            origHash: await getOrigHash(assessmentLiveInfoPath),
+          }),
+        ).rejects.toThrow(
           'Cannot un-share this assessment publicly because its course instance is publicly shared',
         );
-        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        assert.equal(assessmentInfo.shareSourcePublicly, true);
+        const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+        assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
       } finally {
         await setCourseInstanceSharingFilePublic(false);
         await setAssessmentSharingFilesPublic(false);

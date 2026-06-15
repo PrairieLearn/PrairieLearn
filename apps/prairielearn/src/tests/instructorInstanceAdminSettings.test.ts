@@ -151,7 +151,7 @@ describe('Updating a course instance ID', () => {
     },
   );
 
-  test.sequential('un-shares course instance source at any time', async () => {
+  test.sequential('un-shares course instance source', async () => {
     await setSharingFilesPublic(true);
     try {
       const response = await fetchCheerio(

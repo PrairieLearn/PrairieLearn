@@ -462,7 +462,10 @@ router.post(
             course_instance_id: courseInstance.id,
           });
         }
-        // A course instance can be un-shared at any time, so the submitted value wins.
+        // Native form POST: an unchecked box is absent, not `false`, so a missing
+        // value means "unchecked" → un-share (allowed for a course instance at any
+        // time). This differs from the assessment settings (tRPC), where a missing
+        // field may be a disabled checkbox whose current value must be preserved.
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,
           parsedBody.share_source_publicly ?? false,

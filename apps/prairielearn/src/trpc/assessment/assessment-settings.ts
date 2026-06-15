@@ -19,10 +19,7 @@ import {
   prepareJsonFileEditor,
   saveJsonFile,
 } from '../../lib/editors.js';
-import {
-  assertAssessmentCanBeSharedPublicly,
-  assertAssessmentCanBeUnsharedPublicly,
-} from '../../lib/sharing-validation.js';
+import { assertAssessmentCanBeSharedPublicly } from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
 import {
@@ -368,17 +365,25 @@ const updateAssessment = t.procedure
     }
 
     if (locals.question_sharing_enabled) {
-      try {
-        if (input.share_source_publicly === true && !assessment.share_source_publicly) {
+      if (input.share_source_publicly === true && !assessment.share_source_publicly) {
+        try {
           await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
-        } else if (input.share_source_publicly === false && assessment.share_source_publicly) {
-          await assertAssessmentCanBeUnsharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof HttpStatusError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
         }
-      } catch (err) {
-        if (err instanceof HttpStatusError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
-        }
-        throw err;
+      } else if (
+        input.share_source_publicly === false &&
+        assessment.share_source_publicly &&
+        course_instance.share_source_publicly
+      ) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'Cannot un-share this assessment publicly because its course instance is publicly shared. Un-share the course instance first.',
+        });
       }
     }
 
