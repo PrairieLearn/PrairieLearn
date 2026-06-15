@@ -113,7 +113,7 @@ export interface QuestionOverrides {
 }
 
 export const DUPLICATE_ASSESSMENT_QUESTION_WARNING =
-  'This question appears multiple times on the assessment. Only the first occurrence will be imported.';
+  'This question appears multiple times on the assessment. Only the first occurrence of the question will be imported.';
 
 /**
  * Remove repeated references to the same question within an assessment's
