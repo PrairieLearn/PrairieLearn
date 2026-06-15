@@ -2,8 +2,11 @@ import { type Header, createColumnHelper } from '@tanstack/react-table';
 
 import { run } from '@prairielearn/run';
 import {
+  BooleanColumnFilter,
+  type BooleanFilterOption,
   MultiSelectColumnFilter,
   type MultiSelectFilterValue,
+  applyBooleanFilter,
   applyMultiSelectFilter,
 } from '@prairielearn/ui';
 
@@ -272,6 +275,26 @@ export function createQuestionsTableColumns({
       size: 200,
     }),
 
+    columnHelper.accessor('single_variant', {
+      id: 'single_variant',
+      header: 'Single variant',
+      cell: (info) => (info.getValue() ? 'Yes' : 'No'),
+      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      },
+      size: 190,
+    }),
+
+    columnHelper.accessor('has_preferences', {
+      id: 'has_preferences',
+      header: 'Has preferences',
+      cell: (info) => (info.getValue() ? 'Yes' : 'No'),
+      filterFn: (row, columnId, filter: MultiSelectFilterValue<BooleanFilterOption>) => {
+        return applyBooleanFilter(filter, row.getValue<boolean>(columnId));
+      },
+      size: 170,
+    }),
+
     // Dynamic assessment columns per course instance, grouped under "Referenced assessments"
     ...(courseInstances.length > 0
       ? [
@@ -465,6 +488,8 @@ export function createQuestionsTableFilters({
     workspace_image: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
     ),
+    single_variant: ({ header }) => <BooleanColumnFilter column={header.column} />,
+    has_preferences: ({ header }) => <BooleanColumnFilter column={header.column} />,
     sharing_sets: ({ header }) => (
       <MultiSelectColumnFilter column={header.column} allColumnValues={allSharingSets} />
     ),

@@ -209,6 +209,8 @@ router.get(
           job_sequence_id: message.job_sequence_id,
           status: message.status,
           include_in_context: message.include_in_context,
+          user_name: message.user_name,
+          created_at: message.created_at.toISOString(),
         },
       };
     });

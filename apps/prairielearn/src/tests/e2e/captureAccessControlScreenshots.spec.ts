@@ -17,7 +17,6 @@ import type { Locator, Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import type { Assessment, CourseInstance } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { replaceEnrollmentAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -308,7 +307,6 @@ test.describe('Modern access control docs screenshots', () => {
     await page.setViewportSize(VIEWPORT);
     if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
-    await features.enable('enhanced-access-control');
     await writeScreenshotAssessmentConfig({
       testCoursePath,
       displayTimezone: courseInstance.display_timezone,

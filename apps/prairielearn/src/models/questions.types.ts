@@ -31,6 +31,10 @@ export const QuestionsPageDataSchema = QuestionSchema.pick({
   // The public questions query does not select these columns, so they must be optional.
   sync_errors: QuestionSchema.shape.sync_errors.optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings.optional(),
+  // The queries coalesce null to false.
+  single_variant: z.boolean(),
+  // True if the question defines a non-empty `preferences` schema.
+  has_preferences: z.boolean(),
   display_type: z.string(),
   open_issue_count: z.number().default(0),
   topic: TopicSchema,

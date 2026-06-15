@@ -1,6 +1,5 @@
 import { EC2 } from '@aws-sdk/client-ec2';
 import * as async from 'async';
-import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
