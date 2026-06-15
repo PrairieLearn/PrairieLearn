@@ -1101,6 +1101,25 @@ function testUploadMultipleFiles(params: {
       pullAndVerifyFileInDev(uploadedPath, file.contents);
     });
   });
+
+  describe(`POST to ${params.url} with duplicate file names`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+        formData.append('files', new Blob([Buffer.from(file.contents + ' (copy)')]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isNotOk(res.ok);
+      const text = await res.text();
+      assert.include(text, 'Duplicate file names in upload');
+    });
+  });
 }
 
 function testRenameFile(params: {
