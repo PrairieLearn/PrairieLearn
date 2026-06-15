@@ -85,9 +85,9 @@
     "brotli": 549
   },
   "scripts/instructorFileBrowserClient.ts": {
-    "raw": 5335,
-    "gzip": 2245,
-    "brotli": 2037
+    "raw": 5942,
+    "gzip": 2490,
+    "brotli": 2220
   },
   "scripts/instructorFileEditorClient.tsx": {
     "raw": 1321321,
