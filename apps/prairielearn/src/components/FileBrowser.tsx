@@ -457,7 +457,7 @@ function DirectoryBrowserActions({
             data-bs-container="body"
             data-bs-html="true"
             data-bs-placement="auto"
-            data-bs-title="Upload file"
+            data-bs-title="Upload files"
             data-bs-content="${escapeHtml(
               FileUploadForm({
                 file: { id: `New${d.label}`, info: d.info, working_path: d.path },
@@ -479,7 +479,7 @@ function DirectoryBrowserActions({
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
-        data-bs-title="Upload file"
+        data-bs-title="Upload files"
         data-bs-content="${escapeHtml(
           FileUploadForm({
             file: { id: 'New', working_path: paths.workingPath },
