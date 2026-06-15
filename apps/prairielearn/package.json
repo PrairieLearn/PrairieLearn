@@ -255,7 +255,7 @@
     "unified": "^11.0.5",
     "unzipper": "^0.12.3",
     "use-stick-to-bottom": "^1.1.4",
-    "vite": "^8.0.14",
+    "vite": "^8.0.16",
     "web-tree-sitter": "^0.26.9",
     "winston": "^3.19.0",
     "xml-formatter": "^3.7.0",
