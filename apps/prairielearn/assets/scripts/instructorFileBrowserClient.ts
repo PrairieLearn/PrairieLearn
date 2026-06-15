@@ -35,6 +35,8 @@ on('change', 'input[type="file"]', function (event) {
     input.setCustomValidity(
       `You can only upload files up to ${input.dataset.maxFileSizeFormatted ?? maxFileSize} bytes`,
     );
+  } else if (new Set(Array.from(input.files || []).map((file) => file.name)).size < fileCount) {
+    input.setCustomValidity('Duplicate file names are not allowed');
   } else {
     input.setCustomValidity('');
   }
