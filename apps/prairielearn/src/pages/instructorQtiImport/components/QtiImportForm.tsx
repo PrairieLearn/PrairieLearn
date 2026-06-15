@@ -23,6 +23,7 @@ import {
   type SerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  deduplicateAssessmentZoneQuestions,
   getUnresolvedSourceBankRefs,
   hasCanvasUnresolvedSourceBankRefs,
   resolveRenamedDir,
@@ -229,6 +230,12 @@ function mergeSourceBankResults(
 
     if (!changed) return result;
 
+    // A bank question may already be on the assessment directly, or two
+    // matched banks may share deduplicated questions; keep only the first
+    // reference so the assessment can sync.
+    const { zones: dedupedZones, warnings: duplicateWarnings } =
+      deduplicateAssessmentZoneQuestions(zones);
+
     return {
       ...result,
       unresolvedSourceBankRefs: remainingRefs.length > 0 ? remainingRefs : undefined,
@@ -236,13 +243,14 @@ function mergeSourceBankResults(
         ...result.assessment,
         infoJson: {
           ...result.assessment.infoJson,
-          zones,
+          zones: dedupedZones,
         },
       },
       questions: [...questionsByDir.values()],
-      warnings: result.warnings.filter(
-        (warning) => !removedWarningQuestionIds.has(warning.questionId),
-      ),
+      warnings: [
+        ...result.warnings.filter((warning) => !removedWarningQuestionIds.has(warning.questionId)),
+        ...duplicateWarnings,
+      ],
     };
   });
 
