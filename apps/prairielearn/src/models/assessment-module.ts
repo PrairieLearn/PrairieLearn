@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { AssessmentUsageSchema } from '../lib/client/assessment-usage.js';
+import { AssessmentUsageSchema } from '../components/AssessmentUsageModal.js';
 import { type AssessmentModule, AssessmentModuleSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AssessmentUsageSchema } from '../../lib/client/assessment-usage.js';
+import { AssessmentUsageSchema } from '../../components/AssessmentUsageModal.js';
 import { RawStaffAssessmentModuleSchema } from '../../lib/client/safe-db-types.js';
 
 // Safe-db-types view of a module plus the assessments that belong to it. Used
