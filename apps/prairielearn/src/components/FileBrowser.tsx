@@ -677,6 +677,7 @@ function DirectoryBrowserBody({
 }
 
 function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: string }) {
+  const maxFileSizeFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
   return html`
     <form
       class="needs-validation"
@@ -694,13 +695,17 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
         <input
           type="file"
           name="files"
-          ${file.path == null ? 'multiple' : ''}
+          ${file.path == null
+            ? html`multiple data-max-file-count="${config.fileUploadMaxFiles}"`
+            : ''}
+          data-max-file-size="${config.fileUploadMaxBytes}"
+          data-max-file-size-formatted="${maxFileSizeFormatted}"
           class="form-control"
           id="attachFileInput-${file.id}"
           required
         />
         <small class="form-text text-muted">
-          Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+          Max file size: ${maxFileSizeFormatted}
           ${file.path == null ? `per file (at most ${config.fileUploadMaxFiles} files)` : ''}
         </small>
       </div>
