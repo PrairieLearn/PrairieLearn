@@ -1,5 +1,7 @@
 FROM node:26-trixie
 ARG CACHEBUST=2026-06-15-15-59-28
+LABEL com.prairielearn.workspace.home="/home/student"
+LABEL com.prairielearn.workspace.port="8080"
 
 RUN apt-get update \
     && apt-get upgrade -y \

@@ -106,8 +106,19 @@ const WorkspaceOptionsJsonSchema = z
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.number().int().describe('The port number used in the Docker image.'),
-    home: z.string().describe('The home directory of the workspace container.'),
+    port: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        'The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.',
+      ),
+    home: z
+      .string()
+      .optional()
+      .describe(
+        'The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.',
+      ),
     args: z
       .union([z.string(), z.array(z.string())])
       .describe('Command line arguments to pass to the Docker container.')

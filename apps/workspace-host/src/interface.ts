@@ -65,8 +65,8 @@ const PortOccupiedSchema = z.boolean();
 
 const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
-  workspace_port: z.number(),
-  workspace_home: z.string(),
+  workspace_port: z.number().nullable(),
+  workspace_home: z.string().nullable(),
   workspace_graded_files: z.array(z.string()),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
@@ -828,7 +828,25 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
-  const containerPath = settings.workspace_home;
+  const [containerPath, workspacePort] = await run(async () => {
+    if (settings.workspace_home != null && settings.workspace_port != null) {
+      return [settings.workspace_home, settings.workspace_port];
+    }
+    logger.verbose('Retrieving workspace labels from image');
+    const inspectResults = await docker.getImage(settings.workspace_image).inspect();
+    const labels = inspectResults.Config.Labels;
+    const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
+    const port = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
+    if (home == null) {
+      throw new Error(
+        'Workspace home directory not specified in question settings or image labels',
+      );
+    }
+    if (port == null) {
+      throw new Error('Workspace port not specified in question settings or image labels');
+    }
+    return [home, port];
+  });
   const args = settings.workspace_args.trim();
 
   let networkMode = 'bridge';
@@ -841,14 +859,14 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   }
 
   debug(`Creating docker container for image=${settings.workspace_image}`);
-  debug(`Exposed port: ${settings.workspace_port}`);
+  debug(`Exposed port: ${workspacePort}`);
   debug(`Networking enabled: ${settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${settings.workspace_environment}`);
   debug(
     `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
   );
-  debug(`Port binding: ${settings.workspace_port}:${launch_port}`);
+  debug(`Port binding: ${workspacePort}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${local_name}`);
 
@@ -866,13 +884,13 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
-      [`${settings.workspace_port}/tcp`]: {},
+      [`${workspacePort}/tcp`]: {},
     },
     Env: settings.workspace_environment,
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {
-        [`${settings.workspace_port}/tcp`]: [{ HostPort: `${launch_port}` }],
+        [`${workspacePort}/tcp`]: [{ HostPort: `${launch_port}` }],
       },
       Binds: [`${workspacePath}:${containerPath}`],
       Memory: config.workspaceDockerMemory,
@@ -960,6 +978,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     const workspace = await run(async () => {
       try {
         debug('init: configuring workspace');
+        const settings = await _getWorkspaceSettings(workspace_id);
         return {
           id: workspace_id,
           course_id,
@@ -969,7 +988,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
           local_name: `workspace-${uuid}`,
           remote_name: `workspace-${workspace_id}-${version}`,
           launch_port: await _allocateContainerPort(workspace_id),
-          settings: await _getWorkspaceSettings(workspace_id),
+          settings,
         } satisfies Workspace;
       } catch (err) {
         logger.error(`Error configuring workspace ${workspace_id}`, err);
@@ -1093,7 +1112,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
-  const workspaceSettings = await _getWorkspaceSettings(workspace_id);
+  const { workspace_graded_files } = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
@@ -1102,7 +1121,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   try {
     gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
       workspaceDir,
-      workspaceSettings.workspace_graded_files,
+      workspace_graded_files,
       {
         maxFiles: config.workspaceMaxGradedFilesCount,
         maxSize: config.workspaceMaxGradedFilesSize,

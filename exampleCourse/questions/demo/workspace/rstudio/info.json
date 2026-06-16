@@ -7,10 +7,8 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-rstudio",
-    "port": 3939,
     "args": "",
     "rewriteUrl": false,
-    "home": "/home/rstudio/workspace",
     "gradedFiles": ["student.R"]
   },
   "gradingMethod": "External",
