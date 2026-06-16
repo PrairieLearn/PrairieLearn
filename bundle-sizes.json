@@ -261,13 +261,13 @@
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentSettings.ts": {
     "raw": 941858,
-    "gzip": 290603,
-    "brotli": 251574
+    "gzip": 290605,
+    "brotli": 251572
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminInstances.ts": {
-    "raw": 1244041,
-    "gzip": 380521,
-    "brotli": 311241
+    "raw": 1244123,
+    "gzip": 380564,
+    "brotli": 311283
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminSharing.ts": {
     "raw": 900321,
@@ -290,9 +290,9 @@
     "brotli": 70816
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
-    "raw": 1448018,
-    "gzip": 409380,
-    "brotli": 351539
+    "raw": 1448154,
+    "gzip": 409451,
+    "brotli": 351591
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
     "raw": 1510894,
@@ -365,9 +365,9 @@
     "brotli": 71052
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 999031,
-    "gzip": 270960,
-    "brotli": 232893
+    "raw": 999113,
+    "gzip": 271002,
+    "brotli": 232932
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 1463271,
