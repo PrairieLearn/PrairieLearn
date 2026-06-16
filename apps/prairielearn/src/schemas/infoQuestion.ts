@@ -109,6 +109,8 @@ const WorkspaceOptionsJsonSchema = z
     port: z
       .number()
       .int()
+      .min(1)
+      .max(65535)
       .optional()
       .describe(
         'The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.',

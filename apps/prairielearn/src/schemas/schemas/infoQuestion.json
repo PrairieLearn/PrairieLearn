@@ -288,8 +288,8 @@
         "port": {
           "description": "The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.",
           "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991
+          "minimum": 1,
+          "maximum": 65535
         },
         "home": {
           "description": "The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.",
