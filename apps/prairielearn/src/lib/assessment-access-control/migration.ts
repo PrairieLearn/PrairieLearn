@@ -347,6 +347,19 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
     }
   }
 
+  // `questions: { hidden: true }` without reveal dates matches the
+  // afterComplete default, so omit it from the migrated JSON.
+  if (
+    result.questions?.hidden &&
+    result.questions.visibleFromDate == null &&
+    result.questions.visibleUntilDate == null
+  ) {
+    delete result.questions;
+  }
+  if (result.questions === undefined && result.score === undefined) {
+    return { afterComplete: undefined, notes };
+  }
+
   return { afterComplete: result, notes };
 }
 
@@ -510,9 +523,12 @@ function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
-  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  const afterLastCredit =
+    dateControl.afterLastDeadline?.allowSubmissions === true
+      ? dateControl.afterLastDeadline.credit
+      : 0;
   if (
-    dateControl.afterLastDeadline &&
+    dateControl.afterLastDeadline?.allowSubmissions === true &&
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {
@@ -620,6 +636,10 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     const releaseDate = findReleaseDate(rules);
     const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
     if (releaseDate) dateControl.release = { date: releaseDate };
+    const openTimedRule = creditRules.find((r) => r.timeLimitMin);
+    if (openTimedRule?.timeLimitMin) {
+      dateControl.durationMinutes = openTimedRule.timeLimitMin;
+    }
     return { dateControl, errors, notes };
   }
 
@@ -1027,6 +1047,25 @@ export function migrateAllowAccess(
 // File-level operations
 // ---------------------------------------------------------------------------
 
+/**
+ * Replaces `oldKey` with `newKey` (holding `value`) while preserving the
+ * original property order. If `newKey` already exists alongside `oldKey`, the
+ * stale `newKey` entry is dropped so it can't overwrite the replacement.
+ */
+export function replaceJsonKey(
+  data: Record<string, unknown>,
+  oldKey: string,
+  newKey: string,
+  value: unknown,
+): Record<string, unknown> {
+  const hasOldKey = Object.hasOwn(data, oldKey);
+  return Object.fromEntries(
+    Object.entries(data)
+      .filter(([key]) => !(hasOldKey && key === newKey))
+      .map(([key, val]) => (key === oldKey ? [newKey, value] : [key, val])),
+  );
+}
+
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
   jsonContent: string,
@@ -1034,15 +1073,19 @@ export function migrateAssessmentJson(
 ): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+  if (!Array.isArray(allowAccess)) return null;
+
+  if (allowAccess.length === 0) {
+    const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', []);
+    return { json: JSON.stringify(migrated), errors: [], notes: [] };
+  }
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   if (errors.length > 0 || accessControl == null) return null;
 
-  data.accessControl = [accessControl];
-  delete data.allowAccess;
-  return { json: JSON.stringify(data), errors, notes };
+  const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', [accessControl]);
+  return { json: JSON.stringify(migrated), errors, notes };
 }
 
 export async function analyzeAssessmentFile(
@@ -1063,11 +1106,12 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(allowAccess)) return null;
 
-  const { errors, notes, hasUidRules } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
+  const { errors, notes, hasUidRules } =
+    allowAccess.length === 0
+      ? { errors: [], notes: [], hasUidRules: false }
+      : migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,
@@ -1103,7 +1147,7 @@ export async function analyzeCourseInstanceAssessments(
 }
 
 /**
- * Errors and notes from `migrateAllowAccess` are intentionally discarded
+ * Errors and notes from `migrateAssessmentJson` are intentionally discarded
  * here. The UI runs `analyzeAccessControl` ahead of time, and the errors produced here
  * will match what the user already saw.
  */
@@ -1117,7 +1161,7 @@ export async function applyMigrationToAssessmentFile(
   const data = JSON.parse(content);
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+  if (!Array.isArray(allowAccess)) {
     return;
   }
 
@@ -1132,11 +1176,13 @@ export async function applyMigrationToAssessmentFile(
       delete data.allowAccess;
       break;
     case 'migrate': {
-      const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-      if (errors.length === 0 && accessControl != null) {
-        data.accessControl = [accessControl];
-        delete data.allowAccess;
-      } else if (clearIncompatible) {
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+      if (migrationResult) {
+        const formatted = await formatJsonWithPrettier(migrationResult.json);
+        await fs.writeFile(filePath, formatted);
+        return;
+      }
+      if (clearIncompatible) {
         delete data.allowAccess;
       } else {
         return;

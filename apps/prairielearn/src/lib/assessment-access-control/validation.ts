@@ -79,45 +79,6 @@ function findLastDeadlineMs(rule: AccessControlJson): number | null {
   return findDueMs(rule);
 }
 
-function hasAnyDeadline(rule: AccessControlJson): boolean {
-  const dc = rule.dateControl;
-  if (!dc) return false;
-  if (dc.due?.date) return true;
-  if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
-  return false;
-}
-
-type CompletionMechanismType = 'deadline' | 'duration' | 'prairieTest';
-
-function getCompletionMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
-  const types = new Set<CompletionMechanismType>();
-  if (hasAnyDeadline(rule)) types.add('deadline');
-  if (rule.dateControl?.durationMinutes != null) types.add('duration');
-  if ((rule.integrations?.prairieTest?.exams ?? []).length > 0) types.add('prairieTest');
-  return types;
-}
-
-/**
- * Mechanism types that an override actively clears, i.e. nulls out without
- * supplying a replacement. Used to pull a globally-available mechanism out
- * of consideration for this override's resolved view: e.g. a default with only
- * a due date paired with an override of `dateControl: { due: { date: null } }`
- * leaves the override's students with nothing. Overrides cannot define
- * `integrations`, so PrairieTest exams cannot be cleared by an override.
- */
-function overrideClearedMechanismTypes(rule: AccessControlJson): Set<CompletionMechanismType> {
-  const cleared = new Set<CompletionMechanismType>();
-  const dc = rule.dateControl;
-  if (!dc) return cleared;
-  if (!hasAnyDeadline(rule) && dc.due !== undefined && dc.due.date == null) {
-    cleared.add('deadline');
-  }
-  if (dc.durationMinutes === null) {
-    cleared.add('duration');
-  }
-  return cleared;
-}
-
 /**
  * Validates structural field dependencies within a single rule.
  * These are constraints where certain fields are meaningless without
@@ -169,53 +130,6 @@ export function validateRuleStructuralDependencyIssues(
       ['dateControl', 'earlyDeadlines', 0, 'date'],
       'Early deadlines are not allowed when due date credit is below 100%.',
     );
-  }
-
-  // Constraint 3: After-complete date fields require at least one deadline.
-  // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
-  // to the last deadline. Boolean fields (hidden) are fine without deadlines.
-  // PrairieTest and timed assessments manage completion independently,
-  // so after-complete dates are valid without deadlines in those cases.
-  // Only enforced on the default rule — overrides may inherit deadlines.
-  // The "no completion mechanism at all" case (no dateControl + no
-  // PrairieTest) is handled by validateGlobalAfterCompleteIssues with a
-  // broader message.
-  const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
-  const hasDuration = dc?.durationMinutes != null;
-  const ac = rule.afterComplete;
-  if (
-    validationRule.targetType === 'none' &&
-    ac &&
-    dc &&
-    !hasAnyDeadline(rule) &&
-    !hasPrairieTest &&
-    !hasDuration
-  ) {
-    const q = ac.questions;
-    if (q?.visibleFromDate) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['afterComplete', 'questions', 'visibleFromDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
-      );
-    }
-    if (q?.visibleUntilDate) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['afterComplete', 'questions', 'visibleUntilDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
-      );
-    }
-    if (ac.score?.visibleFromDate) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['afterComplete', 'score', 'visibleFromDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
-      );
-    }
   }
 
   return issues;
@@ -795,57 +709,6 @@ export function validateAfterCompleteCrossFieldIssues(
 }
 
 /**
- * Cross-rule check: each rule with after-complete settings must have a
- * completion mechanism — a real deadline (due date or late deadline), a
- * duration limit, or a PrairieTest exam. A dateControl with only `release`,
- * `password`, or `due: { date: null }` is not enough since none of those can
- * ever close the assessment, so any after-complete settings would be a no-op.
- *
- * The default rule must carry a mechanism in its own config. Overrides accept
- * any globally-available mechanism (any rule may contribute, since overrides
- * stack at runtime), minus types this override actively clears: a globally
- * unique mechanism type that the override nulls out leaves nothing for the
- * override's students.
- */
-export function validateGlobalAfterCompleteIssues(
-  validationRules: AccessControlValidationRule[],
-): AccessControlValidationIssue[] {
-  const issues: AccessControlValidationIssue[] = [];
-  if (validationRules.length === 0) return issues;
-
-  const message =
-    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
-
-  const globalMechanisms = new Set<CompletionMechanismType>();
-  for (const vr of validationRules) {
-    for (const t of getCompletionMechanismTypes(vr.rule)) globalMechanisms.add(t);
-  }
-
-  for (const validationRule of validationRules) {
-    const ac = validationRule.rule.afterComplete;
-    if (!ac) continue;
-
-    let hasMechanism: boolean;
-    if (validationRule.targetType === 'none') {
-      hasMechanism = getCompletionMechanismTypes(validationRule.rule).size > 0;
-    } else {
-      const cleared = overrideClearedMechanismTypes(validationRule.rule);
-      hasMechanism = [...globalMechanisms].some((t) => !cleared.has(t));
-    }
-    if (hasMechanism) continue;
-
-    if (ac.questions !== undefined) {
-      pushIssue(issues, validationRule, ['afterComplete', 'questions'], message);
-    }
-    if (ac.score !== undefined) {
-      pushIssue(issues, validationRule, ['afterComplete', 'score'], message);
-    }
-  }
-
-  return issues;
-}
-
-/**
  * Validates date ordering within a single access control rule.
  * Returns an array of error messages (empty if valid).
  */
@@ -978,13 +841,6 @@ export function validateRule(
       errors.push(`Duplicate late deadline date: ${d.date}.`);
     }
     lateDates.add(d.date);
-  }
-
-  if (
-    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
-    rule.dateControl.afterLastDeadline.credit !== undefined
-  ) {
-    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
   }
 
   if (
@@ -1136,11 +992,6 @@ export function validateAccessControlRules({
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
     ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
-    // Run the "no completion mechanism" check before the cross-field check,
-    // matching the form-side validator. The mechanism error is more
-    // fundamental (cross-field consistency is moot when there's no completion
-    // mechanism at all), so surface it first.
-    ...validateGlobalAfterCompleteIssues(validationRules).map((issue) => issue.message),
     ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 

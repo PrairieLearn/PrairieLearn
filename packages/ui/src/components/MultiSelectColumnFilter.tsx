@@ -30,15 +30,19 @@ function defaultRenderValueLabel({ value }: { value: string }) {
  * @param params.column - The TanStack Table column object
  * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
+ * @param params.showModeToggle - Whether to show the "Include" / "Exclude" toggle.
+ * Disable for columns where the two modes are redundant (e.g. boolean columns).
  */
 export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
+  showModeToggle = true,
 }: {
   column: Column<TData, unknown>;
   allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;
+  showModeToggle?: boolean;
 }) {
   const columnId = column.id;
 
@@ -98,37 +102,39 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
             </button>
           </div>
 
-          <div className="btn-group btn-group-sm w-100 mb-2">
-            <input
-              type="radio"
-              className="btn-check"
-              name={`filter-${columnId}-options`}
-              id={`filter-${columnId}-include`}
-              checked={mode === 'include'}
-              onChange={() => apply('include', selected)}
-            />
-            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-include`}>
-              <span className="text-nowrap">
-                {mode === 'include' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
-                Include
-              </span>
-            </label>
+          {showModeToggle && (
+            <div className="btn-group btn-group-sm w-100 mb-2">
+              <input
+                type="radio"
+                className="btn-check"
+                name={`filter-${columnId}-options`}
+                id={`filter-${columnId}-include`}
+                checked={mode === 'include'}
+                onChange={() => apply('include', selected)}
+              />
+              <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-include`}>
+                <span className="text-nowrap">
+                  {mode === 'include' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
+                  Include
+                </span>
+              </label>
 
-            <input
-              type="radio"
-              className="btn-check"
-              name={`filter-${columnId}-options`}
-              id={`filter-${columnId}-exclude`}
-              checked={mode === 'exclude'}
-              onChange={() => apply('exclude', selected)}
-            />
-            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-exclude`}>
-              <span className="text-nowrap">
-                {mode === 'exclude' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
-                Exclude
-              </span>
-            </label>
-          </div>
+              <input
+                type="radio"
+                className="btn-check"
+                name={`filter-${columnId}-options`}
+                id={`filter-${columnId}-exclude`}
+                checked={mode === 'exclude'}
+                onChange={() => apply('exclude', selected)}
+              />
+              <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-exclude`}>
+                <span className="text-nowrap">
+                  {mode === 'exclude' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
+                  Exclude
+                </span>
+              </label>
+            </div>
+          )}
         </div>
 
         <div

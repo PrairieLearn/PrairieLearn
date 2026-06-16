@@ -12,7 +12,11 @@ import {
   serializeClientFiles,
   serializeConversionResult,
 } from './instructorQtiImport.js';
-import type { StoredSerializedConversionResult } from './instructorQtiImport.types.js';
+import {
+  DUPLICATE_ASSESSMENT_QUESTION_WARNING,
+  type StoredSerializedConversionResult,
+  deduplicateAssessmentZoneQuestions,
+} from './instructorQtiImport.types.js';
 
 function makeQuestions(directoryPrefix: string, questionSourceId: string, questionHtml: string) {
   const questionDirectoryName = `imported/${directoryPrefix}/q1`;
@@ -270,6 +274,49 @@ describe('deduplicateIdenticalQuestions', () => {
     expect(results[1].assessment.infoJson.zones[0].questions[0].id).toBe('imported/quiz-2/q1');
   });
 
+  it('removes duplicate zone references when identical questions appear on the same assessment', () => {
+    const base = makeResult({ directoryPrefix: 'quiz-1', questionSourceId: 'copy-a' });
+    const { questions: duplicateQuestions } = makeQuestions(
+      'quiz-1',
+      'copy-b',
+      '<pl-question-panel><p>What is 2 + 2?</p></pl-question-panel>',
+    );
+    duplicateQuestions[0].directoryName = 'imported/quiz-1/q2';
+    assert(base.sourceType === 'assessment');
+    const result: StoredSerializedConversionResult = {
+      ...base,
+      questions: [...base.questions, ...duplicateQuestions],
+      assessment: {
+        ...base.assessment,
+        infoJson: {
+          ...base.assessment.infoJson,
+          zones: [
+            {
+              title: 'Questions',
+              questions: [
+                { id: 'imported/quiz-1/q1', autoPoints: 1 },
+                { id: 'imported/quiz-1/q2', autoPoints: 1 },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const [deduped] = deduplicateIdenticalQuestions([result]);
+
+    assert(deduped.sourceType === 'assessment');
+    expect(deduped.questions).toHaveLength(1);
+    expect(deduped.assessment.infoJson.zones[0].questions).toEqual([
+      { id: 'imported/quiz-1/q1', autoPoints: 1 },
+    ]);
+    expect(deduped.warnings).toContainEqual({
+      questionId: 'imported/quiz-1/q1',
+      message: DUPLICATE_ASSESSMENT_QUESTION_WARNING,
+      level: 'warn',
+    });
+  });
+
   it('prefers question bank questions as canonical when available', () => {
     const results = deduplicateIdenticalQuestions([
       makeResult({ directoryPrefix: 'quiz-1', sourceId: 'quiz-1', questionSourceId: 'copy-a' }),
@@ -285,6 +332,119 @@ describe('deduplicateIdenticalQuestions', () => {
     assert(results[0].sourceType === 'assessment');
     expect(results[0].assessment.infoJson.zones[0].questions[0].id).toBe('imported/bank-1/q1');
     expect(results[1].questions[0].directoryName).toBe('imported/bank-1/q1');
+  });
+});
+
+describe('deduplicateAssessmentZoneQuestions', () => {
+  it('returns zones unchanged when there are no duplicates', () => {
+    const zones = [
+      { title: 'Zone 1', questions: [{ id: 'q1', autoPoints: 1 }] },
+      { title: 'Zone 2', questions: [{ id: 'q2', autoPoints: 1 }], numberChoose: 1 },
+    ];
+
+    const result = deduplicateAssessmentZoneQuestions(zones);
+
+    expect(result.zones).toEqual(zones);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps only the first occurrence of a question repeated within a zone', () => {
+    const result = deduplicateAssessmentZoneQuestions([
+      {
+        title: 'Questions',
+        questions: [
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q2', autoPoints: 1 },
+          { id: 'q1', autoPoints: 2 },
+        ],
+      },
+    ]);
+
+    expect(result.zones).toEqual([
+      {
+        title: 'Questions',
+        questions: [
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q2', autoPoints: 1 },
+        ],
+      },
+    ]);
+    expect(result.warnings).toEqual([
+      { questionId: 'q1', message: DUPLICATE_ASSESSMENT_QUESTION_WARNING, level: 'warn' },
+    ]);
+  });
+
+  it('removes duplicates across zones and drops zones left empty', () => {
+    const result = deduplicateAssessmentZoneQuestions([
+      { title: 'Direct questions', questions: [{ id: 'q1', autoPoints: 1 }] },
+      { title: 'Bank group', questions: [{ id: 'q1', autoPoints: 1 }], numberChoose: 1 },
+    ]);
+
+    expect(result.zones).toEqual([
+      { title: 'Direct questions', questions: [{ id: 'q1', autoPoints: 1 }] },
+    ]);
+    expect(result.warnings).toEqual([
+      { questionId: 'q1', message: DUPLICATE_ASSESSMENT_QUESTION_WARNING, level: 'warn' },
+    ]);
+  });
+
+  it('drops numberChoose when removals shrink the zone to that size', () => {
+    const result = deduplicateAssessmentZoneQuestions([
+      { title: 'Direct questions', questions: [{ id: 'q1', autoPoints: 1 }] },
+      {
+        title: 'Bank group',
+        questions: [
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q2', autoPoints: 1 },
+        ],
+        numberChoose: 1,
+      },
+    ]);
+
+    expect(result.zones).toEqual([
+      { title: 'Direct questions', questions: [{ id: 'q1', autoPoints: 1 }] },
+      { title: 'Bank group', questions: [{ id: 'q2', autoPoints: 1 }] },
+    ]);
+  });
+
+  it('preserves numberChoose when enough questions remain', () => {
+    const result = deduplicateAssessmentZoneQuestions([
+      { title: 'Direct questions', questions: [{ id: 'q1', autoPoints: 1 }] },
+      {
+        title: 'Bank group',
+        questions: [
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q2', autoPoints: 1 },
+          { id: 'q3', autoPoints: 1 },
+        ],
+        numberChoose: 1,
+      },
+    ]);
+
+    expect(result.zones[1]).toEqual({
+      title: 'Bank group',
+      questions: [
+        { id: 'q2', autoPoints: 1 },
+        { id: 'q3', autoPoints: 1 },
+      ],
+      numberChoose: 1,
+    });
+  });
+
+  it('reports a question repeated more than twice only once', () => {
+    const result = deduplicateAssessmentZoneQuestions([
+      {
+        title: 'Questions',
+        questions: [
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q1', autoPoints: 1 },
+          { id: 'q1', autoPoints: 1 },
+        ],
+      },
+    ]);
+
+    expect(result.zones[0].questions).toHaveLength(1);
+    expect(result.warnings).toHaveLength(1);
   });
 });
 

@@ -118,11 +118,11 @@ export interface AccessControlResolverResult {
    */
   visibilitySource: 'default' | 'afterComplete' | 'prairieTest';
   /**
-   * True when the assessment has reached a "complete" phase from the
-   * resolver's perspective: a non-submittable after-last-deadline segment
-   * under date control, or a read-only PrairieTest reservation. Instance-
-   * specific completion (closed instance or expired time limit) is applied
-   * separately in the modern authz layer.
+   * True when the assessment has reached a "complete" visibility phase from
+   * the resolver's perspective: a non-submittable after-last-deadline segment
+   * under date control, or a read-only PrairieTest reservation.
+   * Instance-specific completion (closed instance or expired time limit) is
+   * applied separately in the modern authz layer.
    */
   complete: boolean;
   /**
@@ -539,19 +539,6 @@ export function resolveAccessControl(
       accessTimeline,
       showBeforeRelease: shouldShowBeforeRelease,
       nextActiveDate: current.endDate,
-    };
-  }
-
-  // afterLastDeadline omitted = no access at all (distinct from
-  // allowSubmissions: false which is view-only).
-  if (!current.accessible) {
-    return {
-      ...UNAUTHORIZED_RESULT,
-      visibility: afterCompleteVisibility,
-      afterCompleteVisibility,
-      visibilitySource: 'afterComplete',
-      complete: true,
-      accessTimeline,
     };
   }
 

@@ -68,7 +68,7 @@ export function StudentLinkSharing({
 }) {
   const [showQR, setShowQR] = useState(false);
   return (
-    <div className="mb-3">
+    <div className="mb-0">
       <label className="form-label" htmlFor="student_link">
         Student link
       </label>

@@ -6,27 +6,38 @@ import {
   createLinter,
 } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
+import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
 const require = createRequire(import.meta.url);
-const wasmPath =
-  require.resolve('@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
+
+const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
+const RUNTIME_WASM_FILENAME = 'web-tree-sitter.wasm';
 
 let linterPromise: Promise<Linter> | null = null;
 
 function getLinter(): Promise<Linter> {
-  if (linterPromise) return linterPromise;
-  linterPromise = createLinter({ locateWasm: wasmPath });
+  linterPromise ??= createLinter({
+    locateWasm: (name) => {
+      if (name === GRAMMAR_WASM_FILENAME) {
+        return require.resolve('@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm');
+      }
+      if (name === RUNTIME_WASM_FILENAME) {
+        return require.resolve('web-tree-sitter/web-tree-sitter.wasm');
+      }
+      return name;
+    },
+    formats,
+    validators,
+  });
+
   return linterPromise;
 }
 
 /**
  * Lint a question.html string against the project's htmlmustache rules.
- * Returns diagnostics as `{ message, severity }` pairs.
  */
-export async function lintQuestionHtml(
-  html: string,
-): Promise<Pick<Diagnostic, 'message' | 'severity'>[]> {
+export async function lintQuestionHtml(html: string): Promise<Diagnostic[]> {
   const linter = await getLinter();
   return linter.lint(html, htmlMustacheConfig);
 }

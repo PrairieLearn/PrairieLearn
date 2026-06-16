@@ -87,6 +87,21 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'timed-assessment-open-ended',
+      rules: [{ credit: 100, timeLimitMin: 50, showClosedAssessment: false }],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: FALLBACK_RELEASE },
+            durationMinutes: 50,
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'declining-credit',
       rules: [
         { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
@@ -110,14 +125,14 @@ describe('migrateAllowAccess', () => {
     {
       name: 'prairietest with viewing rule',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
         { startDate: '2024-01-01T00:00:00', active: false },
       ],
       expected: {
         accessControl: {
           dateControl: { release: { date: '2024-01-01T00:00:00' } },
           integrations: {
-            prairieTest: { exams: [{ examUuid: '11111111-1111-1111-1111-111111111111' }] },
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
           },
         },
         errors: [],
@@ -647,7 +662,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -694,7 +708,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -702,7 +716,7 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'visibility-only inactive rule reports one completion mechanism error',
+      name: 'visibility-only inactive rule preserves afterComplete',
       rules: [
         {
           showClosedAssessment: false,
@@ -711,10 +725,10 @@ describe('migrateAllowAccess', () => {
         },
       ],
       expected: {
-        accessControl: null,
-        errors: [
-          'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
-        ],
+        accessControl: {
+          afterComplete: { score: { hidden: true } },
+        },
+        errors: [],
         notes: [],
         hasUidRules: false,
       },
@@ -768,7 +782,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -800,7 +814,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -1097,16 +1111,16 @@ describe('migrateAllowAccess', () => {
     {
       name: 'multiple prairietest exams',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65', credit: 100 },
       ],
       expected: {
         accessControl: {
           integrations: {
             prairieTest: {
               exams: [
-                { examUuid: '11111111-1111-1111-1111-111111111111' },
-                { examUuid: '22222222-2222-2222-2222-222222222222' },
+                { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+                { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
               ],
             },
           },
@@ -1119,17 +1133,17 @@ describe('migrateAllowAccess', () => {
     {
       name: 'duplicate prairietest exam rules are collapsed',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100 },
-        { examUuid: '22222222-2222-2222-2222-222222222222', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65', credit: 100 },
       ],
       expected: {
         accessControl: {
           integrations: {
             prairieTest: {
               exams: [
-                { examUuid: '11111111-1111-1111-1111-111111111111' },
-                { examUuid: '22222222-2222-2222-2222-222222222222' },
+                { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' },
+                { examUuid: 'bffd5230-43a5-4be8-a87c-c43b5525bc65' },
               ],
             },
           },
@@ -1142,12 +1156,12 @@ describe('migrateAllowAccess', () => {
     {
       name: 'prairietest rule with password emits a warning note',
       rules: [
-        { examUuid: '11111111-1111-1111-1111-111111111111', credit: 100, password: 'discarded' },
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100, password: 'discarded' },
       ],
       expected: {
         accessControl: {
           integrations: {
-            prairieTest: { exams: [{ examUuid: '11111111-1111-1111-1111-111111111111' }] },
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
           },
         },
         errors: [],
@@ -1174,7 +1188,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -1698,7 +1711,7 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
-  it('returns null for empty allowAccess array', async () => {
+  it('analyzes an empty allowAccess array as legacy access control', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1711,7 +1724,12 @@ describe('analyzeAssessmentFile', () => {
           }),
         );
         const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
-        assert.isNull(result);
+        assert.isNotNull(result);
+        assert.equal(result.tid, 'e01');
+        assert.equal(result.ruleCount, 0);
+        assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -1877,6 +1895,32 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy preserves property order', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            uuid: '00000000-0000-0000-0000-000000000000',
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-06-01T00:00:00' },
+            ],
+            zones: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.deepEqual(Object.keys(result), ['uuid', 'type', 'title', 'accessControl', 'zones']);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
@@ -1962,6 +2006,29 @@ describe('applyMigrationToAssessmentFile', () => {
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('migrate strategy converts empty allowAccess to empty accessControl', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.deepEqual(result.accessControl, []);
       },
       { unsafeCleanup: true },
     );
@@ -2139,6 +2206,35 @@ describe('applyMigrationToAssessmentFile', () => {
       },
       { unsafeCleanup: true },
     );
+  });
+});
+
+describe('migrateAssessmentJson', () => {
+  it('converts empty allowAccess to empty accessControl', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    assert.deepEqual(result.notes, []);
+    assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
+  });
+
+  it('drops a stale accessControl key when migrating allowAccess', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      accessControl: [{ dateControl: { release: { date: '2020-01-01T00:00:00' } } }],
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
   });
 });
 
