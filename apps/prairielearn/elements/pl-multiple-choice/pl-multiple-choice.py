@@ -89,8 +89,7 @@ def categorize_options(
                 SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
             ):
                 raise ValueError(
-                    'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
-                    "must be a number in the range [0.0, 1.0]."
+                    f"Score {score} is invalid, must be in the range [0.0, 1.0]."
                 )
 
             answer_tuple = AnswerTuple(
@@ -106,7 +105,7 @@ def categorize_options(
 
         else:
             raise ValueError(
-                "<pl-multiple-choice> only allows these child elements: <pl-answer>."
+                f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
             )
 
     # NOTE Reading in answer choices from JSON is deprecated.
@@ -180,8 +179,7 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Get order type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
-            'Attributes "order" and "fixed-order" on <pl-multiple-choice> '
-            'cannot be set together. Use "order".'
+            'Setting answer choice order should be done with the "order" attribute.'
         )
 
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
@@ -194,8 +192,8 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Get display type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(
-            'Attributes "display" and "inline" on <pl-multiple-choice> '
-            'cannot be set together. Use "display"; "inline" is deprecated.'
+            "Cannot set both 'display' and 'inline' attributes. "
+            "Use only 'display'; the 'inline' attribute is deprecated."
         )
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
@@ -425,13 +423,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if get_display_type(element) is not DisplayType.DROPDOWN:
         if pl.has_attrib(element, "size"):
             raise ValueError(
-                'Attribute "size" on <pl-multiple-choice> is only allowed when '
-                '"display" is "dropdown".'
+                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
             )
         if pl.has_attrib(element, "placeholder"):
             raise ValueError(
-                'Attribute "placeholder" on <pl-multiple-choice> is only allowed when '
-                '"display" is "dropdown".'
+                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
             )
 
     if name in data["params"]:
@@ -446,40 +442,32 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if not builtin_grading:
         if pl.has_attrib(element, "weight"):
             raise ValueError(
-                'Attribute "weight" on <pl-multiple-choice> is only allowed when '
-                '"builtin-grading" is true.'
+                '"weight" should not be set when builtin-grading is false.'
             )
         restricted_aota_nota_values = {"correct", "incorrect", "random"}
         aota_raw = pl.get_string_attrib(element, "all-of-the-above", None)
         if aota_raw is not None and aota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                'Attribute "all-of-the-above" on <pl-multiple-choice> cannot use the '
-                'grading values "correct", "incorrect", or "random" when '
-                '"builtin-grading" is false.'
+                '"all-of-the-above" should be set to true or false when builtin-grading is false.'
             )
         nota_raw = pl.get_string_attrib(element, "none-of-the-above", None)
         if nota_raw is not None and nota_raw.lower() in restricted_aota_nota_values:
             raise ValueError(
-                'Attribute "none-of-the-above" on <pl-multiple-choice> cannot use the '
-                'grading values "correct", "incorrect", or "random" when '
-                '"builtin-grading" is false.'
+                '"none-of-the-above" should be set to true or false when builtin-grading is false.'
             )
         if pl.has_attrib(element, "hide-score-badge"):
             raise ValueError(
-                'Attribute "hide-score-badge" on <pl-multiple-choice> is only allowed '
-                'when "builtin-grading" is true.'
+                '"hide-score-badge" should not be set when builtin-grading is false.'
             )
         for child in element:
             if child.tag in {"pl-answer", "pl_answer"}:
                 if pl.has_attrib(child, "score"):
                     raise ValueError(
-                        'Attribute "score" on <pl-answer> inside <pl-multiple-choice> '
-                        'is only allowed when "builtin-grading" is true.'
+                        '"score" on pl-answer should not be set when builtin-grading is false.'
                     )
                 if pl.has_attrib(child, "feedback"):
                     raise ValueError(
-                        'Attribute "feedback" on <pl-answer> inside <pl-multiple-choice> '
-                        'is only allowed when "builtin-grading" is true.'
+                        '"feedback" on pl-answer should not be set when builtin-grading is false.'
                     )
 
     correct_answers, incorrect_answers = categorize_options(element, data)
@@ -496,7 +484,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if duplicates:
         raise ValueError(
-            f"<pl-multiple-choice> has duplicate answer choices: {duplicates}."
+            f"pl-multiple-choice element has duplicate choices: {duplicates}"
         )
 
     # Get answers to display to student, using a helper function to separate out logic.

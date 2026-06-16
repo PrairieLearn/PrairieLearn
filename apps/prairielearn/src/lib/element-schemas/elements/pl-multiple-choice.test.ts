@@ -38,14 +38,14 @@ describe('pl-multiple-choice schema', () => {
     assert.isTrue(messages.some((message) => message.includes('only allows these child elements')));
   });
 
-  it('rejects scores outside the [0.0, 1.0] range', async () => {
+  it('allows scores outside the Python-enforced semantic range', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer correct="true" score="1.5">A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('range')));
+    assert.deepEqual(messages, []);
   });
 
   it('rejects attributes from other pl-answer owners', async () => {
@@ -86,68 +86,50 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('must be a number in the range')));
+    assert.isTrue(messages.some((message) => message.includes('match format "number"')));
   });
 
-  it('requires dropdown display for size and placeholder', async () => {
+  it('allows dropdown-only attributes without checking display mode', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" size="5" placeholder="Pick one">
         <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((m) => m.includes('is only allowed when "display" is "dropdown"')));
+    assert.deepEqual(messages, []);
   });
 
-  it('requires matching all/none of the above attributes for feedback', async () => {
+  it('allows all/none feedback attributes without checking matching options', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" all-of-the-above-feedback="All">
         <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(
-      messages.some((m) =>
-        m.includes(
-          'Attribute "all-of-the-above-feedback" on <pl-multiple-choice> is only allowed when "all-of-the-above" is enabled.',
-        ),
-      ),
-    );
+    assert.deepEqual(messages, []);
   });
 
-  it('restricts grading attributes when builtin grading is disabled', async () => {
+  it('allows grading attributes without checking builtin-grading mode', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1">
         <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(
-      messages.some((m) =>
-        m.includes(
-          'Attribute "weight" on <pl-multiple-choice> is only allowed when "builtin-grading" is true.',
-        ),
-      ),
-    );
+    assert.deepEqual(messages, []);
   });
 
-  it('rejects grading-specific all-of-the-above values when builtin grading is disabled', async () => {
+  it('allows grading-specific all-of-the-above values without checking builtin-grading mode', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" builtin-grading="false" all-of-the-above="correct">
         <pl-answer>A</pl-answer>
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(
-      messages.some((m) =>
-        m.includes(
-          'Attribute "all-of-the-above" on <pl-multiple-choice> cannot use the grading values "correct", "incorrect", or "random" when "builtin-grading" is false.',
-        ),
-      ),
-    );
+    assert.deepEqual(messages, []);
   });
 
-  it('rejects duplicate answer inner HTML', async () => {
+  it('allows duplicate answer inner HTML', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer>A</pl-answer>
@@ -155,10 +137,10 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('has a duplicate answer choice')));
+    assert.deepEqual(messages, []);
   });
 
-  it('flags answers with identical Mustache as duplicate inner HTML', async () => {
+  it('allows answers with identical Mustache inner HTML', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer>{{ params.A }}</pl-answer>
@@ -166,14 +148,10 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isTrue(
-      messages.some((message) =>
-        message.includes('has a duplicate answer choice: "{{ params.A }}"'),
-      ),
-    );
+    assert.deepEqual(messages, []);
   });
 
-  it('does not flag answers with differing Mustache as duplicate inner HTML', async () => {
+  it('allows answers with differing Mustache inner HTML', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">
         <pl-answer>{{ params.A }}</pl-answer>
@@ -181,12 +159,20 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.isFalse(messages.some((message) => message.includes('has a duplicate answer choice')));
+    assert.deepEqual(messages, []);
   });
 
   it('allows external-json without inline answers', async () => {
     const messages = await lintMessages(
       '<pl-multiple-choice answers-name="choice" external-json="answers.json"></pl-multiple-choice>',
+    );
+
+    assert.deepEqual(messages, []);
+  });
+
+  it('allows empty answer children without checking fallback semantics', async () => {
+    const messages = await lintMessages(
+      '<pl-multiple-choice answers-name="choice"></pl-multiple-choice>',
     );
 
     assert.deepEqual(messages, []);
@@ -201,16 +187,5 @@ describe('pl-multiple-choice schema', () => {
 
     assert.isTrue(warnings.some((m) => m.includes('"fixed-order"') && m.includes('deprecated')));
     assert.isTrue(warnings.some((m) => m.includes('"inline"') && m.includes('deprecated')));
-  });
-
-  it('allows answers with matching text but different HTML', async () => {
-    const messages = await lintMessages(`
-      <pl-multiple-choice answers-name="choice">
-        <pl-answer><code>x</code></pl-answer>
-        <pl-answer><strong>x</strong></pl-answer>
-      </pl-multiple-choice>
-    `);
-
-    assert.isFalse(messages.some((message) => message.includes('has a duplicate answer choice')));
   });
 });
