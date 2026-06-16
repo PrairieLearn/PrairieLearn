@@ -1806,40 +1806,40 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
-const AssessmentInfoFileRowSchema = z.object({
-  course_instance_directory: CourseInstanceSchema.shape.short_name,
-  assessment_directory: AssessmentSchema.shape.tid,
-});
-
 /**
- * Applies `transform` to each given assessment's parsed `infoAssessment.json`,
- * returning the paths written. `contents` is `unknown` because a repo can hold
- * JSON that doesn't match our schema, so each `transform` must check its shape.
+ * Walks every `infoAssessment.json` on disk under the course's course instances
+ * and applies `transform` to each parsed file. We inspect the disk rather than
+ * querying the database because the course may be in a state where what's on
+ * disk hasn't been synced to the database yet.
+ *
+ * `transform` returns `true` when it modified the contents, in which case the
+ * file is rewritten and its path returned. `contents` is `unknown` because a
+ * repo can hold JSON that doesn't match our schema, so each `transform` must
+ * check its shape.
  */
 async function rewriteAssessmentInfoFiles(
   course: Course,
-  assessments: z.infer<typeof AssessmentInfoFileRowSchema>[],
-  transform: (contents: unknown) => void,
+  transform: (contents: unknown) => boolean,
 ): Promise<string[]> {
   const pathsToAdd: string[] = [];
 
-  for (const assessment of assessments) {
-    assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+  const courseInstancesPath = path.join(course.path, 'courseInstances');
+  const courseInstanceDirs = await discoverInfoDirs(courseInstancesPath, 'infoCourseInstance.json');
 
-    const infoPath = path.join(
-      course.path,
-      'courseInstances',
-      assessment.course_instance_directory,
-      'assessments',
-      assessment.assessment_directory,
-      'infoAssessment.json',
-    );
-    pathsToAdd.push(infoPath);
+  for (const courseInstanceDir of courseInstanceDirs) {
+    const assessmentsPath = path.join(courseInstancesPath, courseInstanceDir, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
 
-    const infoJson: unknown = await fs.readJson(infoPath);
-    transform(infoJson);
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(infoPath, formattedJson);
+    for (const assessmentDir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, assessmentDir, 'infoAssessment.json');
+
+      const infoJson: unknown = await fs.readJson(infoPath);
+      if (!transform(infoJson)) continue;
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
   }
 
   return pathsToAdd;
@@ -1873,15 +1873,12 @@ export class AssessmentSetRenameEditor extends Editor {
 
     debug('AssessmentSetRenameEditor: write()');
 
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_assessment_set,
-      { assessment_set_name: this.oldName, course_id: this.course.id },
-      AssessmentInfoFileRowSchema,
-    );
-
-    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
-      if (contents === null || typeof contents !== 'object') return;
-      (contents as Record<string, unknown>).set = this.newName;
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
+      if (contents === null || typeof contents !== 'object') return false;
+      const json = contents as Record<string, unknown>;
+      if (json.set !== this.oldName) return false;
+      json.set = this.newName;
+      return true;
     });
 
     if (pathsToAdd.length === 0) return null;
@@ -1927,20 +1924,16 @@ export class AssessmentModuleRenameEditor extends Editor {
 
     debug('AssessmentModuleRenameEditor: write()');
 
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_assessment_module,
-      { assessment_module_name: this.oldName, course_id: this.course.id },
-      AssessmentInfoFileRowSchema,
-    );
-
-    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
-      if (contents === null || typeof contents !== 'object') return;
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
+      if (contents === null || typeof contents !== 'object') return false;
       const json = contents as Record<string, unknown>;
+      if (json.module !== this.oldName) return false;
       if (this.newName === null) {
         delete json.module;
       } else {
         json.module = this.newName;
       }
+      return true;
     });
 
     if (pathsToAdd.length === 0) return null;

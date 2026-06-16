@@ -111,4 +111,84 @@ describe('AssessmentSetRenameEditor', () => {
       assert.equal(updatedInfo.set, 'Laboratory Exercises');
     }
   });
+
+  it('renames assessments on disk even when they are not synced to the database', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.assessmentSets.push({
+      name: 'Labs',
+      abbreviation: 'L',
+      heading: 'Lab assignments',
+      color: 'red2',
+    } satisfies AssessmentSetJsonInput);
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.lab01 = {
+      uuid: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+      title: 'Lab 1',
+      type: 'Homework',
+      set: 'Labs',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    // Write the course to disk without syncing it to the database.
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const editor = new AssessmentSetRenameEditor({
+      locals: createMockLocals(courseDir, '1'),
+      oldName: 'Labs',
+      newName: 'Laboratory Exercises',
+    });
+
+    const result = await editor.write();
+
+    assert.isNotNull(result);
+    assert.equal(result.pathsToAdd.length, 1);
+
+    const infoPath = getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'lab01');
+    const updatedInfo = await fs.readJson(infoPath);
+    assert.equal(updatedInfo.set, 'Laboratory Exercises');
+  });
+
+  it('does not rewrite assessments that reference a different set', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.assessmentSets.push({
+      name: 'Labs',
+      abbreviation: 'L',
+      heading: 'Lab assignments',
+      color: 'red2',
+    } satisfies AssessmentSetJsonInput);
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.lab01 = {
+      uuid: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+      title: 'Lab 1',
+      type: 'Homework',
+      set: 'Labs',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.hw01 = {
+      uuid: 'd4e5f6a7-b8c9-0123-def0-234567890123',
+      title: 'Homework 1',
+      type: 'Homework',
+      set: 'Homework',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const editor = new AssessmentSetRenameEditor({
+      locals: createMockLocals(courseDir, '1'),
+      oldName: 'Labs',
+      newName: 'Laboratory Exercises',
+    });
+
+    const result = await editor.write();
+
+    assert.isNotNull(result);
+    assert.equal(result.pathsToAdd.length, 1);
+
+    const hwInfo = await fs.readJson(
+      getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'hw01'),
+    );
+    assert.equal(hwInfo.set, 'Homework');
+  });
 });
