@@ -1806,6 +1806,45 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
+const AssessmentInfoFileRowSchema = z.object({
+  course_instance_directory: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid,
+});
+
+/**
+ * Applies `transform` to each given assessment's parsed `infoAssessment.json`,
+ * returning the paths written. `contents` is `unknown` because a repo can hold
+ * JSON that doesn't match our schema, so each `transform` must check its shape.
+ */
+async function rewriteAssessmentInfoFiles(
+  course: Course,
+  assessments: z.infer<typeof AssessmentInfoFileRowSchema>[],
+  transform: (contents: unknown) => void,
+): Promise<string[]> {
+  const pathsToAdd: string[] = [];
+
+  for (const assessment of assessments) {
+    assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+    const infoPath = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+      'infoAssessment.json',
+    );
+    pathsToAdd.push(infoPath);
+
+    const infoJson: unknown = await fs.readJson(infoPath);
+    transform(infoJson);
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(infoPath, formattedJson);
+  }
+
+  return pathsToAdd;
+}
+
 /**
  * This rename editor is used to rename an assessment set referenced by assessments.
  *
@@ -1837,43 +1876,81 @@ export class AssessmentSetRenameEditor extends Editor {
     const assessments = await sqldb.queryRows(
       sql.select_assessments_with_assessment_set,
       { assessment_set_name: this.oldName, course_id: this.course.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
+      AssessmentInfoFileRowSchema,
     );
 
-    if (assessments.length === 0) return null;
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      (contents as Record<string, unknown>).set = this.newName;
+    });
 
-    const pathsToAdd: string[] = [];
-
-    for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
-      );
-      pathsToAdd.push(infoPath);
-
-      debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
-
-      debug(`Replace assessment set name in ${infoPath}`);
-      infoJson.set = this.newName;
-
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
-    }
+    if (pathsToAdd.length === 0) return null;
 
     return {
       pathsToAdd,
       commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+    };
+  }
+}
+
+/**
+ * Rewrites the `module` field of every `infoAssessment.json` that references
+ * `oldName`. A string `newName` renames the reference; a null `newName` removes
+ * the field entirely, so the assessments fall back to the implicit "Default"
+ * module that sync always creates.
+ *
+ * It does not change the module at the course level (infoCourse.json).
+ */
+export class AssessmentModuleRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string | null;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string | null;
+    },
+  ) {
+    super({
+      ...params,
+      description:
+        params.newName === null
+          ? `Reassign assessments from module ${params.oldName} to the default module`
+          : `Rename assessment module ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentModuleRenameEditor: write()');
+
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_assessment_module,
+      { assessment_module_name: this.oldName, course_id: this.course.id },
+      AssessmentInfoFileRowSchema,
+    );
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      const json = contents as Record<string, unknown>;
+      if (this.newName === null) {
+        delete json.module;
+      } else {
+        json.module = this.newName;
+      }
+    });
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage:
+        this.newName === null
+          ? `reassign assessments from module ${this.oldName} to the default module`
+          : `rename assessment module ${this.oldName} to ${this.newName}`,
     };
   }
 }

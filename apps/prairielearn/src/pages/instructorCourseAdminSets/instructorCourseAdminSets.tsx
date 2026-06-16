@@ -19,7 +19,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
-import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
+import { AssessmentSetsPage } from './components/AssessmentSetsPage.js';
 import {
   InstructorCourseAdminSetFormRowSchema,
   InstructorCourseAdminSetRowSchema,
