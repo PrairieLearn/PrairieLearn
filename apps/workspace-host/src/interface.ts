@@ -836,14 +836,18 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     const inspectResults = await docker.getImage(settings.workspace_image).inspect();
     const labels = inspectResults.Config.Labels;
     const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
-    const port = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
+    const portStr = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
     if (home == null) {
       throw new Error(
         'Workspace home directory not specified in question settings or image labels',
       );
     }
-    if (port == null) {
+    if (portStr == null) {
       throw new Error('Workspace port not specified in question settings or image labels');
+    }
+    const port = Number(portStr);
+    if (!Number.isNaN(port) || port <= 0 || port > 65535) {
+      throw new Error('Workspace port is not a valid port number');
     }
     return [home, port];
   });
