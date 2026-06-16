@@ -1814,32 +1814,21 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
+const AssessmentInfoFileRowSchema = z.object({
+  course_instance_directory: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid,
+});
+
 /**
- * Rewrites the `infoAssessment.json` of every assessment returned by `query`
- * (which must select `course_instance_directory` and `assessment_directory`),
- * applying `transform` to each file's parsed contents and returning the paths
- * that were written.
- *
- * This runs at `write()` time (under the course repo lock), so it reads the
- * current on-disk state and is correctly re-run if the edit has to be retried
- * after merging remote changes. Affected assessments are located by joining
- * through the synced foreign keys.
+ * Applies `transform` to each given assessment's parsed `infoAssessment.json`,
+ * returning the paths written. `contents` is `unknown` because a repo can hold
+ * JSON that doesn't match our schema, so each `transform` must check its shape.
  */
 async function rewriteAssessmentInfoFiles(
   course: Course,
-  query: string,
-  params: Record<string, string>,
-  transform: (contents: AssessmentJsonInput) => void,
+  assessments: z.infer<typeof AssessmentInfoFileRowSchema>[],
+  transform: (contents: unknown) => void,
 ): Promise<string[]> {
-  const assessments = await sqldb.queryRows(
-    query,
-    params,
-    z.object({
-      course_instance_directory: CourseInstanceSchema.shape.short_name,
-      assessment_directory: AssessmentSchema.shape.tid,
-    }),
-  );
-
   const pathsToAdd: string[] = [];
 
   for (const assessment of assessments) {
@@ -1855,7 +1844,7 @@ async function rewriteAssessmentInfoFiles(
     );
     pathsToAdd.push(infoPath);
 
-    const infoJson: AssessmentJsonInput = await fs.readJson(infoPath);
+    const infoJson: unknown = await fs.readJson(infoPath);
     transform(infoJson);
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(infoPath, formattedJson);
@@ -1892,14 +1881,16 @@ export class AssessmentSetRenameEditor extends Editor {
 
     debug('AssessmentSetRenameEditor: write()');
 
-    const pathsToAdd = await rewriteAssessmentInfoFiles(
-      this.course,
+    const assessments = await sqldb.queryRows(
       sql.select_assessments_with_assessment_set,
       { assessment_set_name: this.oldName, course_id: this.course.id },
-      (contents) => {
-        contents.set = this.newName;
-      },
+      AssessmentInfoFileRowSchema,
     );
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      (contents as Record<string, unknown>).set = this.newName;
+    });
 
     if (pathsToAdd.length === 0) return null;
 
@@ -1944,18 +1935,21 @@ export class AssessmentModuleRenameEditor extends Editor {
 
     debug('AssessmentModuleRenameEditor: write()');
 
-    const pathsToAdd = await rewriteAssessmentInfoFiles(
-      this.course,
+    const assessments = await sqldb.queryRows(
       sql.select_assessments_with_assessment_module,
       { assessment_module_name: this.oldName, course_id: this.course.id },
-      (contents) => {
-        if (this.newName === null) {
-          delete contents.module;
-        } else {
-          contents.module = this.newName;
-        }
-      },
+      AssessmentInfoFileRowSchema,
     );
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      const json = contents as Record<string, unknown>;
+      if (this.newName === null) {
+        delete json.module;
+      } else {
+        json.module = this.newName;
+      }
+    });
 
     if (pathsToAdd.length === 0) return null;
 
