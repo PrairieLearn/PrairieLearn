@@ -69,7 +69,8 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           Require enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If an enrollment code is not required, any course instance link allows self-enrollment.
+          If an enrollment code is not required, any course instance or assessment link allows
+          self-enrollment.
         </div>
       </div>
     </>

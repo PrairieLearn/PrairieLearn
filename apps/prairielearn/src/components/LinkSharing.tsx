@@ -62,15 +62,13 @@ export function PublicLinkSharing({
 export function StudentLinkSharing({
   studentLink,
   studentLinkMessage,
-  className = 'mb-3',
 }: {
   studentLink: string;
   studentLinkMessage: string;
-  className?: string;
 }) {
   const [showQR, setShowQR] = useState(false);
   return (
-    <div className={className}>
+    <div className="mb-0">
       <label className="form-label" htmlFor="student_link">
         Student link
       </label>

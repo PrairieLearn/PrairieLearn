@@ -243,7 +243,8 @@ export function SelfEnrollmentSettings({
           Require enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If an enrollment code is not required, any course instance link allows self-enrollment.
+          If an enrollment code is not required, any course instance or assessment link allows
+          self-enrollment.
         </div>
       </div>
 
@@ -361,7 +362,6 @@ export function SelfEnrollmentSettings({
         <StudentLinkSharing
           studentLink={studentLink}
           studentLinkMessage={`This is the link that students will use to ${selfEnrollmentEnabled ? 'access the course' : 'accept invitations'}. You can copy this link to share with students.`}
-          className="mb-0"
         />
       )}
     </>

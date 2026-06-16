@@ -1103,7 +1103,6 @@ function InstructorAssessmentSettingsInner({
               <StudentLinkSharing
                 studentLink={studentLink}
                 studentLinkMessage="The link that students will use to access this assessment."
-                className="mb-0"
               />
             </div>
           </div>
