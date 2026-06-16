@@ -978,7 +978,6 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     const workspace = await run(async () => {
       try {
         debug('init: configuring workspace');
-        const settings = await _getWorkspaceSettings(workspace_id);
         return {
           id: workspace_id,
           course_id,
@@ -988,7 +987,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
           local_name: `workspace-${uuid}`,
           remote_name: `workspace-${workspace_id}-${version}`,
           launch_port: await _allocateContainerPort(workspace_id),
-          settings,
+          settings: await _getWorkspaceSettings(workspace_id),
         } satisfies Workspace;
       } catch (err) {
         logger.error(`Error configuring workspace ${workspace_id}`, err);
