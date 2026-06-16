@@ -1,5 +1,5 @@
 FROM node:26-trixie
-ARG CACHEBUST=2026-05-15-14-49-21
+ARG CACHEBUST=2026-06-15-15-59-28
 
 RUN apt-get update \
     && apt-get upgrade -y \
