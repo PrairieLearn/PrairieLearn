@@ -408,9 +408,9 @@ router.post(
       };
 
       // We'll only write the workspace options if the request contains the
-      // required fields. Client-side validation will ensure that these are
-      // present if a workspace is configured.
-      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+      // image. Client-side validation will ensure that it is present if a
+      // workspace is configured.
+      if (workspaceOptions.image) {
         const filteredOptions = Object.fromEntries(
           Object.entries(
             propertyValueWithDefault(
