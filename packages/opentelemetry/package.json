@@ -40,7 +40,7 @@
     "@opentelemetry/semantic-conventions": "^1.41.1"
   },
   "devDependencies": {
-    "@opentelemetry/context-async-hooks": "^2.7.1",
+    "@opentelemetry/context-async-hooks": "^2.8.0",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.12.4",
     "@typescript/native-preview": "beta",
