@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';

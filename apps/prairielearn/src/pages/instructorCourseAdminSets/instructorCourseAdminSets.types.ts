@@ -2,7 +2,7 @@ import z from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { AssessmentUsageSchema } from '../../lib/client/assessment-usage.js';
+import { AssessmentUsageSchema } from '../../components/AssessmentUsageModal.js';
 import { RawStaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
 
 // Database type
