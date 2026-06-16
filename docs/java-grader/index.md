@@ -126,7 +126,7 @@ The autograder will give a question points based on if a test passed or failed b
 
 ### Dynamic, parameterized and repeated tests
 
-JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-repeated-tests) and [test factories](https://docs.junit.org/5.14.1/user-guide/#writing-tests-dynamic-tests).
+JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.14.1/writing-tests/parameterized-classes-and-tests.html), [repeated tests](https://docs.junit.org/5.14.1/writing-tests/repeated-tests.html) and [test factories](https://docs.junit.org/5.14.1/writing-tests/dynamic-tests.html).
 
 While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different from other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
 
