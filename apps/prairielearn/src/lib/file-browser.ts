@@ -181,7 +181,7 @@ export async function browseDirectory({
   };
 }
 
-export async function browseFile({ paths }: { paths: FileBrowserPaths }): Promise<FileInfo> {
+async function browseFile({ paths }: { paths: FileBrowserPaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {
