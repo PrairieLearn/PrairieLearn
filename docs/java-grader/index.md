@@ -51,11 +51,14 @@ A full `info.json` file should look something like:
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "image": "prairielearn/grader-java",
-    "timeout": 10
+    "image": "prairielearn/grader-java"
   }
 }
 ```
+
+!!! note "Timeouts"
+
+    The `timeout` field in the `externalGradingOptions` dictionary, if set, should be long enough to allow the autograder to both compile and run all tests. The default timeout of 30 seconds is typically sufficient for most questions, but instructors may want to adjust this value based on the expected complexity of the question and the number of tests. Note that `javac` may take a few seconds just to compile the student code and the test files, so a timeout of less than 10 seconds may cause a timeout even before the student code itself runs. Longer timeouts are encouraged for more complex questions that require additional compilation time, or questions with a large number of tests or with tests that take a long time to run.
 
 ### `question.html`
 
@@ -153,7 +156,6 @@ By default, the Java compiler will show all compilation warnings to the user, ex
 {
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
-    "timeout": 10,
     "environment": {
       "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3",
       "JDK_JAVA_OPTIONS": "-ea"
@@ -184,8 +186,7 @@ Some questions may include libraries and base classes that are common across mul
 {
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
-    "serverFilesCourse": ["java/libs/"],
-    "timeout": 10
+    "serverFilesCourse": ["java/libs/"]
   }
 }
 ```
