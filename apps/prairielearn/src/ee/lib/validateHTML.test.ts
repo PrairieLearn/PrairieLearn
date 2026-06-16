@@ -378,16 +378,6 @@ describe('validateHTML htmlmustache schema diagnostics', () => {
     assert.isTrue(errors.some((error) => error.includes('bogus')));
   });
 
-  it('does not surface pl-multiple-choice semantic Python validation errors', async () => {
-    const { errors, warnings } = await validateHTML(
-      '<pl-multiple-choice answers-name="choice" builtin-grading="false" weight="1"><pl-answer>A</pl-answer></pl-multiple-choice>',
-      true,
-    );
-
-    assert.deepEqual(errors, []);
-    assert.deepEqual(warnings, []);
-  });
-
   it('does not surface non-schema htmlmustache diagnostics', async () => {
     const { errors, warnings } = await validateHTML(
       '<pl-question-panel><img src="foo.png"></pl-question-panel>',

@@ -50,6 +50,8 @@ Prefer schemas for stable local facts and Python for semantics. Do not add TypeS
 
 Generated files are checked by `make check-element-schemas`; never hand-edit them. Change the schema module and regenerate.
 
+Do not add per-element tests just to prove generic JSON Schema enforcement such as required attributes, unknown attributes, enum validation, or format validation. Test only element-specific schema facts that are easy to regress, such as shared child tag ownership, unusual child structure, or deprecation metadata.
+
 When adding schema coverage for an existing element, match current runtime behavior only for lightweight schema facts. If docs and runtime disagree, flag the mismatch and decide which one to change instead of silently enforcing the docs.
 
 ## Legacy AI HTML validator
