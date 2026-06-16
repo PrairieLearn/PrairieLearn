@@ -249,8 +249,7 @@ export async function uploadDraftQuestionFile({
     new FileUploadEditor({
       locals: { course, user, authz_data },
       container: { rootPath: questionRootPath, invalidRootPaths: [] },
-      filePath: fullPath,
-      fileContents,
+      files: { [fullPath]: fileContents },
     }),
   );
 }
