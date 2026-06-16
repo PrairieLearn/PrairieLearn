@@ -61,12 +61,6 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be course previewer)');
     }
 
-    const url = getUrl(req);
-    if (url.searchParams.get('view') === 'legacy') {
-      url.searchParams.delete('view');
-      return res.redirect(`${url.pathname}${url.search}`);
-    }
-
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
@@ -142,7 +136,7 @@ router.get(
       config.secretKey,
     );
 
-    const search = url.search;
+    const search = getUrl(req).search;
 
     res.send(
       PageLayout({
