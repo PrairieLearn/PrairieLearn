@@ -156,27 +156,6 @@ export function isOverrideEditable(
 }
 
 /**
- * The default rule has a completion mechanism when something can actually
- * close the assessment: a due date, a late deadline, a duration limit, or a
- * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
- * with only a release date or password has date control "on" but nothing to
- * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
- * in `validation.ts`. Used to gate after-complete UI and serialization on
- * the default rule.
- */
-export function defaultRuleHasCompletionMechanism(
-  rule: Pick<
-    DefaultRuleData,
-    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
-  >,
-): boolean {
-  const hasDateControlMechanism =
-    rule.dateControlEnabled &&
-    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
-  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
-}
-
-/**
  * Whether a (timezone-naive) datetime string is at or before "now" in the
  * given display timezone. A null/empty value is treated as released.
  */
@@ -467,16 +446,15 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false) AND there is a
-  // completion mechanism (dateControl or PrairieTest). Without one,
-  // after-complete settings are meaningless and would fail validation.
-  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
+  // (questions.hidden: true, score.hidden: false). These settings can apply
+  // even without a scheduled deadline when an instructor manually closes a
+  // student's assessment instance.
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden

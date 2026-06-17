@@ -19,7 +19,6 @@ import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
-import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 

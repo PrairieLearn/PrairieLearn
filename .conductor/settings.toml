@@ -1,0 +1,5 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "./scripts/conductor-setup.sh"
+run = "make dev"

@@ -4,7 +4,7 @@ This file documents the default Java autograder included in the `prairielearn/gr
 
 ## Overview
 
-The Java autograder is based on [JUnit 5](https://docs.junit.org/5.14.1/user-guide/). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://docs.junit.org/5.14.1/user-guide/#writing-tests)):
+The Java autograder is based on [JUnit 5](https://docs.junit.org/5.14.1/overview.html). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://docs.junit.org/5.14.1/writing-tests/intro.html)):
 
 ```java
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,11 +51,14 @@ A full `info.json` file should look something like:
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "image": "prairielearn/grader-java",
-    "timeout": 10
+    "image": "prairielearn/grader-java"
   }
 }
 ```
+
+!!! note "Timeouts"
+
+    The `timeout` field in the `externalGradingOptions` dictionary, if set, should be long enough to allow the autograder to both compile and run all tests. The default timeout of 30 seconds is typically sufficient for most questions, but instructors may want to adjust this value based on the expected complexity of the question and the number of tests. Note that `javac` may take a few seconds just to compile the student code and the test files, so a timeout of less than 10 seconds may cause a timeout even before the student code itself runs. Longer timeouts are encouraged for more complex questions that require additional compilation time, or questions with a large number of tests or with tests that take a long time to run.
 
 ### `question.html`
 
@@ -78,7 +81,7 @@ Inside the `tests/junit` directory, one or more classes can be provided with met
 
 Tests that are part of a package must be provided in an equivalent subdirectory. For example, if a test named `AppTest` is in package `com.example.myapp.test`, it must be saved in the file `tests/junit/com/example/myapp/test/AppTest.java`.
 
-Each test found by JUnit will be provided as an individual result to the student. The name of the test result is based on the test's [display name](https://docs.junit.org/5.14.1/user-guide/#writing-tests-display-names). By default, each test will be worth one point. To change this default, a [tag](https://docs.junit.org/5.14.1/user-guide/#writing-tests-tagging-and-filtering) in the format `@Tag("points=XX")` (replacing `XX` with a number of points) must be provided. For example:
+Each test found by JUnit will be provided as an individual result to the student. The name of the test result is based on the test's [display name](https://docs.junit.org/5.14.1/writing-tests/display-names.html). By default, each test will be worth one point. To change this default, a [tag](https://docs.junit.org/5.14.1/writing-tests/tagging-and-filtering.html) in the format `@Tag("points=XX")` (replacing `XX` with a number of points) must be provided. For example:
 
 ```java
     @Test
@@ -104,9 +107,9 @@ import org.prairielearn.autograder.AutograderInfo;
     }
 ```
 
-To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://docs.junit.org/5.14.1/user-guide/#writing-tests-test-execution-order).
+To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://docs.junit.org/5.14.1/writing-tests/test-execution-order.html).
 
-To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://docs.junit.org/5.14.1/user-guide/#writing-tests-dependency-injection). Calling [the `publishEntry` method for the test reporter](https://docs.junit.org/5.14.1/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
+To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://docs.junit.org/5.14.1/writing-tests/dependency-injection-for-constructors-and-methods.html). Calling [the `publishEntry` method for the test reporter](https://docs.junit.org/5.14.1/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
 
 ```java
 @Test
@@ -126,7 +129,7 @@ The autograder will give a question points based on if a test passed or failed b
 
 ### Dynamic, parameterized and repeated tests
 
-JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-repeated-tests) and [test factories](https://docs.junit.org/5.14.1/user-guide/#writing-tests-dynamic-tests).
+JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.14.1/writing-tests/parameterized-classes-and-tests.html), [repeated tests](https://docs.junit.org/5.14.1/writing-tests/repeated-tests.html) and [test factories](https://docs.junit.org/5.14.1/writing-tests/dynamic-tests.html).
 
 While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different from other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
 
@@ -153,7 +156,6 @@ By default, the Java compiler will show all compilation warnings to the user, ex
 {
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
-    "timeout": 10,
     "environment": {
       "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3",
       "JDK_JAVA_OPTIONS": "-ea"
@@ -171,7 +173,7 @@ The example above disables the `static` warning (use of static fields applied to
 Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/25/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
 - `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
-  - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/user-guide/#running-tests-config-params).
+  - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/running-tests/configuration-parameters.html).
 - `-ea` to enable [Java assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html).
 
 ### Libraries and instructor-provided classes
@@ -184,8 +186,7 @@ Some questions may include libraries and base classes that are common across mul
 {
   "externalGradingOptions": {
     "image": "prairielearn/grader-java",
-    "serverFilesCourse": ["java/libs/"],
-    "timeout": 10
+    "serverFilesCourse": ["java/libs/"]
   }
 }
 ```

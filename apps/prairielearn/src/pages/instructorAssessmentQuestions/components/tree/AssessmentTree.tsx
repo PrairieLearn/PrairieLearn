@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import type { TreeActions, TreeState, ViewType, ZoneAssessmentForm } from '../../types.js';
 import { computeQuestionNumber } from '../../utils/zoneLookup.js';
 import { ViewToggle } from '../EditModeToolbar.js';
-import { ViewSwitcherDropdown } from '../ViewSwitcherDropdown.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
 
@@ -17,7 +16,6 @@ export function AssessmentTree({
   onViewTypeChange,
   onToggleExpandCollapse,
   editControls,
-  switchViewUrl,
 }: {
   zones: ZoneAssessmentForm[];
   state: TreeState;
@@ -27,7 +25,6 @@ export function AssessmentTree({
   onViewTypeChange: (viewType: ViewType) => void;
   onToggleExpandCollapse: () => void;
   editControls: ReactNode;
-  switchViewUrl: string | null;
 }) {
   const { editMode, viewType } = state;
   const hasAlternatives = zones.some((zone) => zone.questions.some((q) => q.alternatives != null));
@@ -41,14 +38,7 @@ export function AssessmentTree({
           onViewTypeChange={onViewTypeChange}
           onToggleExpandCollapse={onToggleExpandCollapse}
         />
-        <div className="ms-auto d-flex gap-2 align-items-center">
-          <ViewSwitcherDropdown
-            currentView="new"
-            switchViewUrl={switchViewUrl}
-            editMode={editMode}
-          />
-          {editControls}
-        </div>
+        <div className="ms-auto d-flex gap-2 align-items-center">{editControls}</div>
       </div>
       <div className="overflow-auto flex-grow-1" style={{ minHeight: 0 }}>
         <SortableContext

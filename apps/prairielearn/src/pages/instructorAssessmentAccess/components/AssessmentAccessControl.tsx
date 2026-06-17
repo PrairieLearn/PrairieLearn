@@ -31,6 +31,7 @@ interface AssessmentAccessControlProps {
   origHash: string | null;
   assessmentId: string;
   isExam: boolean;
+  hasExamAutoClose: boolean;
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
@@ -42,6 +43,7 @@ function AssessmentAccessControlInner({
   courseInstance,
   origHash: initialOrigHash,
   isExam,
+  hasExamAutoClose,
   initialData,
   prairieTestExamMetadata,
   ptHost,
@@ -134,6 +136,7 @@ function AssessmentAccessControlInner({
       <AccessControlForm
         courseInstance={courseInstance}
         isExam={isExam}
+        hasExamAutoClose={hasExamAutoClose}
         initialData={initialData}
         prairieTestExamMetadata={prairieTestExamMetadata}
         ptHost={ptHost}

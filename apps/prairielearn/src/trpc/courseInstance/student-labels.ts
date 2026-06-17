@@ -14,6 +14,7 @@ import {
   prepareAccessControlLabelRewriteEditors,
   prepareJsonFileEditor,
 } from '../../lib/editors.js';
+import { getCourseInstanceContainer } from '../../lib/instructorFiles.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -49,14 +50,6 @@ import {
 export interface StudentLabelError {
   Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
-
-function getCourseInstanceContainer(coursePath: string, shortName: string) {
-  const rootPath = path.join(coursePath, 'courseInstances', shortName);
-  return {
-    rootPath,
-    invalidRootPaths: [path.join(rootPath, 'assessments')],
-  };
 }
 
 const list = t.procedure

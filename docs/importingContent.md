@@ -2,10 +2,6 @@
 
 If you're migrating from Canvas or another learning management system, you can import existing quizzes, assessments, question banks, and questions into PrairieLearn. The import tool reads QTI 1.2 content, which is the format Canvas exports for quiz and course content.
 
-!!! info
-
-    This feature requires the `qti-content-import` feature flag to be enabled for your course. If you don't see import options on the Assessments or Questions pages, contact your PrairieLearn administrator.
-
 ## Overview
 
 The importer is a review-and-confirm workflow:

@@ -65,7 +65,7 @@
 {{/question}}
 
 {{#submission}}
-    {{#inline}}<span class="d-inline-block">{{/inline}}
+    {{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
     {{#error}}
 
     <span>
@@ -137,11 +137,13 @@
     {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
     </div>
     {{/error}}
-    {{#inline}}</span>{{/inline}}
+    {{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 ${{type}}({{a_tru}})$
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}
 
 {{#format}}

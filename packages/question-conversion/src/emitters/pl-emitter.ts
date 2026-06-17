@@ -246,15 +246,22 @@ export class PLEmitter implements OutputEmitter {
 
     const uuid = stableUuid(options?.uuidNamespace ?? itemContainer.sourceId, question.sourceId);
 
+    // Omit properties whose values match the PrairieLearn schema defaults
+    // (singleVariant: false, gradingMethod: 'Internal') so the emitted
+    // info.json contains only what's strictly necessary.
     const infoJson: PLQuestionInfoJson = {
       uuid,
       title: question.title,
       topic,
       tags,
       type: 'v3',
-      singleVariant: question.body.type !== 'calculated',
-      gradingMethod: question.gradingMethod,
     };
+    if (question.body.type !== 'calculated') {
+      infoJson.singleVariant = true;
+    }
+    if (question.gradingMethod != null && question.gradingMethod !== 'Internal') {
+      infoJson.gradingMethod = question.gradingMethod;
+    }
 
     const questionHtml = this.renderQuestionHtml(question);
     const serverPy = this.renderServerPy(question);

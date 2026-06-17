@@ -3,8 +3,6 @@ import * as z from 'zod/v4';
 import { booleanFormat, integerFormat, numberFormat } from '../helpers.ts';
 import type { ElementSchemaModule } from '../types.ts';
 
-import { validators } from './pl-multiple-choice.validator.ts';
-
 const aotaNotaAttribute = () =>
   z.union([booleanFormat(), z.enum(['false', 'random', 'correct', 'incorrect'])]);
 
@@ -60,5 +58,4 @@ export const element: ElementSchemaModule = {
       schema: z.toJSONSchema(plMultipleChoiceAnswerAttributesSchema, { target: 'draft-04' }),
     },
   },
-  validators,
 };

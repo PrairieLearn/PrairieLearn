@@ -22,6 +22,11 @@ SELECT
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
+  coalesce(q.single_variant, FALSE) AS single_variant,
+  (
+    q.preferences_schema IS NOT NULL
+    AND q.preferences_schema != '{}'::jsonb
+  ) AS has_preferences,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'
@@ -112,6 +117,11 @@ SELECT
   q.grading_method,
   q.external_grading_image,
   q.workspace_image,
+  coalesce(q.single_variant, FALSE) AS single_variant,
+  (
+    q.preferences_schema IS NOT NULL
+    AND q.preferences_schema != '{}'::jsonb
+  ) AS has_preferences,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'

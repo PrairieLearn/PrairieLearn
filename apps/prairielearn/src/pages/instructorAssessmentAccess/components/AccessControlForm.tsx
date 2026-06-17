@@ -90,6 +90,7 @@ export function AccessControlForm({
   onSubmit,
   courseInstance,
   isExam,
+  hasExamAutoClose,
   isSaving = false,
   alert,
   canEditAccessSettings,
@@ -104,6 +105,7 @@ export function AccessControlForm({
   onSubmit: (data: AccessControlJsonWithId[]) => Promise<void>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   isExam: boolean;
+  hasExamAutoClose: boolean;
   isSaving?: boolean;
   alert?: StickySaveBarAlert | null;
   canEditAccessSettings: boolean;
@@ -293,7 +295,11 @@ export function AccessControlForm({
     selectedRule?.type === 'default' ? (
       <AccessControlEditabilityProvider ruleEditable={selectedRuleCanEdit}>
         <div className="px-3 pb-3">
-          <DefaultRuleForm displayTimezone={displayTimezone} isExam={isExam} />
+          <DefaultRuleForm
+            displayTimezone={displayTimezone}
+            isExam={isExam}
+            hasExamAutoClose={hasExamAutoClose}
+          />
         </div>
       </AccessControlEditabilityProvider>
     ) : selectedRule?.type === 'override' ? (
