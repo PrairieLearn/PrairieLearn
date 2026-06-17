@@ -26,19 +26,19 @@ const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMod
     value: 'show_questions_and_score',
     label: 'Show questions and score',
     description:
-      'Students see questions and their score after finishing while the reservation is still active',
+      'Students see questions, their submissions, and their overall assessment score after finishing while the reservation is still active',
   },
   {
     value: 'show_score_only',
     label: 'Show score only',
     description:
-      'Students see their score but not the questions after finishing while the reservation is still active',
+      'Students see their overall assessment score, but not questions or submissions, after finishing while the reservation is still active',
   },
   {
     value: 'hide_questions_and_score',
     label: 'Hide questions and score',
     description:
-      'Students see neither questions nor score after finishing while the reservation is still active',
+      'Students do not see questions, submissions, or their overall assessment score after finishing while the reservation is still active',
   },
 ];
 
@@ -101,7 +101,8 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
       )}
       {readOnly && (
         <Form.Text className="text-muted d-block">
-          Questions and scores are always shown during read-only reservations.
+          Questions, submissions, and the overall assessment score are always shown during read-only
+          reservations.
         </Form.Text>
       )}
     </div>
