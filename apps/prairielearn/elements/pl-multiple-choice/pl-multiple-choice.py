@@ -220,7 +220,9 @@ def prepare_answers_to_display(
     len_total = len_correct + len_incorrect
 
     if len_total == 0:
-        raise ValueError("<pl-multiple-choice> must have at least 1 answer choice.")
+        raise ValueError(
+            "pl-multiple-choice element must have at least 1 answer choice."
+        )
 
     # When builtin grading is disabled, NOTA/AOTA just controls display
     # (show/hide) with no correctness semantics.
@@ -232,15 +234,13 @@ def prepare_answers_to_display(
 
     if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
         raise ValueError(
-            '<pl-multiple-choice> cannot have both "all-of-the-above" and '
-            '"none-of-the-above" set to "correct".'
+            'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'
         )
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
         raise ValueError(
-            "<pl-multiple-choice> must have at least 2 correct answers when "
-            '"all-of-the-above" is "correct" or "random".'
+            'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
         )
 
     if (
@@ -250,8 +250,7 @@ def prepare_answers_to_display(
     ):
         # There must be a correct answer
         raise ValueError(
-            "<pl-multiple-choice> must have at least 1 correct answer, or set "
-            '"none-of-the-above" to "correct" or "random".'
+            'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
         )
 
     # If no correct option is provided, a random 'None of the above' will be
@@ -291,8 +290,7 @@ def prepare_answers_to_display(
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
-                "<pl-multiple-choice> does not have enough correct choices for "
-                f'"all-of-the-above". Need {expected_num_answers - number_answers} more.'
+                f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
             )
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
         # max number if 'None of the above' is correct
@@ -300,8 +298,7 @@ def prepare_answers_to_display(
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
-                "<pl-multiple-choice> does not have enough incorrect choices for "
-                f'"none-of-the-above". Need {expected_num_answers - number_answers} more.'
+                f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
             )
     elif aota is not AotaNotaType.CORRECT:
         # 'None of the above' does not exist or is not correct, so:

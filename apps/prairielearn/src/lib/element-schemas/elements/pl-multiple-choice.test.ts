@@ -20,7 +20,7 @@ describe('pl-multiple-choice schema', () => {
   it('accepts schema-valid multiple-choice markup', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice" order="fixed">
-        <pl-answer correct="true" score=".5">A</pl-answer>
+        <pl-answer correct="true" score="1">A</pl-answer>
         <pl-answer>B</pl-answer>
       </pl-multiple-choice>
     `);
