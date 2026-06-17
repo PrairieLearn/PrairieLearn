@@ -31,7 +31,6 @@
 
 #    "workspaceOptions": {
 #        "image": "prairielearn/workspace-rstudio",
-#        "args": "",
 #        "rewriteUrl": false
 #    }
 

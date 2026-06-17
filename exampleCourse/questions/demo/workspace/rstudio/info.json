@@ -7,7 +7,6 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-rstudio",
-    "args": "",
     "rewriteUrl": false,
     "gradedFiles": ["student.R"]
   },
