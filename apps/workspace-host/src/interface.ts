@@ -1022,12 +1022,12 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       container = await _createContainer(workspace);
-    } catch (err) {
+    } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace.id,
         'stopped',
-        'Error creating container. Click "Reboot" to try again.',
+        `Error creating container${err.message ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
