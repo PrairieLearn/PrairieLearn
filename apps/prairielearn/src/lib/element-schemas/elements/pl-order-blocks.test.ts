@@ -43,11 +43,15 @@ describe('pl-order-blocks schema', () => {
   });
 
   it('warns on deprecated attributes', async () => {
-    const warnings = await lintWarnings(`
+    const html = `
       <pl-order-blocks answers-name="blocks" inline="true">
         <pl-answer correct="true">A</pl-answer>
       </pl-order-blocks>
-    `);
+    `;
+    const messages = await lintMessages(html);
+    const warnings = await lintWarnings(html);
+
+    assert.deepEqual(messages, []);
 
     assert.isTrue(
       warnings.some((message) => message.includes('"inline"') && message.includes('deprecated')),
