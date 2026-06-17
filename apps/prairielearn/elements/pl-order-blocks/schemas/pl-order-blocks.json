@@ -2,20 +2,34 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
     "answers-name": {
       "type": "string"
     },
-    "weight": {
-      "type": "string",
-      "format": "integer"
+    "code-language": {
+      "type": "string"
     },
-    "source-blocks-order": {
+    "display-blocks": {
       "type": "string",
-      "enum": ["random", "alphabetized", "ordered", "random-sections"]
+      "enum": ["vertical", "inline-wrap", "inline-nowrap"]
     },
     "distractor-order": {
       "type": "string",
       "enum": ["random", "inherit"]
+    },
+    "feedback": {
+      "type": "string",
+      "enum": ["none", "first-wrong", "first-wrong-verbose"]
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["default", "code"]
     },
     "grading-method": {
       "type": "string",
@@ -25,20 +39,17 @@
       "type": "string",
       "format": "boolean"
     },
-    "source-header": {
-      "type": "string"
-    },
-    "solution-header": {
-      "type": "string"
-    },
-    "file-name": {
-      "type": "string"
-    },
-    "solution-placement": {
+    "inline": {
       "type": "string",
-      "enum": ["right", "bottom"]
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"display-blocks\" attribute instead."
     },
     "max-incorrect": {
+      "type": "string",
+      "format": "integer"
+    },
+    "max-indent": {
       "type": "string",
       "format": "integer"
     },
@@ -46,38 +57,27 @@
       "type": "string",
       "format": "integer"
     },
-    "inline": {
-      "type": "string",
-      "format": "boolean",
-      "deprecated": true,
-      "description": "Use the \"display-blocks\" attribute instead."
-    },
-    "display-blocks": {
-      "type": "string",
-      "enum": ["vertical", "inline-wrap", "inline-nowrap"]
-    },
-    "max-indent": {
-      "type": "string",
-      "format": "integer"
-    },
-    "feedback": {
-      "type": "string",
-      "enum": ["none", "first-wrong", "first-wrong-verbose"]
-    },
     "partial-credit": {
       "type": "string",
       "enum": ["none", "lcs"]
     },
-    "format": {
-      "type": "string",
-      "enum": ["default", "code"]
-    },
-    "code-language": {
+    "solution-header": {
       "type": "string"
     },
-    "allow-blank": {
+    "solution-placement": {
       "type": "string",
-      "format": "boolean"
+      "enum": ["right", "bottom"]
+    },
+    "source-blocks-order": {
+      "type": "string",
+      "enum": ["random", "alphabetized", "ordered", "random-sections"]
+    },
+    "source-header": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
     }
   },
   "required": ["answers-name"],

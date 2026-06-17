@@ -9,13 +9,6 @@ async function lintMessages(html: string): Promise<string[]> {
     .map((diagnostic) => diagnostic.message);
 }
 
-async function lintWarnings(html: string): Promise<string[]> {
-  const diagnostics = await lintQuestionHtml(html);
-  return diagnostics
-    .filter((diagnostic) => diagnostic.severity === 'warning')
-    .map((diagnostic) => diagnostic.message);
-}
-
 describe('pl-order-blocks schema', () => {
   it('accepts schema-valid order-blocks markup', async () => {
     const messages = await lintMessages(`
@@ -40,21 +33,5 @@ describe('pl-order-blocks schema', () => {
     `);
 
     assert.deepEqual(messages, []);
-  });
-
-  it('warns on deprecated attributes', async () => {
-    const html = `
-      <pl-order-blocks answers-name="blocks" inline="true">
-        <pl-answer correct="true">A</pl-answer>
-      </pl-order-blocks>
-    `;
-    const messages = await lintMessages(html);
-    const warnings = await lintWarnings(html);
-
-    assert.deepEqual(messages, []);
-
-    assert.isTrue(
-      warnings.some((message) => message.includes('"inline"') && message.includes('deprecated')),
-    );
   });
 });

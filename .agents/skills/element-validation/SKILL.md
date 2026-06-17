@@ -42,4 +42,4 @@ When adding schema coverage for an existing element, match runtime behavior for 
 
 ## Tests
 
-Test the layer that changed. For schema modules, add per-element tests only for element-specific facts that are easy to regress, such as shared child tag ownership, unusual child structure, or deprecation metadata. Do not retest generic JSON Schema behavior like required attributes, unknown attributes, enum validation, or format validation for every element.
+Test the layer that changed. For schema modules, add per-element tests only for element-specific facts that are easy to regress, such as shared child tag ownership or unusual child structure. Do not retest generic JSON Schema or linter behavior like required attributes, unknown attributes, enum validation, format validation, or deprecated-attribute warning emission for every element. Use generated schema diffs and `make check-element-schemas` to verify ordinary attribute metadata.

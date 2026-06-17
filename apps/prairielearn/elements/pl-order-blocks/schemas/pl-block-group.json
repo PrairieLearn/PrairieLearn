@@ -2,10 +2,10 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "tag": {
+    "depends": {
       "type": "string"
     },
-    "depends": {
+    "tag": {
       "type": "string"
     }
   },

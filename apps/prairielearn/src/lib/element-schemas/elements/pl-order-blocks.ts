@@ -5,53 +5,53 @@ import type { ElementSchemaModule } from '../types.ts';
 
 const plOrderBlocksAnswerAttributesSchema = z
   .object({
-    correct: booleanFormat().optional(),
-    'initially-placed': booleanFormat().optional(),
-    tag: z.string().optional(),
-    depends: z.string().optional(),
     comment: z.string().optional(),
-    indent: integerFormat().optional(),
+    correct: booleanFormat().optional(),
+    depends: z.string().optional(),
     'distractor-feedback': z.string().optional(),
     'distractor-for': z.string().optional(),
+    final: booleanFormat().optional(),
+    indent: integerFormat().optional(),
+    'initially-placed': booleanFormat().optional(),
     'ordering-feedback': z.string().optional(),
     ranking: integerFormat().optional(),
-    final: booleanFormat().optional(),
+    tag: z.string().optional(),
   })
   .strict();
 
 const plOrderBlocksBlockGroupAttributesSchema = z
   .object({
-    tag: z.string().optional(),
     depends: z.string().optional(),
+    tag: z.string().optional(),
   })
   .strict();
 
 const plOrderBlocksAttributesSchema = z
   .object({
+    'allow-blank': booleanFormat().optional(),
     'answers-name': z.string(),
-    weight: integerFormat().optional(),
-    'source-blocks-order': z
-      .enum(['random', 'alphabetized', 'ordered', 'random-sections'])
-      .optional(),
+    'code-language': z.string().optional(),
+    'display-blocks': z.enum(['vertical', 'inline-wrap', 'inline-nowrap']).optional(),
     'distractor-order': z.enum(['random', 'inherit']).optional(),
+    feedback: z.enum(['none', 'first-wrong', 'first-wrong-verbose']).optional(),
+    'file-name': z.string().optional(),
+    format: z.enum(['default', 'code']).optional(),
     'grading-method': z.enum(['unordered', 'ordered', 'ranking', 'dag', 'external']).optional(),
     indentation: booleanFormat().optional(),
-    'source-header': z.string().optional(),
-    'solution-header': z.string().optional(),
-    'file-name': z.string().optional(),
-    'solution-placement': z.enum(['right', 'bottom']).optional(),
-    'max-incorrect': integerFormat().optional(),
-    'min-incorrect': integerFormat().optional(),
     inline: booleanFormat()
       .meta({ deprecated: true, description: 'Use the "display-blocks" attribute instead.' })
       .optional(),
-    'display-blocks': z.enum(['vertical', 'inline-wrap', 'inline-nowrap']).optional(),
+    'max-incorrect': integerFormat().optional(),
     'max-indent': integerFormat().optional(),
-    feedback: z.enum(['none', 'first-wrong', 'first-wrong-verbose']).optional(),
+    'min-incorrect': integerFormat().optional(),
     'partial-credit': z.enum(['none', 'lcs']).optional(),
-    format: z.enum(['default', 'code']).optional(),
-    'code-language': z.string().optional(),
-    'allow-blank': booleanFormat().optional(),
+    'solution-header': z.string().optional(),
+    'solution-placement': z.enum(['right', 'bottom']).optional(),
+    'source-blocks-order': z
+      .enum(['random', 'alphabetized', 'ordered', 'random-sections'])
+      .optional(),
+    'source-header': z.string().optional(),
+    weight: integerFormat().optional(),
   })
   .strict();
 
