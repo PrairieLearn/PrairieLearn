@@ -5,24 +5,14 @@
   "set": "Homework",
   "module": "IntroModule",
   "number": "3",
-  "allowAccess": [
+  "accessControl": [
     {
-      "comment": "Set end date for 100% credit",
-      "credit": 100,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-11-15T23:59:59"
-    },
-    {
-      "comment": "Set later end date for reduced credit",
-      "credit": 50,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-11-30T23:59:59"
-    },
-    {
-      "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessment)",
-      "credit": 0,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2023-12-31T23:59:59"
+      "dateControl": {
+        "release": { "date": "2021-01-01T00:00:01" },
+        "due": { "date": "2023-11-15T23:59:59" },
+        "lateDeadlines": [{ "date": "2023-11-30T23:59:59", "credit": 50 }],
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
+      }
     }
   ],
   "zones": [

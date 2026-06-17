@@ -91,6 +91,11 @@ describe('rewriteImagesAsPlFigure', () => {
     assert.equal(rewriteImagesAsPlFigure(html), html);
   });
 
+  it('leaves malformed remote URLs as <img>', () => {
+    const html = '<img src="://example.com/img.png">';
+    assert.equal(rewriteImagesAsPlFigure(html), html);
+  });
+
   it('leaves data: URLs as <img>', () => {
     const html = '<img src="data:image/png;base64,AAAA">';
     assert.equal(rewriteImagesAsPlFigure(html), html);
@@ -109,6 +114,16 @@ describe('resolveImsFileRefs', () => {
     assert.equal(result.html, '<img src="{{ options.client_files_question_url }}/image.png">');
     assert.equal(result.fileRefs.get('image.png'), 'Quiz Files/image.png');
     assert.deepEqual(result.skippedFiles, []);
+  });
+
+  it('decodes HTML entities and strips Canvas download query parameters from file references', () => {
+    const html = '<img src="$IMS-CC-FILEBASE$/TemplateINC&amp;CF.jpg?canvas_download=1">';
+    const result = resolveImsFileRefs(html);
+    assert.equal(
+      result.html,
+      '<img src="{{ options.client_files_question_url }}/TemplateINC&amp;CF.jpg">',
+    );
+    assert.equal(result.fileRefs.get('TemplateINC&CF.jpg'), 'TemplateINC&CF.jpg');
   });
 
   it('comments out tags that reference excluded extensions', () => {
@@ -130,7 +145,7 @@ describe('resolveImsFileRefs', () => {
     assert.equal(
       result.html,
       '<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n' +
-        '<video src="{{ options.client_files_question_url }}/clip.webm" />\n' +
+        '<video src="{{ options.client_files_question_url }}/clip.webm"></video>\n' +
         '-->',
     );
     assert.deepEqual(result.skippedFiles, ['clip.webm']);
@@ -281,7 +296,7 @@ describe('rewritePreAsPlCode', () => {
     assert.include(result, '<pl-code');
     assert.notInclude(result, '<span>');
     assert.notInclude(result, '<br>');
-    assert.include(result, 'for (int i = 0; i <= n; i++)\n');
+    assert.include(result, 'for (int i = 0; i &lt;= n; i++)\n');
     assert.include(result, '  // body\n');
   });
 });
@@ -291,11 +306,43 @@ describe('cleanQuestionHtml', () => {
     assert.equal(cleanQuestionHtml('<div><p>Hello</p></div>'), '<p>Hello</p>');
   });
 
+  it('strips wrapping div with attributes', () => {
+    assert.equal(cleanQuestionHtml('<div class="prompt"><p>Hello</p></div>'), '<p>Hello</p>');
+  });
+
+  it('preserves sibling divs instead of stripping the first open and last close', () => {
+    const html = '<div>First</div><div><div>Second</div></div>';
+    assert.equal(cleanQuestionHtml(html), html);
+  });
+
   it('preserves content without wrapping div', () => {
     assert.equal(cleanQuestionHtml('<p>Hello</p>'), '<p>Hello</p>');
   });
 
   it('trims whitespace', () => {
     assert.equal(cleanQuestionHtml('  <p>Hello</p>  '), '<p>Hello</p>');
+  });
+
+  it('removes Canvas answer blocks from prompt HTML', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<p>Prompt</p><div class="answers"><div class="answers_wrapper"><div>Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('removes answer blocks with extra classes and attributes', () => {
+    assert.equal(
+      cleanQuestionHtml(
+        '<div class="prompt"><p>Prompt</p><div id="answer-list" class="canvas answers"><div class="answers_wrapper hidden">Correct</div></div></div>',
+      ),
+      '<p>Prompt</p>',
+    );
+  });
+
+  it('preserves answers divs without an answers_wrapper child', () => {
+    const html = '<p>Prompt</p><div class="answers"><p>Discussion of answers</p></div>';
+    assert.equal(cleanQuestionHtml(html), html);
   });
 });

@@ -1,356 +1,789 @@
 # Assessment access control
 
-By default, assessments are only accessible to [course staff](../course/index.md#course-staff). To control access to assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
+Instructors can use the assessment **Access** page to configure availability, deadlines, credit, time limits, passwords, PrairieTest access, and student-specific overrides.
 
 ## Access control checks
 
-In PrairieLearn there are two types of checks that determine whether a student has access to an assessment:
+PrairieLearn checks access at two levels:
 
-1. First, the **course instance** must be published to the student, and the student must be enrolled in the course instance. The `publishing` configuration in [infoCourseInstance.json](../courseInstance/index.md#publishing-controls) alongside [publishing extensions](../courseInstance/index.md#publishing-extensions) can be used to publish the course instance. Students are able to view the course instance as long as they are enrolled and the course instance is published. This does not by itself grant them access to any assessments in the course instance.
+1. The **course instance** must be available to the student. The student must be enrolled in the course instance, and the course instance must be published or otherwise visible through its [publishing controls](../courseInstance/index.md#publishing-controls).
+2. The **assessment** must grant the student access. Configure assessment access from the assessment **Access** page: **Defaults** apply to all students, and **Overrides** apply to selected student labels or specific students.
 
-2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/overview.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
+These two checks are both required. Publishing a course instance lets enrolled students see the course instance, but it does not by itself grant access to every assessment in it. Granting assessment access only works for students who can also access the course instance.
 
-## `allowAccess` format
+!!! note "Legacy `allowAccess`"
 
-The general format of `allowAccess` is:
+    Existing assessments that still use `allowAccess` can continue to do so. New assessments should use the **Access** page and the `accessControl` format documented here. For details about the older format, see the [legacy assessment access control](accessControlLegacy.md) documentation.
 
-```json
-{
-  "allowAccess": [
-    {
-      /* <accessRule1> */
-    },
-    {
-      /* <accessRule2> */
-    },
-    {
-      /* <accessRule3> */
-    }
-  ]
-}
-```
+## Open the Access page
 
-Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows:
+From an assessment, open the **Access** tab. The page has two sections:
 
-| Access restriction        | Meaning                                                                                                                                    | Example                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| `uids`                    | Require one of the UIDs in the array to access.                                                                                            | `"uids": ["student1@example.com", "student2@example.com"]` |
-| [`startDate`](#dates)     | Only allow access after this date.                                                                                                         | `"startDate": "2015-01-19T00:00:01"`                       |
-| [`endDate`](#dates)       | Only allow access before this date.                                                                                                        | `"endDate": "2015-05-13T23:59:59"`                         |
-| [`mode`](#server-modes)   | Only allow access from this server mode. By default, the mode is Public, unless `examUuid` is provided, in which case the default is Exam. | `"mode": "Exam"`                                           |
-| [`password`](#passwords)  | Password required to start an assessment. Typically used for proctored exams.                                                              | `"password": "mysecret"`                                   |
-| [`examUuid`](#exam-uuids) | PrairieTest UUID for the exam that students must register for.                                                                             | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`       |
+- **Defaults**: settings that apply to all students.
+- **Overrides**: settings that apply only to selected student labels or specific students.
 
-Each access rule will only grant access if all the restrictions are satisfied.
+![Access control page showing Defaults and Overrides](accessControl/01-overview.png)
+/// caption
+The Access page summarizes the active configuration and lists every override that applies to the assessment.
+///
 
-In summary, `allowAccess` uses the algorithm:
+The summary card shows the current access state, the release/due timeline, credit after deadlines, and visibility settings. Click **Edit** on a card to open the detail panel, make changes, and then click **Save** to persist the changes.
 
-```text
-each accessRule is True if (restriction1 AND restriction2 AND restriction3)
-allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
-```
+## Configure defaults
 
-If all the restrictions are satisfied, then there are a variety of effects that can be applied to the assessment, listed below:
+Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
-| Access effect                                                       | Meaning                                                                                                    | Example                              |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| [`active`](#active-assessments)                                     | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"active": false`                    |
-| [`credit`](#credit)                                                 | Maximum credit as percentage of full credit (can be more than 100).                                        | `"credit": 100`                      |
-| [`showClosedAssessment`](#showinghiding-closed-assessments)         | Whether to allow viewing of assessment contents when closed (default `true`).                              | `"showClosedAssessment": false`      |
-| [`showClosedAssessmentScore`](#showinghiding-all-score-information) | Whether to allow viewing of the score of a closed assessment (default `true`).                             | `"showClosedAssessmentScore": false` |
-| [`timeLimitMin`](#time-limits)                                      | Time limit in minutes to complete an assessment (only for assessments with type: Exam).                    | `"timeLimitMin": 60`                 |
+![Defaults editor panel for access control](accessControl/02-defaults-editor.png)
+/// caption
+Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
+///
 
-If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
+### Date control
 
-Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](../course/index.md#course-staff).
+Use **Date control** to configure when students can open the assessment, when submissions are accepted, and how much credit submissions receive over time.
 
-## Dates
+Set a **Release** option:
 
-All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](../courseInstance/index.md#timezone).
+- **Released**: students can access the assessment immediately, unless other access settings prevent it.
+- **Scheduled for release**: students cannot open the assessment before the release date. If **List before release** is enabled, they can see the assessment title before release.
 
-If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
+Set a **Due date** option:
 
-## Server modes
+- **No due date**: students can submit indefinitely after release.
+- **Due on date**: students receive the due-date credit until that date.
 
-Each user accesses the PrairieLearn server in a _mode_, as listed below. This can be used to restrict access to assessments based on the current mode. The mode of an access rule has the following effect:
+By default, the due date is worth 100% credit. Click **Change** next to the due credit if you need a different on-time credit value. This is uncommon — most courses keep the on-time value at 100% and use an **early deadline** to reward early submissions or [bonus points](configuration.md#assessment-points) to let students exceed 100% by doing additional work.
 
-| Mode     | When is access allowed?                                                                                                                                                                                       |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Public` | Access is normally allowed, but is blocked when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This is the default mode.                                |
-| `Exam`   | Access is normally blocked, and is only allowed when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This mode is used when the `examUuid` is specified. |
+#### Credit
 
-In general usage it is best to keep the default Public mode for any homework (assessments that students should do at home or without special access control), and to use exam mode, by setting the `"examUuid"`, for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
+Available credit is the maximum percentage score a student can earn during a particular access window. When the available credit is less than 100%, the percentage score is capped at that value. When the available credit is greater than 100%, students receive the bonus credit percentage once they reach full points; if [`maxBonusPoints`](configuration.md#assessment-points) is used, points above `maxPoints` are also scaled by the available credit percentage.
 
-## Credit
+For example, on a 10-point assessment with 80% available credit, a student who earns 9/10 points receives an 80% score because the access window caps the percentage score. With 110% available credit, a student who earns 10/10 points receives 110%, while a student who earns 8/10 points still receives 80%.
 
-When the available credit is less than 100%, the percentage score is calculated as `min(credit, points / maxPoints * 100)`. However, the student's percentage score will never decrease, so if they've already earned a higher percentage score then they will keep it. For example, if `credit = 80` and `maxPoints = 10`, then when a student has `points = 8` then they will have a percentage score of 80%, and when they have `points = 9` or `points = 10` they will still have a percentage score of 80%.
+#### Early and late deadlines
 
-When the available credit is more than 100%, then the percentage score is calculated as `points / maxPoints * 100` when `points < maxPoints`. However, if `points = maxPoints` then the percentage score is taken to be the credit value. For example, if `credit = 120` then the student will see their percentage score rise towards 100% as their `points` increase towards `maxPoints`, and then when their `points` reaches `maxPoints` their percentage score will suddenly jump to 120%. If [`maxBonusPoints`](../assessment/configuration.md#assessment-points) is used, and the student is able to obtain points above `maxPoints`, then the student's percentage score will be based on this credit as a percentage, i.e., their score will be computed as `credit * points / maxPoints`. For example, if `maxPoints = 10`, `maxBonusPoints = 2`, `credit = 120` and the student obtained 11 points, their score will be `120 * 11 / 10 = 132%`.
+Use **Early deadlines** for bonus-credit windows before the due date, and **Late deadlines** for reduced-credit windows after the due date.
 
-## Time limits
+For each deadline, choose:
 
-For students taking remote exams it can be helpful to have an enforced time limit. This can be done with an access rule like:
+- a date and time;
+- the integer credit percentage students receive until that deadline.
 
-```json
-{
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T16:00:00",
-      "endDate": "2015-01-19T18:00:00",
-      "timeLimitMin": 90,
-      "credit": 100
-    }
-  ]
-}
-```
+Deadlines form one chronological credit timeline. For example, an assessment might be worth 110% until an early deadline, 100% until the due date, 80% until a late deadline, and then 0% or practice credit after that.
 
-The above example will give students 90 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`. See the following diagram for an illustration of this.
+!!! tip
 
-![Time limit illustrations](./exam_timer.svg)
+    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit, and all credit after the due date must be below 100%.
+
+#### After deadlines
+
+Configure what happens after all deadlines have passed. The setting is labeled **After due date** when there are no late deadlines, **After late deadline** when there is one, and **After late deadlines** when there are several.
+
+- **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
+- **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
+- **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
+
+This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+
+#### Time limits
+
+Enable **Time limit** to give each student a fixed amount of working time after they start the assessment.
+
+Timed attempts can span early deadlines, the due date, and late deadlines that still allow submissions, so the credit a student earns can shift as those deadlines pass during the attempt. If an assessment has a due date, a late deadline, and a 60-minute time limit, a student who starts 1 minute before the due date works for the full 60 minutes: the first minute earns the on-time credit, and the remainder earns the late-deadline credit.
+
+However, a timed attempt cannot continue past the point where submissions stop entirely. For example, if **After due date** is set to **No submissions allowed** with no late deadlines, a student who starts shortly before the due date receives only the remaining time until then, not the full configured time limit.
+
+#### Passwords
+
+Enable **Password** to require a password to start or continue working on the assessment. This is typically used for proctored exams. The password gates active, submittable work; students do not need to re-enter the password to review their work once submissions are no longer allowed (for example, in **No submissions allowed** mode after the last deadline).
+
+!!! info
+
+    Time limits and passwords apply only when a student gains access through **date control**. They are not enforced inside an active PrairieTest reservation — PrairieTest enforces its own scheduled time limit and access controls, including any PrairieTest session password.
+
+### PrairieTest
+
+Enable **PrairieTest** to let an active PrairieTest reservation grant access to the assessment. Add the PrairieTest exam UUID from the PrairieTest exam settings.
+
+PrairieLearn shows an **Exam** badge in the navigation bar when a student is in **Exam mode**, which means the student has a checked-in PrairieTest reservation. While a matching reservation is active and the student is in Exam mode, PrairieTest controls the scheduled access window and time limit. Outside Exam mode, the top-level date control, before-release behavior, and after-completion visibility apply normally.
+
+For each PrairieTest exam, configure what students see after they finish **while the reservation is still active**:
+
+- **Show questions and score**: students can review questions and see their score.
+- **Show score only**: students can see their score, but not the questions.
+- **Hide questions and score**: students see neither questions nor score.
+
+These per-exam settings do not support reveal dates. Use the top-level **After completion** settings for visibility after the active reservation ends.
+
+You can also enable **Read-only mode**. During a read-only reservation, students can view previous submissions but cannot submit new answers or start the assessment if they have not already started. Questions and scores are always shown during read-only reservations, regardless of the per-exam visibility settings.
+
+#### PrairieTest precedence
+
+When a PrairieTest exam is associated with the assessment, PrairieLearn resolves access in this order:
+
+- **During an active matching reservation (Exam mode)**, PrairieTest grants access. Date-control scheduling, time limits, and passwords are **not** enforced — PrairieTest enforces its own scheduling, time limit, and access controls. For non-read-only reservations, the per-exam **After completion** visibility setting controls what students see after they finish, until the reservation ends.
+- **In Exam mode without an active matching reservation**, date control is not used as a fallback access path. PrairieLearn denies access, omits the assessment from the student assessment list, and hides completed-work visibility such as gradebook scores.
+- **Outside Exam mode**, the top-level date control rules apply normally when a date-control release exists. Top-level **After completion** visibility also takes over for completed instances once the reservation ends.
+
+To restrict submission access to PrairieTest only, leave date control disabled. If students should also be unable to review questions or scores outside the reservation, keep top-level **Question visibility** and **Score visibility** hidden.
+
+### Before release
+
+Enable **List before release** when students should see the assessment title before they can open it. With date control, this is the period before the release date. With PrairieTest only (no date control), this controls whether students can see the assessment title outside Exam mode even though they cannot open it. In Exam mode, only assessments with an active matching reservation are listed or accessible. If neither date control nor PrairieTest is enabled, the assessment is listed but students cannot start it.
+
+Disable it when the assessment should be completely hidden until release.
+
+### After completion
+
+Use **Question visibility** and **Score visibility** to decide what students can see after the assessment is complete.
+
+These settings apply once submissions are no longer allowed: after the final deadline, when a timed assessment closes, when an Exam assessment auto-closes after inactivity, or when an instructor closes it. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
+
+Question visibility options:
+
+- **Hide questions permanently**: questions are never visible after completion.
+- **Show questions after completion**: students can review questions and answers immediately after completing the assessment.
+- **Show questions after date**: questions are hidden after completion and become visible on the chosen date.
+- **Show questions between dates**: questions are visible only between the chosen dates.
+
+Score visibility options:
+
+- **Hide score permanently**: the score is never visible after completion.
+- **Show score after completion**: students can see their score immediately.
+- **Show score after date**: the score is hidden after completion and becomes visible on the chosen date.
+
+For PrairieTest exams, top-level after-completion settings apply outside an active reservation. Use the per-exam PrairieTest visibility setting to control what students see while their reservation is still active.
+
+Visibility dates are only valid when the corresponding item is hidden first. Hiding the score also requires hiding questions, because PrairieLearn does not support showing question submissions while hiding their resulting score.
+
+## Add an override
+
+Overrides customize access for selected students while inheriting anything they do not explicitly change from the defaults.
+
+Click **Add override** in the **Overrides** section.
+
+Choose who the override applies to:
+
+- **Specific students**: select enrolled students. Student-specific overrides are stored in the database, not in `infoAssessment.json`, which keeps one-off accommodations and makeup windows out of the course's git history.
+- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them). Student-label overrides are stored in `infoAssessment.json` alongside the rest of the assessment configuration.
+
+[Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
+
+After choosing the target, click **Override** next to each field you want to customize. Fields that you do not override continue to inherit from the defaults.
+
+Common override uses include:
+
+- extending the due date for a student label;
+- adding extra time for students with an accommodation label;
+- giving one student a password or different access window;
+- hiding or revealing completed exam content differently for one group.
+
+## Edit an existing override
+
+Existing overrides appear as cards under **Overrides for student labels** or **Overrides for specific students**. Click **Edit** to change the target or overridden fields.
+
+![Student-specific override editor with an overridden release date](accessControl/03-student-override.png)
+/// caption
+Each override starts with every field inherited from the defaults; click **Override** next to a field to set a different value just for the targeted students.
+///
+
+When an override field is active, the detail panel shows **Remove override** for that field. Removing the override does not clear the default value; it makes the rule inherit that field again.
+
+## Override priority
+
+Student-specific overrides take priority over student-label overrides. Within each section, overrides lower in the list take priority over those higher in the list; use the drag handle to reorder overrides when priority matters.
+
+For example, suppose a student has both the "Section A" and "Extended time" labels:
+
+- The **Section A** override sets a later **due date** (Feb 20).
+- The **Extended time** override sets a longer **time limit** (90 minutes) and an earlier **release date** (Jan 14).
+
+The student inherits both overrides on top of the defaults: due date Feb 20, time limit 90 minutes, release date Jan 14. If both overrides set the same field — say, both set the due date — the override lower in the list wins.
+
+## Save changes
+
+The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store student-specific overrides in the database, and sync the course.
+
+Click **Cancel** to discard unsaved UI changes.
+
+Click **Clear** on the Defaults card to remove the default access-control configuration. Click **Remove** on an override card to delete the entire override.
+
+## Migrating from legacy access control
+
+Legacy access control uses `allowAccess` rules. Modern access control uses `accessControl` rules. See the [legacy access control documentation](accessControlLegacy.md) for details about the older format.
+
+Migration from legacy `allowAccess` can be done in two ways:
+
+- On an assessment's **Access** tab, click **Migrate to modern format**. PrairieLearn shows the migrated changes and any warnings before you confirm.
+- When **copying a course instance**, PrairieLearn migrates compatible assessment-level rules and reports any caveats before you confirm the copy.
 
 !!! note
 
-    Time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.
+    UID-based rules from the legacy system do not have a direct JSON equivalent in modern access control. After migration, use the Access page to configure overrides for student labels or specific enrolled students.
 
-### Time limit adjustments for open assessments
+For JSON-level before-and-after examples, see [Legacy migration examples](#legacy-migration-examples) in the advanced JSON reference.
 
-Changes to the time limits in the `infoAssessment.json` file only take effect before an assessment is started. Once a student opens an assessment and creates an instance, the time limit for that assessment will be set based on the time limit rules at the time the assessment started. In some scenarios, instructors or proctors may need to change the time limit allotted to individual students or for all students with an open assessment instance. This change could be due to errors in the original configuration, unexpected events (e.g., power outages or scheduling problems), or concessions.
+## Common scenarios
 
-On the Staff View for the assessment, select the Students tab. This tab will show a list of all students that have started the assessment. The "Remaining" column will include one of the following values:
+### Simple homework with a due date
 
-- The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](../assessment/configuration.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
-- The value "Open (no time limit)" indicates that the assessment is open and has no time limit (other than the `autoClose` setting listed above). Students are able to submit answers for these assessments.
-- The value "Expired" indicates that the student's time limit has run out, but the assessment was not yet closed. This may be due to the student having closed the assessment without selecting the Finished button, or because the time limit was recently changed and the student's browser has not yet updated its time limit. Students will get a message that their timer has run out as soon as they try to open the assessment, and will be unable to submit further answers.
-- A value indicating a number of minutes indicates the remaining time until the exam is automatically closed. Students are able to submit answers until this time expires. Note that this time is computed when the page is loaded, so to get an updated time, the page must be refreshed.
+Students can start and submit the homework from Jan 15 to Feb 15 for 100% credit. After Feb 15, submissions are not allowed. The **After completion** settings apply; by default, students can see their score but not the questions.
 
-An edit button is presented inside the "Remaining" tab for each student, which should allow proctors to modify the time limit for a student. For instances with no time limit, this action allows the proctor to set the total time limit (based on the time the student started the assessment) or the remaining time (from the current time). For instances with a set time limit, in addition to these two options, the action also allows the instructor to add or subtract time from the current limit, or to remove the time limit. An option to set the time limit as Expired is also available, which will cause the timer to be set to the current time, and in effect block any further submissions by the student. Changing the time limit will re-open an assessment if it has been closed already.
+In the UI:
 
-It is also possible to change the time limit for all instances, using the **Action for all instances** button in the top-right corner of the table. It is advisable that any changes done to all instances take into consideration students with different time limits (e.g., students with accessibility concessions). One option available for changing the time limit is the option to add/subtract a specific percentage from the current total time limit for all students. This option allows proctors to maintain the concession percentage for students with a differential time limit.
+1. Edit **Defaults**.
+2. Enable **Date control**.
+3. Set **Release** to **Scheduled for release** and enter Jan 15.
+4. Set **Due date** to **Due on date** and enter Feb 15.
+5. Leave due-date credit at the default 100%.
+6. Leave **After due date** set to **No submissions allowed**.
 
-## Passwords
+??? info "JSON"
 
-Remote or online exams sometimes use a “proctor password” to control access to Exams. This can be enabled with an access rule like:
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59",
-      "password": "mysecret",
-      "credit": 100
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" }
+          }
+        }
+      ]
+    }
+    ```
+
+### Always-open practice assessment
+
+Students can access a practice assessment indefinitely after release with full credit.
+
+In the UI:
+
+1. Edit **Defaults**.
+2. Enable **Date control**.
+3. Set **Release** to **Released** (or **Scheduled for release** with a release date).
+4. Set **Due date** to **No due date**.
+
+??? info "JSON"
+
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": null }
+          }
+        }
+      ]
+    }
+    ```
+
+    With `due.date: null`, `due.credit` (default 100%) applies indefinitely after release.
+
+### Homework with early bonus and late penalty
+
+| Period        | Credit                                    |
+| ------------- | ----------------------------------------- |
+| Before Jan 15 | Not open                                  |
+| Jan 15-Feb 1  | 110%                                      |
+| Feb 1-Feb 15  | 100%                                      |
+| Feb 15-Feb 22 | 80%                                       |
+| Feb 22-Mar 1  | 50%                                       |
+| After Mar 1   | 0%, with submissions allowed for feedback |
+
+After Mar 1, submissions remain open indefinitely for feedback at 0% credit. The **After completion** settings apply only after the student's assessment instance closes or its time limit expires.
+
+In the UI:
+
+1. Edit **Defaults**.
+2. Enable **Date control** and set the release date to Jan 15.
+3. Add an **Early deadline** on Feb 1 with 110% credit.
+4. Set the **Due date** to Feb 15 and leave credit at 100%.
+5. Add **Late deadlines** on Feb 22 with 80% credit and Mar 1 with 50% credit.
+6. Set **After late deadlines** to **Allow practice submissions**.
+
+??? info "JSON"
+
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" },
+            "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
+            "lateDeadlines": [
+              { "date": "2025-02-22T23:59:59", "credit": 80 },
+              { "date": "2025-03-01T23:59:59", "credit": 50 }
+            ],
+            "afterLastDeadline": {
+              "allowSubmissions": true,
+              "credit": 0
+            }
+          }
+        }
+      ]
+    }
+    ```
+
+### Timed exam with password
+
+Students have a 90-minute time limit within the two-hour exam window. A password is required to start. Submissions stop after the exam window. Once the exam is complete, questions and scores are hidden, with scores revealed on Mar 12.
+
+In the UI:
+
+1. Edit **Defaults**.
+2. Enable **Date control**.
+3. Set the release date to Mar 10 at 9:00am and the due date to Mar 10 at 11:00am.
+4. Enable **Time limit** and enter 90 minutes.
+5. Enable **Password** and enter the password.
+6. Under **After completion**, set **Question visibility** to **Hide questions permanently**.
+7. Set **Score visibility** to **Show score after date** and enter Mar 12.
+
+??? info "JSON"
+
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-03-10T09:00:00" },
+            "due": { "date": "2025-03-10T11:00:00" },
+            "durationMinutes": 90,
+            "password": "exam2025"
+          },
+          "afterComplete": {
+            "questions": { "hidden": true },
+            "score": { "hidden": true, "visibleFromDate": "2025-03-12T00:00:01" }
+          }
+        }
+      ]
+    }
+    ```
+
+### PrairieTest exam
+
+Students access the assessment through an active PrairieTest reservation; time limits and scheduling are managed by PrairieTest.
+
+In the UI:
+
+1. Edit **Defaults**.
+2. Enable **PrairieTest** under **Integrations**.
+3. Enter the PrairieTest exam UUID.
+4. For **After completion**, choose what students can see after they finish, while their reservation is still active.
+5. Use the top-level **After completion** settings for what students can see after the reservation ends.
+6. Do not configure an ordinary date-control access window unless students should also be able to access the assessment outside PrairieTest.
+
+??? info "JSON"
+
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "integrations": {
+            "prairieTest": {
+              "exams": [
+                {
+                  "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+    ```
+
+### Extended due date for a student label
+
+Students with the "Extended time" label get a later due date and more time. All other settings inherit from the defaults.
+
+In the UI:
+
+1. Create or confirm a student label such as "Extended time" on the course instance **Students** page.
+2. On the assessment **Access** page, click **Add override**.
+3. Choose **Students by label** and select "Extended time".
+4. Click **Override** next to **Due date** and set the later due date.
+5. Click **Override** next to **Time limit** and enter the longer duration.
+6. Leave every other field inherited.
+
+??? info "JSON"
+
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" },
+            "durationMinutes": 60
+          }
+        },
+        {
+          "labels": ["Extended time"],
+          "dateControl": {
+            "due": { "date": "2025-02-22T23:59:59" },
+            "durationMinutes": 90
+          }
+        }
+      ]
+    }
+    ```
+
+### Extended access for specific students
+
+Use student-specific overrides for one-off accommodations or makeup windows that should not become course content.
+
+In the UI:
+
+1. Click **Add override**.
+2. Choose **Specific students**.
+3. Click **Select students** and choose the enrolled students.
+4. Click **Override** next to only the fields that should differ, such as **Release**, **Due date**, or **Time limit**.
+5. Save the changes.
+
+## Limitations
+
+Modern access control models credit as a single contiguous submission timeline from the release date through deadlines to the point where submissions stop. It cannot represent non-contiguous submission ranges where credit is available, then unavailable, then available again.
+
+For example, a legacy setup that accepts 100% credit submissions from Jan 15 to Feb 15, stops accepting submissions, and then reopens for 100% credit submissions from Mar 1 to Mar 15 cannot be represented as one modern credit timeline.
+
+Assessments with non-contiguous credit ranges are flagged as incompatible during migration. You can clear those rules and reconfigure access manually, or keep the legacy format.
+
+## Limits
+
+Modern access control limits unusually large configurations so that access settings remain reviewable and do not accept unbounded input. Most assessments should be well below these limits; use student labels for repeated accommodations, sections, or cohorts instead of selecting large groups of students individually.
+
+| Setting                                      | Limit                                   |
+| -------------------------------------------- | --------------------------------------- |
+| Student-label overrides                      | 100 overrides per assessment            |
+| Student-specific overrides                   | 100 overrides per assessment            |
+| Students in one student-specific override    | 100 students                            |
+| Student labels in one student-label override | 100 labels                              |
+| Early and late deadlines                     | 10 early and 10 late deadlines per rule |
+| Linked PrairieTest exams                     | 10 exams per assessment                 |
+| Time limits                                  | 525,600 minutes (365 days)              |
+| Passwords                                    | 128 characters                          |
+
+## Staff access
+
+Course staff with a course role of Previewer or above, or a course instance role of Student Data Viewer or above, always receive full access to all assessments regardless of access control rules. They see 100% credit with a "(Staff override)" indicator.
+
+## Advanced JSON configuration
+
+Most instructors should use the Access page. The JSON format is useful when you need to script access-control changes, review diffs, or generate assessments programmatically.
+
+The `accessControl` field is an array in `infoAssessment.json`:
+
+```json title="infoAssessment.json"
+{
+  "accessControl": [
+    {
+      "beforeRelease": { "listed": true },
+      "dateControl": {
+        "release": { "date": "2026-04-10T00:00:01" },
+        "due": { "date": "2026-05-01T23:59:59" },
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
+      },
+      "afterComplete": { "questions": { "hidden": false } }
+    },
+    {
+      "labels": ["Section A"],
+      "dateControl": {
+        "due": { "date": "2026-05-28T20:15:00" }
+      }
     }
   ]
 }
 ```
 
-Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page. Alternatively, the proctor may provide this phrase to students during the session.
+The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; student-specific overrides are configured through the UI.
 
-## Exam UUIDs
+### Full JSON skeleton
 
-To require that students take a particular exam in a testing center or a course-managed PrairieTest session, the `examUuid` should be set to the UUID value from PrairieTest. For example:
-
-```json
+```json title="infoAssessment.json"
 {
-  "allowAccess": [
+  "accessControl": [
     {
-      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-      "credit": 100
+      "beforeRelease": { "listed": true },
+      "dateControl": {
+        "release": { "date": "2025-01-15T00:00:01" },
+        "due": { "date": "2025-02-15T23:59:59", "credit": 100 },
+        "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
+        "lateDeadlines": [{ "date": "2025-02-22T23:59:59", "credit": 80 }],
+        "afterLastDeadline": {
+          "allowSubmissions": true,
+          "credit": 0
+        },
+        "durationMinutes": 60,
+        "password": "mysecret"
+      },
+      "integrations": {
+        "prairieTest": {
+          "exams": [
+            {
+              "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+              "readOnly": false,
+              "afterComplete": {
+                "questions": { "hidden": true },
+                "score": { "hidden": true }
+              }
+            }
+          ]
+        }
+      },
+      "afterComplete": {
+        "questions": {
+          "hidden": true,
+          "visibleFromDate": "2025-03-01T00:00:01",
+          "visibleUntilDate": "2025-06-01T00:00:01"
+        },
+        "score": {
+          "hidden": true,
+          "visibleFromDate": "2025-03-01T00:00:01"
+        }
+      }
+    },
+    {
+      "labels": ["Extended time"],
+      "dateControl": {
+        "due": { "date": "2025-02-22T23:59:59" },
+        "durationMinutes": 90
+      }
     }
   ]
 }
 ```
 
-Note that in this case the `startDate` and `endDate` should _NOT_ be specified. These will be automatically determined by PrairieTest and should not be set in PrairieLearn.
+### `dateControl`
 
-## Showing/hiding closed assessments
+| Field               | Type    | Description                                                                                                                                                                                 |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                                                                                                 |
+| `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional integer `credit` (0-200, default 100).                                                                            |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                                                                                                   |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                                                                                                  |
+| `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive. Omit on the default rule to disallow submissions; omit on overrides to inherit. |
+| `durationMinutes`   | integer | Time limit in minutes.                                                                                                                                                                      |
+| `password`          | string  | Password required to start the assessment.                                                                                                                                                  |
 
-When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. Similarly, in [exam mode](#server-modes) for assessments with [real-time grading disabled](../assessment/configuration.md#disabling-real-time-grading), once the student hits "Finish assessment", the assessment will "close". When an assessment closes, it automatically grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
+`due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
 
-To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
+When `due.date` is `null`, the due credit applies indefinitely after release.
 
-```json
-{
-  "allowAccess": [
+### `afterLastDeadline`
+
+| Field              | Type    | Default | Description                                                                                          |
+| ------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines.                                       |
+| `credit`           | integer | -       | Required when `allowSubmissions` is `true`; credit percentage after the last deadline, from 0 to 99. |
+
+If `allowSubmissions` is `true`, `credit` is required and must be below 100% and below the preceding deadline's credit. Use `"credit": 0` for practice submissions.
+
+If `afterLastDeadline` is omitted on the default rule or set to `{ "allowSubmissions": false }`, students cannot submit after the final deadline. They can still review whatever the `afterComplete` settings make visible. On overrides, omit `afterLastDeadline` to inherit from the default rule, or set `{ "allowSubmissions": false }` to explicitly disable submissions.
+
+If `allowSubmissions` is `true`, the `afterComplete` visibility settings apply only after the student's assessment instance closes or its time limit expires.
+
+### `beforeRelease`
+
+| Field    | Type    | Default | Description                                                                                          |
+| -------- | ------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `listed` | boolean | `false` | Whether students can see the assessment title before release. They still cannot open the assessment. |
+
+`beforeRelease` can only be configured on the defaults rule.
+
+### `afterComplete`
+
+By default, questions are hidden and scores are shown after completion.
+
+| Field                        | Type    | Default | Description                                        |
+| ---------------------------- | ------- | ------- | -------------------------------------------------- |
+| `questions.hidden`           | boolean | `true`  | Whether questions are hidden after completion.     |
+| `questions.visibleFromDate`  | string  |         | Date to reveal questions after completion.         |
+| `questions.visibleUntilDate` | string  |         | Date to hide questions again after revealing them. |
+| `score.hidden`               | boolean | `false` | Whether the score is hidden after completion.      |
+| `score.visibleFromDate`      | string  |         | Date to reveal the score after completion.         |
+
+The visibility fields follow a toggle pattern. For example, if `questions.hidden` is `true`, questions are hidden after completion. At `questions.visibleFromDate`, they become visible. At `questions.visibleUntilDate`, they are hidden again.
+
+### PrairieTest JSON
+
+| Field                                                             | Type    | Description                                                                                       |
+| ----------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `integrations.prairieTest.exams`                                  | array   | Array of exam objects.                                                                            |
+| `integrations.prairieTest.exams[].examUuid`                       | string  | UUID of the associated PrairieTest exam.                                                          |
+| `integrations.prairieTest.exams[].readOnly`                       | boolean | Whether the exam is read-only for students.                                                       |
+| `integrations.prairieTest.exams[].afterComplete.questions.hidden` | boolean | If `true`, questions are hidden after the student finishes while the reservation is still active. |
+| `integrations.prairieTest.exams[].afterComplete.score.hidden`     | boolean | If `true`, the score is hidden after the student finishes while the reservation is still active.  |
+
+`readOnly: true` cannot be combined with exam-level `afterComplete` settings that hide questions or scores. Also, `afterComplete.score.hidden: true` requires `afterComplete.questions.hidden: true`. Exam-level `afterComplete` only supports the three UI modes above; it does not support `visibleFromDate` or `visibleUntilDate`.
+
+### JSON override inheritance
+
+JSON overrides only target student labels. They store the fields they change; omitted fields inherit through the same priority order used by the UI:
+
+1. Start with the defaults rule.
+2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
+3. Apply any student-specific overrides configured through the UI.
+
+Later matching student-label overrides replace fields from earlier matching student-label overrides. Student-specific overrides are managed through the UI and take priority over student-label overrides.
+
+| Field                        | Defaults to override merge                                          | Override to override cascade                              |
+| ---------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |
+| `dateControl.*` sub-fields   | Override replaces individual sub-fields; omitted sub-fields inherit | Later override replaces; omitted fields kept from earlier |
+| `afterComplete.questions`    | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `afterComplete.score`        | Replaced as a whole object when set                                 | Replaced as a whole object; otherwise inherited           |
+| `beforeRelease`              | Cannot be overridden                                                | Not applicable                                            |
+| `integrations.prairieTest.*` | Cannot be overridden                                                | Not applicable                                            |
+
+There are a few important details:
+
+- `due` is one atomic setting. Overriding the due date also overrides the due-date credit choice — they cannot be cascaded independently.
+- `earlyDeadlines` and `lateDeadlines` are each replaced as a whole array. Setting either to `[]` in an override **clears** the inherited deadlines for that override's students.
+- `afterLastDeadline` is inherited when omitted from an override. Set `{ "allowSubmissions": false }` to explicitly disable after-deadline submissions for that override.
+- `durationMinutes: null` and `password: null` in an override **clear** the inherited time limit or password. Omitting the field entirely keeps the inherited value.
+- `afterComplete.questions` and `afterComplete.score` inherit independently of each other, but each is replaced as a whole object: an override that sets `afterComplete.questions` without dates does not retain the default's `visibleFromDate`/`visibleUntilDate`.
+- `beforeRelease.listed` and PrairieTest integrations (`integrations.prairieTest`) are **defaults-only**. Overrides cannot enable, disable, or change them.
+
+### Legacy migration examples
+
+#### Single deadline
+
+=== "Legacy `allowAccess`"
+
+    ```json title="infoAssessment.json"
     {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59",
-      "timeLimitMin": 50,
-      "showClosedAssessment": false,
-      "credit": 100
-    },
-    {
-      "active": false,
-      "showClosedAssessment": false
+      "allowAccess": [
+        {
+          "startDate": "2025-01-15T00:00:01",
+          "endDate": "2025-02-15T23:59:59",
+          "credit": 100
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
+=== "Modern `accessControl`"
 
-## Showing/hiding all score information
-
-When setting `showClosedAssessment` to `false` students will still by default still be able to see their assessment score immediately after submitting the exam.
-
-To block students from viewing closed assessment scores, set `"showClosedAssessmentScore": false` in the `allowAccess` rule, like this:
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59",
-      "timeLimitMin": 50,
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false,
-      "credit": 100
-    },
-    {
-      "active": false,
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" }
+          }
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-Note that the `showClosedAssessment` and `showClosedAssessmentScore` statements are listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
+#### Declining credit
 
-The `showClosedAssessmentScore` access rule restriction is often used in conjunction with [disabling real-time grading](../assessment/configuration.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`. It may also be used in assessments with [manual grading](../manualGrading/index.md), to hide the assessment grade until all students have been graded.
+=== "Legacy `allowAccess`"
 
-## Active assessments
-
-The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](../faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over).
-
-By default, the `active` property in an access rule is `true`. This means that, if there is an access rule that applies at a particular time/context, students can start the assessment, create new assessment instances, and submit answers to questions.
-
-If there is no applicable access rule at a particular time/context, students will not be able to view the assessment, and it won't appear on their Assessments page. They will only be able to see their grade for the assessment in the gradebook.
-
-If `active` is set to `false` in an access rule, students will still be able to see the assessment on the Assessments page, but they cannot start the assessment, create a new assessment instance, or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page.
-
-If `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
-
-Note that when `"active": false` is used to allow students to review their work after they've finished the assessment, students can still access and modify files in any [workspaces](../workspaces/index.md) associated with questions on the assessment. However, they will not be able to submit any changed workspace files for grading.
-
-An example of the `active` access rule restriction is shown below:
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "startDate": "2015-02-16T00:00:01",
-      "endDate": "2015-02-16T23:59:59",
-      "timeLimitMin": 50,
-      "credit": 100
-    },
-    {
-      "startDate": "2015-01-01T00:00:01",
-      "endDate": "2015-02-15T23:59:59",
-      "active": false
+      "allowAccess": [
+        {
+          "startDate": "2025-01-15T00:00:01",
+          "endDate": "2025-02-01T23:59:59",
+          "credit": 110
+        },
+        {
+          "startDate": "2025-01-15T00:00:01",
+          "endDate": "2025-02-15T23:59:59",
+          "credit": 100
+        },
+        {
+          "startDate": "2025-01-15T00:00:01",
+          "endDate": "2025-02-22T23:59:59",
+          "credit": 80
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. They will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `active` is `true` (by default), students can start the assessment and submit answers to questions on that day.
+=== "Modern `accessControl`"
 
-## Example access rules
-
-### Exam example
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "uids": ["student1@example.com", "student2@example.com"],
-      "credit": 100,
-      "startDate": "2014-09-12T00:00:01",
-      "endDate": "2014-09-12T23:59:59"
-    },
-    {
-      "credit": 100,
-      "startDate": "2014-09-07T00:00:01",
-      "endDate": "2014-09-10T23:59:59"
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-01-15T00:00:01" },
+            "due": { "date": "2025-02-15T23:59:59" },
+            "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
+            "lateDeadlines": [{ "date": "2025-02-22T23:59:59", "credit": 80 }]
+          }
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-The above `allowAccess` directive means that this assessment is available under two different circumstances and always for full credit. First, there are two specific students who have access to take the exam on Sept 12th. Second, any student can access this assessment from Sept 7th to Sept 10th. Note that exception rules are typically listed first, so that they take priority when access is determined. Also note that because the second rule does not overlap the first one, the two specific students listed in the first rule also have access to the exam during the range set in the second rule.
+#### Timed exam
 
-### Exam with remote students example
+=== "Legacy `allowAccess`"
 
-**See [Remote Exams](remoteExams.md) for more detailed examples.**
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "credit": 100,
-      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
-    },
-    {
-      "uids": ["student1@example.com", "student2@example.com"],
-      "credit": 100,
-      "startDate": "2014-09-10T11:00:00",
-      "endDate": "2014-09-10T11:59:59",
-      "timeLimitMin": 50
+      "allowAccess": [
+        {
+          "startDate": "2025-03-10T09:00:00",
+          "endDate": "2025-03-10T11:00:00",
+          "timeLimitMin": 90,
+          "credit": 100
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-The above `allowAccess` directive is appropriate for an exam being taken by on-campus students in a testing center (or a course-managed PrairieTest session) and by remote students. First, anyone (i.e., on-campus students) can access the assessment in a testing center (the `"examUuid"` rule) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by PrairieTest.
+=== "Modern `accessControl`"
 
-The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
-
-### Homework example
-
-```json
-{
-  "allowAccess": [
+    ```json title="infoAssessment.json"
     {
-      "active": false,
-      "endDate": "2014-10-11T23:59:59"
-    },
-    {
-      "credit": 110,
-      "startDate": "2014-10-12T00:00:01",
-      "endDate": "2014-10-15T23:59:59"
-    },
-    {
-      "credit": 100,
-      "startDate": "2014-10-16T00:00:01",
-      "endDate": "2014-10-18T23:59:59"
-    },
-    {
-      "credit": 80,
-      "startDate": "2014-10-19T00:00:01",
-      "endDate": "2014-10-25T23:59:59"
-    },
-    {
-      "startDate": "2014-10-26T00:00:01"
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-03-10T09:00:00" },
+            "due": { "date": "2025-03-10T11:00:00" },
+            "durationMinutes": 90
+          }
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-This `allowAccess` directive is suitable for a `Homework` assessment. Students can see that the homework exists before Oct 12th, but because it is `"active": false` they won't be able to see the questions or start the homework. They can start the homework anytime from Oct 12th onwards, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points, at any time after that. The homework visibility will also be limited by the [course instance publishing configuration](../courseInstance/index.md#publishing-controls), so the homework won't be accessible in any way outside the course instance date range.
+#### Password-gated exam
 
-## Preview access control
+=== "Legacy `allowAccess`"
 
-Click on your user in the top right corner to see the role picker dropdown. This will allow you to preview the access control for different roles and users. The picker will have additional options depending on the page you are on.
+    ```json title="infoAssessment.json"
+    {
+      "allowAccess": [
+        {
+          "startDate": "2025-03-10T09:00:00",
+          "endDate": "2025-03-10T11:00:00",
+          "password": "mysecret",
+          "credit": 100
+        }
+      ]
+    }
+    ```
 
-![The role picker dropdown](role_picker.png){ width=100% style="max-width: 400px" }
+=== "Modern `accessControl`"
 
-This feature allows you to preview a course as yourself but with different roles and restrictions:
-
-- "Staff view": Default view.
-- "Student view": Simulates the student view.
-- "Student view without access restrictions": Simulates the student view without taking into account any access control.
-
-You can also change to a different effective user to see the course as they would. After entering a UID and clicking "Change UID", you can switch between two additional views:
-
-- "Student view": Simulates the view of a specific user.
-- "Student view without access restrictions": Simulates the view of a specific user without taking into account any access control.
+    ```json title="infoAssessment.json"
+    {
+      "accessControl": [
+        {
+          "dateControl": {
+            "release": { "date": "2025-03-10T09:00:00" },
+            "due": { "date": "2025-03-10T11:00:00" },
+            "password": "mysecret"
+          }
+        }
+      ]
+    }
+    ```

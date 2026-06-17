@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 3.7.0
+
+### Minor Changes
+
+- e3c07aa: Add `BooleanColumnFilter` and `applyBooleanFilter` for boolean-valued table columns, and add a `showModeToggle` prop to `MultiSelectColumnFilter`
+
+## 3.6.0
+
+### Minor Changes
+
+- 74672f0: Add an optional `unit` prop to `NumericInputColumnFilter` to show a unit label (e.g. "minutes") in the filter dropdown.
+
 ## 3.5.2
 
 ### Patch Changes

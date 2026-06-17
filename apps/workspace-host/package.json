@@ -8,16 +8,16 @@
   },
   "scripts": {
     "build": "tsgo && tscp",
-    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.1056.0",
-    "@aws-sdk/client-s3": "^3.1056.0",
-    "@aws-sdk/credential-providers": "^3.1056.0",
-    "@aws-sdk/lib-storage": "^3.1056.0",
+    "@aws-sdk/client-ecr": "^3.1057.0",
+    "@aws-sdk/client-s3": "^3.1057.0",
+    "@aws-sdk/credential-providers": "^3.1057.0",
+    "@aws-sdk/lib-storage": "^3.1057.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -28,7 +28,7 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.4 <2",
@@ -38,13 +38,12 @@
     "express-async-handler": "^1.2.0",
     "ioredis": "^5.11.0",
     "minimist": "^1.2.8",
-    "node-fetch": "3.3.2",
     "shlex": "^3.0.0",
-    "zod": "^3.25.76 <4"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/async": "^3.2.25",
     "@types/body-parser": "^1.19.6 <2",
     "@types/debug": "^4.1.13",

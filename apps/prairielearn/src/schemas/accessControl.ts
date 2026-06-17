@@ -2,6 +2,18 @@ import { z } from 'zod';
 
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
+import { MAX_STUDENT_LABEL_NAME_LENGTH } from './infoCourseInstance.js';
+
+export const MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES = 100;
+export const MAX_ACCESS_CONTROL_RULES = MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1;
+export const MAX_ENROLLMENT_ACCESS_CONTROL_RULES = 100;
+export const MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE = 100;
+export const MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE = 100;
+export const MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE = 10;
+export const MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS = 10;
+export const MAX_ACCESS_CONTROL_DURATION_MINUTES = 365 * 24 * 60;
+export const MAX_ACCESS_CONTROL_PASSWORD_LENGTH = 128;
+
 export const DeadlineEntryJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
@@ -9,12 +21,19 @@ export const DeadlineEntryJsonSchema = z
   })
   .strict();
 
-const AfterLastDeadlineJsonSchema = z
-  .object({
-    allowSubmissions: z.boolean(),
-    credit: z.number().int().min(0).max(99).optional(),
-  })
-  .strict();
+const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
+  z
+    .object({
+      allowSubmissions: z.literal(false),
+    })
+    .strict(),
+  z
+    .object({
+      allowSubmissions: z.literal(true),
+      credit: z.number().int().min(0).max(99),
+    })
+    .strict(),
+]);
 
 const ReleaseJsonSchema = z
   .object({
@@ -49,29 +68,31 @@ const DateControlJsonSchema = z
     ),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
+      .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()
       .describe('Array of early deadlines with credit as percentages'),
     lateDeadlines: z
       .array(DeadlineEntryJsonSchema)
+      .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
-      .describe(
-        'Controls for assessment behavior after last deadline. Null means no access; omitted on overrides inherits from the default rule. On the default rule, omitting is equivalent to null (no access).',
-      )
-      .optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
+      'Controls whether submissions are allowed after the last deadline. Omitted on overrides inherits from the default rule. On the default rule, omitting means no submissions.',
+    ).optional(),
     durationMinutes: z
       .number()
       .int()
       .positive()
+      .max(MAX_ACCESS_CONTROL_DURATION_MINUTES)
       .nullable()
       .optional()
       .describe('Desired duration limit for assessment'),
     password: z
       .string()
       .min(1, 'Password cannot be empty')
+      .max(MAX_ACCESS_CONTROL_PASSWORD_LENGTH)
       .nullable()
       .optional()
       .describe('Password for assessment'),
@@ -89,13 +110,7 @@ const ExamAfterCompleteJsonSchema = z
 
 const ExamJsonSchema = z
   .object({
-    examUuid: z
-      .string()
-      .regex(
-        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-        'Invalid UUID format',
-      )
-      .describe('UUID of associated PrairieTest exam'),
+    examUuid: z.uuid({ version: 'v4' }).describe('UUID of associated PrairieTest exam'),
     readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
     afterComplete: ExamAfterCompleteJsonSchema.describe(
       'Controls visibility after the student finishes the assessment during an active PrairieTest reservation. Only applies while a matching reservation is active; ignored otherwise.',
@@ -107,6 +122,7 @@ const PrairieTestJsonSchema = z
   .object({
     exams: z
       .array(ExamJsonSchema)
+      .max(MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS)
       .optional()
       .describe('Array of associated PrairieTest exam configs'),
   })
@@ -159,7 +175,8 @@ const BeforeReleaseJsonSchema = z
 export const AccessControlJsonSchema = z
   .object({
     labels: z
-      .array(z.string())
+      .array(z.string().min(1).max(MAX_STUDENT_LABEL_NAME_LENGTH))
+      .max(MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE)
       .optional()
       .describe('Array of student label names this set targets'),
     beforeRelease: BeforeReleaseJsonSchema.describe(

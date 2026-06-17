@@ -7,7 +7,6 @@
     "types": [
       "jquery",
       "bootstrap",
-      "bootstrap-table",
       // This is necessary to augment the Express `Request` type with a
       // `session` property. We of course don't actually use Express on the
       // client, but we rely on importing server-side types for end to end
@@ -23,6 +22,7 @@
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "skipLibCheck": true
   },

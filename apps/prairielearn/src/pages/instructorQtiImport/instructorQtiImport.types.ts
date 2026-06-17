@@ -2,8 +2,11 @@ import type {
   ConversionWarning,
   IRSourceBankRef,
   PLAssessmentInfoJson,
+  PLAssessmentZone,
   PLQuestionInfoJson,
 } from '@prairielearn/question-conversion';
+
+export const QTI_IMPORT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 /** Question output sent to the browser. Binary client file contents stay in an import draft. */
 export interface SerializedQuestionOutput {
@@ -109,6 +112,58 @@ export interface QuestionOverrides {
   collisionStrategy: CollisionStrategy;
 }
 
+export const DUPLICATE_ASSESSMENT_QUESTION_WARNING =
+  'This question appears multiple times on the assessment. Only the first occurrence of the question will be imported.';
+
+/**
+ * Remove repeated references to the same question within an assessment's
+ * zones, keeping only the first occurrence. PrairieLearn does not allow a
+ * question to appear more than once on an assessment, so duplicates (e.g. a
+ * question placed directly on a Canvas quiz that also appears in a question
+ * group pulling from a bank) would otherwise fail to sync.
+ */
+export function deduplicateAssessmentZoneQuestions(zones: PLAssessmentZone[]): {
+  zones: PLAssessmentZone[];
+  warnings: ConversionWarning[];
+} {
+  const seenQuestionIds = new Set<string>();
+  const duplicateQuestionIds = new Set<string>();
+
+  const dedupedZones: PLAssessmentZone[] = [];
+  for (const zone of zones) {
+    const questions = zone.questions.filter((question) => {
+      if (seenQuestionIds.has(question.id)) {
+        duplicateQuestionIds.add(question.id);
+        return false;
+      }
+      seenQuestionIds.add(question.id);
+      return true;
+    });
+    if (questions.length === 0) continue;
+    if (questions.length === zone.questions.length) {
+      dedupedZones.push(zone);
+      continue;
+    }
+
+    const dedupedZone = { ...zone, questions };
+    // Removing duplicates can shrink the zone to (or below) its numberChoose;
+    // dropping it falls back to using every remaining question.
+    if (dedupedZone.numberChoose != null && dedupedZone.numberChoose >= questions.length) {
+      delete dedupedZone.numberChoose;
+    }
+    dedupedZones.push(dedupedZone);
+  }
+
+  return {
+    zones: dedupedZones,
+    warnings: [...duplicateQuestionIds].map((questionId) => ({
+      questionId,
+      message: DUPLICATE_ASSESSMENT_QUESTION_WARNING,
+      level: 'warn',
+    })),
+  };
+}
+
 /** Generate a renamed directory by appending an incrementing suffix. */
 export function resolveRenamedDir(originalDir: string, existingDirs: Set<string>): string {
   let candidate = `${originalDir}-2`;
@@ -148,4 +203,6 @@ export interface UploadResponse {
   assessmentSetNames: string[];
   /** Existing (set, number) pairs in this course instance, for deduplication. */
   existingAssessmentLabels: { set: string; number: string }[];
+  /** Count of unique questions that appeared in more than one question bank and were deduplicated. */
+  deduplicatedQuestionBankQuestionCount: number;
 }

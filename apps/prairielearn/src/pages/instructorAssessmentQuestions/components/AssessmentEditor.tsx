@@ -88,8 +88,10 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // MDN recommends setting returnValue for legacy browser support:
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -147,7 +149,6 @@ interface AssessmentEditorInnerProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   search: string;
@@ -170,7 +171,6 @@ function AssessmentEditorInner({
   canEdit,
   csrfToken,
   origHash,
-  switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
   search,
@@ -1094,7 +1094,6 @@ function AssessmentEditorInner({
                   state={treeState}
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
-                  switchViewUrl={switchViewUrl}
                   editControls={
                     <EditModeToolbar
                       csrfToken={csrfToken}

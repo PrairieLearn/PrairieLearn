@@ -13,8 +13,5 @@
   },
   "gradingMethod": "External",
   "showCorrectAnswer": false,
-  "externalGradingOptions": {
-    "image": "prairielearn/grader-java",
-    "timeout": 5
-  }
+  "externalGradingOptions": { "image": "prairielearn/grader-java" }
 }

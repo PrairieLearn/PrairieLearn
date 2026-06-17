@@ -8,7 +8,6 @@ columns
     before_release_listed: boolean
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
-    date_control_after_last_deadline_overridden: boolean not null default false
     date_control_due_credit: integer
     date_control_due_date: timestamp with time zone
     date_control_due_overridden: boolean not null default false

@@ -6,6 +6,28 @@ export type { ConvertOptions } from './pipeline.js';
 export { QTI12ItemContainerParser } from './parsers/qti12/index.js';
 export type { InputParser, ParseOptions } from './parsers/parser.js';
 
+// QTI archive trimming
+export {
+  analyzeQtiArchive,
+  createTrimmedQtiArchive,
+  defaultTrimmedQtiArchiveName,
+  listZipEntries,
+  loadZipArchive,
+  readZipEntryText,
+  summarizeQtiArchiveAnalysis,
+  trimQtiArchive,
+} from './trimmer/index.js';
+export type {
+  QtiArchiveAnalysis,
+  QtiArchiveEntry,
+  QtiArchiveSummary,
+  QtiArchiveTrimResult,
+  QtiArchiveTrimWarning,
+  ZipArchive,
+  ZipEntrySummary,
+  ZipInput,
+} from './trimmer/index.js';
+
 // Emitters
 export { PLEmitter } from './emitters/pl-emitter.js';
 export type {
@@ -60,3 +82,4 @@ export {
 } from './utils/course-export.js';
 export type { CourseExportInfo, QtiFileEntry } from './utils/course-export.js';
 export { slugify } from './utils/slugify.js';
+export { normalizeImsFilePath, safeDecodeURIComponent } from './utils/ims-file-path.js';

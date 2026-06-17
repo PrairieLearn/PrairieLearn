@@ -18,7 +18,7 @@ import {
 } from '../../models/course-permissions.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
-import { withPTReservation } from '../helperExam.js';
+import { exam1AutomaticTestSuite, withPTReservation } from '../helperExam.js';
 import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -107,6 +107,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () => await helperClient.fetchCheerio(context.examAssessmentUrl, { headers }),
     );
@@ -122,6 +123,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () =>
         await helperClient.fetchCheerio(context.examAssessmentUrl, {
@@ -155,6 +157,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () => await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers }),
     );
@@ -520,6 +523,7 @@ describe('student data access', { timeout: 60_000 }, function () {
           userId: context.userIdStudent,
           accessStart: new Date(Date.now() - 60 * 60 * 1000),
           accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+          examUuid: exam1AutomaticTestSuite.examUuid,
         },
         async () => {
           let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
@@ -554,6 +558,7 @@ describe('student data access', { timeout: 60_000 }, function () {
           userId: context.userIdStudent,
           accessStart: new Date(Date.now() - 60 * 60 * 1000),
           accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+          examUuid: exam1AutomaticTestSuite.examUuid,
         },
         async () => {
           let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {
@@ -609,35 +614,11 @@ describe('student data access', { timeout: 60_000 }, function () {
   );
 
   test.sequential(
-    'instructor (student data editor) can view homework assessment instances raw data',
-    async () => {
-      const headers = { cookie: 'pl_test_user=test_instructor' };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-        { headers },
-      );
-      assert.isTrue(response.ok);
-    },
-  );
-
-  test.sequential(
     'instructor (student data editor) can view exam assessment instances',
     async () => {
       const headers = { cookie: 'pl_test_user=test_instructor' };
       const response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
-        { headers },
-      );
-      assert.isTrue(response.ok);
-    },
-  );
-
-  test.sequential(
-    'instructor (student data editor) can view exam assessment instances raw data',
-    async () => {
-      const headers = { cookie: 'pl_test_user=test_instructor' };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
         { headers },
       );
       assert.isTrue(response.ok);
@@ -684,21 +665,6 @@ describe('student data access', { timeout: 60_000 }, function () {
   );
 
   test.sequential(
-    'instructor (student data viewer) can view homework assessment instances raw data',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
-      };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-        { headers },
-      );
-      assert.isTrue(response.ok);
-    },
-  );
-
-  test.sequential(
     'instructor (student data viewer) can view exam assessment instances',
     async () => {
       const headers = {
@@ -707,21 +673,6 @@ describe('student data access', { timeout: 60_000 }, function () {
       };
       const response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
-        { headers },
-      );
-      assert.isTrue(response.ok);
-    },
-  );
-
-  test.sequential(
-    'instructor (student data viewer) can view exam assessment instances raw data',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
-      };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
         { headers },
       );
       assert.isTrue(response.ok);
@@ -769,20 +720,6 @@ describe('student data access', { timeout: 60_000 }, function () {
     assert.equal(response.status, 403);
   });
 
-  test.sequential(
-    'instructor (no role) cannot view homework assessment instances raw data',
-    async () => {
-      const headers = {
-        cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
-      };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-        { headers },
-      );
-      assert.equal(response.status, 403);
-    },
-  );
-
   test.sequential('instructor (no role) cannot view exam assessment instances', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
@@ -793,18 +730,4 @@ describe('student data access', { timeout: 60_000 }, function () {
     );
     assert.equal(response.status, 403);
   });
-
-  test.sequential(
-    'instructor (no role) cannot view exam assessment instances raw data',
-    async () => {
-      const headers = {
-        cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
-      };
-      const response = await helperClient.fetchCheerio(
-        `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
-        { headers },
-      );
-      assert.equal(response.status, 403);
-    },
-  );
 });

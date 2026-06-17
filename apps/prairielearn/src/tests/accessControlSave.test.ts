@@ -10,9 +10,11 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { computeScopedJsonHash } from '../lib/editorUtil.js';
-import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { syncEnrollmentAccessControl } from '../models/assessment-access-control-rules.js';
+import {
+  replaceEnrollmentAccessControlRules,
+  selectAccessControlRules,
+} from '../models/assessment-access-control-rules.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -59,7 +61,6 @@ describe('Access control save via tRPC', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
     await helperServer.before(courseRepo.courseLiveDir)();
-    await features.enable('enhanced-access-control');
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
 
     const instructor = await getOrCreateUser({
@@ -97,13 +98,14 @@ describe('Access control save via tRPC', () => {
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
     });
-    await syncEnrollmentAccessControl(
-      assessment,
-      formJsonToEnrollmentRuleData({
-        dateControl: { due: { date: '2024-04-18T23:59:00' } },
-      }),
-      [enrollment.id],
-    );
+    await replaceEnrollmentAccessControlRules(assessment, [
+      {
+        ruleData: formJsonToEnrollmentRuleData({
+          dateControl: { due: { date: '2024-04-18T23:59:00' } },
+        }),
+        enrollmentIds: [enrollment.id],
+      },
+    ]);
   });
 
   afterAll(helperServer.after);
@@ -289,15 +291,134 @@ describe('Access control save via tRPC', () => {
     assert.include(html, '"hiddenEnrollmentRuleCount":0');
   });
 
+  test.sequential('persists student-specific override order', async () => {
+    const client = await createClient();
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const [studentA, studentB] = await generateAndEnrollUsers({
+      count: 2,
+      course_instance_id: '1',
+    });
+    const enrollmentRows = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+      uids: [studentA.uid, studentB.uid],
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    const enrollmentByUid = new Map(enrollmentRows.map((row) => [row.user.uid, row.enrollment]));
+    const enrollmentA = enrollmentByUid.get(studentA.uid)!;
+    const enrollmentB = enrollmentByUid.get(studentB.uid)!;
+
+    const firstSave = await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule()],
+      enrollmentRules: [
+        {
+          enrollmentIds: [enrollmentA.id],
+          ruleJson: { dateControl: { due: { date: '2024-04-01T23:59:00' } } },
+        },
+        {
+          enrollmentIds: [enrollmentB.id],
+          ruleJson: { dateControl: { due: { date: '2024-04-08T23:59:00' } } },
+        },
+      ],
+      origHash: await getOrigHash(),
+    });
+
+    let enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const ruleA = enrollmentRules.find((rule) =>
+      rule.enrollments?.some((enrollment) => enrollment.enrollmentId === enrollmentA.id),
+    );
+    const ruleB = enrollmentRules.find((rule) =>
+      rule.enrollments?.some((enrollment) => enrollment.enrollmentId === enrollmentB.id),
+    );
+    assert.isOk(ruleA);
+    assert.isOk(ruleB);
+    assert.equal(ruleA.number, 1);
+    assert.equal(ruleB.number, 2);
+
+    await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule()],
+      enrollmentRules: [
+        {
+          id: ruleB.id,
+          enrollmentIds: [enrollmentB.id],
+          ruleJson: { dateControl: { due: { date: '2024-04-08T23:59:00' } } },
+        },
+        {
+          id: ruleA.id,
+          enrollmentIds: [enrollmentA.id],
+          ruleJson: { dateControl: { due: { date: '2024-04-01T23:59:00' } } },
+        },
+      ],
+      origHash: firstSave.newHash,
+    });
+
+    enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const reorderedRuleA = enrollmentRules.find((rule) =>
+      rule.enrollments?.some((enrollment) => enrollment.enrollmentId === enrollmentA.id),
+    );
+    const reorderedRuleB = enrollmentRules.find((rule) =>
+      rule.enrollments?.some((enrollment) => enrollment.enrollmentId === enrollmentB.id),
+    );
+    assert.isOk(reorderedRuleA);
+    assert.isOk(reorderedRuleB);
+    assert.equal(reorderedRuleB.number, 1);
+    assert.equal(reorderedRuleA.number, 2);
+  });
+
+  test.sequential('rejects duplicate student-specific override ids', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const existingRules = await selectAccessControlRules(assessment, ['enrollment']);
+    const existingRule = existingRules[0];
+    assert.isOk(existingRule);
+    const enrollmentIds = existingRule.enrollments!.map((enrollment) => enrollment.enrollmentId);
+
+    await expect(
+      replaceEnrollmentAccessControlRules(assessment, [
+        {
+          ruleData: {
+            ...formJsonToEnrollmentRuleData({
+              dateControl: { due: { date: '2024-04-01T23:59:00' } },
+            }),
+            id: existingRule.id,
+          },
+          enrollmentIds,
+        },
+        {
+          ruleData: {
+            ...formJsonToEnrollmentRuleData({
+              dateControl: { due: { date: '2024-04-08T23:59:00' } },
+            }),
+            id: existingRule.id,
+          },
+          enrollmentIds,
+        },
+      ]),
+    ).rejects.toThrow(`Duplicate enrollment access control rule ID: ${existingRule.id}`);
+
+    const rulesAfterRejection = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.deepEqual(
+      rulesAfterRejection.map((rule) => rule.id),
+      existingRules.map((rule) => rule.id),
+    );
+  });
+
   test.sequential('rejects save with stale origHash', async () => {
     const client = await createClient();
     const staleHash = await getOrigHash();
 
     // First save succeeds and changes the hash.
-    await client.accessControl.saveAllRules.mutate({
-      rules: [makeRule()],
+    const firstSave = await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule({ beforeRelease: { listed: true } })],
       origHash: staleHash,
     });
+    assert.notEqual(firstSave.newHash, staleHash);
 
     // Second save with the same (now stale) hash must fail.
     await expect(

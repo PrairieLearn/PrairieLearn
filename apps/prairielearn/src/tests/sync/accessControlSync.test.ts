@@ -20,7 +20,6 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
@@ -145,7 +144,6 @@ const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
 describe('Access control syncing', () => {
   beforeAll(async () => {
     await helperDb.before();
-    await features.enable('enhanced-access-control');
     await sqldb.executeRow(sql.insert_pt_exam, { uuid: TEST_EXAM_UUID });
   });
 
@@ -219,7 +217,7 @@ describe('Access control syncing', () => {
         assert.equal(row.date_control_password, 'secret');
       }));
 
-    it('fields absent from JSON get overridden=false and value=NULL', () =>
+    it('omitted JSON fields are stored as unset overrides', () =>
       runInTransactionAndRollback(async () => {
         const rule: AccessControlJsonInput = {
           dateControl: {
@@ -237,7 +235,7 @@ describe('Access control syncing', () => {
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
         assert.isNull(row.date_control_after_last_deadline_credit);
-        assert.isNull(row.date_control_after_last_deadline_allow_submissions);
+        assert.isFalse(row.date_control_after_last_deadline_allow_submissions);
       }));
 
     it('null fields get overridden=true with value=NULL', () =>
@@ -258,7 +256,7 @@ describe('Access control syncing', () => {
         assert.isNull(row.date_control_password);
       }));
 
-    it('no dateControl at all: all flags are overridden=false', () =>
+    it('no dateControl at all leaves date-control fields unset', () =>
       runInTransactionAndRollback(async () => {
         const rule = makeAccessControlRule({ dateControl: undefined });
         const { syncedRules } = await syncRulesAndRead([rule]);
@@ -269,6 +267,7 @@ describe('Access control syncing', () => {
         assert.isFalse(row.date_control_password_overridden);
         assert.isFalse(row.date_control_early_deadlines_overridden);
         assert.isFalse(row.date_control_late_deadlines_overridden);
+        assert.isNull(row.date_control_after_last_deadline_allow_submissions);
       }));
 
     it('afterComplete fields follow the same pattern', () =>
@@ -1183,21 +1182,11 @@ describe('Access control syncing', () => {
           uuid: courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.uuid,
         });
 
-        const syncResults = await util.syncCourseData(courseDir);
+        await util.syncCourseData(courseDir);
 
-        assert.equal(syncResults.status, 'complete');
-        if (syncResults.status === 'complete') {
-          const courseInstance = syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID];
-          assert.isAbove(courseInstance.courseInstance.errors.length, 0);
-
-          const assessment = courseInstance.assessments[util.ASSESSMENT_ID];
-          assert.isTrue(
-            assessment.errors.some((error) => error.includes('Invalid student label(s): foobar')),
-          );
-          assert.isFalse(
-            assessment.errors.some((error) => error.includes('non-existent student labels')),
-          );
-        }
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        assert.isNotNull(assessment.sync_errors);
+        assert.match(assessment.sync_errors, /Invalid student label\(s\): foobar/);
 
         const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
         assert.equal(syncedRules.length, 0);
@@ -1354,7 +1343,7 @@ describe('Access control syncing', () => {
     it('rejects non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is enabled', () =>
       runInTransactionAndRollback(() =>
         withConfig({ checkAccessRulesExamUuid: true }, async () => {
-          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const fakeUuid = '166da275-8f52-4c11-9cb9-2e7ba9ba62d9';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
               dateControl: undefined,
@@ -1367,13 +1356,17 @@ describe('Access control syncing', () => {
           ]);
           assert.equal(syncedRules.length, 0);
           assert.isTrue(errors.some((e) => e.includes('Invalid PrairieTest exam UUID(s)')));
+
+          const assessment = await getAssessment(util.ASSESSMENT_ID);
+          assert.isNotNull(assessment.sync_errors);
+          assert.match(assessment.sync_errors, /Invalid PrairieTest exam UUID\(s\)/);
         }),
       ));
 
     it('allows non-existent PrairieTest exam UUIDs when checkAccessRulesExamUuid is disabled', () =>
       runInTransactionAndRollback(() =>
         withConfig({ checkAccessRulesExamUuid: false }, async () => {
-          const fakeUuid = '00000000-0000-0000-0000-000000000000';
+          const fakeUuid = '46909567-db2c-44e7-9a79-1510e192bbc1';
           const { syncedRules, errors } = await syncRulesAndRead([
             makeAccessControlRule({
               dateControl: undefined,
@@ -1520,6 +1513,32 @@ describe('Access control syncing', () => {
   describe('Round-trip', () => {
     const timezone = 'America/Chicago';
 
+    it('canonicalizes default-rule afterLastDeadline allowSubmissions false to omitted', () =>
+      runInTransactionAndRollback(async () => {
+        const courseData = util.getCourseData();
+        const defaultRule = makeAccessControlRule({
+          dateControl: {
+            release: { date: '2024-03-14T00:01:00' },
+            due: { date: '2024-03-21T23:59:00' },
+            afterLastDeadline: { allowSubmissions: false },
+          },
+        });
+
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule];
+        await util.writeAndSyncCourseData(courseData);
+
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const rules = await selectAccessControlRulesForAssessment(assessment);
+        const defaultRuleResult = rules.find((r): r is DefaultRule => r.targetType === 'none');
+        assert.isOk(defaultRuleResult);
+        // Disabled submissions on the default rule are the implicit default, so
+        // the runtime readback omits afterLastDeadline (the resolver treats an
+        // omitted segment as non-submittable).
+        assert.isUndefined(defaultRuleResult.rule.dateControl?.afterLastDeadline);
+      }));
+
     it('preserves afterLastDeadline allowSubmissions false on override', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
@@ -1549,8 +1568,7 @@ describe('Access control syncing', () => {
         const rules = await selectAccessControlRulesForAssessment(assessment);
         const override = rules.find((r): r is OverrideRule => r.targetType !== 'none');
         assert.isOk(override);
-        assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
-        assert.isNull(override.rule.dateControl?.afterLastDeadline?.credit);
+        assert.deepEqual(override.rule.dateControl?.afterLastDeadline, { allowSubmissions: false });
       }));
 
     it('preserves afterComplete question hidden: true without dates on override', () =>
@@ -1633,7 +1651,7 @@ describe('Access control syncing', () => {
           dateControl: {
             durationMinutes: null,
             password: null,
-            afterLastDeadline: { allowSubmissions: true },
+            afterLastDeadline: { allowSubmissions: true, credit: 0 },
           },
         };
 
@@ -1649,10 +1667,13 @@ describe('Access control syncing', () => {
         assert.isOk(override.rule.dateControl);
         assert.strictEqual(override.rule.dateControl.durationMinutes, null);
         assert.strictEqual(override.rule.dateControl.password, null);
-        assert.strictEqual(override.rule.dateControl.afterLastDeadline?.credit, null);
+        assert.deepEqual(override.rule.dateControl.afterLastDeadline, {
+          allowSubmissions: true,
+          credit: 0,
+        });
       }));
 
-    it('only configured fields appear in the round-tripped JSON', () =>
+    it('only configured fields appear in runtime readback', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
@@ -1679,7 +1700,6 @@ describe('Access control syncing', () => {
           plainDateTimeStringToDate('2024-03-14T00:01:00', timezone),
         );
         assert.deepEqual(dc.due?.date, plainDateTimeStringToDate('2024-03-21T23:59:00', timezone));
-        // Fields not in the original JSON should be absent
         assert.isUndefined(dc.durationMinutes);
         assert.isUndefined(dc.password);
         assert.isUndefined(dc.earlyDeadlines);
@@ -1687,7 +1707,7 @@ describe('Access control syncing', () => {
         assert.isUndefined(dc.afterLastDeadline);
       }));
 
-    it('no dateControl in JSON produces no dateControl in round-trip', () =>
+    it('no dateControl in JSON produces no dateControl in runtime readback', () =>
       runInTransactionAndRollback(async () => {
         const courseData = util.getCourseData();
         const defaultRuleJson: AccessControlJsonInput = {};
@@ -1752,8 +1772,7 @@ describe('Access control syncing', () => {
         assert.equal(dc.earlyDeadlines?.[0].credit, 120);
         assert.equal(dc.lateDeadlines?.length, 1);
         assert.equal(dc.lateDeadlines?.[0].credit, 50);
-        assert.equal(dc.afterLastDeadline?.credit, 10);
-        assert.equal(dc.afterLastDeadline?.allowSubmissions, true);
+        assert.deepEqual(dc.afterLastDeadline, { allowSubmissions: true, credit: 10 });
 
         const ac = defaultRule.rule.afterComplete;
         assert.isOk(ac);
@@ -1891,9 +1910,13 @@ describe('Access control syncing', () => {
 });
 
 describe('cleanAccessControlRulesForDisk', () => {
-  it('omits beforeRelease.listed: false and empty objects from output', () => {
+  it('omits default-valued settings and empty objects from output', () => {
     const rules: AccessControlJsonInput[] = [
-      { beforeRelease: { listed: false }, dateControl: {}, afterComplete: {} },
+      {
+        beforeRelease: { listed: false },
+        dateControl: { afterLastDeadline: { allowSubmissions: false } },
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+      },
     ];
 
     const cleaned = cleanAccessControlRulesForDisk(rules);
@@ -1902,6 +1925,37 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.notProperty(cleaned[0], 'beforeRelease');
     assert.notProperty(cleaned[0], 'dateControl');
     assert.notProperty(cleaned[0], 'afterComplete');
+  });
+
+  it('preserves afterLastDeadline allowSubmissions false on overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({}),
+      makeAccessControlRule({
+        labels: ['Section A'],
+        dateControl: { afterLastDeadline: { allowSubmissions: false } },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual(cleaned[1].dateControl?.afterLastDeadline, { allowSubmissions: false });
+  });
+
+  it('preserves afterComplete default values on overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({}),
+      makeAccessControlRule({
+        labels: ['Section A'],
+        afterComplete: { questions: { hidden: true }, score: { hidden: false } },
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.deepEqual(cleaned[1].afterComplete, {
+      questions: { hidden: true },
+      score: { hidden: false },
+    });
   });
 
   it('preserves beforeRelease.listed: true on the default rule only', () => {
@@ -1928,11 +1982,14 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.deepEqual(cleaned[1].labels, []);
   });
 
-  it('includes non-empty dateControl and afterComplete', () => {
+  it('includes non-empty dateControl and non-default afterComplete', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({
         dateControl: { due: { date: '2024-04-01T23:59:00' } },
-        afterComplete: { questions: { hidden: true } },
+        afterComplete: {
+          questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+          score: { hidden: true },
+        },
       }),
     ];
 
@@ -1942,6 +1999,9 @@ describe('cleanAccessControlRulesForDisk', () => {
       release: { date: '2024-03-14T00:01:00' },
       due: { date: '2024-04-01T23:59:00' },
     });
-    assert.deepEqual(cleaned[0].afterComplete, { questions: { hidden: true } });
+    assert.deepEqual(cleaned[0].afterComplete, {
+      questions: { hidden: true, visibleFromDate: '2024-04-15T00:00:00' },
+      score: { hidden: true },
+    });
   });
 });

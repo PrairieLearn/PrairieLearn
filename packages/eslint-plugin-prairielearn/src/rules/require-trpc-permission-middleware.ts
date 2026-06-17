@@ -26,8 +26,8 @@ const { findVariable } = ASTUtils;
  * - Or-combinations of the above, e.g. requireCoursePermissionEditOrCourseInstancePermissionView
  * - requireAdministrator
  *
- * Feature gates like `requireEnhancedAccessControl` and `requireAiGradingFeature`
- * don't count — they must be paired with a permission middleware.
+ * Feature gates like `requireAiGradingFeature` don't count — they must be
+ * paired with a permission middleware.
  *
  * The rule follows intermediate procedure-base variables so patterns like
  * `const protected = t.procedure.use(...); ...; protected.query(...)` are

@@ -21,11 +21,12 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg,
   description,
   renderItemExtra,
+  maxSelected,
 }: {
   items: T[];
   selectedUids: Set<string>;
   onToggle: (uid: string) => void;
-  onSelectAll: () => void;
+  onSelectAll?: () => void;
   onDeselectAll: () => void;
   label: string;
   checkboxIdPrefix: string;
@@ -35,8 +36,16 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
   iconBg?: string;
   description?: string;
   renderItemExtra?: (item: T) => ReactNode;
+  maxSelected?: number;
 }) {
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
+  const unselectedCount = items.length - selectedCount;
+  const maxSelectedReason =
+    maxSelected === undefined ? undefined : `At most ${maxSelected} students can be selected.`;
+  const maxSelectedReached = maxSelected !== undefined && selectedUids.size >= maxSelected;
+  const selectAllWouldExceedLimit =
+    maxSelected !== undefined && selectedUids.size + unselectedCount > maxSelected;
+  const selectAllDisabledReason = selectAllWouldExceedLimit ? maxSelectedReason : undefined;
 
   return (
     <div className="d-flex flex-column gap-2">
@@ -68,15 +77,19 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
             {selectedCount} of {items.length} selected
           </span>
           <div className="d-flex gap-1 ms-auto">
-            <Button
-              variant="link"
-              size="sm"
-              className="text-decoration-none"
-              aria-label={`Select all ${label.toLowerCase()}`}
-              onClick={onSelectAll}
-            >
-              Select all
-            </Button>
+            {onSelectAll && (
+              <Button
+                variant="link"
+                size="sm"
+                className="text-decoration-none"
+                aria-label={`Select all ${label.toLowerCase()}`}
+                disabled={selectAllDisabledReason !== undefined}
+                title={selectAllDisabledReason}
+                onClick={onSelectAll}
+              >
+                Select all
+              </Button>
+            )}
             <Button
               variant="link"
               size="sm"
@@ -89,34 +102,43 @@ export function StudentCheckboxList<T extends StudentCheckboxListItem>({
           </div>
         </div>
         <div style={{ maxHeight, overflowY: 'auto' }}>
-          {items.map((item, index) => (
-            <div
-              key={item.uid}
-              className={clsx('px-3 py-2', index !== items.length - 1 && 'border-bottom')}
-            >
-              <Form.Check
-                type="checkbox"
-                id={`${checkboxIdPrefix}-${item.uid}`}
-                className="d-flex gap-2 align-items-center mb-0"
+          {items.map((item, index) => {
+            const isSelected = selectedUids.has(item.uid);
+            const disabledReason =
+              !isSelected && maxSelectedReached ? maxSelectedReason : undefined;
+
+            return (
+              <div
+                key={item.uid}
+                className={clsx('px-3 py-2', index !== items.length - 1 && 'border-bottom')}
+                title={disabledReason}
               >
-                <Form.Check.Input
+                <Form.Check
                   type="checkbox"
-                  className="mt-0"
-                  checked={selectedUids.has(item.uid)}
-                  onChange={() => onToggle(item.uid)}
-                />
-                <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
-                  <span className="d-flex flex-column">
-                    <span>{item.uid}</span>
-                    {item.name && <span className="text-muted small">{item.name}</span>}
-                  </span>
-                  {renderItemExtra && <span className="ms-auto">{renderItemExtra(item)}</span>}
-                </Form.Check.Label>
-              </Form.Check>
-            </div>
-          ))}
+                  id={`${checkboxIdPrefix}-${item.uid}`}
+                  className="d-flex gap-2 align-items-center mb-0"
+                >
+                  <Form.Check.Input
+                    type="checkbox"
+                    className="mt-0"
+                    checked={isSelected}
+                    disabled={disabledReason !== undefined}
+                    onChange={() => onToggle(item.uid)}
+                  />
+                  <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
+                    <span className="d-flex flex-column">
+                      <span>{item.uid}</span>
+                      {item.name && <span className="text-muted small">{item.name}</span>}
+                    </span>
+                    {renderItemExtra && <span className="ms-auto">{renderItemExtra(item)}</span>}
+                  </Form.Check.Label>
+                </Form.Check>
+              </div>
+            );
+          })}
         </div>
       </div>
+      {maxSelectedReached && <Form.Text className="text-muted">{maxSelectedReason}</Form.Text>}
     </div>
   );
 }
