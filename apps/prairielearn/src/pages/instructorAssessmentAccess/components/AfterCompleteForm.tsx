@@ -26,23 +26,25 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
   {
     value: 'hide_questions_forever',
     label: 'Hide questions permanently',
-    description: 'Questions will never be visible after completion',
+    description: 'Questions and submissions will never be visible after completion',
   },
   {
     value: 'show_questions',
     label: 'Show questions after completion',
     description:
-      'Students can see questions and answers immediately after completing the assessment',
+      'Students can review questions and their submissions immediately after completing the assessment',
   },
   {
     value: 'hide_questions_between_dates',
     label: 'Show questions between dates',
-    description: 'Questions will be visible between these dates, hidden before and after',
+    description:
+      'Questions and submissions will be visible between these dates, hidden before and after',
   },
   {
     value: 'hide_questions_until_date',
     label: 'Show questions after date',
-    description: 'Questions will be hidden after completion and become visible on this date',
+    description:
+      'Questions and submissions will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -50,17 +52,19 @@ const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
-    description: 'Score will never be visible after completion',
+    description: 'The overall assessment score will never be visible after completion',
   },
   {
     value: 'show_score',
     label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
+    description:
+      'Students can see their overall assessment score immediately after completing the assessment',
   },
   {
     value: 'hide_score_until_date',
     label: 'Show score after date',
-    description: 'Score will be hidden after completion and become visible on this date',
+    description:
+      'The overall assessment score will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -480,6 +484,18 @@ export function DefaultAfterCompleteForm({
         </Alert>
       )}
       <div>
+        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
+          Score visibility
+        </Form.Label>
+        <ScoreVisibilityInput
+          value={svField.value}
+          idPrefix="defaultRule"
+          visibleFromDateError={svVisibleFromError}
+          displayTimezone={displayTimezone}
+          onChange={svField.onChange}
+        />
+      </div>
+      <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
         </Form.Label>
@@ -492,18 +508,6 @@ export function DefaultAfterCompleteForm({
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
           onChange={qvField.onChange}
-        />
-      </div>
-      <div>
-        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
-          Score visibility
-        </Form.Label>
-        <ScoreVisibilityInput
-          value={svField.value}
-          idPrefix="defaultRule"
-          visibleFromDateError={svVisibleFromError}
-          displayTimezone={displayTimezone}
-          onChange={svField.onChange}
         />
       </div>
     </AfterCompleteCard>
@@ -574,6 +578,29 @@ export function OverrideAfterCompleteForm({
     <AfterCompleteCard title={title}>
       <div>
         <FieldWrapper
+          isOverridden={svOverridden}
+          label="Score visibility"
+          onOverride={() => {
+            svField.onChange({ ...defaultRuleSV });
+            addSvOverride();
+            void trigger(qvField.name);
+          }}
+          onRemoveOverride={() => {
+            removeSvOverride();
+            void trigger(qvField.name);
+          }}
+        >
+          <ScoreVisibilityInput
+            value={svField.value}
+            idPrefix={`overrides-${index}`}
+            visibleFromDateError={svVisibleFromError}
+            displayTimezone={displayTimezone}
+            onChange={svField.onChange}
+          />
+        </FieldWrapper>
+      </div>
+      <div>
+        <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
           onOverride={() => {
@@ -594,29 +621,6 @@ export function OverrideAfterCompleteForm({
             visibleUntilDateError={visibleUntilDateError}
             displayTimezone={displayTimezone}
             onChange={qvField.onChange}
-          />
-        </FieldWrapper>
-      </div>
-      <div>
-        <FieldWrapper
-          isOverridden={svOverridden}
-          label="Score visibility"
-          onOverride={() => {
-            svField.onChange({ ...defaultRuleSV });
-            addSvOverride();
-            void trigger(qvField.name);
-          }}
-          onRemoveOverride={() => {
-            removeSvOverride();
-            void trigger(qvField.name);
-          }}
-        >
-          <ScoreVisibilityInput
-            value={svField.value}
-            idPrefix={`overrides-${index}`}
-            visibleFromDateError={svVisibleFromError}
-            displayTimezone={displayTimezone}
-            onChange={svField.onChange}
           />
         </FieldWrapper>
       </div>
