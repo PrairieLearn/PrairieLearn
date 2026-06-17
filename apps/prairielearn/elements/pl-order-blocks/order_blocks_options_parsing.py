@@ -386,7 +386,7 @@ class OrderBlocksOptions:
 
             if not has_final:
                 raise ValueError(
-                    'Use of optional lines requires at least one <pl-answer final="true"> block.'
+                    'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.'
                 )
 
     def _validate_order_blocks_options(self) -> None:

@@ -373,7 +373,7 @@ def test_initially_placed_validation(
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            'Use of optional lines requires at least one <pl-answer final="true"> block.',
+            'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.',
         ),
     ],
 )
@@ -406,7 +406,7 @@ def test_valid_final_tag(
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2"},
             ],
-            'Use of optional lines requires at least one <pl-answer final="true"> block.',
+            'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.',
         ),
     ],
 )

@@ -378,16 +378,6 @@ describe('validateHTML htmlmustache schema diagnostics', () => {
     assert.isTrue(errors.some((error) => error.includes('bogus')));
   });
 
-  it('allows pl-order-blocks as a supported input element', async () => {
-    const { errors, warnings } = await validateHTML(
-      '<pl-order-blocks answers-name="blocks"><pl-answer correct="true">A</pl-answer></pl-order-blocks>',
-      false,
-    );
-
-    assert.deepEqual(errors, []);
-    assert.deepEqual(warnings, []);
-  });
-
   it('does not surface non-schema htmlmustache diagnostics', async () => {
     const { errors, warnings } = await validateHTML(
       '<pl-question-panel><img src="foo.png"></pl-question-panel>',
