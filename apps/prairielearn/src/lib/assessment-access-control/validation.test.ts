@@ -1851,7 +1851,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 0,
-          message: /Questions cannot be visible after completion while the score is hidden/,
+          message: /Questions cannot be made visible after completion while the score is hidden/,
         },
       ],
     },
@@ -2027,7 +2027,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message: /Questions cannot be visible after completion while the score is hidden/,
+          message: /Questions cannot be made visible after completion while the score is hidden/,
         },
       ],
     },

@@ -249,7 +249,7 @@ describe('getGlobalDateValidationErrors', () => {
 
     expect(errors).toContainEqual({
       path: 'defaultRule.questionVisibility',
-      message: 'Questions cannot be visible after completion while the score is hidden.',
+      message: 'Questions cannot be made visible after completion while the score is hidden.',
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();
