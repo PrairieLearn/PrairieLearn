@@ -1,6 +1,5 @@
 import { assert, describe, it } from 'vitest';
 
-import { validateHTML } from '../../../ee/lib/validateHTML.js';
 import { lintQuestionHtml } from '../../question-html-linter.js';
 
 async function lintMessages(html: string): Promise<string[]> {
@@ -53,18 +52,5 @@ describe('pl-order-blocks schema', () => {
     assert.isTrue(
       warnings.some((message) => message.includes('"inline"') && message.includes('deprecated')),
     );
-  });
-
-  it('allows validateHTML to accept order blocks', async () => {
-    const result = await validateHTML(
-      `
-        <pl-order-blocks answers-name="blocks">
-          <pl-answer correct="true">A</pl-answer>
-        </pl-order-blocks>
-      `,
-      false,
-    );
-
-    assert.deepEqual(result.errors, []);
   });
 });

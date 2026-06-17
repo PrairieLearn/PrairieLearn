@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 import prettier from 'prettier';
 
@@ -157,7 +158,7 @@ function collectElementSchemas(element: ElementSchemaModule): Map<string, Record
     for (const [childTag, child] of Object.entries(children)) {
       if (child.schema) {
         const existing = files.get(childTag);
-        if (existing && JSON.stringify(existing) !== JSON.stringify(child.schema)) {
+        if (existing && !isDeepStrictEqual(existing, child.schema)) {
           throw new Error(
             `<${element.tag}>: child tag <${childTag}> declares different schemas at different nesting depths; a child tag must use the same schema everywhere it appears within an element.`,
           );

@@ -74,8 +74,8 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
-# Keep in sync with GRADING_METHOD_ANSWER_ATTRIBUTES in
-# apps/prairielearn/src/lib/element-schemas/elements/pl-order-blocks.validator.ts.
+# The JSON schema accepts the union of answer attributes across grading methods.
+# Python owns the mode-specific attribute restrictions.
 GRADING_METHOD_ANSWER_ATTRIBUTES: dict[GradingMethodType, frozenset[str]] = {
     GradingMethodType.EXTERNAL: frozenset(["correct", "initially-placed"]),
     GradingMethodType.UNORDERED: frozenset([
@@ -386,7 +386,7 @@ class OrderBlocksOptions:
 
             if not has_final:
                 raise ValueError(
-                    "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering."
+                    'Use of optional lines requires at least one <pl-answer final="true"> block.'
                 )
 
     def _validate_order_blocks_options(self) -> None:
