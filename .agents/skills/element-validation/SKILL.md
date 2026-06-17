@@ -3,40 +3,30 @@ name: element-validation
 description: Use when changing or reviewing PrairieLearn element question.html contracts, including schema-level attributes/children, Python semantic validation, docs, and legacy AI HTML validation.
 ---
 
-Use this when a change affects an element's `question.html` contract. JSON Schema is the shared lightweight contract layer; Python is authoritative for full semantic validation.
+Use this when a change affects what course authors may write in an element's `question.html`: tag names, attributes, child tags, accepted values, or validation errors for invalid markup.
 
-First choose the path for the element:
+JSON Schema is the shared lightweight contract layer. Python is authoritative for semantic validation and final user-facing errors.
 
-- If `apps/prairielearn/src/lib/element-schemas/elements/<tag>.ts` exists, the element uses the shared schema system.
-- If no schema module exists but `<tag>` is in `SUPPORTED_ELEMENTS` in `apps/prairielearn/src/ee/lib/validateHTML.ts`, AI question generation still uses legacy hand-written validation.
-- If neither applies, no schema or AI-validator update is needed; still keep the element's Python behavior and docs aligned with any contract change.
+## Ownership
 
-Adding a schema module does not by itself expose an element to AI question generation. If AI should generate the element, `SUPPORTED_ELEMENTS` and `checkTag` in `validateHTML.ts` must also allow it.
+- JSON Schema owns local facts: allowed attribute names, required attributes, single-attribute formats/enums, deprecation metadata, and basic child tag structure.
+- Python owns semantics: cross-attribute rules, mode-dependent behavior, child count/content rules, uniqueness, ordering, parsing, defaults, and final validation wording.
+- Docs describe the author-facing contract and should match whichever layer owns the changed behavior.
+- Legacy AI validation in `apps/prairielearn/src/ee/lib/validateHTML.ts` applies only to supported elements that do not yet have schema modules.
 
-## Where to make changes
+If a child attribute is only valid for some parent modes, keep the child schema permissive across the union of valid attributes and enforce the mode-specific subset in Python.
 
-When a change affects an element's `question.html` contract, update the authoritative surface for that part of the contract.
+## Workflow
 
-**Element with a schema module:**
+1. Check for `apps/prairielearn/src/lib/element-schemas/elements/<tag>.ts`.
+2. If the schema module exists, update it for schema-owned facts and run `make update-element-schemas`.
+3. If no schema module exists but `<tag>` is in `SUPPORTED_ELEMENTS`, update the legacy AI validator for schema-owned facts.
+4. Put semantic validation changes in `apps/prairielearn/elements/<tag>/<tag>.py`.
+5. Update `docs/elements/<tag>.md` when the author-facing contract changes.
 
-- Update `apps/prairielearn/src/lib/element-schemas/elements/<tag>.ts` for schema-level facts: allowed attribute names, required attributes, single-attribute formats/enums, deprecation metadata, and basic allowed child tag structure.
-- Run `make update-element-schemas` and include the generated JSON schemas under `apps/prairielearn/elements/<tag>/schemas/`, `apps/prairielearn/src/lib/element-schemas/registry.generated.ts`, and `.htmlmustache.jsonc`.
-- Update `apps/prairielearn/elements/<tag>/<tag>.py` for semantic validation, parsing, default behavior, and final user-facing validation errors.
-- Update the attribute table in `docs/elements/<tag>.md`.
+Adding a schema module does not enable AI generation for that element. If AI should generate it, also update `SUPPORTED_ELEMENTS` and `checkTag` in `validateHTML.ts`.
 
-**Legacy AI-validated element (in `SUPPORTED_ELEMENTS`, no schema module):**
-
-- Update its legacy validation in `apps/prairielearn/src/ee/lib/validateHTML.ts`.
-- Update the attribute table in `docs/elements/<tag>.md`.
-
-**Other elements:**
-
-- Update `apps/prairielearn/elements/<tag>/<tag>.py` for behavior and validation changes.
-- Update the attribute table in `docs/elements/<tag>.md`.
-
-Do not require validation updates for unrelated controller internals, prose-only documentation edits, example updates, or schema/linter refactors that do not change the `question.html` contract.
-
-## Shared element-schema system
+## Schema Modules
 
 Schema modules live in `apps/prairielearn/src/lib/element-schemas/elements/` and export `element: ElementSchemaModule`:
 
@@ -44,24 +34,12 @@ Schema modules live in `apps/prairielearn/src/lib/element-schemas/elements/` and
 - `schema`: JSON Schema for the element's attributes, usually from `z.toJSONSchema(z.object(...).strict(), { target: 'draft-04' })`.
 - `children`: optional child-tag schemas, keyed by child tag.
 
-Use `pl-multiple-choice` as the main example when adding schema coverage for another element. Use `helpers.ts` for `booleanFormat()`, `integerFormat()`, and `numberFormat()`. Mark deprecated attributes with `.meta({ deprecated: true, description: 'Use ... instead.' })`.
-
-Prefer schemas for stable local facts and Python for semantics. Do not add TypeScript checks for semantic validation such as cross-attribute rules, mode-dependent behavior, child content/count semantics, uniqueness, ordering, or Python parsing/default behavior. If child attributes depend on a parent mode, use a permissive child schema for the union of allowed attributes and let Python enforce the mode-specific subset.
+Use `helpers.ts` for `booleanFormat()`, `integerFormat()`, and `numberFormat()`. Mark deprecated attributes with `.meta({ deprecated: true, description: 'Use ... instead.' })`.
 
 Generated files are checked by `make check-element-schemas`; never hand-edit them. Change the schema module and regenerate.
 
-Do not add per-element tests just to prove generic JSON Schema enforcement such as required attributes, unknown attributes, enum validation, or format validation. Test only element-specific schema facts that are easy to regress, such as shared child tag ownership, unusual child structure, or deprecation metadata.
+When adding schema coverage for an existing element, match runtime behavior for schema-owned facts. If docs and runtime disagree, identify the mismatch before deciding which surface to change.
 
-When adding schema coverage for an existing element, match current runtime behavior only for lightweight schema facts. If docs and runtime disagree, flag the mismatch and decide which one to change instead of silently enforcing the docs.
+## Tests
 
-## Legacy AI HTML validator
-
-For elements without a schema module, AI question generation uses `SUPPORTED_ELEMENTS` and `checkTag` in `apps/prairielearn/src/ee/lib/validateHTML.ts`.
-
-The element docs table is still AI prompt context: the `Attribute | Type | Default | Description` table in `docs/elements/<tag>.md` is parsed by `apps/prairielearn/src/ee/lib/context-parsers/documentation.ts`.
-
-## Contract Changes
-
-- Schema-level changes belong in the schema module or legacy AI validator: added/removed/renamed attributes, required attributes, allowed values, value formats, deprecations, and basic child tag structure.
-- Semantic changes belong in Python and docs: cross-attribute rules, mode-dependent behavior, child content/count semantics, uniqueness, ordering, parsing, defaults, and final error wording.
-- AI support changes belong in `SUPPORTED_ELEMENTS` and legacy dispatch, or in a new schema module plus generated schema updates.
+Test the layer that changed. For schema modules, add per-element tests only for element-specific facts that are easy to regress, such as shared child tag ownership, unusual child structure, or deprecation metadata. Do not retest generic JSON Schema behavior like required attributes, unknown attributes, enum validation, or format validation for every element.
