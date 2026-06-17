@@ -149,7 +149,6 @@ interface AssessmentEditorInnerProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   search: string;
@@ -172,7 +171,6 @@ function AssessmentEditorInner({
   canEdit,
   csrfToken,
   origHash,
-  switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
   search,
@@ -1096,7 +1094,6 @@ function AssessmentEditorInner({
                   state={treeState}
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
-                  switchViewUrl={switchViewUrl}
                   editControls={
                     <EditModeToolbar
                       csrfToken={csrfToken}
