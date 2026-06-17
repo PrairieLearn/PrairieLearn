@@ -27,6 +27,7 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getAssessmentLogsUrl,
   getAssessmentStudentsUrl,
+  getCourseInstanceSettingsUrl,
   getQuestionSettingsUrl,
 } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
@@ -221,6 +222,7 @@ export function InstructorAssessmentSettings({
           zonePointsRange={zonePointsRange}
           setZonePointsRange={setZonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
+          courseInstanceSharedPublicly={courseInstance.share_source_publicly}
           questionSharingEnabled={questionSharingEnabled}
           hasInstances={hasInstances}
           typeChangeMessage={typeChangeMessage}
@@ -672,6 +674,7 @@ function InstructorAssessmentSettingsInner({
   zonePointsRange,
   setZonePointsRange,
   nonPublicQuestionsInAssessment,
+  courseInstanceSharedPublicly,
   questionSharingEnabled,
   hasInstances,
   typeChangeMessage,
@@ -680,6 +683,7 @@ function InstructorAssessmentSettingsInner({
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;
+  courseInstanceSharedPublicly: boolean;
   typeChangeMessage: string | null;
   setTypeChangeMessage: (message: string | null) => void;
 }) {
@@ -792,6 +796,15 @@ function InstructorAssessmentSettingsInner({
       {
         onSuccess: (result) => {
           setCurrentOrigHash(result.origHash);
+          // The sharing card reflects `assessment.share_source_publicly` (not form
+          // state), and the mutation returns only the new hash, so mirror the saved
+          // value onto `assessment` to avoid showing stale sharing status until the
+          // next page load. `??` keeps the current value when the field was omitted
+          // (e.g. a disabled checkbox).
+          setAssessment({
+            ...assessment,
+            share_source_publicly: data.share_source_publicly ?? assessment.share_source_publicly,
+          });
           reset(data);
           setUseCustomMaxPoints(data.max_points !== '');
         },
@@ -1525,6 +1538,14 @@ function InstructorAssessmentSettingsInner({
               publicLink={publicLink}
               entityNoun="assessment"
               childNoun="questions"
+              unshareBlock={
+                assessment.share_source_publicly && courseInstanceSharedPublicly
+                  ? {
+                      parentNoun: 'course instance',
+                      href: getCourseInstanceSettingsUrl(assessment.course_instance_id),
+                    }
+                  : undefined
+              }
             />
           )}
 

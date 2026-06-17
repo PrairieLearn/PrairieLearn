@@ -35,7 +35,6 @@ describe('LTI 1.3 authentication', () => {
 
   beforeAll(async () => {
     config.isEnterprise = true;
-    config.features.lti13 = true;
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
@@ -53,7 +52,6 @@ describe('LTI 1.3 authentication', () => {
   afterAll(async () => {
     await helperServer.after();
     config.isEnterprise = false;
-    config.features = {};
   });
 
   test.sequential('create and configure an LTI instance', async () => {

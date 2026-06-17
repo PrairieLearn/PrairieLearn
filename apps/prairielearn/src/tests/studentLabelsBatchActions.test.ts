@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 
 import { TRPCClientError } from '@trpc/client';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';

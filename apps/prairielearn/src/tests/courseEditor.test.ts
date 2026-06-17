@@ -5,7 +5,6 @@ import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';

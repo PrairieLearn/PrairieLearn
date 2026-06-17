@@ -1806,6 +1806,45 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
+const AssessmentInfoFileRowSchema = z.object({
+  course_instance_directory: CourseInstanceSchema.shape.short_name,
+  assessment_directory: AssessmentSchema.shape.tid,
+});
+
+/**
+ * Applies `transform` to each given assessment's parsed `infoAssessment.json`,
+ * returning the paths written. `contents` is `unknown` because a repo can hold
+ * JSON that doesn't match our schema, so each `transform` must check its shape.
+ */
+async function rewriteAssessmentInfoFiles(
+  course: Course,
+  assessments: z.infer<typeof AssessmentInfoFileRowSchema>[],
+  transform: (contents: unknown) => void,
+): Promise<string[]> {
+  const pathsToAdd: string[] = [];
+
+  for (const assessment of assessments) {
+    assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+    const infoPath = path.join(
+      course.path,
+      'courseInstances',
+      assessment.course_instance_directory,
+      'assessments',
+      assessment.assessment_directory,
+      'infoAssessment.json',
+    );
+    pathsToAdd.push(infoPath);
+
+    const infoJson: unknown = await fs.readJson(infoPath);
+    transform(infoJson);
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(infoPath, formattedJson);
+  }
+
+  return pathsToAdd;
+}
+
 /**
  * This rename editor is used to rename an assessment set referenced by assessments.
  *
@@ -1837,43 +1876,81 @@ export class AssessmentSetRenameEditor extends Editor {
     const assessments = await sqldb.queryRows(
       sql.select_assessments_with_assessment_set,
       { assessment_set_name: this.oldName, course_id: this.course.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
+      AssessmentInfoFileRowSchema,
     );
 
-    if (assessments.length === 0) return null;
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      (contents as Record<string, unknown>).set = this.newName;
+    });
 
-    const pathsToAdd: string[] = [];
-
-    for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
-      );
-      pathsToAdd.push(infoPath);
-
-      debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
-
-      debug(`Replace assessment set name in ${infoPath}`);
-      infoJson.set = this.newName;
-
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
-    }
+    if (pathsToAdd.length === 0) return null;
 
     return {
       pathsToAdd,
       commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+    };
+  }
+}
+
+/**
+ * Rewrites the `module` field of every `infoAssessment.json` that references
+ * `oldName`. A string `newName` renames the reference; a null `newName` removes
+ * the field entirely, so the assessments fall back to the implicit "Default"
+ * module that sync always creates.
+ *
+ * It does not change the module at the course level (infoCourse.json).
+ */
+export class AssessmentModuleRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string | null;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string | null;
+    },
+  ) {
+    super({
+      ...params,
+      description:
+        params.newName === null
+          ? `Reassign assessments from module ${params.oldName} to the default module`
+          : `Rename assessment module ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentModuleRenameEditor: write()');
+
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_assessment_module,
+      { assessment_module_name: this.oldName, course_id: this.course.id },
+      AssessmentInfoFileRowSchema,
+    );
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, assessments, (contents) => {
+      if (contents === null || typeof contents !== 'object') return;
+      const json = contents as Record<string, unknown>;
+      if (this.newName === null) {
+        delete json.module;
+      } else {
+        json.module = this.newName;
+      }
+    });
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage:
+        this.newName === null
+          ? `reassign assessments from module ${this.oldName} to the default module`
+          : `rename assessment module ${this.oldName} to ${this.newName}`,
     };
   }
 }
@@ -2254,42 +2331,42 @@ export class FileRenameEditor extends Editor {
 
 export class FileUploadEditor extends Editor {
   private container: { rootPath: string; invalidRootPaths: string[] };
-  private filePath: string;
-  private fileContents: Buffer;
+  private files: Record<string, Buffer>;
 
   constructor(
     params: BaseEditorOptions & {
       container: { rootPath: string; invalidRootPaths: string[] };
-      filePath: string;
-      fileContents: Buffer;
+      files: Record<string, Buffer>;
     },
   ) {
     const {
       locals: { course },
       container,
-      filePath,
-      fileContents,
+      files,
     } = params;
 
     let prefix = '';
     if (course.path !== container.rootPath) {
       prefix = `${path.basename(container.rootPath)}: `;
     }
-    super({
-      ...params,
-      description: `${prefix}Upload ${path.relative(container.rootPath, params.filePath)}`,
-    });
+
+    const description = `${prefix}Upload ${Object.keys(files)
+      .slice(0, 3)
+      .map((filePath) => path.relative(container.rootPath, filePath))
+      .join(
+        ', ',
+      )}${Object.keys(files).length > 3 ? ` and ${Object.keys(files).length - 3} more` : ''}`;
+    super({ ...params, description });
 
     this.container = container;
-    this.filePath = filePath;
-    this.fileContents = fileContents;
+    this.files = files;
   }
 
-  async shouldEdit() {
+  async fileContentModified(filePath: string, newContents: Buffer) {
     debug('look for old contents');
-    let contents;
+    let oldContents;
     try {
-      contents = await fs.readFile(this.filePath);
+      oldContents = await fs.readFile(filePath);
     } catch (err: any) {
       if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
@@ -2299,13 +2376,9 @@ export class FileUploadEditor extends Editor {
       throw err;
     }
 
-    debug('get hash of old contents and of new contents');
-    const oldHash = getHash(contents);
-    const newHash = getHash(this.fileContents);
-    debug('oldHash: ' + oldHash);
-    debug('newHash: ' + newHash);
-    if (oldHash === newHash) {
-      debug('new contents are the same as old contents, so abort upload');
+    debug('compare old contents and new contents');
+    if (oldContents.equals(newContents)) {
+      debug('new contents are the same as old contents, so skip this upload');
       return false;
     } else {
       debug('new contents are different from old contents, so continue with upload');
@@ -2314,35 +2387,37 @@ export class FileUploadEditor extends Editor {
   }
 
   assertCanEdit() {
-    if (!contains(this.container.rootPath, this.filePath)) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
-          </div>
-        `,
-      });
-    }
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(this.container.rootPath, filePath)) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must be inside the root directory</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+            </div>
+          `,
+        });
+      }
 
-    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.filePath),
-    );
-    if (found) {
-      throw new AugmentedError('Invalid file path', {
-        info: html`
-          <p>The file path</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
-          </div>
-          <p>must <em>not</em> be inside the directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
-        `,
-      });
+      const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+        contains(invalidRootPath, filePath),
+      );
+      if (found) {
+        throw new AugmentedError('Invalid file path', {
+          info: html`
+            <p>The file path</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${filePath}</pre>
+            </div>
+            <p>must <em>not</em> be inside the directory</p>
+            <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+          `,
+        });
+      }
     }
 
     super.assertCanEdit();
@@ -2351,18 +2426,24 @@ export class FileUploadEditor extends Editor {
   async write() {
     debug('FileUploadEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    const pathsToAdd: string[] = [];
 
-    debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
+    for (const [filePath, fileContents] of Object.entries(this.files)) {
+      // If the content is the same as what's already on disk, then we can skip writing it to reduce impact on git history.
+      if (await this.fileContentModified(filePath, fileContents)) {
+        debug('ensure path exists');
+        await fs.ensureDir(path.dirname(filePath));
 
-    debug('write file');
-    await fs.writeFile(this.filePath, this.fileContents);
+        debug('write file');
+        await fs.writeFile(filePath, fileContents);
+        pathsToAdd.push(filePath);
+      }
+    }
 
-    return {
-      pathsToAdd: [this.filePath],
-      commitMessage: this.description,
-    };
+    // If all uploaded files are the same as what's already on disk, then we can
+    // skip creating a new commit since there are effectively no changes.
+    if (pathsToAdd.length === 0) return null;
+    return { pathsToAdd, commitMessage: this.description };
   }
 }
 

@@ -3,6 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectAssessmentQuestions } from '../lib/assessment-question.js';
 import { config } from '../lib/config.js';
 import { SprocQuestionOrderSchema } from '../lib/db-types.js';
 
@@ -25,7 +26,6 @@ describe(
       assessmentInstanceId: string;
       assessmentInstanceUrl: string;
       assessmentUrl: string;
-      instructorAssessmentQuestionsUrl: string;
       expectedPercentages: number[];
       instanceQuestions: { id: number; locked: boolean; url: string }[];
       lockedQuestion: { id: number; url: string };
@@ -41,7 +41,6 @@ describe(
       const assessmentId = await sqldb.queryScalar(sql.select_sequential_exam, IdSchema);
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
-      context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/?view=legacy`;
     });
 
     afterAll(helperServer.after);
@@ -49,19 +48,13 @@ describe(
     test.sequential(
       'Minimum advancement score is computed correctly for each question',
       async function () {
-        const response = await helperClient.fetchCheerio(context.instructorAssessmentQuestionsUrl, {
-          method: 'GET',
-        });
-        assert.isTrue(response.ok);
-
         context.expectedPercentages = [0, 60, 75, 0, 30, 100];
-        const computedPercentages = response
-          .$('[data-testid="advance-score-perc"]')
-          .map((i, elem) => {
-            // turn string "25%" -> number 25
-            return Number(response.$(elem).text().trim().slice(0, -1));
-          })
-          .get();
+        const questionRows = await selectAssessmentQuestions({
+          assessment_id: context.assessmentId,
+        });
+        const computedPercentages = questionRows.map(
+          (row) => row.assessment_question.effective_advance_score_perc,
+        );
         assert.deepEqual(computedPercentages, context.expectedPercentages);
       },
     );

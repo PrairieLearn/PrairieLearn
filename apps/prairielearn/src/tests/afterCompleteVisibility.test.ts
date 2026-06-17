@@ -4,6 +4,7 @@ import { gradeAssessmentInstance, makeAssessmentInstance } from '../lib/assessme
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import type { Assessment } from '../lib/db-types.js';
+import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
@@ -183,12 +184,31 @@ describe(
     });
 
     describe('timed exam completion after the time limit expires', () => {
-      beforeAll(async () => {
-        const assessmentInstanceId = await createAssessmentInstance({
-          assessment: context.timedExamAssessment,
-          timeLimitMin: 10,
+      test.sequential('student starts the timed exam during the active window', async () => {
+        const timedExamAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.timedExamAssessment.id}/`;
+        const startPage = await helperClient.fetchCheerio(timedExamAssessmentUrl, {
+          headers: { cookie: activeWindowCookie },
         });
-        context.timedExamAssessmentInstanceUrl = assessmentInstanceUrl(assessmentInstanceId);
+        assert.isTrue(startPage.ok);
+        assert.equal(startPage.$('#start-assessment').text().trim(), 'Start assessment');
+
+        const startCsrfToken = helperClient.getCSRFToken(startPage.$('form'));
+        const response = await helperClient.fetchCheerio(timedExamAssessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: startCsrfToken,
+          }),
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
+        assert.include(response.url, '/assessment_instance/');
+
+        context.timedExamAssessmentInstanceId = String(
+          helperClient.parseAssessmentInstanceId(response.url),
+        );
+        context.timedExamAssessmentInstanceUrl = response.url;
+        context.timedExamCsrfToken = helperClient.getCSRFToken(response.$);
       });
 
       test.sequential('student assessments list omits available credit', async () => {
@@ -202,7 +222,7 @@ describe(
         assert.equal(row.find('td').eq(2).text().trim(), '');
       });
 
-      test.sequential('student assessment instance page shows the closed message', async () => {
+      test.sequential('student assessment instance GET shows the closed message', async () => {
         const response = await helperClient.fetchCheerio(context.timedExamAssessmentInstanceUrl, {
           headers: { cookie: afterTimeLimitCookie },
         });
@@ -212,6 +232,27 @@ describe(
         assert.lengthOf(message, 1);
         assert.match(message.text(), /Assessment is no longer available/);
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
+      });
+
+      test.sequential('timeLimitFinish closes the hidden expired assessment instance', async () => {
+        const response = await helperClient.fetchCheerio(context.timedExamAssessmentInstanceUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'timeLimitFinish',
+            __csrf_token: context.timedExamCsrfToken,
+          }),
+          headers: { cookie: afterTimeLimitCookie },
+        });
+        assert.equal(response.status, 403);
+        assert.equal(
+          response.url,
+          `${context.timedExamAssessmentInstanceUrl}?timeLimitExpired=true`,
+        );
+
+        const assessmentInstance = await selectAssessmentInstanceById(
+          context.timedExamAssessmentInstanceId,
+        );
+        assert.isFalse(assessmentInstance.open);
       });
     });
 

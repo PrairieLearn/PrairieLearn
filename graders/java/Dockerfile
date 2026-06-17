@@ -1,13 +1,13 @@
 # Use the official GCC image to build the Landlock sandbox executable in a multi-stage build. This stage is discarded after the executable is built, so the final image does not include the GCC compiler.
 FROM gcc:16 AS landlock_builder
-ARG CACHEBUST=2026-05-15-14-49-21
+ARG CACHEBUST=2026-06-15-15-59-28
 
 # Copy the sandbox.c file and compile it into a Landlock-based sandbox executable
 COPY sandbox.c /sandbox.c
 RUN gcc -O2 -o /landlock_sandbox -Wall -Wextra -Werror /sandbox.c
 
 FROM ubuntu:24.04
-ARG CACHEBUST=2026-05-15-14-49-21
+ARG CACHEBUST=2026-06-15-15-59-28
 
 LABEL maintainer="jonatan@yorku.ca"
 
