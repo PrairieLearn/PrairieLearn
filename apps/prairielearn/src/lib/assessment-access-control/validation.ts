@@ -661,7 +661,7 @@ export function getAfterCompleteCrossFieldIssue(
   if (score.hidden && !questions.hidden) {
     return {
       kind: 'score_hidden_requires_questions_hidden',
-      message: 'The score cannot be hidden after completion while questions are visible.',
+      message: 'Questions cannot be visible after completion while the score is hidden.',
     };
   }
   if (!questions.hidden || questions.visibleFromDate === undefined) return null;

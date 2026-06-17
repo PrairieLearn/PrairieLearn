@@ -99,6 +99,7 @@ function QuestionVisibilityInput({
   idPrefix,
   hasPrairieTest = false,
   hasCompletionMechanism = true,
+  error,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -108,6 +109,7 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   hasCompletionMechanism?: boolean;
+  error?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
@@ -158,6 +160,7 @@ function QuestionVisibilityInput({
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
           disabled={!ruleEditable}
+          errorMessage={error}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -279,12 +282,14 @@ function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  error,
   visibleFromDateError,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  error?: string;
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
@@ -323,6 +328,7 @@ function ScoreVisibilityInput({
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
           disabled={!ruleEditable}
+          errorMessage={error}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -440,6 +446,7 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.questionVisibility.visibleFromDate',
   )?.message;
+  const qvError: string | undefined = get(errors, 'defaultRule.questionVisibility')?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
     'defaultRule.questionVisibility.visibleUntilDate',
@@ -448,6 +455,7 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
+  const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -490,6 +498,7 @@ export function DefaultAfterCompleteForm({
         <ScoreVisibilityInput
           value={svField.value}
           idPrefix="defaultRule"
+          error={svError}
           visibleFromDateError={svVisibleFromError}
           displayTimezone={displayTimezone}
           onChange={svField.onChange}
@@ -504,6 +513,7 @@ export function DefaultAfterCompleteForm({
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
+          error={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
@@ -540,6 +550,7 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.questionVisibility.visibleFromDate`,
   )?.message;
+  const qvError: string | undefined = get(errors, `overrides.${index}.questionVisibility`)?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
     `overrides.${index}.questionVisibility.visibleUntilDate`,
@@ -548,6 +559,7 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
+  const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
 
   const {
     isOverridden: qvOverridden,
@@ -593,6 +605,7 @@ export function OverrideAfterCompleteForm({
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            error={svError}
             visibleFromDateError={svVisibleFromError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}
@@ -617,6 +630,7 @@ export function OverrideAfterCompleteForm({
             value={qvField.value}
             idPrefix={`overrides-${index}`}
             hasPrairieTest={hasPrairieTest}
+            error={qvError}
             visibleFromDateError={qvVisibleFromError}
             visibleUntilDateError={visibleUntilDateError}
             displayTimezone={displayTimezone}
