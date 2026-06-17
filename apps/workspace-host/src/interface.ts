@@ -92,6 +92,13 @@ interface Workspace {
   settings: WorkspaceSettings;
 }
 
+class SafeForStudentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SafeForStudentError';
+  }
+}
+
 let server: http.Server | undefined;
 const workspace_server_settings: WorkspaceServerSettings = {};
 
@@ -837,16 +844,18 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
     const portStr = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
     if (home == null) {
-      throw new Error(
+      throw new SafeForStudentError(
         'Workspace home directory not specified in question settings or image labels',
       );
     }
     if (portStr == null) {
-      throw new Error('Workspace port not specified in question settings or image labels');
+      throw new SafeForStudentError(
+        'Workspace port not specified in question settings or image labels',
+      );
     }
     const port = Number(portStr);
     if (Number.isNaN(port) || port <= 0 || port > 65535) {
-      throw new Error('Workspace port is not a valid port number');
+      throw new SafeForStudentError('Workspace port is not a valid port number');
     }
     return [home, port];
   });
@@ -1026,7 +1035,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       safeUpdateWorkspaceState(
         workspace.id,
         'stopped',
-        `Error creating container${err.message ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
+        `Error creating container${err instanceof SafeForStudentError ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
