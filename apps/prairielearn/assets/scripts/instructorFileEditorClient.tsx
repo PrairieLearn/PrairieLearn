@@ -25,13 +25,22 @@ import './lib/verboseToggle.js';
  * JSON schemas for the known course JSON files, keyed by file type.
  */
 const JSON_SCHEMAS: Partial<Record<FileType, { uri: string; schema: unknown }>> = {
-  [FileType.Course]: { uri: 'infoCourse.schema.json', schema: infoCourseSchema },
+  [FileType.Course]: {
+    uri: 'prairielearn-schema:/infoCourse.schema.json',
+    schema: infoCourseSchema,
+  },
   [FileType.CourseInstance]: {
-    uri: 'infoCourseInstance.schema.json',
+    uri: 'prairielearn-schema:/infoCourseInstance.schema.json',
     schema: infoCourseInstanceSchema,
   },
-  [FileType.Assessment]: { uri: 'infoAssessment.schema.json', schema: infoAssessmentSchema },
-  [FileType.Question]: { uri: 'infoQuestion.schema.json', schema: infoQuestionSchema },
+  [FileType.Assessment]: {
+    uri: 'prairielearn-schema:/infoAssessment.schema.json',
+    schema: infoAssessmentSchema,
+  },
+  [FileType.Question]: {
+    uri: 'prairielearn-schema:/infoQuestion.schema.json',
+    schema: infoQuestionSchema,
+  },
 };
 
 /**
@@ -138,6 +147,7 @@ class InstructorFileEditor {
   fileMetadata?: FileMetadata;
   aceMode?: string;
   private abortController?: AbortController;
+  private jsonSchemaLanguageServiceInitialized = false;
 
   constructor({
     element,
@@ -221,9 +231,13 @@ class InstructorFileEditor {
    * via ace-linters, which runs a JSON language service in a web worker.
    */
   setUpJsonSchemaLanguageService() {
+    if (this.jsonSchemaLanguageServiceInitialized) return;
+
     const workerPath = this.element.dataset.aceLintersWorkerPath;
     const schemaInfo = this.fileMetadata ? JSON_SCHEMAS[this.fileMetadata.type] : undefined;
     if (!workerPath || !schemaInfo) return;
+
+    this.jsonSchemaLanguageServiceInitialized = true;
 
     // The JSON language service reports syntax errors itself, so disable Ace's
     // built-in JSON worker to avoid duplicate annotations.
@@ -431,6 +445,9 @@ class InstructorFileEditor {
 
   takeOver() {
     this.editor.setReadOnly(false);
+    if (this.aceMode === 'ace/mode/json') {
+      this.setUpJsonSchemaLanguageService();
+    }
     this.checkDiff();
     this.editor.resize();
   }
