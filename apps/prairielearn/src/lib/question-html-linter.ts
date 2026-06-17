@@ -6,7 +6,7 @@ import {
   createLinter,
 } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-import { formats, validators } from './element-schemas/htmlmustache-plugin.js';
+import { formats } from './element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from './htmlMustacheConfig.js';
 
 const require = createRequire(import.meta.url);
@@ -28,7 +28,6 @@ function getLinter(): Promise<Linter> {
       return name;
     },
     formats,
-    validators,
   });
 
   return linterPromise;
