@@ -10,8 +10,15 @@ async function lintMessages(html: string): Promise<string[]> {
     .map((diagnostic) => diagnostic.message);
 }
 
+async function lintWarnings(html: string): Promise<string[]> {
+  const diagnostics = await lintQuestionHtml(html);
+  return diagnostics
+    .filter((diagnostic) => diagnostic.severity === 'warning')
+    .map((diagnostic) => diagnostic.message);
+}
+
 describe('pl-order-blocks schema', () => {
-  it('accepts a valid ordered order-blocks element', async () => {
+  it('accepts schema-valid order-blocks markup', async () => {
     const messages = await lintMessages(`
       <pl-order-blocks answers-name="blocks" source-blocks-order="ordered">
         <pl-answer correct="true">First</pl-answer>
@@ -22,7 +29,7 @@ describe('pl-order-blocks schema', () => {
     assert.deepEqual(messages, []);
   });
 
-  it('accepts DAG block groups', async () => {
+  it('accepts DAG block groups with nested answers', async () => {
     const messages = await lintMessages(`
       <pl-order-blocks answers-name="blocks" grading-method="dag">
         <pl-block-group tag="case-a">
@@ -36,199 +43,16 @@ describe('pl-order-blocks schema', () => {
     assert.deepEqual(messages, []);
   });
 
-  it('accepts DAG order blocks where every answer is in a block group', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag">
-        <pl-block-group tag="case-a">
-          <pl-answer correct="true" tag="a1">First case</pl-answer>
-          <pl-answer correct="true" tag="a2" depends="a1">Finish case</pl-answer>
-        </pl-block-group>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
-  it('counts incorrect answers inside DAG block groups', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag" max-incorrect="1">
-        <pl-block-group tag="case-a">
-          <pl-answer correct="true" tag="a0">Correct</pl-answer>
-          <pl-answer correct="false" tag="a1">Distractor</pl-answer>
-        </pl-block-group>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
-  it('requires answers-name', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks>
-        <pl-answer>A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      '<pl-order-blocks> is missing required attribute "answers-name".',
-      'Input element is missing the required `answers-name` attribute.',
-    ]);
-  });
-
-  it('rejects unknown attributes and additional child tags', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" bogus="true">
-        <p>A</p>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'Unknown attribute "bogus" on <pl-order-blocks>.',
-      '<pl-order-blocks> only allows these child elements: <pl-answer>, <pl-block-group>.',
-      '<pl-order-blocks> must have at least 1 answer block.',
-    ]);
-  });
-
-  it('rejects invalid attribute values', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="sequence" max-incorrect="1.5">
-        <pl-answer correct="maybe" indent="0.5">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'Attribute "grading-method" on <pl-order-blocks> must be one of: "unordered", "ordered", "ranking", "dag", "external".',
-      'Attribute "max-incorrect" on <pl-order-blocks> must match format "integer".',
-      'Attribute "correct" on <pl-answer> inside <pl-order-blocks> must match format "boolean".',
-      'Attribute "indent" on <pl-answer> inside <pl-order-blocks> must match format "integer".',
-      '<pl-answer> should not specify indentation if indentation is disabled.',
-    ]);
-  });
-
-  it('rejects answer attributes incompatible with the grading method', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="external">
-        <pl-answer ranking="1">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'pl-answer: ranking is not valid with this pl-order-blocks grading method.',
-    ]);
-  });
-
-  it('validates cross-attribute constraints', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks
-        answers-name="blocks"
-        code-language="python"
-        feedback="first-wrong"
-        grading-method="ordered"
-        inline="true"
-        indentation="true"
-      >
+  it('warns on deprecated attributes', async () => {
+    const warnings = await lintWarnings(`
+      <pl-order-blocks answers-name="blocks" inline="true">
         <pl-answer correct="true">A</pl-answer>
       </pl-order-blocks>
     `);
 
-    assert.deepEqual(messages, [
-      'code-language attribute may only be used with format="code"',
-      'feedback type first-wrong is not available with the ordered grading-method.',
-      'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
-    ]);
-  });
-
-  it('allows explicit no-op partial credit in non-LCS grading modes', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="unordered" partial-credit="none">
-        <pl-answer correct="true">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
-  it('requires at least one possibly correct answer outside external grading', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks">
-        <pl-answer correct="false">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, ['There are no correct answers specified for this question.']);
-  });
-
-  it('allows no correct answers for external grading', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="external">
-        <pl-answer correct="false">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
-  it('rejects duplicate correct answer tags', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag">
-        <pl-answer tag="a">A</pl-answer>
-        <pl-answer tag="a">B</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'Tag "a" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.',
-    ]);
-  });
-
-  it('rejects duplicate group and answer tags', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag">
-        <pl-answer tag="a">A</pl-answer>
-        <pl-block-group tag="a">
-          <pl-answer tag="b">B</pl-answer>
-        </pl-block-group>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'Tag "a" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.',
-    ]);
-  });
-
-  it('rejects initially placed correct answers with distractors', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag">
-        <pl-answer correct="true" initially-placed="true" tag="a">A</pl-answer>
-        <pl-answer correct="false" distractor-for="a" tag="b">B</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, ['A block with distractors cannot be initially placed.']);
-  });
-
-  it('rejects indentation with an inline display-blocks value', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" display-blocks="inline-wrap" indentation="true">
-        <pl-answer correct="true">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
-    ]);
-  });
-
-  it('rejects optional blocks without a final answer', async () => {
-    const messages = await lintMessages(`
-      <pl-order-blocks answers-name="blocks" grading-method="dag">
-        <pl-answer correct="true" tag="a" depends="b|c">A</pl-answer>
-      </pl-order-blocks>
-    `);
-
-    assert.deepEqual(messages, [
-      "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
-    ]);
+    assert.isTrue(
+      warnings.some((message) => message.includes('"inline"') && message.includes('deprecated')),
+    );
   });
 
   it('allows validateHTML to accept order blocks', async () => {

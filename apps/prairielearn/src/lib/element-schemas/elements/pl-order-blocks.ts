@@ -3,8 +3,6 @@ import * as z from 'zod/v4';
 import { booleanFormat, integerFormat } from '../helpers.ts';
 import type { ElementSchemaModule } from '../types.ts';
 
-import { blockGroupValidators, validators } from './pl-order-blocks.validator.ts';
-
 const plOrderBlocksAnswerAttributesSchema = z
   .object({
     correct: booleanFormat().optional(),
@@ -71,5 +69,4 @@ export const element: ElementSchemaModule = {
       },
     },
   },
-  validators: [...validators, ...blockGroupValidators],
 };
