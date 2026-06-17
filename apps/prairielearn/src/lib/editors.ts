@@ -1846,38 +1846,44 @@ async function rewriteAssessmentInfoFiles(
 }
 
 /**
- * This rename editor is used to rename an assessment set referenced by assessments.
+ * This rename editor renames assessment sets referenced by assessments.
+ *
+ * It applies all renames in a single pass keyed on each file's original
+ * on-disk `set` value, so swaps (rename A to B and B to A) and chains rewrite
+ * every file exactly once based on its starting value rather than cascading.
  *
  * It does not rename the assessment set at the course level (infoCourse.json).
  */
 export class AssessmentSetRenameEditor extends Editor {
-  private oldName: string;
-  private newName: string;
+  private renames: { oldName: string; newName: string }[];
 
   constructor(
     params: BaseEditorOptions & {
-      oldName: string;
-      newName: string;
+      renames: { oldName: string; newName: string }[];
     },
   ) {
+    const renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
     super({
       ...params,
-      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
+      description: renames
+        .map((r) => `rename assessment set ${r.oldName} to ${r.newName}`)
+        .join('; '),
     });
-    this.oldName = params.oldName;
-    this.newName = params.newName;
+    this.renames = renames;
   }
 
   async write() {
-    if (this.oldName === this.newName) return null;
-
     debug('AssessmentSetRenameEditor: write()');
+
+    const newNameByOldName = new Map(this.renames.map((r) => [r.oldName, r.newName]));
 
     const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
       if (contents === null || typeof contents !== 'object') return false;
       const json = contents as Record<string, unknown>;
-      if (json.set !== this.oldName) return false;
-      json.set = this.newName;
+      if (typeof json.set !== 'string') return false;
+      const newName = newNameByOldName.get(json.set);
+      if (newName === undefined) return false;
+      json.set = newName;
       return true;
     });
 
@@ -1885,53 +1891,59 @@ export class AssessmentSetRenameEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+      commitMessage: this.description,
     };
   }
 }
 
 /**
- * Rewrites the `module` field of every `infoAssessment.json` that references
- * `oldName`. A string `newName` renames the reference; a null `newName` removes
- * the field entirely, so the assessments fall back to the implicit "Default"
- * module that sync always creates.
+ * Rewrites the `module` field of `infoAssessment.json` files that reference a
+ * renamed module. A string `newName` renames the reference; a null `newName`
+ * removes the field entirely, so the assessments fall back to the implicit
+ * "Default" module that sync always creates.
+ *
+ * Like {@link AssessmentSetRenameEditor}, all renames are applied in a single
+ * pass keyed on each file's original on-disk `module` value, so swaps and
+ * chains rewrite every file exactly once based on its starting value.
  *
  * It does not change the module at the course level (infoCourse.json).
  */
 export class AssessmentModuleRenameEditor extends Editor {
-  private oldName: string;
-  private newName: string | null;
+  private renames: { oldName: string; newName: string | null }[];
 
   constructor(
     params: BaseEditorOptions & {
-      oldName: string;
-      newName: string | null;
+      renames: { oldName: string; newName: string | null }[];
     },
   ) {
+    const renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
     super({
       ...params,
-      description:
-        params.newName === null
-          ? `Reassign assessments from module ${params.oldName} to the default module`
-          : `Rename assessment module ${params.oldName} to ${params.newName}`,
+      description: renames
+        .map((r) =>
+          r.newName === null
+            ? `reassign assessments from module ${r.oldName} to the default module`
+            : `rename assessment module ${r.oldName} to ${r.newName}`,
+        )
+        .join('; '),
     });
-    this.oldName = params.oldName;
-    this.newName = params.newName;
+    this.renames = renames;
   }
 
   async write() {
-    if (this.oldName === this.newName) return null;
-
     debug('AssessmentModuleRenameEditor: write()');
+
+    const newNameByOldName = new Map(this.renames.map((r) => [r.oldName, r.newName]));
 
     const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
       if (contents === null || typeof contents !== 'object') return false;
       const json = contents as Record<string, unknown>;
-      if (json.module !== this.oldName) return false;
-      if (this.newName === null) {
+      if (typeof json.module !== 'string' || !newNameByOldName.has(json.module)) return false;
+      const newName = newNameByOldName.get(json.module) ?? null;
+      if (newName === null) {
         delete json.module;
       } else {
-        json.module = this.newName;
+        json.module = newName;
       }
       return true;
     });
@@ -1940,10 +1952,7 @@ export class AssessmentModuleRenameEditor extends Editor {
 
     return {
       pathsToAdd,
-      commitMessage:
-        this.newName === null
-          ? `reassign assessments from module ${this.oldName} to the default module`
-          : `rename assessment module ${this.oldName} to ${this.newName}`,
+      commitMessage: this.description,
     };
   }
 }

@@ -75,8 +75,7 @@ describe('AssessmentModuleRenameEditor', () => {
 
     const editor = new AssessmentModuleRenameEditor({
       locals: createMockLocals(courseDir, '1'),
-      oldName: 'Module1',
-      newName: 'Module One',
+      renames: [{ oldName: 'Module1', newName: 'Module One' }],
     });
 
     const result = await editor.write();
@@ -109,8 +108,7 @@ describe('AssessmentModuleRenameEditor', () => {
 
     const editor = new AssessmentModuleRenameEditor({
       locals: createMockLocals(courseDir, '1'),
-      oldName: 'Module1',
-      newName: null,
+      renames: [{ oldName: 'Module1', newName: null }],
     });
 
     const result = await editor.write();
@@ -153,8 +151,7 @@ describe('AssessmentModuleRenameEditor', () => {
 
     const editor = new AssessmentModuleRenameEditor({
       locals: createMockLocals(courseDir, '1'),
-      oldName: 'Module1',
-      newName: 'Module One',
+      renames: [{ oldName: 'Module1', newName: 'Module One' }],
     });
 
     const result = await editor.write();
@@ -166,5 +163,56 @@ describe('AssessmentModuleRenameEditor', () => {
       getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'hw02'),
     );
     assert.equal(hw02Info.module, 'Module2');
+  });
+
+  it('swaps two module names in a single pass without cascading', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.assessmentModules.push(
+      { name: 'Module1', heading: 'Module 1' },
+      { name: 'Module2', heading: 'Module 2' },
+    );
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.hw01 = {
+      uuid: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+      title: 'Homework 1',
+      type: 'Homework',
+      set: 'Homework',
+      module: 'Module1',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.hw02 = {
+      uuid: 'd4e5f6a7-b8c9-0123-def0-234567890123',
+      title: 'Homework 2',
+      type: 'Homework',
+      set: 'Homework',
+      module: 'Module2',
+      number: '2',
+    } satisfies AssessmentJsonInput;
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const editor = new AssessmentModuleRenameEditor({
+      locals: createMockLocals(courseDir, '1'),
+      renames: [
+        { oldName: 'Module1', newName: 'Module2' },
+        { oldName: 'Module2', newName: 'Module1' },
+      ],
+    });
+
+    const result = await editor.write();
+
+    assert.isNotNull(result);
+    assert.equal(result.pathsToAdd.length, 2);
+
+    const hw01Info = await fs.readJson(
+      getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'hw01'),
+    );
+    assert.equal(hw01Info.module, 'Module2');
+
+    const hw02Info = await fs.readJson(
+      getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'hw02'),
+    );
+    assert.equal(hw02Info.module, 'Module1');
   });
 });

@@ -94,8 +94,7 @@ describe('AssessmentSetRenameEditor', () => {
     // Create the editor and perform the rename
     const editor = new AssessmentSetRenameEditor({
       locals: createMockLocals(courseDir, syncResults.courseId),
-      oldName: 'Labs',
-      newName: 'Laboratory Exercises',
+      renames: [{ oldName: 'Labs', newName: 'Laboratory Exercises' }],
     });
 
     const result = await editor.write();
@@ -134,8 +133,7 @@ describe('AssessmentSetRenameEditor', () => {
 
     const editor = new AssessmentSetRenameEditor({
       locals: createMockLocals(courseDir, '1'),
-      oldName: 'Labs',
-      newName: 'Laboratory Exercises',
+      renames: [{ oldName: 'Labs', newName: 'Laboratory Exercises' }],
     });
 
     const result = await editor.write();
@@ -177,8 +175,7 @@ describe('AssessmentSetRenameEditor', () => {
 
     const editor = new AssessmentSetRenameEditor({
       locals: createMockLocals(courseDir, '1'),
-      oldName: 'Labs',
-      newName: 'Laboratory Exercises',
+      renames: [{ oldName: 'Labs', newName: 'Laboratory Exercises' }],
     });
 
     const result = await editor.write();
@@ -190,5 +187,64 @@ describe('AssessmentSetRenameEditor', () => {
       getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'hw01'),
     );
     assert.equal(hwInfo.set, 'Homework');
+  });
+
+  it('swaps two set names in a single pass without cascading', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.assessmentSets.push(
+      {
+        name: 'Labs',
+        abbreviation: 'L',
+        heading: 'Lab assignments',
+        color: 'red2',
+      } satisfies AssessmentSetJsonInput,
+      {
+        name: 'Quizzes',
+        abbreviation: 'Q',
+        heading: 'Quizzes',
+        color: 'red1',
+      } satisfies AssessmentSetJsonInput,
+    );
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.lab01 = {
+      uuid: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+      title: 'Lab 1',
+      type: 'Homework',
+      set: 'Labs',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.quiz01 = {
+      uuid: 'd4e5f6a7-b8c9-0123-def0-234567890123',
+      title: 'Quiz 1',
+      type: 'Homework',
+      set: 'Quizzes',
+      number: '1',
+    } satisfies AssessmentJsonInput;
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    const editor = new AssessmentSetRenameEditor({
+      locals: createMockLocals(courseDir, '1'),
+      renames: [
+        { oldName: 'Labs', newName: 'Quizzes' },
+        { oldName: 'Quizzes', newName: 'Labs' },
+      ],
+    });
+
+    const result = await editor.write();
+
+    assert.isNotNull(result);
+    assert.equal(result.pathsToAdd.length, 2);
+
+    const lab01 = await fs.readJson(
+      getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'lab01'),
+    );
+    assert.equal(lab01.set, 'Quizzes');
+
+    const quiz01 = await fs.readJson(
+      getAssessmentInfoPath(courseDir, util.COURSE_INSTANCE_ID, 'quiz01'),
+    );
+    assert.equal(quiz01.set, 'Labs');
   });
 });

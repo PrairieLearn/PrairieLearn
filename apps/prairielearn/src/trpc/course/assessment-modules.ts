@@ -153,15 +153,11 @@ const save = t.procedure
       });
     }
 
-    const rewriteEditors = rewrites.map(
-      (rewrite) => new AssessmentModuleRenameEditor({ locals, ...rewrite }),
-    );
-
     const editor =
-      rewriteEditors.length === 0
+      rewrites.length === 0
         ? prepared.editor
         : new MultiEditor({ locals, description: 'Update assessment modules' }, [
-            ...rewriteEditors,
+            new AssessmentModuleRenameEditor({ locals, renames: rewrites }),
             prepared.editor,
           ]);
 

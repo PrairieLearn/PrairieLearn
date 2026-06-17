@@ -175,14 +175,7 @@ router.post(
         }
 
         return new MultiEditor({ locals: res.locals, description: 'Update assessment sets' }, [
-          ...renames.map(
-            (r) =>
-              new AssessmentSetRenameEditor({
-                locals: res.locals,
-                oldName: r.oldName,
-                newName: r.newName,
-              }),
-          ),
+          new AssessmentSetRenameEditor({ locals: res.locals, renames }),
           fileModifyEditor,
         ]);
       });
