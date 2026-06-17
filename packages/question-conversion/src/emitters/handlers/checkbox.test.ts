@@ -11,10 +11,15 @@ const choices = [
 describe('checkboxHandler.renderHtml', () => {
   it('renders basic checkbox list', () => {
     const html = checkboxHandler.renderHtml({ type: 'checkbox', choices });
-    assert.include(html, '<pl-checkbox answers-name="answer">');
+    assert.include(html, '<pl-checkbox answers-name="answer" partial-credit="net-correct">');
     assert.include(html, '<pl-answer correct="true">Apple</pl-answer>');
     assert.include(html, '<pl-answer correct="false">Banana</pl-answer>');
     assert.include(html, '</pl-checkbox>');
+  });
+
+  it('sets partial-credit="net-correct" to match Canvas grading', () => {
+    const html = checkboxHandler.renderHtml({ type: 'checkbox', choices });
+    assert.include(html, 'partial-credit="net-correct"');
   });
 
   it('adds order="fixed" when shuffleAnswers is false', () => {
