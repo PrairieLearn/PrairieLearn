@@ -730,6 +730,25 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[0].date_control_duration_minutes, 60);
       }));
 
+    it('deletes enrollment rules when accessControl is empty', () =>
+      runInTransactionAndRollback(async () => {
+        const { courseDir } = await syncRulesAndRead([
+          makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+        ]);
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        await insertEnrollmentOverride({
+          assessment,
+          uid: 'student@example.com',
+          number: 1,
+          durationMinutes: 90,
+          uuid: '22222222-2222-4222-8222-222222222222',
+        });
+
+        const { syncedRules } = await syncRulesAndRead([], { courseDir });
+
+        assert.lengthOf(syncedRules, 0);
+      }));
+
     it('respects rule number when label rules are renumbered', () =>
       runInTransactionAndRollback(async () => {
         const labelName1 = 'Label A';

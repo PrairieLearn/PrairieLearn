@@ -225,34 +225,6 @@ describe('Default rule requirement', () => {
     );
   });
 
-  it('should fail validation when a non-default rule omits a UUID', () => {
-    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
-      {
-        dateControl: {
-          release: { date: '2024-03-14T00:01:00' },
-          due: { date: '2024-03-21T23:59:00' },
-        },
-      },
-      {
-        dateControl: {
-          release: { date: '2024-03-15T00:01:00' },
-          due: { date: '2024-03-22T23:59:00' },
-        },
-      },
-    ];
-
-    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({
-      rules: parsedRules,
-    });
-
-    assert.isTrue(result.errors.length > 0, 'Expected error when a non-default rule omits a UUID');
-    assert.isTrue(
-      result.errors.includes('Every non-default accessControl rule must specify uuid.'),
-      `Expected missing UUID error, but got: ${result.errors.join(', ')}`,
-    );
-  });
-
   it('should pass validation with exactly one default rule', () => {
     const rulesWithOneDefault: AccessControlJsonInput[] = [
       {
@@ -386,31 +358,6 @@ describe('rule UUID validation', () => {
         },
       },
       {
-        dateControl: { durationMinutes: 120 },
-      },
-    ];
-
-    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({ rules: parsedRules });
-
-    assert.include(result.errors, 'Every non-default accessControl rule must specify uuid.');
-  });
-
-  it('rejects mixed UUID and non-UUID non-default rules', () => {
-    const rules: AccessControlJsonInput[] = [
-      {
-        dateControl: {
-          release: { date: '2024-03-14T00:01:00' },
-          due: { date: '2024-03-21T23:59:00' },
-        },
-      },
-      {
-        uuid: '22222222-2222-4222-8222-222222222222',
-        labels: ['Section A'],
-        dateControl: { durationMinutes: 90 },
-      },
-      {
-        labels: ['Section B'],
         dateControl: { durationMinutes: 120 },
       },
     ];

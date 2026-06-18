@@ -271,34 +271,29 @@ BEGIN
         after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
         after_complete_score_hidden = EXCLUDED.after_complete_score_hidden;
 
-    -- Delete non-default rules that are no longer present in JSON.
-    DELETE FROM assessment_access_control_rules aacr
-    USING (
-        SELECT DISTINCT (rule ->> 'assessment_id')::bigint AS assessment_id
-        FROM UNNEST(rules_data) AS rule
-    ) synced_assessments
-    JOIN assessments a ON a.id = synced_assessments.assessment_id AND a.course_instance_id = syncing_course_instance_id
-    WHERE aacr.assessment_id = synced_assessments.assessment_id
-        AND aacr.target_type <> 'none'
-        AND NOT EXISTS (
-            SELECT 1 FROM UNNEST(rules_data) AS rule
-            WHERE (rule ->> 'uuid') IS NOT NULL
-                AND (rule ->> 'assessment_id')::bigint = aacr.assessment_id
-                AND (rule ->> 'uuid')::uuid = aacr.uuid
-        );
-
-    -- Delete ALL non-enrollment rules for assessments that have no incoming rules
-    -- (either because they had errors or because their accessControl array is empty).
-    -- Child rows are cascade-deleted via FK constraints.
+    -- Delete rules that are no longer present in JSON. If an assessment has no
+    -- incoming accessControl rules, remove all existing access-control rows for
+    -- that assessment; otherwise, keep the default row and delete only
+    -- non-default rows whose UUID is absent from the incoming JSON.
     DELETE FROM assessment_access_control_rules aacr
     USING assessments a
     WHERE a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
         AND aacr.assessment_id = ANY(syncing_assessment_ids)
-        AND NOT EXISTS (
-            SELECT 1 FROM UNNEST(rules_data) AS rule
-            WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
-        )
-        AND aacr.target_type IN ('none', 'student_label');
+        AND (
+            NOT EXISTS (
+                SELECT 1 FROM UNNEST(rules_data) AS rule
+                WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
+            )
+            OR (
+                aacr.target_type <> 'none'
+                AND NOT EXISTS (
+                    SELECT 1 FROM UNNEST(rules_data) AS rule
+                    WHERE (rule ->> 'uuid') IS NOT NULL
+                        AND (rule ->> 'assessment_id')::bigint = aacr.assessment_id
+                        AND (rule ->> 'uuid')::uuid = aacr.uuid
+                )
+            )
+        );
 
     -- Delete child rows that are no longer in the incoming data for surviving rules.
     -- This runs after excess rule deletion so cascades have already cleaned up
@@ -321,15 +316,9 @@ BEGIN
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE aced.assessment_access_control_rule_id = aacr.id
         AND aacr.assessment_id = ANY(syncing_assessment_ids)
-        AND (
-            aacr.target_type IN ('none', 'student_label')
-            OR (
-                aacr.target_type = 'enrollment'
-                AND EXISTS (
-                    SELECT 1 FROM UNNEST(rules_data) AS rule
-                    WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
-                )
-            )
+        AND EXISTS (
+            SELECT 1 FROM UNNEST(rules_data) AS rule
+            WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
         )
         AND NOT EXISTS (
             SELECT 1 FROM UNNEST(early_deadlines_data) AS d
@@ -344,15 +333,9 @@ BEGIN
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE acld.assessment_access_control_rule_id = aacr.id
         AND aacr.assessment_id = ANY(syncing_assessment_ids)
-        AND (
-            aacr.target_type IN ('none', 'student_label')
-            OR (
-                aacr.target_type = 'enrollment'
-                AND EXISTS (
-                    SELECT 1 FROM UNNEST(rules_data) AS rule
-                    WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
-                )
-            )
+        AND EXISTS (
+            SELECT 1 FROM UNNEST(rules_data) AS rule
+            WHERE (rule ->> 'assessment_id')::bigint = aacr.assessment_id
         )
         AND NOT EXISTS (
             SELECT 1 FROM UNNEST(late_deadlines_data) AS d

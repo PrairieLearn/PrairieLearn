@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   type AccessControlRuleTargetType,
-  normalizeAccessControlRules,
+  getAccessControlRuleTargetType,
 } from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
@@ -264,9 +264,9 @@ export async function syncAccessControl(
 
   for (const { assessmentId, rules } of assessments) {
     assessmentIds.push(assessmentId);
-    const normalizedRules = normalizeAccessControlRules(rules);
 
-    for (const { rule, targetType, ruleIndex } of normalizedRules.rules) {
+    for (const [ruleIndex, rule] of rules.entries()) {
+      const targetType = getAccessControlRuleTargetType(rule, ruleIndex);
       const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
         prepareRuleRow(
           assessmentId,

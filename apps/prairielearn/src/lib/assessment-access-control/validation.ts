@@ -14,16 +14,6 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
-interface NormalizedAccessControlRule {
-  rule: AccessControlJson;
-  targetType: AccessControlRuleTargetType;
-  ruleIndex: number;
-}
-
-export interface NormalizedAccessControlRules {
-  rules: NormalizedAccessControlRule[];
-}
-
 type AccessControlIssuePath =
   | ['dateControl', 'release', 'date']
   | ['dateControl', 'due', 'date']
@@ -905,24 +895,12 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
-function getAccessControlRuleTargetType(
+export function getAccessControlRuleTargetType(
   rule: AccessControlJson,
   index: number,
 ): AccessControlRuleTargetType {
   if (index === 0) return 'none';
-  return rule.uuid != null && rule.labels == null ? 'enrollment' : 'student_label';
-}
-
-export function normalizeAccessControlRules(
-  rules: AccessControlJson[],
-): NormalizedAccessControlRules {
-  return {
-    rules: rules.map((rule, index) => ({
-      rule,
-      targetType: getAccessControlRuleTargetType(rule, index),
-      ruleIndex: index,
-    })),
-  };
+  return rule.labels == null ? 'enrollment' : 'student_label';
 }
 
 /**
@@ -957,10 +935,8 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  const normalizedRules = normalizeAccessControlRules(rules);
-
-  const studentLabelRuleCount = normalizedRules.rules.filter(
-    ({ targetType }) => targetType === 'student_label',
+  const studentLabelRuleCount = rules.filter(
+    (rule, index) => getAccessControlRuleTargetType(rule, index) === 'student_label',
   ).length;
   if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
     errors.push(
@@ -969,8 +945,8 @@ export function validateAccessControlRules({
   }
 
   const enrollmentRuleCount =
-    normalizedRules.rules.filter(({ targetType }) => targetType === 'enrollment').length +
-    enrollmentRulesCount;
+    rules.filter((rule, index) => getAccessControlRuleTargetType(rule, index) === 'enrollment')
+      .length + enrollmentRulesCount;
   if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
     errors.push(
       `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
@@ -1000,10 +976,12 @@ export function validateAccessControlRules({
   }
 
   let seenStudentSpecificRule = false;
-  for (const { rule } of normalizedRules.rules.slice(1)) {
-    if (rule.labels == null) {
+  for (const [index, rule] of rules.entries()) {
+    if (index === 0) continue;
+    const targetType = getAccessControlRuleTargetType(rule, index);
+    if (targetType === 'enrollment') {
       seenStudentSpecificRule = true;
-    } else if (seenStudentSpecificRule) {
+    } else if (targetType === 'student_label' && seenStudentSpecificRule) {
       errors.push(
         'Student-label access control rules must appear before student-specific access control rules.',
       );
@@ -1011,7 +989,8 @@ export function validateAccessControlRules({
     }
   }
 
-  normalizedRules.rules.forEach(({ rule, targetType, ruleIndex }) => {
+  rules.forEach((rule, ruleIndex) => {
+    const targetType = getAccessControlRuleTargetType(rule, ruleIndex);
     if (targetType === 'none' && rule.uuid != null) {
       errors.push('uuid can only be specified on non-default access control rules.');
     }
