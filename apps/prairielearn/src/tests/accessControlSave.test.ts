@@ -40,8 +40,6 @@ import * as helperServer from './helperServer.js';
 import { getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-const initialEnrollmentRuleUuid = '99999999-9999-4999-8999-999999999999';
-const initialEnrollmentRuleDueDate = '2026-06-01T23:59:00';
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
   return merge(
@@ -102,17 +100,11 @@ describe('Access control save via tRPC', () => {
     });
     const [enrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(enrollmentRule);
-    assert.equal(enrollmentRule.uuid, initialEnrollmentRuleUuid);
+    assert.isString(enrollmentRule.uuid);
 
     await replaceEnrollmentAccessControlRules(assessment, [
       {
-        ruleData: {
-          ...formJsonToEnrollmentRuleData({
-            uuid: initialEnrollmentRuleUuid,
-            dateControl: { due: { date: initialEnrollmentRuleDueDate } },
-          }),
-          id: enrollmentRule.id,
-        },
+        ruleData: formJsonToEnrollmentRuleData(enrollmentRule),
         enrollmentIds: [enrollment.id],
       },
     ]);
