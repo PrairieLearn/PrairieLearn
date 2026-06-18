@@ -2382,6 +2382,21 @@ describe('cleanAccessControlRulesForDisk', () => {
     assert.deepEqual(cleaned[1].labels, []);
   });
 
+  it('preserves UUIDs on non-default rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ uuid: '11111111-1111-4111-8111-111111111111' }),
+      makeAccessControlRule({
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.notProperty(cleaned[0], 'uuid');
+    assert.equal(cleaned[1].uuid, '22222222-2222-4222-8222-222222222222');
+  });
+
   it('includes non-empty dateControl and non-default afterComplete', () => {
     const rules: AccessControlJsonInput[] = [
       makeAccessControlRule({

@@ -10,6 +10,7 @@ const TEST_TIMEZONE = 'America/Chicago';
 
 function makeOverride(partial: Partial<OverrideData> = {}): OverrideData {
   return {
+    uuid: '11111111-1111-4111-8111-111111111111',
     trackingId: 'override',
     appliesTo: {
       targetType: 'student_label',

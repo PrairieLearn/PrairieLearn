@@ -78,7 +78,6 @@ function AssessmentAccessControlInner({
   );
 
   const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
-    const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
       .map(({ ruleType: _, enrollments, ...ruleJson }) => ({
@@ -91,7 +90,7 @@ function AssessmentAccessControlInner({
       (initialData.some((r) => r.ruleType === 'enrollment') || enrollmentRules.length > 0);
 
     await saveMutation.mutateAsync({
-      rules: jsonRules,
+      rules: data,
       enrollmentRules: shouldSyncEnrollmentRules ? enrollmentRules : undefined,
       origHash,
     });
@@ -125,6 +124,23 @@ function AssessmentAccessControlInner({
       return {
         variant: 'danger',
         message: saveError.message,
+        onDismiss: () => saveMutation.reset(),
+      };
+    }
+    if (saveError?.code === 'ENROLLMENT_MAPPING_FAILED') {
+      return {
+        variant: 'danger',
+        message: (
+          <>
+            {saveError.message}
+            {saveError.ruleUuids.length > 0 && (
+              <>
+                {' '}
+                Student-specific rule UUIDs: <code>{saveError.ruleUuids.join(', ')}</code>
+              </>
+            )}
+          </>
+        ),
         onDismiss: () => saveMutation.reset(),
       };
     }

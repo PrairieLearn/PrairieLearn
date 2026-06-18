@@ -1,16 +1,23 @@
+import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
+import {
+  normalizeAccessControlRules,
+  validateAccessControlRules,
+} from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
+  type AccessControlJsonWithId,
   type EnrollmentAccessControlRuleData,
   replaceEnrollmentAccessControlRules,
+  selectAccessControlRules,
   selectPrairieTestExamMetadataByUuids,
 } from '../../models/assessment-access-control-rules.js';
 import {
@@ -37,7 +44,9 @@ import {
 } from './init.js';
 
 export interface AccessControlError {
-  SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  SaveAllRules:
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
+    | { code: 'ENROLLMENT_MAPPING_FAILED'; ruleUuids: string[] };
 }
 
 const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
@@ -101,12 +110,14 @@ export function formJsonToEnrollmentRuleData(
 const AccessControlJsonInputSchema = AccessControlJsonSchema.extend({
   id: IdSchema.optional(),
 }).strip();
+type AccessControlJsonInputWithId = z.infer<typeof AccessControlJsonInputSchema>;
 
 const EnrollmentRuleInputSchema = z.object({
   id: IdSchema.optional(),
   enrollmentIds: z.array(IdSchema).max(MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE),
   ruleJson: AccessControlJsonInputSchema,
 });
+type EnrollmentRuleInput = z.infer<typeof EnrollmentRuleInputSchema>;
 
 function isNonEmptyObject(value: unknown): boolean {
   return (
@@ -117,6 +128,233 @@ function isNonEmptyObject(value: unknown): boolean {
   );
 }
 
+function stripRuleId(rule: AccessControlJsonInputWithId): AccessControlJson {
+  const { id: _id, ...jsonRule } = rule;
+  return jsonRule;
+}
+
+function stripModelOnlyRuleFields(rule: AccessControlJsonWithId): AccessControlJson {
+  const {
+    id: _id,
+    number: _number,
+    ruleType: _ruleType,
+    enrollments: _enrollments,
+    labelDetails: _labelDetails,
+    ...jsonRule
+  } = rule;
+  return jsonRule;
+}
+
+function toLocalDatetimeValue(value: string, displayTimezone: string): string {
+  try {
+    return Temporal.Instant.from(value)
+      .toZonedDateTimeISO(displayTimezone)
+      .toPlainDateTime()
+      .toString({ smallestUnit: 'second' });
+  } catch {
+    return value;
+  }
+}
+
+function localizeRuleDates(rule: AccessControlJson, displayTimezone: string): AccessControlJson {
+  const dateControl = rule.dateControl;
+  const afterComplete = rule.afterComplete;
+
+  return {
+    ...rule,
+    ...(dateControl && {
+      dateControl: {
+        ...dateControl,
+        ...(dateControl.release && {
+          release: {
+            ...dateControl.release,
+            date: toLocalDatetimeValue(dateControl.release.date, displayTimezone),
+          },
+        }),
+        ...(dateControl.due && {
+          due: {
+            ...dateControl.due,
+            date:
+              dateControl.due.date == null
+                ? null
+                : toLocalDatetimeValue(dateControl.due.date, displayTimezone),
+          },
+        }),
+        ...(dateControl.earlyDeadlines !== undefined && {
+          earlyDeadlines:
+            dateControl.earlyDeadlines?.map((deadline) => ({
+              ...deadline,
+              date: toLocalDatetimeValue(deadline.date, displayTimezone),
+            })) ?? null,
+        }),
+        ...(dateControl.lateDeadlines !== undefined && {
+          lateDeadlines:
+            dateControl.lateDeadlines?.map((deadline) => ({
+              ...deadline,
+              date: toLocalDatetimeValue(deadline.date, displayTimezone),
+            })) ?? null,
+        }),
+      },
+    }),
+    ...(afterComplete && {
+      afterComplete: {
+        ...afterComplete,
+        ...(afterComplete.questions && {
+          questions: {
+            ...afterComplete.questions,
+            ...(afterComplete.questions.visibleFromDate && {
+              visibleFromDate: toLocalDatetimeValue(
+                afterComplete.questions.visibleFromDate,
+                displayTimezone,
+              ),
+            }),
+            ...(afterComplete.questions.visibleUntilDate && {
+              visibleUntilDate: toLocalDatetimeValue(
+                afterComplete.questions.visibleUntilDate,
+                displayTimezone,
+              ),
+            }),
+          },
+        }),
+        ...(afterComplete.score && {
+          score: {
+            ...afterComplete.score,
+            ...(afterComplete.score.visibleFromDate && {
+              visibleFromDate: toLocalDatetimeValue(
+                afterComplete.score.visibleFromDate,
+                displayTimezone,
+              ),
+            }),
+          },
+        }),
+      },
+    }),
+  };
+}
+
+function prepareRulesForUuidFormat(
+  rules: AccessControlJsonInputWithId[],
+  existingNonDefaultRules: AccessControlJsonWithId[],
+): AccessControlJson[] {
+  const uuidByRuleId = new Map(
+    existingNonDefaultRules
+      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
+        return rule.id != null && rule.uuid != null;
+      })
+      .map((rule) => [rule.id, rule.uuid]),
+  );
+
+  return rules.map((rule, index) => {
+    const jsonRule = stripRuleId(rule);
+    if (index === 0) {
+      const { uuid: _uuid, ...defaultRule } = jsonRule;
+      return defaultRule;
+    }
+
+    const existingUuid = rule.id ? uuidByRuleId.get(rule.id) : undefined;
+    if (jsonRule.uuid != null || existingUuid != null || jsonRule.labels != null) {
+      return {
+        ...jsonRule,
+        uuid: jsonRule.uuid ?? existingUuid ?? randomUUID(),
+      };
+    }
+
+    return {
+      ...jsonRule,
+    };
+  });
+}
+
+function preserveUnsubmittedEnrollmentRules(
+  submittedRules: AccessControlJson[],
+  existingEnrollmentRules: AccessControlJsonWithId[],
+  displayTimezone: string,
+): AccessControlJson[] {
+  const submittedUuids = new Set(
+    submittedRules.map((rule) => rule.uuid).filter((uuid): uuid is string => uuid !== undefined),
+  );
+  const preservedEnrollmentRules = existingEnrollmentRules
+    .filter((rule) => rule.uuid != null && !submittedUuids.has(rule.uuid))
+    .map((rule) => localizeRuleDates(stripModelOnlyRuleFields(rule), displayTimezone));
+
+  return [...submittedRules, ...preservedEnrollmentRules];
+}
+
+function getJsonEnrollmentRuleUuids(rules: AccessControlJson[]): Set<string> {
+  const normalizedRules = normalizeAccessControlRules(rules);
+  return new Set(
+    normalizedRules.rules
+      .filter(({ targetType }) => targetType === 'enrollment')
+      .map(({ rule }) => rule.uuid)
+      .filter((uuid): uuid is string => uuid !== undefined),
+  );
+}
+
+function prepareEnrollmentRulesForUuidFormat(
+  enrollmentRules: EnrollmentRuleInput[],
+  existingNonDefaultRules: AccessControlJsonWithId[],
+): EnrollmentRuleInput[] {
+  const uuidByRuleId = new Map(
+    existingNonDefaultRules
+      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
+        return rule.id != null && rule.uuid != null;
+      })
+      .map((rule) => [rule.id, rule.uuid]),
+  );
+
+  return enrollmentRules.map((enrollmentRule) => {
+    const uuid =
+      enrollmentRule.ruleJson.uuid ??
+      (enrollmentRule.ruleJson.id ? uuidByRuleId.get(enrollmentRule.ruleJson.id) : undefined);
+
+    if (uuid == null) return enrollmentRule;
+
+    return {
+      ...enrollmentRule,
+      ruleJson: {
+        ...enrollmentRule.ruleJson,
+        uuid,
+      },
+    };
+  });
+}
+
+function validateEnrollmentRuleMappings(
+  enrollmentRules: EnrollmentRuleInput[] | undefined,
+  jsonEnrollmentRuleUuids: Set<string>,
+) {
+  if (enrollmentRules === undefined || jsonEnrollmentRuleUuids.size === 0) return;
+
+  const enrollmentMappingUuids = new Set<string>();
+  for (const enrollmentRule of enrollmentRules) {
+    const uuid = enrollmentRule.ruleJson.uuid;
+    if (uuid == null || !jsonEnrollmentRuleUuids.has(uuid)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Student-specific assignment data must reference a saved student-specific access control rule UUID.',
+      });
+    }
+    if (enrollmentMappingUuids.has(uuid)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Duplicate student-specific assignment data for access control rule UUID ${uuid}.`,
+      });
+    }
+    enrollmentMappingUuids.add(uuid);
+  }
+
+  if (
+    enrollmentMappingUuids.size !== jsonEnrollmentRuleUuids.size ||
+    [...jsonEnrollmentRuleUuids].some((uuid) => !enrollmentMappingUuids.has(uuid))
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Student-specific assignment data is missing for one or more access control rules.',
+    });
+  }
+}
+
 /**
  * Cleans access control rules for writing to infoAssessment.json on disk.
  * Removes empty objects and omits default-valued settings on the default rule.
@@ -124,6 +362,10 @@ function isNonEmptyObject(value: unknown): boolean {
 export function cleanAccessControlRulesForDisk(rules: AccessControlJson[]): AccessControlJson[] {
   return rules.map((rule, index) => {
     const clean: Record<string, unknown> = {};
+
+    if (index > 0 && rule.uuid != null) {
+      clean.uuid = rule.uuid;
+    }
 
     if (index > 0 && rule.labels != null) {
       clean.labels = rule.labels;
@@ -199,19 +441,42 @@ const saveAllRules = t.procedure
       });
     }
 
-    // Validate all rules before writing anything to disk or DB.
-    const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, uuid: _uuid, ...rest }) => rest);
+    const existingNonDefaultRules = await selectAccessControlRules(opts.ctx.assessment, [
+      'student_label',
+      'enrollment',
+    ]);
+    const existingEnrollmentRules = existingNonDefaultRules.filter(
+      (rule) => rule.ruleType === 'enrollment',
+    );
+
+    const submittedRules = prepareRulesForUuidFormat(rules, existingNonDefaultRules);
+    const rulesToSync =
+      enrollmentRules === undefined
+        ? preserveUnsubmittedEnrollmentRules(
+            submittedRules,
+            existingEnrollmentRules,
+            opts.ctx.course_instance.display_timezone,
+          )
+        : submittedRules;
+    const preparedEnrollmentRules =
+      enrollmentRules === undefined
+        ? undefined
+        : prepareEnrollmentRulesForUuidFormat(enrollmentRules, existingNonDefaultRules);
+    const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rulesToSync);
+
+    validateEnrollmentRuleMappings(preparedEnrollmentRules, jsonEnrollmentRuleUuids);
 
     const { errors: validationErrors } = validateAccessControlRules({
       rules: rulesToSync,
-      enrollmentRules: enrollmentRules?.map((r) => r.ruleJson),
+      enrollmentRules:
+        jsonEnrollmentRuleUuids.size === 0 ? preparedEnrollmentRules?.map((r) => r.ruleJson) : [],
     });
     if (validationErrors.length > 0) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
     }
 
-    if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
-      const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
+    if (preparedEnrollmentRules !== undefined && preparedEnrollmentRules.length > 0) {
+      const allEnrollmentIds = new Set(preparedEnrollmentRules.flatMap((r) => r.enrollmentIds));
       if (allEnrollmentIds.size > 0) {
         const validCount = await validateEnrollmentIdsInCourseInstance(
           allEnrollmentIds,
@@ -273,24 +538,53 @@ const saveAllRules = t.procedure
       });
     }
 
-    // Enrollment rules are written directly to DB (they are per-student
-    // overrides, not stored in infoAssessment.json).
-    if (enrollmentRules !== undefined) {
-      // TODO: Add audit logging for enrollment rule changes. Label/default rules
-      // are tracked in git; only enrollment rules need separate audit logs.
-      await replaceEnrollmentAccessControlRules(
-        opts.ctx.assessment,
-        enrollmentRules.map((enrollmentRule) => {
-          const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-          if (enrollmentRule.id) {
-            ruleData.id = enrollmentRule.id;
-          }
-          return {
-            ruleData,
-            enrollmentIds: enrollmentRule.enrollmentIds,
-          };
-        }),
-      );
+    if (preparedEnrollmentRules !== undefined) {
+      try {
+        const savedEnrollmentRules =
+          jsonEnrollmentRuleUuids.size > 0
+            ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
+            : [];
+        const savedEnrollmentRuleIdByUuid = new Map(
+          savedEnrollmentRules
+            .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
+              return rule.uuid != null;
+            })
+            .map((rule) => [rule.uuid, rule.id]),
+        );
+
+        // TODO: Add audit logging for enrollment rule changes. Label/default rules
+        // are tracked in git; only enrollment rules need separate audit logs.
+        await replaceEnrollmentAccessControlRules(
+          opts.ctx.assessment,
+          preparedEnrollmentRules.map((enrollmentRule) => {
+            const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+            if (jsonEnrollmentRuleUuids.size > 0) {
+              const uuid = enrollmentRule.ruleJson.uuid;
+              const id = uuid ? savedEnrollmentRuleIdByUuid.get(uuid) : undefined;
+              if (id == null) {
+                throw new Error(`Synced student-specific access control rule not found: ${uuid}`);
+              }
+              ruleData.id = id;
+            } else if (enrollmentRule.id) {
+              ruleData.id = enrollmentRule.id;
+            }
+            return {
+              ruleData,
+              enrollmentIds: enrollmentRule.enrollmentIds,
+            };
+          }),
+        );
+      } catch {
+        throwAppError<AccessControlError['SaveAllRules']>(
+          {
+            code: 'ENROLLMENT_MAPPING_FAILED',
+            message:
+              'Access control rule bodies were saved, but student-specific assignments could not be updated. Refresh the page and retry.',
+            ruleUuids: [...jsonEnrollmentRuleUuids],
+          },
+          'INTERNAL_SERVER_ERROR',
+        );
+      }
     }
 
     return { newHash: saveResult.newHash };
