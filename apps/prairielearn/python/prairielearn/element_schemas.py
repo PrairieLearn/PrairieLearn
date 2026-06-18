@@ -1,9 +1,8 @@
-"""JSON Schema validation helpers for PrairieLearn elements.
+"""JSON Schema validation helpers for PrairieLearn element attributes and structure.
 
-The rendered messages intentionally mirror the wording produced by the
-`@prairielearn/tree-sitter-htmlmustache` linter so that an instructor sees the
-same text whether a problem is caught at lint time (in the editor) or at render
-time (in Python). Keep the two in sync when changing either.
+Attribute schema error messages intentionally mirror the wording produced by
+the `@prairielearn/tree-sitter-htmlmustache` linter. Tree validation adds
+Python-side selector context for parent/child paths.
 """
 
 import functools
