@@ -979,6 +979,68 @@ describe('Access control syncing', () => {
         );
       }));
 
+    it('recreates a UUID rule when its target type changes', () =>
+      runInTransactionAndRollback(async () => {
+        const labelName = 'Label A';
+        const ruleUuid = '66666666-6666-4666-8666-666666666666';
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const courseData = util.getCourseData();
+        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule];
+
+        const { courseDir } = await util.writeAndSyncCourseData(courseData);
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const enrollmentRule = await insertEnrollmentOverride({
+          assessment,
+          uid: 'target-change-student@example.com',
+          number: 1,
+          durationMinutes: 150,
+          uuid: ruleUuid,
+        });
+
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [
+          defaultRule,
+          makeAccessControlRule({
+            uuid: ruleUuid,
+            labels: [labelName],
+            dateControl: { durationMinutes: 210 },
+          }),
+        ];
+        await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+        const allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const syncedRule = allRules.find((rule) => rule.uuid === ruleUuid);
+        assert.isOk(syncedRule);
+        assert.notEqual(syncedRule.id, enrollmentRule.ruleId);
+        assert.equal(syncedRule.target_type, 'student_label');
+        assert.equal(syncedRule.number, 1);
+        assert.equal(syncedRule.date_control_duration_minutes, 210);
+
+        const allEnrollments = await util.dumpTableWithSchema(
+          'assessment_access_control_enrollments',
+          AssessmentAccessControlEnrollmentSchema,
+        );
+        assert.isUndefined(
+          allEnrollments.find((target) =>
+            idsEqual(target.assessment_access_control_rule_id, enrollmentRule.ruleId),
+          ),
+        );
+
+        const allStudentLabels = await util.dumpTableWithSchema(
+          'assessment_access_control_student_labels',
+          AssessmentAccessControlStudentLabelSchema,
+        );
+        assert.isOk(
+          allStudentLabels.find((target) =>
+            idsEqual(target.assessment_access_control_rule_id, syncedRule.id),
+          ),
+        );
+      }));
+
     it('preserves existing rules when partial UUID-format JSON has validation errors', () =>
       runInTransactionAndRollback(async () => {
         const labelName1 = 'Label A';

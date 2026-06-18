@@ -42,6 +42,7 @@ BEGIN
     USING UNNEST(rules_data) AS rule
     JOIN assessments a ON a.id = (rule ->> 'assessment_id')::bigint AND a.course_instance_id = syncing_course_instance_id
     WHERE (rule ->> 'uuid') IS NOT NULL
+        AND (rule ->> 'uuid_format')::boolean
         AND aacr.assessment_id = (rule ->> 'assessment_id')::bigint
         AND aacr.uuid = (rule ->> 'uuid')::uuid
         AND aacr.target_type != (rule ->> 'target_type')::enum_assessment_access_control_target_type;
