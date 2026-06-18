@@ -36,4 +36,3 @@ apps/prairielearn/public/build
 apps/prairielearn/server.log
 packages/*/coverage/
 packages/*/dist/
-.pnpm-store
