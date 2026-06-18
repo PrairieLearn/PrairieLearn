@@ -1862,14 +1862,8 @@ export class AssessmentSetRenameEditor extends Editor {
       renames: { oldName: string; newName: string }[];
     },
   ) {
-    const renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
-    super({
-      ...params,
-      description: renames
-        .map((r) => `rename assessment set ${r.oldName} to ${r.newName}`)
-        .join('; '),
-    });
-    this.renames = renames;
+    super({ ...params, description: 'Update assessment sets' });
+    this.renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
   }
 
   async write() {
@@ -1916,18 +1910,8 @@ export class AssessmentModuleRenameEditor extends Editor {
       renames: { oldName: string; newName: string | null }[];
     },
   ) {
-    const renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
-    super({
-      ...params,
-      description: renames
-        .map((r) =>
-          r.newName === null
-            ? `reassign assessments from module ${r.oldName} to the default module`
-            : `rename assessment module ${r.oldName} to ${r.newName}`,
-        )
-        .join('; '),
-    });
-    this.renames = renames;
+    super({ ...params, description: 'Update assessment modules' });
+    this.renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
   }
 
   async write() {
