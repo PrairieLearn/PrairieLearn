@@ -17,6 +17,7 @@ INSERT INTO
     assessment_id,
     before_release_listed,
     number,
+    uuid,
     target_type,
     date_control_duration_minutes,
     date_control_duration_minutes_overridden
@@ -26,6 +27,7 @@ VALUES
     $assessment_id,
     true,
     $number,
+    $uuid::uuid,
     'enrollment',
     $duration_minutes::integer,
     $duration_minutes::integer IS NOT null
@@ -41,13 +43,6 @@ VALUES
     $assessment_access_control_rule_id,
     $enrollment_id
   );
-
--- BLOCK update_access_control_rule_uuid
-UPDATE assessment_access_control_rules
-SET
-  uuid = $uuid::uuid
-WHERE
-  id = $id;
 
 -- BLOCK select_student_label_id
 SELECT

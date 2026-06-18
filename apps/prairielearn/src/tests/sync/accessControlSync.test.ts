@@ -175,11 +175,11 @@ async function insertEnrollmentOverride({
     {
       assessment_id: assessment.id,
       number,
+      uuid,
       duration_minutes: durationMinutes,
     },
     IdSchema,
   );
-  await sqldb.execute(sql.update_access_control_rule_uuid, { id: ruleId, uuid });
   await sqldb.execute(sql.insert_enrollment_target, {
     assessment_access_control_rule_id: ruleId,
     enrollment_id: enrollmentId,
@@ -1098,6 +1098,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
+            uuid: null,
             duration_minutes: 150,
           },
           IdSchema,
@@ -1108,6 +1109,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 2,
+            uuid: null,
             duration_minutes: 180,
           },
           IdSchema,
@@ -1234,6 +1236,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
+            uuid: null,
             duration_minutes: 150,
           },
           IdSchema,
@@ -1406,6 +1409,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 100,
+            uuid: null,
             duration_minutes: null,
           },
           IdSchema,
