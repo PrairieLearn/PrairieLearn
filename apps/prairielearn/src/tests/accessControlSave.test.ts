@@ -242,7 +242,6 @@ describe('Access control save via tRPC', () => {
           labels: ['Section A'],
           dateControl: { due: { date: '2024-04-01T23:59:00' } },
         }),
-        enrollmentRule,
       ],
       enrollmentRules: [
         {
@@ -273,6 +272,47 @@ describe('Access control save via tRPC', () => {
         (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
       ),
     );
+  });
+
+  test.sequential(
+    'rejects student-specific rules submitted in the label/default rules array',
+    async () => {
+      const client = await createClient();
+
+      await expect(
+        client.accessControl.saveAllRules.mutate({
+          rules: [
+            makeRule(),
+            makeRule({
+              uuid: '44444444-4444-4444-8444-444444444444',
+              dateControl: { due: { date: '2024-04-22T23:59:00' } },
+            }),
+          ],
+          origHash: await getOrigHash(),
+        }),
+      ).rejects.toThrow(/must be submitted via enrollmentRules/);
+    },
+  );
+
+  test.sequential('rejects student-label rules submitted as enrollment rules', async () => {
+    const client = await createClient();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule()],
+        enrollmentRules: [
+          {
+            enrollmentIds: [],
+            ruleJson: makeRule({
+              uuid: '55555555-5555-4555-8555-555555555555',
+              labels: ['Section A'],
+              dateControl: { due: { date: '2024-04-22T23:59:00' } },
+            }),
+          },
+        ],
+        origHash: await getOrigHash(),
+      }),
+    ).rejects.toThrow(/must be submitted via rules/);
   });
 
   test.sequential(
@@ -353,7 +393,7 @@ describe('Access control save via tRPC', () => {
     });
     const adminClient = await createClient();
     const seedSaveResult = await adminClient.accessControl.saveAllRules.mutate({
-      rules: [makeRule(), hiddenEnrollmentRuleJson],
+      rules: [makeRule()],
       enrollmentRules: [
         {
           id: existingEnrollmentRule.id,

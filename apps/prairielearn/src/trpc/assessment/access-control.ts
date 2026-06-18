@@ -132,6 +132,39 @@ function stripRuleId(rule: AccessControlJsonInputWithId): AccessControlJson {
   return jsonRule;
 }
 
+function validateRuleInputTargets(
+  rules: AccessControlJsonInputWithId[],
+  enrollmentRules: EnrollmentRuleInput[] | undefined,
+) {
+  if (rules.length === 0 && (enrollmentRules?.length ?? 0) > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'A default access control rule is required when saving student-specific rules.',
+    });
+  }
+
+  for (const [index, rule] of rules.entries()) {
+    if (index === 0) continue;
+    if (rule.labels == null) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Student-specific access control rules must be submitted via enrollmentRules, not rules.',
+      });
+    }
+  }
+
+  for (const enrollmentRule of enrollmentRules ?? []) {
+    if (enrollmentRule.ruleJson.labels != null) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'Student-label access control rules must be submitted via rules, not enrollmentRules.',
+      });
+    }
+  }
+}
+
 function prepareRulesForUuidFormat(
   rules: AccessControlJsonInputWithId[],
   existingNonDefaultRules: AccessControlJsonWithId[],
@@ -211,11 +244,16 @@ function convertToOldFormatRules(rules: AccessControlJson[]): AccessControlJson[
 
 function prepareRulesForDisk(
   submittedRules: AccessControlJson[],
+  submittedEnrollmentRules: EnrollmentRuleInput[] | undefined,
   diskRules: AccessControlJson[] | undefined,
   existingEnrollmentRules: AccessControlJsonWithId[],
-  preserveEnrollmentRules: boolean,
 ): AccessControlJson[] {
-  if (!preserveEnrollmentRules) return submittedRules;
+  if (submittedEnrollmentRules !== undefined) {
+    return [
+      ...submittedRules,
+      ...submittedEnrollmentRules.map((enrollmentRule) => stripRuleId(enrollmentRule.ruleJson)),
+    ];
+  }
 
   const rulesWithPreservedEnrollmentRules = preserveUnsubmittedDiskEnrollmentRules(
     submittedRules,
@@ -245,13 +283,11 @@ function prepareEnrollmentRulesForUuidFormat(
       enrollmentRule.ruleJson.uuid ??
       (enrollmentRule.ruleJson.id ? uuidByRuleId.get(enrollmentRule.ruleJson.id) : undefined);
 
-    if (uuid == null) return enrollmentRule;
-
     return {
       ...enrollmentRule,
       ruleJson: {
         ...enrollmentRule.ruleJson,
-        uuid,
+        uuid: uuid ?? randomUUID(),
       },
     };
   });
@@ -378,6 +414,7 @@ const saveAllRules = t.procedure
         message: 'Access denied (must be a student data editor)',
       });
     }
+    validateRuleInputTargets(rules, enrollmentRules);
 
     const existingNonDefaultRules = await selectAccessControlRules(opts.ctx.assessment, [
       'student_label',
@@ -422,9 +459,9 @@ const saveAllRules = t.procedure
       applyChanges: (jsonContents) => {
         const rulesToSync = prepareRulesForDisk(
           submittedRules,
+          preparedEnrollmentRules,
           jsonContents.accessControl,
           existingEnrollmentRules,
-          preparedEnrollmentRules === undefined,
         );
         jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
         return jsonContents;
