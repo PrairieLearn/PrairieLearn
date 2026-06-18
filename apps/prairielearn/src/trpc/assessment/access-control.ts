@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
-import { Temporal } from '@js-temporal/polyfill';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -12,7 +11,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { saveJsonFile } from '../../lib/editors.js';
+import { prepareJsonFileEditor } from '../../lib/editors.js';
 import {
   type AccessControlJsonWithId,
   type EnrollmentAccessControlRuleData,
@@ -133,105 +132,6 @@ function stripRuleId(rule: AccessControlJsonInputWithId): AccessControlJson {
   return jsonRule;
 }
 
-function stripModelOnlyRuleFields(rule: AccessControlJsonWithId): AccessControlJson {
-  const {
-    id: _id,
-    number: _number,
-    ruleType: _ruleType,
-    enrollments: _enrollments,
-    labelDetails: _labelDetails,
-    ...jsonRule
-  } = rule;
-  return jsonRule;
-}
-
-function toLocalDatetimeValue(value: string, displayTimezone: string): string {
-  try {
-    return Temporal.Instant.from(value)
-      .toZonedDateTimeISO(displayTimezone)
-      .toPlainDateTime()
-      .toString({ smallestUnit: 'second' });
-  } catch {
-    return value;
-  }
-}
-
-function localizeRuleDates(rule: AccessControlJson, displayTimezone: string): AccessControlJson {
-  const dateControl = rule.dateControl;
-  const afterComplete = rule.afterComplete;
-
-  return {
-    ...rule,
-    ...(dateControl && {
-      dateControl: {
-        ...dateControl,
-        ...(dateControl.release && {
-          release: {
-            ...dateControl.release,
-            date: toLocalDatetimeValue(dateControl.release.date, displayTimezone),
-          },
-        }),
-        ...(dateControl.due && {
-          due: {
-            ...dateControl.due,
-            date:
-              dateControl.due.date == null
-                ? null
-                : toLocalDatetimeValue(dateControl.due.date, displayTimezone),
-          },
-        }),
-        ...(dateControl.earlyDeadlines !== undefined && {
-          earlyDeadlines:
-            dateControl.earlyDeadlines?.map((deadline) => ({
-              ...deadline,
-              date: toLocalDatetimeValue(deadline.date, displayTimezone),
-            })) ?? null,
-        }),
-        ...(dateControl.lateDeadlines !== undefined && {
-          lateDeadlines:
-            dateControl.lateDeadlines?.map((deadline) => ({
-              ...deadline,
-              date: toLocalDatetimeValue(deadline.date, displayTimezone),
-            })) ?? null,
-        }),
-      },
-    }),
-    ...(afterComplete && {
-      afterComplete: {
-        ...afterComplete,
-        ...(afterComplete.questions && {
-          questions: {
-            ...afterComplete.questions,
-            ...(afterComplete.questions.visibleFromDate && {
-              visibleFromDate: toLocalDatetimeValue(
-                afterComplete.questions.visibleFromDate,
-                displayTimezone,
-              ),
-            }),
-            ...(afterComplete.questions.visibleUntilDate && {
-              visibleUntilDate: toLocalDatetimeValue(
-                afterComplete.questions.visibleUntilDate,
-                displayTimezone,
-              ),
-            }),
-          },
-        }),
-        ...(afterComplete.score && {
-          score: {
-            ...afterComplete.score,
-            ...(afterComplete.score.visibleFromDate && {
-              visibleFromDate: toLocalDatetimeValue(
-                afterComplete.score.visibleFromDate,
-                displayTimezone,
-              ),
-            }),
-          },
-        }),
-      },
-    }),
-  };
-}
-
 function prepareRulesForUuidFormat(
   rules: AccessControlJsonInputWithId[],
   existingNonDefaultRules: AccessControlJsonWithId[],
@@ -265,17 +165,18 @@ function prepareRulesForUuidFormat(
   });
 }
 
-function preserveUnsubmittedEnrollmentRules(
+function preserveUnsubmittedDiskEnrollmentRules(
   submittedRules: AccessControlJson[],
-  existingEnrollmentRules: AccessControlJsonWithId[],
-  displayTimezone: string,
+  diskRules: AccessControlJson[] | undefined,
 ): AccessControlJson[] {
   const submittedUuids = new Set(
     submittedRules.map((rule) => rule.uuid).filter((uuid): uuid is string => uuid !== undefined),
   );
-  const preservedEnrollmentRules = existingEnrollmentRules
-    .filter((rule) => rule.uuid != null && !submittedUuids.has(rule.uuid))
-    .map((rule) => localizeRuleDates(stripModelOnlyRuleFields(rule), displayTimezone));
+  const preservedEnrollmentRules = normalizeAccessControlRules(diskRules ?? [])
+    .rules.filter(({ rule, targetType }) => {
+      return targetType === 'enrollment' && rule.uuid != null && !submittedUuids.has(rule.uuid);
+    })
+    .map(({ rule }) => rule);
 
   return [...submittedRules, ...preservedEnrollmentRules];
 }
@@ -288,6 +189,43 @@ function getJsonEnrollmentRuleUuids(rules: AccessControlJson[]): Set<string> {
       .map(({ rule }) => rule.uuid)
       .filter((uuid): uuid is string => uuid !== undefined),
   );
+}
+
+function missesExistingEnrollmentRule(
+  rules: AccessControlJson[],
+  existingEnrollmentRules: AccessControlJsonWithId[],
+): boolean {
+  const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rules);
+  return existingEnrollmentRules.some((rule) => {
+    return rule.uuid == null || !jsonEnrollmentRuleUuids.has(rule.uuid);
+  });
+}
+
+function convertToOldFormatRules(rules: AccessControlJson[]): AccessControlJson[] {
+  return rules.flatMap((rule, index) => {
+    const { uuid: _uuid, ...oldFormatRule } = rule;
+    if (index > 0 && rule.labels == null) return [];
+    return oldFormatRule;
+  });
+}
+
+function prepareRulesForDisk(
+  submittedRules: AccessControlJson[],
+  diskRules: AccessControlJson[] | undefined,
+  existingEnrollmentRules: AccessControlJsonWithId[],
+  preserveEnrollmentRules: boolean,
+): AccessControlJson[] {
+  if (!preserveEnrollmentRules) return submittedRules;
+
+  const rulesWithPreservedEnrollmentRules = preserveUnsubmittedDiskEnrollmentRules(
+    submittedRules,
+    diskRules,
+  );
+  if (!missesExistingEnrollmentRule(rulesWithPreservedEnrollmentRules, existingEnrollmentRules)) {
+    return rulesWithPreservedEnrollmentRules;
+  }
+
+  return convertToOldFormatRules(submittedRules);
 }
 
 function prepareEnrollmentRulesForUuidFormat(
@@ -450,30 +388,10 @@ const saveAllRules = t.procedure
     );
 
     const submittedRules = prepareRulesForUuidFormat(rules, existingNonDefaultRules);
-    const rulesToSync =
-      enrollmentRules === undefined
-        ? preserveUnsubmittedEnrollmentRules(
-            submittedRules,
-            existingEnrollmentRules,
-            opts.ctx.course_instance.display_timezone,
-          )
-        : submittedRules;
     const preparedEnrollmentRules =
       enrollmentRules === undefined
         ? undefined
         : prepareEnrollmentRulesForUuidFormat(enrollmentRules, existingNonDefaultRules);
-    const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rulesToSync);
-
-    validateEnrollmentRuleMappings(preparedEnrollmentRules, jsonEnrollmentRuleUuids);
-
-    const { errors: validationErrors } = validateAccessControlRules({
-      rules: rulesToSync,
-      enrollmentRules:
-        jsonEnrollmentRuleUuids.size === 0 ? preparedEnrollmentRules?.map((r) => r.ruleJson) : [],
-    });
-    if (validationErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
-    }
 
     if (preparedEnrollmentRules !== undefined && preparedEnrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(preparedEnrollmentRules.flatMap((r) => r.enrollmentIds));
@@ -500,8 +418,14 @@ const saveAllRules = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
-    const saveResult = await saveJsonFile<AssessmentJsonInput>({
+    const preparedSave = await prepareJsonFileEditor<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {
+        const rulesToSync = prepareRulesForDisk(
+          submittedRules,
+          jsonContents.accessControl,
+          existingEnrollmentRules,
+          preparedEnrollmentRules === undefined,
+        );
         jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
         return jsonContents;
       },
@@ -523,18 +447,36 @@ const saveAllRules = t.procedure
       },
     });
 
-    if (!saveResult.success) {
-      if (saveResult.reason === 'conflict') {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message:
-            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
-        });
-      }
+    if (!preparedSave.success) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message:
+          'The access control rules have been modified since you loaded this page. Please refresh and try again.',
+      });
+    }
+
+    const rulesToSync = preparedSave.jsonData.accessControl ?? [];
+    const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rulesToSync);
+
+    validateEnrollmentRuleMappings(preparedEnrollmentRules, jsonEnrollmentRuleUuids);
+
+    const { errors: validationErrors } = validateAccessControlRules({
+      rules: rulesToSync,
+      enrollmentRules:
+        jsonEnrollmentRuleUuids.size === 0 ? preparedEnrollmentRules?.map((r) => r.ruleJson) : [],
+    });
+    if (validationErrors.length > 0) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
+    }
+
+    const serverJob = await preparedSave.editor.prepareServerJob();
+    try {
+      await preparedSave.editor.executeWithServerJob(serverJob);
+    } catch {
       throwAppError<AccessControlError>({
         code: 'SYNC_JOB_FAILED',
         message: 'Failed to save access control rules',
-        jobSequenceId: saveResult.jobSequenceId,
+        jobSequenceId: serverJob.jobSequenceId,
       });
     }
 
@@ -587,7 +529,7 @@ const saveAllRules = t.procedure
       }
     }
 
-    return { newHash: saveResult.newHash };
+    return { newHash: preparedSave.newHash };
   });
 
 export const accessControlRouter = t.router({
