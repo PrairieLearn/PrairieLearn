@@ -138,9 +138,10 @@ function prepareRuleRow(
     after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
 
-  // Child data arrays use [assessment_id, rule_number, target_type, ...data]
-  // format. The target type disambiguates old-format label rules from
-  // preserved DB-only enrollment rules that can share the same rule number.
+  // Child data arrays identify rules by assessment ID and rule number.
+  // Early- and late-deadline arrays also include target type to disambiguate
+  // old-format label rules from preserved DB-only enrollment rules that can
+  // share a rule number.
   const studentLabels = studentLabelIds.map((labelId) =>
     JSON.stringify([assessmentId, ruleNumber, labelId]),
   );
