@@ -8,6 +8,7 @@ import {
 } from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -39,8 +40,13 @@ function validateAssessmentRules(
   rules: AccessControlJson[],
   studentLabelIdByName: Map<string, string>,
   invalidExamUuids: Set<string>,
+  requireRuleUuids: boolean,
 ): string | null {
   if (rules.length === 0) return null;
+
+  if (requireRuleUuids && rules.slice(1).some((rule) => rule.uuid == null)) {
+    return 'Every non-default accessControl rule must specify uuid.';
+  }
 
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
@@ -233,9 +239,15 @@ export async function validateAccessControl(
 
   const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
   const invalidExamUuids = await selectInvalidExamUuids(validationTargets);
+  const requireRuleUuids = await features.enabled('access-control-require-rule-uuids');
 
   for (const { tid, rules } of validationTargets) {
-    const error = validateAssessmentRules(rules, studentLabelIdByName, invalidExamUuids);
+    const error = validateAssessmentRules(
+      rules,
+      studentLabelIdByName,
+      invalidExamUuids,
+      requireRuleUuids,
+    );
     if (error) {
       infofile.addError(assessments[tid], error);
     }

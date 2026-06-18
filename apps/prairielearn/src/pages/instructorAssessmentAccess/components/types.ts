@@ -127,6 +127,7 @@ export interface DefaultRuleData {
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
   id?: string;
+  uuid: string;
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
@@ -350,7 +351,8 @@ export function jsonToOverrideFormData(
 
   return {
     id: json.id,
-    trackingId: json.id ?? crypto.randomUUID(),
+    uuid: json.uuid ?? crypto.randomUUID(),
+    trackingId: json.id ?? json.uuid ?? crypto.randomUUID(),
     appliesTo,
     overriddenFields,
     release,
@@ -490,6 +492,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const output: AccessControlJsonWithId = {
     id: rule.id,
+    uuid: rule.uuid,
     labels,
   };
 
@@ -558,6 +561,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
 
 export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
+    uuid: crypto.randomUUID(),
     trackingId: crypto.randomUUID(),
     appliesTo: {
       targetType: 'enrollment',

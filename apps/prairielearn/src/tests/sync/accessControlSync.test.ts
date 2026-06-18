@@ -21,6 +21,7 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   replaceEnrollmentAccessControlRules,
@@ -795,6 +796,28 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[1].date_control_duration_minutes, 120);
       }));
 
+    it('rejects old-format overrides when the UUID requirement flag is enabled', () =>
+      runInTransactionAndRollback(async () => {
+        await features.runWithGlobalOverrides(
+          { 'access-control-require-rule-uuids': true },
+          async () => {
+            const labelName = 'Label A';
+            const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+            const labelRule = makeAccessControlRule({
+              labels: [labelName],
+              dateControl: { durationMinutes: 90 },
+            });
+
+            const { errors, syncedRules } = await syncRulesAndRead([defaultRule, labelRule], {
+              studentLabels: [labelName],
+            });
+
+            assert.include(errors, 'Every non-default accessControl rule must specify uuid.');
+            assert.lengthOf(syncedRules, 0);
+          },
+        );
+      }));
+
     it('upserts non-default rules by UUID when they are reordered', () =>
       runInTransactionAndRollback(async () => {
         const labelName1 = 'Label A';
@@ -923,60 +946,6 @@ describe('Access control syncing', () => {
         const pageRules = await selectAccessControlRules(assessment, ['enrollment']);
         assert.equal(pageRules.length, 1);
         assert.equal(pageRules[0].uuid, keepUuid);
-      }));
-
-    it('preserves null-UUID enrollment rules during UUID-format sync', () =>
-      runInTransactionAndRollback(async () => {
-        const labelName = 'Label A';
-        const labelUuid = '22222222-2222-4222-8222-222222222222';
-        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
-        const courseData = util.getCourseData();
-        addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [defaultRule];
-
-        const { courseDir } = await util.writeAndSyncCourseData(courseData);
-        const assessment = await getAssessment(util.ASSESSMENT_ID);
-        const legacyRule = await insertEnrollmentOverride({
-          assessment,
-          uid: 'legacy-student@example.com',
-          number: 2,
-          durationMinutes: 150,
-          uuid: null,
-        });
-
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].accessControl = [
-          defaultRule,
-          makeAccessControlRule({
-            uuid: labelUuid,
-            labels: [labelName],
-            dateControl: { durationMinutes: 210 },
-          }),
-        ];
-        await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-        const allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        const syncedLegacyRule = allRules.find((rule) => rule.id === legacyRule.ruleId);
-        assert.isOk(syncedLegacyRule);
-        assert.isNull(syncedLegacyRule.uuid);
-        assert.equal(syncedLegacyRule.target_type, 'enrollment');
-        assert.equal(syncedLegacyRule.number, 2);
-        assert.equal(syncedLegacyRule.date_control_duration_minutes, 150);
-
-        const allEnrollments = await util.dumpTableWithSchema(
-          'assessment_access_control_enrollments',
-          AssessmentAccessControlEnrollmentSchema,
-        );
-        assert.isOk(
-          allEnrollments.find(
-            (target) =>
-              idsEqual(target.assessment_access_control_rule_id, legacyRule.ruleId) &&
-              idsEqual(target.enrollment_id, legacyRule.enrollmentId),
-          ),
-        );
       }));
 
     it('recreates a UUID rule when its target type changes', () =>
@@ -1214,7 +1183,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444441',
             duration_minutes: 150,
           },
           IdSchema,
@@ -1225,7 +1194,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 2,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444442',
             duration_minutes: 180,
           },
           IdSchema,
@@ -1352,7 +1321,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444443',
             duration_minutes: 150,
           },
           IdSchema,
@@ -1525,7 +1494,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 100,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444444',
             duration_minutes: null,
           },
           IdSchema,
@@ -2412,6 +2381,21 @@ describe('cleanAccessControlRulesForDisk', () => {
 
     assert.notProperty(cleaned[0], 'labels');
     assert.deepEqual(cleaned[1].labels, []);
+  });
+
+  it('preserves UUIDs on non-default rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      makeAccessControlRule({ uuid: '11111111-1111-4111-8111-111111111111' }),
+      makeAccessControlRule({
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+      }),
+    ];
+
+    const cleaned = cleanAccessControlRulesForDisk(rules);
+
+    assert.notProperty(cleaned[0], 'uuid');
+    assert.equal(cleaned[1].uuid, '22222222-2222-4222-8222-222222222222');
   });
 
   it('includes non-empty dateControl and non-default afterComplete', () => {

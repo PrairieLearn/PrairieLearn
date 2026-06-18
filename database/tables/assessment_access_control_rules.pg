@@ -33,6 +33,7 @@ check constraints
     assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
     assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
     assessment_access_control_rules_date_control_due_credit_check: CHECK (date_control_due_credit >= 0)
+    assessment_access_control_rules_uuid_target_type_check: CHECK ((target_type = 'none'::enum_assessment_access_control_target_type) = (uuid IS NULL))
     check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))
 
 foreign-key constraints
