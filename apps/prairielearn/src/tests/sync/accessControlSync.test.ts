@@ -11,6 +11,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { selectAccessControlRulesForAssessment } from '../../lib/assessment-access-control/data.js';
 import type { DefaultRule, OverrideRule } from '../../lib/assessment-access-control/resolver.js';
 import {
+  type Assessment,
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
   AssessmentAccessControlLateDeadlineSchema,
@@ -21,6 +22,7 @@ import {
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
@@ -137,6 +139,48 @@ async function syncRulesAndRead(
     errors: assessment.errors,
     courseDir,
   };
+}
+
+async function insertEnrollmentOverride({
+  assessment,
+  uid,
+  number,
+  durationMinutes,
+  uuid,
+}: {
+  assessment: Assessment;
+  uid: string;
+  number: number;
+  durationMinutes: number | null;
+  uuid?: string;
+}) {
+  const user = await selectOrInsertUserByUid(uid);
+  const enrollmentId = await sqldb.queryScalar(
+    sql.insert_enrollment,
+    {
+      user_id: user.id,
+      course_instance_id: assessment.course_instance_id,
+      status: 'joined',
+    },
+    IdSchema,
+  );
+  const ruleId = await sqldb.queryScalar(
+    sql.insert_enrollment_access_control_rule,
+    {
+      assessment_id: assessment.id,
+      number,
+      duration_minutes: durationMinutes,
+    },
+    IdSchema,
+  );
+  if (uuid != null) {
+    await sqldb.execute(sql.update_access_control_rule_uuid, { id: ruleId, uuid });
+  }
+  await sqldb.execute(sql.insert_enrollment_target, {
+    assessment_access_control_rule_id: ruleId,
+    enrollment_id: enrollmentId,
+  });
+  return { enrollmentId, ruleId };
 }
 
 const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
@@ -710,6 +754,138 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[1].date_control_duration_minutes, 120);
         assert.equal(syncedRules[2].number, 2);
         assert.equal(syncedRules[2].date_control_duration_minutes, 90);
+      }));
+  });
+
+  describe('UUID-format rule syncing', () => {
+    it('upserts non-default rules by UUID when they are reordered', () =>
+      runInTransactionAndRollback(async () => {
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
+        const labels = [labelName1, labelName2];
+        const ruleAUuid = '22222222-2222-4222-8222-222222222222';
+        const ruleBUuid = '33333333-3333-4333-8333-333333333333';
+
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const ruleA = makeAccessControlRule({
+          uuid: ruleAUuid,
+          labels: [labelName1],
+          dateControl: { durationMinutes: 90 },
+        });
+        const ruleB = makeAccessControlRule({
+          uuid: ruleBUuid,
+          labels: [labelName2],
+          dateControl: { durationMinutes: 120 },
+        });
+
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead(
+          [defaultRule, ruleA, ruleB],
+          { studentLabels: labels },
+        );
+        const initialRuleA = initialRules.find((rule) => rule.uuid === ruleAUuid);
+        const initialRuleB = initialRules.find((rule) => rule.uuid === ruleBUuid);
+        assert.isOk(initialRuleA);
+        assert.isOk(initialRuleB);
+        assert.equal(initialRuleA.number, 1);
+        assert.equal(initialRuleB.number, 2);
+
+        const { syncedRules } = await syncRulesAndRead(
+          [
+            defaultRule,
+            makeAccessControlRule({
+              uuid: ruleBUuid,
+              labels: [labelName2],
+              dateControl: { durationMinutes: 130 },
+            }),
+            makeAccessControlRule({
+              uuid: ruleAUuid,
+              labels: [labelName1],
+              dateControl: { durationMinutes: 95 },
+            }),
+          ],
+          { studentLabels: labels, courseDir },
+        );
+
+        const syncedRuleA = syncedRules.find((rule) => rule.uuid === ruleAUuid);
+        const syncedRuleB = syncedRules.find((rule) => rule.uuid === ruleBUuid);
+        assert.isOk(syncedRuleA);
+        assert.isOk(syncedRuleB);
+        assert.equal(syncedRuleA.id, initialRuleA.id);
+        assert.equal(syncedRuleA.number, 2);
+        assert.equal(syncedRuleA.date_control_duration_minutes, 95);
+        assert.equal(syncedRuleB.id, initialRuleB.id);
+        assert.equal(syncedRuleB.number, 1);
+        assert.equal(syncedRuleB.date_control_duration_minutes, 130);
+      }));
+
+    it('syncs student-specific rule bodies by UUID while preserving enrollment mappings', () =>
+      runInTransactionAndRollback(async () => {
+        const keepUuid = '44444444-4444-4444-8444-444444444444';
+        const deleteUuid = '55555555-5555-4555-8555-555555555555';
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule];
+
+        const { courseDir } = await util.writeAndSyncCourseData(courseData);
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const keepRule = await insertEnrollmentOverride({
+          assessment,
+          uid: 'keep-student@example.com',
+          number: 1,
+          durationMinutes: 150,
+          uuid: keepUuid,
+        });
+        const deleteRule = await insertEnrollmentOverride({
+          assessment,
+          uid: 'delete-student@example.com',
+          number: 2,
+          durationMinutes: 180,
+          uuid: deleteUuid,
+        });
+
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [
+          defaultRule,
+          makeAccessControlRule({
+            uuid: keepUuid,
+            dateControl: { durationMinutes: 210 },
+          }),
+        ];
+        await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+        const allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const syncedKeepRule = allRules.find((rule) => rule.uuid === keepUuid);
+        const syncedDeletedRule = allRules.find((rule) => rule.uuid === deleteUuid);
+        assert.isOk(syncedKeepRule);
+        assert.isUndefined(syncedDeletedRule);
+        assert.equal(syncedKeepRule.id, keepRule.ruleId);
+        assert.equal(syncedKeepRule.target_type, 'enrollment');
+        assert.equal(syncedKeepRule.number, 1);
+        assert.equal(syncedKeepRule.date_control_duration_minutes, 210);
+
+        const allEnrollments = await util.dumpTableWithSchema(
+          'assessment_access_control_enrollments',
+          AssessmentAccessControlEnrollmentSchema,
+        );
+        assert.isOk(
+          allEnrollments.find(
+            (target) =>
+              idsEqual(target.assessment_access_control_rule_id, keepRule.ruleId) &&
+              idsEqual(target.enrollment_id, keepRule.enrollmentId),
+          ),
+        );
+        assert.isUndefined(
+          allEnrollments.find((target) =>
+            idsEqual(target.assessment_access_control_rule_id, deleteRule.ruleId),
+          ),
+        );
+
+        const pageRules = await selectAccessControlRules(assessment, ['enrollment']);
+        assert.equal(pageRules.length, 1);
+        assert.equal(pageRules[0].uuid, keepUuid);
       }));
   });
 

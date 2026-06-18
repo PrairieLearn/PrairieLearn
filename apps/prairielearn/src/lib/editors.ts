@@ -68,6 +68,22 @@ export function getHash(contents: string | Buffer) {
   return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
+function removeEnrollmentSpecificAccessControlRules(infoJson: AssessmentJsonInput) {
+  if (!Array.isArray(infoJson.accessControl)) return;
+
+  infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
+    if (index === 0) return true;
+    return rule.uuid == null || rule.labels != null;
+  });
+}
+
+async function removeEnrollmentSpecificAccessControlRulesFromAssessmentFile(infoPath: string) {
+  const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+  removeEnrollmentSpecificAccessControlRules(infoJson);
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+  await fs.writeFile(infoPath, formattedJson);
+}
+
 async function syncCourseFromDisk(
   course: Course,
   startGitHash: string,
@@ -529,6 +545,14 @@ export class AssessmentCopyEditor extends Editor {
     },
   ) {
     const { course_instance, assessment } = params.locals;
+    assert(
+      idsEqual(course_instance.course_id, params.locals.course.id),
+      'course instance must belong to the current course',
+    );
+    assert(
+      idsEqual(assessment.course_instance_id, course_instance.id),
+      'assessment must belong to the course instance',
+    );
 
     super({
       ...params,
@@ -548,6 +572,10 @@ export class AssessmentCopyEditor extends Editor {
   async write() {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
     assert(this.assessment.tid, 'assessment.tid is required');
+    // AssessmentCopyEditor currently only supports copies within the same
+    // course instance. If that changes, label-targeted access-control rules
+    // need explicit handling because their labels may not exist in the target
+    // course instance.
 
     debug('AssessmentCopyEditor: write()');
     const assessmentsPath = path.join(
@@ -589,9 +617,12 @@ export class AssessmentCopyEditor extends Editor {
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoAssessment.json');
-    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+    const infoJson = (await fs.readJson(
+      path.join(assessmentPath, 'infoAssessment.json'),
+    )) as AssessmentJsonInput;
 
     delete infoJson.shareSourcePublicly;
+    removeEnrollmentSpecificAccessControlRules(infoJson);
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1040,6 +1071,8 @@ export class CourseInstanceCopyEditor extends Editor {
             todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
+
+      await removeEnrollmentSpecificAccessControlRulesFromAssessmentFile(infoPath);
     }
 
     pathsToAdd.push(courseInstancePath);

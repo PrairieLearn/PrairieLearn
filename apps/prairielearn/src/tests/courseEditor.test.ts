@@ -33,6 +33,8 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoFixture;
 
+type JsonObject = Record<string, unknown>;
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
@@ -66,6 +68,19 @@ interface EditData {
     url?: string;
   };
   trpcCall?: () => Promise<void>;
+  validateInfo?: (infoJson: JsonObject) => void | Promise<void>;
+}
+
+function assertNoEnrollmentSpecificAccessControlRules(infoJson: JsonObject) {
+  assert.deepEqual(infoJson.accessControl, [
+    {
+      dateControl: {
+        release: {
+          date: '2000-01-01T00:00:00',
+        },
+      },
+    },
+  ]);
 }
 
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
@@ -256,6 +271,7 @@ const testEditData: EditData[] = [
       currentPage$ = cheerio.load(await res.text());
     },
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
+    validateInfo: assertNoEnrollmentSpecificAccessControlRules,
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -340,6 +356,16 @@ const testEditData: EditData[] = [
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
+    validateInfo: async () => {
+      const contents = await fs.readFile(
+        path.join(
+          courseRepo.courseDevDir,
+          'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
+        ),
+        'utf-8',
+      );
+      assertNoEnrollmentSpecificAccessControlRules(JSON.parse(contents));
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -735,8 +761,9 @@ function testEdit(params: EditData) {
       const info = params.info;
       it('should have a uuid', async () => {
         const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
-        const infoJson = JSON.parse(contents);
+        const infoJson = JSON.parse(contents) as JsonObject;
         assert.isString(infoJson.uuid);
+        await params.validateInfo?.(infoJson);
       });
     }
   });

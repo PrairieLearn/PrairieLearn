@@ -21,10 +21,12 @@ columns
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
     number: integer not null
     target_type: enum_assessment_access_control_target_type not null
+    uuid: uuid
 
 indexes
     assessment_access_control_rules_pkey: PRIMARY KEY (id) USING btree (id)
     aacr_assessment_number_target_type_unique: UNIQUE (assessment_id, number, target_type) USING btree (assessment_id, number, target_type)
+    assessment_access_control_rules_assessment_id_uuid_idx: UNIQUE USING btree (assessment_id, uuid) WHERE (uuid IS NOT NULL)
     assessment_access_control_rules_id_target_type_idx: UNIQUE USING btree (id, target_type)
 
 check constraints

@@ -54,7 +54,7 @@
       "description": "(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied."
     },
     "accessControl": {
-      "maxItems": 101,
+      "maxItems": 201,
       "type": "array",
       "items": {
         "$ref": "#/definitions/AccessControlJsonSchema"
@@ -411,6 +411,12 @@
     "AccessControlJsonSchema": {
       "type": "object",
       "properties": {
+        "uuid": {
+          "description": "Stable UUID for non-default access control override rules",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+        },
         "labels": {
           "description": "Array of student label names this set targets",
           "maxItems": 100,

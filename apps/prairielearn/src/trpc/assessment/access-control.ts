@@ -200,7 +200,7 @@ const saveAllRules = t.procedure
     }
 
     // Validate all rules before writing anything to disk or DB.
-    const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+    const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, uuid: _uuid, ...rest }) => rest);
 
     const { errors: validationErrors } = validateAccessControlRules({
       rules: rulesToSync,

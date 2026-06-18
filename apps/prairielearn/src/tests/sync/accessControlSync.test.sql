@@ -42,6 +42,13 @@ VALUES
     $enrollment_id
   );
 
+-- BLOCK update_access_control_rule_uuid
+UPDATE assessment_access_control_rules
+SET
+  uuid = $uuid::uuid
+WHERE
+  id = $id;
+
 -- BLOCK select_student_label_id
 SELECT
   id

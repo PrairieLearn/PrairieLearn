@@ -5,8 +5,9 @@ import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 import { MAX_STUDENT_LABEL_NAME_LENGTH } from './infoCourseInstance.js';
 
 export const MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES = 100;
-export const MAX_ACCESS_CONTROL_RULES = MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1;
 export const MAX_ENROLLMENT_ACCESS_CONTROL_RULES = 100;
+export const MAX_ACCESS_CONTROL_RULES =
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1;
 export const MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE = 100;
 export const MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE = 100;
 export const MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE = 10;
@@ -174,6 +175,10 @@ const BeforeReleaseJsonSchema = z
 
 export const AccessControlJsonSchema = z
   .object({
+    uuid: z
+      .uuid({ version: 'v4' })
+      .optional()
+      .describe('Stable UUID for non-default access control override rules'),
     labels: z
       .array(z.string().min(1).max(MAX_STUDENT_LABEL_NAME_LENGTH))
       .max(MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE)
