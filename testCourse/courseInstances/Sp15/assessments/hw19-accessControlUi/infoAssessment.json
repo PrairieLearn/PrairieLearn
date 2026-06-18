@@ -14,7 +14,11 @@
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
-    { "labels": ["Section A"], "dateControl": { "due": { "date": "2026-05-28T20:15:00" } } }
+    {
+      "uuid": "11111111-1111-4111-8111-111111111111",
+      "labels": ["Section A"],
+      "dateControl": { "due": { "date": "2026-05-28T20:15:00" } }
+    }
   ],
   "zones": [
     { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }

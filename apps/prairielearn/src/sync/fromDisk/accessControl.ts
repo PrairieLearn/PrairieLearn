@@ -8,7 +8,6 @@ import {
 } from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -40,11 +39,10 @@ function validateAssessmentRules(
   rules: AccessControlJson[],
   studentLabelIdByName: Map<string, string>,
   invalidExamUuids: Set<string>,
-  requireRuleUuids: boolean,
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (requireRuleUuids && rules.slice(1).some((rule) => rule.uuid == null)) {
+  if (rules.slice(1).some((rule) => rule.uuid == null)) {
     return 'Every non-default accessControl rule must specify uuid.';
   }
 
@@ -82,7 +80,6 @@ function prepareRuleRow(
   assessmentId: string,
   ruleNumber: number,
   rule: AccessControlJson,
-  uuidFormat: boolean,
   targetType: AccessControlRuleTargetType,
   studentLabelIdByName: Map<string, string>,
 ): {
@@ -119,8 +116,7 @@ function prepareRuleRow(
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
-    uuid: uuidFormat && !isDefaultRule ? rule.uuid : null,
-    uuid_format: uuidFormat,
+    uuid: !isDefaultRule ? rule.uuid : null,
     // beforeRelease.listed is only configurable on the default rule.
     before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
@@ -146,8 +142,8 @@ function prepareRuleRow(
 
   // Child data arrays identify rules by assessment ID and rule number.
   // Early- and late-deadline arrays also include target type to disambiguate
-  // old-format label rules from preserved DB-only enrollment rules that can
-  // share a rule number.
+  // student-label rules from student-specific rules that can share a rule
+  // number.
   const studentLabels = studentLabelIds.map((labelId) =>
     JSON.stringify([assessmentId, ruleNumber, labelId]),
   );
@@ -239,15 +235,9 @@ export async function validateAccessControl(
 
   const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
   const invalidExamUuids = await selectInvalidExamUuids(validationTargets);
-  const requireRuleUuids = await features.enabled('access-control-require-rule-uuids');
 
   for (const { tid, rules } of validationTargets) {
-    const error = validateAssessmentRules(
-      rules,
-      studentLabelIdByName,
-      invalidExamUuids,
-      requireRuleUuids,
-    );
+    const error = validateAssessmentRules(rules, studentLabelIdByName, invalidExamUuids);
     if (error) {
       infofile.addError(assessments[tid], error);
     }
@@ -282,7 +272,6 @@ export async function syncAccessControl(
           assessmentId,
           JSON_RULE_START + ruleIndex,
           rule,
-          normalizedRules.uuidFormat,
           targetType,
           studentLabelIdByName,
         );

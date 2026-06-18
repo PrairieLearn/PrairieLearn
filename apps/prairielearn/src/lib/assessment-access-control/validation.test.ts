@@ -112,6 +112,7 @@ describe('Valid configs', () => {
       },
       {
         // Individual override
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student3'],
         dateControl: {
           durationMinutes: 90,
@@ -195,12 +196,14 @@ describe('Default rule requirement', () => {
   it('should fail validation when no default rule exists', () => {
     const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student1'],
         dateControl: {
           durationMinutes: 90,
         },
       },
       {
+        uuid: '22222222-2222-4222-8222-222222222222',
         labels: ['student2'],
         dateControl: {
           durationMinutes: 120,
@@ -222,7 +225,7 @@ describe('Default rule requirement', () => {
     );
   });
 
-  it('should fail validation when multiple default rules exist', () => {
+  it('should fail validation when a non-default rule omits a UUID', () => {
     const rulesWithMultipleDefault: AccessControlJsonInput[] = [
       {
         dateControl: {
@@ -243,12 +246,10 @@ describe('Default rule requirement', () => {
       rules: parsedRules,
     });
 
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
+    assert.isTrue(result.errors.length > 0, 'Expected error when a non-default rule omits a UUID');
     assert.isTrue(
-      result.errors.includes(
-        'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
-      ),
-      `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
+      result.errors.includes('Every non-default accessControl rule must specify uuid.'),
+      `Expected missing UUID error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -300,7 +301,7 @@ describe('Default rule requirement', () => {
   });
 });
 
-describe('UUID-format rule detection', () => {
+describe('rule UUID validation', () => {
   it('accepts trailing unlabeled student-specific overrides when all non-default rules have UUIDs', () => {
     const rules: AccessControlJsonInput[] = [
       {
@@ -376,7 +377,7 @@ describe('UUID-format rule detection', () => {
     );
   });
 
-  it('keeps old-format unlabeled non-default rules invalid', () => {
+  it('rejects non-default rules without UUIDs', () => {
     const rules: AccessControlJsonInput[] = [
       {
         dateControl: {
@@ -392,10 +393,7 @@ describe('UUID-format rule detection', () => {
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({ rules: parsedRules });
 
-    assert.include(
-      result.errors,
-      'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
-    );
+    assert.include(result.errors, 'Every non-default accessControl rule must specify uuid.');
   });
 
   it('rejects mixed UUID and non-UUID non-default rules', () => {
@@ -420,10 +418,7 @@ describe('UUID-format rule detection', () => {
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({ rules: parsedRules });
 
-    assert.include(
-      result.errors,
-      'Either every non-default accessControl rule must specify uuid, or none of them should.',
-    );
+    assert.include(result.errors, 'Every non-default accessControl rule must specify uuid.');
   });
 
   it('rejects duplicate non-default rule UUIDs', () => {
@@ -1097,6 +1092,7 @@ describe('Empty accessControl array', () => {
       rules: [
         AccessControlJsonSchema.parse({}),
         AccessControlJsonSchema.parse({
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: [],
           dateControl: {
             durationMinutes: 90,
@@ -2405,6 +2401,7 @@ describe('Global afterComplete validation', () => {
       rules: [
         {},
         {
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           afterComplete: { questions: { hidden: true } },
         },
@@ -2420,6 +2417,7 @@ describe('Global afterComplete validation', () => {
           },
         },
         {
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           dateControl: { due: { date: null } },
           afterComplete: { questions: { hidden: true } },

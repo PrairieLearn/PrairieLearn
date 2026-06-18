@@ -610,7 +610,7 @@ export class AssessmentCopyEditor extends Editor {
     if (Array.isArray(infoJson.accessControl)) {
       infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
         if (index === 0) return true;
-        return rule.uuid == null || rule.labels != null;
+        return rule.labels != null;
       });
     }
 
@@ -1067,7 +1067,7 @@ export class CourseInstanceCopyEditor extends Editor {
         assessmentInfoJson.accessControl = assessmentInfoJson.accessControl.filter(
           (rule, index) => {
             if (index === 0) return true;
-            return rule.uuid == null || rule.labels != null;
+            return rule.labels != null;
           },
         );
       }

@@ -21,8 +21,6 @@ interface NormalizedAccessControlRule {
 }
 
 export interface NormalizedAccessControlRules {
-  uuidFormat: boolean;
-  partialUuidFormat: boolean;
   rules: NormalizedAccessControlRule[];
 }
 
@@ -907,35 +905,21 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
-function usesUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
-  const overrides = rules.slice(1);
-  return overrides.length > 0 && overrides.every((rule) => rule.uuid != null);
-}
-
-function usesPartialUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
-  const overrides = rules.slice(1);
-  return overrides.some((rule) => rule.uuid != null) && overrides.some((rule) => rule.uuid == null);
-}
-
 function getAccessControlRuleTargetType(
   rule: AccessControlJson,
   index: number,
-  uuidFormat: boolean,
 ): AccessControlRuleTargetType {
   if (index === 0) return 'none';
-  return uuidFormat && rule.labels == null ? 'enrollment' : 'student_label';
+  return rule.uuid != null && rule.labels == null ? 'enrollment' : 'student_label';
 }
 
 export function normalizeAccessControlRules(
   rules: AccessControlJson[],
 ): NormalizedAccessControlRules {
-  const uuidFormat = usesUuidAccessControlFormat(rules);
   return {
-    uuidFormat,
-    partialUuidFormat: usesPartialUuidAccessControlFormat(rules),
     rules: rules.map((rule, index) => ({
       rule,
-      targetType: getAccessControlRuleTargetType(rule, index, uuidFormat),
+      targetType: getAccessControlRuleTargetType(rule, index),
       ruleIndex: index,
     })),
   };
@@ -947,9 +931,8 @@ export function normalizeAccessControlRules(
  *
  * @param params
  * @param params.rules The full ordered list of access control rules: index 0
- * is the default rule that applies to everyone. Old-format non-default entries
- * are student-label rules. UUID-format non-default entries with `labels` are
- * student-label rules, and trailing entries without `labels` are
+ * is the default rule that applies to everyone. Non-default entries with
+ * `labels` are student-label rules, and trailing entries without `labels` are
  * student-specific rules.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
@@ -975,7 +958,6 @@ export function validateAccessControlRules({
   }
 
   const normalizedRules = normalizeAccessControlRules(rules);
-  const uuidFormat = normalizedRules.uuidFormat;
 
   const studentLabelRuleCount = normalizedRules.rules.filter(
     ({ targetType }) => targetType === 'student_label',
@@ -995,30 +977,12 @@ export function validateAccessControlRules({
     );
   }
 
-  if (normalizedRules.partialUuidFormat) {
-    errors.push(
-      'Either every non-default accessControl rule must specify uuid, or none of them should.',
-    );
+  if (rules.slice(1).some((rule) => rule.uuid == null)) {
+    errors.push('Every non-default accessControl rule must specify uuid.');
   }
 
-  // In old-format JSON, a non-first rule without `labels` is an extra default.
-  // In UUID-format JSON, a non-first rule without `labels` is a student-specific override.
-  const defaultRules = normalizedRules.rules.filter(
-    ({ rule, ruleIndex }) => rule.labels == null && (ruleIndex === 0 || !uuidFormat),
-  );
-
-  if (defaultRules.length === 0) {
+  if (rules.length === 0 || rules[0].labels != null) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (defaultRules.length > 1) {
-    errors.push(
-      `Found ${defaultRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
-    );
-  } else {
-    // The DB constraint `check_first_rule_is_none` requires the default rule at index 0
-    const firstRule = rules[0];
-    if (firstRule.labels != null) {
-      errors.push('The defaults must be the first element in the array.');
-    }
   }
 
   const seenRuleUuids = new Set<string>();
@@ -1035,17 +999,15 @@ export function validateAccessControlRules({
     errors.push(`Found duplicate access control rule UUIDs: ${formatValues(duplicateRuleUuids)}.`);
   }
 
-  if (uuidFormat) {
-    let seenStudentSpecificRule = false;
-    for (const { rule } of normalizedRules.rules.slice(1)) {
-      if (rule.labels == null) {
-        seenStudentSpecificRule = true;
-      } else if (seenStudentSpecificRule) {
-        errors.push(
-          'Student-label access control rules must appear before student-specific access control rules.',
-        );
-        break;
-      }
+  let seenStudentSpecificRule = false;
+  for (const { rule } of normalizedRules.rules.slice(1)) {
+    if (rule.labels == null) {
+      seenStudentSpecificRule = true;
+    } else if (seenStudentSpecificRule) {
+      errors.push(
+        'Student-label access control rules must appear before student-specific access control rules.',
+      );
+      break;
     }
   }
 
