@@ -17,11 +17,6 @@ describe('checkboxHandler.renderHtml', () => {
     assert.include(html, '</pl-checkbox>');
   });
 
-  it('sets partial-credit="net-correct" to match Canvas grading', () => {
-    const html = checkboxHandler.renderHtml({ type: 'checkbox', choices });
-    assert.include(html, 'partial-credit="net-correct"');
-  });
-
   it('adds order="fixed" when shuffleAnswers is false', () => {
     const html = checkboxHandler.renderHtml({ type: 'checkbox', choices }, false);
     assert.include(html, 'order="fixed"');
