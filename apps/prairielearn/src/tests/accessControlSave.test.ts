@@ -159,6 +159,7 @@ describe('Access control save via tRPC', () => {
       const rules: AccessControlJsonInput[] = [
         makeRule({ beforeRelease: { listed: true } }),
         makeRule({
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           dateControl: { due: { date: '2024-04-01T23:59:00' } },
         }),
@@ -218,6 +219,7 @@ describe('Access control save via tRPC', () => {
           enrollmentIds:
             existingEnrollmentRule.enrollments?.map((enrollment) => enrollment.enrollmentId) ?? [],
           ruleJson: makeRule({
+            uuid: enrollmentRuleUuid,
             dateControl: { due: { date: '2024-04-20T23:59:00' } },
           }),
         },
@@ -319,6 +321,34 @@ describe('Access control save via tRPC', () => {
       ).rejects.toThrow(/must be submitted via enrollmentRules/);
     },
   );
+
+  test.sequential('rejects student-label rules without UUIDs', async () => {
+    const client = await createClient();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule(), makeRule({ labels: ['Section A'] })],
+        origHash: await getOrigHash(),
+      }),
+    ).rejects.toThrow(/must include a UUID/);
+  });
+
+  test.sequential('rejects student-specific rules without UUIDs', async () => {
+    const client = await createClient();
+
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule()],
+        enrollmentRules: [
+          {
+            enrollmentIds: [],
+            ruleJson: makeRule(),
+          },
+        ],
+        origHash: await getOrigHash(),
+      }),
+    ).rejects.toThrow(/must include a UUID/);
+  });
 
   test.sequential('rejects student-label rules submitted as enrollment rules', async () => {
     const client = await createClient();
@@ -532,17 +562,25 @@ describe('Access control save via tRPC', () => {
     const enrollmentByUid = new Map(enrollmentRows.map((row) => [row.user.uid, row.enrollment]));
     const enrollmentA = enrollmentByUid.get(studentA.uid)!;
     const enrollmentB = enrollmentByUid.get(studentB.uid)!;
+    const ruleAUuid = '77777777-7777-4777-8777-777777777777';
+    const ruleBUuid = '88888888-8888-4888-8888-888888888888';
 
     const firstSave = await client.accessControl.saveAllRules.mutate({
       rules: [makeRule()],
       enrollmentRules: [
         {
           enrollmentIds: [enrollmentA.id],
-          ruleJson: { dateControl: { due: { date: '2024-04-01T23:59:00' } } },
+          ruleJson: {
+            uuid: ruleAUuid,
+            dateControl: { due: { date: '2024-04-01T23:59:00' } },
+          },
         },
         {
           enrollmentIds: [enrollmentB.id],
-          ruleJson: { dateControl: { due: { date: '2024-04-08T23:59:00' } } },
+          ruleJson: {
+            uuid: ruleBUuid,
+            dateControl: { due: { date: '2024-04-08T23:59:00' } },
+          },
         },
       ],
       origHash: await getOrigHash(),
@@ -566,12 +604,18 @@ describe('Access control save via tRPC', () => {
         {
           id: ruleB.id,
           enrollmentIds: [enrollmentB.id],
-          ruleJson: { dateControl: { due: { date: '2024-04-08T23:59:00' } } },
+          ruleJson: {
+            uuid: ruleBUuid,
+            dateControl: { due: { date: '2024-04-08T23:59:00' } },
+          },
         },
         {
           id: ruleA.id,
           enrollmentIds: [enrollmentA.id],
-          ruleJson: { dateControl: { due: { date: '2024-04-01T23:59:00' } } },
+          ruleJson: {
+            uuid: ruleAUuid,
+            dateControl: { due: { date: '2024-04-01T23:59:00' } },
+          },
         },
       ],
       origHash: firstSave.newHash,

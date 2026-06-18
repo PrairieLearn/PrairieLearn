@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import { TRPCError } from '@trpc/server';
@@ -131,25 +130,6 @@ function stripRuleId(rule: AccessControlJsonInputWithId): AccessControlJson {
   return jsonRule;
 }
 
-function getUuidByRuleId(existingNonDefaultRules: AccessControlJsonWithId[]): Map<string, string> {
-  return new Map(
-    existingNonDefaultRules
-      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
-        return rule.id != null && rule.uuid != null;
-      })
-      .map((rule) => [rule.id, rule.uuid]),
-  );
-}
-
-function getExistingOrNewRuleUuid(
-  rule: AccessControlJsonInputWithId,
-  uuidByRuleId: Map<string, string>,
-  fallbackId?: string,
-): string {
-  const id = rule.id ?? fallbackId;
-  return rule.uuid ?? (id != null ? uuidByRuleId.get(id) : undefined) ?? randomUUID();
-}
-
 function validateRuleInputTargets(
   rules: AccessControlJsonInputWithId[],
   enrollmentRules: EnrollmentRuleInput[] | undefined,
@@ -158,6 +138,13 @@ function validateRuleInputTargets(
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: 'A default access control rule is required when saving student-specific rules.',
+    });
+  }
+
+  if (rules[0]?.uuid != null) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'The default access control rule must not specify a UUID.',
     });
   }
 
@@ -170,6 +157,12 @@ function validateRuleInputTargets(
           'Student-specific access control rules must be submitted via enrollmentRules, not rules.',
       });
     }
+    if (rule.uuid == null) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Non-default access control rules must include a UUID.',
+      });
+    }
   }
 
   for (const enrollmentRule of enrollmentRules ?? []) {
@@ -180,6 +173,12 @@ function validateRuleInputTargets(
           'Student-label access control rules must be submitted via rules, not enrollmentRules.',
       });
     }
+    if (enrollmentRule.ruleJson.uuid == null) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Student-specific access control rules must include a UUID.',
+      });
+    }
     if (new Set(enrollmentRule.enrollmentIds).size !== enrollmentRule.enrollmentIds.length) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -187,24 +186,6 @@ function validateRuleInputTargets(
       });
     }
   }
-}
-
-function prepareRulesForUuidFormat(
-  rules: AccessControlJsonInputWithId[],
-  uuidByRuleId: Map<string, string>,
-): AccessControlJson[] {
-  return rules.map((rule, index) => {
-    const jsonRule = stripRuleId(rule);
-    if (index === 0) {
-      const { uuid: _uuid, ...defaultRule } = jsonRule;
-      return defaultRule;
-    }
-
-    return {
-      ...jsonRule,
-      uuid: getExistingOrNewRuleUuid(rule, uuidByRuleId),
-    };
-  });
 }
 
 function getEnrollmentRulesWithUuids(
@@ -253,21 +234,6 @@ function prepareRulesForDisk(
 
   if (hasDbOnlyEnrollmentRules) return convertToOldFormatRules(submittedRules);
   return [...submittedRules, ...preservedEnrollmentRules];
-}
-
-function prepareEnrollmentRulesForUuidFormat(
-  enrollmentRules: EnrollmentRuleInput[],
-  uuidByRuleId: Map<string, string>,
-): EnrollmentRuleInput[] {
-  return enrollmentRules.map((enrollmentRule) => {
-    return {
-      ...enrollmentRule,
-      ruleJson: {
-        ...enrollmentRule.ruleJson,
-        uuid: getExistingOrNewRuleUuid(enrollmentRule.ruleJson, uuidByRuleId, enrollmentRule.id),
-      },
-    };
-  });
 }
 
 /**
@@ -357,20 +323,20 @@ const saveAllRules = t.procedure
     }
     validateRuleInputTargets(rules, enrollmentRules);
 
-    const existingNonDefaultRules = await selectAccessControlRules(opts.ctx.assessment, [
-      'student_label',
-      'enrollment',
-    ]);
-    const existingEnrollmentRules = existingNonDefaultRules.filter(
-      (rule) => rule.ruleType === 'enrollment',
-    );
-    const uuidByRuleId = getUuidByRuleId(existingNonDefaultRules);
-
-    const submittedRules = prepareRulesForUuidFormat(rules, uuidByRuleId);
-    const preparedEnrollmentRules =
+    const existingEnrollmentRules =
       enrollmentRules === undefined
-        ? undefined
-        : prepareEnrollmentRulesForUuidFormat(enrollmentRules, uuidByRuleId);
+        ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
+        : [];
+
+    const submittedRules = rules.map((rule, index) => {
+      const jsonRule = stripRuleId(rule);
+      if (index === 0) {
+        const { uuid: _uuid, ...defaultRule } = jsonRule;
+        return defaultRule;
+      }
+      return jsonRule;
+    });
+    const preparedEnrollmentRules = enrollmentRules;
 
     if (preparedEnrollmentRules !== undefined && preparedEnrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(preparedEnrollmentRules.flatMap((r) => r.enrollmentIds));
