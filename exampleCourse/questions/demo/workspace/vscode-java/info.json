@@ -7,8 +7,6 @@
   "type": "v3",
   "workspaceOptions": {
     "image": "prairielearn/workspace-vscode-java",
-    "port": 8080,
-    "home": "/home/coder/workspace",
     "gradedFiles": ["Square.java"]
   },
   "gradingMethod": "External",

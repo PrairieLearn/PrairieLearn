@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -44,11 +45,11 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           Allow self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, students will need to be invited to this course instance.
+          If self-enrollment is disabled, students must be invited to this course instance.
         </div>
       </div>
 
-      <div className="mb-3 form-check">
+      <div className={clsx('mb-3 form-check', !selfEnrollmentEnabled && 'd-none')}>
         <input
           className="form-check-input"
           type="checkbox"
@@ -65,10 +66,11 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           className="form-check-label"
           htmlFor={`${formId}-self-enrollment-use-enrollment-code`}
         >
-          Use enrollment code for self-enrollment
+          Require enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, any link to anything in the course instance will allow self-enrollment.
+          If an enrollment code is not required, any course instance or assessment link allows
+          self-enrollment.
         </div>
       </div>
     </>
