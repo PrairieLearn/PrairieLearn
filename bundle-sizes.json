@@ -91,8 +91,8 @@
   },
   "scripts/instructorFileEditorClient.tsx": {
     "raw": 1321321,
-    "gzip": 375950,
-    "brotli": 279695
+    "gzip": 375949,
+    "brotli": 279820
   },
   "scripts/instructorFileEditorHtmlMustacheLinterClient.ts": {
     "raw": 376852,
@@ -346,7 +346,7 @@
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
     "raw": 1710237,
-    "gzip": 480532,
+    "gzip": 480533,
     "brotli": 395361
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
