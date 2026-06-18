@@ -10,7 +10,7 @@ import {
   validateAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
-import { prepareJsonFileEditor } from '../../lib/editors.js';
+import { saveJsonFile } from '../../lib/editors.js';
 import {
   type AccessControlJsonWithId,
   type EnrollmentAccessControlRuleData,
@@ -363,7 +363,7 @@ const saveAllRules = t.procedure
     );
     const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
 
-    const preparedSave = await prepareJsonFileEditor<AssessmentJsonInput>({
+    const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {
         const rulesToSync = prepareRulesForDisk(
           submittedRules,
@@ -371,7 +371,16 @@ const saveAllRules = t.procedure
           jsonContents.accessControl,
           existingEnrollmentRules,
         );
-        jsonContents.accessControl = cleanAccessControlRulesForDisk(rulesToSync);
+        const cleanedRulesToSync = cleanAccessControlRulesForDisk(rulesToSync);
+
+        const { errors: validationErrors } = validateAccessControlRules({
+          rules: cleanedRulesToSync,
+        });
+        if (validationErrors.length > 0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
+        }
+
+        jsonContents.accessControl = cleanedRulesToSync;
         return jsonContents;
       },
       jsonPath: assessmentPath,
@@ -392,31 +401,18 @@ const saveAllRules = t.procedure
       },
     });
 
-    if (!preparedSave.success) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message:
-          'The access control rules have been modified since you loaded this page. Please refresh and try again.',
-      });
-    }
-
-    const rulesToSync = preparedSave.jsonData.accessControl ?? [];
-
-    const { errors: validationErrors } = validateAccessControlRules({
-      rules: rulesToSync,
-    });
-    if (validationErrors.length > 0) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
-    }
-
-    const serverJob = await preparedSave.editor.prepareServerJob();
-    try {
-      await preparedSave.editor.executeWithServerJob(serverJob);
-    } catch {
+    if (!saveResult.success) {
+      if (saveResult.reason === 'conflict') {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
       throwAppError<AccessControlError>({
         code: 'SYNC_JOB_FAILED',
         message: 'Failed to save access control rules',
-        jobSequenceId: serverJob.jobSequenceId,
+        jobSequenceId: saveResult.jobSequenceId,
       });
     }
 
@@ -461,7 +457,7 @@ const saveAllRules = t.procedure
       }
     }
 
-    return { newHash: preparedSave.newHash };
+    return { newHash: saveResult.newHash };
   });
 
 export const accessControlRouter = t.router({
