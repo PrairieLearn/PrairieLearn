@@ -4,6 +4,7 @@ import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
+import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
@@ -39,6 +40,7 @@ import {
 import * as helperServer from './helperServer.js';
 import { getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
@@ -181,6 +183,46 @@ describe('Access control save via tRPC', () => {
     assert.equal(parsed.type, 'Homework');
     assert.isArray(parsed.zones);
   });
+
+  test.sequential(
+    'preserves legacy student-specific overrides when saving label rules',
+    async () => {
+      const client = await createClient();
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw19-accessControlUi',
+      });
+      const existingEnrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+      const existingEnrollmentRule = existingEnrollmentRules[0];
+      assert.isOk(existingEnrollmentRule);
+      await sqldb.execute(sql.clear_access_control_rule_uuid, {
+        id: existingEnrollmentRule.id,
+        assessment_id: assessment.id,
+      });
+
+      const result = await client.accessControl.saveAllRules.mutate({
+        rules: [
+          makeRule({ beforeRelease: { listed: true } }),
+          makeRule({
+            labels: ['Section A'],
+            dateControl: { due: { date: '2024-04-01T23:59:00' } },
+          }),
+        ],
+        origHash: await getOrigHash(),
+      });
+      assert.isString(result.newHash);
+
+      const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+      const preservedRule = enrollmentRules.find((rule) => rule.id === existingEnrollmentRule.id);
+      assert.isOk(preservedRule);
+      assert.isUndefined(preservedRule.uuid);
+      assert.isTrue(
+        preservedRule.enrollments?.some(
+          (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
+        ),
+      );
+    },
+  );
 
   test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
     const client = await createClient();

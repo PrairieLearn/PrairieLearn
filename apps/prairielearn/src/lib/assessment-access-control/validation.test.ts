@@ -3,6 +3,8 @@ import { assert, describe, it } from 'vitest';
 import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 
 import {
@@ -17,6 +19,10 @@ import {
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
+
+function uuidForIndex(index: number): string {
+  return `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
+}
 
 describe('Valid configs', () => {
   const validAccessControlExamples: AccessControlJsonInput[][] = [
@@ -290,6 +296,209 @@ describe('Default rule requirement', () => {
     assert.isTrue(
       result.errors.some((err) => err.includes('beforeRelease can only be specified')),
       `Expected beforeRelease validation error, but got: ${result.errors.join(', ')}`,
+    );
+  });
+});
+
+describe('UUID-format rule detection', () => {
+  it('accepts trailing unlabeled student-specific overrides when all non-default rules have UUIDs', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+      {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.deepEqual(result.errors, []);
+  });
+
+  it('rejects too many student-label overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        labels: [`Section ${i}`],
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
+    );
+  });
+
+  it('rejects too many student-specific overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({
+      rules: parsedRules,
+      enrollmentRules: [AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 120 } })],
+    });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
+  });
+
+  it('keeps old-format unlabeled non-default rules invalid', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
+    );
+  });
+
+  it('rejects mixed UUID and non-UUID non-default rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+      {
+        labels: ['Section B'],
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Either every non-default accessControl rule must specify uuid, or none of them should.',
+    );
+  });
+
+  it('rejects duplicate non-default rule UUIDs', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Found duplicate access control rule UUIDs: "22222222-2222-4222-8222-222222222222".',
+    );
+  });
+
+  it('rejects student-label UUID rules after student-specific UUID rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        dateControl: { durationMinutes: 120 },
+      },
+      {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Student-label access control rules must appear before student-specific access control rules.',
+    );
+  });
+
+  it('rejects UUIDs on the default rule', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'uuid can only be specified on non-default access control rules.',
     );
   });
 });

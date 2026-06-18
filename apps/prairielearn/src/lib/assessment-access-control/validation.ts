@@ -1,13 +1,29 @@
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
-type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
   rule: AccessControlJson;
   targetType: AccessControlRuleTargetType;
   ruleIndex: number;
+}
+
+interface NormalizedAccessControlRule {
+  rule: AccessControlJson;
+  targetType: AccessControlRuleTargetType;
+  ruleIndex: number;
+}
+
+export interface NormalizedAccessControlRules {
+  uuidFormat: boolean;
+  partialUuidFormat: boolean;
+  rules: NormalizedAccessControlRule[];
 }
 
 type AccessControlIssuePath =
@@ -891,14 +907,50 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
+function usesUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
+  const overrides = rules.slice(1);
+  return overrides.length > 0 && overrides.every((rule) => rule.uuid != null);
+}
+
+function usesPartialUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
+  const overrides = rules.slice(1);
+  return overrides.some((rule) => rule.uuid != null) && overrides.some((rule) => rule.uuid == null);
+}
+
+function getAccessControlRuleTargetType(
+  rule: AccessControlJson,
+  index: number,
+  uuidFormat: boolean,
+): AccessControlRuleTargetType {
+  if (index === 0) return 'none';
+  return uuidFormat && rule.labels == null ? 'enrollment' : 'student_label';
+}
+
+export function normalizeAccessControlRules(
+  rules: AccessControlJson[],
+): NormalizedAccessControlRules {
+  const uuidFormat = usesUuidAccessControlFormat(rules);
+  return {
+    uuidFormat,
+    partialUuidFormat: usesPartialUuidAccessControlFormat(rules),
+    rules: rules.map((rule, index) => ({
+      rule,
+      targetType: getAccessControlRuleTargetType(rule, index, uuidFormat),
+      ruleIndex: index,
+    })),
+  };
+}
+
 /**
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
  *
  * @param params
- * @param params.rules The full ordered list of access control rules: index 0 is the
- * default rule that applies to everyone (no labels), and all
- * subsequent entries are student-label rules that target specific labels.
+ * @param params.rules The full ordered list of access control rules: index 0
+ * is the default rule that applies to everyone. Old-format non-default entries
+ * are student-label rules. UUID-format non-default entries with `labels` are
+ * student-label rules, and trailing entries without `labels` are
+ * student-specific rules.
  * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
@@ -922,8 +974,38 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  // A default rule is identified by the absence of a `labels` key.
-  const defaultRules = rules.filter((rule) => rule.labels == null);
+  const normalizedRules = normalizeAccessControlRules(rules);
+  const uuidFormat = normalizedRules.uuidFormat;
+
+  const studentLabelRuleCount = normalizedRules.rules.filter(
+    ({ targetType }) => targetType === 'student_label',
+  ).length;
+  if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
+    );
+  }
+
+  const enrollmentRuleCount =
+    normalizedRules.rules.filter(({ targetType }) => targetType === 'enrollment').length +
+    enrollmentRulesCount;
+  if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
+  }
+
+  if (normalizedRules.partialUuidFormat) {
+    errors.push(
+      'Either every non-default accessControl rule must specify uuid, or none of them should.',
+    );
+  }
+
+  // In old-format JSON, a non-first rule without `labels` is an extra default.
+  // In UUID-format JSON, a non-first rule without `labels` is a student-specific override.
+  const defaultRules = normalizedRules.rules.filter(
+    ({ rule, ruleIndex }) => rule.labels == null && (ruleIndex === 0 || !uuidFormat),
+  );
 
   if (defaultRules.length === 0) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
@@ -939,9 +1021,38 @@ export function validateAccessControlRules({
     }
   }
 
-  // Index 0 is the default rule; everything else is a student-label rule.
-  rules.forEach((rule, index) => {
-    const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
+  const seenRuleUuids = new Set<string>();
+  const duplicateRuleUuids = new Set<string>();
+  for (const rule of rules.slice(1)) {
+    if (rule.uuid == null) continue;
+    if (seenRuleUuids.has(rule.uuid)) {
+      duplicateRuleUuids.add(rule.uuid);
+    } else {
+      seenRuleUuids.add(rule.uuid);
+    }
+  }
+  if (duplicateRuleUuids.size > 0) {
+    errors.push(`Found duplicate access control rule UUIDs: ${formatValues(duplicateRuleUuids)}.`);
+  }
+
+  if (uuidFormat) {
+    let seenStudentSpecificRule = false;
+    for (const { rule } of normalizedRules.rules.slice(1)) {
+      if (rule.labels == null) {
+        seenStudentSpecificRule = true;
+      } else if (seenStudentSpecificRule) {
+        errors.push(
+          'Student-label access control rules must appear before student-specific access control rules.',
+        );
+        break;
+      }
+    }
+  }
+
+  normalizedRules.rules.forEach(({ rule, targetType, ruleIndex }) => {
+    if (targetType === 'none' && rule.uuid != null) {
+      errors.push('uuid can only be specified on non-default access control rules.');
+    }
 
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
@@ -973,7 +1084,7 @@ export function validateAccessControlRules({
     validationRules.push({
       rule,
       targetType,
-      ruleIndex: validationRules.length,
+      ruleIndex,
     });
 
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
