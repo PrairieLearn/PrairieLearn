@@ -28,7 +28,7 @@ SELECT
   -- use that value. Otherwise, use the value from the `questions` table. The
   -- value may still be null, in which case the container creation process
   -- retrieves the settings from the image labels or defaults to true.
-  COALESCE(w.url_rewrite, v.workspace_url_rewrite) AS workspace_url_rewrite
+  COALESCE(w.url_rewrite, q.workspace_url_rewrite) AS workspace_url_rewrite
 FROM
   workspaces AS w
   JOIN variants AS v ON (v.workspace_id = w.id)
