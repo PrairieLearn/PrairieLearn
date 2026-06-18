@@ -31,7 +31,8 @@ BEGIN
     JOIN assessments a ON a.id = uuid_assessments.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE aacr.assessment_id = uuid_assessments.assessment_id
         AND aacr.target_type <> 'none'
-        AND aacr.number > 0;
+        AND aacr.number > 0
+        AND NOT (aacr.target_type = 'enrollment' AND aacr.uuid IS NULL);
 
     -- If a UUID-format rule changes between student-label and enrollment
     -- targeting, delete the old row and its target rows before reinserting.
@@ -308,8 +309,8 @@ BEGIN
         AND aacr.target_type IN ('none', 'student_label');
 
     -- Delete UUID-format non-default rules that are no longer present in JSON.
-    -- This includes legacy/null-UUID enrollment rows once the assessment opts
-    -- into UUID-format JSON.
+    -- Null-UUID enrollment rules may still be created by old hosts during
+    -- rolling deploys, so keep them DB-owned until the backfill lands.
     DELETE FROM assessment_access_control_rules aacr
     USING (
         SELECT DISTINCT (rule ->> 'assessment_id')::bigint AS assessment_id
@@ -319,6 +320,7 @@ BEGIN
     JOIN assessments a ON a.id = uuid_assessments.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE aacr.assessment_id = uuid_assessments.assessment_id
         AND aacr.target_type <> 'none'
+        AND NOT (aacr.target_type = 'enrollment' AND aacr.uuid IS NULL)
         AND NOT EXISTS (
             SELECT 1 FROM UNNEST(rules_data) AS rule
             WHERE (rule ->> 'uuid_format')::boolean
@@ -364,6 +366,7 @@ BEGIN
             aacr.target_type IN ('none', 'student_label')
             OR (
                 aacr.target_type = 'enrollment'
+                AND aacr.uuid IS NOT NULL
                 AND EXISTS (
                     SELECT 1 FROM UNNEST(rules_data) AS rule
                     WHERE (rule ->> 'uuid_format')::boolean
@@ -388,6 +391,7 @@ BEGIN
             aacr.target_type IN ('none', 'student_label')
             OR (
                 aacr.target_type = 'enrollment'
+                AND aacr.uuid IS NOT NULL
                 AND EXISTS (
                     SELECT 1 FROM UNNEST(rules_data) AS rule
                     WHERE (rule ->> 'uuid_format')::boolean

@@ -44,6 +44,26 @@ VALUES
     $enrollment_id
   );
 
+-- BLOCK insert_early_deadline
+INSERT INTO
+  assessment_access_control_early_deadlines (assessment_access_control_rule_id, date, credit)
+VALUES
+  (
+    $assessment_access_control_rule_id,
+    $date::timestamptz,
+    $credit
+  );
+
+-- BLOCK insert_late_deadline
+INSERT INTO
+  assessment_access_control_late_deadlines (assessment_access_control_rule_id, date, credit)
+VALUES
+  (
+    $assessment_access_control_rule_id,
+    $date::timestamptz,
+    $credit
+  );
+
 -- BLOCK select_student_label_id
 SELECT
   id
