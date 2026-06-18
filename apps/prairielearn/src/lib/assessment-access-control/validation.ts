@@ -14,7 +14,7 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
-export interface NormalizedAccessControlRule {
+interface NormalizedAccessControlRule {
   rule: AccessControlJson;
   targetType: AccessControlRuleTargetType;
   ruleIndex: number;
@@ -907,7 +907,7 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
-export function usesUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
+function usesUuidAccessControlFormat(rules: AccessControlJson[]): boolean {
   const overrides = rules.slice(1);
   return overrides.length > 0 && overrides.every((rule) => rule.uuid != null);
 }
@@ -917,7 +917,7 @@ function usesPartialUuidAccessControlFormat(rules: AccessControlJson[]): boolean
   return overrides.some((rule) => rule.uuid != null) && overrides.some((rule) => rule.uuid == null);
 }
 
-export function getAccessControlRuleTargetType(
+function getAccessControlRuleTargetType(
   rule: AccessControlJson,
   index: number,
   uuidFormat: boolean,
