@@ -417,44 +417,36 @@ const saveAllRules = t.procedure
     }
 
     if (preparedEnrollmentRules !== undefined) {
-      try {
-        const savedEnrollmentRules =
-          preparedEnrollmentRules.length > 0
-            ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
-            : [];
-        const savedEnrollmentRuleIdByUuid = new Map(
-          savedEnrollmentRules
-            .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
-              return rule.uuid != null;
-            })
-            .map((rule) => [rule.uuid, rule.id]),
-        );
+      const savedEnrollmentRules =
+        preparedEnrollmentRules.length > 0
+          ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
+          : [];
+      const savedEnrollmentRuleIdByUuid = new Map(
+        savedEnrollmentRules
+          .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
+            return rule.uuid != null;
+          })
+          .map((rule) => [rule.uuid, rule.id]),
+      );
 
-        // TODO: Add audit logging for enrollment rule changes. Label/default rules
-        // are tracked in git; only enrollment rules need separate audit logs.
-        await replaceEnrollmentAccessControlRules(
-          opts.ctx.assessment,
-          preparedEnrollmentRules.map((enrollmentRule) => {
-            const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-            const uuid = enrollmentRule.ruleJson.uuid;
-            const id = uuid == null ? undefined : savedEnrollmentRuleIdByUuid.get(uuid);
-            if (id == null) {
-              throw new Error(`Synced student-specific access control rule not found: ${uuid}`);
-            }
-            ruleData.id = id;
-            return {
-              ruleData,
-              enrollmentIds: enrollmentRule.enrollmentIds,
-            };
-          }),
-        );
-      } catch {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message:
-            'Access control rule bodies were saved, but student-specific assignments could not be updated. Refresh the page and retry.',
-        });
-      }
+      // TODO: Add audit logging for enrollment rule changes. Label/default rules
+      // are tracked in git; only enrollment rules need separate audit logs.
+      await replaceEnrollmentAccessControlRules(
+        opts.ctx.assessment,
+        preparedEnrollmentRules.map((enrollmentRule) => {
+          const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+          const uuid = enrollmentRule.ruleJson.uuid;
+          const id = uuid == null ? undefined : savedEnrollmentRuleIdByUuid.get(uuid);
+          if (id == null) {
+            throw new Error(`Synced student-specific access control rule not found: ${uuid}`);
+          }
+          ruleData.id = id;
+          return {
+            ruleData,
+            enrollmentIds: enrollmentRule.enrollmentIds,
+          };
+        }),
+      );
     }
 
     return { newHash: saveResult.newHash };
