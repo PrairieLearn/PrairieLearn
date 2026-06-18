@@ -1715,6 +1715,7 @@ export const WorkspaceSchema = z.object({
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   state_updated_at: DateFromISOString,
   stopped_at: DateFromISOString.nullable(),
+  url_rewrite: z.boolean().nullable(),
   version: z.coerce.number(), // This is BIGINT, but always fits a number
   workspace_host_id: IdSchema.nullable(),
 });
