@@ -5,6 +5,7 @@ import { dbRowToAccessControlJson } from './assessment-access-control-rules.js';
 function makeBaseRule(overrides: Record<string, unknown> = {}) {
   return {
     id: '1',
+    uuid: null,
     assessment_id: '100',
     number: 0,
     target_type: 'none' as const,
