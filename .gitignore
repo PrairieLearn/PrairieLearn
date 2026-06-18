@@ -125,3 +125,6 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
+
+## pnpm-store
+.pnpm-store
