@@ -153,10 +153,10 @@ function manifestRelPath(tag: string): string {
 
 /**
  * Schema file contents for an element, keyed by schema file name (without
- * `.json`): the root schema plus one per (possibly nested) child tag that
- * declares a schema. A child tag must use the same schema everywhere it
- * appears within an element — the Python runtime loads schemas by tag name
- * (`schemas/<tag>.json`) and could not tell two variants apart.
+ * `.json`): the root schema plus one per child tag that declares a schema. A
+ * child tag must use the same schema everywhere it appears within an element so
+ * generated files stay reviewable and custom elements can still hand-author
+ * path-specific manifests if they need that extra expressiveness.
  */
 function collectElementSchemas(element: ElementSchemaModule): Map<string, Record<string, unknown>> {
   const files = new Map<string, Record<string, unknown>>([[element.tag, element.schema]]);
@@ -190,15 +190,13 @@ function schemaManifestPath(schemaTag: string): string {
 
 function buildChildManifests(
   children: Record<string, ElementChildSchema>,
-  prefix: string[],
 ): Record<string, unknown>[] {
   return Object.entries(children)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([childTag, child]) => {
-      const childPath = [...prefix, childTag];
       const manifest: Record<string, unknown> = { tag: childTag };
-      if (child.schema) manifest.schema = schemaManifestPath(childPath.join('.'));
-      if (child.children) manifest.children = buildChildManifests(child.children, childPath);
+      if (child.schema) manifest.schema = schemaManifestPath(childTag);
+      if (child.children) manifest.children = buildChildManifests(child.children);
       if (child.allowAdditionalChildren) manifest.allowAdditionalChildren = true;
       return manifest;
     });
@@ -209,7 +207,7 @@ function buildElementManifest(element: ElementSchemaModule): Record<string, unkn
     tag: element.tag,
     schema: schemaManifestPath(element.tag),
   };
-  if (element.children) manifest.children = buildChildManifests(element.children, []);
+  if (element.children) manifest.children = buildChildManifests(element.children);
   return manifest;
 }
 
