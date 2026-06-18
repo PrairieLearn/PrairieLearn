@@ -175,10 +175,7 @@ const BeforeReleaseJsonSchema = z
 
 export const AccessControlJsonSchema = z
   .object({
-    uuid: z
-      .uuid({ version: 'v4' })
-      .optional()
-      .describe('Stable UUID for non-default access control override rules'),
+    uuid: z.guid().optional().describe('Stable UUID for non-default access control override rules'),
     labels: z
       .array(z.string().min(1).max(MAX_STUDENT_LABEL_NAME_LENGTH))
       .max(MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE)

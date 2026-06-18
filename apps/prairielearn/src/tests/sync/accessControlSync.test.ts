@@ -152,7 +152,7 @@ async function insertEnrollmentOverride({
   uid: string;
   number: number;
   durationMinutes: number | null;
-  uuid?: string;
+  uuid: string;
 }) {
   const user = await selectOrInsertUserByUid(uid);
   const enrollmentId = await sqldb.queryScalar(
@@ -173,9 +173,7 @@ async function insertEnrollmentOverride({
     },
     IdSchema,
   );
-  if (uuid != null) {
-    await sqldb.execute(sql.update_access_control_rule_uuid, { id: ruleId, uuid });
-  }
+  await sqldb.execute(sql.update_access_control_rule_uuid, { id: ruleId, uuid });
   await sqldb.execute(sql.insert_enrollment_target, {
     assessment_access_control_rule_id: ruleId,
     enrollment_id: enrollmentId,

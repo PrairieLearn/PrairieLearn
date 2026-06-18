@@ -33,8 +33,6 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoFixture;
 
-type JsonObject = Record<string, unknown>;
-
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
@@ -68,10 +66,10 @@ interface EditData {
     url?: string;
   };
   trpcCall?: () => Promise<void>;
-  validateInfo?: (infoJson: JsonObject) => void | Promise<void>;
+  validateInfo?: (infoJson: any) => void | Promise<void>;
 }
 
-function assertNoEnrollmentSpecificAccessControlRules(infoJson: JsonObject) {
+function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
   assert.deepEqual(infoJson.accessControl, [
     {
       dateControl: {
@@ -761,7 +759,7 @@ function testEdit(params: EditData) {
       const info = params.info;
       it('should have a uuid', async () => {
         const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
-        const infoJson = JSON.parse(contents) as JsonObject;
+        const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
         await params.validateInfo?.(infoJson);
       });
