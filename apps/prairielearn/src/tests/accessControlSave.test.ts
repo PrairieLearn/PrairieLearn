@@ -61,28 +61,7 @@ describe('Access control save via tRPC', () => {
   let enrollmentOverrideStudentUid: string;
 
   beforeAll(async () => {
-    courseRepo = await createCourseRepoFixture({
-      populateOrigin: async (originDir) => {
-        await fs.copy(TEST_COURSE_PATH, originDir);
-        const infoAssessmentPath = path.join(
-          originDir,
-          'courseInstances',
-          'Sp15',
-          'assessments',
-          'hw19-accessControlUi',
-          'infoAssessment.json',
-        );
-        const infoAssessment = (await fs.readJson(infoAssessmentPath)) as AssessmentJsonInput;
-        infoAssessment.accessControl = [
-          ...(infoAssessment.accessControl ?? []),
-          {
-            uuid: initialEnrollmentRuleUuid,
-            dateControl: { due: { date: initialEnrollmentRuleDueDate } },
-          },
-        ];
-        await fs.writeJson(infoAssessmentPath, infoAssessment, { spaces: 2 });
-      },
-    });
+    courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
 
