@@ -68,22 +68,6 @@ export function getHash(contents: string | Buffer) {
   return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
-function removeEnrollmentSpecificAccessControlRules(infoJson: AssessmentJsonInput) {
-  if (!Array.isArray(infoJson.accessControl)) return;
-
-  infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
-    if (index === 0) return true;
-    return rule.uuid == null || rule.labels != null;
-  });
-}
-
-async function removeEnrollmentSpecificAccessControlRulesFromAssessmentFile(infoPath: string) {
-  const infoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
-  removeEnrollmentSpecificAccessControlRules(infoJson);
-  const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-  await fs.writeFile(infoPath, formattedJson);
-}
-
 async function syncCourseFromDisk(
   course: Course,
   startGitHash: string,
@@ -623,7 +607,12 @@ export class AssessmentCopyEditor extends Editor {
     )) as AssessmentJsonInput;
 
     delete infoJson.shareSourcePublicly;
-    removeEnrollmentSpecificAccessControlRules(infoJson);
+    if (Array.isArray(infoJson.accessControl)) {
+      infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
+        if (index === 0) return true;
+        return rule.uuid == null || rule.labels != null;
+      });
+    }
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1073,7 +1062,19 @@ export class CourseInstanceCopyEditor extends Editor {
         );
       }
 
-      await removeEnrollmentSpecificAccessControlRulesFromAssessmentFile(infoPath);
+      const assessmentInfoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+      if (Array.isArray(assessmentInfoJson.accessControl)) {
+        assessmentInfoJson.accessControl = assessmentInfoJson.accessControl.filter(
+          (rule, index) => {
+            if (index === 0) return true;
+            return rule.uuid == null || rule.labels != null;
+          },
+        );
+      }
+      const formattedAssessmentInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(assessmentInfoJson),
+      );
+      await fs.writeFile(infoPath, formattedAssessmentInfoJson);
     }
 
     pathsToAdd.push(courseInstancePath);
