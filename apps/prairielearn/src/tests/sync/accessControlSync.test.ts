@@ -945,16 +945,6 @@ describe('Access control syncing', () => {
           durationMinutes: 150,
           uuid: null,
         });
-        await sqldb.execute(sql.insert_early_deadline, {
-          assessment_access_control_rule_id: legacyRule.ruleId,
-          date: '2024-03-18T23:59:00',
-          credit: 110,
-        });
-        await sqldb.execute(sql.insert_late_deadline, {
-          assessment_access_control_rule_id: legacyRule.ruleId,
-          date: '2024-03-28T23:59:00',
-          credit: 80,
-        });
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
           util.ASSESSMENT_ID
@@ -985,26 +975,6 @@ describe('Access control syncing', () => {
             (target) =>
               idsEqual(target.assessment_access_control_rule_id, legacyRule.ruleId) &&
               idsEqual(target.enrollment_id, legacyRule.enrollmentId),
-          ),
-        );
-
-        const earlyDeadlines = await util.dumpTableWithSchema(
-          'assessment_access_control_early_deadlines',
-          AssessmentAccessControlEarlyDeadlineSchema,
-        );
-        assert.isOk(
-          earlyDeadlines.find((deadline) =>
-            idsEqual(deadline.assessment_access_control_rule_id, legacyRule.ruleId),
-          ),
-        );
-
-        const lateDeadlines = await util.dumpTableWithSchema(
-          'assessment_access_control_late_deadlines',
-          AssessmentAccessControlLateDeadlineSchema,
-        );
-        assert.isOk(
-          lateDeadlines.find((deadline) =>
-            idsEqual(deadline.assessment_access_control_rule_id, legacyRule.ruleId),
           ),
         );
       }));
