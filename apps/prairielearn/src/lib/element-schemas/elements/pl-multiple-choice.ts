@@ -16,24 +16,13 @@ const plMultipleChoiceAnswerAttributesSchema = z
 
 const plMultipleChoiceAttributesSchema = z
   .object({
-    'answers-name': z.string(),
-    weight: integerFormat().optional(),
-    'number-answers': integerFormat().optional(),
-    order: z.enum(['random', 'ascend', 'descend', 'fixed']).optional(),
-    display: z.enum(['block', 'inline', 'dropdown']).optional(),
-    'hide-letter-keys': booleanFormat().optional(),
-    'fixed-order': booleanFormat()
-      .meta({ deprecated: true, description: 'Use the "order" attribute instead.' })
-      .optional(),
-    inline: booleanFormat()
-      .meta({ deprecated: true, description: 'Use the "display" attribute instead.' })
-      .optional(),
-    'hide-score-badge': booleanFormat().optional(),
+    'all-of-the-above': aotaNotaAttribute().optional(),
+    'all-of-the-above-feedback': z.string().optional(),
     'allow-blank': booleanFormat().optional(),
-    'builtin-grading': booleanFormat().optional(),
-    size: integerFormat().optional(),
-    placeholder: z.string().optional(),
+    'answers-name': z.string(),
     'aria-label': z.string().optional(),
+    'builtin-grading': booleanFormat().optional(),
+    display: z.enum(['block', 'inline', 'dropdown']).optional(),
     'external-json': z
       .string()
       .meta({
@@ -43,10 +32,21 @@ const plMultipleChoiceAttributesSchema = z
       .optional(),
     'external-json-correct-key': z.string().meta({ deprecated: true }).optional(),
     'external-json-incorrect-key': z.string().meta({ deprecated: true }).optional(),
-    'all-of-the-above': aotaNotaAttribute().optional(),
+    'fixed-order': booleanFormat()
+      .meta({ deprecated: true, description: 'Use the "order" attribute instead.' })
+      .optional(),
+    'hide-letter-keys': booleanFormat().optional(),
+    'hide-score-badge': booleanFormat().optional(),
+    inline: booleanFormat()
+      .meta({ deprecated: true, description: 'Use the "display" attribute instead.' })
+      .optional(),
     'none-of-the-above': aotaNotaAttribute().optional(),
-    'all-of-the-above-feedback': z.string().optional(),
     'none-of-the-above-feedback': z.string().optional(),
+    'number-answers': integerFormat().optional(),
+    order: z.enum(['random', 'ascend', 'descend', 'fixed']).optional(),
+    placeholder: z.string().optional(),
+    size: integerFormat().optional(),
+    weight: integerFormat().optional(),
   })
   .strict();
 
