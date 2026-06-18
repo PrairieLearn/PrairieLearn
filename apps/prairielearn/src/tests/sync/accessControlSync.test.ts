@@ -925,10 +925,10 @@ describe('Access control syncing', () => {
         assert.equal(pageRules[0].uuid, keepUuid);
       }));
 
-    it('preserves null-UUID enrollment rules during UUID-format sync', () =>
+    it('recreates a UUID rule when its target type changes', () =>
       runInTransactionAndRollback(async () => {
         const labelName = 'Label A';
-        const labelUuid = '22222222-2222-4222-8222-222222222222';
+        const ruleUuid = '66666666-6666-4666-8666-666666666666';
         const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
         const courseData = util.getCourseData();
         addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, labelName);
@@ -938,22 +938,12 @@ describe('Access control syncing', () => {
 
         const { courseDir } = await util.writeAndSyncCourseData(courseData);
         const assessment = await getAssessment(util.ASSESSMENT_ID);
-        const legacyRule = await insertEnrollmentOverride({
+        const enrollmentRule = await insertEnrollmentOverride({
           assessment,
-          uid: 'legacy-student@example.com',
-          number: 2,
+          uid: 'target-change-student@example.com',
+          number: 1,
           durationMinutes: 150,
-          uuid: null,
-        });
-        await sqldb.execute(sql.insert_early_deadline, {
-          assessment_access_control_rule_id: legacyRule.ruleId,
-          date: '2024-03-18T23:59:00',
-          credit: 110,
-        });
-        await sqldb.execute(sql.insert_late_deadline, {
-          assessment_access_control_rule_id: legacyRule.ruleId,
-          date: '2024-03-28T23:59:00',
-          credit: 80,
+          uuid: ruleUuid,
         });
 
         courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -961,7 +951,7 @@ describe('Access control syncing', () => {
         ].accessControl = [
           defaultRule,
           makeAccessControlRule({
-            uuid: labelUuid,
+            uuid: ruleUuid,
             labels: [labelName],
             dateControl: { durationMinutes: 210 },
           }),
@@ -969,42 +959,30 @@ describe('Access control syncing', () => {
         await util.overwriteAndSyncCourseData(courseData, courseDir);
 
         const allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-        const syncedLegacyRule = allRules.find((rule) => rule.id === legacyRule.ruleId);
-        assert.isOk(syncedLegacyRule);
-        assert.isNull(syncedLegacyRule.uuid);
-        assert.equal(syncedLegacyRule.target_type, 'enrollment');
-        assert.equal(syncedLegacyRule.number, 2);
-        assert.equal(syncedLegacyRule.date_control_duration_minutes, 150);
+        const syncedRule = allRules.find((rule) => rule.uuid === ruleUuid);
+        assert.isOk(syncedRule);
+        assert.notEqual(syncedRule.id, enrollmentRule.ruleId);
+        assert.equal(syncedRule.target_type, 'student_label');
+        assert.equal(syncedRule.number, 1);
+        assert.equal(syncedRule.date_control_duration_minutes, 210);
 
         const allEnrollments = await util.dumpTableWithSchema(
           'assessment_access_control_enrollments',
           AssessmentAccessControlEnrollmentSchema,
         );
-        assert.isOk(
-          allEnrollments.find(
-            (target) =>
-              idsEqual(target.assessment_access_control_rule_id, legacyRule.ruleId) &&
-              idsEqual(target.enrollment_id, legacyRule.enrollmentId),
+        assert.isUndefined(
+          allEnrollments.find((target) =>
+            idsEqual(target.assessment_access_control_rule_id, enrollmentRule.ruleId),
           ),
         );
 
-        const earlyDeadlines = await util.dumpTableWithSchema(
-          'assessment_access_control_early_deadlines',
-          AssessmentAccessControlEarlyDeadlineSchema,
+        const allStudentLabels = await util.dumpTableWithSchema(
+          'assessment_access_control_student_labels',
+          AssessmentAccessControlStudentLabelSchema,
         );
         assert.isOk(
-          earlyDeadlines.find((deadline) =>
-            idsEqual(deadline.assessment_access_control_rule_id, legacyRule.ruleId),
-          ),
-        );
-
-        const lateDeadlines = await util.dumpTableWithSchema(
-          'assessment_access_control_late_deadlines',
-          AssessmentAccessControlLateDeadlineSchema,
-        );
-        assert.isOk(
-          lateDeadlines.find((deadline) =>
-            idsEqual(deadline.assessment_access_control_rule_id, legacyRule.ruleId),
+          allStudentLabels.find((target) =>
+            idsEqual(target.assessment_access_control_rule_id, syncedRule.id),
           ),
         );
       }));
@@ -1182,7 +1160,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444441',
             duration_minutes: 150,
           },
           IdSchema,
@@ -1193,7 +1171,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 2,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444442',
             duration_minutes: 180,
           },
           IdSchema,
@@ -1320,7 +1298,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 1,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444443',
             duration_minutes: 150,
           },
           IdSchema,
@@ -1493,7 +1471,7 @@ describe('Access control syncing', () => {
           {
             assessment_id: assessment.id,
             number: 100,
-            uuid: null,
+            uuid: '44444444-4444-4444-8444-444444444444',
             duration_minutes: null,
           },
           IdSchema,

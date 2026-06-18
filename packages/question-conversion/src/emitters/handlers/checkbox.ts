@@ -11,7 +11,9 @@ export const checkboxHandler: BodyEmitHandler = {
     const cb = body as CheckboxBody;
     const deduped = deduplicateChoices(cb.choices);
     const orderAttr = shuffleAnswers === false ? ' order="fixed"' : '';
-    const lines = [`<pl-checkbox answers-name="answer"${orderAttr}>`];
+    // Canvas grants partial credit on multiple-answer questions using a net-correct
+    // strategy, so emit the matching pl-checkbox partial-credit mode.
+    const lines = [`<pl-checkbox answers-name="answer" partial-credit="net-correct"${orderAttr}>`];
     for (const choice of deduped) {
       lines.push(`  <pl-answer correct="${choice.correct}">${choice.html}</pl-answer>`);
     }

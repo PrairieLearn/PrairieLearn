@@ -61,8 +61,7 @@ PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
-SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-multiple-choice.json"
-ANSWER_SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-answer.json"
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
 
 def categorize_options(
@@ -76,9 +75,6 @@ def categorize_options(
     # First, check internal HTML for answer choices
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
-            pl.validate_element(
-                child, ANSWER_SCHEMA_PATH, parent_tag="pl-multiple-choice"
-            )
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
@@ -413,7 +409,7 @@ def prepare_answers_to_display(
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.validate_element(element, SCHEMA_PATH)
+    pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
 
