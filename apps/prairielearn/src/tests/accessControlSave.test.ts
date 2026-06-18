@@ -3,9 +3,7 @@ import * as path from 'node:path';
 import { merge } from 'es-toolkit';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
-import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
@@ -41,7 +39,6 @@ import {
 import * as helperServer from './helperServer.js';
 import { getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessControlJsonInput {
@@ -55,8 +52,6 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
     overrides,
   );
 }
-
-const UuidRowSchema = z.object({ uuid: z.string() });
 
 describe('Access control save via tRPC', () => {
   let courseRepo: CourseRepoFixture;
@@ -155,15 +150,6 @@ describe('Access control save via tRPC', () => {
     );
   }
 
-  async function ensureEnrollmentRuleUuid(rule: { id: string }, assessmentId: string) {
-    const row = await sqldb.queryRow(
-      sql.ensure_access_control_rule_uuid,
-      { id: rule.id, assessment_id: assessmentId },
-      UuidRowSchema,
-    );
-    return row.uuid;
-  }
-
   test.sequential(
     'saves rules to disk and preserves omitted DB-only enrollment rules',
     async () => {
@@ -204,6 +190,7 @@ describe('Access control save via tRPC', () => {
       });
       const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
       assert.lengthOf(enrollmentRules, 1);
+      assert.isString(enrollmentRules[0].uuid);
       assert.isTrue(
         enrollmentRules[0].enrollments?.some(
           (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
@@ -211,6 +198,45 @@ describe('Access control save via tRPC', () => {
       );
     },
   );
+
+  test.sequential('saves existing student-specific override with no label rules', async () => {
+    const client = await createClient();
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const [existingEnrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.isOk(existingEnrollmentRule);
+    const enrollmentRuleUuid = existingEnrollmentRule.uuid;
+    assert.isString(enrollmentRuleUuid);
+
+    const result = await client.accessControl.saveAllRules.mutate({
+      rules: [makeRule()],
+      enrollmentRules: [
+        {
+          id: existingEnrollmentRule.id,
+          enrollmentIds:
+            existingEnrollmentRule.enrollments?.map((enrollment) => enrollment.enrollmentId) ?? [],
+          ruleJson: makeRule({
+            dateControl: { due: { date: '2024-04-20T23:59:00' } },
+          }),
+        },
+      ],
+      origHash: await getOrigHash(),
+    });
+    assert.isString(result.newHash);
+
+    const parsed = JSON.parse(await fs.readFile(assessmentPath(), 'utf8'));
+    assert.equal(parsed.accessControl.length, 2);
+    assert.equal(parsed.accessControl[1].uuid, enrollmentRuleUuid);
+    assert.notProperty(parsed.accessControl[1], 'labels');
+    assert.notProperty(parsed.accessControl[1], 'enrollments');
+    assert.notProperty(parsed.accessControl[1], 'ruleType');
+
+    const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.lengthOf(enrollmentRules, 1);
+    assert.equal(enrollmentRules[0].uuid, enrollmentRuleUuid);
+  });
 
   test.sequential('saves mixed UUID-format overrides to disk and syncs enrollments', async () => {
     const client = await createClient();
@@ -315,52 +341,35 @@ describe('Access control save via tRPC', () => {
     ).rejects.toThrow(/must be submitted via rules/);
   });
 
-  test.sequential(
-    'preserves legacy student-specific overrides when saving label rules',
-    async () => {
-      const client = await createClient();
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: 'hw19-accessControlUi',
-      });
-      const existingEnrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
-      const existingEnrollmentRule = existingEnrollmentRules[0];
-      assert.isOk(existingEnrollmentRule);
-      await sqldb.execute(sql.clear_access_control_rule_uuid, {
-        id: existingEnrollmentRule.id,
-        assessment_id: assessment.id,
-      });
+  test.sequential('rejects duplicate enrollment IDs in one student-specific rule', async () => {
+    const client = await createClient();
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const [existingEnrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.isOk(existingEnrollmentRule);
+    const enrollmentId = existingEnrollmentRule.enrollments?.[0]?.enrollmentId;
+    assert.isString(enrollmentId);
 
-      const result = await client.accessControl.saveAllRules.mutate({
-        rules: [
-          makeRule({ beforeRelease: { listed: true } }),
-          makeRule({
-            labels: ['Section A'],
-            dateControl: { due: { date: '2024-04-01T23:59:00' } },
-          }),
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [makeRule()],
+        enrollmentRules: [
+          {
+            enrollmentIds: [enrollmentId, enrollmentId],
+            ruleJson: makeRule({
+              uuid: '66666666-6666-4666-8666-666666666666',
+              dateControl: { due: { date: '2024-04-22T23:59:00' } },
+            }),
+          },
         ],
         origHash: await getOrigHash(),
-      });
-      assert.isString(result.newHash);
+      }),
+    ).rejects.toThrow(/Duplicate enrollment IDs/);
+  });
 
-      const parsed = JSON.parse(await fs.readFile(assessmentPath(), 'utf8'));
-      assert.equal(parsed.accessControl.length, 2);
-      assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
-      assert.notProperty(parsed.accessControl[1], 'uuid');
-
-      const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
-      const preservedRule = enrollmentRules.find((rule) => rule.id === existingEnrollmentRule.id);
-      assert.isOk(preservedRule);
-      assert.isUndefined(preservedRule.uuid);
-      assert.isTrue(
-        preservedRule.enrollments?.some(
-          (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
-        ),
-      );
-    },
-  );
-
-  test.sequential('omits beforeRelease.listed: false and empty objects from disk', async () => {
+  test.sequential('omits beforeRelease.listed: false and empty objects from rules', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
@@ -372,8 +381,10 @@ describe('Access control save via tRPC', () => {
     const fileContent = await fs.readFile(assessmentPath(), 'utf8');
     const parsed = JSON.parse(fileContent);
 
-    assert.equal(parsed.accessControl.length, 1);
+    assert.equal(parsed.accessControl.length, 2);
     assert.notProperty(parsed.accessControl[0], 'beforeRelease');
+    assert.notProperty(parsed.accessControl[1], 'labels');
+    assert.isString(parsed.accessControl[1].uuid);
   });
 
   test.sequential('course editor without student data permissions', async () => {
@@ -383,10 +394,8 @@ describe('Access control save via tRPC', () => {
     });
     const [existingEnrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
     assert.isOk(existingEnrollmentRule);
-    const hiddenEnrollmentRuleUuid = await ensureEnrollmentRuleUuid(
-      existingEnrollmentRule,
-      assessment.id,
-    );
+    const hiddenEnrollmentRuleUuid = existingEnrollmentRule.uuid;
+    assert.isString(hiddenEnrollmentRuleUuid);
     const hiddenEnrollmentRuleJson = makeRule({
       uuid: hiddenEnrollmentRuleUuid,
       dateControl: { due: { date: '2024-04-18T23:59:00' } },

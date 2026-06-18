@@ -117,6 +117,7 @@ const EnrollmentRuleInputSchema = z.object({
   ruleJson: AccessControlJsonInputSchema,
 });
 type EnrollmentRuleInput = z.infer<typeof EnrollmentRuleInputSchema>;
+type AccessControlJsonWithUuid = AccessControlJson & { uuid: string };
 
 function isNonEmptyObject(value: unknown): boolean {
   return (
@@ -130,6 +131,25 @@ function isNonEmptyObject(value: unknown): boolean {
 function stripRuleId(rule: AccessControlJsonInputWithId): AccessControlJson {
   const { id: _id, ...jsonRule } = rule;
   return jsonRule;
+}
+
+function getUuidByRuleId(existingNonDefaultRules: AccessControlJsonWithId[]): Map<string, string> {
+  return new Map(
+    existingNonDefaultRules
+      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
+        return rule.id != null && rule.uuid != null;
+      })
+      .map((rule) => [rule.id, rule.uuid]),
+  );
+}
+
+function getExistingOrNewRuleUuid(
+  rule: AccessControlJsonInputWithId,
+  uuidByRuleId: Map<string, string>,
+  fallbackId?: string,
+): string {
+  const id = rule.id ?? fallbackId;
+  return rule.uuid ?? (id != null ? uuidByRuleId.get(id) : undefined) ?? randomUUID();
 }
 
 function validateRuleInputTargets(
@@ -162,21 +182,19 @@ function validateRuleInputTargets(
           'Student-label access control rules must be submitted via rules, not enrollmentRules.',
       });
     }
+    if (new Set(enrollmentRule.enrollmentIds).size !== enrollmentRule.enrollmentIds.length) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Duplicate enrollment IDs are not allowed in student-specific assignments.',
+      });
+    }
   }
 }
 
 function prepareRulesForUuidFormat(
   rules: AccessControlJsonInputWithId[],
-  existingNonDefaultRules: AccessControlJsonWithId[],
+  uuidByRuleId: Map<string, string>,
 ): AccessControlJson[] {
-  const uuidByRuleId = new Map(
-    existingNonDefaultRules
-      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
-        return rule.id != null && rule.uuid != null;
-      })
-      .map((rule) => [rule.id, rule.uuid]),
-  );
-
   return rules.map((rule, index) => {
     const jsonRule = stripRuleId(rule);
     if (index === 0) {
@@ -184,54 +202,23 @@ function prepareRulesForUuidFormat(
       return defaultRule;
     }
 
-    const existingUuid = rule.id ? uuidByRuleId.get(rule.id) : undefined;
-    if (jsonRule.uuid != null || existingUuid != null || jsonRule.labels != null) {
-      return {
-        ...jsonRule,
-        uuid: jsonRule.uuid ?? existingUuid ?? randomUUID(),
-      };
-    }
-
     return {
       ...jsonRule,
+      uuid: getExistingOrNewRuleUuid(rule, uuidByRuleId),
     };
   });
 }
 
-function preserveUnsubmittedDiskEnrollmentRules(
-  submittedRules: AccessControlJson[],
-  diskRules: AccessControlJson[] | undefined,
-): AccessControlJson[] {
-  const submittedUuids = new Set(
-    submittedRules.map((rule) => rule.uuid).filter((uuid): uuid is string => uuid !== undefined),
-  );
-  const preservedEnrollmentRules = normalizeAccessControlRules(diskRules ?? [])
-    .rules.filter(({ rule, targetType }) => {
-      return targetType === 'enrollment' && rule.uuid != null && !submittedUuids.has(rule.uuid);
-    })
-    .map(({ rule }) => rule);
-
-  return [...submittedRules, ...preservedEnrollmentRules];
-}
-
-function getJsonEnrollmentRuleUuids(rules: AccessControlJson[]): Set<string> {
-  const normalizedRules = normalizeAccessControlRules(rules);
-  return new Set(
-    normalizedRules.rules
-      .filter(({ targetType }) => targetType === 'enrollment')
-      .map(({ rule }) => rule.uuid)
-      .filter((uuid): uuid is string => uuid !== undefined),
-  );
-}
-
-function missesExistingEnrollmentRule(
-  rules: AccessControlJson[],
-  existingEnrollmentRules: AccessControlJsonWithId[],
-): boolean {
-  const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rules);
-  return existingEnrollmentRules.some((rule) => {
-    return rule.uuid == null || !jsonEnrollmentRuleUuids.has(rule.uuid);
-  });
+function getEnrollmentRulesWithUuids(
+  rules: AccessControlJson[] | undefined,
+): AccessControlJsonWithUuid[] {
+  const enrollmentRules: AccessControlJsonWithUuid[] = [];
+  for (const { rule, targetType } of normalizeAccessControlRules(rules ?? []).rules) {
+    if (targetType === 'enrollment' && rule.uuid != null) {
+      enrollmentRules.push({ ...rule, uuid: rule.uuid });
+    }
+  }
+  return enrollmentRules;
 }
 
 function convertToOldFormatRules(rules: AccessControlJson[]): AccessControlJson[] {
@@ -255,78 +242,34 @@ function prepareRulesForDisk(
     ];
   }
 
-  const rulesWithPreservedEnrollmentRules = preserveUnsubmittedDiskEnrollmentRules(
-    submittedRules,
-    diskRules,
+  const submittedUuids = new Set(
+    submittedRules.map((rule) => rule.uuid).filter((uuid): uuid is string => uuid !== undefined),
   );
-  if (!missesExistingEnrollmentRule(rulesWithPreservedEnrollmentRules, existingEnrollmentRules)) {
-    return rulesWithPreservedEnrollmentRules;
-  }
+  const preservedEnrollmentRules = getEnrollmentRulesWithUuids(diskRules).filter((rule) => {
+    return !submittedUuids.has(rule.uuid);
+  });
+  const preservedEnrollmentRuleUuids = new Set(preservedEnrollmentRules.map((rule) => rule.uuid));
+  const hasDbOnlyEnrollmentRules = existingEnrollmentRules.some((rule) => {
+    return rule.uuid == null || !preservedEnrollmentRuleUuids.has(rule.uuid);
+  });
 
-  return convertToOldFormatRules(submittedRules);
+  if (hasDbOnlyEnrollmentRules) return convertToOldFormatRules(submittedRules);
+  return [...submittedRules, ...preservedEnrollmentRules];
 }
 
 function prepareEnrollmentRulesForUuidFormat(
   enrollmentRules: EnrollmentRuleInput[],
-  existingNonDefaultRules: AccessControlJsonWithId[],
+  uuidByRuleId: Map<string, string>,
 ): EnrollmentRuleInput[] {
-  const uuidByRuleId = new Map(
-    existingNonDefaultRules
-      .filter((rule): rule is AccessControlJsonWithId & { id: string; uuid: string } => {
-        return rule.id != null && rule.uuid != null;
-      })
-      .map((rule) => [rule.id, rule.uuid]),
-  );
-
   return enrollmentRules.map((enrollmentRule) => {
-    const uuid =
-      enrollmentRule.ruleJson.uuid ??
-      (enrollmentRule.ruleJson.id ? uuidByRuleId.get(enrollmentRule.ruleJson.id) : undefined);
-
     return {
       ...enrollmentRule,
       ruleJson: {
         ...enrollmentRule.ruleJson,
-        uuid: uuid ?? randomUUID(),
+        uuid: getExistingOrNewRuleUuid(enrollmentRule.ruleJson, uuidByRuleId, enrollmentRule.id),
       },
     };
   });
-}
-
-function validateEnrollmentRuleMappings(
-  enrollmentRules: EnrollmentRuleInput[] | undefined,
-  jsonEnrollmentRuleUuids: Set<string>,
-) {
-  if (enrollmentRules === undefined || jsonEnrollmentRuleUuids.size === 0) return;
-
-  const enrollmentMappingUuids = new Set<string>();
-  for (const enrollmentRule of enrollmentRules) {
-    const uuid = enrollmentRule.ruleJson.uuid;
-    if (uuid == null || !jsonEnrollmentRuleUuids.has(uuid)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message:
-          'Student-specific assignment data must reference a saved student-specific access control rule UUID.',
-      });
-    }
-    if (enrollmentMappingUuids.has(uuid)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `Duplicate student-specific assignment data for access control rule UUID ${uuid}.`,
-      });
-    }
-    enrollmentMappingUuids.add(uuid);
-  }
-
-  if (
-    enrollmentMappingUuids.size !== jsonEnrollmentRuleUuids.size ||
-    [...jsonEnrollmentRuleUuids].some((uuid) => !enrollmentMappingUuids.has(uuid))
-  ) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'Student-specific assignment data is missing for one or more access control rules.',
-    });
-  }
 }
 
 /**
@@ -423,12 +366,13 @@ const saveAllRules = t.procedure
     const existingEnrollmentRules = existingNonDefaultRules.filter(
       (rule) => rule.ruleType === 'enrollment',
     );
+    const uuidByRuleId = getUuidByRuleId(existingNonDefaultRules);
 
-    const submittedRules = prepareRulesForUuidFormat(rules, existingNonDefaultRules);
+    const submittedRules = prepareRulesForUuidFormat(rules, uuidByRuleId);
     const preparedEnrollmentRules =
       enrollmentRules === undefined
         ? undefined
-        : prepareEnrollmentRulesForUuidFormat(enrollmentRules, existingNonDefaultRules);
+        : prepareEnrollmentRulesForUuidFormat(enrollmentRules, uuidByRuleId);
 
     if (preparedEnrollmentRules !== undefined && preparedEnrollmentRules.length > 0) {
       const allEnrollmentIds = new Set(preparedEnrollmentRules.flatMap((r) => r.enrollmentIds));
@@ -493,14 +437,9 @@ const saveAllRules = t.procedure
     }
 
     const rulesToSync = preparedSave.jsonData.accessControl ?? [];
-    const jsonEnrollmentRuleUuids = getJsonEnrollmentRuleUuids(rulesToSync);
-
-    validateEnrollmentRuleMappings(preparedEnrollmentRules, jsonEnrollmentRuleUuids);
 
     const { errors: validationErrors } = validateAccessControlRules({
       rules: rulesToSync,
-      enrollmentRules:
-        jsonEnrollmentRuleUuids.size === 0 ? preparedEnrollmentRules?.map((r) => r.ruleJson) : [],
     });
     if (validationErrors.length > 0) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: validationErrors[0] });
@@ -520,7 +459,7 @@ const saveAllRules = t.procedure
     if (preparedEnrollmentRules !== undefined) {
       try {
         const savedEnrollmentRules =
-          jsonEnrollmentRuleUuids.size > 0
+          preparedEnrollmentRules.length > 0
             ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
             : [];
         const savedEnrollmentRuleIdByUuid = new Map(
@@ -537,16 +476,12 @@ const saveAllRules = t.procedure
           opts.ctx.assessment,
           preparedEnrollmentRules.map((enrollmentRule) => {
             const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-            if (jsonEnrollmentRuleUuids.size > 0) {
-              const uuid = enrollmentRule.ruleJson.uuid;
-              const id = uuid ? savedEnrollmentRuleIdByUuid.get(uuid) : undefined;
-              if (id == null) {
-                throw new Error(`Synced student-specific access control rule not found: ${uuid}`);
-              }
-              ruleData.id = id;
-            } else if (enrollmentRule.id) {
-              ruleData.id = enrollmentRule.id;
+            const uuid = enrollmentRule.ruleJson.uuid;
+            const id = uuid == null ? undefined : savedEnrollmentRuleIdByUuid.get(uuid);
+            if (id == null) {
+              throw new Error(`Synced student-specific access control rule not found: ${uuid}`);
             }
+            ruleData.id = id;
             return {
               ruleData,
               enrollmentIds: enrollmentRule.enrollmentIds,
@@ -559,7 +494,9 @@ const saveAllRules = t.procedure
             code: 'ENROLLMENT_MAPPING_FAILED',
             message:
               'Access control rule bodies were saved, but student-specific assignments could not be updated. Refresh the page and retry.',
-            ruleUuids: [...jsonEnrollmentRuleUuids],
+            ruleUuids: preparedEnrollmentRules
+              .map((rule) => rule.ruleJson.uuid)
+              .filter((uuid): uuid is string => uuid != null),
           },
           'INTERNAL_SERVER_ERROR',
         );
