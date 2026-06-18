@@ -31,10 +31,7 @@
 
 #    "workspaceOptions": {
 #        "image": "prairielearn/workspace-rstudio",
-#        "port": 3939,
-#        "args": "",
-#        "rewriteUrl": false,
-#        "home": "/home/rstudio/workspace"
+#        "rewriteUrl": false
 #    }
 
 # If you just want to use RStudio locally for its own sake:
@@ -46,6 +43,9 @@
 
 FROM rocker/rstudio:4.6.0
 ARG CACHEBUST=2026-06-15-15-59-28
+LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
+LABEL com.prairielearn.workspace.port="3939"
+LABEL com.prairielearn.workspace.rewrite-url="false"
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
