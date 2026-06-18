@@ -42,34 +42,6 @@ WHERE
 RETURNING
   draft_number;
 
--- BLOCK select_assessments_with_assessment_set
-SELECT
-  ci.short_name AS course_instance_directory,
-  a.tid AS assessment_directory
-FROM
-  assessments AS a
-  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-WHERE
-  aset.name = $assessment_set_name
-  AND aset.course_id = $course_id
-  AND a.deleted_at IS NULL
-  AND ci.deleted_at IS NULL;
-
--- BLOCK select_assessments_with_assessment_module
-SELECT
-  ci.short_name AS course_instance_directory,
-  a.tid AS assessment_directory
-FROM
-  assessments AS a
-  JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-WHERE
-  am.name = $assessment_module_name
-  AND am.course_id = $course_id
-  AND a.deleted_at IS NULL
-  AND ci.deleted_at IS NULL;
-
 -- BLOCK select_assessments_with_student_label
 SELECT DISTINCT
   ci.short_name AS course_instance_directory,

@@ -8,6 +8,7 @@
 // `element` of type `ElementSchemaModule`) and regenerates everything derived
 // from them:
 //   - the on-disk JSON schemas under `apps/prairielearn/elements/<tag>/schemas/`
+//   - the element-local schema manifest at `apps/prairielearn/elements/<tag>/schema.json`
 //   - the static module registry `registry.generated.ts`
 //   - the full on-disk linter config `.htmlmustache.jsonc`
 //
@@ -145,6 +146,11 @@ function schemaRelPath(tag: string, schemaTag: string): string {
   return `apps/prairielearn/elements/${tag}/schemas/${schemaTag}.json`;
 }
 
+/** Path on disk for a generated element schema manifest, relative to the repo root. */
+function manifestRelPath(tag: string): string {
+  return `apps/prairielearn/elements/${tag}/schema.json`;
+}
+
 /**
  * Schema file contents for an element, keyed by schema file name (without
  * `.json`): the root schema plus one per (possibly nested) child tag that
@@ -175,6 +181,36 @@ function collectElementSchemas(element: ElementSchemaModule): Map<string, Record
 /** The `./`-prefixed path used to reference a schema from `.htmlmustache.jsonc`. */
 function schemaConfigPath(tag: string, schemaTag: string): string {
   return `./${schemaRelPath(tag, schemaTag)}`;
+}
+
+/** The element-local path used to reference a schema from `schema.json`. */
+function schemaManifestPath(schemaTag: string): string {
+  return `./schemas/${schemaTag}.json`;
+}
+
+function buildChildManifests(
+  children: Record<string, ElementChildSchema>,
+  prefix: string[],
+): Record<string, unknown>[] {
+  return Object.entries(children)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([childTag, child]) => {
+      const childPath = [...prefix, childTag];
+      const manifest: Record<string, unknown> = { tag: childTag };
+      if (child.schema) manifest.schema = schemaManifestPath(childPath.join('.'));
+      if (child.children) manifest.children = buildChildManifests(child.children, childPath);
+      if (child.allowAdditionalChildren) manifest.allowAdditionalChildren = true;
+      return manifest;
+    });
+}
+
+function buildElementManifest(element: ElementSchemaModule): Record<string, unknown> {
+  const manifest: Record<string, unknown> = {
+    tag: element.tag,
+    schema: schemaManifestPath(element.tag),
+  };
+  if (element.children) manifest.children = buildChildManifests(element.children, []);
+  return manifest;
 }
 
 async function format(filePath: string, contents: string): Promise<string> {
@@ -302,6 +338,11 @@ for (const { tag, element } of elements) {
     baseFiles[filePath] = await format(filePath, `${JSON.stringify(schema, null, 2)}\n`);
     schemaPaths.add(filePath);
   }
+  const manifestPath = path.resolve(REPO_ROOT, manifestRelPath(tag));
+  baseFiles[manifestPath] = await format(
+    manifestPath,
+    `${JSON.stringify(buildElementManifest(element), null, 2)}\n`,
+  );
 }
 baseFiles[REGISTRY_PATH] = await format(REGISTRY_PATH, buildRegistry(elements));
 

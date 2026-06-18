@@ -106,13 +106,13 @@ const save = t.procedure
 
     // A submitted row that maps to an existing module whose name changed is a
     // rename: referencing assessments must point at the new name (`newName`).
-    const rewrites: { oldName: string; newName: string | null }[] = [];
+    const renames: { oldName: string; newName: string | null }[] = [];
     for (const module of modules) {
       if (module.id === null) continue;
       const existing = currentById.get(module.id);
       if (!existing || existing.name === DEFAULT_ASSESSMENT_MODULE_NAME) continue;
       if (existing.name !== module.name) {
-        rewrites.push({ oldName: existing.name, newName: module.name });
+        renames.push({ oldName: existing.name, newName: module.name });
       }
     }
 
@@ -126,7 +126,7 @@ const save = t.procedure
         !submittedIds.has(module.id) &&
         !submittedNames.has(module.name)
       ) {
-        rewrites.push({ oldName: module.name, newName: null });
+        renames.push({ oldName: module.name, newName: null });
       }
     }
 
@@ -153,15 +153,11 @@ const save = t.procedure
       });
     }
 
-    const rewriteEditors = rewrites.map(
-      (rewrite) => new AssessmentModuleRenameEditor({ locals, ...rewrite }),
-    );
-
     const editor =
-      rewriteEditors.length === 0
+      renames.length === 0
         ? prepared.editor
         : new MultiEditor({ locals, description: 'Update assessment modules' }, [
-            ...rewriteEditors,
+            new AssessmentModuleRenameEditor({ locals, renames }),
             prepared.editor,
           ]);
 
