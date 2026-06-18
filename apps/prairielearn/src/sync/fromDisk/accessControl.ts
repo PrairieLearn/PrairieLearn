@@ -42,10 +42,6 @@ function validateAssessmentRules(
 ): string | null {
   if (rules.length === 0) return null;
 
-  if (rules.slice(1).some((rule) => rule.uuid == null)) {
-    return 'Every non-default accessControl rule must specify uuid.';
-  }
-
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
   // Reject them here to prevent label-targeted rules from being silently
