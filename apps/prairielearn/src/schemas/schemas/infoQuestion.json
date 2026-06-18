@@ -311,7 +311,7 @@
         },
         "rewriteUrl": {
           "type": "boolean",
-          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /. If not provided, the behaviour is retrieved from the workspace image labels."
+          "description": "If true or not provided, the URL will be rewritten such that the workspace container will see all requests as originating from /."
         },
         "gradedFiles": {
           "default": [],
