@@ -21,6 +21,7 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   replaceEnrollmentAccessControlRules,
@@ -793,6 +794,28 @@ describe('Access control syncing', () => {
         assert.equal(syncedRules[1].id, initialRules[1].id);
         assert.equal(syncedRules[1].uuid, initialLabelRuleUuid);
         assert.equal(syncedRules[1].date_control_duration_minutes, 120);
+      }));
+
+    it('rejects old-format overrides when the UUID requirement flag is enabled', () =>
+      runInTransactionAndRollback(async () => {
+        await features.runWithGlobalOverrides(
+          { 'access-control-require-rule-uuids': true },
+          async () => {
+            const labelName = 'Label A';
+            const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+            const labelRule = makeAccessControlRule({
+              labels: [labelName],
+              dateControl: { durationMinutes: 90 },
+            });
+
+            const { errors, syncedRules } = await syncRulesAndRead([defaultRule, labelRule], {
+              studentLabels: [labelName],
+            });
+
+            assert.include(errors, 'Every non-default accessControl rule must specify uuid.');
+            assert.lengthOf(syncedRules, 0);
+          },
+        );
       }));
 
     it('upserts non-default rules by UUID when they are reordered', () =>

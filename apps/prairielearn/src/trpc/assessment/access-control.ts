@@ -336,10 +336,8 @@ const saveAllRules = t.procedure
       }
       return jsonRule;
     });
-    const preparedEnrollmentRules = enrollmentRules;
-
-    if (preparedEnrollmentRules !== undefined && preparedEnrollmentRules.length > 0) {
-      const allEnrollmentIds = new Set(preparedEnrollmentRules.flatMap((r) => r.enrollmentIds));
+    if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
+      const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
       if (allEnrollmentIds.size > 0) {
         const validCount = await validateEnrollmentIdsInCourseInstance(
           allEnrollmentIds,
@@ -367,7 +365,7 @@ const saveAllRules = t.procedure
       applyChanges: (jsonContents) => {
         const rulesToSync = prepareRulesForDisk(
           submittedRules,
-          preparedEnrollmentRules,
+          enrollmentRules,
           jsonContents.accessControl,
           existingEnrollmentRules,
         );
@@ -416,9 +414,9 @@ const saveAllRules = t.procedure
       });
     }
 
-    if (preparedEnrollmentRules !== undefined) {
+    if (enrollmentRules !== undefined) {
       const savedEnrollmentRules =
-        preparedEnrollmentRules.length > 0
+        enrollmentRules.length > 0
           ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
           : [];
       const savedEnrollmentRuleIdByUuid = new Map(
@@ -433,7 +431,7 @@ const saveAllRules = t.procedure
       // are tracked in git; only enrollment rules need separate audit logs.
       await replaceEnrollmentAccessControlRules(
         opts.ctx.assessment,
-        preparedEnrollmentRules.map((enrollmentRule) => {
+        enrollmentRules.map((enrollmentRule) => {
           const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
           const uuid = enrollmentRule.ruleJson.uuid;
           const id = uuid == null ? undefined : savedEnrollmentRuleIdByUuid.get(uuid);
