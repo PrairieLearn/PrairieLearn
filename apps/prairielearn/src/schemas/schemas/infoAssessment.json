@@ -54,7 +54,6 @@
       "description": "(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied."
     },
     "accessControl": {
-      "maxItems": 201,
       "type": "array",
       "items": {
         "$ref": "#/definitions/AccessControlJsonSchema"

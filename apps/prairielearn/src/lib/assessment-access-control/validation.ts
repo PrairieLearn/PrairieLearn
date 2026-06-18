@@ -1,4 +1,8 @@
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
@@ -972,6 +976,24 @@ export function validateAccessControlRules({
 
   const normalizedRules = normalizeAccessControlRules(rules);
   const uuidFormat = normalizedRules.uuidFormat;
+
+  const studentLabelRuleCount = normalizedRules.rules.filter(
+    ({ targetType }) => targetType === 'student_label',
+  ).length;
+  if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
+    );
+  }
+
+  const enrollmentRuleCount =
+    normalizedRules.rules.filter(({ targetType }) => targetType === 'enrollment').length +
+    enrollmentRulesCount;
+  if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
+  }
 
   if (normalizedRules.partialUuidFormat) {
     errors.push(

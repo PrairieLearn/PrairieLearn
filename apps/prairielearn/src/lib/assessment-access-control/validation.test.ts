@@ -3,6 +3,8 @@ import { assert, describe, it } from 'vitest';
 import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 
 import {
@@ -17,6 +19,10 @@ import {
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
+
+function uuidForIndex(index: number): string {
+  return `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
+}
 
 describe('Valid configs', () => {
   const validAccessControlExamples: AccessControlJsonInput[][] = [
@@ -318,6 +324,56 @@ describe('UUID-format rule detection', () => {
     const result = validateAccessControlRules({ rules: parsedRules });
 
     assert.deepEqual(result.errors, []);
+  });
+
+  it('rejects too many student-label overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        labels: [`Section ${i}`],
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
+    );
+  });
+
+  it('rejects too many student-specific overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({
+      rules: parsedRules,
+      enrollmentRules: [AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 120 } })],
+    });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
   });
 
   it('keeps old-format unlabeled non-default rules invalid', () => {
