@@ -1,17 +1,17 @@
-"""JSON Schema validation helpers for PrairieLearn elements.
+"""JSON Schema validation helpers for PrairieLearn element attributes and structure.
 
-The rendered messages intentionally mirror the wording produced by the
-`@prairielearn/tree-sitter-htmlmustache` linter so that an instructor sees the
-same text whether a problem is caught at lint time (in the editor) or at render
-time (in Python). Keep the two in sync when changing either.
+Attribute schema error messages intentionally mirror the wording produced by
+the `@prairielearn/tree-sitter-htmlmustache` linter. Tree validation adds
+Python-side selector context for parent/child paths.
 """
 
 import functools
 import json
 import pathlib
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, NotRequired, TypedDict, cast
 
+import lxml.etree
 import lxml.html
 from jsonschema import FormatChecker, ValidationError
 from jsonschema.validators import validator_for
@@ -22,7 +22,21 @@ from prairielearn.html_utils import (
     is_integer_attrib,
 )
 
-__all__ = ["validate_element"]
+__all__ = ["validate_element", "validate_element_tree"]
+
+
+class ElementSchemaManifestChild(TypedDict):
+    tag: str
+    schema: NotRequired[str]
+    children: NotRequired[list["ElementSchemaManifestChild"]]
+    allowAdditionalChildren: NotRequired[bool]
+
+
+class ElementSchemaManifest(TypedDict):
+    tag: str
+    schema: str
+    children: NotRequired[list[ElementSchemaManifestChild]]
+
 
 pl_format_checker = FormatChecker(formats=())
 
@@ -52,6 +66,11 @@ def _load_validator(path: pathlib.Path) -> Any:
     return validator_cls(schema, format_checker=pl_format_checker)
 
 
+@functools.cache
+def _load_manifest(path: pathlib.Path) -> ElementSchemaManifest:
+    return cast(ElementSchemaManifest, json.loads(path.read_text()))
+
+
 def validate_element(
     element: lxml.html.HtmlElement,
     schema_path: pathlib.Path,
@@ -62,20 +81,90 @@ def validate_element(
 
     `parent_tag`, when provided, is woven into the message the same way the
     linter does for nested elements (e.g. `<pl-answer> inside <pl-multiple-choice>`).
-
-    Raises:
-        ValueError: If the element's attributes do not satisfy the schema.
     """
+    _validate_element_at_context(
+        element, schema_path, _tag_context(_tag_name(element), parent_tag)
+    )
+
+
+def validate_element_tree(
+    element: lxml.html.HtmlElement,
+    manifest_path: pathlib.Path,
+) -> None:
+    """Validate an element subtree against an element schema manifest.
+
+    This is a lightweight first pass for local structure: the root tag,
+    contextual child tags, and each declared tag's attributes. Element Python
+    code remains responsible for semantic validation.
+    """
+    manifest = _load_manifest(manifest_path)
+    _validate_element_tree_node(
+        element,
+        manifest,
+        manifest_path.parent,
+        manifest["tag"],
+    )
+
+
+def _validate_element_at_context(
+    element: lxml.html.HtmlElement,
+    schema_path: pathlib.Path,
+    context: str,
+) -> None:
     validator = _load_validator(schema_path)
     first = next(validator.iter_errors(_normalize_attrs(dict(element.attrib))), None)
     if first is not None:
-        tag = _tag_name(element)
-        raise ValueError(_render_error(first, tag, parent_tag))
+        raise ValueError(_render_error(first, context))
+
+
+def _validate_element_tree_node(
+    element: lxml.html.HtmlElement,
+    manifest: ElementSchemaManifest | ElementSchemaManifestChild,
+    manifest_dir: pathlib.Path,
+    context: str,
+) -> None:
+    actual_tag = _manifest_tag_name(element)
+    expected_tag = manifest["tag"]
+    if actual_tag != expected_tag:
+        raise ValueError(f"Expected {expected_tag} at {context}, not {actual_tag}.")
+
+    schema_path = manifest.get("schema")
+    if schema_path is not None:
+        _validate_element_at_context(element, manifest_dir / schema_path, context)
+
+    children = manifest.get("children")
+    if children is None:
+        return
+
+    child_manifests = {child["tag"]: child for child in children}
+    child_counts: dict[str, int] = {}
+    for child in element:
+        if isinstance(child, lxml.etree._Comment):
+            continue
+        child_tag = _manifest_tag_name(child)
+        child_counts[child_tag] = child_counts.get(child_tag, 0) + 1
+        child_context = (
+            f"{context} > {child_tag}:nth-of-type({child_counts[child_tag]})"
+        )
+        child_manifest = child_manifests.get(child_tag)
+        if child_manifest is not None:
+            _validate_element_tree_node(
+                child, child_manifest, manifest_dir, child_context
+            )
+        elif not manifest.get("allowAdditionalChildren", False):
+            allowed = ", ".join(sorted(child_manifests))
+            raise ValueError(
+                f"Unexpected child {child_tag} at {child_context}. Expected: {allowed}."
+            )
 
 
 def _tag_name(element: lxml.html.HtmlElement) -> str:
     tag = element.tag
     return tag.lower() if isinstance(tag, str) else "element"
+
+
+def _manifest_tag_name(element: lxml.html.HtmlElement) -> str:
+    return _tag_name(element).replace("_", "-")
 
 
 def _normalize_attrs(attribs: Mapping[str, Any]) -> dict[str, Any]:
@@ -92,7 +181,7 @@ def _tag_context(tag: str, parent_tag: str | None) -> str:
     return f"<{tag}> inside <{parent_tag}>" if parent_tag else f"<{tag}>"
 
 
-def _render_error(error: ValidationError, tag: str, parent_tag: str | None) -> str:
+def _render_error(error: ValidationError, context: str) -> str:
     error_message = (
         error.schema.get("errorMessage") if isinstance(error.schema, dict) else None
     )
@@ -104,8 +193,6 @@ def _render_error(error: ValidationError, tag: str, parent_tag: str | None) -> s
             or error_message.get("_")
             or error.message
         )
-
-    context = _tag_context(tag, parent_tag)
 
     if error.validator == "required":
         missing = _missing_required_attribute(error)
