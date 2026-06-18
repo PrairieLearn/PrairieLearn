@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo && tscp",
-    "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
+    "dev": "tsx watch --clear-screen=false --include \"**/*.sql\" --include \"**/*.json\" src/interface.js",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
@@ -54,13 +54,8 @@
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.7",
     "fast-glob": "^3.3.3",
-    "nodemon": "^3.1.14",
     "tsx": "^4.22.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.1.7"
-  },
-  "nodemonConfig": {
-    "ext": "js,jsx,ts,tsx,json,sql",
-    "delay": 100
   }
 }
