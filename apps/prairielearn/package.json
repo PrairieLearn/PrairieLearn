@@ -173,7 +173,7 @@
     "htmx-ext-loading-states": "^2.0.2",
     "htmx-ext-morphdom-swap": "^2.0.2",
     "htmx.org": "^2.0.10",
-    "http-proxy-middleware": "^4.0.0",
+    "http-proxy-middleware": "^4.1.1",
     "http-status": "^2.1.0",
     "ioredis": "^5.11.0",
     "isbinaryfile": "^6.0.0",
