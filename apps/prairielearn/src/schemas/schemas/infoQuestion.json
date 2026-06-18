@@ -286,14 +286,14 @@
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
         },
         "port": {
+          "description": "The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.",
           "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991,
-          "description": "The port number used in the Docker image."
+          "minimum": 1,
+          "maximum": 65535
         },
         "home": {
-          "type": "string",
-          "description": "The home directory of the workspace container."
+          "description": "The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.",
+          "type": "string"
         },
         "args": {
           "anyOf": [
@@ -349,7 +349,7 @@
           "deprecated": true
         }
       },
-      "required": ["image", "port", "home"],
+      "required": ["image"],
       "additionalProperties": false,
       "description": "Options for workspace questions."
     },

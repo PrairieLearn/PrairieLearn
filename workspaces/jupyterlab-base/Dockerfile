@@ -1,5 +1,8 @@
 FROM quay.io/jupyter/minimal-notebook:2025-08-04
 ARG CACHEBUST=2026-06-15-15-59-28
+LABEL com.prairielearn.workspace.home="/home/jovyan"
+LABEL com.prairielearn.workspace.port="8080"
+LABEL com.prairielearn.workspace.rewrite-url="false"
 
 ENV XDG_DATA_HOME=/tmp/local/share
 ENV XDG_CACHE_HOME=/tmp/cache
