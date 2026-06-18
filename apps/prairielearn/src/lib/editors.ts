@@ -545,6 +545,11 @@ export class AssessmentCopyEditor extends Editor {
     },
   ) {
     const { course_instance, assessment } = params.locals;
+
+    // AssessmentCopyEditor currently only supports copies within the same
+    // course instance. If that changes, label-targeted access-control rules
+    // need explicit handling because their labels may not exist in the target
+    // course instance.
     assert(
       idsEqual(course_instance.course_id, params.locals.course.id),
       'course instance must belong to the current course',
@@ -572,10 +577,6 @@ export class AssessmentCopyEditor extends Editor {
   async write() {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
     assert(this.assessment.tid, 'assessment.tid is required');
-    // AssessmentCopyEditor currently only supports copies within the same
-    // course instance. If that changes, label-targeted access-control rules
-    // need explicit handling because their labels may not exist in the target
-    // course instance.
 
     debug('AssessmentCopyEditor: write()');
     const assessmentsPath = path.join(
