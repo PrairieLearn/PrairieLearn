@@ -310,9 +310,8 @@
           "description": "Command line arguments to pass to the Docker container."
         },
         "rewriteUrl": {
-          "default": true,
           "type": "boolean",
-          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /."
+          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /. If not provided, the behaviour is retrieved from the workspace image labels."
         },
         "gradedFiles": {
           "default": [],
