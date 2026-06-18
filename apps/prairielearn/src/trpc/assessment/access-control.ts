@@ -43,9 +43,7 @@ import {
 } from './init.js';
 
 export interface AccessControlError {
-  SaveAllRules:
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
-    | { code: 'ENROLLMENT_MAPPING_FAILED'; ruleUuids: string[] };
+  SaveAllRules: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
 }
 
 const students = t.procedure.use(requireCourseInstancePermissionView).query(async (opts) => {
@@ -489,17 +487,11 @@ const saveAllRules = t.procedure
           }),
         );
       } catch {
-        throwAppError<AccessControlError['SaveAllRules']>(
-          {
-            code: 'ENROLLMENT_MAPPING_FAILED',
-            message:
-              'Access control rule bodies were saved, but student-specific assignments could not be updated. Refresh the page and retry.',
-            ruleUuids: preparedEnrollmentRules
-              .map((rule) => rule.ruleJson.uuid)
-              .filter((uuid): uuid is string => uuid != null),
-          },
-          'INTERNAL_SERVER_ERROR',
-        );
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message:
+            'Access control rule bodies were saved, but student-specific assignments could not be updated. Refresh the page and retry.',
+        });
       }
     }
 

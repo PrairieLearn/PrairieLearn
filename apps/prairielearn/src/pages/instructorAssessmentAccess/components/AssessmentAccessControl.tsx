@@ -146,23 +146,6 @@ function AssessmentAccessControlInner({
         onDismiss: () => saveMutation.reset(),
       };
     }
-    if (saveError?.code === 'ENROLLMENT_MAPPING_FAILED') {
-      return {
-        variant: 'danger',
-        message: (
-          <>
-            {saveError.message}
-            {saveError.ruleUuids.length > 0 && (
-              <>
-                {' '}
-                Student-specific rule UUIDs: <code>{saveError.ruleUuids.join(', ')}</code>
-              </>
-            )}
-          </>
-        ),
-        onDismiss: () => saveMutation.reset(),
-      };
-    }
     return null;
   });
 
