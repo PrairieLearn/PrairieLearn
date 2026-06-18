@@ -3,8 +3,8 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  getAccessControlRuleTargetType,
-  usesUuidAccessControlFormat,
+  type AccessControlRuleTargetType,
+  normalizeAccessControlRules,
 } from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
@@ -77,6 +77,7 @@ function prepareRuleRow(
   ruleNumber: number,
   rule: AccessControlJson,
   uuidFormat: boolean,
+  targetType: AccessControlRuleTargetType,
   studentLabelIdByName: Map<string, string>,
 ): {
   ruleRow: string;
@@ -108,8 +109,6 @@ function prepareRuleRow(
   const studentLabelIds = ruleLabels
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
-
-  const targetType = getAccessControlRuleTargetType(rule, ruleNumber, uuidFormat);
 
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
@@ -262,15 +261,16 @@ export async function syncAccessControl(
 
   for (const { assessmentId, rules } of assessments) {
     assessmentIds.push(assessmentId);
-    const uuidFormat = usesUuidAccessControlFormat(rules);
+    const normalizedRules = normalizeAccessControlRules(rules);
 
-    for (let i = 0; i < rules.length; i++) {
+    for (const { rule, targetType, ruleIndex } of normalizedRules.rules) {
       const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
         prepareRuleRow(
           assessmentId,
-          JSON_RULE_START + i,
-          rules[i],
-          uuidFormat,
+          JSON_RULE_START + ruleIndex,
+          rule,
+          normalizedRules.uuidFormat,
+          targetType,
           studentLabelIdByName,
         );
 

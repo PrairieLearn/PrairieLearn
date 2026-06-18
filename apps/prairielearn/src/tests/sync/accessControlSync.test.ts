@@ -22,11 +22,17 @@ import {
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
+import {
+  replaceEnrollmentAccessControlRules,
+  selectAccessControlRules,
+} from '../../models/assessment-access-control-rules.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 import { plainDateTimeStringToDate } from '../../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
-import { cleanAccessControlRulesForDisk } from '../../trpc/assessment/access-control.js';
+import {
+  cleanAccessControlRulesForDisk,
+  formJsonToEnrollmentRuleData,
+} from '../../trpc/assessment/access-control.js';
 import * as helperDb from '../helperDb.js';
 import { runInTransactionAndRollback } from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -756,6 +762,39 @@ describe('Access control syncing', () => {
   });
 
   describe('UUID-format rule syncing', () => {
+    it('assigns and preserves UUIDs for old-format student-label rules', () =>
+      runInTransactionAndRollback(async () => {
+        const labelName = 'Label A';
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const labelRule = makeAccessControlRule({
+          labels: [labelName],
+          dateControl: { durationMinutes: 90 },
+        });
+
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead(
+          [defaultRule, labelRule],
+          { studentLabels: [labelName] },
+        );
+        assert.isNull(initialRules[0].uuid);
+        assert.isString(initialRules[1].uuid);
+
+        const initialLabelRuleUuid = initialRules[1].uuid;
+        const { syncedRules } = await syncRulesAndRead(
+          [
+            defaultRule,
+            makeAccessControlRule({
+              labels: [labelName],
+              dateControl: { durationMinutes: 120 },
+            }),
+          ],
+          { studentLabels: [labelName], courseDir },
+        );
+
+        assert.equal(syncedRules[1].id, initialRules[1].id);
+        assert.equal(syncedRules[1].uuid, initialLabelRuleUuid);
+        assert.equal(syncedRules[1].date_control_duration_minutes, 120);
+      }));
+
     it('upserts non-default rules by UUID when they are reordered', () =>
       runInTransactionAndRollback(async () => {
         const labelName1 = 'Label A';
@@ -884,6 +923,105 @@ describe('Access control syncing', () => {
         const pageRules = await selectAccessControlRules(assessment, ['enrollment']);
         assert.equal(pageRules.length, 1);
         assert.equal(pageRules[0].uuid, keepUuid);
+      }));
+
+    it('preserves existing rules when partial UUID-format JSON has validation errors', () =>
+      runInTransactionAndRollback(async () => {
+        const labelName1 = 'Label A';
+        const labelName2 = 'Label B';
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const labelRule1 = makeAccessControlRule({
+          labels: [labelName1],
+          dateControl: { durationMinutes: 90 },
+        });
+        const labelRule2 = makeAccessControlRule({
+          labels: [labelName2],
+          dateControl: { durationMinutes: 120 },
+        });
+
+        const { syncedRules: initialRules, courseDir } = await syncRulesAndRead(
+          [defaultRule, labelRule1, labelRule2],
+          { studentLabels: [labelName1, labelName2] },
+        );
+        const initialRows = initialRules.map((rule) => ({
+          id: rule.id,
+          number: rule.number,
+          uuid: rule.uuid,
+          target_type: rule.target_type,
+          duration: rule.date_control_duration_minutes,
+        }));
+
+        const { errors, syncedRules } = await syncRulesAndRead(
+          [
+            defaultRule,
+            makeAccessControlRule({
+              uuid: '22222222-2222-4222-8222-222222222222',
+              labels: [labelName1],
+              dateControl: { durationMinutes: 210 },
+            }),
+            makeAccessControlRule({
+              labels: [labelName2],
+              dateControl: { durationMinutes: 240 },
+            }),
+          ],
+          { studentLabels: [labelName1, labelName2], courseDir },
+        );
+
+        assert.isTrue(
+          errors.some((error) =>
+            error.includes(
+              'Either every non-default accessControl rule must specify uuid, or none of them should.',
+            ),
+          ),
+        );
+        assert.deepEqual(
+          syncedRules.map((rule) => ({
+            id: rule.id,
+            number: rule.number,
+            uuid: rule.uuid,
+            target_type: rule.target_type,
+            duration: rule.date_control_duration_minutes,
+          })),
+          initialRows,
+        );
+      }));
+  });
+
+  describe('Enrollment rule writes', () => {
+    it('assigns UUIDs to newly created enrollment rules', () =>
+      runInTransactionAndRollback(async () => {
+        const defaultRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].accessControl = [defaultRule];
+
+        await util.writeAndSyncCourseData(courseData);
+        const assessment = await getAssessment(util.ASSESSMENT_ID);
+        const user = await selectOrInsertUserByUid('new-enrollment-rule@example.com');
+        const enrollmentId = await sqldb.queryScalar(
+          sql.insert_enrollment,
+          {
+            user_id: user.id,
+            course_instance_id: assessment.course_instance_id,
+            status: 'joined',
+          },
+          IdSchema,
+        );
+
+        await replaceEnrollmentAccessControlRules(assessment, [
+          {
+            ruleData: formJsonToEnrollmentRuleData(
+              makeAccessControlRule({ dateControl: { durationMinutes: 120 } }),
+            ),
+            enrollmentIds: [enrollmentId],
+          },
+        ]);
+
+        const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+        const enrollmentRule = syncedRules.find((rule) => rule.target_type === 'enrollment');
+        assert.isOk(enrollmentRule);
+        assert.isString(enrollmentRule.uuid);
       }));
   });
 

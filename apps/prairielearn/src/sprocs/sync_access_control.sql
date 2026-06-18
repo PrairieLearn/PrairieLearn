@@ -87,7 +87,10 @@ BEGIN
     SELECT
         (rule ->> 'assessment_id')::bigint,
         (rule ->> 'number')::integer,
-        (rule ->> 'uuid')::uuid,
+        CASE
+            WHEN (rule ->> 'target_type')::enum_assessment_access_control_target_type = 'none' THEN NULL
+            ELSE gen_random_uuid()
+        END,
         (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
@@ -113,7 +116,7 @@ BEGIN
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
         uuid = CASE
             WHEN assessment_access_control_rules.target_type = 'none' THEN NULL
-            ELSE COALESCE(EXCLUDED.uuid, assessment_access_control_rules.uuid)
+            ELSE COALESCE(assessment_access_control_rules.uuid, EXCLUDED.uuid)
         END,
         before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,

@@ -2,12 +2,24 @@ import type { AccessControlJson } from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
-type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
   rule: AccessControlJson;
   targetType: AccessControlRuleTargetType;
   ruleIndex: number;
+}
+
+export interface NormalizedAccessControlRule {
+  rule: AccessControlJson;
+  targetType: AccessControlRuleTargetType;
+  ruleIndex: number;
+}
+
+export interface NormalizedAccessControlRules {
+  uuidFormat: boolean;
+  partialUuidFormat: boolean;
+  rules: NormalizedAccessControlRule[];
 }
 
 type AccessControlIssuePath =
@@ -910,6 +922,21 @@ export function getAccessControlRuleTargetType(
   return uuidFormat && rule.labels == null ? 'enrollment' : 'student_label';
 }
 
+export function normalizeAccessControlRules(
+  rules: AccessControlJson[],
+): NormalizedAccessControlRules {
+  const uuidFormat = usesUuidAccessControlFormat(rules);
+  return {
+    uuidFormat,
+    partialUuidFormat: usesPartialUuidAccessControlFormat(rules),
+    rules: rules.map((rule, index) => ({
+      rule,
+      targetType: getAccessControlRuleTargetType(rule, index, uuidFormat),
+      ruleIndex: index,
+    })),
+  };
+}
+
 /**
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
@@ -943,10 +970,10 @@ export function validateAccessControlRules({
     return { errors, warnings };
   }
 
-  const uuidFormat = usesUuidAccessControlFormat(rules);
-  const partialUuidFormat = usesPartialUuidAccessControlFormat(rules);
+  const normalizedRules = normalizeAccessControlRules(rules);
+  const uuidFormat = normalizedRules.uuidFormat;
 
-  if (partialUuidFormat) {
+  if (normalizedRules.partialUuidFormat) {
     errors.push(
       'Either every non-default accessControl rule must specify uuid, or none of them should.',
     );
@@ -954,8 +981,8 @@ export function validateAccessControlRules({
 
   // In old-format JSON, a non-first rule without `labels` is an extra default.
   // In UUID-format JSON, a non-first rule without `labels` is a student-specific override.
-  const defaultRules = rules.filter(
-    (rule, index) => rule.labels == null && (index === 0 || !uuidFormat),
+  const defaultRules = normalizedRules.rules.filter(
+    ({ rule, ruleIndex }) => rule.labels == null && (ruleIndex === 0 || !uuidFormat),
   );
 
   if (defaultRules.length === 0) {
@@ -988,7 +1015,7 @@ export function validateAccessControlRules({
 
   if (uuidFormat) {
     let seenStudentSpecificRule = false;
-    for (const rule of rules.slice(1)) {
+    for (const { rule } of normalizedRules.rules.slice(1)) {
       if (rule.labels == null) {
         seenStudentSpecificRule = true;
       } else if (seenStudentSpecificRule) {
@@ -1000,9 +1027,7 @@ export function validateAccessControlRules({
     }
   }
 
-  rules.forEach((rule, index) => {
-    const targetType = getAccessControlRuleTargetType(rule, index, uuidFormat);
-
+  normalizedRules.rules.forEach(({ rule, targetType, ruleIndex }) => {
     if (targetType === 'none' && rule.uuid != null) {
       errors.push('uuid can only be specified on non-default access control rules.');
     }
@@ -1037,7 +1062,7 @@ export function validateAccessControlRules({
     validationRules.push({
       rule,
       targetType,
-      ruleIndex: validationRules.length,
+      ruleIndex,
     });
 
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
