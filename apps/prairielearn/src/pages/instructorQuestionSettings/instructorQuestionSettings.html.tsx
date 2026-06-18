@@ -718,7 +718,8 @@ export const InstructorQuestionSettingsForm = ({
                     Override URL rewrite image settings
                   </label>
                   <div className="small text-muted">
-                    Workspace images can specify if their URL should be rewritten by the workspace proxy. Override to change the settings for this question.
+                    Workspace images can specify if their URL should be rewritten by the workspace
+                    proxy. Override to change the settings for this question.
                   </div>
                 </div>
                 {workspaceRewriteUrlOverride && (
