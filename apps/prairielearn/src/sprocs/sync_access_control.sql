@@ -17,6 +17,34 @@ BEGIN
     -- in syncDiskToSqlWithLock.
     SELECT display_timezone INTO ci_timezone FROM course_instances WHERE id = syncing_course_instance_id;
 
+    -- For UUID-format assessments, rule identity is independent of order.
+    -- Move existing non-default rules out of the positive number range before
+    -- upserting so reorder operations cannot violate the number/type unique
+    -- constraint mid-statement.
+    UPDATE assessment_access_control_rules aacr
+    SET number = -aacr.number
+    FROM (
+        SELECT DISTINCT (rule ->> 'assessment_id')::bigint AS assessment_id
+        FROM UNNEST(rules_data) AS rule
+        WHERE (rule ->> 'uuid_format')::boolean
+    ) uuid_assessments
+    JOIN assessments a ON a.id = uuid_assessments.assessment_id AND a.course_instance_id = syncing_course_instance_id
+    WHERE aacr.assessment_id = uuid_assessments.assessment_id
+        AND aacr.target_type <> 'none'
+        AND aacr.number > 0;
+
+    -- If a UUID-format rule changes between student-label and enrollment
+    -- targeting, delete the old row and its target rows before reinserting.
+    -- Updating target_type in place would cascade into target tables whose
+    -- check constraints intentionally require one target type.
+    DELETE FROM assessment_access_control_rules aacr
+    USING UNNEST(rules_data) AS rule
+    JOIN assessments a ON a.id = (rule ->> 'assessment_id')::bigint AND a.course_instance_id = syncing_course_instance_id
+    WHERE (rule ->> 'uuid') IS NOT NULL
+        AND (rule ->> 'uuid_format')::boolean
+        AND aacr.assessment_id = (rule ->> 'assessment_id')::bigint
+        AND aacr.uuid = (rule ->> 'uuid')::uuid
+        AND aacr.target_type != (rule ->> 'target_type')::enum_assessment_access_control_target_type;
 
     -- Delete rows where the target_type changed for a given (assessment, number)
     -- to avoid unique constraint conflicts (the conflict key includes target_type).
@@ -24,15 +52,18 @@ BEGIN
     DELETE FROM assessment_access_control_rules aacr
     USING UNNEST(rules_data) AS rule
     JOIN assessments a ON a.id = (rule ->> 'assessment_id')::bigint AND a.course_instance_id = syncing_course_instance_id
-    WHERE aacr.assessment_id = (rule ->> 'assessment_id')::bigint
+    WHERE NOT (rule ->> 'uuid_format')::boolean
+        AND aacr.assessment_id = (rule ->> 'assessment_id')::bigint
         AND aacr.number = (rule ->> 'number')::integer
         AND aacr.target_type != (rule ->> 'target_type')::enum_assessment_access_control_target_type
         AND aacr.target_type IN ('none', 'student_label');
 
-    -- UPSERT all rules across all assessments in a single statement.
+    -- UPSERT old-format rules and default rules across all assessments in a
+    -- single statement. UUID-format non-default rules are handled below.
     INSERT INTO assessment_access_control_rules (
         assessment_id,
         number,
+        uuid,
         before_release_listed,
         target_type,
         date_control_release_date,
@@ -57,6 +88,10 @@ BEGIN
     SELECT
         (rule ->> 'assessment_id')::bigint,
         (rule ->> 'number')::integer,
+        CASE
+            WHEN (rule ->> 'target_type')::enum_assessment_access_control_target_type = 'none' THEN NULL
+            ELSE gen_random_uuid()
+        END,
         (rule ->> 'before_release_listed')::boolean,
         (rule ->> 'target_type')::enum_assessment_access_control_target_type,
         input_date(rule ->> 'date_control_release_date', ci_timezone),
@@ -78,7 +113,87 @@ BEGIN
         (rule ->> 'after_complete_score_hidden')::boolean,
         input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
     FROM UNNEST(rules_data) AS rule
+    WHERE (rule ->> 'uuid') IS NULL
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
+        uuid = CASE
+            WHEN assessment_access_control_rules.target_type = 'none' THEN NULL
+            ELSE COALESCE(assessment_access_control_rules.uuid, EXCLUDED.uuid)
+        END,
+        before_release_listed = EXCLUDED.before_release_listed,
+        date_control_release_date = EXCLUDED.date_control_release_date,
+        date_control_due_overridden = EXCLUDED.date_control_due_overridden,
+        date_control_due_date = EXCLUDED.date_control_due_date,
+        date_control_due_credit = EXCLUDED.date_control_due_credit,
+        date_control_early_deadlines_overridden = EXCLUDED.date_control_early_deadlines_overridden,
+        date_control_late_deadlines_overridden = EXCLUDED.date_control_late_deadlines_overridden,
+        date_control_after_last_deadline_allow_submissions = EXCLUDED.date_control_after_last_deadline_allow_submissions,
+        date_control_after_last_deadline_credit = EXCLUDED.date_control_after_last_deadline_credit,
+        date_control_duration_minutes_overridden = EXCLUDED.date_control_duration_minutes_overridden,
+        date_control_duration_minutes = EXCLUDED.date_control_duration_minutes,
+        date_control_password_overridden = EXCLUDED.date_control_password_overridden,
+        date_control_password = EXCLUDED.date_control_password,
+
+        after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
+        after_complete_questions_visible_from_date = EXCLUDED.after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date = EXCLUDED.after_complete_questions_visible_until_date,
+        after_complete_score_hidden = EXCLUDED.after_complete_score_hidden,
+        after_complete_score_visible_from_date = EXCLUDED.after_complete_score_visible_from_date;
+
+    -- UPSERT UUID-format non-default rules by stable per-assessment UUID.
+    INSERT INTO assessment_access_control_rules (
+        assessment_id,
+        number,
+        uuid,
+        before_release_listed,
+        target_type,
+        date_control_release_date,
+        date_control_due_overridden,
+        date_control_due_date,
+        date_control_due_credit,
+        date_control_early_deadlines_overridden,
+        date_control_late_deadlines_overridden,
+        date_control_after_last_deadline_allow_submissions,
+        date_control_after_last_deadline_credit,
+        date_control_duration_minutes_overridden,
+        date_control_duration_minutes,
+        date_control_password_overridden,
+        date_control_password,
+
+        after_complete_questions_hidden,
+        after_complete_questions_visible_from_date,
+        after_complete_questions_visible_until_date,
+        after_complete_score_hidden,
+        after_complete_score_visible_from_date
+    )
+    SELECT
+        (rule ->> 'assessment_id')::bigint,
+        (rule ->> 'number')::integer,
+        (rule ->> 'uuid')::uuid,
+        (rule ->> 'before_release_listed')::boolean,
+        (rule ->> 'target_type')::enum_assessment_access_control_target_type,
+        input_date(rule ->> 'date_control_release_date', ci_timezone),
+        (rule ->> 'date_control_due_overridden')::boolean,
+        input_date(rule ->> 'date_control_due_date', ci_timezone),
+        (rule ->> 'date_control_due_credit')::integer,
+        (rule ->> 'date_control_early_deadlines_overridden')::boolean,
+        (rule ->> 'date_control_late_deadlines_overridden')::boolean,
+        (rule ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
+        (rule ->> 'date_control_after_last_deadline_credit')::integer,
+        (rule ->> 'date_control_duration_minutes_overridden')::boolean,
+        (rule ->> 'date_control_duration_minutes')::integer,
+        (rule ->> 'date_control_password_overridden')::boolean,
+        (rule ->> 'date_control_password')::text,
+
+        (rule ->> 'after_complete_questions_hidden')::boolean,
+        input_date(rule ->> 'after_complete_questions_visible_from_date', ci_timezone),
+        input_date(rule ->> 'after_complete_questions_visible_until_date', ci_timezone),
+        (rule ->> 'after_complete_score_hidden')::boolean,
+        input_date(rule ->> 'after_complete_score_visible_from_date', ci_timezone)
+    FROM UNNEST(rules_data) AS rule
+    WHERE (rule ->> 'uuid') IS NOT NULL
+    ON CONFLICT (assessment_id, uuid) WHERE uuid IS NOT NULL DO UPDATE SET
+        number = EXCLUDED.number,
+        target_type = EXCLUDED.target_type,
         before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,
         date_control_due_overridden = EXCLUDED.date_control_due_overridden,
@@ -118,14 +233,15 @@ BEGIN
         SELECT
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
-            input_date(d ->> 2, ci_timezone) AS date,
-            (d ->> 3)::integer AS credit
+            (d ->> 2)::enum_assessment_access_control_target_type AS target_type,
+            input_date(d ->> 3, ci_timezone) AS date,
+            (d ->> 4)::integer AS credit
         FROM UNNEST(early_deadlines_data) AS d
     ) sub
     JOIN assessment_access_control_rules aacr ON
         aacr.assessment_id = sub.assessment_id
         AND aacr.number = sub.rule_number
-        AND aacr.target_type IN ('none', 'student_label')
+        AND aacr.target_type = sub.target_type
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     ON CONFLICT (assessment_access_control_rule_id, date) DO UPDATE SET
         credit = EXCLUDED.credit;
@@ -137,14 +253,15 @@ BEGIN
         SELECT
             (d ->> 0)::bigint AS assessment_id,
             (d ->> 1)::integer AS rule_number,
-            input_date(d ->> 2, ci_timezone) AS date,
-            (d ->> 3)::integer AS credit
+            (d ->> 2)::enum_assessment_access_control_target_type AS target_type,
+            input_date(d ->> 3, ci_timezone) AS date,
+            (d ->> 4)::integer AS credit
         FROM UNNEST(late_deadlines_data) AS d
     ) sub
     JOIN assessment_access_control_rules aacr ON
         aacr.assessment_id = sub.assessment_id
         AND aacr.number = sub.rule_number
-        AND aacr.target_type IN ('none', 'student_label')
+        AND aacr.target_type = sub.target_type
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     ON CONFLICT (assessment_access_control_rule_id, date) DO UPDATE SET
         credit = EXCLUDED.credit;
@@ -174,7 +291,8 @@ BEGIN
         after_complete_questions_hidden = EXCLUDED.after_complete_questions_hidden,
         after_complete_score_hidden = EXCLUDED.after_complete_score_hidden;
 
-    -- Delete excess rules: rules with number > max incoming number per assessment.
+    -- Delete excess old-format rules: rules with number > max incoming number
+    -- per assessment. Enrollment rules remain DB-owned in old format.
     -- Child rows are cascade-deleted via FK constraints.
     DELETE FROM assessment_access_control_rules aacr
     USING (
@@ -182,12 +300,30 @@ BEGIN
             (rule ->> 'assessment_id')::bigint AS assessment_id,
             MAX((rule ->> 'number')::integer) AS max_number
         FROM UNNEST(rules_data) AS rule
+        WHERE NOT (rule ->> 'uuid_format')::boolean
         GROUP BY (rule ->> 'assessment_id')::bigint
     ) max_rules
     JOIN assessments a ON a.id = max_rules.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE aacr.assessment_id = max_rules.assessment_id
         AND aacr.number > max_rules.max_number
         AND aacr.target_type IN ('none', 'student_label');
+
+    -- Delete UUID-format non-default rules that are no longer present in JSON.
+    DELETE FROM assessment_access_control_rules aacr
+    USING (
+        SELECT DISTINCT (rule ->> 'assessment_id')::bigint AS assessment_id
+        FROM UNNEST(rules_data) AS rule
+        WHERE (rule ->> 'uuid_format')::boolean
+    ) uuid_assessments
+    JOIN assessments a ON a.id = uuid_assessments.assessment_id AND a.course_instance_id = syncing_course_instance_id
+    WHERE aacr.assessment_id = uuid_assessments.assessment_id
+        AND aacr.target_type <> 'none'
+        AND NOT EXISTS (
+            SELECT 1 FROM UNNEST(rules_data) AS rule
+            WHERE (rule ->> 'uuid_format')::boolean
+                AND (rule ->> 'assessment_id')::bigint = aacr.assessment_id
+                AND (rule ->> 'uuid')::uuid = aacr.uuid
+        );
 
     -- Delete ALL non-enrollment rules for assessments that have no incoming rules
     -- (either because they had errors or because their accessControl array is empty).
@@ -223,12 +359,24 @@ BEGIN
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE aced.assessment_access_control_rule_id = aacr.id
         AND aacr.assessment_id = ANY(syncing_assessment_ids)
-        AND aacr.target_type IN ('none', 'student_label')
+        AND (
+            aacr.target_type IN ('none', 'student_label')
+            OR (
+                aacr.target_type = 'enrollment'
+                AND aacr.uuid IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM UNNEST(rules_data) AS rule
+                    WHERE (rule ->> 'uuid_format')::boolean
+                        AND (rule ->> 'assessment_id')::bigint = aacr.assessment_id
+                )
+            )
+        )
         AND NOT EXISTS (
             SELECT 1 FROM UNNEST(early_deadlines_data) AS d
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
-                AND input_date(d ->> 2, ci_timezone) = aced.date
+                AND (d ->> 2)::enum_assessment_access_control_target_type = aacr.target_type
+                AND input_date(d ->> 3, ci_timezone) = aced.date
         );
 
     DELETE FROM assessment_access_control_late_deadlines acld
@@ -236,12 +384,24 @@ BEGIN
     JOIN assessments a ON a.id = aacr.assessment_id AND a.course_instance_id = syncing_course_instance_id
     WHERE acld.assessment_access_control_rule_id = aacr.id
         AND aacr.assessment_id = ANY(syncing_assessment_ids)
-        AND aacr.target_type IN ('none', 'student_label')
+        AND (
+            aacr.target_type IN ('none', 'student_label')
+            OR (
+                aacr.target_type = 'enrollment'
+                AND aacr.uuid IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM UNNEST(rules_data) AS rule
+                    WHERE (rule ->> 'uuid_format')::boolean
+                        AND (rule ->> 'assessment_id')::bigint = aacr.assessment_id
+                )
+            )
+        )
         AND NOT EXISTS (
             SELECT 1 FROM UNNEST(late_deadlines_data) AS d
             WHERE (d ->> 0)::bigint = aacr.assessment_id
                 AND (d ->> 1)::integer = aacr.number
-                AND input_date(d ->> 2, ci_timezone) = acld.date
+                AND (d ->> 2)::enum_assessment_access_control_target_type = aacr.target_type
+                AND input_date(d ->> 3, ci_timezone) = acld.date
         );
 
     DELETE FROM assessment_access_control_prairietest_exams acpe

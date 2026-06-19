@@ -66,6 +66,19 @@ interface EditData {
     url?: string;
   };
   trpcCall?: () => Promise<void>;
+  validateInfo?: (infoJson: any) => void | Promise<void>;
+}
+
+function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
+  assert.deepEqual(infoJson.accessControl, [
+    {
+      dateControl: {
+        release: {
+          date: '2000-01-01T00:00:00',
+        },
+      },
+    },
+  ]);
 }
 
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
@@ -256,6 +269,7 @@ const testEditData: EditData[] = [
       currentPage$ = cheerio.load(await res.text());
     },
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
+    validateInfo: assertNoEnrollmentSpecificAccessControlRules,
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -340,6 +354,16 @@ const testEditData: EditData[] = [
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
+    validateInfo: async () => {
+      const contents = await fs.readFile(
+        path.join(
+          courseRepo.courseDevDir,
+          'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
+        ),
+        'utf-8',
+      );
+      assertNoEnrollmentSpecificAccessControlRules(JSON.parse(contents));
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -737,6 +761,7 @@ function testEdit(params: EditData) {
         const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
+        await params.validateInfo?.(infoJson);
       });
     }
   });

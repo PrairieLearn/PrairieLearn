@@ -421,6 +421,7 @@ In the UI:
           }
         },
         {
+          "uuid": "22222222-2222-4222-8222-222222222222",
           "labels": ["Extended time"],
           "dateControl": {
             "due": { "date": "2025-02-22T23:59:59" },
@@ -433,7 +434,7 @@ In the UI:
 
 ### Extended access for specific students
 
-Use student-specific overrides for one-off accommodations or makeup windows that should not become course content.
+Use student-specific overrides for one-off accommodations or makeup windows. The selected student list is stored in PrairieLearn, not in course content.
 
 In the UI:
 
@@ -489,16 +490,23 @@ The `accessControl` field is an array in `infoAssessment.json`:
       "afterComplete": { "questions": { "hidden": false } }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Section A"],
       "dateControl": {
         "due": { "date": "2026-05-28T20:15:00" }
+      }
+    },
+    {
+      "uuid": "33333333-3333-4333-8333-333333333333",
+      "dateControl": {
+        "durationMinutes": 120
       }
     }
   ]
 }
 ```
 
-The first element is the defaults rule. Later elements are overrides. Each override can target student labels with `labels`; student-specific overrides are configured through the UI.
+The first element is the defaults rule and must not have a `uuid`. Later elements are overrides and must either all have `uuid`s or all omit them. UUID-format overrides with `labels` target student labels; trailing UUID-format overrides without `labels` store student-specific rule bodies, while the selected students stay in PrairieLearn rather than in course content. Use `labels: []` for a student-label override that intentionally targets no labels.
 
 ### Full JSON skeleton
 
@@ -546,10 +554,18 @@ The first element is the defaults rule. Later elements are overrides. Each overr
       }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Extended time"],
       "dateControl": {
         "due": { "date": "2025-02-22T23:59:59" },
         "durationMinutes": 90
+      }
+    },
+    {
+      "uuid": "33333333-3333-4333-8333-333333333333",
+      "dateControl": {
+        "release": { "date": "2025-02-20T00:00:01" },
+        "due": { "date": "2025-02-28T23:59:59" }
       }
     }
   ]
@@ -621,13 +637,13 @@ The visibility fields follow a toggle pattern. For example, if `questions.hidden
 
 ### JSON override inheritance
 
-JSON overrides only target student labels. They store the fields they change; omitted fields inherit through the same priority order used by the UI:
+JSON overrides store the fields they change; omitted fields inherit through the same priority order used by the UI:
 
 1. Start with the defaults rule.
 2. Apply matching overrides with `labels` in the order they appear in the `accessControl` array.
-3. Apply any student-specific overrides configured through the UI.
+3. Apply matching student-specific overrides, which have `uuid` and no `labels`.
 
-Later matching student-label overrides replace fields from earlier matching student-label overrides. Student-specific overrides are managed through the UI and take priority over student-label overrides.
+Later matching student-label overrides replace fields from earlier matching student-label overrides. Student-specific overrides take priority over student-label overrides. Student-specific rule bodies may appear in JSON, but the selected student mappings remain stored in PrairieLearn and are not listed in `infoAssessment.json`.
 
 | Field                        | Defaults to override merge                                          | Override to override cascade                              |
 | ---------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |

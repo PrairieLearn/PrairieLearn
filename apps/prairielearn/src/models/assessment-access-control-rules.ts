@@ -200,6 +200,7 @@ function dbBaseRowToAccessControlJson(
 
   return {
     id: rule.id,
+    ...(rule.uuid != null ? { uuid: rule.uuid } : {}),
     number: rule.number,
     ...(beforeReleaseListed != null ? { beforeRelease: { listed: beforeReleaseListed } } : {}),
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
