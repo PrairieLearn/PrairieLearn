@@ -8,6 +8,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
@@ -103,7 +104,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       try {
         const match = path.match(containerPathRegex);
         if (!match) throw new Error(`Could not match path: ${path}`);
-        const workspace_id = Number.parseInt(match[1]);
+        const workspace_id = IdSchema.parse(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
         if (workspace_url_rewrite == null) {
           workspace_url_rewrite = await queryScalar(
@@ -129,7 +130,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       const match = path.match(containerPathRegex);
       if (!match) throw new Error(`Could not match path: ${path}`);
 
-      const workspace_id = match[1];
+      const workspace_id = IdSchema.parse(match[1]);
       const hostname = await queryOptionalScalar(
         sql.select_hostname_from_workspace_id,
         { workspace_id },
