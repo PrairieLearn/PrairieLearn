@@ -617,12 +617,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_blank=allow_blank,
             )
 
-            number_correct_text = generate_number_correct_text(
-                num_correct=len(correct_answer_list),
-                show_number_correct=show_number_correct,
+            helptext = (
+                f'<small class="form-text text-muted">Select {insert_text}</small>'
             )
-
-            helptext = f'<small class="form-text text-muted">Select {insert_text}{number_correct_text}</small>'
 
             grading_info = generate_grading_text(
                 insert_text=insert_text,
