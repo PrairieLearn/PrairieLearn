@@ -72,7 +72,7 @@ describe('PLEmitter', () => {
     const result = emitter.emit(makeAssessment([q]));
     assert.equal(
       result.questions[0].questionHtml,
-      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer">\n  <pl-answer correct="true">A</pl-answer>\n  <pl-answer correct="false">B</pl-answer>\n</pl-checkbox>',
+      '<pl-question-panel>\n<p>What is 2+2?</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer" partial-credit="net-correct">\n  <pl-answer correct="true">A</pl-answer>\n  <pl-answer correct="false">B</pl-answer>\n</pl-checkbox>',
     );
   });
 

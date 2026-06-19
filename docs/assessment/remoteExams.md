@@ -53,6 +53,7 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
       }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Remote makeup"],
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
@@ -102,6 +103,7 @@ This configuration is good when:
       }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Extended time"],
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
@@ -110,6 +112,7 @@ This configuration is good when:
       }
     },
     {
+      "uuid": "33333333-3333-4333-8333-333333333333",
       "labels": ["Conflict exam"],
       "dateControl": {
         "release": { "date": "2020-04-20T23:00:00" },
@@ -162,6 +165,7 @@ This configuration is good when:
       }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Extended time"],
       "dateControl": {
         "durationMinutes": 90
@@ -202,6 +206,7 @@ This configuration is good when:
       }
     },
     {
+      "uuid": "22222222-2222-4222-8222-222222222222",
       "labels": ["Extended time"],
       "dateControl": {
         "release": { "date": "2020-04-20T11:00:00" },
@@ -210,6 +215,7 @@ This configuration is good when:
       }
     },
     {
+      "uuid": "33333333-3333-4333-8333-333333333333",
       "labels": ["Conflict exam"],
       "dateControl": {
         "release": { "date": "2020-04-20T23:00:00" },

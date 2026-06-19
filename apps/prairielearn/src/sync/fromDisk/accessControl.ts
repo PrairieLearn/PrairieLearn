@@ -2,8 +2,13 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  type AccessControlRuleTargetType,
+  normalizeAccessControlRules,
+} from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -35,8 +40,13 @@ function validateAssessmentRules(
   rules: AccessControlJson[],
   studentLabelIdByName: Map<string, string>,
   invalidExamUuids: Set<string>,
+  requireRuleUuids: boolean,
 ): string | null {
   if (rules.length === 0) return null;
+
+  if (requireRuleUuids && rules.slice(1).some((rule) => rule.uuid == null)) {
+    return 'Every non-default accessControl rule must specify uuid.';
+  }
 
   // When the course instance config is invalid, student label syncing is
   // skipped, so labels that appear valid in JSON may not exist in the DB.
@@ -72,6 +82,8 @@ function prepareRuleRow(
   assessmentId: string,
   ruleNumber: number,
   rule: AccessControlJson,
+  uuidFormat: boolean,
+  targetType: AccessControlRuleTargetType,
   studentLabelIdByName: Map<string, string>,
 ): {
   ruleRow: string;
@@ -104,11 +116,11 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' = isDefaultRule ? 'none' : 'student_label';
-
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
+    uuid: uuidFormat && !isDefaultRule ? rule.uuid : null,
+    uuid_format: uuidFormat,
     // beforeRelease.listed is only configurable on the default rule.
     before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
@@ -132,18 +144,20 @@ function prepareRuleRow(
     after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
 
-  // Child data arrays use [assessment_id, rule_number, ...data] format.
-  // The sproc joins on (assessment_id, rule_number) to resolve the access_control_id.
+  // Child data arrays identify rules by assessment ID and rule number.
+  // Early- and late-deadline arrays also include target type to disambiguate
+  // old-format label rules from preserved DB-only enrollment rules that can
+  // share a rule number.
   const studentLabels = studentLabelIds.map((labelId) =>
     JSON.stringify([assessmentId, ruleNumber, labelId]),
   );
 
   const earlyDeadlines = (earlyDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
   );
 
   const lateDeadlines = (lateDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
   );
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
@@ -225,9 +239,15 @@ export async function validateAccessControl(
 
   const studentLabelIdByName = await selectStudentLabelIdByName(courseInstanceId);
   const invalidExamUuids = await selectInvalidExamUuids(validationTargets);
+  const requireRuleUuids = await features.enabled('access-control-require-rule-uuids');
 
   for (const { tid, rules } of validationTargets) {
-    const error = validateAssessmentRules(rules, studentLabelIdByName, invalidExamUuids);
+    const error = validateAssessmentRules(
+      rules,
+      studentLabelIdByName,
+      invalidExamUuids,
+      requireRuleUuids,
+    );
     if (error) {
       infofile.addError(assessments[tid], error);
     }
@@ -254,10 +274,18 @@ export async function syncAccessControl(
 
   for (const { assessmentId, rules } of assessments) {
     assessmentIds.push(assessmentId);
+    const normalizedRules = normalizeAccessControlRules(rules);
 
-    for (let i = 0; i < rules.length; i++) {
+    for (const { rule, targetType, ruleIndex } of normalizedRules.rules) {
       const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
-        prepareRuleRow(assessmentId, JSON_RULE_START + i, rules[i], studentLabelIdByName);
+        prepareRuleRow(
+          assessmentId,
+          JSON_RULE_START + ruleIndex,
+          rule,
+          normalizedRules.uuidFormat,
+          targetType,
+          studentLabelIdByName,
+        );
 
       allRuleRows.push(ruleRow);
       allStudentLabels.push(...studentLabels);

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
-    "dev": "nodemon --exec \"pnpm dev:no-watch\" --",
+    "dev": "tsx watch --clear-screen=false --tsconfig src/tsconfig.json --include \"**/*.sql\" --include \"**/*.py\" --include \"**/*.json\" --exclude \"assets/*\" --exclude \"elements/*\" --exclude \"dist/*\" --exclude \"public/*\" src/server.ts",
     "dev:bun": "bun --watch src/server.ts",
     "dev:no-watch": "tsx --tsconfig src/tsconfig.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
@@ -173,7 +173,7 @@
     "htmx-ext-loading-states": "^2.0.2",
     "htmx-ext-morphdom-swap": "^2.0.2",
     "htmx.org": "^2.0.10",
-    "http-proxy-middleware": "^4.0.0",
+    "http-proxy-middleware": "^4.1.1",
     "http-status": "^2.1.0",
     "ioredis": "^5.11.0",
     "isbinaryfile": "^6.0.0",
@@ -197,7 +197,6 @@
     "multer": "^2.1.1",
     "mustache": "^4.2.0",
     "node-jose": "^2.2.0",
-    "nodemon": "^3.1.14",
     "notebookjs": "^0.8.3",
     "numeric": "^1.2.6",
     "nuqs": "^2.8.9",
@@ -326,15 +325,5 @@
     "tsx": "^4.22.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.1.7"
-  },
-  "nodemonConfig": {
-    "ignore": [
-      "assets/*",
-      "elements/*",
-      "dist/*",
-      "public/*"
-    ],
-    "ext": "js,jsx,ts,tsx,json,sql,py",
-    "delay": 100
   }
 }
