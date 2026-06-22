@@ -32,7 +32,11 @@ import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './v
 // ---------------------------------------------------------------------------
 
 export interface Migration {
-  accessControl: AccessControlJsonInput;
+  /**
+   * Fully assembled migrated access control. `null` when the migration failed
+   * (errors is non-empty).
+   */
+  accessControl: AccessControlJsonInput | null;
   errors: string[];
   notes: string[];
   hasUidRules: boolean;
@@ -343,6 +347,19 @@ function buildAfterComplete(rules: AssessmentAccessRuleJson[]): {
     }
   }
 
+  // `questions: { hidden: true }` without reveal dates matches the
+  // afterComplete default, so omit it from the migrated JSON.
+  if (
+    result.questions?.hidden &&
+    result.questions.visibleFromDate == null &&
+    result.questions.visibleUntilDate == null
+  ) {
+    delete result.questions;
+  }
+  if (result.questions === undefined && result.score === undefined) {
+    return { afterComplete: undefined, notes };
+  }
+
   return { afterComplete: result, notes };
 }
 
@@ -506,9 +523,12 @@ function simplifyTimeline(
   dateControl: NonNullable<AccessControlJsonInput['dateControl']>,
   dueDateCredit: number,
 ): void {
-  const afterLastCredit = dateControl.afterLastDeadline?.credit ?? 0;
+  const afterLastCredit =
+    dateControl.afterLastDeadline?.allowSubmissions === true
+      ? dateControl.afterLastDeadline.credit
+      : 0;
   if (
-    dateControl.afterLastDeadline &&
+    dateControl.afterLastDeadline?.allowSubmissions === true &&
     !dateControl.lateDeadlines?.length &&
     afterLastCredit >= dueDateCredit
   ) {
@@ -616,6 +636,10 @@ function buildCreditTimeline(rules: AssessmentAccessRuleJson[]): BuilderResult {
     const releaseDate = findReleaseDate(rules);
     const dateControl: NonNullable<AccessControlJsonInput['dateControl']> = {};
     if (releaseDate) dateControl.release = { date: releaseDate };
+    const openTimedRule = creditRules.find((r) => r.timeLimitMin);
+    if (openTimedRule?.timeLimitMin) {
+      dateControl.durationMinutes = openTimedRule.timeLimitMin;
+    }
     return { dateControl, errors, notes };
   }
 
@@ -799,10 +823,17 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   const examRules = rules.filter((r) => r.examUuid);
   if (examRules.length === 0) return null;
 
-  const exams = examRules.map((r) => ({ examUuid: r.examUuid! }));
+  const examUuids = [...new Set(examRules.map((r) => r.examUuid!))];
+  const exams = examUuids.map((examUuid) => ({ examUuid }));
   const remainingRules = rules.filter((r) => !r.examUuid);
 
   const notes: string[] = [];
+  const duplicateExamCount = examRules.length - examUuids.length;
+  if (duplicateExamCount > 0) {
+    notes.push(
+      `${duplicateExamCount} duplicate PrairieTest exam rule${duplicateExamCount === 1 ? '' : 's'} collapsed during migration.`,
+    );
+  }
   if (examRules.some((r) => r.password)) {
     notes.push(
       'Passwords on PrairieTest rules were discarded during migration; PrairieTest exams are gated by their own access controls.',
@@ -820,157 +851,21 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
 // Main migration pipeline
 // ---------------------------------------------------------------------------
 
-interface AnalysisResults {
+function assembleAccessControl({
+  schedulingRules,
+  ptExtract,
+  pwExtract,
+  dateControl,
+  visibilityMigration,
+  fallbackReleaseDate,
+}: {
   schedulingRules: AssessmentAccessRuleJson[];
   ptExtract: ReturnType<typeof extractPrairieTest>;
   pwExtract: ReturnType<typeof extractPassword>;
   dateControl: AccessControlJsonInput['dateControl'];
   visibilityMigration: VisibilityMigration;
-}
-
-interface Analysis {
-  errors: string[];
-  notes: string[];
-  hasUidRules: boolean;
-  /**
-   * Intermediate state used by `migrateAllowAccess` to assemble the final
-   * `AccessControlJsonInput`. `null` when the analysis failed (errors is
-   * non-empty). Callers that only need diagnostics can ignore this field.
-   */
-  results: AnalysisResults | null;
-}
-
-/**
- * Runs the diagnostic phase of the migration: normalization, orthogonal-concern
- * extraction, precondition checks, and credit-timeline construction. Use this
- * when the caller wants to know whether the migration would succeed (and what
- * notes/UID-rule warnings to surface) without producing a final
- * `AccessControlJsonInput`.
- */
-function analyzeAllowAccess(rules: AssessmentAccessRuleJson[]): Analysis {
-  const hasUidRules = rules.some((r) => r.uids);
-  rules = normalizeRules(rules);
-
-  const notes: string[] = [];
-  if (hasUidRules) {
-    notes.push(
-      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
-    );
-  }
-
-  let schedulingRules = rules;
-
-  const ptExtract = extractPrairieTest(schedulingRules);
-  if (ptExtract) {
-    schedulingRules = ptExtract.remainingRules;
-    notes.push(...ptExtract.notes);
-  }
-
-  const pwExtract = extractPassword(schedulingRules);
-  if (pwExtract) {
-    schedulingRules = pwExtract.remainingRules;
-    notes.push(...pwExtract.notes);
-  }
-
-  if (hasAccessGaps(schedulingRules)) {
-    return {
-      errors: ['Non-contiguous access windows are not supported.'],
-      notes,
-      hasUidRules,
-      results: null,
-    };
-  }
-
-  if (hasNonMonotonicCredit(schedulingRules)) {
-    return {
-      errors: ['Credit must be non-increasing over time.'],
-      notes,
-      hasUidRules,
-      results: null,
-    };
-  }
-
-  if (hasPracticeBeforeRelease(schedulingRules)) {
-    return {
-      errors: [
-        'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
-      ],
-      notes,
-      hasUidRules,
-      results: null,
-    };
-  }
-
-  const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
-  const hasModeOnly =
-    !hasCreditRules &&
-    schedulingRules.some((r) => r.mode) &&
-    schedulingRules.every(
-      (r) =>
-        (r.credit ?? 0) === 0 &&
-        (r.active ?? true) &&
-        !r.startDate &&
-        !r.endDate &&
-        !r.showClosedAssessment &&
-        !r.showClosedAssessmentScore,
-    );
-  if (hasModeOnly && !ptExtract) {
-    return {
-      errors: ['Mode-only access rules are not supported.'],
-      notes,
-      hasUidRules,
-      results: null,
-    };
-  }
-
-  const { dateControl, errors, notes: builderNotes } = buildCreditTimeline(schedulingRules);
-  notes.push(...builderNotes);
-
-  if (errors.length > 0) {
-    return { errors, notes, hasUidRules, results: null };
-  }
-
-  const questionReviewWindowCount = getQuestionReviewWindows(schedulingRules).length;
-  if (questionReviewWindowCount > 1) {
-    notes.push(
-      `${questionReviewWindowCount} completed-question review windows collapsed into a single visibility window.`,
-    );
-  }
-
-  // No-op detection: when nothing produced a dateControl, password, or
-  // PrairieTest config, the rules collapse to a no-op. Suppress the note if
-  // the rules were intentionally hidden via `active: false`.
-  if (!dateControl && !ptExtract && !pwExtract) {
-    const isHidden = schedulingRules.some((r) => (r.active ?? true) === false);
-    if (!isHidden) {
-      notes.push('An empty accessControl list signifies that no access is granted.');
-    }
-  }
-
-  const visibilityMigration = buildVisibilityMigration(schedulingRules);
-  notes.push(...visibilityMigration.notes);
-
-  return {
-    errors: [],
-    notes,
-    hasUidRules,
-    results: { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration },
-  };
-}
-
-export function migrateAllowAccess(
-  rules: AssessmentAccessRuleJson[],
-  fallbackReleaseDate: string,
-): Migration {
-  const analysis = analyzeAllowAccess(rules);
-  if (analysis.results === null) {
-    const { errors, notes, hasUidRules } = analysis;
-    return { accessControl: {}, errors, notes, hasUidRules };
-  }
-
-  const { schedulingRules, ptExtract, pwExtract, dateControl, visibilityMigration } =
-    analysis.results;
-  const { notes, hasUidRules } = analysis;
+  fallbackReleaseDate: string;
+}): AccessControlJsonInput {
   const accessControl: AccessControlJsonInput = {};
 
   if (dateControl) {
@@ -1002,32 +897,174 @@ export function migrateAllowAccess(
     accessControl.dateControl.release = { date: fallbackReleaseDate };
   }
 
-  // Run the assembled config through the same validators that sync uses.
-  // We shouldn't be creating invalid configurations, so this acts as a safety check.
+  return accessControl;
+}
+
+function validateMigratedAccessControl(accessControl: AccessControlJsonInput): string[] {
   const schemaResult = AccessControlJsonSchema.safeParse(accessControl);
   if (!schemaResult.success) {
-    return {
-      accessControl: {},
-      errors: schemaResult.error.issues.map((issue) =>
-        issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
-      ),
-      notes,
-      hasUidRules,
-    };
-  }
-  const { errors: validationErrors } = validateAccessControlRules({
-    rules: [accessControl],
-  });
-  if (validationErrors.length > 0) {
-    return { accessControl: {}, errors: validationErrors, notes, hasUidRules };
+    return schemaResult.error.issues.map((issue) =>
+      issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
+    );
   }
 
-  return { accessControl, errors: [], notes, hasUidRules };
+  const { errors } = validateAccessControlRules({
+    rules: [accessControl],
+  });
+  return errors;
+}
+
+/**
+ * Runs the allowAccess migration pipeline: normalization, orthogonal-concern
+ * extraction, precondition checks, credit-timeline construction, final
+ * accessControl assembly, and final accessControl validation.
+ */
+export function migrateAllowAccess(
+  rules: AssessmentAccessRuleJson[],
+  fallbackReleaseDate: string,
+): Migration {
+  const hasUidRules = rules.some((r) => r.uids);
+  rules = normalizeRules(rules);
+
+  const notes: string[] = [];
+  if (hasUidRules) {
+    notes.push(
+      'UID-based rules are excluded from the migrated JSON and must be recreated as enrollment overrides if needed.',
+    );
+  }
+
+  let schedulingRules = rules;
+
+  const ptExtract = extractPrairieTest(schedulingRules);
+  if (ptExtract) {
+    schedulingRules = ptExtract.remainingRules;
+    notes.push(...ptExtract.notes);
+  }
+
+  const pwExtract = extractPassword(schedulingRules);
+  if (pwExtract) {
+    schedulingRules = pwExtract.remainingRules;
+    notes.push(...pwExtract.notes);
+  }
+
+  if (hasAccessGaps(schedulingRules)) {
+    return {
+      errors: ['Non-contiguous access windows are not supported.'],
+      notes,
+      hasUidRules,
+      accessControl: null,
+    };
+  }
+
+  if (hasNonMonotonicCredit(schedulingRules)) {
+    return {
+      errors: ['Credit must be non-increasing over time.'],
+      notes,
+      hasUidRules,
+      accessControl: null,
+    };
+  }
+
+  if (hasPracticeBeforeRelease(schedulingRules)) {
+    return {
+      errors: [
+        'Practice windows before the assessment opens are not supported. Practice is only allowed after the assessment closes.',
+      ],
+      notes,
+      hasUidRules,
+      accessControl: null,
+    };
+  }
+
+  const hasCreditRules = schedulingRules.some((r) => (r.credit ?? 0) > 0);
+  const hasModeOnly =
+    !hasCreditRules &&
+    schedulingRules.some((r) => r.mode) &&
+    schedulingRules.every(
+      (r) =>
+        (r.credit ?? 0) === 0 &&
+        (r.active ?? true) &&
+        !r.startDate &&
+        !r.endDate &&
+        !r.showClosedAssessment &&
+        !r.showClosedAssessmentScore,
+    );
+  if (hasModeOnly && !ptExtract) {
+    return {
+      errors: ['Mode-only access rules are not supported.'],
+      notes,
+      hasUidRules,
+      accessControl: null,
+    };
+  }
+
+  const { dateControl, errors, notes: builderNotes } = buildCreditTimeline(schedulingRules);
+  notes.push(...builderNotes);
+
+  if (errors.length > 0) {
+    return { errors, notes, hasUidRules, accessControl: null };
+  }
+
+  const questionReviewWindowCount = getQuestionReviewWindows(schedulingRules).length;
+  if (questionReviewWindowCount > 1) {
+    notes.push(
+      `${questionReviewWindowCount} completed-question review windows collapsed into a single visibility window.`,
+    );
+  }
+
+  // No-op detection: when nothing produced a dateControl, password, or
+  // PrairieTest config, the rules collapse to a no-op. Suppress the note if
+  // the rules were intentionally hidden via `active: false`.
+  if (!dateControl && !ptExtract && !pwExtract) {
+    const isHidden = schedulingRules.some((r) => (r.active ?? true) === false);
+    if (!isHidden) {
+      notes.push('An empty accessControl list signifies that no access is granted.');
+    }
+  }
+
+  const visibilityMigration = buildVisibilityMigration(schedulingRules);
+  notes.push(...visibilityMigration.notes);
+
+  const accessControl = assembleAccessControl({
+    schedulingRules,
+    ptExtract,
+    pwExtract,
+    dateControl,
+    visibilityMigration,
+    fallbackReleaseDate,
+  });
+  const validationErrors = validateMigratedAccessControl(accessControl);
+
+  return {
+    errors: validationErrors,
+    notes,
+    hasUidRules,
+    accessControl: validationErrors.length > 0 ? null : accessControl,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // File-level operations
 // ---------------------------------------------------------------------------
+
+/**
+ * Replaces `oldKey` with `newKey` (holding `value`) while preserving the
+ * original property order. If `newKey` already exists alongside `oldKey`, the
+ * stale `newKey` entry is dropped so it can't overwrite the replacement.
+ */
+export function replaceJsonKey(
+  data: Record<string, unknown>,
+  oldKey: string,
+  newKey: string,
+  value: unknown,
+): Record<string, unknown> {
+  const hasOldKey = Object.hasOwn(data, oldKey);
+  return Object.fromEntries(
+    Object.entries(data)
+      .filter(([key]) => !(hasOldKey && key === newKey))
+      .map(([key, val]) => (key === oldKey ? [newKey, value] : [key, val])),
+  );
+}
 
 /** Migrates assessment JSON from legacy allowAccess to modern accessControl format. */
 export function migrateAssessmentJson(
@@ -1036,20 +1073,25 @@ export function migrateAssessmentJson(
 ): { json: string; errors: string[]; notes: string[] } | null {
   const data = JSON.parse(jsonContent);
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+  if (!Array.isArray(allowAccess)) return null;
+
+  if (allowAccess.length === 0) {
+    const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', []);
+    return { json: JSON.stringify(migrated), errors: [], notes: [] };
+  }
 
   const { accessControl, errors, notes } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
-  if (errors.length > 0) return null;
+  if (errors.length > 0 || accessControl == null) return null;
 
-  data.accessControl = [accessControl];
-  delete data.allowAccess;
-  return { json: JSON.stringify(data), errors, notes };
+  const migrated = replaceJsonKey(data, 'allowAccess', 'accessControl', [accessControl]);
+  return { json: JSON.stringify(migrated), errors, notes };
 }
 
 export async function analyzeAssessmentFile(
   filePath: string,
   tid: string,
+  fallbackReleaseDate: string,
 ): Promise<AssessmentMigrationAnalysis | null> {
   let data: Record<string, unknown>;
   try {
@@ -1064,11 +1106,12 @@ export async function analyzeAssessmentFile(
   }
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(allowAccess)) return null;
 
-  const { errors, notes, hasUidRules } = analyzeAllowAccess(allowAccess);
+  const { errors, notes, hasUidRules } =
+    allowAccess.length === 0
+      ? { errors: [], notes: [], hasUidRules: false }
+      : migrateAllowAccess(allowAccess, fallbackReleaseDate);
 
   return {
     tid,
@@ -1083,6 +1126,7 @@ export async function analyzeAssessmentFile(
 
 export async function analyzeCourseInstanceAssessments(
   courseInstancePath: string,
+  fallbackReleaseDate: string,
 ): Promise<CourseInstanceMigrationAnalysis> {
   const assessmentsPath = path.join(courseInstancePath, 'assessments');
   const assessments: AssessmentMigrationAnalysis[] = [];
@@ -1090,7 +1134,7 @@ export async function analyzeCourseInstanceAssessments(
   const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
   for (const dir of assessmentDirs) {
     const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
-    const analysis = await analyzeAssessmentFile(infoPath, dir);
+    const analysis = await analyzeAssessmentFile(infoPath, dir, fallbackReleaseDate);
     if (analysis) {
       assessments.push(analysis);
     }
@@ -1103,7 +1147,7 @@ export async function analyzeCourseInstanceAssessments(
 }
 
 /**
- * Errors and notes from `migrateAllowAccess` are intentionally discarded
+ * Errors and notes from `migrateAssessmentJson` are intentionally discarded
  * here. The UI runs `analyzeAccessControl` ahead of time, and the errors produced here
  * will match what the user already saw.
  */
@@ -1117,7 +1161,7 @@ export async function applyMigrationToAssessmentFile(
   const data = JSON.parse(content);
 
   const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
-  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+  if (!Array.isArray(allowAccess)) {
     return;
   }
 
@@ -1132,11 +1176,13 @@ export async function applyMigrationToAssessmentFile(
       delete data.allowAccess;
       break;
     case 'migrate': {
-      const { accessControl, errors } = migrateAllowAccess(allowAccess, fallbackReleaseDate);
-      if (errors.length === 0) {
-        data.accessControl = [accessControl];
-        delete data.allowAccess;
-      } else if (clearIncompatible) {
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+      if (migrationResult) {
+        const formatted = await formatJsonWithPrettier(migrationResult.json);
+        await fs.writeFile(filePath, formatted);
+        return;
+      }
+      if (clearIncompatible) {
         delete data.allowAccess;
       } else {
         return;

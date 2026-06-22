@@ -1,5 +1,23 @@
 # @prairielearn/session
 
+## 4.0.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- e4a5a84: Persist regenerated sessions to the store immediately, mirroring `loadSession()`'s behavior for new sessions. This ensures the new session ID is available to other queries within the same request after `req.session.regenerate()`.
+
 ## 4.0.5
 
 ### Patch Changes

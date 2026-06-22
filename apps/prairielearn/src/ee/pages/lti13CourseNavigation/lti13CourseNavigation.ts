@@ -53,7 +53,6 @@ async function courseInstancesAllowedToLink({
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
     authzData,
-    requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);

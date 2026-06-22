@@ -56,7 +56,7 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
 type RoleValue = (typeof ROLE_VALUES)[number];
-const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
+const STATUS_VALUES = [...EnumEnrollmentStatusSchema.options];
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
 const EMPTY_ROLE_FILTER: MultiSelectFilterValue<RoleValue> = { values: [], mode: 'include' };
 const EMPTY_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {

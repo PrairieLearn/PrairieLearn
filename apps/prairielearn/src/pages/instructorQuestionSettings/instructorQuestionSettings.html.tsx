@@ -575,10 +575,7 @@ export const InstructorQuestionSettingsForm = ({
                     aria-invalid={!!errors.workspace_port || undefined}
                     defaultValue={defaultValues.workspace_port}
                     aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
-                    // Disable default behavior of incrementing/decrementing the value when scrolling
-                    onWheel={(e) => e.currentTarget.blur()}
                     {...register('workspace_port', {
-                      required: 'Port is required for workspace',
                       validate: (value) => {
                         if (value === '') return true;
                         const n = Number(value);
@@ -593,7 +590,8 @@ export const InstructorQuestionSettingsForm = ({
                     </div>
                   )}
                   <small className="form-text text-muted">
-                    The port number used in the Docker image.
+                    The port number used in the Docker image. If not provided, the default port for
+                    the image will be used.
                   </small>
                 </div>
 
@@ -609,9 +607,7 @@ export const InstructorQuestionSettingsForm = ({
                     aria-invalid={!!errors.workspace_home || undefined}
                     defaultValue={defaultValues.workspace_home}
                     aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
-                    {...register('workspace_home', {
-                      required: 'Home is required for workspace',
-                    })}
+                    {...register('workspace_home')}
                   />
                   {errors.workspace_home && (
                     <div id="workspace_home-error" className="invalid-feedback">
@@ -619,7 +615,8 @@ export const InstructorQuestionSettingsForm = ({
                     </div>
                   )}
                   <small className="form-text text-muted">
-                    The home directory of the workspace container.
+                    The home directory of the workspace container. If not provided, the default home
+                    directory for the image will be used.
                   </small>
                 </div>
 
@@ -846,8 +843,6 @@ export const InstructorQuestionSettingsForm = ({
                     aria-errormessage={
                       errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
                     }
-                    // Disable default behavior of incrementing/decrementing the value when scrolling
-                    onWheel={(e) => e.currentTarget.blur()}
                     {...register('external_grading_timeout', {
                       setValueAs: coerceToNumber,
                       min: {

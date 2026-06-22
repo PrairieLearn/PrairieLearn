@@ -9,13 +9,7 @@ import {
 } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
-import {
-  type AuthzData,
-  type CourseRole,
-  type InstructorCourseInstanceRole,
-  type PageAuthzData,
-  assertHasRole,
-} from '../lib/authz-data-lib.js';
+import type { PageAuthzData } from '../lib/authz-data-lib.js';
 import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
@@ -93,14 +87,10 @@ export async function selectOptionalCourseInstanceIdByEnrollmentCode({
 export async function selectCourseInstancesWithStaffAccess({
   course,
   authzData,
-  requiredRole,
 }: {
   course: CourseContext;
   authzData: PageAuthzData;
-  requiredRole: (CourseRole | InstructorCourseInstanceRole)[];
 }) {
-  assertHasRole(authzData, requiredRole);
-
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
     {
@@ -136,8 +126,6 @@ export async function selectCourseInstancesWithStaffAccess({
  * Returns all users with at least the given minimal role for the given course instance.
  *
  * @param params
- * @param params.authzData - The authorization data of the user.
- * @param params.requiredRole - The required role that the model function checks for.
  * @param params.courseInstance - The course instance to check access for.
  * @param params.minimalRole - The minimal role to check access for.
  *
@@ -145,17 +133,11 @@ export async function selectCourseInstancesWithStaffAccess({
  */
 export async function selectUsersWithCourseInstanceAccess({
   courseInstance,
-  authzData,
-  requiredRole,
   minimalRole,
 }: {
   courseInstance: CourseInstance;
-  authzData: AuthzData;
-  requiredRole: ('Student Data Viewer' | 'Student Data Editor')[];
   minimalRole: 'Student Data Viewer' | 'Student Data Editor';
 }) {
-  assertHasRole(authzData, requiredRole);
-
   return await queryRows(
     sql.select_users_with_course_instance_access,
     { course_instance_id: courseInstance.id, minimal_role: minimalRole },
@@ -165,18 +147,10 @@ export async function selectUsersWithCourseInstanceAccess({
 
 export async function selectCourseInstanceGraderStaff({
   courseInstance,
-  authzData,
-  requiredRole,
 }: {
   courseInstance: CourseInstance;
-  authzData: AuthzData;
-  requiredRole: ('Student Data Viewer' | 'Student Data Editor')[];
 }) {
-  assertHasRole(authzData, requiredRole);
-
   return await selectUsersWithCourseInstanceAccess({
-    authzData,
-    requiredRole,
     courseInstance,
     minimalRole: 'Student Data Editor',
   });

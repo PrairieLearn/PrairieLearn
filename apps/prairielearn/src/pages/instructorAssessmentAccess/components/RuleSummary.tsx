@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Fragment, type ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
-import type { FieldErrors } from 'react-hook-form';
+import { type FieldErrors, get } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
@@ -14,6 +14,7 @@ import {
   type RuntimeDateControl,
   buildAccessTimeline,
 } from '../../../lib/assessment-access-control/timeline.js';
+import { UUID_REGEXP } from '../../../lib/string-util.js';
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 
@@ -27,14 +28,12 @@ import {
   isNonDefaultScoreVisibility,
 } from './types.js';
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function formatCreditPercent(credit: number): string {
   return Number.isFinite(credit) ? `${credit}%` : '—';
 }
 
-/** react-hook-form error subtree for a single access control rule. */
-export type RuleFormErrors = FieldErrors<DefaultRuleData> | FieldErrors<OverrideData>;
+/** react-hook-form error subtree for an override rule. */
+export type OverrideRuleFormErrors = FieldErrors<OverrideData>;
 type DefaultRuleFormErrors = FieldErrors<DefaultRuleData>;
 
 interface DateTableRow {
@@ -123,7 +122,14 @@ function defaultRuleToRuntimeDateControl(
       : {}),
     ...(earlyDeadlines.length > 0 ? { earlyDeadlines } : {}),
     ...(lateDeadlines.length > 0 ? { lateDeadlines } : {}),
-    ...(rule.afterLastDeadline ? { afterLastDeadline: rule.afterLastDeadline } : {}),
+    ...(rule.afterLastDeadline.allowSubmissions
+      ? {
+          afterLastDeadline: {
+            allowSubmissions: true as const,
+            credit: rule.afterLastDeadline.credit,
+          },
+        }
+      : {}),
   };
 }
 
@@ -300,15 +306,12 @@ export function generateDefaultRuleDateTableRows(
     rows.push({
       date: '',
       label: getAfterLastDeadlineLabel(rule.lateDeadlines),
-      access:
-        afterLastDeadline == null
-          ? 'No access'
-          : afterLastDeadline.allowSubmissions
-            ? afterLastDeadline.credit != null
-              ? formatCreditPercent(afterLastDeadline.credit)
-              : 'Practice'
-            : 'Closed',
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      access: afterLastDeadline.allowSubmissions
+        ? afterLastDeadline.credit > 0
+          ? formatCreditPercent(afterLastDeadline.credit)
+          : 'Practice'
+        : 'No submissions allowed',
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
       current: isAfterLastSegment,
       currentVariant,
     });
@@ -526,20 +529,19 @@ function formatDeadlineEntries(
   }));
 }
 
-function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue | null): string {
-  if (afterLastDeadline == null) return 'No access';
+function formatAfterLastDeadline(afterLastDeadline: AfterLastDeadlineValue): string {
   const parts: string[] = [];
   if (
     afterLastDeadline.allowSubmissions &&
-    afterLastDeadline.credit != null &&
+    afterLastDeadline.credit > 0 &&
     Number.isFinite(afterLastDeadline.credit)
   ) {
     parts.push(`${afterLastDeadline.credit}% credit`);
   }
   if (afterLastDeadline.allowSubmissions) {
-    parts.push(parts.length > 0 ? 'submissions allowed' : 'Submissions allowed');
+    parts.push(parts.length > 0 ? 'submissions allowed' : 'Practice submissions allowed');
   } else {
-    parts.push('Closed');
+    parts.push('No submissions allowed');
   }
   return parts.join(', ');
 }
@@ -594,7 +596,7 @@ function HiddenAfterCompletionVisibility({
 function generateOverrideFieldItems(
   rule: OverrideData,
   displayTimezone: string,
-  formErrors?: RuleFormErrors,
+  formErrors?: OverrideRuleFormErrors,
 ): OverrideFieldItem[] {
   const items: OverrideFieldItem[] = [];
   const overriddenFields = new Set(rule.overriddenFields);
@@ -679,7 +681,7 @@ function generateOverrideFieldItems(
     items.push({
       label: 'After last deadline',
       value: formatAfterLastDeadline(rule.afterLastDeadline),
-      error: formErrors?.afterLastDeadline?.credit?.message,
+      error: get(formErrors, 'afterLastDeadline.credit')?.message,
     });
   }
 
@@ -831,7 +833,9 @@ function SummaryCardHeader({
   return (
     <div className="access-summary-card-header">
       <i className={`bi ${icon} text-body-secondary`} aria-hidden="true" />
-      <h6 id={headingId}>{title}</h6>
+      <h3 className="h6" id={headingId}>
+        {title}
+      </h3>
     </div>
   );
 }
@@ -1063,12 +1067,8 @@ function buildDefaultRuleCurrentIndicator(
     };
   }
 
-  if (!segment.accessible) {
-    return { variant: 'secondary', icon: 'bi-x-circle', text: 'No access' };
-  }
-
   if (!segment.submittable) {
-    return { variant: 'primary', icon: 'bi-lock', text: 'Closed' };
+    return { variant: 'primary', icon: 'bi-lock', text: 'No submissions allowed' };
   }
 
   if (segment.endDate) {
@@ -1132,7 +1132,7 @@ export function PrairieTestExamsTable({
     new Set(
       exams
         .map((e) => e.examUuid)
-        .filter((u) => UUID_PATTERN.test(u))
+        .filter((u) => UUID_REGEXP.test(u))
         .map((u) => u.toLowerCase()),
     ),
   ).sort();
@@ -1246,7 +1246,7 @@ export function OverrideRuleSummaryCard({
   title: string;
   onEdit?: () => void;
   displayTimezone: string;
-  formErrors?: RuleFormErrors;
+  formErrors?: OverrideRuleFormErrors;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
   isActive?: boolean;

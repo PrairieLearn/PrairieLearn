@@ -20,7 +20,16 @@ WITH
         AND $date BETWEEN r.access_start AND r.access_end
       ) AS reservation_active,
       l.id AS location_id,
-      l.filter_networks AS location_filter_networks
+      l.filter_networks AS location_filter_networks,
+      -- For center sessions the location's flag is authoritative; for
+      -- course-run sessions it lives on the session itself. COALESCE
+      -- collapses both cases — the schema guarantees the relevant column
+      -- is non-null in each.
+      COALESCE(
+        l.lockdown_browser_enabled,
+        s.lockdown_browser_enabled,
+        FALSE
+      ) AS reservation_requires_lockdown_browser
     FROM
       pt_reservations AS r
       JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
@@ -76,6 +85,17 @@ SELECT
       END
     ),
     FALSE
-  )
+  ) AS exam_mode,
+  -- If any in-progress reservation requires LockDown Browser, we'll deny
+  -- access from non-LDB sessions. We use `reservation_active` (the strict
+  -- "right now" window) rather than the broader pre-check-in / post-grace
+  -- window so we don't lock students out before the exam actually starts.
+  COALESCE(
+    BOOL_OR(
+      reservation.reservation_active
+      AND reservation.reservation_requires_lockdown_browser
+    ),
+    FALSE
+  ) AS requires_lockdown_browser
 FROM
   active_reservations AS reservation;

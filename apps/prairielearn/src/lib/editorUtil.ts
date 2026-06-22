@@ -1,6 +1,6 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import fs from 'fs-extra';
 import z from 'zod';
 
@@ -13,7 +13,7 @@ import { computeStableHash } from './json.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function computeFileContentHash(contents: string): string {
-  return sha256(b64EncodeUnicode(contents)).toString();
+  return crypto.createHash('sha256').update(b64EncodeUnicode(contents)).digest('hex');
 }
 
 export async function getOriginalHash(filePath: string) {

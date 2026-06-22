@@ -7,7 +7,7 @@ Shared ESLint configuration for PrairieLearn projects.
 ```bash
 npm install @prairielearn/eslint-config
 # or
-yarn add @prairielearn/eslint-config
+pnpm add @prairielearn/eslint-config
 ```
 
 ## Usage

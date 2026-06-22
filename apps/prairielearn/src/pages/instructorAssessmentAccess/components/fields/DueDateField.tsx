@@ -1,8 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { useEffect } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { useController, useWatch } from 'react-hook-form';
-
-import { formatDateFriendly } from '@prairielearn/formatter';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
@@ -10,17 +9,6 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry, DueValue } from '../types.js';
 import { endOfDayDatetime, getLatestDeadlineEntry } from '../utils/dateUtils.js';
-
-function localDatetimeToTimezoneDate(value: string, timezone: string): Date {
-  return new Date(Temporal.PlainDateTime.from(value).toZonedDateTime(timezone).epochMilliseconds);
-}
-
-function formatCourseLocalDate(value: string, displayTimezone: string): string {
-  return formatDateFriendly(localDatetimeToTimezoneDate(value, displayTimezone), displayTimezone, {
-    dateOnly: true,
-    includeTz: false,
-  });
-}
 
 function DueDateInput({
   value,
@@ -169,7 +157,6 @@ function DueDateInput({
                 value={value.credit ?? ''}
                 placeholder="100"
                 disabled={!ruleEditable}
-                onWheel={({ currentTarget }) => currentTarget.blur()}
                 onChange={({ currentTarget }) => {
                   const raw = currentTarget.value;
                   const parsed = raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
@@ -200,31 +187,8 @@ function DueDateInput({
   );
 }
 
-function validateDueDate(
-  date: string | null,
-  releaseDate: string | null | undefined,
-  displayTimezone: string,
-): string | undefined {
-  if (date === null) return undefined;
-  if (!date) return 'Date is required';
-  if (releaseDate && new Date(date) <= new Date(releaseDate)) {
-    return `Must be after release date (${formatCourseLocalDate(releaseDate, displayTimezone)})`;
-  }
-  return undefined;
-}
-
-function validateDueCredit(credit: number | null, customCredit: boolean): string | undefined {
-  if (credit === null) {
-    if (customCredit) return 'Credit is required';
-    return undefined;
-  }
-  if (!Number.isFinite(credit)) return 'Credit must be a finite number';
-  if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit > 200) return 'Credit must be between 0% and 200%';
-  return undefined;
-}
-
 export function DefaultDueDateField({ displayTimezone }: { displayTimezone: string }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const releaseDate = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
@@ -239,16 +203,9 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
 
   const dateCtrl = useController<AccessControlFormData, 'defaultRule.due.date'>({
     name: 'defaultRule.due.date',
-    rules: {
-      validate: (value) => validateDueDate(value, releaseDate, displayTimezone) ?? true,
-    },
   });
   const creditCtrl = useController<AccessControlFormData, 'defaultRule.due.credit'>({
     name: 'defaultRule.due.credit',
-    rules: {
-      validate: (value, formValues) =>
-        validateDueCredit(value, formValues.defaultRule.due.customCredit) ?? true,
-    },
   });
 
   const value: DueValue = {
@@ -256,6 +213,14 @@ export function DefaultDueDateField({ displayTimezone }: { displayTimezone: stri
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
+
+  // Re-validate the due date whenever the release date changes so the
+  // cross-field error message updates without the user touching the due
+  // date input.
+  useEffect(() => {
+    void trigger('defaultRule.due.date');
+  }, [releaseDate, trigger]);
+
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {
@@ -288,6 +253,7 @@ export function OverrideDueDateField({
   index: number;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.due'>({
     name: 'defaultRule.due',
   });
@@ -322,16 +288,9 @@ export function OverrideDueDateField({
 
   const dateCtrl = useController<AccessControlFormData, `overrides.${number}.due.date`>({
     name: `overrides.${index}.due.date`,
-    rules: {
-      validate: (value) => validateDueDate(value, validationReleaseDate, displayTimezone) ?? true,
-    },
   });
   const creditCtrl = useController<AccessControlFormData, `overrides.${number}.due.credit`>({
     name: `overrides.${index}.due.credit`,
-    rules: {
-      validate: (value, formValues) =>
-        validateDueCredit(value, formValues.overrides[index].due.customCredit) ?? true,
-    },
   });
 
   const value: DueValue = {
@@ -339,6 +298,14 @@ export function OverrideDueDateField({
     credit: creditCtrl.field.value,
     customCredit: customCreditCtrl.field.value,
   };
+
+  // Re-validate the due date whenever the effective release date changes so
+  // the cross-field error message updates without the user touching the due
+  // date input.
+  useEffect(() => {
+    void trigger(`overrides.${index}.due.date`);
+  }, [index, validationReleaseDate, trigger]);
+
   const handleChange = (next: DueValue) => {
     if (next.date !== value.date) dateCtrl.field.onChange(next.date);
     if (next.customCredit !== value.customCredit) {

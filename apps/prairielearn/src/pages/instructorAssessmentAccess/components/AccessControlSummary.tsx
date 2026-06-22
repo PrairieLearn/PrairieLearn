@@ -20,9 +20,9 @@ import {
   AfterCompleteTableView,
   DateTableView,
   DefaultRuleCurrentIndicator,
+  type OverrideRuleFormErrors,
   OverrideRuleSummaryCard,
   PrairieTestExamsTable,
-  type RuleFormErrors,
   generateAfterCompleteTableRows,
   generateDefaultRuleDateTableRows,
 } from './RuleSummary.js';
@@ -56,7 +56,7 @@ function SortableOverrideCard({
 }: {
   id: string;
   override: OverrideData;
-  formErrors: RuleFormErrors | undefined;
+  formErrors: OverrideRuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
   isActive: boolean;
@@ -70,7 +70,9 @@ function SortableOverrideCard({
 
   const style = {
     opacity: isDragging ? 0.6 : 1,
-    transform: CSS.Transform.toString(transform ? { ...transform, scaleX: 1, scaleY: 1 } : null),
+    // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+    // which visually warps variable-height rows. See https://github.com/clauderic/dnd-kit/issues/44.
+    transform: CSS.Translate.toString(transform),
     transition,
   };
 
@@ -161,6 +163,7 @@ export function AccessControlSummary({
   selectedOverrideIndex,
   getOverrideName,
   onAddOverride,
+  addOverrideDisabledReason,
   onRemoveOverride,
   onMoveOverride,
   onEditDefaultRule,
@@ -181,6 +184,7 @@ export function AccessControlSummary({
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
+  addOverrideDisabledReason?: string | null;
   onRemoveOverride: (index: number) => void;
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
   /** Callback when default rule edit is requested */
@@ -227,6 +231,7 @@ export function AccessControlSummary({
   const hiddenEnrollmentRuleNoun =
     hiddenEnrollmentRuleCount === 1 ? 'student-specific override' : 'student-specific overrides';
   const hiddenEnrollmentRuleVerb = hiddenEnrollmentRuleCount === 1 ? 'is' : 'are';
+  const addOverrideDisabledReasonId = `${dndId}-add-override-disabled-reason`;
 
   return (
     <div>
@@ -237,14 +242,14 @@ export function AccessControlSummary({
       )}
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0 d-flex align-items-center">
+          <h2 className="h5 mb-0 d-flex align-items-center">
             Defaults
             {defaultRuleErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
                 {defaultRuleErrorCount} {defaultRuleErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
-          </h5>
+          </h2>
           <div className="d-flex gap-2">
             <Button
               variant="outline-primary"
@@ -291,19 +296,22 @@ export function AccessControlSummary({
 
       <section>
         <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
-          <h5 className="mb-0 d-flex align-items-center">
+          <h2 className="h5 mb-0 d-flex align-items-center">
             Overrides
             {overridesErrorCount > 0 && (
               <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>
                 {overridesErrorCount} {overridesErrorCount === 1 ? 'error' : 'errors'}
               </Badge>
             )}
-          </h5>
+          </h2>
           {canEditAccessSettings && (
             <Button
               variant="primary"
               size="sm"
               className="d-inline-flex align-items-center"
+              disabled={addOverrideDisabledReason != null}
+              title={addOverrideDisabledReason ?? undefined}
+              aria-describedby={addOverrideDisabledReason ? addOverrideDisabledReasonId : undefined}
               onClick={onAddOverride}
             >
               <i className="bi bi-plus-lg me-1" /> Add override
@@ -314,6 +322,12 @@ export function AccessControlSummary({
           Customize settings for specific students or students with specific labels. Fields not
           overridden are inherited from the defaults and any earlier overrides.
         </small>
+
+        {addOverrideDisabledReason && (
+          <Alert variant="secondary" className="py-2 mb-3" id={addOverrideDisabledReasonId}>
+            {addOverrideDisabledReason}
+          </Alert>
+        )}
 
         {canEditAccessSettings && !canEditEnrollmentRules && (
           <Alert variant="info" className="mb-3">
@@ -391,7 +405,7 @@ export function AccessControlSummary({
         <div className="rounded p-3 mt-3" style={{ backgroundColor: 'var(--bs-tertiary-bg)' }}>
           <p className="text-body-secondary small mb-0">
             If a student matches multiple overrides, student-specific overrides take priority over
-            student label overrides. Within each section, overrides lower in the list take priority
+            student-label overrides. Within each section, overrides lower in the list take priority
             over those higher up.
           </p>
         </div>

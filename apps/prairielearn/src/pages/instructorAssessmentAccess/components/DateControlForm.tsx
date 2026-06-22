@@ -29,7 +29,7 @@ export function DefaultDateControlForm({
   isExam: boolean;
 }) {
   const ruleEditable = useAccessControlRuleEditable();
-  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { clearErrors, register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -47,7 +47,8 @@ export function DefaultDateControlForm({
   const afterLastDeadline = useWatch<AccessControlFormData, 'defaultRule.afterLastDeadline'>({
     name: 'defaultRule.afterLastDeadline',
   });
-  const showLateFields = dueDate != null || lateDeadlines.length > 0 || afterLastDeadline != null;
+  const showLateFields =
+    dueDate != null || lateDeadlines.length > 0 || afterLastDeadline.allowSubmissions;
 
   return (
     <div>
@@ -59,19 +60,34 @@ export function DefaultDateControlForm({
           disabled={!ruleEditable}
           {...register('defaultRule.dateControlEnabled', {
             onChange: (e) => {
-              if (e.target.checked && !getValues('defaultRule.release.date')) {
-                setValue(
-                  'defaultRule.release.date',
-                  startOfDayDatetime(todayDate(displayTimezone)),
-                  {
+              if (e.target.checked) {
+                if (!getValues('defaultRule.release.date')) {
+                  setValue(
+                    'defaultRule.release.date',
+                    startOfDayDatetime(todayDate(displayTimezone)),
+                    {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    },
+                  );
+                  setValue('defaultRule.release.released', true, {
                     shouldDirty: true,
                     shouldValidate: true,
-                  },
-                );
-                setValue('defaultRule.release.released', true, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                });
+                  });
+                }
+              } else {
+                // Date-control fields are inactive while this section is off.
+                // Clear any existing sub-field errors before the editors
+                // unmount so hidden inputs cannot keep Save disabled.
+                clearErrors([
+                  'defaultRule.release',
+                  'defaultRule.due',
+                  'defaultRule.earlyDeadlines',
+                  'defaultRule.lateDeadlines',
+                  'defaultRule.afterLastDeadline',
+                  'defaultRule.durationMinutes',
+                  'defaultRule.password',
+                ]);
               }
             },
           })}

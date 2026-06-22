@@ -83,6 +83,23 @@ WITH
       AND i.open
     GROUP BY
       a.id
+  ),
+  manual_grading_count AS (
+    SELECT
+      aq.assessment_id,
+      count(*) AS ungraded_manual_grading_submission_count
+    FROM
+      assessments AS a
+      JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
+      JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+    WHERE
+      a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
+      AND aq.deleted_at IS NULL
+      AND iq.requires_manual_grading
+      AND iq.status != 'unanswered'
+    GROUP BY
+      aq.assessment_id
   )
 SELECT
   a.*,
@@ -119,12 +136,14 @@ SELECT
         a.id
     ) IS NULL
   ) AS start_new_assessment_group,
-  coalesce(ic.open_issue_count, 0) AS open_issue_count
+  coalesce(ic.open_issue_count, 0) AS open_issue_count,
+  coalesce(mgc.ungraded_manual_grading_submission_count, 0) AS ungraded_manual_grading_submission_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
+  LEFT JOIN manual_grading_count AS mgc ON (mgc.assessment_id = a.id)
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
   ci.id = $course_instance_id
@@ -154,6 +173,58 @@ FROM
   JOIN zones AS z ON (at.zone_id = z.id)
 WHERE
   z.assessment_id = $assessment_id;
+
+-- BLOCK select_assessment_in_course
+SELECT
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  a.id = $assessment_id
+  AND ci.course_id = $course_id
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessments_referencing_questions
+SELECT DISTINCT
+  a.id AS assessment_id,
+  aset.abbreviation || a.number AS assessment_label,
+  aset.color AS assessment_color,
+  aset.abbreviation AS assessment_set_abbreviation,
+  aset.name AS assessment_set_name,
+  a.number AS assessment_number,
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  a.tid AS assessment_directory
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  aq.question_id = ANY ($question_ids::bigint[])
+  AND ci.course_id = $course_id
+  AND a.tid IS NOT NULL
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessment_referenced_question_counts
+SELECT
+  aq.assessment_id,
+  count(DISTINCT aq.question_id)::bigint AS referenced_count
+FROM
+  assessment_questions AS aq
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND aq.question_id = ANY ($question_ids::bigint[])
+  AND aq.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+GROUP BY
+  aq.assessment_id;
 
 -- BLOCK select_assessment_zone_points_range
 WITH

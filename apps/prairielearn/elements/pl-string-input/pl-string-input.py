@@ -1,5 +1,6 @@
 import html
 import random
+import re
 from enum import Enum
 from typing import Any, assert_never
 
@@ -11,6 +12,11 @@ import prairielearn as pl
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+
+
+class CorrectAnswerFormat(Enum):
+    EXACT = "exact"
+    REGEX = "regex"
 
 
 SPACE_HINT_DICT: dict[tuple[bool, bool], str] = {
@@ -41,6 +47,7 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 MULTILINE_DEFAULT = False
+CORRECT_ANSWER_FORMAT_DEFAULT = CorrectAnswerFormat.EXACT
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -67,6 +74,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-score",
         "multiline",
         "escape-unicode",
+        "correct-answer-format",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -81,6 +89,22 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if name in data["correct_answers"]:
             raise RuntimeError(f'Duplicate correct_answers variable name: "{name}"')
         data["correct_answers"][name] = correct_answer
+
+    correct_answer_format = pl.get_enum_attrib(
+        element,
+        "correct-answer-format",
+        CorrectAnswerFormat,
+        CORRECT_ANSWER_FORMAT_DEFAULT,
+    )
+    if correct_answer_format is CorrectAnswerFormat.REGEX:
+        regex_answer = pl.from_json(data["correct_answers"].get(name, None))
+        if regex_answer is not None:
+            try:
+                re.compile(str(regex_answer))
+            except re.error as exc:
+                raise ValueError(
+                    f'The correct answer for "{name}" is not a valid regular expression: {exc}'
+                ) from exc
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -198,17 +222,38 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
+        correct_answer_format = pl.get_enum_attrib(
+            element,
+            "correct-answer-format",
+            CorrectAnswerFormat,
+            CORRECT_ANSWER_FORMAT_DEFAULT,
+        )
+        is_regex = correct_answer_format is CorrectAnswerFormat.REGEX
+
+        if is_regex:
+            # Fold the ignore-case setting into a visible (?i) flag, since it is
+            # otherwise not represented in the pattern shown to the student.
+            ignore_case = pl.get_boolean_attrib(
+                element, "ignore-case", IGNORE_CASE_DEFAULT
+            )
+            display_answer = f"(?i){a_tru}" if ignore_case else str(a_tru)
+        else:
+            display_answer = a_tru
+
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": a_tru,
+            "a_tru": display_answer,
+            "is_regex": is_regex,
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
             display.value: True,
             # Some users were putting numbers into the correct answer. For
             # backwards compatibility, always convert the answer to a string.
-            "escaped_correct_answer": html.escape(pl.escape_unicode_string(str(a_tru))),
+            "escaped_correct_answer": html.escape(
+                pl.escape_unicode_string(str(display_answer))
+            ),
         }
 
         return chevron.render(template, html_params).strip()
@@ -285,6 +330,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Get string case sensitivity option
     ignore_case = pl.get_boolean_attrib(element, "ignore-case", IGNORE_CASE_DEFAULT)
 
+    # Get correct-answer-format option (exact or regex)
+    correct_answer_format = pl.get_enum_attrib(
+        element,
+        "correct-answer-format",
+        CorrectAnswerFormat,
+        CORRECT_ANSWER_FORMAT_DEFAULT,
+    )
+
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
@@ -303,15 +356,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         nonlocal a_tru_str
 
+        # In regex mode the correct answer is a pattern, not a literal string.
+        # It must not be normalized, as stripping or lowercasing it would
+        # corrupt the regular expression.
+        is_regex = correct_answer_format is CorrectAnswerFormat.REGEX
+
         # Remove the leading and trailing characters
         if remove_leading_trailing:
             a_sub_str = a_sub_str.strip()
-            a_tru_str = a_tru_str.strip()
+            if not is_regex:
+                a_tru_str = a_tru_str.strip()
 
         # Remove the blank spaces between characters
         if remove_spaces:
             a_sub_str = "".join(a_sub_str.split())
-            a_tru_str = "".join(a_tru_str.split())
+            if not is_regex:
+                a_tru_str = "".join(a_tru_str.split())
+
+        # If using regex format, match the whole submission against the
+        # pattern. Case-insensitivity is applied with the re.IGNORECASE flag
+        # rather than by lowercasing, which would also corrupt the pattern.
+        if is_regex:
+            flags = re.IGNORECASE if ignore_case else 0
+            return re.fullmatch(a_tru_str, a_sub_str, flags=flags) is not None, None
 
         # Modify string case for submission and true answer to be lower.
         if ignore_case:
@@ -328,7 +395,19 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    correct_answer_format = pl.get_enum_attrib(
+        element,
+        "correct-answer-format",
+        CorrectAnswerFormat,
+        CORRECT_ANSWER_FORMAT_DEFAULT,
+    )
     result = data["test_type"]
+
+    if correct_answer_format is CorrectAnswerFormat.REGEX:
+        # The correct answer is a regular expression, not a concrete string, so
+        # this element cannot generate its own test submissions. Defer the
+        # generation of test inputs to server.py.
+        return
 
     a_tru = ""
     if result in ["correct", "incorrect"]:
