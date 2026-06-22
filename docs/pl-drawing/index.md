@@ -45,10 +45,6 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
 | `aria-description`         | string  | None                                         | Text that describes the diagram in detail. See the [accessibility section](#accessibility)                                                                                  |
 
-**Accessibility**
-
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
-
 **Example implementations**
 
 - [demo/drawing/centroid]: Gradable drawing with `weight`, `allow-blank`, and `show-score`
@@ -1855,6 +1851,10 @@ A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps th
 | `offset-tol-y`         | float   | 0                  | Half the length of the bounding box in the y-direction. The end point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                            |
 | `offset-control-tol-x` | float   | 0                  | Half the length of the bounding box in the x-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
 | `offset-control-tol-y` | float   | 0                  | Half the length of the bounding box in the y-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
+
+## Accessibility
+
+Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
 
 ## Extension API
 
