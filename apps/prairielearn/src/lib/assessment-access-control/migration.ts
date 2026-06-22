@@ -27,6 +27,15 @@ import { formatJsonWithPrettier } from '../prettier.js';
 
 import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './validation.js';
 
+export const INACTIVE_WINDOW_NOTE =
+  'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.';
+
+function inactivePasswordNote(count: number): string {
+  return `${count} password${count === 1 ? '' : 's'} on inactive legacy access rule${
+    count === 1 ? '' : 's'
+  } discarded because inactive rules do not allow submissions.`;
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -74,7 +83,7 @@ interface VisibilityMigration {
 
 function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
-    .filter((r) => (r.credit ?? 0) > 0)
+    .filter((r) => (r.active ?? true) && (r.credit ?? 0) > 0)
     .sort((a, b) => {
       const creditDiff = (b.credit ?? 0) - (a.credit ?? 0);
       if (creditDiff !== 0) return creditDiff;
@@ -82,8 +91,12 @@ function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRule
     });
 }
 
+function getInactiveRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
+  return rules.filter((r) => (r.active ?? true) === false && !r.examUuid);
+}
+
 function getVisibilityRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
-  return rules.filter((r) => (r.active ?? true) === false && !r.examUuid && !r.password);
+  return getInactiveRules(rules).filter((r) => !r.password);
 }
 
 function findFirstCreditStartDate(rules: AssessmentAccessRuleJson[]): string | undefined {
@@ -144,14 +157,7 @@ function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined 
   // — otherwise the resolver would treat any earlier visibility-rule startDate
   // as a submittable 100%-credit window. Pre-credit visibility is preserved
   // separately via `beforeRelease.listed`.
-  const firstCreditStartDate = findFirstCreditStartDate(rules);
-  if (firstCreditStartDate) return firstCreditStartDate;
-
-  const visibilityDates = getVisibilityRules(rules)
-    .map((r) => r.startDate)
-    .filter((date): date is string => !!date)
-    .sort();
-  return visibilityDates[0];
+  return findFirstCreditStartDate(rules);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,7 +222,7 @@ function hasAccessGaps(rules: AssessmentAccessRuleJson[]): boolean {
 }
 
 function hasNonMonotonicCredit(rules: AssessmentAccessRuleJson[]): boolean {
-  const creditRules = rules.filter((r) => (r.credit ?? 0) > 0);
+  const creditRules = getCreditRules(rules);
   if (creditRules.length === 0) return false;
 
   const dates = new Set<string>();
@@ -815,6 +821,23 @@ function extractPassword(rules: AssessmentAccessRuleJson[]): {
   };
 }
 
+function stripPasswordsFromInactiveRules(rules: AssessmentAccessRuleJson[]): {
+  rules: AssessmentAccessRuleJson[];
+  notes: string[];
+} {
+  const inactivePasswordRules = getInactiveRules(rules).filter((r) => r.password);
+  if (inactivePasswordRules.length === 0) return { rules, notes: [] };
+
+  return {
+    rules: rules.map((r) => {
+      if (!r.password || (r.active ?? true) !== false) return r;
+      const { password: _password, ...rest } = r;
+      return rest;
+    }),
+    notes: [inactivePasswordNote(inactivePasswordRules.length)],
+  };
+}
+
 function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
   integrations: AccessControlJsonInput['integrations'];
   remainingRules: AssessmentAccessRuleJson[];
@@ -852,14 +875,12 @@ function extractPrairieTest(rules: AssessmentAccessRuleJson[]): {
 // ---------------------------------------------------------------------------
 
 function assembleAccessControl({
-  schedulingRules,
   ptExtract,
   pwExtract,
   dateControl,
   visibilityMigration,
   fallbackReleaseDate,
 }: {
-  schedulingRules: AssessmentAccessRuleJson[];
   ptExtract: ReturnType<typeof extractPrairieTest>;
   pwExtract: ReturnType<typeof extractPassword>;
   dateControl: AccessControlJsonInput['dateControl'];
@@ -870,14 +891,6 @@ function assembleAccessControl({
 
   if (dateControl) {
     accessControl.dateControl = dateControl;
-  } else {
-    // No credit rules produced a dateControl. Check for view-only rules
-    // (active: false with dates) that indicate a release date.
-    const viewOnlyRules = getVisibilityRules(schedulingRules).filter((r) => r.startDate);
-    if (viewOnlyRules.length > 0) {
-      const releaseDate = viewOnlyRules.map((r) => r.startDate!).sort()[0];
-      accessControl.dateControl = { release: { date: releaseDate } };
-    }
   }
 
   if (pwExtract) {
@@ -885,7 +898,9 @@ function assembleAccessControl({
     accessControl.dateControl.password = pwExtract.password;
   }
 
-  applyVisibilityMigration(accessControl, visibilityMigration);
+  if (dateControl || ptExtract || pwExtract) {
+    applyVisibilityMigration(accessControl, visibilityMigration);
+  }
 
   if (ptExtract) {
     accessControl.integrations = ptExtract.integrations;
@@ -940,6 +955,10 @@ export function migrateAllowAccess(
     schedulingRules = ptExtract.remainingRules;
     notes.push(...ptExtract.notes);
   }
+
+  const inactivePasswordResult = stripPasswordsFromInactiveRules(schedulingRules);
+  schedulingRules = inactivePasswordResult.rules;
+  notes.push(...inactivePasswordResult.notes);
 
   const pwExtract = extractPassword(schedulingRules);
   if (pwExtract) {
@@ -1012,6 +1031,10 @@ export function migrateAllowAccess(
     );
   }
 
+  const hasInactiveRulesWithoutDateControl =
+    !dateControl && getInactiveRules(schedulingRules).length > 0;
+  if (hasInactiveRulesWithoutDateControl && !pwExtract) notes.push(INACTIVE_WINDOW_NOTE);
+
   // No-op detection: when nothing produced a dateControl, password, or
   // PrairieTest config, the rules collapse to a no-op. Suppress the note if
   // the rules were intentionally hidden via `active: false`.
@@ -1026,7 +1049,6 @@ export function migrateAllowAccess(
   notes.push(...visibilityMigration.notes);
 
   const accessControl = assembleAccessControl({
-    schedulingRules,
     ptExtract,
     pwExtract,
     dateControl,

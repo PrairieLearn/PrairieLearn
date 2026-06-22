@@ -3,13 +3,16 @@
  * migrateAllowAccess(), normalizes shapes and error signatures, and generates
  * an HTML report comparing old vs new for each unique (shape, outcome) pair.
  *
- * Run from the root of the repository with `./node_modules/.bin/tsx scripts/migration-harness.mts`
+ * Run from the root of the repository with
+ * `pnpm --dir apps/prairielearn exec tsx ../../scripts/migration-harness.mts`
+ * or add `--inactive-window-summary` for a targeted summary of inactive legacy access rules.
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import {
+  INACTIVE_WINDOW_NOTE,
   migrateAllowAccess,
   normalizeRules,
 } from '../apps/prairielearn/src/lib/assessment-access-control/migration.js';
@@ -167,6 +170,27 @@ interface OutcomeGroup {
   filePaths: string[];
 }
 
+interface InactiveWindowClassification {
+  singleInactiveRule: boolean;
+  inactiveOnly: boolean;
+  prairieTestPlusInactive: boolean;
+  hasInactiveDates: boolean;
+  hasInactiveTimeLimit: boolean;
+  hasInactivePassword: boolean;
+  hasInactiveExplicitZeroCredit: boolean;
+  hasInactivePositiveCredit: boolean;
+  hasInactiveShowClosedAssessment: boolean;
+  hasInactiveShowClosedAssessmentScore: boolean;
+  shape: string;
+  normalized: NormalizedRule[];
+}
+
+interface InactiveWindowShapeGroup {
+  count: number;
+  classification: InactiveWindowClassification;
+  filePaths: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Generate HTML report
 // ---------------------------------------------------------------------------
@@ -287,6 +311,154 @@ function filterRows() {
 }
 
 // ---------------------------------------------------------------------------
+// Inactive-only legacy rule summary
+// ---------------------------------------------------------------------------
+
+function classifyInactiveWindowRules(
+  rules: AssessmentAccessRuleJson[],
+): InactiveWindowClassification | null {
+  const migrationResult = migrateAllowAccess(rules, FALLBACK_RELEASE);
+  if (!migrationResult.notes.includes(INACTIVE_WINDOW_NOTE)) return null;
+
+  const { shape, normalized } = normalizeRulesForHarness(rules);
+  const normalizedRules = normalizeRules(rules);
+  const inactiveRules = normalizedRules.filter((rule) => rule.active === false && !rule.examUuid);
+  const nonPrairieTestRules = normalizedRules.filter((rule) => !rule.examUuid);
+
+  return {
+    singleInactiveRule: normalizedRules.length === 1 && inactiveRules.length === 1,
+    inactiveOnly: inactiveRules.length > 0 && nonPrairieTestRules.length === inactiveRules.length,
+    prairieTestPlusInactive:
+      normalizedRules.some((rule) => rule.examUuid) && inactiveRules.length > 0,
+    hasInactiveDates: inactiveRules.some((rule) => rule.startDate != null || rule.endDate != null),
+    hasInactiveTimeLimit: inactiveRules.some((rule) => rule.timeLimitMin != null),
+    hasInactivePassword: inactiveRules.some((rule) => rule.password != null),
+    hasInactiveExplicitZeroCredit: inactiveRules.some((rule) => rule.credit === 0),
+    hasInactivePositiveCredit: inactiveRules.some((rule) => (rule.credit ?? 0) > 0),
+    hasInactiveShowClosedAssessment: inactiveRules.some(
+      (rule) => rule.showClosedAssessment != null,
+    ),
+    hasInactiveShowClosedAssessmentScore: inactiveRules.some(
+      (rule) => rule.showClosedAssessmentScore != null,
+    ),
+    shape,
+    normalized,
+  };
+}
+
+function incrementIf(map: Map<string, number>, key: string, condition: boolean) {
+  if (!condition) return;
+  map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+function printCount(label: string, count: number, denominator: number) {
+  const pct = denominator === 0 ? '0.00' : ((count / denominator) * 100).toFixed(2);
+  console.log(`  ${label}: ${count.toLocaleString()} (${pct}%)`);
+}
+
+async function printInactiveWindowSummary(files: string[]) {
+  const shapeGroups = new Map<string, InactiveWindowShapeGroup>();
+  const counters = new Map<string, number>();
+  let withAccess = 0;
+  let processed = 0;
+  let affected = 0;
+
+  for (const filePath of files) {
+    processed++;
+    if (processed % 10000 === 0) {
+      console.log(`  Processed ${processed}/${files.length}...`);
+    }
+
+    let content: string;
+    try {
+      content = await fs.readFile(filePath, 'utf-8');
+    } catch {
+      continue;
+    }
+
+    let json: any;
+    try {
+      json = JSON.parse(content);
+    } catch {
+      continue;
+    }
+
+    const allowAccess: AssessmentAccessRuleJson[] | undefined = json.allowAccess;
+    if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) continue;
+    withAccess++;
+
+    const classification = classifyInactiveWindowRules(allowAccess);
+    if (!classification) continue;
+
+    affected++;
+    incrementIf(counters, 'single inactive rule', classification.singleInactiveRule);
+    incrementIf(counters, 'inactive-only after normalization', classification.inactiveOnly);
+    incrementIf(
+      counters,
+      'PrairieTest plus inactive viewing rule',
+      classification.prairieTestPlusInactive,
+    );
+    incrementIf(counters, 'inactive rule has start/end date', classification.hasInactiveDates);
+    incrementIf(counters, 'inactive rule has timeLimitMin', classification.hasInactiveTimeLimit);
+    incrementIf(counters, 'inactive rule has password', classification.hasInactivePassword);
+    incrementIf(
+      counters,
+      'inactive rule has explicit credit 0',
+      classification.hasInactiveExplicitZeroCredit,
+    );
+    incrementIf(
+      counters,
+      'inactive rule has positive credit',
+      classification.hasInactivePositiveCredit,
+    );
+    incrementIf(
+      counters,
+      'inactive rule has showClosedAssessment',
+      classification.hasInactiveShowClosedAssessment,
+    );
+    incrementIf(
+      counters,
+      'inactive rule has showClosedAssessmentScore',
+      classification.hasInactiveShowClosedAssessmentScore,
+    );
+
+    const existing = shapeGroups.get(classification.shape);
+    if (existing) {
+      existing.count++;
+      if (existing.filePaths.length < 3) existing.filePaths.push(filePath);
+    } else {
+      shapeGroups.set(classification.shape, {
+        count: 1,
+        classification,
+        filePaths: [filePath],
+      });
+    }
+  }
+
+  console.log('\nInactive legacy access-rule summary');
+  console.log(`${files.length.toLocaleString()} total files scanned`);
+  console.log(`${withAccess.toLocaleString()} assessments with allowAccess`);
+  printCount('affected assessments', affected, withAccess);
+  console.log('\nBreakdown among affected assessments:');
+  for (const [label, count] of [...counters.entries()].sort((a, b) => b[1] - a[1])) {
+    printCount(label, count, affected);
+  }
+
+  console.log('\nTop affected normalized shapes:');
+  const topGroups = [...shapeGroups.values()].sort((a, b) => b.count - a.count).slice(0, 20);
+  topGroups.forEach((group, index) => {
+    console.log(
+      `\n#${index + 1}: ${group.count.toLocaleString()} assessment${group.count === 1 ? '' : 's'}`,
+    );
+    console.log(JSON.stringify(group.classification.normalized, null, 2));
+    console.log('Example files:');
+    for (const filePath of group.filePaths) {
+      console.log(`  ${filePath.replace(REPOS_DIR + '/', '')}`);
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -294,6 +466,11 @@ async function main() {
   console.log('Scanning for infoAssessment.json files...');
   const files = await findInfoAssessmentFiles(REPOS_DIR);
   console.log(`Found ${files.length} files`);
+
+  if (process.argv.includes('--inactive-window-summary')) {
+    await printInactiveWindowSummary(files);
+    return;
+  }
 
   // Group by (shape, outcome) where outcome = normalized errors/notes.
   const groupMap = new Map<string, OutcomeGroup>();
