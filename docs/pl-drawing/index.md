@@ -4,7 +4,7 @@ A canvas for auto-gradeable drawings.
 
 Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
 
-## Elements to create drawing canvas
+## Elements for drawing canvases
 
 ### `pl-drawing` element
 
@@ -66,26 +66,13 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 
 ![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
 
-And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
+For use in grading canvases, see the `pl-drawing-initial` section under [Elements for grading canvases](#elements-for-grading-canvases).
 
-```html
-<pl-drawing gradable="true" answers-name="add-objects">
-  <pl-drawing-initial>
-    <!-- objects that define the initial state are placed here -->
-  </pl-drawing-initial>
-  <pl-drawing-answer>
-    <!-- objects that define the correct answer are placed here -->
-  </pl-drawing-answer>
-</pl-drawing>
-```
-
-The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
-
-## Elements to set up a grading canvas
+## Elements for grading canvases
 
 ### Grading canvas example
 
-The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
+The element `pl-drawing-answer` is required for grading canvases, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
 #### Sample element
 
@@ -137,7 +124,18 @@ In the example above, `pl-vector` is the only object that is graded. The corresp
 
 ### `pl-drawing-initial` element
 
-This element will wrap all the elements included in the grading canvas that will not be graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
+This element wraps initial objects that should appear in a grading canvas but should not be graded. Objects inside `pl-drawing-initial` are not graded, while objects inside `pl-drawing-answer` are graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
+
+```html
+<pl-drawing gradable="true" answers-name="add-objects">
+  <pl-drawing-initial>
+    <!-- objects that define the initial state are placed here -->
+  </pl-drawing-initial>
+  <pl-drawing-answer>
+    <!-- objects that define the correct answer are placed here -->
+  </pl-drawing-answer>
+</pl-drawing>
+```
 
 #### Customizations
 
@@ -1804,7 +1802,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing-initial>
 ```
 
-**Example implementations**
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that highlights graph sketching
 
