@@ -621,8 +621,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1
       dompurify:
-        specifier: ^3.4.9
-        version: 3.4.9
+        specifier: ^3.4.11
+        version: 3.4.11
       dropzone:
         specifier: ^5.9.3 <6
         version: 5.9.3
@@ -1847,8 +1847,8 @@ importers:
         specifier: workspace:^
         version: link:../marked-mathjax
       dompurify:
-        specifier: ^3.4.9
-        version: 3.4.9
+        specifier: ^3.4.11
+        version: 3.4.11
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1
@@ -6804,8 +6804,8 @@ packages:
     resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
     engines: {node: '>=20.19.0'}
 
-  dompurify@3.4.9:
-    resolution: {integrity: sha512-4dPSRMRDqHvs0V4YDFCsaIZo4if5u0xM+llyxiM2fwuZFdKArUBAF3VtI2+n8NKg9P870WMdYk0UhqQNoWXbfQ==}
+  dompurify@3.4.11:
+    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -14982,7 +14982,7 @@ snapshots:
     dependencies:
       domelementtype: 3.0.0
 
-  dompurify@3.4.9:
+  dompurify@3.4.11:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -17277,7 +17277,7 @@ snapshots:
   notebookjs@0.8.3:
     dependencies:
       ansi_up: 6.0.6
-      dompurify: 3.4.9
+      dompurify: 3.4.11
       jsdom: 29.1.1
       marked: 11.2.0
     transitivePeerDependencies:
