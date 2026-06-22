@@ -4,7 +4,9 @@ A canvas for auto-gradeable drawings.
 
 Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
 
-## Elements to create drawing canvas
+A `pl-drawing` canvas can be used in two modes. In a display-only canvas (`gradable="false"`, the default), it renders drawing objects authored in the question. In a gradable canvas (`gradable="true"`), students place objects on the canvas and PrairieLearn grades them against objects in `pl-drawing-answer`; objects in `pl-drawing-initial` are shown but not graded.
+
+## Elements for display-only canvases
 
 ### `pl-drawing` element
 
@@ -26,7 +28,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 | Attribute                  | Type    | Default                                      | Description                                                                                                                                                                 |
 | -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
+| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display-only figures.                         |
 | `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
 | `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
 | `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
@@ -66,26 +68,13 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 
 ![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
 
-And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
+For use in gradable canvases, see the `pl-drawing-initial` section under [Elements for gradable canvases](#elements-for-gradable-canvases).
 
-```html
-<pl-drawing gradable="true" answers-name="add-objects">
-  <pl-drawing-initial>
-    <!-- objects that define the correct answer are placed here -->
-  </pl-drawing-initial>
-  <pl-drawing-answer>
-    <!-- objects that define the correct answer are placed here -->
-  </pl-drawing-answer>
-</pl-drawing>
-```
+## Elements for gradable canvases
 
-The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
+### Gradable canvas example
 
-## Elements to set up a grading canvas
-
-### Grading canvas example
-
-The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
+The element `pl-drawing-answer` is required for gradable canvases, but there are other elements as well that can be helpful. The example below illustrates typical parts of a gradable canvas.
 
 #### Sample element
 
@@ -137,7 +126,18 @@ In the example above, `pl-vector` is the only object that is graded. The corresp
 
 ### `pl-drawing-initial` element
 
-This element will wrap all the elements included in the grading canvas that will not be graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
+This element wraps initial objects that should appear in a gradable canvas but should not be graded. Objects inside `pl-drawing-initial` are not graded, while objects inside `pl-drawing-answer` are graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
+
+```html
+<pl-drawing gradable="true" answers-name="add-objects">
+  <pl-drawing-initial>
+    <!-- objects that define the initial state are placed here -->
+  </pl-drawing-initial>
+  <pl-drawing-answer>
+    <!-- objects that define the correct answer are placed here -->
+  </pl-drawing-answer>
+</pl-drawing>
+```
 
 #### Customizations
 
@@ -145,7 +145,7 @@ This element will wrap all the elements included in the grading canvas that will
 | ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-initial` will be displayed with their respective error bounding boxes in the answer panel. |
 
-The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
+The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the gradable canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
 ### `pl-controls` element
@@ -276,11 +276,11 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `offsetx`           | float  | -16     | Horizontal distance of `label` from the origin of the coordinate system.                                                                                                |
 | `offsety`           | float  | -10     | Vertical distance of `label` from the origin of the coordinate system.                                                                                                  |
 | `label-x`           | string | x       | Text to label the horizontal arrow vector (x-axis)                                                                                                                      |
-| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the origin of the coordinate system.                                                                                              |
-| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the origin of the coordinate system.                                                                                                |
+| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                  |
+| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                    |
 | `label-y`           | string | y       | Text to label the vertical arrow vector (y-axis)                                                                                                                        |
-| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the origin of the coordinate system.                                                                                              |
-| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the origin of the coordinate system.                                                                                                |
+| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                    |
+| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                      |
 | `color`             | string | black   | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )            |
 | `stroke-width`      | float  | 2       | Set the width of the stroke.                                                                                                                                            |
 | `arrow-head-width`  | float  | 1       | Scale factor for the width of the arrow head.                                                                                                                           |
@@ -384,8 +384,8 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `start-support-line` | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x1,y1)` and the point where the dimension line starts (which are different when `dim-offset` is not zero).                                                                        |
 | `end-support-line`   | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x2,y2)` and the point where the dimension line finishes (which are different when `dim-offset` is not zero).                                                                      |
 | `label`              | string  | -       | Text to label the dimension.                                                                                                                                                                                                                          |
-| `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the dimension line.                                                                                                                                                                                 |
-| `offsety`            | float   | 0       | Vertical distance of `label` from the center of the dimension line.                                                                                                                                                                                   |
+| `offsetx`            | float   | 0       | Horizontal distance of `label` from the default label position, which is 10 px perpendicular to the center of the dimension line.                                                                                                                     |
+| `offsety`            | float   | 0       | Vertical distance of `label` from the default label position, which is 10 px perpendicular to the center of the dimension line.                                                                                                                       |
 | `stroke-color`       | string  | black   | Set the color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                      |
 | `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                                                                                          |
 | `draw-start-arrow`   | boolean | true    | Draw an arrow head at the start point of the line.                                                                                                                                                                                                    |
@@ -436,8 +436,8 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `draw-start-arrow`   | boolean | false   | Draw an arrow head at the `start-angle`.                                                                                                                                         |
 | `draw-end-arrow`     | boolean | true    | Draw an arrow head at the `end-angle`.                                                                                                                                           |
 | `label`              | string  | -       | Text to label the arc angle.                                                                                                                                                     |
-| `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the arc.                                                                                                                       |
-| `offsety`            | float   | 0       | Vertical distance of `label` from the center of the arc.                                                                                                                         |
+| `offsetx`            | float   | 0       | Horizontal distance of `label` from the midpoint of the arc.                                                                                                                     |
+| `offsety`            | float   | 0       | Vertical distance of `label` from the midpoint of the arc.                                                                                                                       |
 | `stroke-color`       | string  | black   | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                           |
 | `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                     |
 | `arrow-head-width`   | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                    |
@@ -788,7 +788,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                            |
 | `label`        | string | -       | Text to label the center of the circle.                                                                                                                 |
 | `offsetx`      | float  | 5       | Horizontal distance of `label` from the center of the circle.                                                                                           |
-| `offsety`      | float  | 5       | Vertical distance of `label1` from the center of the circle                                                                                             |
+| `offsety`      | float  | 5       | Vertical distance of `label` from the center of the circle.                                                                                             |
 
 #### Example implementations
 
@@ -1024,8 +1024,8 @@ More information about the grading attributes in the Grading section below.
 | `draw-center`         | boolean | true    | Draw the center of the arc vector.                                                                                                                                                      |
 | `clockwise-direction` | boolean | true    | Defines the orientation of the arc vector. Draw an arc vector in the clockwise direction by default.                                                                                    |
 | `label`               | string  | -       | Text to label the arc vector angle.                                                                                                                                                     |
-| `offsetx`             | float   | 0       | Horizontal distance of `label` from the center of the arc vector.                                                                                                                       |
-| `offsety`             | float   | 0       | Vertical distance of `label` from the center of the arc vector.                                                                                                                         |
+| `offsetx`             | float   | 0       | Horizontal distance of `label` from the midpoint of the arc vector.                                                                                                                     |
+| `offsety`             | float   | 0       | Vertical distance of `label` from the midpoint of the arc vector.                                                                                                                       |
 | `color`               | string  | purple  | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                  |
 | `stroke-width`        | float   | 3       | Set the width of the stroke.                                                                                                                                                            |
 | `arrow-head-width`    | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                           |
@@ -1079,8 +1079,8 @@ More information about the grading attributes in the Grading section below.
 
 | Attribute           | Type    | Default             | Description                                                                                                                                                                                                                                                                                                       |
 | ------------------- | ------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float   | 20                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
-| `y1`                | float   | 20                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
+| `x1`                | float   | 30                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
+| `y1`                | float   | 10                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
 | `anchor-is-tail`    | boolean | true                | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
 | `width`             | float   | 60                  | Range of the distributed load.                                                                                                                                                                                                                                                                                    |
 | `spacing`           | float   | 20                  | Spacing between the vectors.                                                                                                                                                                                                                                                                                      |
@@ -1090,16 +1090,16 @@ More information about the grading attributes in the Grading section below.
 | `label1`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
 | `offsetx1`          | float   | 2                   | Horizontal distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                        |
 | `offsety1`          | float   | 2                   | Vertical distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `label2`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
-| `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                        |
-| `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `color`             | string  | blue                | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                            |
+| `label2`            | string  | -                   | Text to label the height of the vectors at the end of the range.                                                                                                                                                                                                                                                  |
+| `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the end of the range.                                                                                                                                                                                                                                          |
+| `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the end of the range.                                                                                                                                                                                                                                            |
+| `color`             | string  | red3                | Set the stroke color of the distributed load ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                               |
 | `stroke-width`      | float   | 3                   | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
-| `arrow-head-width`  | float   | 1                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
-| `arrow-head-length` | float   | 1                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
+| `arrow-head-width`  | float   | 2                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
+| `arrow-head-length` | float   | 3                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
 | `disregard-sense`   | boolean | false               | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
 | `draw-error-box`    | boolean | -                   | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
-| `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.                                                                                                                                                                                                        |
+| `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load. The default is `max(w1, w2) * 1.1` when `disregard-sense=true`.                                                                                                                                        |
 | `offset-backward`   | float   | `max(w1, w2) * 1.1` | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.                                                                                                                                                                                                    |
 | `optional-grading`  | boolean | false               | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                     |
 
@@ -1130,7 +1130,7 @@ More information about the grading attributes in the Grading section below.
 | Attribute      | Type    | Default | Description                                                                                                                                          |
 | -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `y1`           | float   | 40      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
 | `x2`           | float   | 80      | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
 | `y2`           | float   | 20      | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
 | `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
@@ -1138,9 +1138,9 @@ More information about the grading attributes in the Grading section below.
 | `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
 | `offsetx1`     | float   | 2       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`     | float   | 2       | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
-| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | 2       | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the second end of the rod.                                                                                      |
+| `offsety2`     | float   | 2       | Vertical distance of `label2` from the second end of the rod.                                                                                        |
 | `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
@@ -1176,16 +1176,16 @@ More information about the grading attributes in the Grading section below.
 | `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
 | `y3`           | float   | 140     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
 | `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `draw-pin`     | boolean | true    | Draw the pin location at all three points of the rod.                                                                                                |
 | `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
 | `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
 | `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                    |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                      |
 | `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                      |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                        |
 | `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
@@ -1223,19 +1223,19 @@ More information about the grading attributes in the Grading section below.
 | `x4`           | float   | 140     | `x` position for the third end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
 | `y4`           | float   | 60      | `y` position for the third end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
 | `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `draw-pin`     | boolean | true    | Draw the pin location at all four points of the rod.                                                                                                 |
 | `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
 | `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
 | `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                    |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                      |
 | `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                      |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                        |
 | `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                              |
-| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the first end of the rod.                                                                                       |
-| `offsety4`     | float   | -20     | Vertical distance of `label4` from the first end of the rod.                                                                                         |
+| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the third end of the rod.                                                                                       |
+| `offsety4`     | float   | -20     | Vertical distance of `label4` from the third end of the rod.                                                                                         |
 | `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
@@ -1273,9 +1273,9 @@ More information about the grading attributes in the Grading section below.
 | `label1`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
 | `offsetx1`         | float   | 2          | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
 | `offsety1`         | float   | 2          | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
-| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`         | float   | 2          | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `label2`           | string  | -          | Text to label the second end of the rod.                                                                                                             |
+| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the second end of the rod.                                                                                      |
+| `offsety2`         | float   | 2          | Vertical distance of `label2` from the second end of the rod.                                                                                        |
 | `draw-collar-end1` | boolean | true       | Draw a collar end at `(x1,y1)`.                                                                                                                      |
 | `w1`               | float   | 1.5\*width | The width of the collar at end 1.                                                                                                                    |
 | `h1`               | float   | 2\*width   | The height of the collar at end 1.                                                                                                                   |
@@ -1390,13 +1390,13 @@ More information about the grading attributes in the Grading section below.
 | Attribute      | Type   | Default | Description                                                                                                                                                                                      |
 | -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `x1`           | float  | 20      | `x` position for the clamped point, i.e., the horizontal distance from the left border of the canvas.                                                                                            |
-| `y1`           | float  | 20      | `y` position for the clamped, i.e., the vertical distance from the top border of the canvas.                                                                                                     |
+| `y1`           | float  | 20      | `y` position for the clamped point, i.e., the vertical distance from the top border of the canvas.                                                                                               |
 | `height`       | float  | 40      | Height of the clamped support (rectangle).                                                                                                                                                       |
 | `width`        | float  | 20      | Width of the clamped support (rectangle).                                                                                                                                                        |
 | `angle`        | float  | 0       | Angle of rotation around the clamped point. Angles are measured from the horizontal axis and are positive clockwise.                                                                             |
-| `label`        | string | -       | Text to label the pin support.                                                                                                                                                                   |
-| `offsetx`      | float  | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                                       |
-| `offsety`      | float  | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                                         |
+| `label`        | string | -       | Text to label the clamped support.                                                                                                                                                               |
+| `offsetx`      | float  | 2       | Horizontal distance of `label` from the clamped point.                                                                                                                                           |
+| `offsety`      | float  | 2       | Vertical distance of `label` from the clamped point.                                                                                                                                             |
 | `color`        | string | black   | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                     |
 
