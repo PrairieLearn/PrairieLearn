@@ -832,7 +832,6 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-
 ## Vectors and loads
 
 ### `pl-vector` element
