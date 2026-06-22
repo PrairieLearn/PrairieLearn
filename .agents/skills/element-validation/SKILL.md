@@ -16,6 +16,8 @@ JSON Schema is the shared lightweight contract layer. Python is authoritative fo
 
 If a child attribute is only valid for some parent modes, keep the child schema permissive across the union of valid attributes and enforce the mode-specific subset in Python.
 
+When adding Python tree validation to an existing element, preserve existing tag-name compatibility but do not expand it. If the old controller accepted legacy underscore child tags such as `pl_answer`, call `validate_element_tree(..., allow_legacy_underscore_tags=True)` and keep the parser handling those aliases. If it only accepted kebab-case tags, leave tree validation in its default strict mode.
+
 ## Workflow
 
 1. Check for `apps/prairielearn/src/lib/element-schemas/elements/<tag>.ts`.

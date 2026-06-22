@@ -141,11 +141,11 @@ def test_valid_order_block_options() -> None:
             {
                 "weight": 3,
             },
-            r'<pl-order-blocks> is missing required attribute "answers-name"\.',
+            r'pl-order-blocks is missing required attribute "answers-name"\.',
         ),
         (
             {"answers-name": "test", "invalid": "test"},
-            r'Unknown attribute "invalid" on <pl-order-blocks>\.',
+            r'Unknown attribute "invalid" on pl-order-blocks\.',
         ),
     ],
 )

@@ -7,10 +7,7 @@ import prairielearn as pl
 from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
 
-SCHEMAS_PATH = pathlib.Path(__file__).parent / "schemas"
-SCHEMA_PATH = SCHEMAS_PATH / "pl-order-blocks.json"
-ANSWER_SCHEMA_PATH = SCHEMAS_PATH / "pl-answer.json"
-BLOCK_GROUP_SCHEMA_PATH = SCHEMAS_PATH / "pl-block-group.json"
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
 
 class GroupInfo(TypedDict):
@@ -237,18 +234,6 @@ class AnswerOptions:
     def _check_options(
         self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
     ) -> None:
-        if html_element.tag != "pl-answer":
-            raise ValueError(
-                "<pl-block-group> only allows these child elements: <pl-answer>."
-            )
-
-        parent = html_element.getparent()
-        pl.validate_element(
-            html_element,
-            ANSWER_SCHEMA_PATH,
-            parent_tag=str(parent.tag) if parent is not None else None,
-        )
-
         # The schema allows the union of attributes across all grading methods;
         # restrict to the ones meaningful for the current method.
         allowed_attribs = GRADING_METHOD_ANSWER_ATTRIBUTES[grading_method]
@@ -368,10 +353,7 @@ class OrderBlocksOptions:
         )
 
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
-        if html_element.tag != "pl-order-blocks":
-            raise ValueError("HTML element is not a pl-order-blocks")
-
-        pl.validate_element(html_element, SCHEMA_PATH)
+        pl.validate_element_tree(html_element, SCHEMA_MANIFEST_PATH)
 
     def validate(self) -> None:
         self._validate_order_blocks_options()
@@ -541,11 +523,6 @@ def collect_answer_options(
 
         match inner_element.tag:
             case "pl-block-group":
-                pl.validate_element(
-                    inner_element,
-                    BLOCK_GROUP_SCHEMA_PATH,
-                    parent_tag="pl-order-blocks",
-                )
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
                     if isinstance(answer_element, _Comment):
@@ -566,8 +543,8 @@ def collect_answer_options(
                 )
                 answer_options.append(options)
             case _:
-                raise ValueError(
-                    "<pl-order-blocks> only allows these child elements: <pl-answer>, <pl-block-group>."
+                raise AssertionError(
+                    "validate_element_tree should reject unsupported pl-order-blocks children."
                 )
 
     return answer_options
