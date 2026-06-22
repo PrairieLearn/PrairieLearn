@@ -27,13 +27,19 @@ onDocumentReady(() => {
     constructor: HTMLDivElement,
     initialize(container) {
       void mathjaxTypeset([container]);
-      initializeReadmeExpansion(container);
       setupDisableOnSubmit(container);
 
       if (container.dataset.gradingMethod === 'External') {
         const externalGrading = initializeExternalGrading({ container });
         return { remove: () => externalGrading?.close() };
       }
+    },
+  });
+
+  observe('.js-readme-card', {
+    constructor: HTMLDivElement,
+    initialize(readmeCard) {
+      initializeReadmeExpansion(readmeCard);
     },
   });
 
