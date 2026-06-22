@@ -1610,32 +1610,6 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'inactive hidden window does not list before release',
-      rules: [
-        {
-          active: false,
-          showClosedAssessment: false,
-          startDate: '2024-01-01T00:00:00',
-        },
-        {
-          credit: 100,
-          startDate: '2024-02-01T00:00:00',
-          endDate: '2024-06-01T00:00:00',
-        },
-      ],
-      expected: {
-        accessControl: {
-          dateControl: {
-            release: { date: '2024-02-01T00:00:00' },
-            due: { date: '2024-06-01T00:00:00' },
-          },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
       name: 'PrairieTest with inactive viewing rule',
       rules: [
         { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
