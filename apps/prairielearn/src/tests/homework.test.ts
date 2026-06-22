@@ -1,7 +1,6 @@
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { keyBy } from 'es-toolkit';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import z from 'zod';
 

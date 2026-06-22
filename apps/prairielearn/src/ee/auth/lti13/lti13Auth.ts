@@ -84,7 +84,7 @@ async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
   // Can be POST or GET
 
-  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
+  const parameters = OIDCLaunchFlowSchema.loose().parse({ ...req.body, ...req.query });
 
   // If the authentication request is coming from an iframe, intercept the parameters
   // and offer a small form to open in a new window.

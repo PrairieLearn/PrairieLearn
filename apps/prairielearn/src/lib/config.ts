@@ -176,8 +176,12 @@ export const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxFiles: z.number().default(20),
   fileUploadMaxParts: z.number().default(1000),
-  fileStoreS3Bucket: z.string().default('file-store'),
+  fileStoreS3Bucket: z
+    .string()
+    .nullable()
+    .default(DEV_MODE ? 'file-store' : null),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
   cronActive: z.boolean().default(true),
   /**
@@ -230,6 +234,7 @@ export const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
+  githubMachineUser: z.string().nullable().default(null),
   /**
    * Custom SSH command used for git operations (clone, fetch, push).
    * Set to `ssh -o StrictHostKeyChecking=accept-new` to automatically
@@ -306,7 +311,7 @@ export const ConfigSchema = z.object({
   /**
    * This is populated by `lib/aws.js` later.
    */
-  awsServiceGlobalOptions: z.record(z.unknown()).default({}),
+  awsServiceGlobalOptions: z.record(z.string(), z.unknown()).default({}),
   hasShib: z.boolean().default(false),
   hideShibLogin: z.boolean().default(false),
   shibLinkText: z.string().default('Sign in with Illinois'),
@@ -511,11 +516,6 @@ export const ConfigSchema = z.object({
    * the configured value for `serverJobHeartbeatIntervalSec`.
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
-  /**
-   * Controls whether or not the course request form will attempt to automatically
-   * create a course if the course request meets certain criteria.
-   */
-  courseRequestAutoApprovalEnabled: z.boolean().default(false),
   devMode: z.boolean().default(DEV_MODE),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),

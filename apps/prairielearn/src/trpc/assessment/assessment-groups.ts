@@ -57,6 +57,7 @@ export interface AssessmentGroupsError {
   DisableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RandomizeGroups: never;
+  Membership: never;
   RefreshGroups: never;
 }
 
@@ -89,6 +90,8 @@ const addGroup = t.procedure
       throw err;
     }
 
+    // TODO: Drop this compatibility payload once old Groups UI bundles no
+    // longer consume it; new clients refetch `membership` after this mutation.
     const [group, notAssigned] = await Promise.all([
       selectGroupById({ group_id: createdGroupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
@@ -157,6 +160,8 @@ const editGroup = t.procedure
       }
     });
 
+    // TODO: Return only `failures` once old Groups UI bundles no longer consume
+    // `group` and `notAssigned`.
     const [group, notAssigned] = await Promise.all([
       selectGroupById({ group_id: input.groupId, assessment_id: assessment.id }),
       selectNotAssignedForAssessment({
@@ -186,6 +191,8 @@ const deleteGroupProcedure = t.procedure
       throw err;
     }
 
+    // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
+    // consume it; new clients refetch `membership` after this mutation.
     const notAssigned = await selectNotAssignedForAssessment({
       assessment_id: assessment.id,
       course_instance_id: course_instance.id,
@@ -198,6 +205,8 @@ const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(
 
   await deleteAllGroups(assessment.id, authn_user.id);
 
+  // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
+  // consume it; new clients refetch `membership` after this mutation.
   const notAssigned = await selectNotAssignedForAssessment({
     assessment_id: assessment.id,
     course_instance_id: course_instance.id,
@@ -307,6 +316,8 @@ const enableGroupWork = t.procedure
       });
     }
 
+    // TODO: Drop this compatibility payload once old Groups UI bundles no
+    // longer consume it; new clients fetch `membership` after enabling.
     const [groups, notAssigned] = ctx.authz_data.has_course_instance_permission_view
       ? await Promise.all([
           selectGroupsForConfig(groupConfig.id),
@@ -455,22 +466,31 @@ const disableGroupWork = t.procedure
     return { origHash: newHash };
   });
 
+async function selectGroupMembership(ctx: AssessmentTrpcCtx) {
+  const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
+  if (!groupConfig) {
+    return { groups: [], notAssigned: [] };
+  }
+
+  const [groups, notAssigned] = await Promise.all([
+    selectGroupsForConfig(groupConfig.id),
+    selectUidsNotInGroup({
+      group_config_id: groupConfig.id,
+      course_instance_id: groupConfig.course_instance_id,
+    }),
+  ]);
+  return { groups, notAssigned };
+}
+
+const membership = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .query(async ({ ctx }) => await selectGroupMembership(ctx));
+
+// TODO: Delete `refreshGroups` after one release cycle; it only supports
+// in-flight browser tabs loaded against the previous bundle.
 const refreshGroups = t.procedure
   .use(requireCourseInstancePermissionView)
-  .mutation(async ({ ctx }) => {
-    const groupConfig = await selectGroupConfigForAssessment(ctx.assessment.id);
-    if (!groupConfig) {
-      return { groups: [], notAssigned: [] };
-    }
-    const [groups, notAssigned] = await Promise.all([
-      selectGroupsForConfig(groupConfig.id),
-      selectUidsNotInGroup({
-        group_config_id: groupConfig.id,
-        course_instance_id: groupConfig.course_instance_id,
-      }),
-    ]);
-    return { groups, notAssigned };
-  });
+  .mutation(async ({ ctx }) => await selectGroupMembership(ctx));
 
 const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
@@ -508,6 +528,7 @@ export const assessmentGroupsRouter = t.router({
   enableGroupWork,
   disableGroupWork,
   updateGroupConfig,
+  membership,
   randomizeGroups,
   refreshGroups,
 });

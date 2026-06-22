@@ -189,6 +189,13 @@ export default [
     },
   },
   {
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/tests/**/*.{ts,tsx}'],
+    rules: {
+      // TODO: Fix deprecations in tests
+      '@typescript-eslint/no-deprecated': 'off',
+    },
+  },
+  {
     files: ['**/*.html', '**/*.mustache'],
     languageOptions: {
       parser: htmlParser,
@@ -222,7 +229,6 @@ export default [
   globalIgnores([
     '.claude/worktrees/*',
     '.venv/*',
-    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'testCourse',
@@ -245,5 +251,11 @@ export default [
     'apps/*/dist/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
+
+    // Playwright
+    'test-results/*',
+    'apps/prairielearn/test-results/*',
+    'apps/prairielearn/playwright/.cache/*',
+    '.playwright-mcp/*',
   ]),
 ];

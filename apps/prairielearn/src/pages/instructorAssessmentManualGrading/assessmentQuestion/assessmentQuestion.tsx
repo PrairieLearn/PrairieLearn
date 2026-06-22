@@ -36,7 +36,10 @@ import { selectAssessmentQuestionById } from '../../../models/assessment-questio
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
-import { selectInstanceQuestionsForManualGrading } from './queries.js';
+import {
+  selectInstanceQuestionsForManualGrading,
+  selectRubricSettingsContextKeys,
+} from './queries.js';
 
 const router = Router();
 
@@ -50,8 +53,6 @@ router.get(
     const courseStaff = z.array(StaffUserSchema).parse(
       await selectCourseInstanceGraderStaff({
         courseInstance: res.locals.course_instance,
-        authzData: res.locals.authz_data,
-        requiredRole: ['Student Data Viewer'],
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
@@ -81,6 +82,10 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
+
+    const rubricSettingsContextKeys = await selectRubricSettingsContextKeys({
+      assessment_question: res.locals.assessment_question,
+    });
 
     const initialOngoingJobSequenceTokens = await run(async () => {
       if (!aiGradingEnabled) {
@@ -197,6 +202,7 @@ router.get(
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
                 aiGradingRelativeCosts={aiGradingRelativeCosts}
+                rubricSettingsContextKeys={rubricSettingsContextKeys}
               />
             </Hydrate>
           </>

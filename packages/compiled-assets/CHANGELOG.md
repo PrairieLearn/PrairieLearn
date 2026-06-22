@@ -1,5 +1,23 @@
 # @prairielearn/compiled-assets
 
+## 4.1.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.1.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 4.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
 ## 4.1.5
 
 ### Patch Changes

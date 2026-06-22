@@ -8,11 +8,12 @@ import { FieldWrapper } from './FieldWrapper.js';
 import { useOverrideField } from './hooks/useOverrideField.js';
 import {
   type AccessControlFormData,
+  type DefaultRuleData,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  defaultRuleHasCompletionMechanism,
 } from './types.js';
 import { endOfDayDatetime, startOfDayDatetime, tomorrowDate } from './utils/dateUtils.js';
+import { DATE_REQUIRED_MESSAGE, isDateFieldEmpty } from './validation.js';
 
 type HideQuestionsMode =
   | 'show_questions'
@@ -25,23 +26,25 @@ const QUESTION_VISIBILITY_ITEMS: RichSelectItem<HideQuestionsMode>[] = [
   {
     value: 'hide_questions_forever',
     label: 'Hide questions permanently',
-    description: 'Questions will never be visible after completion',
+    description: 'Questions and submissions will never be visible after completion',
   },
   {
     value: 'show_questions',
     label: 'Show questions after completion',
     description:
-      'Students can see questions and answers immediately after completing the assessment',
+      'Students can review questions and their submissions immediately after completing the assessment',
   },
   {
     value: 'hide_questions_between_dates',
     label: 'Show questions between dates',
-    description: 'Questions will be visible between these dates, hidden before and after',
+    description:
+      'Questions and submissions will be visible between these dates, hidden before and after',
   },
   {
     value: 'hide_questions_until_date',
     label: 'Show questions after date',
-    description: 'Questions will be hidden after completion and become visible on this date',
+    description:
+      'Questions and submissions will be hidden after completion and become visible on this date',
   },
 ];
 
@@ -49,19 +52,33 @@ const SCORE_VISIBILITY_ITEMS: RichSelectItem<HideScoreMode>[] = [
   {
     value: 'hide_score_forever',
     label: 'Hide score permanently',
-    description: 'Score will never be visible after completion',
+    description: 'The overall assessment score will never be visible after completion',
   },
   {
     value: 'show_score',
     label: 'Show score after completion',
-    description: 'Students can see their score immediately after completing the assessment',
+    description:
+      'Students can see their overall assessment score immediately after completing the assessment',
   },
   {
     value: 'hide_score_until_date',
     label: 'Show score after date',
-    description: 'Score will be hidden after completion and become visible on this date',
+    description:
+      'The overall assessment score will be hidden after completion and become visible on this date',
   },
 ];
+
+function defaultRuleHasCompletionMechanism(
+  rule: Pick<
+    DefaultRuleData,
+    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
+  > & { hasExamAutoClose: boolean },
+): boolean {
+  const hasDateControlMechanism =
+    rule.dateControlEnabled &&
+    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
+  return hasDateControlMechanism || rule.prairieTestExams.length > 0 || rule.hasExamAutoClose;
+}
 
 function getHideQuestionsMode(value: QuestionVisibilityValue): HideQuestionsMode {
   if (!value.hidden) return 'show_questions';
@@ -76,25 +93,13 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
-const DATE_REQUIRED_MESSAGE = 'Date is required';
-
-function isDateFieldEmpty(value: string | undefined): boolean {
-  return value !== undefined && !value;
-}
-
-function validateQuestionVisibility(value: QuestionVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  if (isDateFieldEmpty(value.visibleUntilDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function QuestionVisibilityInput({
   value,
   onChange,
   idPrefix,
   hasPrairieTest = false,
   hasCompletionMechanism = true,
+  error,
   visibleFromDateError,
   visibleUntilDateError,
   displayTimezone,
@@ -104,6 +109,7 @@ function QuestionVisibilityInput({
   idPrefix: string;
   hasPrairieTest?: boolean;
   hasCompletionMechanism?: boolean;
+  error?: string;
   visibleFromDateError?: string;
   visibleUntilDateError?: string;
   displayTimezone: string;
@@ -154,6 +160,7 @@ function QuestionVisibilityInput({
           id={`${idPrefix}-question-visibility-mode`}
           minWidth={300}
           disabled={!ruleEditable}
+          errorMessage={error}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -271,22 +278,18 @@ function QuestionVisibilityInput({
   );
 }
 
-function validateScoreVisibility(value: ScoreVisibilityValue): string | true {
-  if (!value.hidden) return true;
-  if (isDateFieldEmpty(value.visibleFromDate)) return DATE_REQUIRED_MESSAGE;
-  return true;
-}
-
 function ScoreVisibilityInput({
   value,
   onChange,
   idPrefix,
+  error,
   visibleFromDateError,
   displayTimezone,
 }: {
   value: ScoreVisibilityValue;
   onChange: (value: ScoreVisibilityValue) => void;
   idPrefix: string;
+  error?: string;
   visibleFromDateError?: string;
   displayTimezone: string;
 }) {
@@ -325,6 +328,7 @@ function ScoreVisibilityInput({
           id={`${idPrefix}-score-visibility-mode`}
           minWidth={300}
           disabled={!ruleEditable}
+          errorMessage={error}
           onChange={handleModeChange}
         />
         {selectedDescription && (
@@ -365,9 +369,10 @@ const infoPopoverConfig = {
   body: (
     <>
       <p>
-        An assessment is complete when students can no longer answer questions — for example, after
-        the due date and any late deadlines pass, after a time limit expires, or once their
-        assessment instance is closed (manually or via autoclose).
+        These settings apply once submissions are no longer allowed: after the final deadline, when
+        a time limit expires, or when a student's assessment instance is closed manually or by Exam
+        auto-close. If after-deadline submissions are allowed, these settings apply only after the
+        student's assessment instance closes or its time limit expires.
       </p>
       <p>
         The completion time can vary between students based on when they started or any
@@ -417,20 +422,23 @@ function AfterCompleteCard({
 export function DefaultAfterCompleteForm({
   title,
   displayTimezone,
+  isExam,
+  hasExamAutoClose,
 }: {
   title?: string;
   displayTimezone: string;
+  isExam: boolean;
+  hasExamAutoClose: boolean;
 }) {
   const { field: qvField } = useController<AccessControlFormData, 'defaultRule.questionVisibility'>(
     {
       name: 'defaultRule.questionVisibility',
-      rules: { validate: validateQuestionVisibility },
     },
   );
 
   const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
     name: 'defaultRule.scoreVisibility',
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
@@ -438,6 +446,7 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.questionVisibility.visibleFromDate',
   )?.message;
+  const qvError: string | undefined = get(errors, 'defaultRule.questionVisibility')?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
     'defaultRule.questionVisibility.visibleUntilDate',
@@ -446,6 +455,7 @@ export function DefaultAfterCompleteForm({
     errors,
     'defaultRule.scoreVisibility.visibleFromDate',
   )?.message;
+  const svError: string | undefined = get(errors, 'defaultRule.scoreVisibility')?.message;
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -467,10 +477,33 @@ export function DefaultAfterCompleteForm({
     lateDeadlines,
     durationMinutes,
     prairieTestExams,
+    hasExamAutoClose,
   });
+  const automaticCompletionMechanisms = isExam
+    ? 'a due date, time limit, late deadline, PrairieTest exam, or Exam auto-close'
+    : 'a due date, time limit, late deadline, or PrairieTest exam';
 
   return (
     <AfterCompleteCard title={title}>
+      {!hasCompletionMechanism && (
+        <Alert variant="info" className="mb-0">
+          Without {automaticCompletionMechanisms}, these settings will only take effect if an
+          instructor manually closes a student's assessment instance.
+        </Alert>
+      )}
+      <div>
+        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
+          Score visibility
+        </Form.Label>
+        <ScoreVisibilityInput
+          value={svField.value}
+          idPrefix="defaultRule"
+          error={svError}
+          visibleFromDateError={svVisibleFromError}
+          displayTimezone={displayTimezone}
+          onChange={svField.onChange}
+        />
+      </div>
       <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
           Question visibility
@@ -480,22 +513,11 @@ export function DefaultAfterCompleteForm({
           idPrefix="defaultRule"
           hasPrairieTest={hasPrairieTest}
           hasCompletionMechanism={hasCompletionMechanism}
+          error={qvError}
           visibleFromDateError={qvVisibleFromError}
           visibleUntilDateError={visibleUntilDateError}
           displayTimezone={displayTimezone}
           onChange={qvField.onChange}
-        />
-      </div>
-      <div>
-        <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
-          Score visibility
-        </Form.Label>
-        <ScoreVisibilityInput
-          value={svField.value}
-          idPrefix="defaultRule"
-          visibleFromDateError={svVisibleFromError}
-          displayTimezone={displayTimezone}
-          onChange={svField.onChange}
         />
       </div>
     </AfterCompleteCard>
@@ -511,6 +533,7 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
+  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
     name: 'defaultRule.questionVisibility',
   });
@@ -527,6 +550,7 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.questionVisibility.visibleFromDate`,
   )?.message;
+  const qvError: string | undefined = get(errors, `overrides.${index}.questionVisibility`)?.message;
   const visibleUntilDateError: string | undefined = get(
     errors,
     `overrides.${index}.questionVisibility.visibleUntilDate`,
@@ -535,8 +559,7 @@ export function OverrideAfterCompleteForm({
     errors,
     `overrides.${index}.scoreVisibility.visibleFromDate`,
   )?.message;
-
-  const { clearErrors } = useFormContext<AccessControlFormData>();
+  const svError: string | undefined = get(errors, `overrides.${index}.scoreVisibility`)?.message;
 
   const {
     isOverridden: qvOverridden,
@@ -554,39 +577,17 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.questionVisibility`
   >({
     name: `overrides.${index}.questionVisibility`,
-    rules: { validate: validateQuestionVisibility },
   });
   const { field: svField } = useController<
     AccessControlFormData,
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { validate: validateScoreVisibility },
+    rules: { deps: qvField.name },
   });
 
   return (
     <AfterCompleteCard title={title}>
-      <div>
-        <FieldWrapper
-          isOverridden={qvOverridden}
-          label="Question visibility"
-          onOverride={() => {
-            qvField.onChange({ ...defaultRuleQV });
-            addQvOverride();
-          }}
-          onRemoveOverride={removeQvOverride}
-        >
-          <QuestionVisibilityInput
-            value={qvField.value}
-            idPrefix={`overrides-${index}`}
-            hasPrairieTest={hasPrairieTest}
-            visibleFromDateError={qvVisibleFromError}
-            visibleUntilDateError={visibleUntilDateError}
-            displayTimezone={displayTimezone}
-            onChange={qvField.onChange}
-          />
-        </FieldWrapper>
-      </div>
       <div>
         <FieldWrapper
           isOverridden={svOverridden}
@@ -594,18 +595,46 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
+            void trigger(qvField.name);
           }}
           onRemoveOverride={() => {
             removeSvOverride();
-            clearErrors(`overrides.${index}.questionVisibility`);
+            void trigger(qvField.name);
           }}
         >
           <ScoreVisibilityInput
             value={svField.value}
             idPrefix={`overrides-${index}`}
+            error={svError}
             visibleFromDateError={svVisibleFromError}
             displayTimezone={displayTimezone}
             onChange={svField.onChange}
+          />
+        </FieldWrapper>
+      </div>
+      <div>
+        <FieldWrapper
+          isOverridden={qvOverridden}
+          label="Question visibility"
+          onOverride={() => {
+            qvField.onChange({ ...defaultRuleQV });
+            addQvOverride();
+            void trigger(svField.name);
+          }}
+          onRemoveOverride={() => {
+            removeQvOverride();
+            void trigger(svField.name);
+          }}
+        >
+          <QuestionVisibilityInput
+            value={qvField.value}
+            idPrefix={`overrides-${index}`}
+            hasPrairieTest={hasPrairieTest}
+            error={qvError}
+            visibleFromDateError={qvVisibleFromError}
+            visibleUntilDateError={visibleUntilDateError}
+            displayTimezone={displayTimezone}
+            onChange={qvField.onChange}
           />
         </FieldWrapper>
       </div>

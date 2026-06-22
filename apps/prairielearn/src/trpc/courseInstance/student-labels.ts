@@ -14,6 +14,7 @@ import {
   prepareAccessControlLabelRewriteEditors,
   prepareJsonFileEditor,
 } from '../../lib/editors.js';
+import { getCourseInstanceContainer } from '../../lib/instructorFiles.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -31,7 +32,11 @@ import {
 } from '../../pages/instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
+import {
+  type CourseInstanceJsonInput,
+  MAX_STUDENT_LABELS_PER_COURSE_INSTANCE,
+  MAX_STUDENT_LABEL_NAME_LENGTH,
+} from '../../schemas/infoCourseInstance.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -45,14 +50,6 @@ import {
 export interface StudentLabelError {
   Upsert: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   Destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
-
-function getCourseInstanceContainer(coursePath: string, shortName: string) {
-  const rootPath = path.join(coursePath, 'courseInstances', shortName);
-  return {
-    rootPath,
-    invalidRootPaths: [path.join(rootPath, 'assessments')],
-  };
 }
 
 const list = t.procedure
@@ -136,7 +133,7 @@ const upsert = t.procedure
   .input(
     z.object({
       labelId: IdSchema.optional(),
-      name: z.string().trim().min(1, 'Label name is required').max(255),
+      name: z.string().trim().min(1, 'Label name is required').max(MAX_STUDENT_LABEL_NAME_LENGTH),
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).optional(),
       origHash: z.string().nullable(),
@@ -184,6 +181,12 @@ const upsert = t.procedure
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'A label with this name already exists',
+            });
+          }
+          if (studentLabels.length >= MAX_STUDENT_LABELS_PER_COURSE_INSTANCE) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `A course instance can have at most ${MAX_STUDENT_LABELS_PER_COURSE_INSTANCE} student labels. Delete an existing label before adding another.`,
             });
           }
           studentLabels.push({ uuid: labelUuid, name, color });

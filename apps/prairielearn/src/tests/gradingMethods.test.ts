@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch, { type Response } from 'node-fetch';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -90,6 +89,14 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
+function assertQuestionActionButtons(
+  $: cheerio.CheerioAPI,
+  expected: { grade: boolean; save: boolean },
+): void {
+  assert.lengthOf($('button[name="__action"][value="grade"]'), expected.grade ? 1 : 0);
+  assert.lengthOf($('button[name="__action"][value="save"]'), expected.save ? 1 : 0);
+}
+
 describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body: cheerio.CheerioAPI;
   let iqUrl: string;
@@ -116,7 +123,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
         });
@@ -190,7 +197,8 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
             $hm1Body('a:contains("Manual Grading: Fibonacci function, file upload")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 0);
+          assertQuestionActionButtons($questionsPage, { grade: false, save: true });
+          iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should be possible to submit a grade action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
@@ -223,6 +231,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("Manual Grading: Fibonacci function, file upload")').attr('href');
+          iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
@@ -259,7 +268,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
             $hm1Body('a:contains("External Grading: Alpine Linux smoke test")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
         });
         it('should submit "grade" action', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
@@ -352,7 +361,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
             $hm1Body('a:contains("External Grading: Alpine Linux with arguments")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
         });
         it('should submit "grade" action', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
@@ -420,7 +429,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
         });
@@ -501,7 +510,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 0);
+          assertQuestionActionButtons($questionsPage, { grade: false, save: true });
 
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
@@ -582,7 +591,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+          assertQuestionActionButtons($questionsPage, { grade: true, save: true });
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
         });

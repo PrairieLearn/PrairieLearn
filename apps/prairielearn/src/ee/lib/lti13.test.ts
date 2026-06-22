@@ -78,12 +78,20 @@ describe('fetchRetry()', () => {
   });
 
   app.get('/403all', (req, res) => {
-    res.status(403).json([]);
+    res.status(403).header('X-Rate-Limit-Remaining', '0.0').json([]);
   });
 
   app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
-      res.status(403).json([]);
+      res.status(403).header('X-Rate-Limit-Remaining', '0.0').json([]);
+    } else {
+      productApi(req, res);
+    }
+  });
+
+  app.get('/socketCloseOdd', (req, res) => {
+    if (apiCount % 2 === 1) {
+      res.socket!.destroy(new Error('Simulated socket close'));
     } else {
       productApi(req, res);
     }
@@ -141,6 +149,25 @@ describe('fetchRetry()', () => {
       assert.equal(apiCount, 6);
     });
   });
+
+  test.sequential(
+    'should return the full list by iterating with intermittent connection interruptions',
+    async () => {
+      apiCount = 0;
+      await withServer(app, async ({ url }) => {
+        const resultArray = await fetchRetryPaginated(
+          url + '/socketCloseOdd',
+          {},
+          { sleepMs: 100 },
+        );
+        assert.equal(resultArray.length, 3);
+        const products = z.string().array().array().parse(resultArray);
+        const fullList = products.flat();
+        assert.equal(fullList.length, 26);
+        assert.equal(apiCount, 6);
+      });
+    },
+  );
 });
 
 describe('findValueByKey() generic tests', () => {

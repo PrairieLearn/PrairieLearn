@@ -94,16 +94,16 @@ The main JavaScript test suite can take on the order of 10+ minutes to run, so y
 ```sh
 make start-support
 cd apps/prairielearn
-yarn vitest src/tests/getHomepage.test.ts
+pnpm vitest src/tests/getHomepage.test.ts
 ```
 
 ### Package tests
 
-To test a specific package, you can run `yarn test` from the package's directory.
+To test a specific package, you can run `pnpm test` from the package's directory.
 
 ```sh
 cd packages/csv
-yarn test
+pnpm test
 ```
 
 ## Linting
@@ -127,8 +127,8 @@ make lint-all    # Additional linters
 You can format + autofix lint errors with:
 
 ```sh
-make fix-js-cached
-make format-python
+make fix-js
+make fix-python
 ```
 
 To format all changed files (staged + unstaged + untracked) compared to HEAD:
@@ -155,10 +155,10 @@ When working on something in the `packages/` directory, you'll need to rebuild t
 
 ```sh
 # From the root of the repository:
-yarn workspace @prairielearn/postgres run dev
+pnpm --filter @prairielearn/postgres dev
 
 # From a specific package directory, e.g. `packages/postgres`:
-yarn dev
+pnpm dev
 ```
 
 ## More information

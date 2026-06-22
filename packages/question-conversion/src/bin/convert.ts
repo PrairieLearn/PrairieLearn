@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access, copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Command } from 'commander';
@@ -10,14 +10,15 @@ import { logger } from '@prairielearn/logger';
 import type { ConversionResult } from '../emitters/emitter.js';
 import { PLEmitter } from '../emitters/pl-emitter.js';
 import type { ParseOptions } from '../parsers/parser.js';
-import { QTI12AssessmentParser } from '../parsers/qti12/index.js';
+import { QTI12ItemContainerParser } from '../parsers/qti12/index.js';
 import { parseAssessment } from '../pipeline.js';
-import type { IRAssessment } from '../types/ir.js';
+import type { IRItemContainer } from '../types/ir.js';
 import {
   type CourseExportInfo,
   type QtiFileEntry,
   detectCourseExport,
   findQtiFilesFromManifest,
+  findQtiXmlFiles,
 } from '../utils/course-export.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
@@ -75,7 +76,7 @@ program
 
       if (inputStat.isDirectory()) {
         // Prefer the manifest for file discovery — it's present in both quiz
-        // exports and course exports and only lists QTI assessment resources,
+        // exports and course exports and only lists QTI content resources,
         // avoiding non-QTI XML files (course settings, wiki pages, etc.).
         // Fall back to the heuristic directory scan if no manifest is found.
         const manifestFiles = await findQtiFilesFromManifest(resolvedInput);
@@ -196,44 +197,8 @@ async function resolveTimezone(
   process.exit(1);
 }
 
-const NON_QTI_XML_FILES = new Set(['assessment_meta.xml', 'imsmanifest.xml']);
-
-function isQtiXml(filename: string): boolean {
-  return filename.endsWith('.xml') && !NON_QTI_XML_FILES.has(filename);
-}
-
-/**
- * Find QTI XML files in a directory. Handles two cases:
- * - The directory itself contains a QTI XML (single quiz dir)
- * - The directory contains subdirectories, each with a QTI XML (bulk export folder)
- */
-async function findQtiXmlFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir);
-
-  // Check if the directory itself contains a QTI XML (not a manifest)
-  const directXml = entries.find(isQtiXml);
-  if (directXml) {
-    return [path.join(dir, directXml)];
-  }
-
-  // Otherwise look in subdirectories
-  const xmlFiles: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(dir, entry);
-    const entryStat = await stat(entryPath);
-    if (entryStat.isDirectory()) {
-      const subEntries = await readdir(entryPath);
-      const xml = subEntries.find(isQtiXml);
-      if (xml) {
-        xmlFiles.push(path.join(entryPath, xml));
-      }
-    }
-  }
-  return xmlFiles;
-}
-
 interface ParsedInput {
-  ir: IRAssessment;
+  ir: IRItemContainer;
   parseOptions: ParseOptions;
   webResourcesDir: string;
 }
@@ -244,7 +209,7 @@ interface ParsedAssessment {
   webResourcesDir: string;
 }
 
-const PARSERS = [new QTI12AssessmentParser()];
+const PARSERS = [new QTI12ItemContainerParser()];
 const EMITTER = new PLEmitter();
 
 async function parseFile(

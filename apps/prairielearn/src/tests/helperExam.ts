@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import { keyBy } from 'es-toolkit';
-import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
@@ -62,10 +61,12 @@ export async function withPTReservation<T>(
     userId,
     accessStart,
     accessEnd,
+    examUuid,
   }: {
     userId: string;
     accessStart: Date;
     accessEnd: Date;
+    examUuid: string;
   },
   fn: () => Promise<T>,
 ) {
@@ -74,7 +75,7 @@ export async function withPTReservation<T>(
       user_id: userId,
       access_start: accessStart,
       access_end: accessEnd,
-      exam_uuid: exam1AutomaticTestSuite.examUuid,
+      exam_uuid: examUuid,
     });
     return await fn();
   } finally {
