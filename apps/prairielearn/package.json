@@ -148,7 +148,7 @@
     "delegated-events": "^1.1.2",
     "dockerode": "^5.0.0",
     "domhandler": "^6.0.1",
-    "dompurify": "^3.4.9",
+    "dompurify": "^3.4.11",
     "dropzone": "^5.9.3 <6",
     "echarts": "^6.1.0",
     "es-main": "^1.4.0",
