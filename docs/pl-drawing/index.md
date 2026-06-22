@@ -4,9 +4,90 @@ A canvas for auto-gradeable drawings.
 
 Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
 
+## Elements to create drawing canvas
+
+### `pl-drawing` element
+
+A `pl-drawing` element displays a canvas, which can be used to display initial drawing objects or expect drawing objects for grading.
+
+The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
+
+![Screenshot of the pl-origin-canvas element](pl-origin-canvas.png){ width=100% style="max-width: 600px" }
+
+**Sample element**
+
+```html
+<pl-drawing answers-name="fbd"> </pl-drawing>
+```
+
+![Screenshot of the pl-drawing element](./pl-drawing.png){ width=100% style="max-width: 600px" }
+
+**Customizations**
+
+| Attribute                  | Type    | Default                                      | Description                                                                                                                                                                 |
+| -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
+| `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
+| `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
+| `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
+| `height`                   | integer | 320                                          | Vertical height of the canvas (in pixels).                                                                                                                                  |
+| `grid-size`                | integer | 20                                           | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, no grid is drawn and the canvas background is transparent.                               |
+| `snap-to-grid`             | boolean | false                                        | If true, objects placed in the canvas snap to the closest grid point. Otherwise, they can be placed outside the grid.                                                       |
+| `correct-answer`           | string  | special                                      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                            |
+| `tol`                      | float   | `0.5*grid-size`                              | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.                     |
+| `angle-tol`                | float   | 10                                           | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.                                        |
+| `show-tolerance-hint`      | boolean | true                                         | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.                                                                                         |
+| `tolerance-hint`           | string  | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.                                                                                                                        |
+| `disregard-extra-elements` | boolean | false                                        | If true, extra elements are ignored if they match the same reference object. Otherwise, multiple matching elements will reduce the awarded points.                          |
+| `allow-blank`              | boolean | false                                        | Whether a submission with no user-placed elements is allowed. By default, submissions without user-placed elements will not be graded (invalid submission).                 |
+| `hide-answer-panel`        | boolean | true                                         | If true, the correct answer is not displayed in the answer panel.                                                                                                           |
+| `show-score`               | boolean | false                                        | Whether to show the score badge next to this element in the "Submitted answer" panel. Defaults to `false` for backwards compatibility.                                      |
+| `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
+| `aria-description`         | string  | None                                         | Text that describes the diagram in detail. See the [accessibility section](#accessibility)                                                                                  |
+
+**Accessibility**
+
+Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
+
+**Example implementations**
+
+- [demo/drawing/centroid]: Gradable drawing with `weight`, `allow-blank`, and `show-score`
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-drawing-initial` element
+
+A `pl-drawing-initial` will group objects that will be displayed in the canvas defined by `pl-drawing`.
+
+For example, `pl-drawing-initial` can be used to create figures that are displayed as part of the question body:
+
+```html
+<pl-drawing grid-size="0">
+  <pl-drawing-initial>
+    <!-- create the image here -->
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
+
+And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
+
+```html
+<pl-drawing gradable="true" answers-name="add-objects">
+  <pl-drawing-initial>
+    <!-- objects that define the correct answer are placed here -->
+  </pl-drawing-initial>
+  <pl-drawing-answer>
+    <!-- objects that define the correct answer are placed here -->
+  </pl-drawing-answer>
+</pl-drawing>
+```
+
+The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
+
 ## Elements to set up a grading canvas
 
-### `pl-drawing-group` element
+### Grading canvas example
 
 The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
@@ -169,88 +250,7 @@ This button will add a line to the canvas that is not graded, but can be used by
 
 This button deletes objects that were previously placed on the canvas.
 
-## Elements to create drawing canvas
-
-### `pl-drawing` element
-
-A `pl-drawing` element displays a canvas, which can be used to display initial drawing objects or expect drawing objects for grading.
-
-The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
-
-![Screenshot of the pl-origin-canvas element](pl-origin-canvas.png){ width=100% style="max-width: 600px" }
-
-**Sample element**
-
-```html
-<pl-drawing answers-name="fbd"> </pl-drawing>
-```
-
-![Screenshot of the pl-drawing element](./pl-drawing.png){ width=100% style="max-width: 600px" }
-
-**Customizations**
-
-| Attribute                  | Type    | Default                                      | Description                                                                                                                                                                 |
-| -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
-| `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
-| `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
-| `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
-| `height`                   | integer | 320                                          | Vertical height of the canvas (in pixels).                                                                                                                                  |
-| `grid-size`                | integer | 20                                           | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, no grid is drawn and the canvas background is transparent.                               |
-| `snap-to-grid`             | boolean | false                                        | If true, objects placed in the canvas snap to the closest grid point. Otherwise, they can be placed outside the grid.                                                       |
-| `correct-answer`           | string  | special                                      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                            |
-| `tol`                      | float   | `0.5*grid-size`                              | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.                     |
-| `angle-tol`                | float   | 10                                           | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.                                        |
-| `show-tolerance-hint`      | boolean | true                                         | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.                                                                                         |
-| `tolerance-hint`           | string  | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.                                                                                                                        |
-| `disregard-extra-elements` | boolean | false                                        | If true, extra elements are ignored if they match the same reference object. Otherwise, multiple matching elements will reduce the awarded points.                          |
-| `allow-blank`              | boolean | false                                        | Whether a submission with no user-placed elements is allowed. By default, submissions without user-placed elements will not be graded (invalid submission).                 |
-| `hide-answer-panel`        | boolean | true                                         | If true, the correct answer is not displayed in the answer panel.                                                                                                           |
-| `show-score`               | boolean | false                                        | Whether to show the score badge next to this element in the "Submitted answer" panel. Defaults to `false` for backwards compatibility.                                      |
-| `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
-| `aria-description`         | string  | None                                         | Text that describes the diagram in detail. See the [accessibility section](#accessibility)                                                                                  |
-
-**Accessibility**
-
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
-
-**Example implementations**
-
-- [demo/drawing/centroid]: Gradable drawing with `weight`, `allow-blank`, and `show-score`
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-drawing-initial` element
-
-A `pl-drawing-initial` will group objects that will be displayed in the canvas defined by `pl-drawing`.
-
-For example, `pl-drawing-initial` can be used to create figures that are displayed as part of the question body:
-
-```html
-<pl-drawing grid-size="0">
-  <pl-drawing-initial>
-    <!-- create the image here -->
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
-
-And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
-
-```html
-<pl-drawing gradable="true" answers-name="add-objects">
-  <pl-drawing-initial>
-    <!-- objects that define the correct answer are placed here -->
-  </pl-drawing-initial>
-  <pl-drawing-answer>
-    <!-- objects that define the correct answer are placed here -->
-  </pl-drawing-answer>
-</pl-drawing>
-```
-
-The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
-
-## Organizational & formatting elements
+## Organizational and formatting elements
 
 ### `pl-coordinates` element
 
@@ -837,7 +837,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## Vectors & Loads
+## Vectors and loads
 
 ### `pl-vector` element
 
@@ -1114,7 +1114,7 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## Mechanics & Structures
+## Mechanics and structures
 
 ### `pl-rod` element
 
@@ -1522,7 +1522,7 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## Circuit Components
+## Circuit components
 
 ### `pl-capacitor` element
 
