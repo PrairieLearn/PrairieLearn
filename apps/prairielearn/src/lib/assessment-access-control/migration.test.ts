@@ -1395,6 +1395,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'mode-gated only with inactive positive-credit rule',
+      rules: [
+        { mode: 'Exam' },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-01-01T00:00:00',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: null,
+        errors: ['Mode-only access rules are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'all-UID rules filtered to no-op',
       rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01T00:00:00' }],
       expected: {
