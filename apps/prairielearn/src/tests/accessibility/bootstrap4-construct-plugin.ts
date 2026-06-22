@@ -121,7 +121,7 @@ class Bootstrap4ConstructRule extends Rule {
 
           this.report({
             node,
-            message: `Bootstrap 4 attribute "${attr}" should not be used. Use "${attr.replace('data-', 'data-bs-')}" instead.`,
+            message: `Bootstrap 4 attribute "${attr}" should not be used. Migrate to the Bootstrap 5 equivalent.`,
           });
         });
       });

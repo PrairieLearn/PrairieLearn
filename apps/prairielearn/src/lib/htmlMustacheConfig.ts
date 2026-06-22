@@ -110,7 +110,10 @@ export const htmlMustacheConfig: Config = {
     {
       id: 'pl-bs4-data-attrs',
       selector: bootstrapLegacyDataAttributes
-        .map((attr) => (attr === 'data-content' ? '[data-content]:not(option)' : `[${attr}]`))
+        .map((attr) =>
+          // Tom Select uses `option[data-content]` for non-Bootstrap option rendering.
+          attr === 'data-content' ? '[data-content]:not(option)' : `[${attr}]`,
+        )
         .join(', '),
       message:
         'Deprecated Bootstrap 4 data-* attribute. Consider migrating to Bootstrap 5 data-bs-* attributes. See https://getbootstrap.com/docs/5.0/migration/.',
