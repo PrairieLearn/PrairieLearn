@@ -68,6 +68,19 @@ export function getHash(contents: string | Buffer) {
   return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
+function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJsonInput) {
+  if (!Array.isArray(infoJson.accessControl)) return;
+
+  // Student-specific overrides are stored as JSON rule bodies without
+  // `labels`, while the student targets live in the database. Copying only the
+  // JSON body would create a destination rule with no enrolled students, so
+  // copies keep only the default rule and student-label overrides.
+  infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
+    if (index === 0) return true;
+    return rule.labels != null;
+  });
+}
+
 async function syncCourseFromDisk(
   course: Course,
   startGitHash: string,
@@ -607,12 +620,7 @@ export class AssessmentCopyEditor extends Editor {
     )) as AssessmentJsonInput;
 
     delete infoJson.shareSourcePublicly;
-    if (Array.isArray(infoJson.accessControl)) {
-      infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
-        if (index === 0) return true;
-        return rule.uuid == null || rule.labels != null;
-      });
-    }
+    removeStudentSpecificAccessControlRulesForCopy(infoJson);
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1063,14 +1071,7 @@ export class CourseInstanceCopyEditor extends Editor {
       }
 
       const assessmentInfoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
-      if (Array.isArray(assessmentInfoJson.accessControl)) {
-        assessmentInfoJson.accessControl = assessmentInfoJson.accessControl.filter(
-          (rule, index) => {
-            if (index === 0) return true;
-            return rule.uuid == null || rule.labels != null;
-          },
-        );
-      }
+      removeStudentSpecificAccessControlRulesForCopy(assessmentInfoJson);
       const formattedAssessmentInfoJson = await formatJsonWithPrettier(
         JSON.stringify(assessmentInfoJson),
       );

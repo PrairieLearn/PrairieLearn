@@ -18,7 +18,6 @@ const featureNames = [
   'ai-question-generation',
   'qti-content-import',
   'rich-text-editor',
-  'access-control-require-rule-uuids',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',

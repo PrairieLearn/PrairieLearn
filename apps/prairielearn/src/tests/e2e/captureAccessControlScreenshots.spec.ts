@@ -91,6 +91,7 @@ async function writeScreenshotAssessmentConfig({
       afterComplete: { questions: { hidden: false } },
     },
     {
+      uuid: '0b31c53c-0a94-4380-bd01-c75b8f5d3fcc',
       labels: ['Section A'],
       dateControl: {
         due: { date: screenshotDate(displayTimezone, 28, '20:15:00') },

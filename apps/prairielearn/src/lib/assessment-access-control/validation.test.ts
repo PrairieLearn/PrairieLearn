@@ -112,6 +112,7 @@ describe('Valid configs', () => {
       },
       {
         // Individual override
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student3'],
         dateControl: {
           durationMinutes: 90,
@@ -195,12 +196,14 @@ describe('Default rule requirement', () => {
   it('should fail validation when no default rule exists', () => {
     const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student1'],
         dateControl: {
           durationMinutes: 90,
         },
       },
       {
+        uuid: '22222222-2222-4222-8222-222222222222',
         labels: ['student2'],
         dateControl: {
           durationMinutes: 120,
@@ -219,36 +222,6 @@ describe('Default rule requirement', () => {
         'No defaults found. The first element of accessControl must apply to everyone.',
       ),
       `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
-    );
-  });
-
-  it('should fail validation when multiple default rules exist', () => {
-    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
-      {
-        dateControl: {
-          release: { date: '2024-03-14T00:01:00' },
-          due: { date: '2024-03-21T23:59:00' },
-        },
-      },
-      {
-        dateControl: {
-          release: { date: '2024-03-15T00:01:00' },
-          due: { date: '2024-03-22T23:59:00' },
-        },
-      },
-    ];
-
-    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({
-      rules: parsedRules,
-    });
-
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
-    assert.isTrue(
-      result.errors.includes(
-        'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
-      ),
-      `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -300,7 +273,7 @@ describe('Default rule requirement', () => {
   });
 });
 
-describe('UUID-format rule detection', () => {
+describe('rule UUID validation', () => {
   it('accepts trailing unlabeled student-specific overrides when all non-default rules have UUIDs', () => {
     const rules: AccessControlJsonInput[] = [
       {
@@ -358,17 +331,14 @@ describe('UUID-format rule detection', () => {
           due: { date: '2024-03-21T23:59:00' },
         },
       },
-      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES }, (_, i) => ({
+      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
         uuid: uuidForIndex(i),
         dateControl: { durationMinutes: 90 },
       })),
     ];
 
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({
-      rules: parsedRules,
-      enrollmentRules: [AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 120 } })],
-    });
+    const result = validateAccessControlRules({ rules: parsedRules });
 
     assert.include(
       result.errors,
@@ -376,7 +346,7 @@ describe('UUID-format rule detection', () => {
     );
   });
 
-  it('keeps old-format unlabeled non-default rules invalid', () => {
+  it('rejects non-default rules without UUIDs', () => {
     const rules: AccessControlJsonInput[] = [
       {
         dateControl: {
@@ -392,38 +362,7 @@ describe('UUID-format rule detection', () => {
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
     const result = validateAccessControlRules({ rules: parsedRules });
 
-    assert.include(
-      result.errors,
-      'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
-    );
-  });
-
-  it('rejects mixed UUID and non-UUID non-default rules', () => {
-    const rules: AccessControlJsonInput[] = [
-      {
-        dateControl: {
-          release: { date: '2024-03-14T00:01:00' },
-          due: { date: '2024-03-21T23:59:00' },
-        },
-      },
-      {
-        uuid: '22222222-2222-4222-8222-222222222222',
-        labels: ['Section A'],
-        dateControl: { durationMinutes: 90 },
-      },
-      {
-        labels: ['Section B'],
-        dateControl: { durationMinutes: 120 },
-      },
-    ];
-
-    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({ rules: parsedRules });
-
-    assert.include(
-      result.errors,
-      'Either every non-default accessControl rule must specify uuid, or none of them should.',
-    );
+    assert.include(result.errors, 'Every non-default accessControl rule must specify uuid.');
   });
 
   it('rejects duplicate non-default rule UUIDs', () => {
@@ -1073,30 +1012,12 @@ describe('Empty accessControl array', () => {
     assert.deepEqual(result.warnings, []);
   });
 
-  it('requires a defaults rule when enrollment-only rules are provided', () => {
-    const result = validateAccessControlRules({
-      rules: [],
-      enrollmentRules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            durationMinutes: 90,
-          },
-        }),
-      ],
-    });
-
-    assert.isTrue(
-      result.errors.includes(
-        'No defaults found. The first element of accessControl must apply to everyone.',
-      ),
-    );
-  });
-
   it('allows inert student-label rules with no labels by default', () => {
     const result = validateAccessControlRules({
       rules: [
         AccessControlJsonSchema.parse({}),
         AccessControlJsonSchema.parse({
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: [],
           dateControl: {
             durationMinutes: 90,
@@ -2405,6 +2326,7 @@ describe('Global afterComplete validation', () => {
       rules: [
         {},
         {
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           afterComplete: { questions: { hidden: true } },
         },
@@ -2420,6 +2342,7 @@ describe('Global afterComplete validation', () => {
           },
         },
         {
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           dateControl: { due: { date: null } },
           afterComplete: { questions: { hidden: true } },

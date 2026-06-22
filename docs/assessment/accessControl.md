@@ -506,7 +506,7 @@ The `accessControl` field is an array in `infoAssessment.json`:
 }
 ```
 
-The first element is the defaults rule and must not have a `uuid`. Later elements are overrides and must either all have `uuid`s or all omit them. UUID-format overrides with `labels` target student labels; trailing UUID-format overrides without `labels` store student-specific rule bodies, while the selected students stay in PrairieLearn rather than in course content. Use `labels: []` for a student-label override that intentionally targets no labels.
+The first element is the defaults rule and must not have a `uuid`. Every element after the first is an override and must have a `uuid`. Overrides with `labels` target student labels; trailing overrides without `labels` store student-specific rule bodies, while the selected students stay in PrairieLearn rather than in course content. Use `labels: []` for a student-label override that intentionally targets no labels.
 
 ### Full JSON skeleton
 
