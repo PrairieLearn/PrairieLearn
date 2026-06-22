@@ -5,7 +5,7 @@ import prairielearn as pl
 
 
 def generate(data):
-    d = random.randint(2, 9)
+    d = random.choice([-1, 1]) * random.randint(2, 9)
     data["params"]["d"] = d
 
     # The "correct answer" stored here is only one example of a valid answer;
@@ -47,6 +47,8 @@ def test(data):
         A = np.eye(2)
         score = 0
 
+    # pl-matrix-component-input uses one raw submitted answer per cell, named
+    # A1, A2, ... in row-major order for answers-name="A".
     for i in range(2):
         for j in range(2):
             data["raw_submitted_answers"][f"A{2 * i + j + 1}"] = str(A[i, j])
