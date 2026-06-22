@@ -331,17 +331,14 @@ describe('rule UUID validation', () => {
           due: { date: '2024-03-21T23:59:00' },
         },
       },
-      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES }, (_, i) => ({
+      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
         uuid: uuidForIndex(i),
         dateControl: { durationMinutes: 90 },
       })),
     ];
 
     const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({
-      rules: parsedRules,
-      enrollmentRules: [AccessControlJsonSchema.parse({ dateControl: { durationMinutes: 120 } })],
-    });
+    const result = validateAccessControlRules({ rules: parsedRules });
 
     assert.include(
       result.errors,
@@ -1013,25 +1010,6 @@ describe('Empty accessControl array', () => {
     });
     assert.deepEqual(result.errors, []);
     assert.deepEqual(result.warnings, []);
-  });
-
-  it('requires a defaults rule when enrollment-only rules are provided', () => {
-    const result = validateAccessControlRules({
-      rules: [],
-      enrollmentRules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            durationMinutes: 90,
-          },
-        }),
-      ],
-    });
-
-    assert.isTrue(
-      result.errors.includes(
-        'No defaults found. The first element of accessControl must apply to everyone.',
-      ),
-    );
   });
 
   it('allows inert student-label rules with no labels by default', () => {

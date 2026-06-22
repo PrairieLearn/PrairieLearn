@@ -98,7 +98,6 @@ BEGIN
     FROM UNNEST(rules_data) AS rule
     WHERE (rule ->> 'target_type')::enum_assessment_access_control_target_type = 'none'
     ON CONFLICT (assessment_id, number, target_type) DO UPDATE SET
-        uuid = NULL,
         before_release_listed = EXCLUDED.before_release_listed,
         date_control_release_date = EXCLUDED.date_control_release_date,
         date_control_due_overridden = EXCLUDED.date_control_due_overridden,

@@ -912,41 +912,35 @@ export function getAccessControlRuleTargetType(
  * is the default rule that applies to everyone. Non-default entries with
  * `labels` are student-label rules, and trailing entries without `labels` are
  * student-specific rules.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
-  enrollmentRules,
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
-  enrollmentRules?: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const validationRules: AccessControlValidationRule[] = [];
-  const enrollmentRulesCount = enrollmentRules?.length ?? 0;
 
   // If the feature is completely unused, we can skip all validation and we don't need a default rule.
-  if (rules.length === 0 && enrollmentRulesCount === 0) {
+  if (rules.length === 0) {
     return { errors, warnings };
   }
 
-  const studentLabelRuleCount = rules.filter(
-    (rule, index) => getAccessControlRuleTargetType(rule, index) === 'student_label',
-  ).length;
+  const targetTypes = rules.map((rule, index) => getAccessControlRuleTargetType(rule, index));
+
+  const studentLabelRuleCount = targetTypes.filter((type) => type === 'student_label').length;
   if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
     errors.push(
       `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
     );
   }
 
-  const enrollmentRuleCount =
-    rules.filter((rule, index) => getAccessControlRuleTargetType(rule, index) === 'enrollment')
-      .length + enrollmentRulesCount;
+  const enrollmentRuleCount = targetTypes.filter((type) => type === 'enrollment').length;
   if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
     errors.push(
       `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
@@ -957,7 +951,7 @@ export function validateAccessControlRules({
     errors.push('Every non-default accessControl rule must specify uuid.');
   }
 
-  if (rules.length === 0 || rules[0].labels != null) {
+  if (rules[0].labels != null) {
     errors.push('No defaults found. The first element of accessControl must apply to everyone.');
   }
 
@@ -976,9 +970,8 @@ export function validateAccessControlRules({
   }
 
   let seenStudentSpecificRule = false;
-  for (const [index, rule] of rules.entries()) {
+  for (const [index, targetType] of targetTypes.entries()) {
     if (index === 0) continue;
-    const targetType = getAccessControlRuleTargetType(rule, index);
     if (targetType === 'enrollment') {
       seenStudentSpecificRule = true;
     } else if (targetType === 'student_label' && seenStudentSpecificRule) {
@@ -990,7 +983,7 @@ export function validateAccessControlRules({
   }
 
   rules.forEach((rule, ruleIndex) => {
-    const targetType = getAccessControlRuleTargetType(rule, ruleIndex);
+    const targetType = targetTypes[ruleIndex];
     if (targetType === 'none' && rule.uuid != null) {
       errors.push('uuid can only be specified on non-default access control rules.');
     }
@@ -1030,15 +1023,6 @@ export function validateAccessControlRules({
 
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
-
-  for (const rule of enrollmentRules ?? []) {
-    validationRules.push({
-      rule,
-      targetType: 'enrollment',
-      ruleIndex: validationRules.length,
-    });
-    errors.push(...validateRule(rule, 'enrollment', { includeAfterCompleteCrossField: false }));
-  }
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
