@@ -8,7 +8,6 @@ import { AccessControlJsonSchema } from '../../schemas/accessControl.js';
 import type { AssessmentAccessRuleJson } from '../../schemas/infoAssessment.js';
 
 import {
-  INACTIVE_WINDOW_NOTE,
   type Migration,
   analyzeAssessmentFile,
   analyzeCourseInstanceAssessments,
@@ -23,8 +22,6 @@ import { validateAccessControlRules } from './validation.js';
 // Cases whose legacy rules don't supply a startDate (always-open, password-only)
 // get this fallback as their release date in `expected`.
 const FALLBACK_RELEASE = '2000-01-01T00:00:00';
-const INACTIVE_PASSWORD_NOTE =
-  '1 password on inactive legacy access rule discarded because inactive rules do not allow submissions.';
 
 describe('migrateAllowAccess', () => {
   const cases: {
@@ -1515,6 +1512,165 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'view-only inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive rule with submission-only fields',
+      rules: [
+        {
+          active: false,
+          credit: 100,
+          timeLimitMin: 90,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive password rule',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          password: 'foo',
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          '1 password on inactive legacy access rule discarded because inactive rules do not allow submissions.',
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'hidden inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive hidden window does not list before release',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: false,
+          startDate: '2024-01-01T00:00:00',
+        },
+        {
+          credit: 100,
+          startDate: '2024-02-01T00:00:00',
+          endDate: '2024-06-01T00:00:00',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2024-02-01T00:00:00' },
+            due: { date: '2024-06-01T00:00:00' },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'PrairieTest with inactive viewing rule',
+      rules: [
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { startDate: '2024-01-01T00:00:00', active: false },
+      ],
+      expected: {
+        accessControl: {
+          integrations: {
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
+          },
+        },
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive positive-credit rule ignored for active credit monotonicity',
+      rules: [
+        {
+          credit: 50,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-06-01T23:59:59',
+        },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-07-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2026-01-01T23:55:01' },
+            due: { date: '2026-06-01T23:59:59', credit: 50 },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2026-07-01T23:55:01',
+              visibleUntilDate: '2026-12-25T23:59:59',
+            },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'filters non-Student role rules and treats mode:Public as no-op',
       rules: [
         { role: 'TA', endDate: '2019-12-20T23:59:59' },
@@ -1559,134 +1715,6 @@ describe('migrateAllowAccess', () => {
 
     const { errors } = validateAccessControlRules({ rules: [result.accessControl] });
     assert.deepEqual(errors, []);
-  });
-
-  describe('inactive legacy rules without date-control access', () => {
-    const inactiveDatedRule = {
-      active: false,
-      showClosedAssessment: true,
-      startDate: '2026-01-01T23:55:01',
-      endDate: '2026-12-25T23:59:59',
-    } satisfies AssessmentAccessRuleJson;
-
-    it.each([
-      {
-        name: 'view-only dated rule',
-        rules: [inactiveDatedRule],
-        notes: [INACTIVE_WINDOW_NOTE],
-      },
-      {
-        name: 'inactive rule with submission-only fields',
-        rules: [{ ...inactiveDatedRule, credit: 100, timeLimitMin: 90 }],
-        notes: [INACTIVE_WINDOW_NOTE],
-      },
-      {
-        name: 'inactive password rule',
-        rules: [{ ...inactiveDatedRule, credit: 0, password: 'foo' }],
-        notes: [INACTIVE_PASSWORD_NOTE, INACTIVE_WINDOW_NOTE],
-      },
-      {
-        name: 'hidden inactive rule',
-        rules: [
-          {
-            active: false,
-            showClosedAssessment: false,
-            showClosedAssessmentScore: false,
-          },
-        ],
-        notes: [INACTIVE_WINDOW_NOTE],
-      },
-    ] satisfies { name: string; rules: AssessmentAccessRuleJson[]; notes: string[] }[])(
-      '$name',
-      ({ rules, notes }) => {
-        assert.deepEqual(migrateAllowAccess(rules, FALLBACK_RELEASE), {
-          accessControl: {},
-          errors: [],
-          notes,
-          hasUidRules: false,
-        });
-      },
-    );
-
-    it('does not list before release for inactive windows that hide the assessment', () => {
-      const rules: AssessmentAccessRuleJson[] = [
-        {
-          active: false,
-          showClosedAssessment: false,
-          startDate: '2024-01-01T00:00:00',
-        },
-        {
-          credit: 100,
-          startDate: '2024-02-01T00:00:00',
-          endDate: '2024-06-01T00:00:00',
-        },
-      ];
-
-      assert.deepEqual(migrateAllowAccess(rules, FALLBACK_RELEASE), {
-        accessControl: {
-          dateControl: {
-            release: { date: '2024-02-01T00:00:00' },
-            due: { date: '2024-06-01T00:00:00' },
-          },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      });
-    });
-
-    it('keeps PrairieTest integration without turning inactive viewing into a release date', () => {
-      const rules: AssessmentAccessRuleJson[] = [
-        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
-        { startDate: '2024-01-01T00:00:00', active: false },
-      ];
-
-      assert.deepEqual(migrateAllowAccess(rules, FALLBACK_RELEASE), {
-        accessControl: {
-          integrations: {
-            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
-          },
-        },
-        errors: [],
-        notes: [INACTIVE_WINDOW_NOTE],
-        hasUidRules: false,
-      });
-    });
-
-    it('ignores inactive positive-credit rules for active credit monotonicity', () => {
-      const rules: AssessmentAccessRuleJson[] = [
-        {
-          credit: 50,
-          startDate: '2026-01-01T23:55:01',
-          endDate: '2026-06-01T23:59:59',
-        },
-        {
-          active: false,
-          credit: 100,
-          startDate: '2026-07-01T23:55:01',
-          endDate: '2026-12-25T23:59:59',
-        },
-      ];
-
-      assert.deepEqual(migrateAllowAccess(rules, FALLBACK_RELEASE), {
-        accessControl: {
-          dateControl: {
-            release: { date: '2026-01-01T23:55:01' },
-            due: { date: '2026-06-01T23:59:59', credit: 50 },
-          },
-          afterComplete: {
-            questions: {
-              hidden: true,
-              visibleFromDate: '2026-07-01T23:55:01',
-              visibleUntilDate: '2026-12-25T23:59:59',
-            },
-          },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      });
-    });
   });
 });
 

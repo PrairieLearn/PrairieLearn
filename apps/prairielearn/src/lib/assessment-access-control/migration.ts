@@ -27,9 +27,6 @@ import { formatJsonWithPrettier } from '../prettier.js';
 
 import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './validation.js';
 
-export const INACTIVE_WINDOW_NOTE =
-  'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.';
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -1029,7 +1026,9 @@ export function migrateAllowAccess(
   }
 
   if (!dateControl && !pwExtract && getInactiveRules(schedulingRules).length > 0) {
-    notes.push(INACTIVE_WINDOW_NOTE);
+    notes.push(
+      'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+    );
   }
 
   // No-op detection: when nothing produced a dateControl, password, or
