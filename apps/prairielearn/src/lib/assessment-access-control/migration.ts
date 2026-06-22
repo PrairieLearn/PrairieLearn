@@ -825,16 +825,16 @@ function stripPasswordsFromInactiveRules(rules: AssessmentAccessRuleJson[]): {
   rules: AssessmentAccessRuleJson[];
   notes: string[];
 } {
-  const inactivePasswordRules = getInactiveRules(rules).filter((r) => r.password);
-  if (inactivePasswordRules.length === 0) return { rules, notes: [] };
+  const inactivePasswordRules = new Set(getInactiveRules(rules).filter((r) => r.password));
+  if (inactivePasswordRules.size === 0) return { rules, notes: [] };
 
   return {
     rules: rules.map((r) => {
-      if (!r.password || (r.active ?? true) !== false) return r;
+      if (!inactivePasswordRules.has(r)) return r;
       const { password: _password, ...rest } = r;
       return rest;
     }),
-    notes: [inactivePasswordNote(inactivePasswordRules.length)],
+    notes: [inactivePasswordNote(inactivePasswordRules.size)],
   };
 }
 
