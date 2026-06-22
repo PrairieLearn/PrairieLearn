@@ -30,12 +30,6 @@ import { getAfterCompleteCrossFieldIssue, validateAccessControlRules } from './v
 export const INACTIVE_WINDOW_NOTE =
   'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.';
 
-function inactivePasswordNote(count: number): string {
-  return `${count} password${count === 1 ? '' : 's'} on inactive legacy access rule${
-    count === 1 ? '' : 's'
-  } discarded because inactive rules do not allow submissions.`;
-}
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -826,7 +820,8 @@ function stripPasswordsFromInactiveRules(rules: AssessmentAccessRuleJson[]): {
   notes: string[];
 } {
   const inactivePasswordRules = new Set(getInactiveRules(rules).filter((r) => r.password));
-  if (inactivePasswordRules.size === 0) return { rules, notes: [] };
+  const count = inactivePasswordRules.size;
+  if (count === 0) return { rules, notes: [] };
 
   return {
     rules: rules.map((r) => {
@@ -834,7 +829,9 @@ function stripPasswordsFromInactiveRules(rules: AssessmentAccessRuleJson[]): {
       const { password: _password, ...rest } = r;
       return rest;
     }),
-    notes: [inactivePasswordNote(inactivePasswordRules.size)],
+    notes: [
+      `${count} password${count === 1 ? '' : 's'} on inactive legacy access rule${count === 1 ? '' : 's'} discarded because inactive rules do not allow submissions.`,
+    ],
   };
 }
 
@@ -1031,9 +1028,9 @@ export function migrateAllowAccess(
     );
   }
 
-  const hasInactiveRulesWithoutDateControl =
-    !dateControl && getInactiveRules(schedulingRules).length > 0;
-  if (hasInactiveRulesWithoutDateControl && !pwExtract) notes.push(INACTIVE_WINDOW_NOTE);
+  if (!dateControl && !pwExtract && getInactiveRules(schedulingRules).length > 0) {
+    notes.push(INACTIVE_WINDOW_NOTE);
+  }
 
   // No-op detection: when nothing produced a dateControl, password, or
   // PrairieTest config, the rules collapse to a no-op. Suppress the note if
