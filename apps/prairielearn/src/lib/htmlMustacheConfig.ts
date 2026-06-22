@@ -49,6 +49,44 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
+const bootstrapLegacyDataAttributes = [
+  'data-animation',
+  'data-autohide',
+  'data-backdrop',
+  'data-boundary',
+  'data-container',
+  'data-content',
+  'data-custom-class',
+  'data-delay',
+  'data-dismiss',
+  'data-display',
+  'data-fallback-placement',
+  'data-flip',
+  'data-focus',
+  'data-html',
+  'data-interval',
+  'data-keyboard',
+  'data-offset',
+  'data-parent',
+  'data-pause',
+  'data-placement',
+  'data-popper-config',
+  'data-reference',
+  'data-ride',
+  'data-selector',
+  'data-show',
+  'data-slide',
+  'data-slide-to',
+  'data-spy',
+  'data-target',
+  'data-template',
+  'data-title',
+  'data-toggle',
+  'data-touch',
+  'data-trigger',
+  'data-wrap',
+];
+
 // Source of truth for the htmlmustache linter config. The on-disk
 // `.htmlmustache.jsonc` (used by the standalone CLI / editor integration) is
 // generated from this file by `scripts/gen-element-schemas.mts`; run
@@ -71,8 +109,9 @@ export const htmlMustacheConfig: Config = {
   customRules: [
     {
       id: 'pl-bs4-data-attrs',
-      selector:
-        '[data-toggle], [data-dismiss], [data-target], [data-ride], [data-parent], [data-spy], [data-slide], [data-slide-to]',
+      selector: bootstrapLegacyDataAttributes
+        .map((attr) => (attr === 'data-content' ? '[data-content]:not(option)' : `[${attr}]`))
+        .join(', '),
       message:
         'Deprecated Bootstrap 4 data-* attribute. Consider migrating to Bootstrap 5 data-bs-* attributes. See https://getbootstrap.com/docs/5.0/migration/.',
       severity: 'warning',

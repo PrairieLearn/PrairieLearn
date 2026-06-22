@@ -42,7 +42,7 @@
   "customRules": [
     {
       "id": "pl-bs4-data-attrs",
-      "selector": "[data-toggle], [data-dismiss], [data-target], [data-ride], [data-parent], [data-spy], [data-slide], [data-slide-to]",
+      "selector": "[data-animation], [data-autohide], [data-backdrop], [data-boundary], [data-container], [data-content]:not(option), [data-custom-class], [data-delay], [data-dismiss], [data-display], [data-fallback-placement], [data-flip], [data-focus], [data-html], [data-interval], [data-keyboard], [data-offset], [data-parent], [data-pause], [data-placement], [data-popper-config], [data-reference], [data-ride], [data-selector], [data-show], [data-slide], [data-slide-to], [data-spy], [data-target], [data-template], [data-title], [data-toggle], [data-touch], [data-trigger], [data-wrap]",
       "message": "Deprecated Bootstrap 4 data-* attribute. Consider migrating to Bootstrap 5 data-bs-* attributes. See https://getbootstrap.com/docs/5.0/migration/.",
       "severity": "warning"
     },

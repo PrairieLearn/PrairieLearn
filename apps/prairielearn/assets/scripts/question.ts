@@ -14,6 +14,7 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
+import './behaviors/bootstrap-compat.js';
 
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
