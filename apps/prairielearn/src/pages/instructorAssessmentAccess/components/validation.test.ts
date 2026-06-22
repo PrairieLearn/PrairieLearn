@@ -10,6 +10,7 @@ const TEST_TIMEZONE = 'America/Chicago';
 
 function makeOverride(partial: Partial<OverrideData> = {}): OverrideData {
   return {
+    uuid: '11111111-1111-4111-8111-111111111111',
     trackingId: 'override',
     appliesTo: {
       targetType: 'student_label',
@@ -249,7 +250,7 @@ describe('getGlobalDateValidationErrors', () => {
 
     expect(errors).toContainEqual({
       path: 'defaultRule.questionVisibility',
-      message: 'The score cannot be hidden after completion while questions are visible.',
+      message: 'Questions cannot be made visible after completion while the score is hidden.',
     });
     expect(errors.find((e) => e.path === 'overrides.0.questionVisibility')).toBeUndefined();
     expect(errors.find((e) => e.path === 'overrides.0.scoreVisibility')).toBeUndefined();

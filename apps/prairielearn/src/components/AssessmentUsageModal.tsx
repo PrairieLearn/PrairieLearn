@@ -1,40 +1,57 @@
 import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
+import { z } from 'zod';
 
-import type {
-  AssessmentForSet,
-  InstructorCourseAdminSetFormRow,
-} from '../instructorCourseAdminSets.types.js';
+import { IdSchema } from '@prairielearn/zod';
 
-export type AssessmentSetUsageModalData = InstructorCourseAdminSetFormRow;
+/**
+ * An assessment as shown in "View assessments" usage lists, with enough course
+ * instance context to group it and link to it.
+ */
+export const AssessmentUsageSchema = z.object({
+  assessment_id: IdSchema,
+  tid: z.string(),
+  title: z.string(),
+  label: z.string(),
+  color: z.string(),
+  course_instance_id: IdSchema,
+  course_instance_short_name: z.string().nullable(),
+  course_instance_long_name: z.string().nullable(),
+});
+export type AssessmentUsage = z.infer<typeof AssessmentUsageSchema>;
 
-interface AssessmentSetUsageModalProps {
-  show: boolean;
-  data: AssessmentSetUsageModalData | null;
-  onHide: () => void;
-  onExited: () => void;
-}
-
-export function AssessmentSetUsageModal({
+/**
+ * Lists the assessments that reference a course entity (e.g. an assessment set
+ * or module), grouped by course instance.
+ */
+export function AssessmentUsageModal({
   show,
   data,
+  entityLabel,
   onHide,
   onExited,
-}: AssessmentSetUsageModalProps) {
-  // Group assessments by course instance
+}: {
+  show: boolean;
+  data: { name: string; assessments: AssessmentUsage[] } | null;
+  /** Describes the referenced entity, e.g. "assessment set" or "module". */
+  entityLabel: string;
+  onHide: () => void;
+  onExited: () => void;
+}) {
+  // Group assessments by course instance (already sorted by publishing dates in SQL).
   const groupedAssessments = useMemo(() => {
     if (!data) return [];
 
-    const groups = new Map<string, AssessmentForSet[]>();
+    const groups = new Map<string, AssessmentUsage[]>();
     for (const assessment of data.assessments) {
-      const key = assessment.course_instance_id;
-      if (!groups.has(key)) {
-        groups.set(key, []);
+      let group = groups.get(assessment.course_instance_id);
+      if (!group) {
+        group = [];
+        groups.set(assessment.course_instance_id, group);
       }
-      groups.get(key)!.push(assessment);
+      group.push(assessment);
     }
 
-    // Convert to array (already sorted by publishing dates DESC from SQL)
     return Array.from(groups.entries());
   }, [data]);
 
@@ -45,7 +62,7 @@ export function AssessmentSetUsageModal({
       </Modal.Header>
       <Modal.Body>
         {data?.assessments.length === 0 ? (
-          <p className="text-muted mb-0">No assessments use this assessment set.</p>
+          <p className="text-muted mb-0">No assessments use this {entityLabel}.</p>
         ) : (
           <div className="d-flex flex-column gap-3">
             {groupedAssessments.map(([courseInstanceId, assessments]) => (
@@ -80,4 +97,4 @@ export function AssessmentSetUsageModal({
   );
 }
 
-AssessmentSetUsageModal.displayName = 'AssessmentSetUsageModal';
+AssessmentUsageModal.displayName = 'AssessmentUsageModal';

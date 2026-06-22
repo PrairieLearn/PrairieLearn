@@ -16,7 +16,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe(
-  'Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules',
+  'Exam assessment with questions and scores hidden after completion',
   { timeout: 60_000 },
   function () {
     const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };

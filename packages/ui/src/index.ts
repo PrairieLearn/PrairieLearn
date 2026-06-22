@@ -18,6 +18,11 @@ export {
   type MultiSelectFilterValue,
 } from './components/MultiSelectColumnFilter.js';
 export {
+  BooleanColumnFilter,
+  applyBooleanFilter,
+  type BooleanFilterOption,
+} from './components/BooleanColumnFilter.js';
+export {
   NumericInputColumnFilter,
   parseNumericFilter,
   numericColumnFilterFn,

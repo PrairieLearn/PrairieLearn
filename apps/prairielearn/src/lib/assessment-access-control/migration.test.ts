@@ -87,6 +87,21 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'timed-assessment-open-ended',
+      rules: [{ credit: 100, timeLimitMin: 50, showClosedAssessment: false }],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: FALLBACK_RELEASE },
+            durationMinutes: 50,
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'declining-credit',
       rules: [
         { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
@@ -647,7 +662,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -694,7 +708,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -712,7 +726,7 @@ describe('migrateAllowAccess', () => {
       ],
       expected: {
         accessControl: {
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -768,7 +782,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -800,7 +814,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -1174,7 +1188,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -1882,6 +1895,32 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy preserves property order', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            uuid: '00000000-0000-0000-0000-000000000000',
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-06-01T00:00:00' },
+            ],
+            zones: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.deepEqual(Object.keys(result), ['uuid', 'type', 'title', 'accessControl', 'zones']);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
@@ -2180,6 +2219,19 @@ describe('migrateAssessmentJson', () => {
     assert.isNotNull(result);
     assert.deepEqual(result.notes, []);
     assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
+  });
+
+  it('drops a stale accessControl key when migrating allowAccess', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      accessControl: [{ dateControl: { release: { date: '2020-01-01T00:00:00' } } }],
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
     const parsed = JSON.parse(result.json);
     assert.isUndefined(parsed.allowAccess);
     assert.deepEqual(parsed.accessControl, []);

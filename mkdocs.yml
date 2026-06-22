@@ -150,6 +150,7 @@ markdown_extensions:
 
   - toc:
       permalink: true
+      toc_depth: 3
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=pymdownx+blocks+caption#caption
   - pymdownx.blocks.caption
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/?h=attribute+list#attribute-lists
@@ -211,8 +212,7 @@ nav:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
-      # Hidden until the qti-content-import feature flag is generally available:
-      # - 'Importing content from other platforms': 'importingContent.md'
+      - 'Importing content': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
@@ -223,6 +223,7 @@ nav:
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
+          - 'AI question generation': 'question/ai-generation.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Preferences': 'question/preferences.md'
@@ -352,6 +353,7 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
+  assessment/accessControlModern.md
   importingContent.md
 
 validation:
