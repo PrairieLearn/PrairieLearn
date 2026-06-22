@@ -4,7 +4,9 @@ A canvas for auto-gradeable drawings.
 
 Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
 
-## Elements for drawing canvases
+A `pl-drawing` canvas can be used in two modes. In a display-only canvas (`gradable="false"`, the default), it renders drawing objects authored in the question. In a gradable canvas (`gradable="true"`), students place objects on the canvas and PrairieLearn grades them against objects in `pl-drawing-answer`; objects in `pl-drawing-initial` are shown but not graded.
+
+## Elements for display-only canvases
 
 ### `pl-drawing` element
 
@@ -26,7 +28,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 | Attribute                  | Type    | Default                                      | Description                                                                                                                                                                 |
 | -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
+| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display-only figures.                         |
 | `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
 | `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
 | `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
@@ -66,13 +68,13 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 
 ![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
 
-For use in grading canvases, see the `pl-drawing-initial` section under [Elements for grading canvases](#elements-for-grading-canvases).
+For use in gradable canvases, see the `pl-drawing-initial` section under [Elements for gradable canvases](#elements-for-gradable-canvases).
 
-## Elements for grading canvases
+## Elements for gradable canvases
 
-### Grading canvas example
+### Gradable canvas example
 
-The element `pl-drawing-answer` is required for grading canvases, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
+The element `pl-drawing-answer` is required for gradable canvases, but there are other elements as well that can be helpful. The example below illustrates typical parts of a gradable canvas.
 
 #### Sample element
 
@@ -124,7 +126,7 @@ In the example above, `pl-vector` is the only object that is graded. The corresp
 
 ### `pl-drawing-initial` element
 
-This element wraps initial objects that should appear in a grading canvas but should not be graded. Objects inside `pl-drawing-initial` are not graded, while objects inside `pl-drawing-answer` are graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
+This element wraps initial objects that should appear in a gradable canvas but should not be graded. Objects inside `pl-drawing-initial` are not graded, while objects inside `pl-drawing-answer` are graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
 
 ```html
 <pl-drawing gradable="true" answers-name="add-objects">
@@ -143,7 +145,7 @@ This element wraps initial objects that should appear in a grading canvas but sh
 | ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-initial` will be displayed with their respective error bounding boxes in the answer panel. |
 
-The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
+The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the gradable canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
 ### `pl-controls` element
@@ -1802,7 +1804,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing-initial>
 ```
 
-#### Example implementations
+### Example implementations
 
 - [demo/drawing/graphs]: Example that highlights graph sketching
 
