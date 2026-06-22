@@ -6,7 +6,7 @@ Use the assessment **Access** page to configure availability, deadlines, time li
 
 These examples use [modern assessment access control](accessControl.md). Existing assessments that still use `allowAccess` can use the [legacy access control](accessControlLegacy.md) documentation.
 
-Student-specific access overrides are managed from the assessment **Access** page. Use **Specific students** for assessment-specific groups such as one-off makeups or conflict times. Use [student labels](../courseInstance/index.md#student-labels) for groups that are maintained across multiple assessments, such as remote sections, online cohorts, or standing accommodation groups.
+Student-specific access overrides are managed from the assessment **Access** page. Use **Specific students** for assessment-specific exceptions such as one-off makeups or alternate exam windows. Use [student labels](../courseInstance/index.md#student-labels) for groups that are maintained across multiple assessments, such as remote sections, online cohorts, or standing accommodation groups.
 
 ## Exams in a PrairieTest-managed testing center
 
@@ -26,7 +26,7 @@ In the UI:
 Some notes about this configuration:
 
 - The PrairieTest exam UUID should be copied from PrairieTest for the specific exam. Each exam has its own unique UUID, and it's vital that the correct value is used for each separate exam.
-- Do not configure date control or a PrairieLearn time limit unless students should have a non-PrairieTest access path. PrairieTest enforces scheduling and time limits, including conflict exams and disability accommodations.
+- Do not configure date control or a PrairieLearn time limit unless students should have a non-PrairieTest access path. PrairieTest enforces scheduling and time limits, including alternate exam windows and disability accommodations.
 - Use the PrairieTest exam's after-completion visibility setting if students should not review questions or scores after finishing while their reservation is still active.
 
 ??? info "JSON"
@@ -49,11 +49,11 @@ Some notes about this configuration:
     }
     ```
 
-## Testing center exams with a few students outside the testing center
+## Testing center exams with a few students outside PrairieTest
 
-Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed-testing-center)) need to have a few students take the exam without PrairieTest proctoring, for example if they missed the exam and need to take it later without proctoring. Start with the PrairieTest-only defaults, then add an override that gives the selected students a date-control access path.
+Sometimes a PrairieTest-managed exam needs a separate access path for a small number of students who are not taking it through PrairieTest. Start with the PrairieTest-only defaults, then add an override that gives the selected students a date-control access path.
 
-Use a student-specific override for ordinary makeup exams, since the affected students usually change from assessment to assessment. Use a student label only when the same group should be managed together, such as a remote section, online cohort, or accommodation group that will use the same access pattern across multiple assessments.
+Use a student-specific override for one-off exceptions, since the affected students usually change from assessment to assessment. Use a student label only when the same group should be managed together across multiple assessments.
 
 In the UI:
 
@@ -67,13 +67,13 @@ In the UI:
 
 Some notes about this configuration:
 
-- The override uses [date control](accessControl.md#date-control) to create an unproctored access window with its own [time limit](accessControl.md#time-limits). See the [synchronous exam notes](#synchronous-timed-exams) for details about choosing the window and time limit.
+- The override uses [date control](accessControl.md#date-control) to create a non-PrairieTest access window with its own [time limit](accessControl.md#time-limits). See the [synchronous exam notes](#synchronous-timed-exams) for details about choosing the window and time limit.
 - The override can be added at any time, including after other students already completed the exam using PrairieTest. This is useful for accommodations or makeup exams.
 - For a reusable cohort, choose **Students by label** instead of **Specific students** and select the appropriate label, such as "Remote section".
 
 ??? info "JSON"
 
-    This reference shows the reusable-cohort version using a student label. For ordinary specific-student makeups, configure the students in the Access page instead of adding UIDs to this JSON; PrairieLearn stores the selected student assignments separately from the rule body in `infoAssessment.json`.
+    This reference shows the reusable-cohort version using a student label.
 
     ```json title="infoAssessment.json"
     {
@@ -112,11 +112,11 @@ This configuration is good when:
 
 - Almost all students take the exam at the same time.
 - Some students have accommodations, such as 1.5x time.
-- Some students take the exam at a later conflict time, mainly because they are in a different timezone.
+- Some students need an alternate exam window.
 
 !!! warning
 
-    Use student-specific overrides for one-off conflict times or unusual combinations of accommodations. Use student-label overrides only for cohorts that are already maintained as labels or should intentionally be reused across assessments. If a student matches multiple label overrides, [override priority](accessControl.md#override-priority) determines which settings apply.
+    Use student-specific overrides for one-off alternate windows or unusual combinations of accommodations. Use student-label overrides only for cohorts that are already maintained as labels or should intentionally be reused across assessments. If a student matches multiple label overrides, [override priority](accessControl.md#override-priority) determines which settings apply.
 
 In the UI:
 
@@ -129,15 +129,15 @@ In the UI:
 7. Under **After completion**, set **Question visibility** to **Hide questions permanently**. Leave **Score visibility** visible after completion if students should see their total score.
 8. For students with extra-time accommodations, click **Add override**. Choose **Students by label** if you already maintain an accommodation label such as "Extended time"; otherwise choose **Specific students**.
 9. In the extra-time override, click **Override** next to **Due date** and **Time limit**. For 1.5x time on a 60-minute exam, use a 90-minute time limit and extend the due date to cover that time.
-10. For students taking the exam at a later conflict time, click **Add override**. Choose **Specific students** unless this is a reusable cohort that should be managed by label.
-11. In the conflict-time override, click **Override** next to **Release**, **Due date**, and **Time limit** for the later exam window.
-12. For students who need both a conflict exam and extra time, add a student-specific override or a dedicated reusable-cohort label override listed below the other matching overrides.
+10. For students taking the exam in an alternate window, click **Add override**. Choose **Specific students** unless this is a reusable cohort that should be managed by label.
+11. In the alternate-window override, click **Override** next to **Release**, **Due date**, and **Time limit** for the alternate exam window.
+12. For students who need both an alternate window and extra time, add a student-specific override or a dedicated reusable-cohort label override listed below the other matching overrides.
 13. Click **Save**.
 
 Some notes about this configuration:
 
 - The exam window has been set to be 5 minutes longer than the exam time limit. However, students will not be able to submit past the due time under any circumstances. If a student starts this exam more than 5 minutes late, then the countdown timer on their exam will reflect the time remaining until the due time.
-- If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and login to PrairieLearn again, and continue taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
+- If a student closes their web browser accidentally during an exam, they can reopen PrairieLearn and continue where they left off. They can also switch computers and continue the same exam. The timer does not pause while the browser is closed.
 - Remember to extend both the due date and time limit for students with extra-time accommodations.
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions. Students cannot submit after their timer expires or after the due time, whichever comes first. Once the assessment is complete, students can see their final score but cannot review any questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
@@ -146,7 +146,7 @@ Some notes about this configuration:
 
 ??? info "JSON"
 
-    This reference shows an extra-time label override and a student-specific conflict-time rule body. Configure the selected students for the conflict-time override on the Access page; the selected student assignments are stored separately from the rule body in `infoAssessment.json`.
+    This reference shows an extra-time label override and an alternate-window override for specific students.
 
     ```json title="infoAssessment.json"
     {
@@ -190,7 +190,7 @@ This configuration is good when:
 - Students can choose when to take the exam over a long period, typically about 24 hours.
 - Once a student starts working on the exam, they have limited time, such as 1 hour.
 - Some students have accommodations, such as 1.5x time.
-- There is no need for conflict exams because students can choose their own time.
+- There is no need for alternate exam windows because students can choose their own time.
 
 !!! warning
 
@@ -212,11 +212,11 @@ In the UI:
 Some notes about this configuration:
 
 - All of the [notes above](#synchronous-timed-exams) still apply.
-- It's a good idea to run exams early-morning to early-morning. Having a due date at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
+- For long asynchronous windows, consider running the exam early-morning to early-morning, with a due date around 6am. Students are less likely to be active between about 4am and 7am, based on PrairieLearn usage data, so this can reduce end-of-window pile-ups and confusion about exactly when the exam closes.
 
 ??? info "JSON"
 
-    This reference shows the reusable-accommodation version using a student label. For one-off accommodations, configure the selected students on the Access page instead.
+    This reference shows the reusable-accommodation version using a student label.
 
     ```json title="infoAssessment.json"
     {
@@ -264,8 +264,8 @@ In the UI:
 7. Under **After completion**, set **Question visibility** to **Hide questions permanently**.
 8. For students with extra-time accommodations, click **Add override**. Choose **Students by label** if you already maintain an accommodation label such as "Extended time"; otherwise choose **Specific students**.
 9. In the extra-time override, click **Override** next to **Due date** and **Time limit**. For 1.5x time on a 60-minute exam, use a 90-minute time limit and extend the due date to cover that time.
-10. For students taking the exam at a later conflict time, click **Add override**. Choose **Specific students** unless this is a reusable cohort that should be managed by label.
-11. In the conflict-time override, click **Override** next to **Release**, **Due date**, and **Time limit** for the later exam window.
+10. For students taking the exam in an alternate window, click **Add override**. Choose **Specific students** unless this is a reusable cohort that should be managed by label.
+11. In the alternate-window override, click **Override** next to **Release**, **Due date**, and **Time limit** for the alternate exam window.
 12. Click **Save**.
 
 Some notes about this configuration:
@@ -279,7 +279,7 @@ Some notes about this configuration:
 
 ??? info "JSON"
 
-    This reference shows an extra-time label override and a student-specific conflict-time rule body. Configure the selected students for the conflict-time override on the Access page; the selected student assignments are stored separately from the rule body in `infoAssessment.json`.
+    This reference shows an extra-time label override and an alternate-window override for specific students.
 
     ```json title="infoAssessment.json"
     {
