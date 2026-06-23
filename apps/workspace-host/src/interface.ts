@@ -842,6 +842,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     ) {
       return [settings.workspace_home, settings.workspace_port];
     }
+
     const inspectResults = await docker.getImage(settings.workspace_image).inspect();
     const labels = inspectResults.Config.Labels;
     const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
