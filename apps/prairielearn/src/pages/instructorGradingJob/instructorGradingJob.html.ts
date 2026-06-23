@@ -4,7 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledScriptTag } from '../../lib/assets.ts';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
