@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -286,10 +286,8 @@ export const InstructorQuestionSettingsForm = ({
   const watchedSharingSets = watch('sharing_sets');
   const sharePubliclyInput = register('share_publicly');
   const shareSourcePubliclyInput = register('share_source_publicly');
-  const [sharePublicly, setSharePublicly] = useState(defaultValues.share_publicly);
-  const [shareSourcePublicly, setShareSourcePublicly] = useState(
-    defaultValues.share_source_publicly,
-  );
+  const sharePublicly = watch('share_publicly');
+  const shareSourcePublicly = watch('share_source_publicly');
   const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
   const {
     sharePubliclyDisabled,
@@ -345,8 +343,6 @@ export const InstructorQuestionSettingsForm = ({
   });
   const handleCancel = () => {
     reset();
-    setSharePublicly(defaultValues.share_publicly);
-    setShareSourcePublicly(defaultValues.share_source_publicly);
   };
 
   return (
@@ -1035,15 +1031,11 @@ export const InstructorQuestionSettingsForm = ({
                 className="mb-1"
                 disabled={sharePubliclyDisabled}
                 checked={sharePublicly}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked;
-                  void sharePubliclyInput.onChange(e);
-                  setSharePublicly(checked);
-                  setValue('share_publicly', checked, { shouldDirty: true });
-                }}
+                aria-describedby="share_publicly-description"
+                onChange={sharePubliclyInput.onChange}
                 onBlur={sharePubliclyInput.onBlur}
               />
-              <small className="form-text text-muted d-block mb-2">
+              <small id="share_publicly-description" className="form-text text-muted d-block mb-2">
                 Any course may import this question.
                 {sharePubliclyMessage && <SharingMessageText message={sharePubliclyMessage} />}
               </small>
@@ -1061,15 +1053,14 @@ export const InstructorQuestionSettingsForm = ({
                 className="mb-1"
                 disabled={shareSourcePubliclyDisabled}
                 checked={shareSourcePublicly}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked;
-                  void shareSourcePubliclyInput.onChange(e);
-                  setShareSourcePublicly(checked);
-                  setValue('share_source_publicly', checked, { shouldDirty: true });
-                }}
+                aria-describedby="share_source_publicly-description"
+                onChange={shareSourcePubliclyInput.onChange}
                 onBlur={shareSourcePubliclyInput.onBlur}
               />
-              <small className="form-text text-muted d-block mb-3">
+              <small
+                id="share_source_publicly-description"
+                className="form-text text-muted d-block mb-3"
+              >
                 The question's source is publicly shared.
                 {shareSourcePubliclyMessage && (
                   <SharingMessageText message={shareSourcePubliclyMessage} />
