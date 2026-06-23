@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "additional-simplifications": {
+      "type": "string"
+    },
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-complex": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-sets": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-trig-functions": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "blank-value": {
+      "type": "string"
+    },
+    "correct-answer": {
+      "type": "string"
+    },
+    "custom-functions": {
+      "type": "string"
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "display-log-as-ln": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "display-simplified-expression": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "formula-editor": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "imaginary-unit-for-display": {
+      "type": "string",
+      "enum": ["i", "j"]
+    },
+    "initial-value": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "show-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-score": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "suffix": {
+      "type": "string"
+    },
+    "variables": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

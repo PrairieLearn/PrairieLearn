@@ -298,20 +298,12 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-excalidraw' },
     { name: 'pl-file-upload' },
     { name: 'pl-image-capture' },
-    { name: 'pl-integer-input' },
     {
       name: 'pl-matching',
       children: [{ name: 'pl-statement' }, { name: 'pl-option' }],
     },
     { name: 'pl-matrix-component-input' },
     { name: 'pl-matrix-input' },
-    {
-      name: 'pl-checkbox',
-      children: [{ name: 'pl-answer' }],
-    },
-    { name: 'pl-number-input' },
-    { name: 'pl-string-input' },
-    { name: 'pl-symbolic-input' },
     { name: 'pl-units-input' },
     // Decorative
     { name: 'pl-card' },

@@ -155,6 +155,20 @@
   ],
   "customTags": [
     {
+      "name": "pl-checkbox",
+      "schema": "./apps/prairielearn/elements/pl-checkbox/schemas/pl-checkbox.json",
+      "children": [
+        {
+          "name": "pl-answer",
+          "schema": "./apps/prairielearn/elements/pl-checkbox/schemas/pl-answer.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-integer-input",
+      "schema": "./apps/prairielearn/elements/pl-integer-input/schemas/pl-integer-input.json"
+    },
+    {
       "name": "pl-multiple-choice",
       "schema": "./apps/prairielearn/elements/pl-multiple-choice/schemas/pl-multiple-choice.json",
       "children": [
@@ -163,6 +177,10 @@
           "schema": "./apps/prairielearn/elements/pl-multiple-choice/schemas/pl-answer.json"
         }
       ]
+    },
+    {
+      "name": "pl-number-input",
+      "schema": "./apps/prairielearn/elements/pl-number-input/schemas/pl-number-input.json"
     },
     {
       "name": "pl-order-blocks",
@@ -183,6 +201,14 @@
           ]
         }
       ]
+    },
+    {
+      "name": "pl-string-input",
+      "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
+    },
+    {
+      "name": "pl-symbolic-input",
+      "schema": "./apps/prairielearn/elements/pl-symbolic-input/schemas/pl-symbolic-input.json"
     },
     {
       "name": "pl-code",
@@ -253,9 +279,6 @@
       "name": "pl-image-capture"
     },
     {
-      "name": "pl-integer-input"
-    },
-    {
       "name": "pl-matching",
       "children": [
         {
@@ -271,23 +294,6 @@
     },
     {
       "name": "pl-matrix-input"
-    },
-    {
-      "name": "pl-checkbox",
-      "children": [
-        {
-          "name": "pl-answer"
-        }
-      ]
-    },
-    {
-      "name": "pl-number-input"
-    },
-    {
-      "name": "pl-string-input"
-    },
-    {
-      "name": "pl-symbolic-input"
     },
     {
       "name": "pl-units-input"
