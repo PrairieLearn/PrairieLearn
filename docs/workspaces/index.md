@@ -68,15 +68,13 @@ For an ungraded workspace, a full `info.json` file should look something like:
 
 ```json title="info.json"
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode-python"
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": { "image": "prairielearn/workspace-vscode-python" }
 }
 ```
 
@@ -86,24 +84,20 @@ For an externally graded workspace, a full `info.json` file should look somethin
 
 ```json title="info.json"
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode-cpp",
-        "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c",
-            "docs/*.txt"
-        ]
-    },
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "image": "..."
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-cpp",
+    "gradedFiles": ["starter_code.h", "starter_code.c", "docs/*.txt"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "image": "..."
+  }
 }
 ```
 
