@@ -284,6 +284,8 @@ export const InstructorQuestionSettingsForm = ({
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
+  const sharePubliclyInput = register('share_publicly');
+  const shareSourcePubliclyInput = register('share_source_publicly');
   const [sharePublicly, setSharePublicly] = useState(defaultValues.share_publicly);
   const [shareSourcePublicly, setShareSourcePublicly] = useState(
     defaultValues.share_source_publicly,
@@ -1024,9 +1026,10 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_publicly" value="on" />
               )}
               <Form.Check
+                ref={sharePubliclyInput.ref}
                 type="checkbox"
                 id="share_publicly"
-                name="share_publicly"
+                name={sharePubliclyInput.name}
                 value="on"
                 label="Share publicly"
                 className="mb-1"
@@ -1034,9 +1037,11 @@ export const InstructorQuestionSettingsForm = ({
                 checked={sharePublicly}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked;
+                  void sharePubliclyInput.onChange(e);
                   setSharePublicly(checked);
                   setValue('share_publicly', checked, { shouldDirty: true });
                 }}
+                onBlur={sharePubliclyInput.onBlur}
               />
               <small className="form-text text-muted d-block mb-2">
                 Any course may import this question.
@@ -1047,9 +1052,10 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_source_publicly" value="on" />
               )}
               <Form.Check
+                ref={shareSourcePubliclyInput.ref}
                 type="checkbox"
                 id="share_source_publicly"
-                name="share_source_publicly"
+                name={shareSourcePubliclyInput.name}
                 value="on"
                 label="Share source publicly"
                 className="mb-1"
@@ -1057,9 +1063,11 @@ export const InstructorQuestionSettingsForm = ({
                 checked={shareSourcePublicly}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked;
+                  void shareSourcePubliclyInput.onChange(e);
                   setShareSourcePublicly(checked);
                   setValue('share_source_publicly', checked, { shouldDirty: true });
                 }}
+                onBlur={shareSourcePubliclyInput.onBlur}
               />
               <small className="form-text text-muted d-block mb-3">
                 The question's source is publicly shared.
