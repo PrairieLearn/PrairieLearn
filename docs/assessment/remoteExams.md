@@ -26,7 +26,8 @@ In the UI:
 Some notes about this configuration:
 
 - The PrairieTest exam UUID should be copied from PrairieTest for the specific exam. Each exam has its own unique UUID, and it's vital that the correct value is used for each separate exam.
-- Do not configure date control or a PrairieLearn time limit unless students should have a non-PrairieTest access path. PrairieTest enforces scheduling and time limits, including alternate exam windows and disability accommodations.
+- Do not configure date control or a PrairieLearn time limit.
+- Apply overrides and disability accommodations in PrairieTest. Do not use overrides in PrairieLearn.
 - Use the PrairieTest exam's after-completion visibility setting if students should not review questions or scores after finishing while their reservation is still active.
 
 ??? info "JSON"
@@ -136,13 +137,13 @@ In the UI:
 
 Some notes about this configuration:
 
-- The exam window has been set to be 5 minutes longer than the exam time limit. However, students will not be able to submit past the due time under any circumstances. If a student starts this exam more than 5 minutes late, then the countdown timer on their exam will reflect the time remaining until the due time.
+- Set the exam window (release to due date) to be 5 minutes longer than the exam time limit. Students will not be able to submit past the due date under any circumstances. If a student starts this exam more than 5 minutes late, then the countdown timer on their exam will reflect the time remaining until the due date.
 - If a student closes their web browser accidentally during an exam, they can reopen PrairieLearn and continue where they left off. They can also switch computers and continue the same exam. The timer does not pause while the browser is closed.
 - Remember to extend both the due date and time limit for students with extra-time accommodations.
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions. Students cannot submit after their timer expires or after the due time, whichever comes first. Once the assessment is complete, students can see their final score but cannot review any questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check and manually close exams on the **Students** page under the assessment in PrairieLearn.
-- Because no after-deadline submission mode is configured, submissions are not allowed after the due time. The **Question visibility** setting keeps completed exam questions hidden while the total score remains visible by default. This does not prevent students from seeing questions or grading feedback while they are taking the exam.
+- Because no after-deadline submission mode is configured, submissions are not allowed after the due date. The **Question visibility** setting keeps completed exam questions hidden while the total score remains visible by default. This does not prevent students from seeing questions or grading feedback while they are taking the exam.
 
 ??? info "JSON"
 
@@ -183,7 +184,7 @@ Some notes about this configuration:
 
 ## Asynchronous, timed exams
 
-We do **NOT** recommend exams to be run using this configuration for high-stakes exams. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
+We do **NOT** recommend running high-stakes exams using this configuration. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams) unless you have a secure testing environment.
 
 This configuration is good when:
 
