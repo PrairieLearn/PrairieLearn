@@ -5,6 +5,13 @@
   "set": "Homework",
   "number": "21",
   "accessControl": [],
-  "zones": [{ "questions": [{ "id": "addNumbers", "autoPoints": 1 }] }],
+  "zones": [
+    {
+      "questions": [
+        { "id": "addNumbers", "autoPoints": 1 },
+        { "id": "additionalNames", "autoPoints": 1 }
+      ]
+    }
+  ],
   "shareSourcePublicly": true
 }
