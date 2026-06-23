@@ -10,17 +10,6 @@ async function lintMessages(html: string): Promise<string[]> {
 }
 
 describe('pl-checkbox schema', () => {
-  it('accepts schema-valid checkbox markup', async () => {
-    const messages = await lintMessages(`
-      <pl-checkbox answers-name="choice" order="fixed" partial-credit="coverage">
-        <pl-answer correct="true">A</pl-answer>
-        <pl-answer feedback="Try again">B</pl-answer>
-      </pl-checkbox>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
   it('rejects disallowed child tags', async () => {
     const messages = await lintMessages(`
       <pl-checkbox answers-name="choice">

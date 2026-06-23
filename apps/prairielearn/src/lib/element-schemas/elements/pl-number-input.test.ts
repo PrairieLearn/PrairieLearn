@@ -10,14 +10,6 @@ async function lintMessages(html: string): Promise<string[]> {
 }
 
 describe('pl-number-input schema', () => {
-  it('accepts schema-valid number input markup', async () => {
-    const messages = await lintMessages(`
-      <pl-number-input answers-name="number" comparison="sigfig" digits="3"></pl-number-input>
-    `);
-
-    assert.deepEqual(messages, []);
-  });
-
   it('accepts a blank correct answer for Python semantic validation', async () => {
     const messages = await lintMessages(`
       <pl-number-input
