@@ -135,6 +135,12 @@ export function buildContextForSingleElementDoc(
   const content = file.children.slice(contentStartIndex);
 
   // Remove sections that aren't useful for the context.
+  // This context is currently used for new question generation, where we do not want the model
+  // to introduce legacy syntax. If this parser is reused for editing existing questions, make
+  // this conditional or provide separate migration context so the editor can recognize and
+  // migrate deprecated attributes.
+  removeHeadingAndContent('Migrating from deprecated attributes', content);
+  removeHeadingAndContent('Deprecated attributes', content);
   removeHeadingAndContent('Example implementations', content);
   removeHeadingAndContent('See also', content);
 

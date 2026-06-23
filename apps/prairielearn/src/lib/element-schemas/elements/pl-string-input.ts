@@ -11,7 +11,12 @@ const plStringInputAttributesSchema = z
     'correct-answer': z.string().optional(),
     'correct-answer-format': z.enum(['exact', 'regex']).optional(),
     display: z.enum(['block', 'inline']).optional(),
-    'escape-unicode': booleanFormat().optional(),
+    'escape-unicode': booleanFormat()
+      .meta({
+        deprecated: true,
+        description: 'This attribute is ignored; Unicode escaping is always applied when needed.',
+      })
+      .optional(),
     'ignore-case': booleanFormat().optional(),
     'initial-value': z.string().optional(),
     label: z.string().optional(),

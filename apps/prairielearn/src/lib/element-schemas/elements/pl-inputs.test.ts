@@ -14,6 +14,12 @@ describe('AI-supported input schemas', () => {
     const messages = await lintMessages(`
       <pl-integer-input answers-name="integer" base="16" correct-answer="ff"></pl-integer-input>
       <pl-number-input answers-name="number" comparison="sigfig" digits="3"></pl-number-input>
+      <pl-number-input
+        answers-name="blank-number"
+        allow-blank="true"
+        blank-value=""
+        correct-answer=""
+      ></pl-number-input>
       <pl-string-input
         answers-name="string"
         correct-answer-format="regex"
@@ -21,6 +27,7 @@ describe('AI-supported input schemas', () => {
       ></pl-string-input>
       <pl-symbolic-input
         answers-name="symbolic"
+        additional-simplifications="expand, trigsimp"
         allow-complex="true"
         imaginary-unit-for-display="j"
       ></pl-symbolic-input>
@@ -37,5 +44,16 @@ describe('AI-supported input schemas', () => {
 
     assert.isTrue(messages.some((message) => message.includes('correct-answer-format')));
     assert.isTrue(messages.some((message) => message.includes('imaginary-unit-for-display')));
+  });
+
+  it('rejects unsupported symbolic simplification names', async () => {
+    const messages = await lintMessages(`
+      <pl-symbolic-input
+        answers-name="symbolic"
+        additional-simplifications="expand, bogus"
+      ></pl-symbolic-input>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('additional-simplifications')));
   });
 });

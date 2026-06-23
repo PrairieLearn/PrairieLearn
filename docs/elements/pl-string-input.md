@@ -36,9 +36,20 @@ def generate(data):
 | `remove-leading-trailing` | boolean                 | See description | Whether to remove leading and trailing blank spaces from the input string. Defaults to `true` if `multiline` is enabled, otherwise `false`.                                                           |
 | `remove-spaces`           | boolean                 | false           | Whether to remove blank spaces from the input string.                                                                                                                                                 |
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                                                  |
+| `show-score`              | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                                                 |
 | `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                                               |
 | `suffix`                  | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                                                     |
 | `weight`                  | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                                                  |
+
+### Migrating from deprecated attributes
+
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax                 | New syntax         |
+| -------------------------- | ------------------ |
+| `escape-unicode="<value>"` | Omit the attribute |
+
+The `escape-unicode` attribute is ignored. Unicode escaping is always applied when needed for displayed submitted and correct answers.
 
 ## Matching with regular expressions
 

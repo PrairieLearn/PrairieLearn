@@ -69,7 +69,9 @@
       "anyOf": [
         {
           "type": "string",
-          "format": "boolean"
+          "format": "boolean",
+          "deprecated": true,
+          "description": "Use partial-credit=\"off|coverage|each-answer|net-correct\" instead."
         },
         {
           "type": "string",

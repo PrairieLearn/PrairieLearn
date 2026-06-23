@@ -28,6 +28,21 @@ describe('pl-multiple-choice schema', () => {
     assert.deepEqual(messages, []);
   });
 
+  it('accepts legacy boolean all-of-the-above and none-of-the-above values', async () => {
+    const messages = await lintMessages(`
+      <pl-multiple-choice
+        answers-name="choice"
+        all-of-the-above="true"
+        none-of-the-above="false"
+      >
+        <pl-answer correct="true">A</pl-answer>
+        <pl-answer>B</pl-answer>
+      </pl-multiple-choice>
+    `);
+
+    assert.deepEqual(messages, []);
+  });
+
   it('rejects disallowed child tags', async () => {
     const messages = await lintMessages(`
       <pl-multiple-choice answers-name="choice">

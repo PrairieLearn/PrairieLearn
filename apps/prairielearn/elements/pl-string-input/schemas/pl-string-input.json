@@ -25,7 +25,9 @@
     },
     "escape-unicode": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "This attribute is ignored; Unicode escaping is always applied when needed."
     },
     "ignore-case": {
       "type": "string",

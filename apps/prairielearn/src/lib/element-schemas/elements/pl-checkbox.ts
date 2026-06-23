@@ -4,7 +4,13 @@ import { booleanFormat, integerFormat } from '../helpers.ts';
 import type { ElementSchemaModule } from '../types.ts';
 
 const partialCreditAttribute = () =>
-  z.union([booleanFormat(), z.enum(['off', 'coverage', 'each-answer', 'net-correct'])]);
+  z.union([
+    booleanFormat().meta({
+      deprecated: true,
+      description: 'Use partial-credit="off|coverage|each-answer|net-correct" instead.',
+    }),
+    z.enum(['off', 'coverage', 'each-answer', 'net-correct']),
+  ]);
 
 const plCheckboxAnswerAttributesSchema = z
   .object({

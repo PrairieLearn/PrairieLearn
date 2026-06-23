@@ -3,9 +3,12 @@ import * as z from 'zod/v4';
 import { booleanFormat, integerFormat } from '../helpers.ts';
 import type { ElementSchemaModule } from '../types.ts';
 
+const additionalSimplificationsPattern =
+  /^\s*(expand|powsimp|trigsimp|expand_log)(\s*,\s*(expand|powsimp|trigsimp|expand_log))*\s*$/;
+
 const plSymbolicInputAttributesSchema = z
   .object({
-    'additional-simplifications': z.string().optional(),
+    'additional-simplifications': z.string().regex(additionalSimplificationsPattern).optional(),
     'allow-blank': booleanFormat().optional(),
     'allow-complex': booleanFormat().optional(),
     'allow-sets': booleanFormat().optional(),

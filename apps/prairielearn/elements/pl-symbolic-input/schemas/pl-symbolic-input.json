@@ -3,7 +3,8 @@
   "type": "object",
   "properties": {
     "additional-simplifications": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^\\s*(expand|powsimp|trigsimp|expand_log)(\\s*,\\s*(expand|powsimp|trigsimp|expand_log))*\\s*$"
     },
     "allow-blank": {
       "type": "string",
