@@ -256,6 +256,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'aria-label':
         case 'suffix':
         case 'placeholder':
+        case 'initial-value':
           break;
         case 'show-help-text':
         case 'show-score':
@@ -552,7 +553,6 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
         case 'suffix':
         case 'placeholder':
         case 'initial-value':
-        case 'blank-value':
           break;
         case 'display':
           assertInChoices('pl-string-input', key, val, ['block', 'inline'], errors);
