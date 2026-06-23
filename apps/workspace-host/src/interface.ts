@@ -846,8 +846,6 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     const labels = inspectResults.Config.Labels;
     const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
     const portStr = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
-    const urlRewrite =
-      settings.workspace_url_rewrite ?? labels?.['com.prairielearn.workspace.url_rewrite'] ?? true;
     if (home == null) {
       throw new SafeForStudentError(
         'Workspace home directory not specified in question settings or image labels',
@@ -868,13 +866,15 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
       // value and default to true if not specified. This value is not used
       // here, but in the proxy middleware logic, so we save it to the database
       // for later reference.
-      if (typeof urlRewrite === 'string' && !['true', 'false'].includes(urlRewrite.toLowerCase())) {
+      const urlRewrite =
+        labels?.['com.prairielearn.workspace.url-rewrite']?.toLowerCase() ?? 'true';
+
+      if (!['true', 'false'].includes(urlRewrite)) {
         throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
       }
       await sqldb.execute(sql.update_workspace_url_rewrite, {
         workspace_id: workspace.id,
-        url_rewrite:
-          typeof urlRewrite === 'string' ? urlRewrite.toLowerCase() === 'true' : urlRewrite,
+        url_rewrite: urlRewrite === 'true',
       });
     }
 
