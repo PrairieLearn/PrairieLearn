@@ -1,5 +1,17 @@
 # @prairielearn/aws-imds
 
+## 3.0.7
+
+### Patch Changes
+
+- 8b5bed9: Replace node-fetch with native fetch
+
+## 3.0.6
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+
 ## 3.0.5
 
 ### Patch Changes

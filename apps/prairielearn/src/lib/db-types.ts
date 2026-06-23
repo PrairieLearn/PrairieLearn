@@ -105,7 +105,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+export const JsonCommentSchema = z.union([
+  z.string(),
+  z.array(z.any()),
+  z.record(z.string(), z.any()),
+]);
 
 export const QuestionPreferenceValuesSchema = z.record(
   z.string(),
@@ -227,7 +231,6 @@ export const AssessmentAccessControlRuleSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_overridden: z.boolean(),
   date_control_due_credit: z.number().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
   date_control_due_overridden: z.boolean(),
@@ -244,6 +247,7 @@ export const AssessmentAccessControlRuleSchema = z.object({
 
   // Target type: 'none' for default rule (applies to all), 'student_label' for labels, 'enrollment' for individual students
   target_type: z.enum(['none', 'student_label', 'enrollment']),
+  uuid: z.string().nullable(),
 });
 export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
@@ -313,7 +317,7 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credits_added: z.boolean(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
   id: IdSchema,
   refunded_at: DateFromISOString.nullable(),
   stripe_object_id: z.string(),
@@ -609,7 +613,7 @@ export const AssessmentToolSchema = z.object({
   assessment_id: IdSchema.nullable(),
   enabled: z.boolean(),
   id: IdSchema,
-  settings: z.record(z.unknown()),
+  settings: z.record(z.string(), z.unknown()),
   tool: EnumAssessmentToolSchema,
   zone_id: IdSchema.nullable(),
 });
@@ -729,6 +733,7 @@ export const CourseSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   options: z.any(),
   path: z.string(),
+  questions_receive_user_data: z.boolean(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
@@ -893,8 +898,6 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const ExamModeNetworkSchema = null;
-
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1000,6 +1003,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
+/* eslint-disable @typescript-eslint/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -1085,6 +1089,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
+/* eslint-enable @typescript-eslint/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1155,6 +1160,7 @@ export type Institution = z.infer<typeof InstitutionSchema>;
 
 export const InstitutionSettingsSchema = z.object({
   course_request_message: z.string().nullable(),
+  github_course_owner: z.string().nullable(),
   institution_id: IdSchema,
 });
 export type InstitutionSettings = z.infer<typeof InstitutionSettingsSchema>;
@@ -1427,10 +1433,8 @@ export const QuestionSchema = z.object({
   grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
-  json_external_grading_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.any())])
-    .nullable(),
-  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.any())]).nullable(),
+  json_external_grading_comment: JsonCommentSchema.nullable(),
+  json_workspace_comment: JsonCommentSchema.nullable(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
@@ -1710,6 +1714,7 @@ export const WorkspaceSchema = z.object({
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   state_updated_at: DateFromISOString,
   stopped_at: DateFromISOString.nullable(),
+  url_rewrite: z.boolean().nullable(),
   version: z.coerce.number(), // This is BIGINT, but always fits a number
   workspace_host_id: IdSchema.nullable(),
 });
@@ -1814,7 +1819,6 @@ export const TableNames = [
   'current_pages',
   'draft_question_metadata',
   'enrollments',
-  'exam_mode_networks',
   'feature_grants',
   'file_edits',
   'file_transfers',

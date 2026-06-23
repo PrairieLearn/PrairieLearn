@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { execute, queryRow } from '@prairielearn/postgres';

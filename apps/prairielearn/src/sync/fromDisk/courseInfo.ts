@@ -45,6 +45,11 @@ export async function sync(courseDir: string, courseData: CourseData, courseId: 
     throw new Error('Course info file is missing data');
   }
 
+  // The `questions_receive_user_data` column lives outside `courses.options`.
+  // Strip it from the options jsonb we write, and only update the column in dev
+  // mode — in production the column is managed via the course settings UI.
+  const { questionsReceiveUserData, ...optionsForJsonb } = courseInfo.options;
+
   const course = await sqldb.queryRow(
     sql.update_course,
     {
@@ -53,7 +58,8 @@ export async function sync(courseDir: string, courseData: CourseData, courseId: 
       title: courseInfo.title,
       display_timezone: courseInfo.timezone ?? null,
       example_course: isExampleCourse(courseDir),
-      options: courseInfo.options,
+      options: optionsForJsonb,
+      questions_receive_user_data: config.devMode ? questionsReceiveUserData : null,
       comment: JSON.stringify(courseInfo.comment),
       sync_warnings: infofile.stringifyWarnings(courseData.course),
     },

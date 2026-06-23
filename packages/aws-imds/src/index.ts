@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { z } from 'zod';
 
 const IMDS_URI = 'http://169.254.169.254';

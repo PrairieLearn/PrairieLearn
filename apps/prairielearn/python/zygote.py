@@ -380,7 +380,7 @@ def worker_loop() -> None:
 
             mod = mod_cache.get(file_path)
             if mod is None:
-                mod = {}
+                mod = {"__file__": file_path}
 
                 with open(file_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
@@ -490,6 +490,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                 import pwd
 
                 user = pwd.getpwnam("executor")
+                os.setgroups([user.pw_gid])
                 os.setgid(user.pw_gid)
                 os.setuid(user.pw_uid)
 

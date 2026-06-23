@@ -9,7 +9,6 @@ import he from 'he';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import * as tmp from 'tmp-promise';
-import * as unzipper from 'unzipper';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -31,6 +30,7 @@ import {
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { ZipArchiveValidationError, extractZipArchive } from '@prairielearn/utils/zip';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
@@ -55,6 +55,7 @@ import {
   type StoredSerializedConversionResult,
   type StrippedAccessRules,
   type UploadResponse,
+  deduplicateAssessmentZoneQuestions,
 } from './instructorQtiImport.types.js';
 
 const router = Router();
@@ -89,7 +90,7 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
     });
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
       const maxSizeLabel = filesize(QTI_IMPORT_MAX_UPLOAD_BYTES, { round: 0, standard: 'jedec' });
-      res.status(413).json({ error: `The maximum upload size is ${maxSizeLabel}.` });
+      res.status(413).json({ error: `The maximum import size is ${maxSizeLabel}.` });
       return;
     }
     next(err);
@@ -203,12 +204,18 @@ router.post(
         if (!file.path) {
           throw new Error('Uploaded archive was not written to disk');
         }
-        const directory = await unzipper.Open.file(file.path);
-        await directory.extract({ path: tempDir });
-      } catch (err) {
-        throw new HttpStatusError(400, 'The uploaded archive is invalid or corrupt', {
-          cause: err,
+        await extractZipArchive({
+          archivePath: file.path,
+          destinationDir: tempDir,
+          maxEntries: 10_000,
+          maxExtractedBytes: 500 * 1024 * 1024,
         });
+      } catch (err) {
+        const message =
+          err instanceof ZipArchiveValidationError
+            ? err.message
+            : 'The uploaded archive is invalid or corrupt';
+        throw new HttpStatusError(400, message, { cause: err });
       }
 
       // Find QTI content files from the manifest. If the archive has a
@@ -650,20 +657,25 @@ export function deduplicateIdenticalQuestions(
     };
 
     if (result.sourceType === 'assessment') {
+      const canonicalZones = result.assessment.infoJson.zones.map((zone) => ({
+        ...zone,
+        questions: zone.questions.map((question) => ({
+          ...question,
+          id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
+        })),
+      }));
+      // Collapsing identical questions can leave the same canonical question
+      // referenced multiple times within the assessment; keep only the first.
+      const { zones, warnings } = deduplicateAssessmentZoneQuestions(canonicalZones);
       return {
         ...deduped,
         sourceType: 'assessment' as const,
+        warnings: [...deduped.warnings, ...warnings],
         assessment: {
           ...result.assessment,
           infoJson: {
             ...result.assessment.infoJson,
-            zones: result.assessment.infoJson.zones.map((zone) => ({
-              ...zone,
-              questions: zone.questions.map((question) => ({
-                ...question,
-                id: canonicalDirectoryNameByOriginal.get(question.id) ?? question.id,
-              })),
-            })),
+            zones,
           },
         },
       };

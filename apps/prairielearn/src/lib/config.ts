@@ -176,6 +176,7 @@ export const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxFiles: z.number().default(20),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z
     .string()
@@ -233,6 +234,7 @@ export const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
+  githubMachineUser: z.string().nullable().default(null),
   /**
    * Custom SSH command used for git operations (clone, fetch, push).
    * Set to `ssh -o StrictHostKeyChecking=accept-new` to automatically
@@ -309,7 +311,7 @@ export const ConfigSchema = z.object({
   /**
    * This is populated by `lib/aws.js` later.
    */
-  awsServiceGlobalOptions: z.record(z.unknown()).default({}),
+  awsServiceGlobalOptions: z.record(z.string(), z.unknown()).default({}),
   hasShib: z.boolean().default(false),
   hideShibLogin: z.boolean().default(false),
   shibLinkText: z.string().default('Sign in with Illinois'),

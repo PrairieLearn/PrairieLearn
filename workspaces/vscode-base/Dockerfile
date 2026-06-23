@@ -1,6 +1,9 @@
 # noble is the codename for Ubuntu 24.04 LTS
-FROM codercom/code-server:4.122.0-noble
-ARG CACHEBUST=2026-05-15-14-49-21
+FROM codercom/code-server:4.123.0-noble
+ARG CACHEBUST=2026-06-15-15-59-28
+LABEL com.prairielearn.workspace.home="/home/coder/workspace" 
+LABEL com.prairielearn.workspace.port="8080"
+LABEL com.prairielearn.workspace.rewrite-url="true"
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.

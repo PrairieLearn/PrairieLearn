@@ -7,6 +7,7 @@ import {
   createLinter,
 } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
+import { formats } from '../../../src/lib/element-schemas/htmlmustache-plugin.js';
 import { htmlMustacheConfig } from '../../../src/lib/htmlMustacheConfig.js';
 
 const GRAMMAR_WASM_FILENAME = 'tree-sitter-htmlmustache.wasm';
@@ -37,6 +38,7 @@ function getLinter(): Promise<Linter> {
 
   linterPromise = createLinter({
     locateWasm,
+    formats,
   });
   return linterPromise;
 }

@@ -45,7 +45,7 @@ const InstanceLogSchema = z.object({
   variant_number: z.number().nullable(),
   variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
-  data: z.record(z.any()).nullable(),
+  data: z.record(z.string(), z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
   student_question_number: z.string().nullable(),
@@ -406,7 +406,7 @@ export async function gradeAllAssessmentInstances({
 
   const serverJob = await createServerJob({
     type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
+    description: `${close ? 'Grade and close' : 'Grade'} all assessment instances for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_id,
@@ -594,10 +594,6 @@ export async function selectAssessmentInstanceLogCursor(
   );
 }
 
-async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
-}
-
 export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
@@ -607,7 +603,9 @@ export async function updateAssessmentQuestionStatsForAssessment(
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await async.eachSeries(assessment_questions, async (assessment_question_id) => {
+      await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+    });
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }

@@ -414,7 +414,7 @@ function AddUsersModal({
   });
   const appError = getAppError<CourseStaffError['InsertByUserUids']>(mutation.error);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setWarnings([]);
     const uids = uidText.split(/[,;\s]+/).filter(Boolean);
@@ -482,7 +482,7 @@ function AddUsersModal({
           </div>
           {courseInstances.length > 0 && (
             <>
-              <h6 className="font-weight-bolder">Student data access</h6>
+              <h6 className="fw-bolder">Student data access</h6>
               <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 <table className="table table-borderless table-sm align-middle mb-0">
                   <tbody>
@@ -685,7 +685,7 @@ function BulkEditAccessModal({
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <h6 className="font-weight-bolder" id="course-role-label">
+        <h6 className="fw-bolder" id="course-role-label">
           Course content access
         </h6>
         <select
@@ -704,7 +704,7 @@ function BulkEditAccessModal({
 
         {courseInstances.length > 0 && (
           <>
-            <h6 className="font-weight-bolder">Student data access</h6>
+            <h6 className="fw-bolder">Student data access</h6>
             <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
               <table className="table table-borderless table-sm align-middle mb-0">
                 <tbody>

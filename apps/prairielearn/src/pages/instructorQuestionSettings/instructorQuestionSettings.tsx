@@ -59,7 +59,7 @@ import {
 } from '../../models/sharing-set.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import { type QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
+import type { QuestionPreferencesSchemaJson } from '../../schemas/infoQuestion.js';
 
 import { InstructorQuestionSettingsForm } from './instructorQuestionSettings.html.js';
 import {
@@ -217,7 +217,7 @@ router.post(
                       // Fall through to error
                     }
                     ctx.addIssue({
-                      code: z.ZodIssueCode.custom,
+                      code: 'custom',
                       message: 'Invalid enum format',
                     });
                     return z.NEVER;
@@ -229,7 +229,7 @@ router.post(
               prefs.forEach((pref, i) => {
                 if (names.has(pref.name)) {
                   ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: 'custom',
                     message: `Duplicate preference name: "${pref.name}"`,
                     path: [i, 'name'],
                   });
@@ -408,9 +408,9 @@ router.post(
       };
 
       // We'll only write the workspace options if the request contains the
-      // required fields. Client-side validation will ensure that these are
-      // present if a workspace is configured.
-      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+      // image. Client-side validation will ensure that it is present if a
+      // workspace is configured.
+      if (workspaceOptions.image) {
         const filteredOptions = Object.fromEntries(
           Object.entries(
             propertyValueWithDefault(

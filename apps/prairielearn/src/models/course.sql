@@ -24,19 +24,14 @@ WHERE
   c.short_name = $short_name
   AND c.deleted_at IS NULL;
 
--- BLOCK select_course_by_repository_name
+-- BLOCK select_course_by_github_repository
 SELECT
   c.*
 FROM
   courses AS c
 WHERE
-  (
-    c.repository ILIKE '%/' || $repo_name || '.git' ESCAPE '\'
-    OR c.repository ILIKE '%:' || $repo_name || '.git' ESCAPE '\'
-  )
-  AND c.deleted_at IS NULL
-LIMIT
-  1;
+  c.repository ILIKE '%' || $owner || '/' || $repo_name || '%' ESCAPE '\'
+  AND c.deleted_at IS NULL;
 
 -- BLOCK select_course_by_path
 SELECT
@@ -260,6 +255,15 @@ SET
   show_getting_started = $show_getting_started
 WHERE
   id = $course_id;
+
+-- BLOCK update_course_questions_receive_user_data
+UPDATE courses
+SET
+  questions_receive_user_data = $questions_receive_user_data
+WHERE
+  id = $course_id
+RETURNING
+  *;
 
 -- BLOCK update_course_sharing_name
 UPDATE courses

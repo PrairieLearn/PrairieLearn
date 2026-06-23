@@ -1,8 +1,8 @@
-import { decodeData } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 
-$(() => {
+onDocumentReady(() => {
   resetInstructorGradingPanel();
 
   document.addEventListener('keypress', (event) => {
@@ -30,13 +30,12 @@ $(() => {
   });
   const modal = document.querySelector('#conflictGradingJobModal');
   if (modal) {
-    $(modal)
-      .on('shown.bs.modal', function () {
-        modal
-          .querySelectorAll('.js-submission-feedback')
-          .forEach((item) => item.dispatchEvent(new Event('input')));
-      })
-      .modal('show');
+    modal.addEventListener('shown.bs.modal', () =>
+      modal
+        .querySelectorAll('.js-submission-feedback')
+        .forEach((item) => item.dispatchEvent(new Event('input'))),
+    );
+    window.bootstrap.Modal.getOrCreateInstance(modal).show();
   }
 });
 
