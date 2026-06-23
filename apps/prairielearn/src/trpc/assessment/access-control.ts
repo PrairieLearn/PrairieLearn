@@ -5,10 +5,7 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  normalizeAccessControlRules,
-  validateAccessControlRules,
-} from '../../lib/assessment-access-control/validation.js';
+import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
@@ -114,7 +111,6 @@ const EnrollmentRuleInputSchema = z.object({
   ruleJson: AccessControlJsonInputSchema,
 });
 type EnrollmentRuleInput = z.infer<typeof EnrollmentRuleInputSchema>;
-type AccessControlJsonWithUuid = AccessControlJson & { uuid: string };
 
 function isNonEmptyObject(value: unknown): boolean {
   return (
@@ -188,23 +184,9 @@ function validateRuleInputTargets(
   }
 }
 
-function getEnrollmentRulesWithUuids(
-  rules: AccessControlJson[] | undefined,
-): AccessControlJsonWithUuid[] {
-  const enrollmentRules: AccessControlJsonWithUuid[] = [];
-  for (const { rule, targetType } of normalizeAccessControlRules(rules ?? []).rules) {
-    if (targetType === 'enrollment' && rule.uuid != null) {
-      enrollmentRules.push({ ...rule, uuid: rule.uuid });
-    }
-  }
-  return enrollmentRules;
-}
-
-function convertToOldFormatRules(rules: AccessControlJson[]): AccessControlJson[] {
-  return rules.flatMap((rule, index) => {
-    const { uuid: _uuid, ...oldFormatRule } = rule;
-    if (index > 0 && rule.labels == null) return [];
-    return oldFormatRule;
+function getEnrollmentRulesWithUuids(rules: AccessControlJson[] | undefined) {
+  return (rules ?? []).slice(1).filter((rule): rule is AccessControlJson & { uuid: string } => {
+    return rule.uuid != null && rule.labels == null;
   });
 }
 
@@ -212,7 +194,6 @@ function prepareRulesForDisk(
   submittedRules: AccessControlJson[],
   submittedEnrollmentRules: EnrollmentRuleInput[] | undefined,
   diskRules: AccessControlJson[] | undefined,
-  existingEnrollmentRules: AccessControlJsonWithId[],
 ): AccessControlJson[] {
   if (submittedEnrollmentRules !== undefined) {
     return [
@@ -227,12 +208,6 @@ function prepareRulesForDisk(
   const preservedEnrollmentRules = getEnrollmentRulesWithUuids(diskRules).filter((rule) => {
     return !submittedUuids.has(rule.uuid);
   });
-  const preservedEnrollmentRuleUuids = new Set(preservedEnrollmentRules.map((rule) => rule.uuid));
-  const hasDbOnlyEnrollmentRules = existingEnrollmentRules.some((rule) => {
-    return rule.uuid == null || !preservedEnrollmentRuleUuids.has(rule.uuid);
-  });
-
-  if (hasDbOnlyEnrollmentRules) return convertToOldFormatRules(submittedRules);
   return [...submittedRules, ...preservedEnrollmentRules];
 }
 
@@ -323,11 +298,6 @@ const saveAllRules = t.procedure
     }
     validateRuleInputTargets(rules, enrollmentRules);
 
-    const existingEnrollmentRules =
-      enrollmentRules === undefined
-        ? await selectAccessControlRules(opts.ctx.assessment, ['enrollment'])
-        : [];
-
     const submittedRules = rules.map((rule, index) => {
       const jsonRule = stripRuleId(rule);
       if (index === 0) {
@@ -367,7 +337,6 @@ const saveAllRules = t.procedure
           submittedRules,
           enrollmentRules,
           jsonContents.accessControl,
-          existingEnrollmentRules,
         );
         const cleanedRulesToSync = cleanAccessControlRulesForDisk(rulesToSync);
 

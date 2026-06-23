@@ -250,6 +250,10 @@ export function jsonToOverrideFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
 ): OverrideData {
+  if (json.uuid == null) {
+    throw new Error('Non-default access control rules must have a UUID.');
+  }
+
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -351,8 +355,8 @@ export function jsonToOverrideFormData(
 
   return {
     id: json.id,
-    uuid: json.uuid ?? crypto.randomUUID(),
-    trackingId: json.id ?? json.uuid ?? crypto.randomUUID(),
+    uuid: json.uuid,
+    trackingId: json.id ?? json.uuid,
     appliesTo,
     overriddenFields,
     release,

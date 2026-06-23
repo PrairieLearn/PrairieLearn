@@ -4,7 +4,9 @@ A canvas for auto-gradeable drawings.
 
 Note that this element does not support freehand drawings of lines/curves. For more versatile manually graded drawings, consider using [`pl-excalidraw`](../elements/pl-excalidraw.md). For auto-gradable mathematical curve sketches, consider using [`pl-sketch`](../elements/pl-sketch.md).
 
-## Elements to create drawing canvas
+A `pl-drawing` canvas can be used in two modes. In a display-only canvas (`gradable="false"`, the default), it renders drawing objects authored in the question. In a gradable canvas (`gradable="true"`), students place objects on the canvas and PrairieLearn grades them against objects in `pl-drawing-answer`; objects in `pl-drawing-initial` are shown but not graded.
+
+## Elements for display-only canvases
 
 ### `pl-drawing` element
 
@@ -26,7 +28,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 | Attribute                  | Type    | Default                                      | Description                                                                                                                                                                 |
 | -------------------------- | ------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.      |
+| `gradable`                 | boolean | false                                        | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display-only figures.                         |
 | `answers-name`             | string  | —                                            | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`. |
 | `weight`                   | integer | 1                                            | Weight to use when computing a weighted average score over elements.                                                                                                        |
 | `width`                    | integer | 580                                          | Horizontal width of the canvas (in pixels).                                                                                                                                 |
@@ -41,13 +43,9 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | `disregard-extra-elements` | boolean | false                                        | If true, extra elements are ignored if they match the same reference object. Otherwise, multiple matching elements will reduce the awarded points.                          |
 | `allow-blank`              | boolean | false                                        | Whether a submission with no user-placed elements is allowed. By default, submissions without user-placed elements will not be graded (invalid submission).                 |
 | `hide-answer-panel`        | boolean | true                                         | If true, the correct answer is not displayed in the answer panel.                                                                                                           |
-| `show-score`               | boolean | false                                        | Whether to show the score badge next to this element in the "Submitted answer" panel. Defaults to `false` for backwards compatibility.                                      |
+| `show-score`               | boolean | false                                        | Whether to show the score badge in a header above this element's canvas. Defaults to `false` for backwards compatibility.                                                   |
 | `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
 | `aria-description`         | string  | None                                         | Text that describes the diagram in detail. See the [accessibility section](#accessibility)                                                                                  |
-
-#### Accessibility
-
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
 
 #### Example implementations
 
@@ -70,12 +68,70 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 
 ![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
 
-And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
+For use in gradable canvases, see the `pl-drawing-initial` section under [Elements for gradable canvases](#elements-for-gradable-canvases).
+
+## Elements for gradable canvases
+
+### Gradable canvas example
+
+The element `pl-drawing-answer` is required for gradable canvases, but there are other elements as well that can be helpful. The example below illustrates typical parts of a gradable canvas.
+
+#### Sample element
+
+```html
+<pl-drawing grid-size="20" gradable="true" answers-name="box" width="320">
+  <pl-drawing-answer draw-error-box="true">
+    <pl-vector x1="160" y1="160" angle="-45"></pl-vector>
+  </pl-drawing-answer>
+
+  <pl-drawing-initial>
+    <pl-coordinates
+      x1="160"
+      y1="160"
+      width="100"
+      angle="0"
+      label="A"
+      offsetx="-20"
+    ></pl-coordinates>
+  </pl-drawing-initial>
+
+  <pl-controls>
+    <pl-controls-group label="Graded objects:">
+      <pl-drawing-button type="pl-vector"></pl-drawing-button>
+    </pl-controls-group>
+    <pl-controls-group label="Delete button:">
+      <pl-drawing-button type="delete"></pl-drawing-button>
+    </pl-controls-group>
+  </pl-controls>
+</pl-drawing>
+```
+
+![Screenshot of the pl-drawing-group element](pl-vector-grading-canvas-example.png){ width=100% style="max-width: 500px" }
+
+### `pl-drawing-answer` element
+
+This element will wrap all the elements that will be graded (checked for correctness).
+
+#### Customizations
+
+| Attribute        | Type    | Default | Description                                                                                                                                           |
+| ---------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-answer` will be displayed with their respective error bounding boxes in the answer panel. |
+
+Set this attribute on `pl-drawing-answer` to display error boxes for all graded objects in the answer panel. Object-level `draw-error-box` settings on supported objects inside `pl-drawing-answer` override this parent setting for that object.
+
+In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
+
+![Screenshot of the pl-drawing-answer element](pl-vector-correct-answer.png){ width=100% style="max-width: 300px" }
+
+### `pl-drawing-initial` element
+
+This element wraps initial objects that should appear in a gradable canvas but should not be graded. Objects inside `pl-drawing-initial` are not graded, while objects inside `pl-drawing-answer` are graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
 
 ```html
 <pl-drawing gradable="true" answers-name="add-objects">
   <pl-drawing-initial>
-    <!-- objects that define the correct answer are placed here -->
+    <!-- objects that define the initial state are placed here -->
   </pl-drawing-initial>
   <pl-drawing-answer>
     <!-- objects that define the correct answer are placed here -->
@@ -83,9 +139,114 @@ And `pl-drawing-initial` can also be used to display initial objects in a canvas
 </pl-drawing>
 ```
 
-The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
+#### Customizations
 
-## Elements to create drawing objects
+| Attribute        | Type    | Default | Description                                                                                                                                            |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-initial` will be displayed with their respective error bounding boxes in the answer panel. |
+
+The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the gradable canvas including all the objects in `pl-drawing-initial` with
+`draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
+
+### `pl-controls` element
+
+The element `pl-controls` will add the buttons that allow students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
+
+```html
+<pl-controls>
+  <pl-controls-group label="Graded objects:">
+    <pl-drawing-button type="pl-vector"></pl-drawing-button>
+  </pl-controls-group>
+  <pl-controls-group label="Delete button:">
+    <pl-drawing-button type="delete"></pl-drawing-button>
+  </pl-controls-group>
+</pl-controls>
+```
+
+The `pl-controls` element requires only one attribute, `type`, which corresponds with an element name defined above. When a user clicks on the control button, the element will be generated with all of its default values. To override any default, any attribute that can be set on the element to be created (that which is specified in `type`) can be added to `pl-controls` as an optional attribute. (See `demoDrawingCustomizedButtons` below for an example)
+
+#### Example implementations
+
+The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`s that have grading routines implemented.
+
+The example [demo/drawing/buttons] illustrates all the `pl-drawing-button`s that can create placeable objects.
+
+The example [demo/drawing/customizedButtons] illustrates how custom objects can be generated via buttons.
+
+![Screenshot of all the pl-drawing-button elements](pl-all-buttons.png){ width=100% style="max-width: 500px" }
+
+### `pl-drawing-buttons` element
+
+#### Insert a point
+
+```html
+<pl-drawing-button type="pl-point"></pl-drawing-button>
+```
+
+This button adds a point to the canvas. The grading algorithm will check if the submitted point is within the error box. By default, the error box for `pl-point` is a square centered at the correct point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
+
+![Screenshot of the pl-drawing-button set to pl-point](pl-point-error-box.png){ width=100% style="max-width: 200px" }
+
+#### Insert a vector
+
+```html
+<pl-drawing-button type="pl-vector"></pl-drawing-button>
+```
+
+This button adds a vector to the canvas. A vector is marked as correct when the position of the anchor point (tail of the vector) is within the error bounding box and the absolute error of the angle is less than `angle-tol`.
+
+By default, the error box for `pl-vector` is a rectangle aligned with direction of the vector. The width of the rectangle is `tol` and the height is `hb + hf`, as illustrated below. `hb = offset-backward + tol` and `hf = offset-forward + tol`. The attribute `offset-backward` is set to the length of the vector by default. The attribute `offset-forward` is set to zero by default. The tolerances `tol` and `angle-tol` are attributes of `pl-drawing` to make sure that all elements use the same tolerance.
+
+![Screenshot showing an error box for a pl-vector element](pl-vector-error-box.png){ width=100% style="max-width: 300px" }
+
+If the orientation of the vector is not important, so that vectors `p` and `-p` are both considered correct, the attribute `disregard-sense` should be set to `true`.
+
+If a vector is expected as a correct answer, but the author does not want to assign a grade to it, the attribute `optional-grading` can be set to `true`. In this case, the grading algorithm will not assign points to the vector, but will not penalize students either by considering it as extra objects.
+
+#### Insert an arc vector
+
+```html
+<pl-drawing-button type="pl-arc-vector-CCW"></pl-drawing-button>
+<pl-drawing-button type="pl-arc-vector-CW"></pl-drawing-button>
+```
+
+This button adds an arc vector to the canvas. The arc vector is marked as correct when the position of the anchor point (center of the arc vector) is within the error bounding box and the orientation is correct.
+
+By default, the error box for `pl-arc-vector` is a square centered at the anchor point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
+
+If the orientation of the arc vector is not important (both clockwise and counter-clockwise orientations are accepted), the attribute `disregard-sense` should be set to `true`.
+
+#### Insert a distributed load
+
+```html
+<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="true"></pl-drawing-button>
+<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="false"></pl-drawing-button>
+<pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
+```
+
+This button adds a distributed load to the canvas. A distributed load is marked as correct when the position of the anchor point (center of the baseline) is within the error bounding box, the absolute error of the angle is less than `angle-tol`, the absolute error of the range (interval) is less than `tol`, and the expected distribution is matched (if uniform, `w1 = w2` and for triangular load, `w1>w2` or `w2>w1` from submitted answer match the correct answer).
+
+The error box for `pl-distributed-load` is defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
+
+For many questions, it will be necessary to fine-tune the error bounding box by setting the attributes `offset-forward` and `offset-backward`. Suitable values depend on the context of the question, for instance the dimension of the beam in the direction of the distributed load.
+
+#### Insert a "help" line
+
+```html
+<pl-drawing-button type="help-line"></pl-drawing-button>
+```
+
+This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
+
+#### Delete any object previously placed in the canvas
+
+```html
+<pl-drawing-button type="delete"></pl-drawing-button>
+```
+
+This button deletes objects that were previously placed on the canvas.
+
+## Organizational and formatting elements
 
 ### `pl-coordinates` element
 
@@ -115,11 +276,11 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `offsetx`           | float  | -16     | Horizontal distance of `label` from the origin of the coordinate system.                                                                                                |
 | `offsety`           | float  | -10     | Vertical distance of `label` from the origin of the coordinate system.                                                                                                  |
 | `label-x`           | string | x       | Text to label the horizontal arrow vector (x-axis)                                                                                                                      |
-| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the origin of the coordinate system.                                                                                              |
-| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the origin of the coordinate system.                                                                                                |
+| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                  |
+| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                    |
 | `label-y`           | string | y       | Text to label the vertical arrow vector (y-axis)                                                                                                                        |
-| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the origin of the coordinate system.                                                                                              |
-| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the origin of the coordinate system.                                                                                                |
+| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                    |
+| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                      |
 | `color`             | string | black   | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )            |
 | `stroke-width`      | float  | 2       | Set the width of the stroke.                                                                                                                                            |
 | `arrow-head-width`  | float  | 1       | Scale factor for the width of the arrow head.                                                                                                                           |
@@ -130,6 +291,189 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 - [demo/drawing/inclinedPlane]: Example that uses a system of coordinates
 
 - [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-text` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="0">
+  <pl-drawing-initial>
+    <pl-text x1="20" y1="40" label="Moment of inertia:" latex="false"></pl-text>
+    <pl-text x1="20" y1="80" label="\\int_A y^2 dA"></pl-text>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-text element](pl-text.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute   | Type    | Default | Description                                                                                                         |
+| ----------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `label`     | string  | -       | Text to be added.                                                                                                   |
+| `latex`     | boolean | true    | Adds the text in `label` using latex. Otherwise, uses Times New Romans.                                             |
+| `font-size` | float   | 16      | Font size.                                                                                                          |
+| `x1`        | float   | 20      | `x` position for the top-left corner of the text, i.e., the horizontal distance from the left border of the canvas. |
+| `y1`        | float   | 20      | `y` position for the top-left corner of the text, i.e., the vertical distance from the top border of the canvas     |
+| `offsetx`   | float   | 0       | Offset in x direction from `x1`                                                                                     |
+| `offsety`   | float   | 0       | Offset in y direction from `y1`                                                                                     |
+
+#### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-dimensions` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-rod x1="60" y1="100" x2="120" y2="40" height="60"></pl-rod>
+    <pl-dimensions x1="60" y1="100" x2="120" y2="40"></pl-dimensions>
+    <pl-dimensions
+      x1="60"
+      y1="100"
+      x2="120"
+      y2="40"
+      dim-offset="-40"
+      stroke-color="brown"
+      start-support-line="true"
+      end-support-line="true"
+    ></pl-dimensions>
+    <pl-dimensions
+      x1="60"
+      y1="100"
+      x2="120"
+      y2="40"
+      dim-offset="60"
+      dim-offset-angle="0"
+      stroke-color="blue3"
+      start-support-line="true"
+      end-support-line="true"
+    ></pl-dimensions>
+    <pl-dimensions
+      x1="60"
+      y1="100"
+      x2="120"
+      y2="40"
+      dim-offset="100"
+      dim-offset-angle="-90"
+      stroke-color="green3"
+    ></pl-dimensions>
+    <pl-dimensions x1="60" y1="100" width="60" stroke-color="pink3" label="a"></pl-dimensions>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-dimensions element](pl-dimensions.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute            | Type    | Default | Description                                                                                                                                                                                                                                           |
+| -------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                 | float   | 10      | `x` position for the start point for the line, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                      |
+| `y1`                 | float   | 10      | `y` position for the start point for the line, i.e., the vertical distance from the top border of the canvas.                                                                                                                                         |
+| `width`              | float   | 40      | Width of the line.                                                                                                                                                                                                                                    |
+| `angle`              | float   | 0       | Angle of rotation around the start point of the line. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                        |
+| `x2`                 | float   | -       | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.   |
+| `y2`                 | float   | -       | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.      |
+| `dim-offset`         | float   | 0       | By default, the dimension is placed between points `(x1,y1)` and `(x2,y2)`. When `dim-offset` is different from zero, the dimension is translated parallel to the direction defined by `(x1,y1)` and `(x2,y2)`, with an offset distance `dim-offset`. |
+| `dim-offset-angle`   | float   | -       | When `dim-offset-angle` is defined, the dimension has the orientation defined by `dim-offset-angle` about the point `(x1,y1)`, and the `dim-offset` is the distance from `(x1,y1)`.                                                                   |
+| `start-support-line` | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x1,y1)` and the point where the dimension line starts (which are different when `dim-offset` is not zero).                                                                        |
+| `end-support-line`   | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x2,y2)` and the point where the dimension line finishes (which are different when `dim-offset` is not zero).                                                                      |
+| `label`              | string  | -       | Text to label the dimension.                                                                                                                                                                                                                          |
+| `offsetx`            | float   | 0       | Horizontal distance of `label` from the default label position, which is 10 px perpendicular to the center of the dimension line.                                                                                                                     |
+| `offsety`            | float   | 0       | Vertical distance of `label` from the default label position, which is 10 px perpendicular to the center of the dimension line.                                                                                                                       |
+| `stroke-color`       | string  | black   | Set the color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                      |
+| `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                                                                                          |
+| `draw-start-arrow`   | boolean | true    | Draw an arrow head at the start point of the line.                                                                                                                                                                                                    |
+| `draw-end-arrow`     | boolean | true    | Draw an arrow head at the end point of the line.                                                                                                                                                                                                      |
+| `arrow-head-width`   | float   | 1.5     | Scale factor for the width of the arrow head.                                                                                                                                                                                                         |
+| `arrow-head-length`  | float   | 1.5     | Scale factor for the length of the arrow head.                                                                                                                                                                                                        |
+
+#### Example implementations
+
+- [demo/drawing/liftingMechanism]: Example that includes dimensions
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-arc-dimensions` element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-fixed-pin x1="80" y1="100" angle="50" color="turquoise1"></pl-fixed-pin>
+    <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
+    <pl-arc-dimensions
+      x1="80"
+      y1="100"
+      end-angle="50"
+      label="\\theta"
+      offsetx="5"
+      offsety="-5"
+      end-support-line="true"
+    ></pl-arc-dimensions>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-arc-dimensions element](pl-arc-dimensions.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute            | Type    | Default | Description                                                                                                                                                                      |
+| -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                 | float   | 20      | `x` position for the center of the arc, i.e., the horizontal distance from the left border of the canvas.                                                                        |
+| `y1`                 | float   | 20      | `y` position for the center of the arc, i.e., the vertical distance from the top border of the canvas.                                                                           |
+| `radius`             | float   | 20      | Radius of the arc.                                                                                                                                                               |
+| `start-angle`        | float   | 0       | Start angle of the arc. Angles are measured from the horizontal axis and are positive clockwise.                                                                                 |
+| `end-angle`          | float   | 60      | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation. |
+| `start-support-line` | boolean | false   | When `true` it draws a dashed line from the reference point `(x1,y1)` with width `1.5*radius` and orientation given by `start-angle`,                                            |
+| `end-support-line`   | boolean | false   | When `true` it draws a dashed line from the reference point `(x2,y2)` with width `1.5*radius` and orientation given by `end-angle`,                                              |
+| `draw-center`        | boolean | false   | Draw the center of the arc.                                                                                                                                                      |
+| `draw-start-arrow`   | boolean | false   | Draw an arrow head at the `start-angle`.                                                                                                                                         |
+| `draw-end-arrow`     | boolean | true    | Draw an arrow head at the `end-angle`.                                                                                                                                           |
+| `label`              | string  | -       | Text to label the arc angle.                                                                                                                                                     |
+| `offsetx`            | float   | 0       | Horizontal distance of `label` from the midpoint of the arc.                                                                                                                     |
+| `offsety`            | float   | 0       | Vertical distance of `label` from the midpoint of the arc.                                                                                                                       |
+| `stroke-color`       | string  | black   | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                           |
+| `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                     |
+| `arrow-head-width`   | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                    |
+| `arrow-head-length`  | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                   |
+
+#### Example implementations
+
+- [demo/drawing/liftingMechanism]: Example that includes arc dimensions
+
+- [demo/drawing/inclinedPlane]: Example that includes arc dimensions
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-drawing-group` element
+
+The element `pl-drawing-group` combines several elements as a group, to allow groups of elements to be turned visible or not.
+
+```html
+<pl-drawing>
+  <pl-drawing-initial>
+
+      <pl-drawing-group visible="true">
+          <!-- objects here will be displayed -->
+      </pl-drawing-group>
+
+      <pl-drawing-group visible="false">
+          <!-- objects here will not be displayed -->
+      </pl-drawing-group>
+</pl-drawing>
+```
+
+#### Example implementations
+
+- [demo/drawing/simpleTutorial]: Example where the attribute `visible` is set in server.py
+
+## Geometric shapes
 
 ### `pl-line` element
 
@@ -163,6 +507,59 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 #### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses lines
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-controlled-line` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-controlled-line
+      x1="40"
+      y1="40"
+      x2="120"
+      y2="80"
+      draw-error-box="true"
+      offset-tol-x="20"
+    ></pl-controlled-line>
+    <pl-controlled-line
+      x1="60"
+      y1="140"
+      x2="160"
+      y2="140"
+      color="blue"
+      stroke-width="6"
+      handle-radius="8"
+    ></pl-controlled-line>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-controlled-line element](pl-controlled-line.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                               |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`             | float   | 20      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                 |
+| `y1`             | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                    |
+| `x2`             | float   | 40      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                 |
+| `y2`             | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                    |
+| `color`          | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                                              |
+| `stroke-width`   | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                              |
+| `handle-radius`  | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                              |
+| `draw-error-box` | boolean | -       | Draw the error bounding box, where the location of the end points and control point are accepted as correct.                                                                                                                                                              |
+| `offset-tol-x`   | float   | 0       | Tolerance offset in the horizontal direction. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box. |
+| `offset-tol-y`   | float   | 0       | Tolerance offset in the vertical direction. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.     |
+
+#### Example implementations
+
+- [demo/drawing/graphs]: Example that includes controlled lines for graph sketching
+
+- [demo/drawing/vMDiagrams]: Example that includes controlled lines for graph sketching
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -204,6 +601,57 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                 |
 
 #### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-controlled-curved-line` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-controlled-curved-line
+      x1="20"
+      y1="20"
+      x2="160"
+      y2="20"
+      x3="40"
+      y3="140"
+      draw-error-box="true"
+      offset-control-tol-x="20"
+      offset-control-tol-y="30"
+    ></pl-controlled-curved-line>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-controlled-curved-line element](pl-controlled-curved-line.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute              | Type    | Default | Description                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                   | float   | 20      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                                           |
+| `y1`                   | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                                              |
+| `x2`                   | float   | 60      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                                           |
+| `y2`                   | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                                              |
+| `x3`                   | float   | 40      | `x` position of the control point for the quadratic curve (middle point) w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                        |
+| `y3`                   | float   | 60      | `y` position of the control point for the quadratic curve (middle point) w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                           |
+| `color`                | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                       |
+| `stroke-width`         | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                                                        |
+| `handle-radius`        | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                                                        |
+| `draw-error-box`       | boolean | -       | Draw the error bounding box, where the location of the end points and control point are accepted as correct.                                                                                                                                                                                        |
+| `offset-tol-x`         | float   | 0       | Tolerance offset in the horizontal direction for the end points. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.        |
+| `offset-tol-y`         | float   | 0       | Tolerance offset in the vertical direction for the end points. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.            |
+| `offset-control-tol-x` | float   | 0       | Tolerance offset in the horizontal direction for the control point. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box. |
+| `offset-control-tol-y` | float   | 0       | Tolerance offset in the vertical direction for the control point. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box.     |
+
+#### Example implementations
+
+- [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching
+
+- [demo/drawing/vMDiagrams]: Example that includes controlled curved lines for graph sketching
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -340,7 +788,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                            |
 | `label`        | string | -       | Text to label the center of the circle.                                                                                                                 |
 | `offsetx`      | float  | 5       | Horizontal distance of `label` from the center of the circle.                                                                                           |
-| `offsety`      | float  | 5       | Vertical distance of `label1` from the center of the circle                                                                                             |
+| `offsety`      | float  | 5       | Vertical distance of `label` from the center of the circle.                                                                                             |
 
 #### Example implementations
 
@@ -384,539 +832,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-### `pl-rod` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-rod x1="60" y1="80" x2="120" y2="100"></pl-rod>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-rod element](pl-rod.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                          |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
-| `x2`           | float   | 80      | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
-| `y2`           | float   | 20      | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
-| `offsetx1`     | float   | 2       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
-| `offsety1`     | float   | 2       | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
-| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | 2       | Vertical distance of `label2` from the first end of the rod.                                                                                         |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
-
-#### Example implementations
-
-- [demo/drawing/vMDiagrams]: Example that includes a rod
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-3pointrod` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-3pointrod x1="40" y1="100" x2="100" y2="100" x3="100" y3="180"></pl-3pointrod>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![A 3-point rod element in PrairieLearn](pl-3pointrod.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                          |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
-| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
-| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
-| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
-| `y3`           | float   | 140     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
-| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
-| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
-| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
-
-#### Example implementations
-
-- [demo/drawing/inclinedPlane]: Example that includes a 3-point rod
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-4pointrod` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-4pointrod></pl-4pointrod>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-4pointrod element](pl-4pointrod.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                          |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
-| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
-| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
-| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
-| `y3`           | float   | 160     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
-| `x4`           | float   | 140     | `x` position for the third end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y4`           | float   | 60      | `y` position for the third end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
-| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
-| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
-| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
-| `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                              |
-| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the first end of the rod.                                                                                       |
-| `offsety4`     | float   | -20     | Vertical distance of `label4` from the first end of the rod.                                                                                         |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
-
-#### Example implementations
-
-- [demo/drawing/liftingMechanism]: Example that uses 4-point rods
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-collar-rod` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-collar-rod x1="60" y1="100" x2="160" y2="100"></pl-collar-rod>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-collar-rod element](pl-collar.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute          | Type    | Default    | Description                                                                                                                                          |
-| ------------------ | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`               | float   | 40         | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
-| `y1`               | float   | 40         | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
-| `x2`               | float   | 100        | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
-| `y2`               | float   | 40         | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
-| `width`            | float   | 20         | Thickness of the rod.                                                                                                                                |
-| `draw-pin`         | boolean | true       | Draw the pin location in both ends of the rod.                                                                                                       |
-| `label1`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
-| `offsetx1`         | float   | 2          | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
-| `offsety1`         | float   | 2          | Vertical distance of `label1` from the first end of the rod.                                                                                         |
-| `label2`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
-| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
-| `offsety2`         | float   | 2          | Vertical distance of `label2` from the first end of the rod.                                                                                         |
-| `draw-collar-end1` | boolean | true       | Draw a collar end at `(x1,y1)`.                                                                                                                      |
-| `w1`               | float   | 1.5\*width | The width of the collar at end 1.                                                                                                                    |
-| `h1`               | float   | 2\*width   | The height of the collar at end 1.                                                                                                                   |
-| `draw-collar-end2` | boolean | false      | Draw a collar end at `(x2,y2)`.                                                                                                                      |
-| `w2`               | float   | 1.5\*width | The width of the collar at end 2.                                                                                                                    |
-| `h2`               | float   | 2\*width   | The height of the collar at end 2.                                                                                                                   |
-| `color`            | string  | white      | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color`     | string  | black      | Set the stroke color of the rod.                                                                                                                     |
-| `stroke-width`     | float   | 2          | Set the width of the stroke.                                                                                                                         |
-
-#### Example implementations
-
-- [demo/drawing/collarRod]: Example that uses a collar rod
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-fixed-pin` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-fixed-pin x1="100" y1="100"></pl-fixed-pin>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-fixed-pin element](pl-fixed-pin.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                  |
-| -------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                    |
-| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                    |
-| `height`       | float   | 40      | Height of the pin support, measured from the top of the base (ground) to the center of the pin.                                                              |
-| `width`        | float   | 30      | Width of the pin support.                                                                                                                                    |
-| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                     |
-| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                |
-| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                            |
-| `label`        | string  | -       | Text to label the pin support.                                                                                                                               |
-| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                   |
-| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                     |
-| `color`        | string  | brown1  | Set the fill color of the pin support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the pin support.                                                                                                                     |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                 |
-
-#### Example implementations
-
-- [demo/drawing/vMDiagrams]: Example that uses a fixed pin as boundary condition
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-roller` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-roller x1="60" y1="100"></pl-roller>
-    <pl-fixed-pin x1="140" y1="100" color="green1"></pl-fixed-pin>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-roller element](pl-roller.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                     |
-| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                       |
-| `y1`           | float   | 20      | `y` position for the first end of the pin, i.e., the vertical distance from the top border of the canvas.                                                       |
-| `height`       | float   | 40      | Height of the roller support, measured from the top of the base (ground) to the center of the pin.                                                              |
-| `width`        | float   | 30      | Width of the roller support.                                                                                                                                    |
-| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                        |
-| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                   |
-| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                               |
-| `label`        | string  | -       | Text to label the roller support.                                                                                                                               |
-| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                      |
-| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                        |
-| `color`        | string  | brown1  | Set the fill color of the roller support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the roller.                                                                                                                             |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                    |
-
-#### Example implementations
-
-- [demo/drawing/vMDiagrams]: Example that uses a roller as boundary condition
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-clamped` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-roller x1="140" y1="100" width="40" color="gray1"></pl-roller>
-    <pl-rod x1="40" y1="100" x2="140" y2="100" draw-pin="false"></pl-rod>
-    <pl-clamped x1="40" y1="100" height="60" width="20"></pl-clamped>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![A clamped end element in PrairieLearn](pl-clamped.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type   | Default | Description                                                                                                                                                                                      |
-| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`           | float  | 20      | `x` position for the clamped point, i.e., the horizontal distance from the left border of the canvas.                                                                                            |
-| `y1`           | float  | 20      | `y` position for the clamped, i.e., the vertical distance from the top border of the canvas.                                                                                                     |
-| `height`       | float  | 40      | Height of the clamped support (rectangle).                                                                                                                                                       |
-| `width`        | float  | 20      | Width of the clamped support (rectangle).                                                                                                                                                        |
-| `angle`        | float  | 0       | Angle of rotation around the clamped point. Angles are measured from the horizontal axis and are positive clockwise.                                                                             |
-| `label`        | string | -       | Text to label the pin support.                                                                                                                                                                   |
-| `offsetx`      | float  | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                                       |
-| `offsety`      | float  | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                                         |
-| `color`        | string | black   | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                     |
-
-#### Example implementations
-
-- [demo/drawing/collarRod]: Example that uses a clamped end as boundary condition
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-spring` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200" grid-size="20">
-  <pl-drawing-initial>
-    <pl-spring x1="50" y1="40" width="140" draw-pin="true"></pl-spring>
-    <pl-spring x1="20" y1="80" angle="20" width="120" height="20" interval="5"></pl-spring>
-    <pl-spring x1="20" y1="160" width="30" height="20" stroke-color="purple3"></pl-spring>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-spring element](pl-spring.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                           |
-| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 20      | `x` position for the start point for the spring, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
-| `y1`           | float   | 20      | `y` position for the start point for the spring, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
-| `width`        | float   | 60      | Length of the spring.                                                                                                                                                                                                                                 |
-| `angle`        | float   | 0       | Angle of rotation around the start point of the spring. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
-| `height`       | float   | 40      | Height of the spring.                                                                                                                                                                                                                                 |
-| `interval`     | float   | 10      | Interval between each angled line. This interval is recalculated if the spring width is too short.                                                                                                                                                    |
-| `x2`           | float   | -       | `x` position for the end point for the spring, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
-| `y2`           | float   | -       | `y` position for the end point for the spring, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
-| `stroke-color` | string  | black   | Set the color of the spring ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
-| `draw-pin`     | boolean | false   | Draw points at the spring ends.                                                                                                                                                                                                                       |
-
-#### Example implementations
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-coil` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200" grid-size="20">
-  <pl-drawing-initial>
-    <pl-coil x1="50" y1="40" draw-pin="true"></pl-coil>
-    <pl-coil x1="20" y1="100" angle="20" width="120" height="80"></pl-coil>
-    <pl-coil x1="20" y1="180" width="40" height="20" stroke-color="purple3"></pl-coil>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-coil element](pl-coil.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                         |
-| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 20      | `x` position for the start point for the coil, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
-| `y1`           | float   | 20      | `y` position for the start point for the coil, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
-| `width`        | float   | 80      | Length of the coil.                                                                                                                                                                                                                                 |
-| `angle`        | float   | 0       | Angle of rotation around the start point of the coil. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
-| `height`       | float   | 30      | Height of the coil.                                                                                                                                                                                                                                 |
-| `x2`           | float   | -       | `x` position for the end point for the coil, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
-| `y2`           | float   | -       | `y` position for the end point for the coil, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
-| `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
-| `draw-pin`     | boolean | false   | Draw points at the coil ends.                                                                                                                                                                                                                       |
-
-#### Example implementations
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-pulley` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-pulley x1="100" y1="150" x2="20" y2="120" x3="140" y3="60" radius="40"></pl-pulley>
-    <pl-pulley x1="50" y1="40" x2="50" y2="100" x3="160" y3="40" color="blue1"></pl-pulley>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-pulley element](pl-pulley.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute          | Type    | Default | Description                                                                                                                                             |
-| ------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`               | float   | 40      | `x` position for the center of the pulley, i.e., the horizontal distance from the left border of the canvas.                                            |
-| `y1`               | float   | 40      | `y` position for the center of the pulley, i.e., the vertical distance from the top border of the canvas.                                               |
-| `x2`               | float   | 10      | `x` position for the first point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                 |
-| `y2`               | float   | 10      | `y` position for the first point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                    |
-| `x3`               | float   | 120     | `x` position for the second point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                |
-| `y3`               | float   | 60      | `y` position for the second point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                   |
-| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to the points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.             |
-| `radius`           | float   | 20      | Radius of the pulley.                                                                                                                                   |
-| `label`            | string  | -       | Text to label the pulley.                                                                                                                               |
-| `offsetx`          | float   | 2       | Horizontal distance of `label` from the center of the pulley.                                                                                           |
-| `offsety`          | float   | 2       | Vertical distance of `label` from the center of the pulley.                                                                                             |
-| `color`            | string  | gray    | Set the fill color of the pulley ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color`     | string  | black   | Set the stroke color of the pulley.                                                                                                                     |
-| `stroke-width`     | float   | 2       | Set the width of the stroke.                                                                                                                            |
-
-#### Example implementations
-
-- [demo/drawing/pulley]: Example that includes a pulley system
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-dimensions` element
-
-#### Sample element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-rod x1="60" y1="100" x2="120" y2="40" height="60"></pl-rod>
-    <pl-dimensions x1="60" y1="100" x2="120" y2="40"></pl-dimensions>
-    <pl-dimensions
-      x1="60"
-      y1="100"
-      x2="120"
-      y2="40"
-      dim-offset="-40"
-      stroke-color="brown"
-      start-support-line="true"
-      end-support-line="true"
-    ></pl-dimensions>
-    <pl-dimensions
-      x1="60"
-      y1="100"
-      x2="120"
-      y2="40"
-      dim-offset="60"
-      dim-offset-angle="0"
-      stroke-color="blue3"
-      start-support-line="true"
-      end-support-line="true"
-    ></pl-dimensions>
-    <pl-dimensions
-      x1="60"
-      y1="100"
-      x2="120"
-      y2="40"
-      dim-offset="100"
-      dim-offset-angle="-90"
-      stroke-color="green3"
-    ></pl-dimensions>
-    <pl-dimensions x1="60" y1="100" width="60" stroke-color="pink3" label="a"></pl-dimensions>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-dimensions element](pl-dimensions.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute            | Type    | Default | Description                                                                                                                                                                                                                                           |
-| -------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                 | float   | 10      | `x` position for the start point for the line, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                      |
-| `y1`                 | float   | 10      | `y` position for the start point for the line, i.e., the vertical distance from the top border of the canvas.                                                                                                                                         |
-| `width`              | float   | 40      | Width of the line.                                                                                                                                                                                                                                    |
-| `angle`              | float   | 0       | Angle of rotation around the start point of the line. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                        |
-| `x2`                 | float   | -       | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.   |
-| `y2`                 | float   | -       | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.      |
-| `dim-offset`         | float   | 0       | By default, the dimension is placed between points `(x1,y1)` and `(x2,y2)`. When `dim-offset` is different from zero, the dimension is translated parallel to the direction defined by `(x1,y1)` and `(x2,y2)`, with an offset distance `dim-offset`. |
-| `dim-offset-angle`   | float   | -       | When `dim-offset-angle` is defined, the dimension has the orientation defined by `dim-offset-angle` about the point `(x1,y1)`, and the `dim-offset` is the distance from `(x1,y1)`.                                                                   |
-| `start-support-line` | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x1,y1)` and the point where the dimension line starts (which are different when `dim-offset` is not zero).                                                                        |
-| `end-support-line`   | boolean | false   | When `true` it draws a dashed line connecting the reference point `(x2,y2)` and the point where the dimension line finishes (which are different when `dim-offset` is not zero).                                                                      |
-| `label`              | string  | -       | Text to label the dimension.                                                                                                                                                                                                                          |
-| `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the dimension line.                                                                                                                                                                                 |
-| `offsety`            | float   | 0       | Vertical distance of `label` from the center of the dimension line.                                                                                                                                                                                   |
-| `stroke-color`       | string  | black   | Set the color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                      |
-| `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                                                                                          |
-| `draw-start-arrow`   | boolean | true    | Draw an arrow head at the start point of the line.                                                                                                                                                                                                    |
-| `draw-end-arrow`     | boolean | true    | Draw an arrow head at the end point of the line.                                                                                                                                                                                                      |
-| `arrow-head-width`   | float   | 1.5     | Scale factor for the width of the arrow head.                                                                                                                                                                                                         |
-| `arrow-head-length`  | float   | 1.5     | Scale factor for the length of the arrow head.                                                                                                                                                                                                        |
-
-#### Example implementations
-
-- [demo/drawing/liftingMechanism]: Example that includes dimensions
-
-- [element/drawingGallery]: Image gallery with drawing objects
-
-### `pl-arc-dimensions` element
-
-```html
-<pl-drawing width="200" height="200">
-  <pl-drawing-initial>
-    <pl-fixed-pin x1="80" y1="100" angle="50" color="turquoise1"></pl-fixed-pin>
-    <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
-    <pl-arc-dimensions
-      x1="80"
-      y1="100"
-      end-angle="50"
-      label="\\theta"
-      offsetx="5"
-      offsety="-5"
-      end-support-line="true"
-    ></pl-arc-dimensions>
-  </pl-drawing-initial>
-</pl-drawing>
-```
-
-![Screenshot of the pl-arc-dimensions element](pl-arc-dimensions.png){ width=100% style="max-width: 300px" }
-
-#### Customizations
-
-| Attribute            | Type    | Default | Description                                                                                                                                                                      |
-| -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                 | float   | 20      | `x` position for the center of the arc, i.e., the horizontal distance from the left border of the canvas.                                                                        |
-| `y1`                 | float   | 20      | `y` position for the center of the arc, i.e., the vertical distance from the top border of the canvas.                                                                           |
-| `radius`             | float   | 20      | Radius of the arc.                                                                                                                                                               |
-| `start-angle`        | float   | 0       | Start angle of the arc. Angles are measured from the horizontal axis and are positive clockwise.                                                                                 |
-| `end-angle`          | float   | 60      | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation. |
-| `start-support-line` | boolean | false   | When `true` it draws a dashed line from the reference point `(x1,y1)` with width `1.5*radius` and orientation given by `start-angle`,                                            |
-| `end-support-line`   | boolean | false   | When `true` it draws a dashed line from the reference point `(x2,y2)` with width `1.5*radius` and orientation given by `end-angle`,                                              |
-| `draw-center`        | boolean | false   | Draw the center of the arc.                                                                                                                                                      |
-| `draw-start-arrow`   | boolean | false   | Draw an arrow head at the `start-angle`.                                                                                                                                         |
-| `draw-end-arrow`     | boolean | true    | Draw an arrow head at the `end-angle`.                                                                                                                                           |
-| `label`              | string  | -       | Text to label the arc angle.                                                                                                                                                     |
-| `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the arc.                                                                                                                       |
-| `offsety`            | float   | 0       | Vertical distance of `label` from the center of the arc.                                                                                                                         |
-| `stroke-color`       | string  | black   | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                           |
-| `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                     |
-| `arrow-head-width`   | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                    |
-| `arrow-head-length`  | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                   |
-
-#### Example implementations
-
-- [demo/drawing/liftingMechanism]: Example that includes arc dimensions
-
-- [demo/drawing/inclinedPlane]: Example that includes arc dimensions
-
-- [element/drawingGallery]: Image gallery with drawing objects
+## Vectors and loads
 
 ### `pl-vector` element
 
@@ -1108,8 +1024,8 @@ More information about the grading attributes in the Grading section below.
 | `draw-center`         | boolean | true    | Draw the center of the arc vector.                                                                                                                                                      |
 | `clockwise-direction` | boolean | true    | Defines the orientation of the arc vector. Draw an arc vector in the clockwise direction by default.                                                                                    |
 | `label`               | string  | -       | Text to label the arc vector angle.                                                                                                                                                     |
-| `offsetx`             | float   | 0       | Horizontal distance of `label` from the center of the arc vector.                                                                                                                       |
-| `offsety`             | float   | 0       | Vertical distance of `label` from the center of the arc vector.                                                                                                                         |
+| `offsetx`             | float   | 0       | Horizontal distance of `label` from the midpoint of the arc vector.                                                                                                                     |
+| `offsety`             | float   | 0       | Vertical distance of `label` from the midpoint of the arc vector.                                                                                                                       |
 | `color`               | string  | purple  | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                  |
 | `stroke-width`        | float   | 3       | Set the width of the stroke.                                                                                                                                                            |
 | `arrow-head-width`    | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                           |
@@ -1163,8 +1079,8 @@ More information about the grading attributes in the Grading section below.
 
 | Attribute           | Type    | Default             | Description                                                                                                                                                                                                                                                                                                       |
 | ------------------- | ------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float   | 20                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
-| `y1`                | float   | 20                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
+| `x1`                | float   | 30                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
+| `y1`                | float   | 10                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
 | `anchor-is-tail`    | boolean | true                | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
 | `width`             | float   | 60                  | Range of the distributed load.                                                                                                                                                                                                                                                                                    |
 | `spacing`           | float   | 20                  | Spacing between the vectors.                                                                                                                                                                                                                                                                                      |
@@ -1174,16 +1090,16 @@ More information about the grading attributes in the Grading section below.
 | `label1`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
 | `offsetx1`          | float   | 2                   | Horizontal distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                        |
 | `offsety1`          | float   | 2                   | Vertical distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `label2`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
-| `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                        |
-| `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `color`             | string  | blue                | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                            |
+| `label2`            | string  | -                   | Text to label the height of the vectors at the end of the range.                                                                                                                                                                                                                                                  |
+| `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the end of the range.                                                                                                                                                                                                                                          |
+| `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the end of the range.                                                                                                                                                                                                                                            |
+| `color`             | string  | red3                | Set the stroke color of the distributed load ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                               |
 | `stroke-width`      | float   | 3                   | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
-| `arrow-head-width`  | float   | 1                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
-| `arrow-head-length` | float   | 1                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
+| `arrow-head-width`  | float   | 2                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
+| `arrow-head-length` | float   | 3                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
 | `disregard-sense`   | boolean | false               | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
 | `draw-error-box`    | boolean | -                   | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
-| `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.                                                                                                                                                                                                        |
+| `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load. The default is `max(w1, w2) * 1.1` when `disregard-sense=true`.                                                                                                                                        |
 | `offset-backward`   | float   | `max(w1, w2) * 1.1` | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.                                                                                                                                                                                                    |
 | `optional-grading`  | boolean | false               | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                     |
 
@@ -1193,140 +1109,415 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-### `pl-controlled-line` element
+## Mechanics and structures
+
+### `pl-rod` element
 
 #### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-controlled-line
-      x1="40"
-      y1="40"
-      x2="120"
-      y2="80"
-      draw-error-box="true"
-      offset-tol-x="20"
-    ></pl-controlled-line>
-    <pl-controlled-line
-      x1="60"
-      y1="140"
-      x2="160"
-      y2="140"
-      color="blue"
-      stroke-width="6"
-      handle-radius="8"
-    ></pl-controlled-line>
+    <pl-rod x1="60" y1="80" x2="120" y2="100"></pl-rod>
   </pl-drawing-initial>
 </pl-drawing>
 ```
 
-![Screenshot of the pl-controlled-line element](pl-controlled-line.png){ width=100% style="max-width: 300px" }
+![Screenshot of the pl-rod element](pl-rod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
-| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                               |
-| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`             | float   | 20      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                 |
-| `y1`             | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                    |
-| `x2`             | float   | 40      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                 |
-| `y2`             | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                    |
-| `color`          | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                                              |
-| `stroke-width`   | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                              |
-| `handle-radius`  | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                              |
-| `draw-error-box` | boolean | -       | Draw the error bounding box, where the location of the end points and control point are accepted as correct.                                                                                                                                                              |
-| `offset-tol-x`   | float   | 0       | Tolerance offset in the horizontal direction. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box. |
-| `offset-tol-y`   | float   | 0       | Tolerance offset in the vertical direction. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.     |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 40      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 80      | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y2`           | float   | 20      | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 2       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | 2       | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the second end of the rod.                                                                                      |
+| `offsety2`     | float   | 2       | Vertical distance of `label2` from the second end of the rod.                                                                                        |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
-- [demo/drawing/graphs]: Example that includes controlled lines for graph sketching
-
-- [demo/drawing/vMDiagrams]: Example that includes controlled lines for graph sketching
+- [demo/drawing/vMDiagrams]: Example that includes a rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-### `pl-controlled-curved-line` element
+### `pl-3pointrod` element
 
 #### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-controlled-curved-line
-      x1="20"
-      y1="20"
-      x2="160"
-      y2="20"
-      x3="40"
-      y3="140"
-      draw-error-box="true"
-      offset-control-tol-x="20"
-      offset-control-tol-y="30"
-    ></pl-controlled-curved-line>
+    <pl-3pointrod x1="40" y1="100" x2="100" y2="100" x3="100" y3="180"></pl-3pointrod>
   </pl-drawing-initial>
 </pl-drawing>
 ```
 
-![Screenshot of the pl-controlled-curved-line element](pl-controlled-curved-line.png){ width=100% style="max-width: 300px" }
+![A 3-point rod element in PrairieLearn](pl-3pointrod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
-| Attribute              | Type    | Default | Description                                                                                                                                                                                                                                                                                         |
-| ---------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                   | float   | 20      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                                           |
-| `y1`                   | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                                              |
-| `x2`                   | float   | 60      | `x` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                                                           |
-| `y2`                   | float   | 40      | `y` position of one of the end points w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                                                              |
-| `x3`                   | float   | 40      | `x` position of the control point for the quadratic curve (middle point) w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                        |
-| `y3`                   | float   | 60      | `y` position of the control point for the quadratic curve (middle point) w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                           |
-| `color`                | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                       |
-| `stroke-width`         | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                                                        |
-| `handle-radius`        | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                                                        |
-| `draw-error-box`       | boolean | -       | Draw the error bounding box, where the location of the end points and control point are accepted as correct.                                                                                                                                                                                        |
-| `offset-tol-x`         | float   | 0       | Tolerance offset in the horizontal direction for the end points. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.        |
-| `offset-tol-y`         | float   | 0       | Tolerance offset in the vertical direction for the end points. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.            |
-| `offset-control-tol-x` | float   | 0       | Tolerance offset in the horizontal direction for the control point. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box. |
-| `offset-control-tol-y` | float   | 0       | Tolerance offset in the vertical direction for the control point. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box.     |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
+| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
+| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y3`           | float   | 140     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location at all three points of the rod.                                                                                                |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                    |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                      |
+| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                      |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                        |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
-- [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching
-
-- [demo/drawing/vMDiagrams]: Example that includes controlled curved lines for graph sketching
+- [demo/drawing/inclinedPlane]: Example that includes a 3-point rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-### `pl-text` element
+### `pl-4pointrod` element
 
 #### Sample element
 
 ```html
-<pl-drawing width="200" height="200" grid-size="0">
+<pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-text x1="20" y1="40" label="Moment of inertia:" latex="false"></pl-text>
-    <pl-text x1="20" y1="80" label="\\int_A y^2 dA"></pl-text>
+    <pl-4pointrod></pl-4pointrod>
   </pl-drawing-initial>
 </pl-drawing>
 ```
 
-![Screenshot of the pl-text element](pl-text.png){ width=100% style="max-width: 300px" }
+![Screenshot of the pl-4pointrod element](pl-4pointrod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
-| Attribute   | Type    | Default | Description                                                                                                         |
-| ----------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `label`     | string  | -       | Text to be added.                                                                                                   |
-| `latex`     | boolean | true    | Adds the text in `label` using latex. Otherwise, uses Times New Romans.                                             |
-| `font-size` | float   | 16      | Font size.                                                                                                          |
-| `x1`        | float   | 20      | `x` position for the top-left corner of the text, i.e., the horizontal distance from the left border of the canvas. |
-| `y1`        | float   | 20      | `y` position for the top-left corner of the text, i.e., the vertical distance from the top border of the canvas     |
-| `offsetx`   | float   | 0       | Offset in x direction from `x1`                                                                                     |
-| `offsety`   | float   | 0       | Offset in y direction from `y1`                                                                                     |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
+| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
+| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y3`           | float   | 160     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `x4`           | float   | 140     | `x` position for the third end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y4`           | float   | 60      | `y` position for the third end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location at all four points of the rod.                                                                                                 |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the middle point of the rod.                                                                                    |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the middle point of the rod.                                                                                      |
+| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the second end of the rod.                                                                                      |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the second end of the rod.                                                                                        |
+| `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                              |
+| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the third end of the rod.                                                                                       |
+| `offsety4`     | float   | -20     | Vertical distance of `label4` from the third end of the rod.                                                                                         |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
+
+#### Example implementations
+
+- [demo/drawing/liftingMechanism]: Example that uses 4-point rods
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-collar-rod` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-collar-rod x1="60" y1="100" x2="160" y2="100"></pl-collar-rod>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-collar-rod element](pl-collar.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute          | Type    | Default    | Description                                                                                                                                          |
+| ------------------ | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`               | float   | 40         | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`               | float   | 40         | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`               | float   | 100        | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y2`               | float   | 40         | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`            | float   | 20         | Thickness of the rod.                                                                                                                                |
+| `draw-pin`         | boolean | true       | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`         | float   | 2          | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`         | float   | 2          | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`           | string  | -          | Text to label the second end of the rod.                                                                                                             |
+| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the second end of the rod.                                                                                      |
+| `offsety2`         | float   | 2          | Vertical distance of `label2` from the second end of the rod.                                                                                        |
+| `draw-collar-end1` | boolean | true       | Draw a collar end at `(x1,y1)`.                                                                                                                      |
+| `w1`               | float   | 1.5\*width | The width of the collar at end 1.                                                                                                                    |
+| `h1`               | float   | 2\*width   | The height of the collar at end 1.                                                                                                                   |
+| `draw-collar-end2` | boolean | false      | Draw a collar end at `(x2,y2)`.                                                                                                                      |
+| `w2`               | float   | 1.5\*width | The width of the collar at end 2.                                                                                                                    |
+| `h2`               | float   | 2\*width   | The height of the collar at end 2.                                                                                                                   |
+| `color`            | string  | white      | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color`     | string  | black      | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width`     | float   | 2          | Set the width of the stroke.                                                                                                                         |
+
+#### Example implementations
+
+- [demo/drawing/collarRod]: Example that uses a collar rod
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-fixed-pin` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-fixed-pin x1="100" y1="100"></pl-fixed-pin>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-fixed-pin element](pl-fixed-pin.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                  |
+| -------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                    |
+| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                    |
+| `height`       | float   | 40      | Height of the pin support, measured from the top of the base (ground) to the center of the pin.                                                              |
+| `width`        | float   | 30      | Width of the pin support.                                                                                                                                    |
+| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                     |
+| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                |
+| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                            |
+| `label`        | string  | -       | Text to label the pin support.                                                                                                                               |
+| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                   |
+| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                     |
+| `color`        | string  | brown1  | Set the fill color of the pin support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the pin support.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                 |
+
+#### Example implementations
+
+- [demo/drawing/vMDiagrams]: Example that uses a fixed pin as boundary condition
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-roller` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-roller x1="60" y1="100"></pl-roller>
+    <pl-fixed-pin x1="140" y1="100" color="green1"></pl-fixed-pin>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-roller element](pl-roller.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                     |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                       |
+| `y1`           | float   | 20      | `y` position for the first end of the pin, i.e., the vertical distance from the top border of the canvas.                                                       |
+| `height`       | float   | 40      | Height of the roller support, measured from the top of the base (ground) to the center of the pin.                                                              |
+| `width`        | float   | 30      | Width of the roller support.                                                                                                                                    |
+| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                        |
+| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                   |
+| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                               |
+| `label`        | string  | -       | Text to label the roller support.                                                                                                                               |
+| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                      |
+| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                        |
+| `color`        | string  | brown1  | Set the fill color of the roller support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the roller.                                                                                                                             |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                    |
+
+#### Example implementations
+
+- [demo/drawing/vMDiagrams]: Example that uses a roller as boundary condition
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-clamped` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-roller x1="140" y1="100" width="40" color="gray1"></pl-roller>
+    <pl-rod x1="40" y1="100" x2="140" y2="100" draw-pin="false"></pl-rod>
+    <pl-clamped x1="40" y1="100" height="60" width="20"></pl-clamped>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![A clamped end element in PrairieLearn](pl-clamped.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                      |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`           | float  | 20      | `x` position for the clamped point, i.e., the horizontal distance from the left border of the canvas.                                                                                            |
+| `y1`           | float  | 20      | `y` position for the clamped point, i.e., the vertical distance from the top border of the canvas.                                                                                               |
+| `height`       | float  | 40      | Height of the clamped support (rectangle).                                                                                                                                                       |
+| `width`        | float  | 20      | Width of the clamped support (rectangle).                                                                                                                                                        |
+| `angle`        | float  | 0       | Angle of rotation around the clamped point. Angles are measured from the horizontal axis and are positive clockwise.                                                                             |
+| `label`        | string | -       | Text to label the clamped support.                                                                                                                                                               |
+| `offsetx`      | float  | 2       | Horizontal distance of `label` from the clamped point.                                                                                                                                           |
+| `offsety`      | float  | 2       | Vertical distance of `label` from the clamped point.                                                                                                                                             |
+| `color`        | string | black   | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                     |
+
+#### Example implementations
+
+- [demo/drawing/collarRod]: Example that uses a clamped end as boundary condition
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-spring` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-spring x1="50" y1="40" width="140" draw-pin="true"></pl-spring>
+    <pl-spring x1="20" y1="80" angle="20" width="120" height="20" interval="5"></pl-spring>
+    <pl-spring x1="20" y1="160" width="30" height="20" stroke-color="purple3"></pl-spring>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-spring element](pl-spring.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                           |
+| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 20      | `x` position for the start point for the spring, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
+| `y1`           | float   | 20      | `y` position for the start point for the spring, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
+| `width`        | float   | 60      | Length of the spring.                                                                                                                                                                                                                                 |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the spring. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `height`       | float   | 40      | Height of the spring.                                                                                                                                                                                                                                 |
+| `interval`     | float   | 10      | Interval between each angled line. This interval is recalculated if the spring width is too short.                                                                                                                                                    |
+| `x2`           | float   | -       | `x` position for the end point for the spring, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the spring, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `stroke-color` | string  | black   | Set the color of the spring ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
+| `draw-pin`     | boolean | false   | Draw points at the spring ends.                                                                                                                                                                                                                       |
 
 #### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-coil` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-coil x1="50" y1="40" draw-pin="true"></pl-coil>
+    <pl-coil x1="20" y1="100" angle="20" width="120" height="80"></pl-coil>
+    <pl-coil x1="20" y1="180" width="40" height="20" stroke-color="purple3"></pl-coil>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-coil element](pl-coil.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                         |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 20      | `x` position for the start point for the coil, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
+| `y1`           | float   | 20      | `y` position for the start point for the coil, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
+| `width`        | float   | 80      | Length of the coil.                                                                                                                                                                                                                                 |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the coil. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `height`       | float   | 30      | Height of the coil.                                                                                                                                                                                                                                 |
+| `x2`           | float   | -       | `x` position for the end point for the coil, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the coil, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
+| `draw-pin`     | boolean | false   | Draw points at the coil ends.                                                                                                                                                                                                                       |
+
+#### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+### `pl-pulley` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+  <pl-drawing-initial>
+    <pl-pulley x1="100" y1="150" x2="20" y2="120" x3="140" y3="60" radius="40"></pl-pulley>
+    <pl-pulley x1="50" y1="40" x2="50" y2="100" x3="160" y3="40" color="blue1"></pl-pulley>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+![Screenshot of the pl-pulley element](pl-pulley.png){ width=100% style="max-width: 300px" }
+
+#### Customizations
+
+| Attribute          | Type    | Default | Description                                                                                                                                             |
+| ------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`               | float   | 40      | `x` position for the center of the pulley, i.e., the horizontal distance from the left border of the canvas.                                            |
+| `y1`               | float   | 40      | `y` position for the center of the pulley, i.e., the vertical distance from the top border of the canvas.                                               |
+| `x2`               | float   | 10      | `x` position for the first point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                 |
+| `y2`               | float   | 10      | `y` position for the first point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                    |
+| `x3`               | float   | 120     | `x` position for the second point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                |
+| `y3`               | float   | 60      | `y` position for the second point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                   |
+| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to the points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.             |
+| `radius`           | float   | 20      | Radius of the pulley.                                                                                                                                   |
+| `label`            | string  | -       | Text to label the pulley.                                                                                                                               |
+| `offsetx`          | float   | 2       | Horizontal distance of `label` from the center of the pulley.                                                                                           |
+| `offsety`          | float   | 2       | Vertical distance of `label` from the center of the pulley.                                                                                             |
+| `color`            | string  | gray    | Set the fill color of the pulley ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color`     | string  | black   | Set the stroke color of the pulley.                                                                                                                     |
+| `stroke-width`     | float   | 2       | Set the width of the stroke.                                                                                                                            |
+
+#### Example implementations
+
+- [demo/drawing/pulley]: Example that includes a pulley system
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
+## Circuit components
 
 ### `pl-capacitor` element
 
@@ -1569,195 +1760,6 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## Creating group of elements
-
-### `pl-drawing-group` element
-
-The element `pl-drawing-group` combines several elements as a group, to allow groups of elements to be turned visible or not.
-
-```html
-<pl-drawing>
-  <pl-drawing-initial>
-
-      <pl-drawing-group visible="true">
-          <!-- objects here will be displayed -->
-      </pl-drawing-group>
-
-      <pl-drawing-group visible="false">
-          <!-- objects here will not be displayed -->
-      </pl-drawing-group>
-</pl-drawing>
-```
-
-#### Example implementations
-
-- [demo/drawing/simpleTutorial]: Example where the attribute `visible` is set in server.py
-
-## Elements to set up a grading canvas
-
-### `pl-drawing-group` element
-
-The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
-
-#### Sample element
-
-```html
-<pl-drawing grid-size="20" gradable="true" answers-name="box" width="320">
-  <pl-drawing-answer draw-error-box="true">
-    <pl-vector x1="160" y1="160" angle="-45"></pl-vector>
-  </pl-drawing-answer>
-
-  <pl-drawing-initial>
-    <pl-coordinates
-      x1="160"
-      y1="160"
-      width="100"
-      angle="0"
-      label="A"
-      offsetx="-20"
-    ></pl-coordinates>
-  </pl-drawing-initial>
-
-  <pl-controls>
-    <pl-controls-group label="Graded objects:">
-      <pl-drawing-button type="pl-vector"></pl-drawing-button>
-    </pl-controls-group>
-    <pl-controls-group label="Delete button:">
-      <pl-drawing-button type="delete"></pl-drawing-button>
-    </pl-controls-group>
-  </pl-controls>
-</pl-drawing>
-```
-
-![Screenshot of the pl-drawing-group element](pl-vector-grading-canvas-example.png){ width=100% style="max-width: 500px" }
-
-### `pl-drawing-answer` element
-
-This element will wrap all the elements that will be graded (checked for correctness).
-
-#### Customizations
-
-| Attribute        | Type    | Default | Description                                                                                                                                           |
-| ---------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-answer` will be displayed with their respective error bounding boxes in the answer panel. |
-
-Set this attribute on `pl-drawing-answer` to display error boxes for all graded objects in the answer panel. Object-level `draw-error-box` settings on supported objects inside `pl-drawing-answer` override this parent setting for that object.
-
-In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
-
-![Screenshot of the pl-drawing-answer element](pl-vector-correct-answer.png){ width=100% style="max-width: 300px" }
-
-### `pl-drawing-initial` element
-
-This element will wrap all the elements included in the grading canvas that will not be graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
-
-#### Customizations
-
-| Attribute        | Type    | Default | Description                                                                                                                                            |
-| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `draw-error-box` | boolean | false   | When `true`, the objects that are placed inside `pl-drawing-initial` will be displayed with their respective error bounding boxes in the answer panel. |
-
-The final version of a question should not have the attribute `draw-error-box`. However, this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
-`draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
-
-### `pl-controls` element
-
-The element `pl-controls` will add the buttons that allow students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
-
-```html
-<pl-controls>
-  <pl-controls-group label="Graded objects:">
-    <pl-drawing-button type="pl-vector"></pl-drawing-button>
-  </pl-controls-group>
-  <pl-controls-group label="Delete button:">
-    <pl-drawing-button type="delete"></pl-drawing-button>
-  </pl-controls-group>
-</pl-controls>
-```
-
-The `pl-controls` element requires only one attribute, `type`, which corresponds with an element name defined above. When a user clicks on the control button, the element will be generated with all of its default values. To override any default, any attribute that can be set on the element to be created (that which is specified in `type`) can be added to `pl-controls` as an optional attribute. (See `demoDrawingCustomizedButtons` below for an example)
-
-#### Example implementations
-
-The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`s that have grading routines implemented.
-
-The example [demo/drawing/buttons] illustrates all the `pl-drawing-button`s that can create placeable objects.
-
-The example [demo/drawing/customizedButtons] illustrates how custom objects can be generated via buttons.
-
-![Screenshot of all the pl-drawing-button elements](pl-all-buttons.png){ width=100% style="max-width: 500px" }
-
-### `pl-drawing-buttons` element
-
-#### Insert a point
-
-```html
-<pl-drawing-button type="pl-point"></pl-drawing-button>
-```
-
-This button adds a point to the canvas. The grading algorithm will check if the submitted point is within the error box. By default, the error box for `pl-point` is a square centered at the correct point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
-
-![Screenshot of the pl-drawing-button set to pl-point](pl-point-error-box.png){ width=100% style="max-width: 200px" }
-
-#### Insert a vector
-
-```html
-<pl-drawing-button type="pl-vector"></pl-drawing-button>
-```
-
-This button adds a vector to the canvas. A vector is marked as correct when the position of the anchor point (tail of the vector) is within the error bounding box and the absolute error of the angle is less than `angle-tol`.
-
-By default, the error box for `pl-vector` is a rectangle aligned with direction of the vector. The width of the rectangle is `tol` and the height is `hb + hf`, as illustrated below. `hb = offset-backward + tol` and `hf = offset-forward + tol`. The attribute `offset-backward` is set to the length of the vector by default. The attribute `offset-forward` is set to zero by default. The tolerances `tol` and `angle-tol` are attributes of `pl-drawing` to make sure that all elements use the same tolerance.
-
-![Screenshot showing an error box for a pl-vector element](pl-vector-error-box.png){ width=100% style="max-width: 300px" }
-
-If the orientation of the vector is not important, so that vectors `p` and `-p` are both considered correct, the attribute `disregard-sense` should be set to `true`.
-
-If a vector is expected as a correct answer, but the author does not want to assign a grade to it, the attribute `optional-grading` can be set to `true`. In this case, the grading algorithm will not assign points to the vector, but will not penalize students either by considering it as extra objects.
-
-#### Insert an arc vector
-
-```html
-<pl-drawing-button type="pl-arc-vector-CCW"></pl-drawing-button>
-<pl-drawing-button type="pl-arc-vector-CW"></pl-drawing-button>
-```
-
-This button adds an arc vector to the canvas. The arc vector is marked as correct when the position of the anchor point (center of the arc vector) is within the error bounding box and the orientation is correct.
-
-By default, the error box for `pl-arc-vector` is a square centered at the anchor point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
-
-If the orientation of the arc vector is not important (both clockwise and counter-clockwise orientations are accepted), the attribute `disregard-sense` should be set to `true`.
-
-#### Insert a distributed load
-
-```html
-<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="true"></pl-drawing-button>
-<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="false"></pl-drawing-button>
-<pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
-```
-
-This button adds a distributed load to the canvas. A distributed load is marked as correct when the position of the anchor point (center of the baseline) is within the error bounding box, the absolute error of the angle is less than `angle-tol`, the absolute error of the range (interval) is less than `tol`, and the expected distribution is matched (if uniform, `w1 = w2` and for triangular load, `w1>w2` or `w2>w1` from submitted answer match the correct answer).
-
-The error box for `pl-distributed-load` is defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
-
-For many questions, it will be necessary to fine-tune the error bounding box by setting the attributes `offset-forward` and `offset-backward`. Suitable values depend on the context of the question, for instance the dimension of the beam in the direction of the distributed load.
-
-#### Insert a "help" line
-
-```html
-<pl-drawing-button type="help-line"></pl-drawing-button>
-```
-
-This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
-
-#### Delete any object previously placed in the canvas
-
-```html
-<pl-drawing-button type="delete"></pl-drawing-button>
-```
-
-This button deletes objects that were previously placed on the canvas.
-
 ## Elements for sketching plots
 
 ![Screenshot of the pl-graph element](pl-graph.png){ width=100% style="max-width: 300px" }
@@ -1848,6 +1850,10 @@ A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps th
 | `offset-tol-y`         | float   | 0                  | Half the length of the bounding box in the y-direction. The end point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                            |
 | `offset-control-tol-x` | float   | 0                  | Half the length of the bounding box in the x-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
 | `offset-control-tol-y` | float   | 0                  | Half the length of the bounding box in the y-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
+
+## Accessibility
+
+Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
 
 ## Extension API
 

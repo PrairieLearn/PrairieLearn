@@ -98,11 +98,13 @@ describe('Access control save via tRPC', () => {
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
     });
+    const [enrollmentRule] = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.isOk(enrollmentRule);
+    assert.isString(enrollmentRule.uuid);
+
     await replaceEnrollmentAccessControlRules(assessment, [
       {
-        ruleData: formJsonToEnrollmentRuleData({
-          dateControl: { due: { date: '2024-04-18T23:59:00' } },
-        }),
+        ruleData: formJsonToEnrollmentRuleData(enrollmentRule),
         enrollmentIds: [enrollment.id],
       },
     ]);
@@ -151,7 +153,7 @@ describe('Access control save via tRPC', () => {
   }
 
   test.sequential(
-    'saves rules to disk and preserves omitted DB-only enrollment rules',
+    'saves rules to disk and preserves omitted student-specific rule bodies',
     async () => {
       const client = await createClient();
       const origHash = await getOrigHash();
@@ -174,11 +176,14 @@ describe('Access control save via tRPC', () => {
       const parsed = JSON.parse(fileContent);
 
       assert.isArray(parsed.accessControl);
-      assert.equal(parsed.accessControl.length, 2);
+      assert.equal(parsed.accessControl.length, 3);
       assert.deepEqual(parsed.accessControl[0].beforeRelease, { listed: true });
+      assert.equal(parsed.accessControl[1].uuid, '11111111-1111-4111-8111-111111111111');
       assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
-      assert.notProperty(parsed.accessControl[1], 'uuid');
       assert.equal(parsed.accessControl[1].dateControl.due?.date, '2024-04-01T23:59:00');
+      assert.isString(parsed.accessControl[2].uuid);
+      assert.notProperty(parsed.accessControl[2], 'labels');
+      assert.notProperty(parsed.accessControl[2], 'enrollments');
 
       // Verify other keys are preserved
       assert.equal(parsed.uuid, 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f');
@@ -240,7 +245,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(enrollmentRules[0].uuid, enrollmentRuleUuid);
   });
 
-  test.sequential('saves mixed UUID-format overrides to disk and syncs enrollments', async () => {
+  test.sequential('saves mixed override rules to disk and syncs enrollments', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
     const assessment = await selectAssessmentByTid({
