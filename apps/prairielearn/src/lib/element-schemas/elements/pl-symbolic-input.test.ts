@@ -9,22 +9,9 @@ async function lintMessages(html: string): Promise<string[]> {
     .map((diagnostic) => diagnostic.message);
 }
 
-describe('AI-supported input schemas', () => {
-  it('accepts schema-valid input markup', async () => {
+describe('pl-symbolic-input schema', () => {
+  it('accepts schema-valid symbolic input markup', async () => {
     const messages = await lintMessages(`
-      <pl-integer-input answers-name="integer" base="16" correct-answer="ff"></pl-integer-input>
-      <pl-number-input answers-name="number" comparison="sigfig" digits="3"></pl-number-input>
-      <pl-number-input
-        answers-name="blank-number"
-        allow-blank="true"
-        blank-value=""
-        correct-answer=""
-      ></pl-number-input>
-      <pl-string-input
-        answers-name="string"
-        correct-answer-format="regex"
-        multiline="true"
-      ></pl-string-input>
       <pl-symbolic-input
         answers-name="symbolic"
         additional-simplifications="expand, trigsimp"
@@ -36,13 +23,11 @@ describe('AI-supported input schemas', () => {
     assert.deepEqual(messages, []);
   });
 
-  it('rejects invalid enum values on schema-backed input markup', async () => {
+  it('rejects invalid imaginary units for display', async () => {
     const messages = await lintMessages(`
-      <pl-string-input answers-name="string" correct-answer-format="glob"></pl-string-input>
       <pl-symbolic-input answers-name="symbolic" imaginary-unit-for-display="k"></pl-symbolic-input>
     `);
 
-    assert.isTrue(messages.some((message) => message.includes('correct-answer-format')));
     assert.isTrue(messages.some((message) => message.includes('imaginary-unit-for-display')));
   });
 

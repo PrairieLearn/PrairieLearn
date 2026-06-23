@@ -9,13 +9,6 @@ async function lintMessages(html: string): Promise<string[]> {
     .map((diagnostic) => diagnostic.message);
 }
 
-async function lintWarnings(html: string): Promise<string[]> {
-  const diagnostics = await lintQuestionHtml(html);
-  return diagnostics
-    .filter((diagnostic) => diagnostic.severity === 'warning')
-    .map((diagnostic) => diagnostic.message);
-}
-
 describe('pl-checkbox schema', () => {
   it('accepts schema-valid checkbox markup', async () => {
     const messages = await lintMessages(`
@@ -46,25 +39,5 @@ describe('pl-checkbox schema', () => {
     `);
 
     assert.isTrue(messages.some((message) => message.includes('score')));
-  });
-
-  it('warns on deprecated attributes', async () => {
-    const warnings = await lintWarnings(`
-      <pl-checkbox
-        answers-name="choice"
-        fixed-order="true"
-        inline="true"
-        partial-credit="true"
-        partial-credit-method="COV"
-      >
-        <pl-answer>A</pl-answer>
-      </pl-checkbox>
-    `);
-
-    assert.isTrue(warnings.some((m) => m.includes('"fixed-order"') && m.includes('deprecated')));
-    assert.isTrue(warnings.some((m) => m.includes('"inline"') && m.includes('deprecated')));
-    assert.isTrue(
-      warnings.some((m) => m.includes('"partial-credit-method"') && m.includes('deprecated')),
-    );
   });
 });

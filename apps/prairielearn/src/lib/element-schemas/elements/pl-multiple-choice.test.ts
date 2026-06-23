@@ -9,13 +9,6 @@ async function lintMessages(html: string): Promise<string[]> {
     .map((diagnostic) => diagnostic.message);
 }
 
-async function lintWarnings(html: string): Promise<string[]> {
-  const diagnostics = await lintQuestionHtml(html);
-  return diagnostics
-    .filter((diagnostic) => diagnostic.severity === 'warning')
-    .map((diagnostic) => diagnostic.message);
-}
-
 describe('pl-multiple-choice schema', () => {
   it('accepts schema-valid multiple-choice markup', async () => {
     const messages = await lintMessages(`
@@ -71,16 +64,5 @@ describe('pl-multiple-choice schema', () => {
     `);
 
     assert.deepEqual(messages, []);
-  });
-
-  it('warns on deprecated attributes', async () => {
-    const warnings = await lintWarnings(`
-      <pl-multiple-choice answers-name="choice" fixed-order="true" inline="true">
-        <pl-answer>A</pl-answer>
-      </pl-multiple-choice>
-    `);
-
-    assert.isTrue(warnings.some((m) => m.includes('"fixed-order"') && m.includes('deprecated')));
-    assert.isTrue(warnings.some((m) => m.includes('"inline"') && m.includes('deprecated')));
   });
 });

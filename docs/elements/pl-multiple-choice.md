@@ -85,14 +85,12 @@ Inside the `pl-multiple-choice` element, each choice must be specified with a `p
 
 The following deprecated attributes are still supported for backward compatibility:
 
-| Old syntax                  | New syntax                   |
-| --------------------------- | ---------------------------- |
-| `inline="true"`             | `display="inline"`           |
-| `fixed-order="true"`        | `order="fixed"`              |
-| `all-of-the-above="true"`   | `all-of-the-above="random"`  |
-| `all-of-the-above="false"`  | `all-of-the-above="false"`   |
-| `none-of-the-above="true"`  | `none-of-the-above="random"` |
-| `none-of-the-above="false"` | `none-of-the-above="false"`  |
+| Old syntax                 | New syntax                   |
+| -------------------------- | ---------------------------- |
+| `inline="true"`            | `display="inline"`           |
+| `fixed-order="true"`       | `order="fixed"`              |
+| `all-of-the-above="true"`  | `all-of-the-above="random"`  |
+| `none-of-the-above="true"` | `none-of-the-above="random"` |
 
 Defining answer choices with external JSON files via the `external-json`, `external-json-correct-key`, and `external-json-incorrect-key` attributes is also deprecated. Define answer choices inline with `pl-answer` elements instead.
 
