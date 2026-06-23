@@ -8,6 +8,7 @@ onDocumentReady(() => {
   document.addEventListener('keypress', (event) => {
     // Ignore holding down the key events
     if (event.repeat) return;
+    if (!(event.target instanceof HTMLElement)) return;
     // Ignore events that target an input element
     if (
       !['TEXTAREA', 'SELECT'].includes(event.target.tagName) &&
@@ -15,17 +16,27 @@ onDocumentReady(() => {
         ['radio', 'button', 'submit', 'checkbox'].includes(event.target.type)) &&
       !event.target.isContentEditable
     ) {
-      document
-        .querySelectorAll(`[data-key-binding="${event.key.toLowerCase()}"]:not(:disabled)`)
-        .forEach((item) => {
-          if (item.classList.contains('js-submission-feedback')) {
-            // Prevent default so that we don't enter this key into the feedback panel
-            event.preventDefault();
-            item.focus();
-          } else {
-            item.dispatchEvent(new MouseEvent('click'));
-          }
-        });
+      // Shortcuts belong to the main grading panel; modals leave that panel in the DOM behind
+      // the backdrop, so suppress shortcuts while any modal is active.
+      if (document.querySelector('.modal.show')) return;
+
+      document.querySelectorAll('[data-key-binding]').forEach((item) => {
+        if (
+          item.dataset.keyBinding?.toLowerCase() !== event.key.toLowerCase() ||
+          item.matches(':disabled, [readonly]') ||
+          !isVisible(item)
+        ) {
+          return;
+        }
+
+        if (item.classList.contains('js-submission-feedback')) {
+          // Prevent default so that we don't enter this key into the feedback panel
+          event.preventDefault();
+          item.focus();
+        } else {
+          item.dispatchEvent(new MouseEvent('click'));
+        }
+      });
     }
   });
   const modal = document.querySelector('#conflictGradingJobModal');
@@ -40,6 +51,11 @@ onDocumentReady(() => {
 });
 
 window.mathjaxTypeset = mathjaxTypeset;
+
+function isVisible(element) {
+  // Some shortcut targets are hidden by client-side toggles while retaining their key binding.
+  return element.offsetParent !== null || element.getClientRects().length > 0;
+}
 
 window.resetInstructorGradingPanel = function () {
   // The visibility of points or percentage is based on a toggle that is persisted in local storage,
