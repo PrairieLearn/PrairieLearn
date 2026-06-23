@@ -18,7 +18,7 @@ import {
 } from '../../models/course-permissions.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
-import { withPTReservation } from '../helperExam.js';
+import { exam1AutomaticTestSuite, withPTReservation } from '../helperExam.js';
 import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -107,6 +107,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () => await helperClient.fetchCheerio(context.examAssessmentUrl, { headers }),
     );
@@ -122,6 +123,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () =>
         await helperClient.fetchCheerio(context.examAssessmentUrl, {
@@ -155,6 +157,7 @@ describe('student data access', { timeout: 60_000 }, function () {
         userId: context.userIdStudent,
         accessStart: new Date(Date.now() - 60 * 60 * 1000),
         accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+        examUuid: exam1AutomaticTestSuite.examUuid,
       },
       async () => await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers }),
     );
@@ -520,6 +523,7 @@ describe('student data access', { timeout: 60_000 }, function () {
           userId: context.userIdStudent,
           accessStart: new Date(Date.now() - 60 * 60 * 1000),
           accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+          examUuid: exam1AutomaticTestSuite.examUuid,
         },
         async () => {
           let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
@@ -554,6 +558,7 @@ describe('student data access', { timeout: 60_000 }, function () {
           userId: context.userIdStudent,
           accessStart: new Date(Date.now() - 60 * 60 * 1000),
           accessEnd: new Date(Date.now() + 60 * 60 * 1000),
+          examUuid: exam1AutomaticTestSuite.examUuid,
         },
         async () => {
           let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, {

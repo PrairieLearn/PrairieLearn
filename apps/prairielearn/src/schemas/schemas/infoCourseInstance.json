@@ -11,8 +11,9 @@
     },
     "uuid": {
       "type": "string",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Unique identifier (UUID v4)."
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+      "description": "Unique identifier (UUID)."
     },
     "longName": {
       "type": "string",
@@ -53,7 +54,8 @@
           "type": "boolean",
           "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "hideInEnrollPage": {
       "type": "boolean",
@@ -77,7 +79,8 @@
           "type": "string",
           "description": "When the course instance is unpublished. If specified, startDate must also be specified."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "allowAccess": {
       "type": "array",
@@ -140,8 +143,9 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            "description": "Unique identifier (UUID v4)."
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+            "description": "Unique identifier (UUID)."
           },
           "name": {
             "type": "string",

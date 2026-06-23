@@ -43,7 +43,7 @@ describe('convert (integration)', () => {
       assert.equal(result.questions.length, 1);
       assert.equal(
         result.questions[0].questionHtml,
-        '<pl-question-panel>\n<p>Select all correct answers</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer">\n  <pl-answer correct="true">Correct A</pl-answer>\n  <pl-answer correct="true">Correct B</pl-answer>\n  <pl-answer correct="false">Wrong C</pl-answer>\n</pl-checkbox>',
+        '<pl-question-panel>\n<p>Select all correct answers</p>\n</pl-question-panel>\n\n<pl-checkbox answers-name="answer" partial-credit="net-correct">\n  <pl-answer correct="true">Correct A</pl-answer>\n  <pl-answer correct="true">Correct B</pl-answer>\n  <pl-answer correct="false">Wrong C</pl-answer>\n</pl-checkbox>',
       );
     });
 

@@ -31,6 +31,7 @@ interface AssessmentAccessControlProps {
   origHash: string | null;
   assessmentId: string;
   isExam: boolean;
+  hasExamAutoClose: boolean;
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
@@ -42,6 +43,7 @@ function AssessmentAccessControlInner({
   courseInstance,
   origHash: initialOrigHash,
   isExam,
+  hasExamAutoClose,
   initialData,
   prairieTestExamMetadata,
   ptHost,
@@ -76,20 +78,38 @@ function AssessmentAccessControlInner({
   );
 
   const handleFormSubmit = async (data: AccessControlJsonWithId[]) => {
-    const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
+    const rules = data
+      .filter((r, index) => index === 0 || r.ruleType !== 'enrollment')
+      .map(
+        ({
+          ruleType: _ruleType,
+          enrollments: _enrollments,
+          labelDetails: _labelDetails,
+          number: _number,
+          ...rule
+        }) => rule,
+      );
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
-      .map(({ ruleType: _, enrollments, ...ruleJson }) => ({
-        id: ruleJson.id,
-        enrollmentIds: (enrollments ?? []).map((e) => e.enrollmentId),
-        ruleJson,
-      }));
+      .map(
+        ({
+          ruleType: _,
+          enrollments,
+          labelDetails: _labelDetails,
+          number: _number,
+          ...ruleJson
+        }) => ({
+          id: ruleJson.id,
+          enrollmentIds: (enrollments ?? []).map((e) => e.enrollmentId),
+          ruleJson,
+        }),
+      );
     const shouldSyncEnrollmentRules =
       canEditEnrollmentRules &&
       (initialData.some((r) => r.ruleType === 'enrollment') || enrollmentRules.length > 0);
 
     await saveMutation.mutateAsync({
-      rules: jsonRules,
+      rules,
       enrollmentRules: shouldSyncEnrollmentRules ? enrollmentRules : undefined,
       origHash,
     });
@@ -134,6 +154,7 @@ function AssessmentAccessControlInner({
       <AccessControlForm
         courseInstance={courseInstance}
         isExam={isExam}
+        hasExamAutoClose={hasExamAutoClose}
         initialData={initialData}
         prairieTestExamMetadata={prairieTestExamMetadata}
         ptHost={ptHost}

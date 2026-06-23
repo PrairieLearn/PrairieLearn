@@ -22,13 +22,16 @@ Gives automated feedback in the case of improper asymptotic input.
 | `show-score`     | boolean                                                            | true                      | Whether to show the score badge and feedback next to this element.                                                                                                                |
 | `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                                            |
 | `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
-| `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported.                                                                   |
+| `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported. If omitted, the variables are inferred from the `correct-answer`. |
 | `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
 
 ## Details
 
 Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
 the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Up to 7 variables are supported.
+
+When the `variables` attribute is omitted, the element infers the variables from the free symbols of the
+`correct-answer` (e.g., `correct-answer="n**2"` infers `n`).
 
 ### Multivariate Limitations
 

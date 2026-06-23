@@ -106,8 +106,21 @@ const WorkspaceOptionsJsonSchema = z
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.number().int().describe('The port number used in the Docker image.'),
-    home: z.string().describe('The home directory of the workspace container.'),
+    port: z
+      .number()
+      .int()
+      .min(1)
+      .max(65535)
+      .optional()
+      .describe(
+        'The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.',
+      ),
+    home: z
+      .string()
+      .optional()
+      .describe(
+        'The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.',
+      ),
     args: z
       .union([z.string(), z.array(z.string())])
       .describe('Command line arguments to pass to the Docker container.')
@@ -115,10 +128,9 @@ const WorkspaceOptionsJsonSchema = z
     rewriteUrl: z
       .boolean()
       .describe(
-        'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
+        'If true or not provided, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
       )
-      .optional()
-      .default(true),
+      .optional(),
     gradedFiles: z
       .array(
         z
@@ -212,10 +224,7 @@ const ExternalGradingOptionsJsonSchema = z
 export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
+    uuid: z.guid().describe('Unique identifier (UUID).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),

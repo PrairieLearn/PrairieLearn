@@ -12,9 +12,14 @@ interface BlockingChild {
 /**
  * Sharing card used on the assessment-settings and course-instance-settings
  * pages. Both surfaces have the same structure: a `share_source_publicly`
- * checkbox that locks once enabled, a description, a blocking warning that
- * lists non-publicly-shared children with links to their settings pages, and a
- * `PublicLinkSharing` block once shared.
+ * checkbox, a description, a blocking warning that lists non-publicly-shared
+ * children with links to their settings pages, and a `PublicLinkSharing` block
+ * once shared.
+ *
+ * Sharing can be un-done: once shared, the checkbox stays editable so the
+ * source can be un-shared — except when `unshareBlock` is set, which keeps the
+ * checkbox disabled because a publicly-shared parent (e.g. the course instance
+ * of a shared assessment) must be un-shared first.
  *
  * Copy varies only by two nouns:
  *   - `entityNoun`: this card's entity ("assessment", "course instance").
@@ -33,6 +38,7 @@ export function ShareSourcePubliclyCard({
   publicLink,
   entityNoun,
   childNoun,
+  unshareBlock,
 }: {
   /** Current persisted value of `share_source_publicly`. */
   alreadyShared: boolean;
@@ -47,6 +53,12 @@ export function ShareSourcePubliclyCard({
   entityNoun: string;
   /** Plural noun for the blocking children, e.g. "questions". */
   childNoun: string;
+  /**
+   * When set, the source is shared but cannot be un-shared until a
+   * publicly-shared parent is un-shared first. `parentNoun` names that parent
+   * (e.g. "course instance") and `href` links to its settings page.
+   */
+  unshareBlock?: { parentNoun: string; href: string };
 }) {
   const blockedCount = blockingChildren.length;
 
@@ -59,14 +71,12 @@ export function ShareSourcePubliclyCard({
           id="share_source_publicly"
           label="Share source publicly"
           className="mb-1"
-          disabled={!canEdit || alreadyShared || blockedCount > 0}
+          disabled={!canEdit || blockedCount > 0 || unshareBlock != null}
           defaultChecked={defaultChecked}
           {...registerProps}
         />
         <small className="form-text text-muted d-block mb-2">
           The {entityNoun}'s source becomes available for others to view and copy.
-          {alreadyShared &&
-            ` This ${entityNoun} already has publicly shared source and cannot be un-shared.`}
         </small>
         {blockedCount > 0 && !alreadyShared && (
           <Alert variant="warning" className="small mb-2">
@@ -79,6 +89,13 @@ export function ShareSourcePubliclyCard({
               </span>
             ))}
             .
+          </Alert>
+        )}
+        {unshareBlock != null && (
+          <Alert variant="warning" className="small mb-2">
+            This {entityNoun}'s source cannot be un-shared while its {unshareBlock.parentNoun} is
+            publicly shared. To un-share it, first{' '}
+            <a href={unshareBlock.href}>un-share the {unshareBlock.parentNoun}</a>.
           </Alert>
         )}
         {alreadyShared && (

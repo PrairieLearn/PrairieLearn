@@ -105,6 +105,8 @@ lint-dependencies:
 
 check-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts check
+check-element-schemas:
+	@pnpm dlx tsx scripts/gen-element-schemas.mts check
 compile-badge-colors:
 	@npx sass --no-source-map apps/prairielearn/public/stylesheets/colors.scss apps/prairielearn/public/stylesheets/colors.css
 	@pnpm prettier --write apps/prairielearn/public/stylesheets/colors.css
@@ -112,8 +114,14 @@ check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-helper-dependencies:
+	@uv run python scripts/sync-python-helper-dependencies.py --check
+update-python-helper-dependencies:
+	@uv run python scripts/sync-python-helper-dependencies.py
 update-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts
+update-element-schemas:
+	@pnpm dlx tsx scripts/gen-element-schemas.mts && yarn prettier --write "apps/prairielearn/elements/**/schemas/*.json"
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql

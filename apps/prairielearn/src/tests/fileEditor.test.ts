@@ -7,7 +7,6 @@ import * as cheerio from 'cheerio';
 import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch, { FormData } from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
@@ -266,6 +265,43 @@ describe('test file editor', { timeout: 20_000 }, function () {
       });
     });
 
+    describe('hadJsonErrors warning when another file has errors', function () {
+      // Break the question JSON by committing garbage directly in the live repo
+      // and pushing it to origin. The push is necessary because in git mode, the
+      // editor resets to origin before syncing, which would discard a local-only
+      // commit. Then save a valid edit to question.html. The sync will complete
+      // with hadJsonErrors (because of the broken question JSON), but
+      // question.html is not a JSON entity file, so fileMetadata.syncErrors will
+      // be null. The alert should be a warning, not an error.
+      writeAndCommitFileInLive(questionJsonPath, 'garbage');
+      pushFromLive();
+
+      editGet(courseInstanceQuestionHtmlEditUrl, false, false, questionHtmlB, null);
+      editPost(
+        'save_and_sync',
+        questionHtmlC,
+        courseInstanceQuestionHtmlEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Error');
+
+      verifyAlert('alert-warning', 'Other files in this course have sync errors');
+
+      // Cleanup: fix the broken question JSON through the editor.
+      editGet(courseInstanceQuestionJsonEditUrl, false, false, 'garbage', null);
+      editPost(
+        'save_and_sync',
+        jsonToContents(questionJsonA),
+        courseInstanceQuestionJsonEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Success');
+    });
+
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
     });
@@ -522,6 +558,8 @@ function doEdits(data: {
     waitForJobSequence(locals, 'Success');
     // (B, B, A, B)
 
+    verifyAlert('alert-success', 'File was saved and synced successfully.');
+
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
@@ -588,7 +626,12 @@ function doEdits(data: {
     if (data.isJson) {
       editPost('save_and_sync', data.contentsX, data.url, true, false, null);
       waitForJobSequence(locals, 'Error');
-      // (X, X, C*, X) <- successful push but failed sync because of bad json
+      // (X, X, C*, X) <- successful push, sync completed with per-entity errors
+
+      verifyAlert(
+        'alert-danger',
+        'File was saved, but it contains errors that prevented it from syncing.',
+      );
 
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
@@ -616,6 +659,17 @@ function writeAndCommitFileInLive(fileName: string, fileContents: string) {
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function pushFromLive() {
+  describe('push live repo to origin', function () {
+    it('should push', async () => {
+      await execa('git', ['push'], {
         cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
@@ -680,6 +734,17 @@ function writeAndPushFileInDev(fileName: string, fileContents: string) {
   });
 }
 
+function verifyAlert(expectedClass: string, expectedMessage: string) {
+  describe('verify alert banner', function () {
+    it(`should show ${expectedClass}`, function () {
+      const alert = locals.$('[data-testid="save-sync-alert"]');
+      assert.lengthOf(alert, 1);
+      assert.isTrue(alert.hasClass(expectedClass));
+      assert.include(alert.text(), expectedMessage);
+    });
+  });
+}
+
 function waitForJobSequence(
   locals: { job_sequence_id?: string },
   expectedResult: 'Success' | 'Error',
@@ -732,6 +797,23 @@ function doFiles(data: {
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
         path: path.join(data.path, 'subdir', 'testfile.txt'),
+      });
+
+      testUploadMultipleFiles({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        workingDirPath: data.path,
+        newButtonId: 'New',
+        files: [
+          {
+            filename: 'multi-file-1.txt',
+            contents: 'First file uploaded in a single request.',
+          },
+          {
+            filename: 'multi-file-2.txt',
+            contents: 'Second file uploaded in a single request.',
+          },
+        ],
       });
     });
     describe('Client Files', function () {
@@ -918,7 +1000,7 @@ function testUploadFile(params: {
       const formData = new FormData();
       formData.append('__action', 'upload_file');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(params.contents)]), params.filename);
+      formData.append('files', new Blob([Buffer.from(params.contents)]), params.filename);
 
       if (locals.file_path) {
         formData.append('file_path', locals.file_path);
@@ -953,6 +1035,91 @@ function testUploadFile(params: {
   });
 
   pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testUploadMultipleFiles(params: {
+  fileViewBaseUrl: string;
+  url: string;
+  workingDirPath: string;
+  newButtonId: string;
+  files: { filename: string; contents: string }[];
+}) {
+  describe(`GET to ${params.url} for multi-file upload`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token and a working_path', () => {
+      elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+
+      elemList = $('input[name="working_path"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.working_path = elemList[0].attribs.value;
+    });
+  });
+
+  describe(`POST to ${params.url} with action upload_file and multiple files`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+  });
+
+  describe('Uploaded files are available', function () {
+    params.files.forEach((file) => {
+      const uploadedPath = path.join(params.workingDirPath, file.filename);
+
+      it(`file view for ${file.filename} should match contents`, async () => {
+        const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(uploadedPath)}`);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+        const pre = locals.$('.card-body pre');
+        assert.lengthOf(pre, 1);
+        assert.strictEqual(pre.text(), file.contents);
+      });
+
+      pullAndVerifyFileInDev(uploadedPath, file.contents);
+    });
+  });
+
+  describe(`POST to ${params.url} with duplicate file names`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+        formData.append('files', new Blob([Buffer.from(file.contents + ' (copy)')]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isNotOk(res.ok);
+      const text = await res.text();
+      assert.include(text, 'Duplicate file names in upload');
+    });
+  });
 }
 
 function testRenameFile(params: {

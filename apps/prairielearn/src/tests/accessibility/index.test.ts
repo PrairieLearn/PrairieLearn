@@ -3,7 +3,6 @@ import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, type RuleConfig, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
@@ -115,6 +114,14 @@ const ROUTE_RULE_OVERRIDES: Record<string, RuleConfig> = {
   // inside a native <button>.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
     'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'button'] }],
+  },
+  // The access control summary uses table roles on a CSS grid so that
+  // columns can span and collapse responsively, which a native <table> can't do.
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access': {
+    'prefer-native-element': [
+      'error',
+      { exclude: ['radiogroup', 'radio', 'table', 'row', 'columnheader', 'cell'] },
+    ],
   },
 };
 

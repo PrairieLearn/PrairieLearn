@@ -62,6 +62,8 @@ const HIDDEN_BY_DEFAULT = new Set([
   'grading_method',
   'external_grading_image',
   'workspace_image',
+  'single_variant',
+  'has_preferences',
 ]);
 
 const EMPTY_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
@@ -394,6 +396,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
               value: row.external_grading_image,
             },
             { name: 'Workspace image', value: row.workspace_image },
+            { name: 'Single variant', value: row.single_variant ? 'Yes' : 'No' },
+            { name: 'Has preferences', value: row.has_preferences ? 'Yes' : 'No' },
           ],
           mapRowToJsonData: (row: SafeQuestionsPageData) => ({
             qid: displayQid(row, qidPrefix),
@@ -404,6 +408,8 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
             grading_method: row.grading_method,
             external_grading_image: row.external_grading_image,
             workspace_image: row.workspace_image,
+            single_variant: row.single_variant,
+            has_preferences: row.has_preferences,
           }),
         }}
         headerButtons={headerButtons}

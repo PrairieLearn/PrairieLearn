@@ -8,8 +8,7 @@ https://docs.prairielearn.com/contributing
 # Description
 
 <!--
-
-- Summarize your changes and explain the rationale for making them.
+- Summarize your changes and explain *why* these changes are necessary (even if it seems obvious).
 - Include any relevant context from Slack, meetings, or other discussions.
 - If there were discussions about key decisions, alternative designs, or implementation choices, summarize the alternatives considered, the pros/cons of each, and the reasons for the eventual choices.
 - If this change is resolving a specific issue, include a link to the issue (e.g. "closes #1234").
