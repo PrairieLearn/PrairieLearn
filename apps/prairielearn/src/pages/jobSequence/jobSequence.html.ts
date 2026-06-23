@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
@@ -38,7 +38,7 @@ export function JobSequence({
             </div>
           `
         : ''}
-      ${JobSequenceResults({ course: resLocals.course, jobSequence: job_sequence })}
+      ${JobSequenceResultsHtml({ course: resLocals.course, jobSequence: job_sequence })}
     `,
   });
 }

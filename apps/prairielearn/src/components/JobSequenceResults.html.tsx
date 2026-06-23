@@ -5,7 +5,7 @@ import { ansiToHtml } from '../lib/chalk.js';
 import type { Course } from '../lib/db-types.js';
 import type { JobSequenceWithTokens } from '../lib/server-jobs.types.js';
 
-import { JobSequenceResults as JobSequenceResultsComponent } from './JobSequenceResults.js';
+import { JobSequenceResults } from './JobSequenceResults.js';
 import {
   type JobSequenceResultsProps,
   JobSequenceResultsPropsSchema,
@@ -33,7 +33,7 @@ export function getJobSequenceResultsProps({
 /**
  * Renders the results of a job sequence with live updates.
  */
-export function JobSequenceResults({
+export function JobSequenceResultsHtml({
   course,
   jobSequence,
 }: {
@@ -43,9 +43,6 @@ export function JobSequenceResults({
   const clientProps = getJobSequenceResultsProps({ course, jobSequence });
 
   return hydrateHtml(
-    <JobSequenceResultsComponent
-      jobSequence={clientProps.jobSequence}
-      timeZone={clientProps.timeZone}
-    />,
+    <JobSequenceResults jobSequence={clientProps.jobSequence} timeZone={clientProps.timeZone} />,
   );
 }

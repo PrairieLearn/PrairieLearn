@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
@@ -96,7 +96,7 @@ export function EditError({
       </div>
 
       <div class="collapse" id="job-sequence-results">
-        ${JobSequenceResults({ course, jobSequence })}
+        ${JobSequenceResultsHtml({ course, jobSequence })}
       </div>
     `,
   });
