@@ -1,7 +1,7 @@
 # `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
-supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
+supported programming languages (e.g. MATLAB, Mathematica, Python, R, or SymPy).
 
 ## Sample element
 
@@ -39,7 +39,7 @@ Attributes for `<pl-variable-output>`:
 | Attribute          | Type                                                      | Default    | Description                                                          |
 | ------------------ | --------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
 | `default-tab`      | `"matlab"`, `"mathematica"`, `"python"`, `"r"`, `"sympy"` | `"matlab"` | Select the active tab.                                               |
-| `digits`           | integer                                                   | —          | Number of digits to display after the decimal.                       |
+| `digits`           | integer                                                   | 2          | Number of digits to display after the decimal.                       |
 | `show-mathematica` | boolean                                                   | true       | Toggles the display of the Mathematica tab.                          |
 | `show-matlab`      | boolean                                                   | true       | Toggles the display of the Matlab tab (also compatible with Octave). |
 | `show-python`      | boolean                                                   | true       | Toggles the display of the Python tab.                               |
@@ -48,19 +48,25 @@ Attributes for `<pl-variable-output>`:
 
 Attributes for `<pl-variable>` (one of these for each variable to display):
 
-| Attribute     | Type    | Default | Description                                                     |
-| ------------- | ------- | ------- | --------------------------------------------------------------- |
-| `comment`     | string  | —       | Comment to add after the displayed variable.                    |
-| `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
-| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
+| Attribute     | Type    | Default | Description                                                                                                                                 |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comment`     | string  | —       | Comment to add after the displayed variable.                                                                                                |
+| `digits`      | integer | 2       | Number of digits to display after the decimal for the variable. Defaults to the `digits` value set on the enclosing `<pl-variable-output>`. |
+| `params-name` | string  | —       | Name of variable in `data["params"]` to display. Required.                                                                                  |
+
+### Migrating from deprecated attributes
+
+`pl-matrix-output` is a deprecated alias for `pl-variable-output`. It supports only the Matlab and Python tabs and always defaults to the Matlab tab. Use `pl-variable-output` instead.
+
+The legacy `<variable>` child tag is still accepted as a deprecated alias for `<pl-variable>`. Use `<pl-variable>` instead.
 
 ## Details
 
 This element displays a list of variables inside `<pl-code>` tags that are formatted for import into
-either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
+either MATLAB, Mathematica, Python, R, or SymPy (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
 text that appears between the `<pl-variable>` and `</pl-variable>` tags, followed by `=`. Below
-are samples of the format displayed under each language tab.
+are samples of the format displayed for several of the language tabs.
 
 **MATLAB format:**
 

@@ -75,20 +75,24 @@ When `builtin-grading="false"` is set:
 
 Inside the `pl-multiple-choice` element, each choice must be specified with a `pl-answer` child element.
 
-| Attribute  | Type    | Default         | Description                                                                                                                                    |
-| ---------- | ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`  | boolean | false           | Is this a correct answer to the question?                                                                                                      |
-| `feedback` | string  | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`    | float   | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+| Attribute  | Type                          | Default         | Description                                                                                                                                    |
+| ---------- | ----------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `correct`  | boolean                       | false           | Is this a correct answer to the question?                                                                                                      |
+| `feedback` | string                        | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
+| `score`    | float in the range [0.0, 1.0] | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 ### Migrating from deprecated attributes
 
 The following deprecated attributes are still supported for backward compatibility:
 
-| Old syntax           | New syntax         |
-| -------------------- | ------------------ |
-| `inline="true"`      | `display="inline"` |
-| `fixed-order="true"` | `order="fixed"`    |
+| Old syntax                  | New syntax                   |
+| --------------------------- | ---------------------------- |
+| `inline="true"`             | `display="inline"`           |
+| `fixed-order="true"`        | `order="fixed"`              |
+| `all-of-the-above="true"`   | `all-of-the-above="random"`  |
+| `all-of-the-above="false"`  | `all-of-the-above="false"`   |
+| `none-of-the-above="true"`  | `none-of-the-above="random"` |
+| `none-of-the-above="false"` | `none-of-the-above="false"`  |
 
 Defining answer choices with external JSON files via the `external-json`, `external-json-correct-key`, and `external-json-incorrect-key` attributes is also deprecated. Define answer choices inline with `pl-answer` elements instead.
 

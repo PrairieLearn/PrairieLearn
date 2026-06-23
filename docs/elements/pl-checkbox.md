@@ -31,7 +31,7 @@ as checkboxes.
 | `hide-score-badge`    | boolean | false           | Hide badges next to selected answers.                                                                                                                                                                                                |
 | `max-correct`         | integer | See description | The maximum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `max-select`          | integer | See description | The maximum number of answers that can be selected in any valid submission. Defaults to `max-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to the number of displayed answers. |
-| `min-correct`         | integer | See description | The minimum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
+| `min-correct`         | integer | 1               | The minimum number of correct answers to display.                                                                                                                                                                                    |
 | `min-select`          | integer | See description | The minimum number of answers that must be selected in any valid submission. Defaults to `min-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to 1.                              |
 | `number-answers`      | integer | See description | The total number of answer choices to display. Defaults to displaying all answers.                                                                                                                                                   |
 | `order`               | string  | `"random"`      | Order of answer choices: `"random"` (randomized) or `"fixed"` (as written).                                                                                                                                                          |
@@ -67,6 +67,7 @@ The following deprecated attributes are still supported for backward compatibili
 | --------------------------------------------------- | ------------------------------ |
 | `partial-credit="false"`                            | `partial-credit="off"`         |
 | `partial-credit="true"`                             | `partial-credit="net-correct"` |
+| `partial-credit="true" partial-credit-method="PC"`  | `partial-credit="net-correct"` |
 | `partial-credit="true" partial-credit-method="EDC"` | `partial-credit="each-answer"` |
 | `partial-credit="true" partial-credit-method="COV"` | `partial-credit="coverage"`    |
 | `inline="true"`                                     | `display="inline"`             |

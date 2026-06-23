@@ -26,7 +26,7 @@ def generate(data):
 | `aria-label`              | string                  | —               | An accessible label for the element.                                                                                                                                                                  |
 | `correct-answer`          | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                      |
 | `correct-answer-format`   | `"exact"` or `"regex"`  | `"exact"`       | Whether `correct-answer` is compared as a literal string (`"exact"`) or interpreted as a regular expression (`"regex"`). See [Matching with regular expressions](#matching-with-regular-expressions). |
-| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled.                                                                                                                       |
+| `display`                 | `"block"` or `"inline"` | `"inline"`      | How to display the input field. Default is `"block"` if `multiline` is enabled. Explicitly setting `display="inline"` together with `multiline="true"` raises an error.                               |
 | `ignore-case`             | boolean                 | false           | Whether to ignore letter case when grading the answer (e.g. `hello` matches `HELLO`).                                                                                                                 |
 | `initial-value`           | string                  | —               | Initial value is added to the text box the first time it is rendered.                                                                                                                                 |
 | `label`                   | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                                                     |
@@ -36,9 +36,20 @@ def generate(data):
 | `remove-leading-trailing` | boolean                 | See description | Whether to remove leading and trailing blank spaces from the input string. Defaults to `true` if `multiline` is enabled, otherwise `false`.                                                           |
 | `remove-spaces`           | boolean                 | false           | Whether to remove blank spaces from the input string.                                                                                                                                                 |
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                                                  |
+| `show-score`              | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                                                 |
 | `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                                               |
 | `suffix`                  | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                                                     |
 | `weight`                  | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                                                  |
+
+### Migrating from deprecated attributes
+
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax                 | New syntax         |
+| -------------------------- | ------------------ |
+| `escape-unicode="<value>"` | Omit the attribute |
+
+The `escape-unicode` attribute is ignored. Unicode escaping is always applied when needed for displayed submitted and correct answers.
 
 ## Matching with regular expressions
 

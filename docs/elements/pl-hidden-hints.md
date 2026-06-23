@@ -1,6 +1,7 @@
 # `pl-hidden-hints` element
 
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
+Hints are revealed based on the total number of submissions for the variant, not just incorrect ones.
 Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
 Otherwise, hints start closed and must be opened by the user. The submission counter is reset when new variants are
 generated. Note that **this element does not reveal new hints across variants.**
@@ -15,12 +16,11 @@ spamming incorrect submissions to reveal all hints right away.
   <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
 
   <pl-hint show-after-submission="3">
-    This is a hint that will be accessible after three incorrect submissions for the current
-    variant.
+    This is a hint that will be accessible after three submissions for the current variant.
   </pl-hint>
 
   <pl-hint show-after-submission="5">
-    This is a hint that will be accessible after five incorrect submissions for the current variant.
+    This is a hint that will be accessible after five submissions for the current variant.
   </pl-hint>
 </pl-hidden-hints>
 ```
