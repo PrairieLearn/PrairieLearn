@@ -11,7 +11,10 @@
     "testCourse/**/question.html",
     "apps/prairielearn/src/tests/**/question.html"
   ],
-  "exclude": ["testCourse/questions/addVectors/question.html"],
+  "exclude": [
+    "testCourse/questions/addVectors/question.html",
+    "testCourse/questions/brokenPrepare/question.html"
+  ],
   "pluginModule": "./apps/prairielearn/src/lib/element-schemas/htmlmustache-plugin.ts",
   "printWidth": 100,
   "customTagDefaults": {
