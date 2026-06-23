@@ -123,36 +123,6 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
-      name: 'prairietest with viewing rule',
-      rules: [
-        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
-        { startDate: '2024-01-01T00:00:00', active: false },
-      ],
-      expected: {
-        accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' } },
-          integrations: {
-            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
-          },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'view-only',
-      rules: [{ startDate: '2024-01-01T00:00:00', active: false }],
-      expected: {
-        accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' } },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
       name: 'password-gated',
       rules: [
         {
@@ -170,16 +140,6 @@ describe('migrateAllowAccess', () => {
             due: { date: '2024-06-01T00:00:00' },
           },
         },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'hidden',
-      rules: [{ active: false }],
-      expected: {
-        accessControl: {},
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -708,24 +668,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { score: { hidden: true } },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'visibility-only inactive rule preserves afterComplete',
-      rules: [
-        {
-          showClosedAssessment: false,
-          showClosedAssessmentScore: false,
-          active: false,
-        },
-      ],
-      expected: {
-        accessControl: {
           afterComplete: { score: { hidden: true } },
         },
         errors: [],
@@ -1453,6 +1395,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'mode-gated only with inactive positive-credit rule',
+      rules: [
+        { mode: 'Exam' },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-01-01T00:00:00',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: null,
+        errors: ['Mode-only access rules are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'all-UID rules filtered to no-op',
       rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01T00:00:00' }],
       expected: {
@@ -1562,6 +1522,139 @@ describe('migrateAllowAccess', () => {
             due: { date: '2023-02-18T23:59:59' },
             lateDeadlines: [{ date: '2023-02-20T23:59:59', credit: 95 }],
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'view-only inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive rule with submission-only fields',
+      rules: [
+        {
+          active: false,
+          credit: 100,
+          timeLimitMin: 90,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive password rule',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          password: 'foo',
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          '1 password on inactive legacy access rule discarded because inactive rules do not allow submissions.',
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'hidden inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'PrairieTest with inactive viewing rule',
+      rules: [
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { startDate: '2024-01-01T00:00:00', active: false },
+      ],
+      expected: {
+        accessControl: {
+          integrations: {
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
+          },
+        },
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive positive-credit rule ignored for active credit monotonicity',
+      rules: [
+        {
+          credit: 50,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-06-01T23:59:59',
+        },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-07-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2026-01-01T23:55:01' },
+            due: { date: '2026-06-01T23:59:59', credit: 50 },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2026-07-01T23:55:01',
+              visibleUntilDate: '2026-12-25T23:59:59',
+            },
           },
         },
         errors: [],
