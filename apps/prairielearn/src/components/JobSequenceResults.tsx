@@ -3,10 +3,7 @@ import { io } from 'socket.io-client';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import type {
-  JobSequenceResultsJob,
-  JobSequenceResultsProps,
-} from './JobSequenceResults.shared.js';
+import type { JobSequenceResultsJob, JobSequenceResultsProps } from './JobSequenceResults.types.js';
 import { JobStatus } from './JobStatus.js';
 
 function redirectWithReferrer() {
