@@ -237,9 +237,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][answer_name] = ""
 
         if not allow_blank:
-            if answer_name not in data["format_errors"]:
-                data["format_errors"][answer_name] = []
-
-            data["format_errors"][answer_name].append(
-                f"No image was submitted for {file_name}."
+            add_format_error(
+                answer_name,
+                data,
+                f"No image was submitted for {file_name}.",
             )
