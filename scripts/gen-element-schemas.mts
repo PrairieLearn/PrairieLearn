@@ -76,9 +76,7 @@ interface DiscoveredElement {
 function discoverModuleFiles(): string[] {
   return fs
     .readdirSync(ELEMENTS_SRC_DIR)
-    .filter(
-      (file) => file.endsWith('.ts') && !file.endsWith('.test.ts'),
-    )
+    .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
     .sort();
 }
 
