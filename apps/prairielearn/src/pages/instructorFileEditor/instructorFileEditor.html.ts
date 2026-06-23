@@ -2,7 +2,7 @@ import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';

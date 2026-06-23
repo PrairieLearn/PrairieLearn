@@ -1,7 +1,6 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
@@ -26,7 +25,6 @@ export function EditError({
       type: 'plain',
       page: 'error',
     },
-    headContent: compiledScriptTag('editErrorClient.ts'),
     content: html`
       <script>
         $(function () {
