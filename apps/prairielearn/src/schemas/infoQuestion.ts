@@ -128,7 +128,7 @@ const WorkspaceOptionsJsonSchema = z
     rewriteUrl: z
       .boolean()
       .describe(
-        'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /. If false, the workspace container will see all requests as originating from /pl/workspace/<workspace_id>/container/. If not specified, the URL rewrite setting is retrieved from the workspace image labels.',
+        'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /. If false, the workspace container will see all requests as originating from /pl/workspace/XXX/container/. If not specified, the URL rewrite setting is retrieved from the workspace image labels.',
       )
       .optional(),
     gradedFiles: z
