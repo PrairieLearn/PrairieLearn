@@ -55,6 +55,7 @@ export interface QuestionSettingsFormValues {
   workspace_args: string;
   workspace_environment: string;
   workspace_enable_networking: boolean;
+  workspace_rewrite_url_override: boolean;
   workspace_rewrite_url: boolean;
   preferences: PreferenceField[];
   external_grading_enabled: boolean;

@@ -163,6 +163,7 @@ export const InstructorQuestionSettingsForm = ({
         ? JSON.stringify(question.workspace_environment, null, 2)
         : '{}',
     workspace_enable_networking: question.workspace_enable_networking ?? false,
+    workspace_rewrite_url_override: question.workspace_url_rewrite !== null,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
     preferences,
     // The state of the checkbox, defaulting to the presence of an external grading image
@@ -199,6 +200,7 @@ export const InstructorQuestionSettingsForm = ({
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
   const workspaceEnabled = watch('workspace_enabled');
+  const workspaceRewriteUrlOverride = watch('workspace_rewrite_url_override');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
   const watchedSharePublicly = watch('share_publicly');
@@ -703,23 +705,42 @@ export const InstructorQuestionSettingsForm = ({
                   </div>
                 </div>
 
-                <div className="form-check">
+                <div className="form-check mb-1">
                   <input
                     className="form-check-input"
                     type="checkbox"
-                    id="workspace_rewrite_url"
+                    id="workspace_rewrite_url_override"
                     disabled={!canEdit}
-                    defaultChecked={defaultValues.workspace_rewrite_url}
-                    {...register('workspace_rewrite_url')}
+                    defaultChecked={defaultValues.workspace_rewrite_url_override}
+                    {...register('workspace_rewrite_url_override')}
                   />
-                  <label className="form-check-label" htmlFor="workspace_rewrite_url">
-                    Rewrite URL
+                  <label className="form-check-label" htmlFor="workspace_rewrite_url_override">
+                    Override URL rewrite image settings
                   </label>
                   <div className="small text-muted">
-                    If enabled, the URL will be rewritten such that the workspace container will see
-                    all requests as originating from "/".
+                    Workspace images can specify how URLs should be handled by the workspace proxy.
+                    Override to change the default workspace settings for this question.
                   </div>
                 </div>
+                {workspaceRewriteUrlOverride && (
+                  <div className="form-check ms-3">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="workspace_rewrite_url"
+                      disabled={!canEdit}
+                      defaultChecked={defaultValues.workspace_rewrite_url}
+                      {...register('workspace_rewrite_url')}
+                    />
+                    <label className="form-check-label" htmlFor="workspace_rewrite_url">
+                      Rewrite URL
+                    </label>
+                    <div className="small text-muted">
+                      If enabled, the URL will be rewritten such that the workspace container will
+                      see all requests as originating from "/".
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
