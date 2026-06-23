@@ -229,17 +229,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
 
-        data["raw_submitted_answers"]["answer_name"] = (
+        data["raw_submitted_answers"][answer_name] = (
             f"data:image/jpeg;base64,{b64_payload}"
         )
 
     elif result == "invalid":
-        data["raw_submitted_answers"]["answer_name"] = ""
+        data["raw_submitted_answers"][answer_name] = ""
 
         if not allow_blank:
-            if "_files" not in data["format_errors"]:
-                data["format_errors"]["answer_name"] = []
+            if answer_name not in data["format_errors"]:
+                data["format_errors"][answer_name] = []
 
-            data["format_errors"]["answer_name"].append(
+            data["format_errors"][answer_name].append(
                 f"No image was submitted for {file_name}."
             )
