@@ -309,16 +309,6 @@ export const htmlMustacheConfig: Config = {
       name: 'pl-checkbox',
       children: [{ name: 'pl-answer' }],
     },
-    {
-      name: 'pl-order-blocks',
-      children: [
-        { name: 'pl-answer' },
-        {
-          name: 'pl-block-group',
-          children: [{ name: 'pl-answer' }],
-        },
-      ],
-    },
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },
     { name: 'pl-symbolic-input' },
