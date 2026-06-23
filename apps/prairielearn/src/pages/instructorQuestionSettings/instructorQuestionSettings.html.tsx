@@ -162,8 +162,8 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
         rel="noopener noreferrer"
       >
         content sharing docs
-      </a>
-      .
+      </a>{' '}
+      for more details.
     </>
   );
 }
@@ -284,8 +284,6 @@ export const InstructorQuestionSettingsForm = ({
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
-  const sharePubliclyInput = register('share_publicly');
-  const shareSourcePubliclyInput = register('share_source_publicly');
   const sharePublicly = watch('share_publicly');
   const shareSourcePublicly = watch('share_source_publicly');
   const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
@@ -341,9 +339,6 @@ export const InstructorQuestionSettingsForm = ({
   const handleFormSubmit = handleSubmit(() => {
     formRef.current?.submit();
   });
-  const handleCancel = () => {
-    reset();
-  };
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -1022,18 +1017,15 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_publicly" value="on" />
               )}
               <Form.Check
-                ref={sharePubliclyInput.ref}
+                {...register('share_publicly')}
                 type="checkbox"
                 id="share_publicly"
-                name={sharePubliclyInput.name}
                 value="on"
                 label="Share publicly"
                 className="mb-1"
                 disabled={sharePubliclyDisabled}
                 checked={sharePublicly}
                 aria-describedby="share_publicly-description"
-                onChange={sharePubliclyInput.onChange}
-                onBlur={sharePubliclyInput.onBlur}
               />
               <small id="share_publicly-description" className="form-text text-muted d-block mb-2">
                 Any course may import this question.
@@ -1044,18 +1036,15 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_source_publicly" value="on" />
               )}
               <Form.Check
-                ref={shareSourcePubliclyInput.ref}
+                {...register('share_source_publicly')}
                 type="checkbox"
                 id="share_source_publicly"
-                name={shareSourcePubliclyInput.name}
                 value="on"
                 label="Share source publicly"
                 className="mb-1"
                 disabled={shareSourcePubliclyDisabled}
                 checked={shareSourcePublicly}
                 aria-describedby="share_source_publicly-description"
-                onChange={shareSourcePubliclyInput.onChange}
-                onBlur={shareSourcePubliclyInput.onBlur}
               />
               <small
                 id="share_source_publicly-description"
@@ -1171,7 +1160,7 @@ export const InstructorQuestionSettingsForm = ({
           visible={isDirty}
           isSaving={isSubmitting}
           formId="edit-question-settings-form"
-          onCancel={handleCancel}
+          onCancel={() => reset()}
         />
       )}
     </div>
