@@ -20,9 +20,9 @@
     "brotli": 1120
   },
   "scripts/application.ts": {
-    "raw": 28347,
-    "gzip": 8858,
-    "brotli": 7921
+    "raw": 18270,
+    "gzip": 6330,
+    "brotli": 5699
   },
   "scripts/calculatorClient.ts": {
     "raw": 1943838,
@@ -35,9 +35,9 @@
     "brotli": 254
   },
   "scripts/examTimeLimitCountdown.ts": {
-    "raw": 6583,
-    "gzip": 2988,
-    "brotli": 2612
+    "raw": 6573,
+    "gzip": 2985,
+    "brotli": 2597
   },
   "scripts/externalImageCaptureClient.ts": {
     "raw": 45949,
@@ -95,9 +95,9 @@
     "brotli": 279820
   },
   "scripts/instructorFileEditorHtmlMustacheLinterClient.ts": {
-    "raw": 376852,
-    "gzip": 108201,
-    "brotli": 93546
+    "raw": 377346,
+    "gzip": 108379,
+    "brotli": 93805
   },
   "scripts/instructorQuestionStatisticsClient.ts": {
     "raw": 53463,
@@ -130,9 +130,9 @@
     "brotli": 757
   },
   "scripts/question.ts": {
-    "raw": 65086,
-    "gzip": 21070,
-    "brotli": 18860
+    "raw": 75199,
+    "gzip": 23609,
+    "brotli": 21084
   },
   "scripts/studentAssessmentClient.ts": {
     "raw": 578,
@@ -200,9 +200,9 @@
     "brotli": 256
   },
   "scripts/esm-bundles/hydrated-components/StaffTable.ts": {
-    "raw": 866903,
-    "gzip": 266044,
-    "brotli": 229870
+    "raw": 866876,
+    "gzip": 266039,
+    "brotli": 229868
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
     "raw": 1393811,
