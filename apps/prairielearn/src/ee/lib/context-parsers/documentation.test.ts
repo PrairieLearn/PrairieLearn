@@ -6,34 +6,6 @@ describe('buildContextForSingleElementDoc', () => {
   it('removes deprecated-attribute sections from element context', () => {
     const context = buildContextForSingleElementDoc(
       `
-# \`pl-string-input\` element
-
-## Customizations
-
-| Attribute | Type | Default | Description |
-| --- | --- | --- | --- |
-| \`answers-name\` | string | — | Variable name to store data in. |
-
-### Deprecated attributes
-
-The \`escape-unicode\` attribute is still accepted for backward compatibility.
-
-## Details
-
-Use this element for short text answers.
-`,
-      'pl-string-input',
-    );
-
-    assert.isNotNull(context);
-    assert.include(context.text, 'answers-name');
-    assert.include(context.text, 'short text answers');
-    assert.notInclude(context.text, 'escape-unicode');
-  });
-
-  it('removes deprecated-attribute migration sections from element context', () => {
-    const context = buildContextForSingleElementDoc(
-      `
 # \`pl-multiple-choice\` element
 
 ## Customizations
@@ -41,6 +13,10 @@ Use this element for short text answers.
 | Attribute | Type | Default | Description |
 | --- | --- | --- | --- |
 | \`all-of-the-above\` | \`"false"\`, \`"random"\`, \`"correct"\`, or \`"incorrect"\` | \`"false"\` | Add \`"All of the above"\` choice. |
+
+### Deprecated attributes
+
+The \`escape-unicode\` attribute is still accepted for backward compatibility.
 
 ### Migrating from deprecated attributes
 
@@ -60,6 +36,7 @@ Use \`all-of-the-above="random"\` for randomly correct extra choices.
     assert.isNotNull(context);
     assert.include(context.text, 'all-of-the-above');
     assert.include(context.text, 'randomly correct extra choices');
+    assert.notInclude(context.text, 'escape-unicode');
     assert.notInclude(context.text, 'all-of-the-above="true"');
   });
 });

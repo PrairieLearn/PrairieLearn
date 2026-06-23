@@ -39,20 +39,6 @@ def create_prepare_data() -> dict[str, Any]:
     return {
         "params": {},
         "correct_answers": {},
-        "submitted_answers": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "score": 0,
-        "feedback": {},
-        "variant_seed": "12345",
-        "options": {},
-        "raw_submitted_answers": {},
-        "editable": True,
-        "panel": "question",
-        "extensions": {},
-        "num_valid_submissions": 0,
-        "manual_points": 0,
-        "auto_points": 0,
         "answers_names": {},
     }
 
