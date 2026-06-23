@@ -20,7 +20,10 @@ onDocumentReady(() => {
       // the backdrop, so suppress shortcuts while any modal is active.
       if (document.querySelector('.modal.show')) return;
 
-      document.querySelectorAll('[data-key-binding]').forEach((item) => {
+      const mainGradingPanel = document.querySelector('.js-main-grading-panel');
+      if (!mainGradingPanel) return;
+
+      mainGradingPanel.querySelectorAll('[data-key-binding]').forEach((item) => {
         if (
           item.dataset.keyBinding?.toLowerCase() !== event.key.toLowerCase() ||
           item.matches(':disabled, [readonly]') ||
@@ -129,7 +132,7 @@ window.resetInstructorGradingPanel = function () {
       input.style.display = '';
       input.classList.remove('d-none');
       Array.from(input.querySelectorAll('input'))
-        .find((el) => el.offsetParent !== null)
+        .find((el) => isVisible(el))
         ?.focus();
     }),
   );
