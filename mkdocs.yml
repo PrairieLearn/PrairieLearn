@@ -205,7 +205,6 @@ nav:
       - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
   - Instructor Guide:
@@ -338,11 +337,6 @@ nav:
       - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
 
 not_in_nav: |
-  workshop/lesson1.md
-  workshop/lesson2.md
-  workshop/lesson3.md
-  workshop/lesson4.md
-  workshop/lesson5.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md
   schemas/questionOptionsFile.md
