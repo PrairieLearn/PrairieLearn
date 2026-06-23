@@ -60,9 +60,9 @@
     "brotli": 535
   },
   "scripts/instructorAssessmentManualGradingInstanceQuestion.js": {
-    "raw": 10535,
-    "gzip": 3612,
-    "brotli": 3179
+    "raw": 10724,
+    "gzip": 3684,
+    "brotli": 3227
   },
   "scripts/instructorAssessmentQuestionsClient.ts": {
     "raw": 53471,
@@ -305,9 +305,9 @@
     "brotli": 216246
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 816596,
-    "gzip": 252505,
-    "brotli": 217755
+    "raw": 816600,
+    "gzip": 252507,
+    "brotli": 217761
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionAiGrade.ts": {
     "raw": 1251690,
