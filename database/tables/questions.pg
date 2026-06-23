@@ -40,7 +40,7 @@ columns
     workspace_home: text
     workspace_image: text
     workspace_port: integer
-    workspace_url_rewrite: boolean default true
+    workspace_url_rewrite: boolean
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
