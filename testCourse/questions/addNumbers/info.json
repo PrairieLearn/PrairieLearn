@@ -8,5 +8,6 @@
   "authors": [
     { "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" },
     { "name": "Jane Smith", "email": "smith@example.org" }
-  ]
+  ],
+  "sharePublicly": true
 }

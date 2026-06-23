@@ -25,7 +25,8 @@
         { "id": "partialCredit4_v2", "autoPoints": 4, "maxAutoPoints": 13 },
         { "id": "partialCredit5_v2_partial", "autoPoints": 5, "maxAutoPoints": 12 },
         { "id": "partialCredit6_no_partial", "autoPoints": 3, "maxAutoPoints": 8 },
-        { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
+        { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 },
+        { "id": "additionalNames", "autoPoints": 1 }
       ]
     }
   ]

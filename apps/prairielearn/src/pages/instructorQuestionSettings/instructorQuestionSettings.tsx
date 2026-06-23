@@ -265,6 +265,33 @@ router.post(
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         });
+        const sharingConstraints = await selectQuestionSharingConstraints({
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        });
+
+        if (
+          res.locals.question.share_publicly &&
+          !body.share_publicly &&
+          sharingConstraints.used_in_other_course
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            'This question is used by another course, so it cannot be un-shared publicly.',
+          );
+        }
+
+        if (
+          sharingConstraints.used_in_same_course_public_assessment &&
+          !body.share_publicly &&
+          !body.share_source_publicly
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            'This question is used in a publicly shared assessment, so it must remain publicly shared or have its source publicly shared for copying.',
+          );
+        }
+
         const validSetNames = new Set(sharingSetRows.map((r) => r.name));
         const requestedSetNames = new Set(body.sharing_sets);
 
