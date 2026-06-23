@@ -73,13 +73,17 @@ function JobOutput({ job }: { job: JobSequenceResultsJob }) {
 }
 
 function JobSequenceResultsJob({
+  authnUserUid,
   job,
   jobSequence,
   timeZone,
+  userUid,
 }: {
+  authnUserUid: string | null;
   job: JobSequenceResultsJob;
   jobSequence: JobSequenceResultsProps['jobSequence'];
   timeZone: string;
+  userUid: string | null;
 }) {
   return (
     <div className="list-group">
@@ -108,10 +112,8 @@ function JobSequenceResultsJob({
         )}
         <p className="mb-1">
           Started {job.start_date ? `at ${formatDate(job.start_date, timeZone)}` : ''}{' '}
-          {jobSequence.user_uid ? `by ${jobSequence.user_uid}` : ''}{' '}
-          {jobSequence.authn_user_uid !== jobSequence.user_uid
-            ? `(really ${jobSequence.authn_user_uid})`
-            : ''}{' '}
+          {userUid ? `by ${userUid}` : ''}{' '}
+          {authnUserUid !== userUid ? `(really ${authnUserUid})` : ''}{' '}
           {job.finish_date && <>&mdash; finished at {formatDate(job.finish_date, timeZone)}</>}
         </p>
         <p className="mb-1">
@@ -135,8 +137,15 @@ function JobSequenceResultsJob({
   );
 }
 
-export function JobSequenceResults({ jobSequence, timeZone }: JobSequenceResultsProps) {
-  const [jobs, setJobs] = useState(jobSequence.jobs);
+export function JobSequenceResults({
+  authnUserUid,
+  jobs: initialJobs,
+  jobSequence,
+  jobSequenceToken,
+  timeZone,
+  userUid,
+}: JobSequenceResultsProps) {
+  const [jobs, setJobs] = useState(initialJobs);
 
   useEffect(() => {
     const socket = io();
@@ -154,15 +163,15 @@ export function JobSequenceResults({ jobSequence, timeZone }: JobSequenceResults
 
     socket.emit(
       'joinJobSequence',
-      { job_sequence_id: jobSequence.id, token: jobSequence.token },
+      { job_sequence_id: jobSequence.id, token: jobSequenceToken },
       (msg: { job_count: number }) => {
-        if (msg.job_count !== jobSequence.jobs.length) {
+        if (msg.job_count !== initialJobs.length) {
           redirectWithReferrer();
         }
       },
     );
 
-    for (const job of jobSequence.jobs) {
+    for (const job of initialJobs) {
       socket.emit(
         'joinJob',
         { job_id: job.id, token: job.token },
@@ -182,7 +191,7 @@ export function JobSequenceResults({ jobSequence, timeZone }: JobSequenceResults
     return () => {
       socket.disconnect();
     };
-  }, [jobSequence.id, jobSequence.jobs, jobSequence.token]);
+  }, [initialJobs, jobSequence.id, jobSequenceToken]);
 
   return (
     <div className="card mb-4">
@@ -192,9 +201,11 @@ export function JobSequenceResults({ jobSequence, timeZone }: JobSequenceResults
       {jobs.map((job) => (
         <JobSequenceResultsJob
           key={job.id}
+          authnUserUid={authnUserUid}
           job={job}
           jobSequence={jobSequence}
           timeZone={timeZone}
+          userUid={userUid}
         />
       ))}
     </div>

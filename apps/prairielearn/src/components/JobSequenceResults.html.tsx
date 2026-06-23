@@ -19,14 +19,15 @@ export function getJobSequenceResultsProps({
   jobSequence: JobSequenceWithTokens;
 }): JobSequenceResultsProps {
   return JobSequenceResultsPropsSchema.parse({
-    jobSequence: {
-      ...jobSequence,
-      jobs: jobSequence.jobs.map((job) => ({
-        ...job,
-        outputHtml: ansiToHtml(job.output),
-      })),
-    },
+    authnUserUid: jobSequence.authn_user_uid,
+    jobs: jobSequence.jobs.map((job) => ({
+      ...job,
+      outputHtml: ansiToHtml(job.output),
+    })),
+    jobSequence,
+    jobSequenceToken: jobSequence.token,
     timeZone: course?.display_timezone || 'UTC',
+    userUid: jobSequence.user_uid,
   });
 }
 
@@ -43,6 +44,13 @@ export function JobSequenceResultsHtml({
   const clientProps = getJobSequenceResultsProps({ course, jobSequence });
 
   return hydrateHtml(
-    <JobSequenceResults jobSequence={clientProps.jobSequence} timeZone={clientProps.timeZone} />,
+    <JobSequenceResults
+      authnUserUid={clientProps.authnUserUid}
+      jobs={clientProps.jobs}
+      jobSequence={clientProps.jobSequence}
+      jobSequenceToken={clientProps.jobSequenceToken}
+      timeZone={clientProps.timeZone}
+      userUid={clientProps.userUid}
+    />,
   );
 }

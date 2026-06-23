@@ -9,17 +9,14 @@ const JobSequenceResultsJobSchema = RawStaffJobSchema.omit({
   token: z.string(),
 });
 
-const JobSequenceResultsJobSequenceSchema = RawStaffJobSequenceSchema.extend({
-  authn_user_uid: z.string().nullable(),
-  jobs: JobSequenceResultsJobSchema.array(),
-  token: z.string(),
-  user_uid: z.string().nullable(),
-});
-
 export const JobSequenceResultsPropsSchema = z.object({
-  jobSequence: JobSequenceResultsJobSequenceSchema,
+  authnUserUid: z.string().nullable(),
+  jobs: JobSequenceResultsJobSchema.array(),
+  jobSequence: RawStaffJobSequenceSchema,
+  jobSequenceToken: z.string(),
   timeZone: z.string(),
+  userUid: z.string().nullable(),
 });
 
 export type JobSequenceResultsProps = z.infer<typeof JobSequenceResultsPropsSchema>;
-export type JobSequenceResultsJob = JobSequenceResultsProps['jobSequence']['jobs'][number];
+export type JobSequenceResultsJob = JobSequenceResultsProps['jobs'][number];
