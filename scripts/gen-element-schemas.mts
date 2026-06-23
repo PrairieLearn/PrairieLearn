@@ -77,8 +77,7 @@ function discoverModuleFiles(): string[] {
   return fs
     .readdirSync(ELEMENTS_SRC_DIR)
     .filter(
-      (file) =>
-        file.endsWith('.ts') && !file.endsWith('.validator.ts') && !file.endsWith('.test.ts'),
+      (file) => file.endsWith('.ts') && !file.endsWith('.test.ts'),
     )
     .sort();
 }

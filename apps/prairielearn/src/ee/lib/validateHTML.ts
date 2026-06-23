@@ -760,9 +760,9 @@ export async function validateHTML(
 
   const diagnostics = await lintQuestionHtml(file);
   for (const diagnostic of diagnostics) {
-    // Hyphenated `pl-*` custom rules (e.g. `pl-prefer-pl-figure`) are advisory
-    // style guidance for course authors and are intentionally excluded here.
-    if (diagnostic.ruleName !== 'customTagSchema' && !diagnostic.ruleName?.startsWith('pl/')) {
+    // Selector-based project rules use hyphenated `pl-*` IDs and are editor lint
+    // guidance. Only surface JSON Schema diagnostics in AI HTML validation.
+    if (diagnostic.ruleName !== 'customTagSchema') {
       continue;
     }
     (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);
