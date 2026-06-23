@@ -17,7 +17,10 @@ def generate(data):
     b = int(max(points))
     a = int(min(points))
     data["params"]["a"] = a
+    data["params"]["p_a"] = repr((a, round(f(a))))
+
     data["params"]["b"] = b
+    data["params"]["p_b"] = repr((b, round(f(b))))
 
     h = abs(f(b) - f(a))
     base = abs(b - a)

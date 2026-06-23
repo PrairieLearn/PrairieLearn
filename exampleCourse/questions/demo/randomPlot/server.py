@@ -4,11 +4,13 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
+MIN_X, MAX_X = -5, 5
+
 
 def file(data):
     if data["filename"] == "figure.png":
         # Create the figure
-        x = np.linspace(-5, 5)
+        x = np.linspace(MIN_X, MAX_X)
         f = data["params"]["m"] * x + data["params"]["b"]
         fig = plt.figure()
         plt.plot(x, f)
@@ -36,21 +38,22 @@ def file(data):
 
 def generate(data):
     # Pick a non-zero slope
-    while True:
-        m = random.randint(-2, 2)
-        if m != 0:
-            break
+    m = random.choice([-1, 1]) * random.randint(1, 2)
 
     # Pick a y-intercept
     b = random.randint(-3, 3)
 
-    # Pick x
-    x = random.randint(-5, 5)
+    def f(t):
+        return m * t + b
 
-    # Find f(x)
-    f = m * x + b
+    # Pick x that is not at the boundary of the plot
+    x = random.randint(MIN_X + 1, MAX_X - 1)
 
     data["params"]["m"] = m
     data["params"]["b"] = b
     data["params"]["x"] = x
-    data["correct_answers"]["f"] = f
+    data["correct_answers"]["f"] = f(x)
+
+    # alt label helpers for where the line enters/exits the plot
+    data["params"]["left"] = repr((MIN_X, f(MIN_X)))
+    data["params"]["right"] = repr((MAX_X, f(MAX_X)))

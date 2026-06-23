@@ -1,6 +1,6 @@
 <pl-question-panel>
     {{! "figure.png" here is not a physical file. Since this pl-figure is the "dynamic" type, the figure is generated via server.py's `file()`. }}
-    <pl-figure file-name="figure.png" type="dynamic" width="500"></pl-figure>
+    <pl-figure file-name="figure.png" type="dynamic" width="500" alt="Graph of a linear function f(x) versus x, that enters the image at {{params.left}} and exits at {{params.right}}."></pl-figure>
     <p>
         What is $f({{params.x}})$?
     </p>

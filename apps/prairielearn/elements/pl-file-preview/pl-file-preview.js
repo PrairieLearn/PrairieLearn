@@ -167,11 +167,13 @@
                 }
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
-                img.src = url;
                 img.onload = () => {
                   URL.revokeObjectURL(url);
+                  img.alt = `Preview of ${file}`;
+                  img.removeAttribute('aria-hidden');
+                  img.classList.remove('d-none');
                 };
-                img.classList.remove('d-none');
+                img.src = url;
               } else if (type === 'application/pdf') {
                 const url = URL.createObjectURL(blob);
                 iframe.src = url;

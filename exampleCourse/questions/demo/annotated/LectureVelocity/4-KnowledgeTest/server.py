@@ -4,6 +4,8 @@ import random
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import sympy as sp
+import sympy.abc as spabc
 
 mpl.rcParams["text.usetex"] = True
 plt.rcParams.update({"font.size": 14})
@@ -29,6 +31,7 @@ def generate(data):
     data["params"]["a"] = a
     data["params"]["b"] = b
     data["params"]["c"] = c
+    data["params"]["f_tex"] = sp.latex(f(spabc.t, a, b, c))
 
     # interval and given points
     t0 = random.choice([0.125, 0.25, 0.375, 0.5])

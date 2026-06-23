@@ -62,6 +62,22 @@ def round_value(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}".rstrip("0").rstrip(".")
 
 
+def normalize_images(images: list[Any]) -> list[dict[str, Any]]:
+    normalized_images: list[dict[str, Any]] = []
+
+    for image in images:
+        if isinstance(image, str):
+            normalized_image = {"url": image}
+        elif isinstance(image, dict):
+            normalized_image = dict(image)
+        else:
+            continue
+
+        normalized_images.append(normalized_image)
+
+    return normalized_images
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     # Early-exit if not the submission panel
     if data["panel"] != "submission":
@@ -106,7 +122,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["output"] = ansi_to_html(output)
         html_params["has_output"] = bool(output)
 
-        images = results.get("images", [])
+        images = normalize_images(results.get("images", []))
         html_params["images"] = images
         html_params["has_images"] = bool(images)
 
@@ -142,7 +158,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 message = results_test.get("message", None)
                 output = results_test.get("output", None)
                 description = results_test.get("description", None)
-                images = results_test.get("images", [])
+                images = normalize_images(results_test.get("images", []))
 
                 test: dict[str, Any] = {
                     "index": index,

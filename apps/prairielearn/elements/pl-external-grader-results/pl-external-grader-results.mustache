@@ -1,3 +1,4 @@
+{{! htmlmustache-disable pl-require-img-alt }}
 {{#graded}}
 <div class="pl-external-grader-results">
   {{^grading_succeeded}}
@@ -52,7 +53,7 @@
                 {{#images}}
                   <figure class="figure">
                     <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
-                    <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                    <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"{{#alt}} alt="{{alt}}"{{/alt}}/>
                   </figure>
                 {{/images}}
               </li>
@@ -105,7 +106,7 @@
                       {{#images}}
                       <figure class="figure">
                         <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
-                        <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                        <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"{{#alt}} alt="{{alt}}"{{/alt}}/>
                       </figure>
                       {{/images}}
                   </li>
