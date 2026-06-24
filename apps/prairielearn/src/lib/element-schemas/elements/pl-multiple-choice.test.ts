@@ -22,7 +22,7 @@ describe('pl-multiple-choice schema', () => {
   });
 
   it('accepts legacy boolean all-of-the-above and none-of-the-above values', async () => {
-    const messages = await lintMessages(`
+    const diagnostics = await lintQuestionHtml(`
       <pl-multiple-choice
         answers-name="choice"
         all-of-the-above="true"
@@ -33,7 +33,7 @@ describe('pl-multiple-choice schema', () => {
       </pl-multiple-choice>
     `);
 
-    assert.deepEqual(messages, []);
+    assert.deepEqual(diagnostics, []);
   });
 
   it('rejects disallowed child tags', async () => {

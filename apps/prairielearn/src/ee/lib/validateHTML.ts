@@ -98,6 +98,7 @@ interface DfsResult {
   errors: string[];
   warnings: string[];
   mandatoryPythonCorrectAnswers: Set<string>;
+  hasTemplatedCorrectAnswer: boolean;
 }
 
 function getTagName(ast: DocumentFragment | ChildNode): string | undefined {
@@ -111,6 +112,9 @@ function getAttribute(ast: DocumentFragment | ChildNode, name: string): string |
 
 function checkUnsupportedTag(ast: DocumentFragment | ChildNode): string[] {
   const tagName = getTagName(ast);
+  // AI-generated questions should use kebab-case PL tags. If this validator is
+  // reused for editing existing questions, legacy underscore aliases should be
+  // handled here so they can be migrated deliberately.
   if (!tagName?.startsWith('pl-')) return [];
   if (SUPPORTED_ELEMENTS.has(tagName)) return [];
 
@@ -131,6 +135,7 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
   let errors = checkUnsupportedTag(ast);
   let warnings: string[] = [];
   const mandatoryPythonCorrectAnswers = new Set<string>();
+  let hasTemplatedCorrectAnswer = false;
 
   if (tagName && INPUT_ELEMENTS.has(tagName) && enclosingPanel) {
     warnings.push(
@@ -144,11 +149,14 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
   if (tagName && CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName)) {
     const answersName = getAttribute(ast, 'answers-name');
     const correctAnswer = getAttribute(ast, 'correct-answer');
+    const correctAnswerTemplateNames =
+      correctAnswer === undefined ? new Set<string>() : extractMustacheTemplateNames(correctAnswer);
 
-    if (answersName && correctAnswer === undefined) {
+    if (answersName && (correctAnswer === undefined || correctAnswerTemplateNames.size > 0)) {
       mandatoryPythonCorrectAnswers.add(answersName);
     }
-    if (correctAnswer !== undefined && extractMustacheTemplateNames(correctAnswer).size > 0) {
+    if (correctAnswerTemplateNames.size > 0) {
+      hasTemplatedCorrectAnswer = true;
       errors.push(
         `${tagName}: correct-answer attribute value must not contain a Mustache template. If the correct answer depends on dynamic parameters, set \`data['correct_answers']\` accordingly in \`server.py\` and remove this attribute.`,
       );
@@ -156,7 +164,7 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
   }
 
   if (tagName && INPUT_ELEMENTS.has(tagName)) {
-    return { errors, warnings, mandatoryPythonCorrectAnswers };
+    return { errors, warnings, mandatoryPythonCorrectAnswers, hasTemplatedCorrectAnswer };
   }
 
   const childPanel = tagName && PANEL_ELEMENTS.has(tagName) ? tagName : enclosingPanel;
@@ -166,13 +174,14 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
       const childResult = dfsCheckParseTree(child, childPanel);
       errors = errors.concat(childResult.errors);
       warnings = warnings.concat(childResult.warnings);
+      hasTemplatedCorrectAnswer ||= childResult.hasTemplatedCorrectAnswer;
       childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
       );
     }
   }
 
-  return { errors, warnings, mandatoryPythonCorrectAnswers };
+  return { errors, warnings, mandatoryPythonCorrectAnswers, hasTemplatedCorrectAnswer };
 }
 
 /**
@@ -205,7 +214,8 @@ export async function validateHTML(
   }
 
   const tree = parse5.parseFragment(file);
-  const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
+  const { errors, warnings, mandatoryPythonCorrectAnswers, hasTemplatedCorrectAnswer } =
+    dfsCheckParseTree(tree);
 
   const diagnostics = await lintQuestionHtml(file);
   for (const diagnostic of diagnostics) {
@@ -223,7 +233,7 @@ export async function validateHTML(
     ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
   ];
 
-  if (!hasServerPy && templates.length > 0) {
+  if (!hasServerPy && templates.length > 0 && !hasTemplatedCorrectAnswer) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
   }
 

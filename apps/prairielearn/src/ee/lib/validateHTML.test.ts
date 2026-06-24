@@ -194,6 +194,26 @@ describe('validateHTML correct answers', () => {
       ),
     );
   });
+
+  it('suppresses missing server.py requirements when correct-answer contains a template', async () => {
+    const { errors } = await validateHTML(
+      '<pl-string-input answers-name="answer" correct-answer="{{params.answer}}"></pl-string-input>',
+      false,
+    );
+
+    assert.isTrue(errors.some((error) => error.includes('Mustache template')));
+    assert.isFalse(errors.some((error) => error.startsWith('Create a server.py file')));
+  });
+
+  it('waits to report other missing server.py requirements until templated correct answers are fixed', async () => {
+    const { errors } = await validateHTML(
+      '<pl-question-panel>{{params.answer}}</pl-question-panel>' +
+        '<pl-string-input answers-name="answer" correct-answer="{{params.answer}}"></pl-string-input>',
+      false,
+    );
+
+    assert.isFalse(errors.some((error) => error.startsWith('Create a server.py file')));
+  });
 });
 
 describe('validateHTML integer attributes', () => {
