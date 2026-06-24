@@ -196,7 +196,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 var_data, language="mathematica", digits=var_digits
             )
             var_numpy_data = pl.string_from_numpy(
-                var_data, language="numpy", digits=var_digits
+                var_data, language="python", digits=var_digits
             )
             var_r_data = pl.string_from_numpy(var_data, language="r", digits=var_digits)
             var_sympy_data = pl.string_from_numpy(
