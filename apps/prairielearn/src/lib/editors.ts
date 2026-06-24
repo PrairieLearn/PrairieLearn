@@ -3,7 +3,6 @@ import crypto from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import { someLimit } from 'async';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -67,6 +66,19 @@ function todayAsDatetimeLocal(
 
 export function getHash(contents: string | Buffer) {
   return crypto.createHash('sha256').update(contents).digest('hex');
+}
+
+function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJsonInput) {
+  if (!Array.isArray(infoJson.accessControl)) return;
+
+  // Student-specific overrides are stored as JSON rule bodies without
+  // `labels`, while the student targets live in the database. Copying only the
+  // JSON body would create a destination rule with no enrolled students, so
+  // copies keep only the default rule and student-label overrides.
+  infoJson.accessControl = infoJson.accessControl.filter((rule, index) => {
+    if (index === 0) return true;
+    return rule.labels != null;
+  });
 }
 
 async function syncCourseFromDisk(
@@ -556,6 +568,19 @@ export class AssessmentCopyEditor extends Editor {
   ) {
     const { course_instance, assessment } = params.locals;
 
+    // AssessmentCopyEditor currently only supports copies within the same
+    // course instance. If that changes, label-targeted access-control rules
+    // need explicit handling because their labels may not exist in the target
+    // course instance.
+    assert(
+      idsEqual(course_instance.course_id, params.locals.course.id),
+      'course instance must belong to the current course',
+    );
+    assert(
+      idsEqual(assessment.course_instance_id, course_instance.id),
+      'assessment must belong to the course instance',
+    );
+
     super({
       ...params,
       description: `${course_instance.short_name}: Copy assessment ${assessment.tid}`,
@@ -615,9 +640,12 @@ export class AssessmentCopyEditor extends Editor {
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoAssessment.json');
-    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+    const infoJson = (await fs.readJson(
+      path.join(assessmentPath, 'infoAssessment.json'),
+    )) as AssessmentJsonInput;
 
     delete infoJson.shareSourcePublicly;
+    removeStudentSpecificAccessControlRulesForCopy(infoJson);
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1066,6 +1094,13 @@ export class CourseInstanceCopyEditor extends Editor {
             todayAsDatetimeLocal(this.course_instance.display_timezone),
         );
       }
+
+      const assessmentInfoJson = (await fs.readJson(infoPath)) as AssessmentJsonInput;
+      removeStudentSpecificAccessControlRulesForCopy(assessmentInfoJson);
+      const formattedAssessmentInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(assessmentInfoJson),
+      );
+      await fs.writeFile(infoPath, formattedAssessmentInfoJson);
     }
 
     pathsToAdd.push(courseInstancePath);
@@ -1905,73 +1940,136 @@ export class QuestionRenameEditor extends Editor {
 }
 
 /**
- * This rename editor is used to rename an assessment set referenced by assessments.
+ * Walks every `infoAssessment.json` on disk under the course's course instances
+ * and applies `transform` to each parsed file. We inspect the disk rather than
+ * querying the database because the course may be in a state where what's on
+ * disk hasn't been synced to the database yet.
+ *
+ * `transform` returns `true` when it modified the contents, in which case the
+ * file is rewritten and its path returned. `contents` is `unknown` because a
+ * repo can hold JSON that doesn't match our schema, so each `transform` must
+ * check its shape.
+ */
+async function rewriteAssessmentInfoFiles(
+  course: Course,
+  transform: (contents: unknown) => boolean,
+): Promise<string[]> {
+  const pathsToAdd: string[] = [];
+
+  const courseInstancesPath = path.join(course.path, 'courseInstances');
+  const courseInstanceDirs = await discoverInfoDirs(courseInstancesPath, 'infoCourseInstance.json');
+
+  for (const courseInstanceDir of courseInstanceDirs) {
+    const assessmentsPath = path.join(courseInstancesPath, courseInstanceDir, 'assessments');
+    const assessmentDirs = await discoverInfoDirs(assessmentsPath, 'infoAssessment.json');
+
+    for (const assessmentDir of assessmentDirs) {
+      const infoPath = path.join(assessmentsPath, assessmentDir, 'infoAssessment.json');
+
+      const infoJson: unknown = await fs.readJson(infoPath);
+      if (!transform(infoJson)) continue;
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+      pathsToAdd.push(infoPath);
+    }
+  }
+
+  return pathsToAdd;
+}
+
+/**
+ * This rename editor renames assessment sets referenced by assessments.
+ *
+ * It applies all renames in a single pass keyed on each file's original
+ * on-disk `set` value, so swaps (rename A to B and B to A) and chains rewrite
+ * every file exactly once based on its starting value rather than cascading.
  *
  * It does not rename the assessment set at the course level (infoCourse.json).
  */
 export class AssessmentSetRenameEditor extends Editor {
-  private oldName: string;
-  private newName: string;
+  private renames: { oldName: string; newName: string }[];
 
   constructor(
     params: BaseEditorOptions & {
-      oldName: string;
-      newName: string;
+      renames: { oldName: string; newName: string }[];
     },
   ) {
-    super({
-      ...params,
-      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
-    });
-    this.oldName = params.oldName;
-    this.newName = params.newName;
+    super({ ...params, description: 'Update assessment sets' });
+    this.renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
   }
 
   async write() {
-    if (this.oldName === this.newName) return null;
-
     debug('AssessmentSetRenameEditor: write()');
 
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_assessment_set,
-      { assessment_set_name: this.oldName, course_id: this.course.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
+    const newNameByOldName = new Map(this.renames.map((r) => [r.oldName, r.newName]));
 
-    if (assessments.length === 0) return null;
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
+      if (contents === null || typeof contents !== 'object') return false;
+      const json = contents as Record<string, unknown>;
+      if (typeof json.set !== 'string') return false;
+      const newName = newNameByOldName.get(json.set);
+      if (newName === undefined) return false;
+      json.set = newName;
+      return true;
+    });
 
-    const pathsToAdd: string[] = [];
-
-    for (const assessment of assessments) {
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
-      );
-      pathsToAdd.push(infoPath);
-
-      debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
-
-      debug(`Replace assessment set name in ${infoPath}`);
-      infoJson.set = this.newName;
-
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
-    }
+    if (pathsToAdd.length === 0) return null;
 
     return {
       pathsToAdd,
-      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+      commitMessage: this.description,
+    };
+  }
+}
+
+/**
+ * Rewrites the `module` field of `infoAssessment.json` files that reference a
+ * renamed module. A string `newName` renames the reference; a null `newName`
+ * removes the field entirely, so the assessments fall back to the implicit
+ * "Default" module that sync always creates.
+ *
+ * Like {@link AssessmentSetRenameEditor}, all renames are applied in a single
+ * pass keyed on each file's original on-disk `module` value, so swaps and
+ * chains rewrite every file exactly once based on its starting value.
+ *
+ * It does not change the module at the course level (infoCourse.json).
+ */
+export class AssessmentModuleRenameEditor extends Editor {
+  private renames: { oldName: string; newName: string | null }[];
+
+  constructor(
+    params: BaseEditorOptions & {
+      renames: { oldName: string; newName: string | null }[];
+    },
+  ) {
+    super({ ...params, description: 'Update assessment modules' });
+    this.renames = params.renames.filter((rename) => rename.oldName !== rename.newName);
+  }
+
+  async write() {
+    debug('AssessmentModuleRenameEditor: write()');
+
+    const newNameByOldName = new Map(this.renames.map((r) => [r.oldName, r.newName]));
+
+    const pathsToAdd = await rewriteAssessmentInfoFiles(this.course, (contents) => {
+      if (contents === null || typeof contents !== 'object') return false;
+      const json = contents as Record<string, unknown>;
+      if (typeof json.module !== 'string' || !newNameByOldName.has(json.module)) return false;
+      const newName = newNameByOldName.get(json.module) ?? null;
+      if (newName === null) {
+        delete json.module;
+      } else {
+        json.module = newName;
+      }
+      return true;
+    });
+
+    if (pathsToAdd.length === 0) return null;
+
+    return {
+      pathsToAdd,
+      commitMessage: this.description,
     };
   }
 }
@@ -2383,34 +2481,28 @@ export class FileUploadEditor extends Editor {
     this.files = files;
   }
 
-  async shouldEdit() {
+  async fileContentModified(filePath: string, newContents: Buffer) {
     debug('look for old contents');
-    return await someLimit(Object.entries(this.files), 5, async ([filePath, fileContents]) => {
-      let contents;
-      try {
-        contents = await fs.readFile(filePath);
-      } catch (err: any) {
-        if (err.code === 'ENOENT') {
-          debug('no old contents, so continue with upload');
-          return true;
-        }
-
-        throw err;
-      }
-
-      debug('get hash of old contents and of new contents');
-      const oldHash = getHash(contents);
-      const newHash = getHash(fileContents);
-      debug('oldHash: ' + oldHash);
-      debug('newHash: ' + newHash);
-      if (oldHash === newHash) {
-        debug('new contents are the same as old contents, so abort upload');
-        return false;
-      } else {
-        debug('new contents are different from old contents, so continue with upload');
+    let oldContents;
+    try {
+      oldContents = await fs.readFile(filePath);
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        debug('no old contents, so continue with upload');
         return true;
       }
-    });
+
+      throw err;
+    }
+
+    debug('compare old contents and new contents');
+    if (oldContents.equals(newContents)) {
+      debug('new contents are the same as old contents, so skip this upload');
+      return false;
+    } else {
+      debug('new contents are different from old contents, so continue with upload');
+      return true;
+    }
   }
 
   assertCanEdit() {
@@ -2453,20 +2545,24 @@ export class FileUploadEditor extends Editor {
   async write() {
     debug('FileUploadEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    const pathsToAdd: string[] = [];
 
     for (const [filePath, fileContents] of Object.entries(this.files)) {
-      debug('ensure path exists');
-      await fs.ensureDir(path.dirname(filePath));
+      // If the content is the same as what's already on disk, then we can skip writing it to reduce impact on git history.
+      if (await this.fileContentModified(filePath, fileContents)) {
+        debug('ensure path exists');
+        await fs.ensureDir(path.dirname(filePath));
 
-      debug('write file');
-      await fs.writeFile(filePath, fileContents);
+        debug('write file');
+        await fs.writeFile(filePath, fileContents);
+        pathsToAdd.push(filePath);
+      }
     }
 
-    return {
-      pathsToAdd: Object.keys(this.files),
-      commitMessage: this.description,
-    };
+    // If all uploaded files are the same as what's already on disk, then we can
+    // skip creating a new commit since there are effectively no changes.
+    if (pathsToAdd.length === 0) return null;
+    return { pathsToAdd, commitMessage: this.description };
   }
 }
 

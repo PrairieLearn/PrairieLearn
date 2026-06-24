@@ -21,13 +21,13 @@ Note that only manual grading is supported. For auto-gradable drawings, consider
 
 ## Customizations
 
-| Attribute          | Type                                                                                                 | Default   | Description                                                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`     | string                                                                                               | —         | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
-| `directory`        | `"serverFilesCourse"`, `"clientFilesCourse"`, `"clientFilesQuestion"`, `"courseExtensions"` or `"."` | `"."`     | Directory where the `"source-file-name"` is loaded from. By default, it refers to the question directory `"."`.         |
-| `gradable`         | boolean                                                                                              | "true"    | Whether a diagram accepts input from the user.                                                                          |
-| `height`           | string                                                                                               | `"800px"` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
-| `source-file-name` | string                                                                                               | —         | Optional file to load as the starter diagram.                                                                           |
-| `width`            | string                                                                                               | `"100%"`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
+| Attribute          | Type                                                                           | Default   | Description                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`     | string                                                                         | —         | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
+| `directory`        | `"serverFilesCourse"`, `"clientFilesCourse"`, `"clientFilesQuestion"` or `"."` | `"."`     | Directory where the `"source-file-name"` is loaded from. By default, it refers to the question directory `"."`.         |
+| `gradable`         | boolean                                                                        | "true"    | Whether a diagram accepts input from the user.                                                                          |
+| `height`           | string                                                                         | `"800px"` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
+| `source-file-name` | string                                                                         | —         | Optional file to load as the starter diagram.                                                                           |
+| `width`            | string                                                                         | `"100%"`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
 
 [css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width

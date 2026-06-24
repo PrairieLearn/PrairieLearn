@@ -25,6 +25,7 @@ BEGIN
     IF existing_rule_id IS NOT NULL THEN
         -- Update existing enrollment rule
         UPDATE assessment_access_control_rules SET
+            uuid = COALESCE(assessment_access_control_rules.uuid, gen_random_uuid()),
             number = (rule_data ->> 'number')::integer,
             before_release_listed = (rule_data ->> 'before_release_listed')::boolean,
             date_control_release_date = input_date(rule_data ->> 'date_control_release_date', ci_timezone),
@@ -70,6 +71,7 @@ BEGIN
         INSERT INTO assessment_access_control_rules (
             assessment_id,
             number,
+            uuid,
             target_type,
             before_release_listed,
             date_control_release_date,
@@ -93,6 +95,7 @@ BEGIN
         ) VALUES (
             syncing_assessment_id,
             (rule_data ->> 'number')::integer,
+            gen_random_uuid(),
             'enrollment',
             (rule_data ->> 'before_release_listed')::boolean,
             input_date(rule_data ->> 'date_control_release_date', ci_timezone),

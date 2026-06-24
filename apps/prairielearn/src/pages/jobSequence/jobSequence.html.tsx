@@ -1,18 +1,10 @@
-import { EncodedData } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 
-import {
-  JobSequenceResults,
-  type JobSequenceResultsData,
-} from '../../components/JobSequenceResults.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
-import {
-  type JobSequenceWithTokens,
-  StaffJobSequenceWithJobsSchema,
-} from '../../lib/server-jobs.types.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
@@ -23,6 +15,11 @@ export function JobSequence({
   job_sequence: JobSequenceWithTokens;
   referrer: string | null;
 }) {
+  const clientProps = getJobSequenceResultsProps({
+    course: resLocals.course,
+    jobSequence: job_sequence,
+  });
+
   return PageLayout({
     resLocals,
     pageTitle: `${job_sequence.description} #${job_sequence.number}`,
@@ -33,40 +30,29 @@ export function JobSequence({
     options: {
       fullWidth: true,
     },
-    headContent: compiledScriptTag('jobSequenceClient.ts'),
-    content: html`
-      <h1 class="visually-hidden">Job Sequence</h1>
-      ${referrer
-        ? html`
-            <div class="row">
-              <div class="col-12">
-                <a class="btn btn-primary mb-4" href="${referrer}">
-                  <i class="fa fa-arrow-left" aria-hidden="true"></i>
-                  Back to previous page
-                </a>
-              </div>
+    content: (
+      <>
+        <h1 className="visually-hidden">Job Sequence</h1>
+        {referrer && (
+          <div className="row">
+            <div className="col-12">
+              <a className="btn btn-primary mb-4" href={referrer}>
+                <i className="fa fa-arrow-left" aria-hidden="true" /> Back to previous page
+              </a>
             </div>
-          `
-        : ''}
-      ${EncodedData<JobSequenceResultsData>(
-        {
-          jobSequenceId: job_sequence.id,
-          token: job_sequence.token,
-          jobCount: job_sequence.jobs.length,
-          jobs: job_sequence.jobs.map((job) => ({
-            id: job.id,
-            status: job.status,
-            token: job.token,
-          })),
-        },
-        'job-sequence-results-data',
-      )}
-      ${renderHtml(
-        <JobSequenceResults
-          jobSequence={StaffJobSequenceWithJobsSchema.parse(job_sequence)}
-          timeZone={resLocals.course?.display_timezone || 'UTC'}
-        />,
-      )}
-    `,
+          </div>
+        )}
+        <Hydrate>
+          <JobSequenceResults
+            authnUserUid={clientProps.authnUserUid}
+            jobs={clientProps.jobs}
+            jobSequence={clientProps.jobSequence}
+            jobSequenceToken={clientProps.jobSequenceToken}
+            timeZone={clientProps.timeZone}
+            userUid={clientProps.userUid}
+          />
+        </Hydrate>
+      </>
+    ),
   });
 }

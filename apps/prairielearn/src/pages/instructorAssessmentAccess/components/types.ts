@@ -127,6 +127,7 @@ export interface DefaultRuleData {
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
   id?: string;
+  uuid: string;
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
@@ -249,6 +250,10 @@ export function jsonToOverrideFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
 ): OverrideData {
+  if (json.uuid == null) {
+    throw new Error('Non-default access control rules must have a UUID.');
+  }
+
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -350,7 +355,8 @@ export function jsonToOverrideFormData(
 
   return {
     id: json.id,
-    trackingId: json.id ?? crypto.randomUUID(),
+    uuid: json.uuid,
+    trackingId: json.id ?? json.uuid,
     appliesTo,
     overriddenFields,
     release,
@@ -490,6 +496,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const output: AccessControlJsonWithId = {
     id: rule.id,
+    uuid: rule.uuid,
     labels,
   };
 
@@ -558,6 +565,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
 
 export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
+    uuid: crypto.randomUUID(),
     trackingId: crypto.randomUUID(),
     appliesTo: {
       targetType: 'enrollment',

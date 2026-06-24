@@ -15,6 +15,10 @@ import { hydrateHtml } from '@prairielearn/react/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import {
+  getJobSequenceResultsProps,
+  type JobSequenceResultsProps,
+} from '../../components/JobSequenceResults.types.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -30,10 +34,6 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
-import {
-  type StaffJobSequenceWithJobs,
-  StaffJobSequenceWithJobsSchema,
-} from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -131,12 +131,12 @@ router.get(
 
       let draftEditResult: {
         outcome: EditOutcome | undefined;
-        jobSequence: StaffJobSequenceWithJobs | null;
+        jobSequenceResults: JobSequenceResultsProps | null;
       } | null = null;
       let versionChoice: { hasRemoteChanges: boolean } | null = null;
       if (draftEdit != null) {
         let outcome: EditOutcome | undefined;
-        let jobSequence: StaffJobSequenceWithJobs | null = null;
+        let jobSequenceResults: JobSequenceResultsProps | null = null;
         if (draftEdit.fileEdit.job_sequence_id != null) {
           const fullJobSequence = await getJobSequence(
             draftEdit.fileEdit.job_sequence_id,
@@ -155,9 +155,12 @@ router.get(
           // still syncs whatever was pulled from the remote repository (with
           // the edit's changes discarded). We ignore that case in the UI.
           outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
-          jobSequence = StaffJobSequenceWithJobsSchema.parse(fullJobSequence);
+          jobSequenceResults = getJobSequenceResultsProps({
+            course: res.locals.course,
+            jobSequence: fullJobSequence,
+          });
         }
-        draftEditResult = { outcome, jobSequence };
+        draftEditResult = { outcome, jobSequenceResults };
 
         const editWasSaved = outcome != null && outcome !== 'save_failed';
         if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
@@ -168,7 +171,7 @@ router.get(
         }
       }
 
-      const { course, __csrf_token } = res.locals;
+      const { __csrf_token } = res.locals;
 
       res.send(
         PageLayout({
@@ -248,7 +251,6 @@ router.get(
                 draftContents={draftEdit?.contents}
                 versionChoice={versionChoice}
                 draftEditResult={draftEditResult}
-                timeZone={course.display_timezone}
                 csrfToken={__csrf_token}
                 fileEditorUseGit={config.fileEditorUseGit}
                 branch={paths.branch.map((dir) => ({

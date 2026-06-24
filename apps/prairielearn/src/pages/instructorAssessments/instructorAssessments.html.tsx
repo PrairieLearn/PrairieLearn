@@ -161,11 +161,14 @@ export function InstructorAssessments({
                               courseInstanceId: course_instance.id,
                               issueAid: row.tid,
                             })}
-                            ${ManualGradingBadgeHtml({
-                              ungradedSubmissionCount: row.ungraded_manual_grading_submission_count,
-                              courseInstanceId: course_instance.id,
-                              assessmentId: row.id,
-                            })}
+                            ${resLocals.authz_data.has_course_instance_permission_view
+                              ? ManualGradingBadgeHtml({
+                                  ungradedSubmissionCount:
+                                    row.ungraded_manual_grading_submission_count,
+                                  courseInstanceId: course_instance.id,
+                                  assessmentId: row.id,
+                                })
+                              : ''}
                           </td>
 
                           <td class="align-middle">${row.tid}</td>

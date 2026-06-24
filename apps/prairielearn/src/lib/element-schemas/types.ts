@@ -1,5 +1,3 @@
-import type { TagValidator } from '@prairielearn/tree-sitter-htmlmustache/linter';
-
 export interface ElementChildSchema {
   /** JSON Schema for the child tag's attributes. */
   schema?: Record<string, unknown>;
@@ -15,8 +13,7 @@ export interface ElementChildSchema {
  *
  * Each element lives in `./elements/<tag>.ts` and exports one of these as
  * `element`. The generator uses it to emit the on-disk JSON schemas, and
- * `index.ts` / `htmlmustache-plugin.ts` assemble the linter's custom tags and
- * validators from the discovered modules.
+ * `index.ts` assembles the linter's custom tags from the discovered modules.
  */
 export interface ElementSchemaModule {
   /** The element's tag name, e.g. `pl-multiple-choice`. */
@@ -25,6 +22,4 @@ export interface ElementSchemaModule {
   schema: Record<string, unknown>;
   /** Permitted child tags, keyed by child tag name. */
   children?: Record<string, ElementChildSchema>;
-  /** Cross-attribute validators that can't be expressed in JSON Schema. */
-  validators?: TagValidator[];
 }

@@ -4,6 +4,7 @@ import { config } from '../../lib/config.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import { aiDraftFilesRouter } from './ai-draft-files.js';
+import { assessmentModulesRouter } from './assessment-modules.js';
 import { courseStaffRouter } from './course-staff.js';
 import { createContext, t } from './init.js';
 import { questionsRouter } from './questions.js';
@@ -11,6 +12,7 @@ import { sharingRouter } from './sharing.js';
 
 const courseRouter = t.router({
   aiDraftFiles: aiDraftFilesRouter,
+  assessmentModules: assessmentModulesRouter,
   courseStaff: courseStaffRouter,
   questions: questionsRouter,
   sharing: sharingRouter,

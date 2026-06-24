@@ -11,10 +11,10 @@ import { assertNever } from '@prairielearn/utils';
 
 import { AceFileEditor, type AceFileEditorHandle } from '../../components/AceFileEditor.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import type { JobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
 import type { EditOutcome } from '../../lib/editors.js';
-import type { StaffJobSequenceWithJobs } from '../../lib/server-jobs.types.js';
 
 declare global {
   interface Window {
@@ -225,7 +225,6 @@ export function FileEditor({
   draftContents,
   versionChoice,
   draftEditResult,
-  timeZone,
   csrfToken,
   fileEditorUseGit,
   branch,
@@ -235,9 +234,8 @@ export function FileEditor({
   versionChoice: { hasRemoteChanges: boolean } | null;
   draftEditResult: {
     outcome: EditOutcome | undefined;
-    jobSequence: StaffJobSequenceWithJobs | null;
+    jobSequenceResults: JobSequenceResultsProps | null;
   } | null;
-  timeZone: string;
   csrfToken: string;
   fileEditorUseGit: boolean;
   branch: { name: string; path: string; href: string | null }[];
@@ -465,7 +463,7 @@ export function FileEditor({
                       >
                         <div className="row align-items-center">
                           <div className="col-auto">{syncAlert.message}</div>
-                          {draftEditResult.jobSequence != null ? (
+                          {draftEditResult.jobSequenceResults != null ? (
                             <div className="col-auto">
                               <button
                                 type="button"
@@ -479,13 +477,10 @@ export function FileEditor({
                             </div>
                           ) : null}
                         </div>
-                        {draftEditResult.jobSequence != null ? (
+                        {draftEditResult.jobSequenceResults != null ? (
                           <Collapse in={detailExpanded}>
                             <div id="job-sequence-results" className="mt-4">
-                              <JobSequenceResults
-                                jobSequence={draftEditResult.jobSequence}
-                                timeZone={timeZone}
-                              />
+                              <JobSequenceResults {...draftEditResult.jobSequenceResults} />
                             </div>
                           </Collapse>
                         ) : null}

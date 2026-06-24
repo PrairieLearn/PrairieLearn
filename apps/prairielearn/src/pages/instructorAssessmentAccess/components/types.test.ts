@@ -4,6 +4,7 @@ import {
   type AccessControlFormData,
   type DefaultRuleData,
   type OverrideData,
+  createDefaultOverrideFormData,
   formDataToJson,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
@@ -28,6 +29,7 @@ const defaultRuleFixture: DefaultRuleData = {
 };
 
 const baseOverride: OverrideData = {
+  uuid: '11111111-1111-4111-8111-111111111111',
   trackingId: 'o-base',
   appliesTo: {
     targetType: 'enrollment',
@@ -105,6 +107,30 @@ describe('jsonToDefaultRuleFormData', () => {
 });
 
 describe('formDataToJson', () => {
+  it('preserves existing override UUIDs from JSON', () => {
+    const formData = jsonToOverrideFormData(
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.uuid).toBe('22222222-2222-4222-8222-222222222222');
+    expect(formDataToJson(buildFormData(formData))[1].uuid).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
+  });
+
+  it('generates UUIDs for new override form data', () => {
+    const formData = createDefaultOverrideFormData(defaultRuleFixture);
+
+    expect(formData.uuid).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(formDataToJson(buildFormData(formData))[1].uuid).toBe(formData.uuid);
+  });
+
   it('defaults beforeReleaseListed to false when omitted from the default rule JSON', () => {
     const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
 
@@ -219,6 +245,7 @@ describe('formDataToJson', () => {
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
+    expect(overrideJson.uuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(overrideJson.labels).toEqual(['label-a', 'label-b']);
     expect(overrideJson.ruleType).toBeUndefined();
     expect(overrideJson.enrollments).toBeUndefined();
@@ -236,6 +263,7 @@ describe('formDataToJson', () => {
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
+    expect(overrideJson.uuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.enrollments).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
@@ -247,6 +275,7 @@ describe('formDataToJson', () => {
     const formData = jsonToOverrideFormData(
       {
         id: '1',
+        uuid: '22222222-2222-4222-8222-222222222222',
         ruleType: 'enrollment',
         enrollments: [],
       },
@@ -260,6 +289,7 @@ describe('formDataToJson', () => {
     });
 
     const overrideJson = formDataToJson(buildFormData(formData))[1];
+    expect(overrideJson.uuid).toBe('22222222-2222-4222-8222-222222222222');
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.enrollments).toEqual([]);
     expect(overrideJson.labels).toBeUndefined();

@@ -25,19 +25,21 @@ test.describe('Assessment sets editor', () => {
     const abbrev1 = `A${timestamp}`;
     const abbrev2 = `B${timestamp}`;
 
-    await page.getByRole('button', { name: 'New assessment set' }).click();
-    await page.getByLabel('Abbreviation').fill(abbrev1);
-    await page.getByLabel('Name').fill('Test Set Alpha');
-    await page.getByLabel('Heading').fill('Test Set Alpha Heading');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    const dialog = page.getByRole('dialog');
 
     await page.getByRole('button', { name: 'New assessment set' }).click();
-    await page.getByLabel('Abbreviation').fill(abbrev2);
-    await page.getByLabel('Name').fill('Test Set Beta');
-    await page.getByLabel('Heading').fill('Test Set Beta Heading');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await dialog.getByLabel('Abbreviation').fill(abbrev1);
+    await dialog.getByLabel('Name').fill('Test Set Alpha');
+    await dialog.getByLabel('Heading').fill('Test Set Alpha Heading');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'New assessment set' }).click();
+    await dialog.getByLabel('Abbreviation').fill(abbrev2);
+    await dialog.getByLabel('Name').fill('Test Set Beta');
+    await dialog.getByLabel('Heading').fill('Test Set Beta Heading');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
     await expect(tbody.locator('.badge', { hasText: abbrev1 })).toBeVisible();
@@ -97,12 +99,14 @@ test.describe('Assessment sets editor', () => {
     const originalAbbrev = `E${timestamp}`;
     const editedAbbrev = `X${timestamp}`;
 
+    const dialog = page.getByRole('dialog');
+
     await page.getByRole('button', { name: 'New assessment set' }).click();
-    await page.getByLabel('Abbreviation').fill(originalAbbrev);
-    await page.getByLabel('Name').fill('Original Name');
-    await page.getByLabel('Heading').fill('Original Heading');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await dialog.getByLabel('Abbreviation').fill(originalAbbrev);
+    await dialog.getByLabel('Name').fill('Original Name');
+    await dialog.getByLabel('Heading').fill('Original Heading');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
     await expect(tbody.locator('.badge', { hasText: originalAbbrev })).toBeVisible();
@@ -111,20 +115,20 @@ test.describe('Assessment sets editor', () => {
     const row = tbody
       .locator('tr')
       .filter({ has: page.locator('.badge', { hasText: originalAbbrev }) });
-    await row.getByRole('button', { name: 'Edit' }).click();
+    await row.getByRole('button', { name: 'Edit assessment set' }).click();
 
     // Verify modal opens with current values
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByLabel('Abbreviation')).toHaveValue(originalAbbrev);
-    await expect(page.getByLabel('Name')).toHaveValue('Original Name');
-    await expect(page.getByLabel('Heading')).toHaveValue('Original Heading');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel('Abbreviation')).toHaveValue(originalAbbrev);
+    await expect(dialog.getByLabel('Name')).toHaveValue('Original Name');
+    await expect(dialog.getByLabel('Heading')).toHaveValue('Original Heading');
 
     // Edit the values
-    await page.getByLabel('Abbreviation').fill(editedAbbrev);
-    await page.getByLabel('Name').fill('Edited Name');
-    await page.getByLabel('Heading').fill('Edited Heading');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await dialog.getByLabel('Abbreviation').fill(editedAbbrev);
+    await dialog.getByLabel('Name').fill('Edited Name');
+    await dialog.getByLabel('Heading').fill('Edited Heading');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).not.toBeVisible();
 
     // Verify the table shows updated values
     await expect(tbody.locator('.badge', { hasText: editedAbbrev })).toBeVisible();
@@ -160,12 +164,14 @@ test.describe('Assessment sets editor', () => {
     const timestamp = Date.now().toString().slice(-4);
     const deleteAbbrev = `D${timestamp}`;
 
+    const dialog = page.getByRole('dialog');
+
     await page.getByRole('button', { name: 'New assessment set' }).click();
-    await page.getByLabel('Abbreviation').fill(deleteAbbrev);
-    await page.getByLabel('Name').fill('To Be Deleted');
-    await page.getByLabel('Heading').fill('Delete Me');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await dialog.getByLabel('Abbreviation').fill(deleteAbbrev);
+    await dialog.getByLabel('Name').fill('To Be Deleted');
+    await dialog.getByLabel('Heading').fill('Delete Me');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).not.toBeVisible();
 
     const tbody = page.locator('table[aria-label="Assessment sets"] tbody');
     await expect(tbody.locator('.badge', { hasText: deleteAbbrev })).toBeVisible();
@@ -174,7 +180,7 @@ test.describe('Assessment sets editor', () => {
     const row = tbody
       .locator('tr')
       .filter({ has: page.locator('.badge', { hasText: deleteAbbrev }) });
-    await row.getByRole('button', { name: 'Delete' }).click();
+    await row.getByRole('button', { name: 'Delete assessment set' }).click();
 
     // Verify it's removed from the table
     await expect(tbody.locator('.badge', { hasText: deleteAbbrev })).not.toBeVisible();

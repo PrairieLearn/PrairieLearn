@@ -1,16 +1,11 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
-import {
-  type JobSequenceWithTokens,
-  StaffJobSequenceWithJobsSchema,
-} from '../../lib/server-jobs.types.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
   resLocals,
@@ -31,7 +26,6 @@ export function EditError({
       type: 'plain',
       page: 'error',
     },
-    headContent: compiledScriptTag('editErrorClient.ts'),
     content: html`
       <script>
         $(function () {
@@ -103,12 +97,7 @@ export function EditError({
       </div>
 
       <div class="collapse" id="job-sequence-results">
-        ${renderHtml(
-          <JobSequenceResults
-            jobSequence={StaffJobSequenceWithJobsSchema.parse(jobSequence)}
-            timeZone={course?.display_timezone || 'UTC'}
-          />,
-        )}
+        ${JobSequenceResultsHtml({ course, jobSequence })}
       </div>
     `,
   });

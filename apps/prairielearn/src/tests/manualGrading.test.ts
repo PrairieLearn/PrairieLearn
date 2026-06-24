@@ -76,6 +76,11 @@ const mockStaff: MockUser[] = [
   { authUid: 'staff3', authName: 'Staff User 3', authUin: 'STAFF003' },
   { authUid: 'staff4', authName: 'Staff User 4', authUin: 'STAFF004' },
 ];
+const mockStaffNoStudentPermission = {
+  authUid: 'staff5',
+  authName: 'Staff User 5',
+  authUin: 'STAFF005',
+};
 
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
@@ -508,6 +513,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         });
       }),
     );
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: mockStaffNoStudentPermission.authUid,
+      course_role: 'Editor',
+      authn_user_id: '1',
+    });
   });
 
   afterAll(() => setUser(defaultUser));
@@ -563,6 +574,20 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(badge.attr('aria-label'), '1 submission requires manual grading');
         assert.include(badge.text(), '1');
       });
+
+      test.sequential(
+        'assessments listing page should not show manual grading badge if user does not have permission',
+        async () => {
+          setUser(mockStaffNoStudentPermission);
+          const res = await fetch(assessmentsUrl);
+          assert.equal(res.ok, true);
+          const $ = cheerio.load(await res.text());
+          const row = $(`tr:contains("${assessmentTitle}")`);
+          assert.equal(row.length, 1);
+          const badge = row.find('[data-testid="manual-grading-badge"]');
+          assert.equal(badge.length, 0);
+        },
+      );
     });
 
     describe('Manual grading behavior while instance is open', () => {

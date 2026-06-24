@@ -2,23 +2,12 @@ import z from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { AssessmentUsageSchema } from '../../components/AssessmentUsageModal.js';
 import { RawStaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
-
-const AssessmentForSetSchema = z.object({
-  assessment_id: IdSchema,
-  tid: z.string(),
-  title: z.string(),
-  label: z.string(),
-  color: z.string(),
-  course_instance_id: IdSchema,
-  course_instance_short_name: z.string().nullable(),
-  course_instance_long_name: z.string().nullable(),
-});
-export type AssessmentForSet = z.infer<typeof AssessmentForSetSchema>;
 
 // Database type
 export const InstructorCourseAdminSetRowSchema = RawStaffAssessmentSetSchema.extend({
-  assessments: z.array(AssessmentForSetSchema),
+  assessments: z.array(AssessmentUsageSchema),
 });
 
 // Internal form state - id and course_id can be null for newly created sets

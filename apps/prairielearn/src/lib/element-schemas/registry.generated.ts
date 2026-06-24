@@ -2,6 +2,7 @@
 // Run `make update-element-schemas` to regenerate after adding or removing an
 // element schema module under `./elements`.
 import { element as plMultipleChoice } from './elements/pl-multiple-choice.ts';
-import type { ElementSchemaModule } from './types.js';
+import { element as plOrderBlocks } from './elements/pl-order-blocks.ts';
+import type { ElementSchemaModule } from './types.ts';
 
-export const elementModules: ElementSchemaModule[] = [plMultipleChoice];
+export const elementModules: ElementSchemaModule[] = [plMultipleChoice, plOrderBlocks];

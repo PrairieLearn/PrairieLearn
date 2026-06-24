@@ -49,6 +49,44 @@ const drawingObjectContainerTags: CustomTag[] = [
   ...drawingObjectTags,
 ];
 
+const bootstrapLegacyDataAttributes = [
+  'data-animation',
+  'data-autohide',
+  'data-backdrop',
+  'data-boundary',
+  'data-container',
+  'data-content',
+  'data-custom-class',
+  'data-delay',
+  'data-dismiss',
+  'data-display',
+  'data-fallback-placement',
+  'data-flip',
+  'data-focus',
+  'data-html',
+  'data-interval',
+  'data-keyboard',
+  'data-offset',
+  'data-parent',
+  'data-pause',
+  'data-placement',
+  'data-popper-config',
+  'data-reference',
+  'data-ride',
+  'data-selector',
+  'data-show',
+  'data-slide',
+  'data-slide-to',
+  'data-spy',
+  'data-target',
+  'data-template',
+  'data-title',
+  'data-toggle',
+  'data-touch',
+  'data-trigger',
+  'data-wrap',
+];
+
 // Source of truth for the htmlmustache linter config. The on-disk
 // `.htmlmustache.jsonc` (used by the standalone CLI / editor integration) is
 // generated from this file by `scripts/gen-element-schemas.mts`; run
@@ -71,8 +109,12 @@ export const htmlMustacheConfig: Config = {
   customRules: [
     {
       id: 'pl-bs4-data-attrs',
-      selector:
-        '[data-toggle], [data-dismiss], [data-target], [data-ride], [data-parent], [data-spy], [data-slide], [data-slide-to]',
+      selector: bootstrapLegacyDataAttributes
+        .map((attr) =>
+          // Tom Select uses `option[data-content]` for non-Bootstrap option rendering.
+          attr === 'data-content' ? '[data-content]:not(option)' : `[${attr}]`,
+        )
+        .join(', '),
       message:
         'Deprecated Bootstrap 4 data-* attribute. Consider migrating to Bootstrap 5 data-bs-* attributes. See https://getbootstrap.com/docs/5.0/migration/.',
       severity: 'warning',
@@ -138,6 +180,20 @@ export const htmlMustacheConfig: Config = {
       selector: 'pl-variable-output variable',
       message:
         'variable children in pl-variable-output are deprecated. Migrate to pl-variable. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+    },
+    {
+      id: 'pl-deprecated-variable-output-python-tab',
+      selector: 'pl-variable-output[default-tab="python"]',
+      message:
+        'default-tab="python" on pl-variable-output is deprecated. Use default-tab="numpy" instead. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+      severity: 'warning',
+    },
+    {
+      id: 'pl-deprecated-variable-output-show-python',
+      selector: 'pl-variable-output[show-python]',
+      message:
+        'show-python on pl-variable-output is deprecated. Use show-numpy instead. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+      severity: 'warning',
     },
     {
       id: 'pl-prefer-pl-inputs',
@@ -266,16 +322,6 @@ export const htmlMustacheConfig: Config = {
     {
       name: 'pl-checkbox',
       children: [{ name: 'pl-answer' }],
-    },
-    {
-      name: 'pl-order-blocks',
-      children: [
-        { name: 'pl-answer' },
-        {
-          name: 'pl-block-group',
-          children: [{ name: 'pl-answer' }],
-        },
-      ],
     },
     { name: 'pl-number-input' },
     { name: 'pl-string-input' },
