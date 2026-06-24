@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useMemo, useRef } from 'react';
 import { Form } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { useController, useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
@@ -146,13 +146,14 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
       shared questions or copy questions whose source is publicly shared.{' '}
       {isSharePubliclyMessage ? (
         <>
-          To un-share this question publicly, first check &quot;Share source publicly&quot; below,
-          or un-share the assessment.
+          To un-share this question publicly, first check &quot;Share source publicly&quot; below.
+          You can also un-share the assessment or remove this question from the shared assessment.
         </>
       ) : (
         <>
-          To stop sharing the source, first re-check &quot;Share publicly&quot; above, or un-share
-          the assessment.
+          To stop sharing this question&apos;s source, first re-check &quot;Share publicly&quot;
+          above. You can also un-share the assessment or remove this question from the shared
+          assessment.
         </>
       )}{' '}
       See the{' '}
@@ -284,8 +285,16 @@ export const InstructorQuestionSettingsForm = ({
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
-  const sharePublicly = watch('share_publicly');
-  const shareSourcePublicly = watch('share_source_publicly');
+  const { field: sharePubliclyInput } = useController({
+    control,
+    name: 'share_publicly',
+  });
+  const { field: shareSourcePubliclyInput } = useController({
+    control,
+    name: 'share_source_publicly',
+  });
+  const sharePublicly = sharePubliclyInput.value;
+  const shareSourcePublicly = shareSourcePubliclyInput.value;
   const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
   const {
     sharePubliclyDisabled,
@@ -1017,15 +1026,18 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_publicly" value="on" />
               )}
               <Form.Check
-                {...register('share_publicly')}
+                ref={sharePubliclyInput.ref}
                 type="checkbox"
                 id="share_publicly"
+                name={sharePubliclyInput.name}
                 value="on"
                 label="Share publicly"
                 className="mb-1"
                 disabled={sharePubliclyDisabled}
                 checked={sharePublicly}
                 aria-describedby="share_publicly-description"
+                onChange={sharePubliclyInput.onChange}
+                onBlur={sharePubliclyInput.onBlur}
               />
               <small id="share_publicly-description" className="form-text text-muted d-block mb-2">
                 Any course may import this question.
@@ -1036,15 +1048,18 @@ export const InstructorQuestionSettingsForm = ({
                 <input type="hidden" name="share_source_publicly" value="on" />
               )}
               <Form.Check
-                {...register('share_source_publicly')}
+                ref={shareSourcePubliclyInput.ref}
                 type="checkbox"
                 id="share_source_publicly"
+                name={shareSourcePubliclyInput.name}
                 value="on"
                 label="Share source publicly"
                 className="mb-1"
                 disabled={shareSourcePubliclyDisabled}
                 checked={shareSourcePublicly}
                 aria-describedby="share_source_publicly-description"
+                onChange={shareSourcePubliclyInput.onChange}
+                onBlur={shareSourcePubliclyInput.onBlur}
               />
               <small
                 id="share_source_publicly-description"
