@@ -45,14 +45,14 @@ def generate(data):
 
 ## Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                          |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allow-blank`  | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format). Setting `allow-blank="true"` requires `blank="true"`, since blank submissions cannot be allowed while the blank dropdown entry is disabled. |
-| `answers-name` | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                 |
-| `aria-label`   | string  | None    | An accessible label for the element.                                                                                                                                                                                                                 |
-| `blank`        | boolean | true    | Option to add blank dropdown entry as default selection in drop-down list. Cannot be set to `false` when `allow-blank="true"`.                                                                                                                       |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                                                                                                    |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                 |
+| Attribute      | Type    | Default | Description                                                                                                                                                          |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allow-blank`  | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format). Cannot be set to `true` when `blank="false"`.               |
+| `answers-name` | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `aria-label`   | string  | None    | An accessible label for the element.                                                                                                                                 |
+| `blank`        | boolean | true    | Option to add blank dropdown entry as default selection in drop-down list. Cannot be set to `false` when `allow-blank="true"`.                                       |
+| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
 
 ## Example implementation
 

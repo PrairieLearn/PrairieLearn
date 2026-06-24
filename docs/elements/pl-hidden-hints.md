@@ -1,7 +1,7 @@
 # `pl-hidden-hints` element
 
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
-Hints are revealed based on the total number of submissions for the variant, not just incorrect ones.
+Hints are revealed based on the total number of valid submissions for the variant, both correct or incorrect. Invalid submissions (e.g., those with an incorrect format) are not counted.
 Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
 Otherwise, hints start closed and must be opened by the user. The submission counter is reset when new variants are
 generated. Note that **this element does not reveal new hints across variants.**
