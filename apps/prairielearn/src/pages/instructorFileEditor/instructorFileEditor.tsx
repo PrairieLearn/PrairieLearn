@@ -16,13 +16,11 @@ import {
   queryScalars,
 } from '@prairielearn/postgres';
 import { hydrateHtml } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import {
-  type JobSequenceResultsProps,
-  getJobSequenceResultsProps,
-} from '../../components/JobSequenceResults.types.js';
+import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -36,7 +34,7 @@ import {
   getFileMetadataForPath,
   isV3QuestionHtmlFile,
 } from '../../lib/editorUtil.js';
-import { type EditOutcome, FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
+import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -118,8 +116,7 @@ router.get(
         throw new Error('Cannot edit binary file');
       }
 
-      const stringContents = contents.toString('utf8');
-      const encodedContents = b64EncodeUnicode(stringContents);
+      const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
       const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
       const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
 
@@ -141,49 +138,50 @@ router.get(
         file_name: editorData.fileName,
       });
 
-      let draftEditResult: {
-        outcome: EditOutcome | undefined;
-        jobSequence: JobSequenceResultsProps | null;
-      } | null = null;
-      let versionChoice: { hasRemoteChanges: boolean } | null = null;
-      if (draftEdit != null) {
-        let outcome: EditOutcome | undefined;
-        let jobSequence: JobSequenceResultsProps | null = null;
-        if (draftEdit.fileEdit.job_sequence_id != null) {
-          const fullJobSequence = await getJobSequence(
-            draftEdit.fileEdit.job_sequence_id,
-            res.locals.course.id,
-          );
-
-          if (fullJobSequence.status === 'Running') {
-            // Because of the redirect, if the job sequence ends up failing to save,
-            // then the corresponding draft will be lost (all drafts are soft-deleted
-            // from the database on readDraftEdit).
-            res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
-            return;
-          }
-
-          // Note that if using git, we pull before we push, so a failed save
-          // still syncs whatever was pulled from the remote repository (with
-          // the edit's changes discarded). We ignore that case in the UI.
-          outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
-          jobSequence = getJobSequenceResultsProps({
-            course: res.locals.course,
-            jobSequence: fullJobSequence,
-          });
-        }
-        draftEditResult = { outcome, jobSequence };
-
-        const editWasSaved = outcome != null && outcome !== 'save_failed';
-        if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
-          // There is a recently saved draft that was not written to disk and that differs from what is on disk.
-          versionChoice = {
-            hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
-          };
-        }
+      const fullJobSequence =
+        draftEdit?.fileEdit.job_sequence_id == null
+          ? null
+          : await getJobSequence(draftEdit.fileEdit.job_sequence_id, res.locals.course.id);
+      if (fullJobSequence?.status === 'Running') {
+        // In the normal save flow, the POST waits for this job to finish before
+        // redirecting back here. If a concurrent load reaches this page while
+        // the job is still running, send the user to the job sequence page to
+        // wait for completion. The above call to `readDraftEdit` has already
+        // consumed the stored draft, so if the job later fails before saving,
+        // the draft will no longer be recoverable.
+        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
+        return;
       }
 
-      const { __csrf_token } = res.locals;
+      const draftEditResult = run(() => {
+        if (draftEdit == null) return null;
+        if (fullJobSequence == null) return { outcome: undefined, jobSequence: null };
+
+        // Note that if using git, we pull before we push, so a failed save
+        // still syncs whatever was pulled from the remote repository (with
+        // the edit's changes discarded). We ignore that case in the UI.
+        const outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
+        return {
+          outcome,
+          jobSequence: getJobSequenceResultsProps({
+            course: res.locals.course,
+            jobSequence: fullJobSequence,
+          }),
+        };
+      });
+
+      const versionChoice = run(() => {
+        if (draftEdit == null || draftEditResult == null) return null;
+
+        const editWasSaved =
+          draftEditResult.outcome != null && draftEditResult.outcome !== 'save_failed';
+        if (editWasSaved || draftEdit.hash === editorData.diskHash) return null;
+
+        // There is a recently saved draft that was not written to disk and that differs from what is on disk.
+        return {
+          hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
+        };
+      });
 
       res.send(
         PageLayout({
@@ -263,7 +261,7 @@ router.get(
                 draftContents={draftEdit?.contents}
                 versionChoice={versionChoice}
                 draftEditResult={draftEditResult}
-                csrfToken={__csrf_token}
+                csrfToken={res.locals.__csrf_token}
                 fileEditorUseGit={config.fileEditorUseGit}
                 branch={paths.branch.map((dir) => ({
                   name: dir.name,
@@ -373,8 +371,7 @@ async function readDraftEdit({
   let hash: string | undefined;
   if (fileEdit.file_id != null) {
     const result = await getFile(fileEdit.file_id);
-    const stringContents = result.contents.toString('utf8');
-    contents = b64EncodeUnicode(stringContents);
+    contents = b64EncodeUnicode(result.contents.toString('utf8'));
     hash = computeEncodedFileContentHash(contents);
 
     await deleteFile(fileEdit.file_id, authn_user_id);
