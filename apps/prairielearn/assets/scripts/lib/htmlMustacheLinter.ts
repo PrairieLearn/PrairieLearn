@@ -67,9 +67,11 @@ function diagnosticsToAnnotations(diagnostics: Diagnostic[]): ace.Ace.Annotation
  */
 export function attachHtmlMustacheLinter({
   editor,
+  onReformatError,
   reformatButton,
 }: {
   editor: ace.Ace.Editor;
+  onReformatError?: () => void;
   reformatButton: HTMLButtonElement | null;
 }): void {
   let debounceTimer: number | undefined;
@@ -102,7 +104,7 @@ export function attachHtmlMustacheLinter({
         editor.focus();
       } catch (err) {
         console.error('htmlmustache reformat failed', err);
-        window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-reformat-error').show();
+        onReformatError?.();
       }
     });
   }

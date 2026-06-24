@@ -441,21 +441,21 @@ function findEditUrl(name: string, selector: string, url: string, expectedEditUr
  */
 function verifyEdit(expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   it('should have a CSRF token', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
+    elemList = locals.$('[data-testid="file-editor"]');
     assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
+    assert.nestedProperty(elemList[0], 'attribs.data-csrf-token');
+    locals.__csrf_token = elemList[0].attribs['data-csrf-token'];
     assert.isString(locals.__csrf_token);
   });
   it('should have a file_edit_orig_hash', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
+    elemList = locals.$('[data-testid="file-editor"]');
     assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_orig_hash = elemList[0].attribs.value;
+    assert.nestedProperty(elemList[0], 'attribs.data-file-edit-orig-hash');
+    locals.file_edit_orig_hash = elemList[0].attribs['data-file-edit-orig-hash'];
     assert.isString(locals.file_edit_orig_hash);
   });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
-    elemList = locals.$('form[name="editor-form"] #job-sequence-results');
+    elemList = locals.$('#job-sequence-results');
     assert.lengthOf(elemList, expectedToFindResults ? 1 : 0);
   });
   it(`should ${expectedToFindChoice ? '' : 'not '}show the version conflict chooser`, function () {

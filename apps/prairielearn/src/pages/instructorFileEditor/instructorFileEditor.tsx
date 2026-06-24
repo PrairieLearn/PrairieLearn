@@ -2,7 +2,7 @@ import * as path from 'path';
 
 // @ts-expect-error No types for ace-code/src/ext/modelist.js
 import { getModeForPath } from 'ace-code/src/ext/modelist.js';
-import { Router } from 'express';
+import { type Request, Router } from 'express';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -296,41 +296,86 @@ router.post(
     // applied to a file and not to a directory.
 
     if (req.body.__action === 'save_and_sync') {
-      const editID = await writeDraftEdit({
-        user_id: res.locals.user.id,
+      await saveAndSync({
         authn_user_id: res.locals.authn_user.id,
+        container,
         course_id: res.locals.course.id,
         dir_name: paths.workingDirectory,
+        editContents: req.body.file_edit_contents,
         file_name: paths.workingFilename,
-        orig_hash: req.body.file_edit_orig_hash,
-        editContents: req.body.file_edit_contents,
-      });
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container,
         filePath: paths.workingPath,
-        editContents: req.body.file_edit_contents,
+        locals: res.locals,
         origHash: req.body.file_edit_orig_hash,
+        user_id: res.locals.user.id,
       });
 
-      const serverJob = await editor.prepareServerJob();
-      await updateJobSequenceId(editID, serverJob.jobSequenceId);
-
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        // We're deliberately choosing to ignore errors here. If there was an
-        // error, we'll still redirect the user back to the same page, which will
-        // allow them to handle the error.
+      if (wantsJsonResponse(req)) {
+        res.json({ redirectUrl: req.originalUrl });
+      } else {
+        res.redirect(req.originalUrl);
       }
-
-      res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
+
+function wantsJsonResponse(req: Request) {
+  return Boolean(req.accepts('application/json') && !req.accepts('html'));
+}
+
+async function saveAndSync({
+  user_id,
+  authn_user_id,
+  course_id,
+  dir_name,
+  file_name,
+  origHash,
+  editContents,
+  locals,
+  container,
+  filePath,
+}: {
+  user_id: string;
+  authn_user_id: string;
+  course_id: string;
+  dir_name: string;
+  file_name: string;
+  origHash: string;
+  editContents: string;
+  locals: ConstructorParameters<typeof FileModifyEditor>[0]['locals'];
+  container: ConstructorParameters<typeof FileModifyEditor>[0]['container'];
+  filePath: string;
+}) {
+  const editID = await writeDraftEdit({
+    user_id,
+    authn_user_id,
+    course_id,
+    dir_name,
+    file_name,
+    orig_hash: origHash,
+    editContents,
+  });
+
+  const editor = new FileModifyEditor({
+    locals,
+    container,
+    filePath,
+    editContents,
+    origHash,
+  });
+
+  const serverJob = await editor.prepareServerJob();
+  await updateJobSequenceId(editID, serverJob.jobSequenceId);
+
+  try {
+    await editor.executeWithServerJob(serverJob);
+  } catch {
+    // We're deliberately choosing to ignore errors here. If there was an
+    // error, we'll still redirect the user back to the same page, which will
+    // allow them to handle the error.
+  }
+}
 
 async function readDraftEdit({
   user_id,

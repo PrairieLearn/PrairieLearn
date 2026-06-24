@@ -1,17 +1,9 @@
 import type ace from 'ace-builds';
-import type * as bootstrap from 'bootstrap';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
-import {
-  Fragment,
-  type SyntheticEvent,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
-import { Alert, Collapse, Modal } from 'react-bootstrap';
+import { Fragment, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { Alert, Collapse, Modal, Toast, ToastContainer } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
@@ -27,12 +19,6 @@ import type { JobSequenceResultsProps } from '../../components/JobSequenceResult
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
 import type { EditOutcome } from '../../lib/editors.js';
-
-declare global {
-  interface Window {
-    bootstrap: typeof bootstrap;
-  }
-}
 
 export interface FileEditorData {
   fileName: string;
@@ -153,6 +139,50 @@ function getSaveIssue(contents: string, editorData: FileEditorData): SaveIssue |
   return null;
 }
 
+function parseSaveResponse(responseBody: unknown): { redirectUrl: string } {
+  if (typeof responseBody === 'object' && responseBody != null && 'redirectUrl' in responseBody) {
+    const { redirectUrl } = responseBody;
+    if (typeof redirectUrl === 'string') {
+      return { redirectUrl };
+    }
+  }
+  throw new Error('Missing redirect URL in file save response');
+}
+
+function ReformatErrorToast({
+  children,
+  onClose,
+  show,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  show: boolean;
+}) {
+  return (
+    <Toast
+      bg="danger"
+      className="border-0 text-white"
+      show={show}
+      delay={5000}
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      autohide
+      onClose={onClose}
+    >
+      <div className="d-flex">
+        <Toast.Body>{children}</Toast.Body>
+        <button
+          type="button"
+          className="btn-close btn-close-white me-2 m-auto"
+          aria-label="Close"
+          onClick={onClose}
+        />
+      </div>
+    </Toast>
+  );
+}
+
 /**
  * Rebuilds a metadata file with its original UUID restored, reformatted with
  * Prettier so a confirmed UUID-restore save keeps the file's formatting instead
@@ -249,18 +279,30 @@ export function FileEditor({
   const [showVersionChoiceAlert, setShowVersionChoiceAlert] = useState(hasVersionChoice);
   const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
   const [saveModalShown, setSaveModalShown] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveInProgress, setSaveInProgress] = useState(false);
+  const [jsonReformatErrorToast, setJsonReformatErrorToast] = useState({ key: 0, show: false });
+  const [htmlMustacheReformatErrorToast, setHtmlMustacheReformatErrorToast] = useState({
+    key: 0,
+    show: false,
+  });
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [buttonsExpanded, setButtonsExpanded] = useState(!hasVersionChoice);
   const [showStatusAlert, setShowStatusAlert] = useState(draftEditResult != null);
   const [detailExpanded, setDetailExpanded] = useState(false);
   const editorRef = useRef<AceFileEditorHandle>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const fileContentsInputRef = useRef<HTMLInputElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
-  const bypassSaveCheckRef = useRef(false);
   const resizeAfterVersionChoiceRef = useRef(false);
 
   const isJson = editorData.aceMode === 'ace/mode/json';
+
+  const showJsonReformatErrorToast = useCallback(() => {
+    setJsonReformatErrorToast(({ key }) => ({ key: key + 1, show: true }));
+  }, []);
+
+  const showHtmlMustacheReformatErrorToast = useCallback(() => {
+    setHtmlMustacheReformatErrorToast(({ key }) => ({ key: key + 1, show: true }));
+  }, []);
 
   const reformatJsonFile = useCallback(async () => {
     const editor = editorRef.current?.editor;
@@ -286,9 +328,9 @@ export function FileEditor({
       editor.focus();
     } catch (err) {
       console.error(err);
-      window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error').show();
+      showJsonReformatErrorToast();
     }
-  }, []);
+  }, [showJsonReformatErrorToast]);
 
   const handleEditorReady = useCallback(
     (editor: ace.Ace.Editor) => {
@@ -305,12 +347,12 @@ export function FileEditor({
       if (editorData.lintHtmlMustache) {
         document.dispatchEvent(
           new CustomEvent('pl:html-mustache-linter-attach', {
-            detail: { editor },
+            detail: { editor, onReformatError: showHtmlMustacheReformatErrorToast },
           }),
         );
       }
     },
-    [isJson, editorData.lintHtmlMustache],
+    [isJson, editorData.lintHtmlMustache, showHtmlMustacheReformatErrorToast],
   );
 
   // Ace measures its container imperatively, so resize after React commits the single-pane layout.
@@ -333,298 +375,316 @@ export function FileEditor({
 
   const discardDraft = () => window.location.reload();
 
-  const handleSubmit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
-    if (bypassSaveCheckRef.current) {
-      bypassSaveCheckRef.current = false;
+  const submitSave = useCallback(
+    async (submittedContents: string) => {
+      setSaveError(null);
+      setSaveInProgress(true);
+
+      try {
+        const response = await fetch(window.location.href, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: new URLSearchParams({
+            __action: 'save_and_sync',
+            file_edit_contents: b64EncodeUnicode(submittedContents),
+            file_edit_orig_hash: editorData.diskHash,
+          }),
+        });
+
+        if (!response.ok) {
+          let message = 'Failed to save file.';
+          try {
+            const responseBody = (await response.json()) as unknown;
+            if (
+              typeof responseBody === 'object' &&
+              responseBody != null &&
+              'message' in responseBody &&
+              typeof responseBody.message === 'string'
+            ) {
+              message = responseBody.message;
+            }
+          } catch {
+            // Keep the generic message when the server returns a non-JSON error response.
+          }
+          setSaveError(message);
+          setSaveInProgress(false);
+          return;
+        }
+
+        const { redirectUrl } = parseSaveResponse(await response.json());
+        window.location.assign(redirectUrl);
+      } catch (err) {
+        console.error(err);
+        setSaveError('Failed to save file.');
+        setSaveInProgress(false);
+      }
+    },
+    [csrfToken, editorData.diskHash],
+  );
+
+  const handleSave = async () => {
+    const issue = getSaveIssue(contents, editorData);
+    if (!issue) {
+      await submitSave(contents);
       return;
     }
 
-    const issue = getSaveIssue(contents, editorData);
-    if (!issue) return;
-
-    event.preventDefault();
     setSaveIssue(issue);
     setSaveModalShown(true);
   };
 
   const confirmSave = async () => {
-    if (!saveIssue || saveIssue.errorCode === SaveErrorCode.INVALID_JSON) return;
+    const issue = saveIssue;
+    if (!issue || issue.errorCode === SaveErrorCode.INVALID_JSON) return;
 
     setSaveModalShown(false);
 
     // Restore only after confirmation so canceled UUID modals cannot affect a later save.
     const restoredContents = await contentsWithRestoredUuid(
-      saveIssue.parsedContent,
-      saveIssue.originalUuid,
+      issue.parsedContent,
+      issue.originalUuid,
     );
-    const fileContentsInput = fileContentsInputRef.current;
-    if (!fileContentsInput) return;
-    // This input's value is React-controlled, but we override it imperatively and
-    // submit synchronously so the native POST serializes the restored contents.
-    // The submit navigates away before any re-render (e.g. the modal's `onExited`)
-    // can overwrite the DOM value back to the editor's current contents. If this
-    // ever becomes an async (fetch/tRPC) submit, pass the restored contents to the
-    // request directly instead of relying on this synchronous-navigation timing.
-    fileContentsInput.value = b64EncodeUnicode(restoredContents);
-
-    bypassSaveCheckRef.current = true;
-    formRef.current?.requestSubmit();
+    setContents(restoredContents);
+    await submitSave(restoredContents);
   };
 
   const cancelSave = () => setSaveModalShown(false);
 
-  const saveDisabled = readOnly || contents === diskContents;
+  const saveDisabled = readOnly || contents === diskContents || saveInProgress;
 
   return (
     <>
-      <form ref={formRef} name="editor-form" method="POST" onSubmit={handleSubmit}>
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        <input type="hidden" name="__action" value="save_and_sync" />
-        <div className="card mb-4">
-          <div className="card-header bg-primary">
-            <div className="row align-items-center justify-content-between">
-              <div className="col-auto">
-                <span className="font-monospace text-white d-flex">
-                  {branch.map((dir, index) => (
-                    <Fragment key={dir.path}>
-                      {index > 0 ? <span className="mx-2">/</span> : null}
-                      {dir.href ? (
-                        <a className="text-white" href={dir.href}>
-                          {dir.name}
-                        </a>
-                      ) : (
-                        <span>{dir.name}</span>
-                      )}
-                    </Fragment>
-                  ))}
-                </span>
-              </div>
-              <Collapse in={buttonsExpanded}>
-                <div className="d-flex flex-wrap gap-2 col-auto">
+      <div
+        className="card mb-4"
+        data-testid="file-editor"
+        data-csrf-token={csrfToken}
+        data-file-edit-orig-hash={editorData.diskHash}
+      >
+        <div className="card-header bg-primary">
+          <div className="row align-items-center justify-content-between">
+            <div className="col-auto">
+              <span className="font-monospace text-white d-flex">
+                {branch.map((dir, index) => (
+                  <Fragment key={dir.path}>
+                    {index > 0 ? <span className="mx-2">/</span> : null}
+                    {dir.href ? (
+                      <a className="text-white" href={dir.href}>
+                        {dir.name}
+                      </a>
+                    ) : (
+                      <span>{dir.name}</span>
+                    )}
+                  </Fragment>
+                ))}
+              </span>
+            </div>
+            <Collapse in={buttonsExpanded}>
+              <div className="d-flex flex-wrap gap-2 col-auto">
+                <button
+                  type="button"
+                  id="help-button"
+                  className="btn btn-light btn-sm"
+                  aria-expanded={helpExpanded}
+                  aria-controls="help"
+                  onClick={() => setHelpExpanded((expanded) => !expanded)}
+                >
+                  <i className="far fa-question-circle" aria-hidden="true" />{' '}
+                  <span>{helpExpanded ? 'Hide help' : 'Show help'}</span>
+                </button>
+                {isJson ? (
                   <button
                     type="button"
-                    id="help-button"
                     className="btn btn-light btn-sm"
-                    aria-expanded={helpExpanded}
-                    aria-controls="help"
-                    onClick={() => setHelpExpanded((expanded) => !expanded)}
+                    onClick={() => void reformatJsonFile()}
                   >
-                    <i className="far fa-question-circle" aria-hidden="true" />{' '}
-                    <span>{helpExpanded ? 'Hide help' : 'Show help'}</span>
+                    <i className="fas fa-paintbrush" aria-hidden="true" /> Reformat
                   </button>
-                  {isJson ? (
-                    <button
-                      type="button"
-                      className="btn btn-light btn-sm"
-                      onClick={() => void reformatJsonFile()}
-                    >
-                      <i className="fas fa-paintbrush" aria-hidden="true" /> Reformat
-                    </button>
-                  ) : null}
-                  {editorData.lintHtmlMustache ? (
-                    <button
-                      type="button"
-                      className="btn btn-light btn-sm js-reformat-html-mustache"
-                    >
-                      <i className="fas fa-paintbrush" aria-hidden="true" /> Reformat
-                    </button>
-                  ) : null}
-                  <button
-                    ref={saveButtonRef}
-                    id="file-editor-save-button"
-                    type="submit"
-                    className="btn btn-light btn-sm"
-                    disabled={saveDisabled}
-                  >
-                    <i className="fas fa-save" aria-hidden="true" /> Save
+                ) : null}
+                {editorData.lintHtmlMustache ? (
+                  <button type="button" className="btn btn-light btn-sm js-reformat-html-mustache">
+                    <i className="fas fa-paintbrush" aria-hidden="true" /> Reformat
                   </button>
-                </div>
-              </Collapse>
-            </div>
-          </div>
-          <Collapse in={helpExpanded}>
-            <div id="help">
-              <div className="card-body">
-                You are editing the file <code>{editorData.normalizedFileName}</code>. To save
-                changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux)
-                or <strong>Cmd-S</strong> (Mac).{' '}
-                {fileEditorUseGit
-                  ? 'Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.'
-                  : 'Doing so will write your changes to disk and will sync them to your local database. You will need to push these changes to the GitHub repository manually (i.e., not in PrairieLearn), if desired.'}{' '}
-                If you reload or navigate away from this page, any unsaved changes will be lost.
-              </div>
-            </div>
-          </Collapse>
-          <div className="card-body p-0">
-            <div className="container-fluid">
-              {draftEditResult != null
-                ? run(() => {
-                    const syncAlert = getSyncAlert(
-                      draftEditResult.outcome,
-                      editorData.fileMetadata,
-                    );
-                    return (
-                      <Alert
-                        variant={syncAlert.variant}
-                        className="m-2"
-                        data-testid="save-sync-alert"
-                        show={showStatusAlert}
-                        dismissible
-                        onClose={() => setShowStatusAlert(false)}
-                      >
-                        <div className="row align-items-center">
-                          <div className="col-auto">{syncAlert.message}</div>
-                          {draftEditResult.jobSequence != null ? (
-                            <div className="col-auto">
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                aria-expanded={detailExpanded}
-                                aria-controls="job-sequence-results"
-                                onClick={() => setDetailExpanded((expanded) => !expanded)}
-                              >
-                                {detailExpanded ? 'Hide detail' : 'Show detail'}
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                        {draftEditResult.jobSequence != null ? (
-                          <Collapse in={detailExpanded}>
-                            <div id="job-sequence-results" className="mt-4">
-                              <JobSequenceResults {...draftEditResult.jobSequence} />
-                            </div>
-                          </Collapse>
-                        ) : null}
-                      </Alert>
-                    );
-                  })
-                : null}
-              {versionChoice != null ? (
-                <Alert
-                  variant="danger"
-                  className="m-2"
-                  show={showVersionChoiceAlert}
-                  dismissible
-                  onClose={() => setShowVersionChoiceAlert(false)}
+                ) : null}
+                <button
+                  ref={saveButtonRef}
+                  id="file-editor-save-button"
+                  type="button"
+                  className="btn btn-light btn-sm"
+                  disabled={saveDisabled}
+                  onClick={() => void handleSave()}
                 >
-                  {versionChoice.hasRemoteChanges
-                    ? 'Both you and another user made changes to this file.'
-                    : 'You were editing this file and made changes.'}{' '}
-                  You may choose either to continue editing your draft or to discard your changes.
-                  In particular, if you click <strong>Choose my version</strong> and then click{' '}
-                  <strong>Save</strong>, you will overwrite the version of this file that is on
-                  disk. If you instead click <strong>Choose their version</strong>, any changes you
-                  have made to this file will be lost.
-                </Alert>
-              ) : null}
-            </div>
-            <div className="row">
-              <div id="file-editor-draft" className="col">
-                <div className="card p-0">
-                  {showVersionChoice ? (
-                    <div className="card-header text-center">
-                      <h4 className="mb-4">My version</h4>
-                      <button className="btn btn-primary" type="button" onClick={takeOverDraft}>
-                        Choose my version (continue editing)
-                      </button>
-                    </div>
-                  ) : null}
-                  <div className="card-body p-0 position-relative">
-                    <input type="hidden" name="file_edit_orig_hash" value={editorData.diskHash} />
-                    <input
-                      ref={fileContentsInputRef}
-                      type="hidden"
-                      name="file_edit_contents"
-                      value={b64EncodeUnicode(contents)}
-                    />
-                    <AceFileEditor
-                      ref={editorRef}
-                      value={contents}
-                      mode={editorData.aceMode}
-                      readOnly={readOnly}
-                      className="editor"
-                      options={EDITOR_OPTIONS}
-                      focusOnMount
-                      onChange={setContents}
-                      onReady={handleEditorReady}
-                    />
-                    <div
-                      aria-live="polite"
-                      aria-atomic="true"
-                      className="position-absolute m-3"
-                      style={{ top: 0, right: 0, zIndex: 10 }}
-                    >
-                      <div
-                        id="js-json-reformat-error"
-                        className="toast hide text-bg-danger border-0"
-                        role="alert"
-                        aria-live="assertive"
-                        aria-atomic="true"
-                        data-bs-delay="5000"
-                      >
-                        <div className="d-flex">
-                          <div className="toast-body">
-                            Error formatting JSON. Please check your JSON syntax.
-                          </div>
-                          <button
-                            type="button"
-                            className="btn-close btn-close-white me-2 m-auto"
-                            data-bs-dismiss="toast"
-                            aria-label="Close"
-                          />
-                        </div>
-                      </div>
-                      {editorData.lintHtmlMustache ? (
-                        <div
-                          id="js-html-mustache-reformat-error"
-                          className="toast hide text-bg-danger border-0"
-                          role="alert"
-                          aria-live="assertive"
-                          aria-atomic="true"
-                          data-bs-delay="5000"
-                        >
-                          <div className="d-flex">
-                            <div className="toast-body">
-                              Error reformatting file. Please check the syntax.
-                            </div>
-                            <button
-                              type="button"
-                              className="btn-close btn-close-white me-2 m-auto"
-                              data-bs-dismiss="toast"
-                              aria-label="Close"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
+                  <i className="fas fa-save" aria-hidden="true" /> Save
+                </button>
               </div>
-              {showVersionChoice ? (
-                <div className="col">
-                  <div className="card p-0">
-                    <div className="card-header text-center">
-                      <h4 className="mb-4">Their version</h4>
-                      <button className="btn btn-primary" type="button" onClick={discardDraft}>
-                        Choose their version (discard my changes)
-                      </button>
-                    </div>
-                    <div className="card-body p-0">
-                      <AceFileEditor
-                        value={diskContents}
-                        mode={editorData.aceMode}
-                        className="editor"
-                        options={EDITOR_OPTIONS}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            </Collapse>
           </div>
         </div>
-      </form>
+        <Collapse in={helpExpanded}>
+          <div id="help">
+            <div className="card-body">
+              You are editing the file <code>{editorData.normalizedFileName}</code>. To save
+              changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or{' '}
+              <strong>Cmd-S</strong> (Mac).{' '}
+              {fileEditorUseGit
+                ? 'Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.'
+                : 'Doing so will write your changes to disk and will sync them to your local database. You will need to push these changes to the GitHub repository manually (i.e., not in PrairieLearn), if desired.'}{' '}
+              If you reload or navigate away from this page, any unsaved changes will be lost.
+            </div>
+          </div>
+        </Collapse>
+        <div className="card-body p-0">
+          <div className="container-fluid">
+            {saveError ? (
+              <Alert
+                variant="danger"
+                className="m-2"
+                dismissible
+                onClose={() => setSaveError(null)}
+              >
+                {saveError}
+              </Alert>
+            ) : null}
+            {draftEditResult != null
+              ? run(() => {
+                  const syncAlert = getSyncAlert(draftEditResult.outcome, editorData.fileMetadata);
+                  return (
+                    <Alert
+                      variant={syncAlert.variant}
+                      className="m-2"
+                      data-testid="save-sync-alert"
+                      show={showStatusAlert}
+                      dismissible
+                      onClose={() => setShowStatusAlert(false)}
+                    >
+                      <div className="row align-items-center">
+                        <div className="col-auto">{syncAlert.message}</div>
+                        {draftEditResult.jobSequence != null ? (
+                          <div className="col-auto">
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              aria-expanded={detailExpanded}
+                              aria-controls="job-sequence-results"
+                              onClick={() => setDetailExpanded((expanded) => !expanded)}
+                            >
+                              {detailExpanded ? 'Hide detail' : 'Show detail'}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                      {draftEditResult.jobSequence != null ? (
+                        <Collapse in={detailExpanded}>
+                          <div id="job-sequence-results" className="mt-4">
+                            <JobSequenceResults {...draftEditResult.jobSequence} />
+                          </div>
+                        </Collapse>
+                      ) : null}
+                    </Alert>
+                  );
+                })
+              : null}
+            {versionChoice != null ? (
+              <Alert
+                variant="danger"
+                className="m-2"
+                show={showVersionChoiceAlert}
+                dismissible
+                onClose={() => setShowVersionChoiceAlert(false)}
+              >
+                {versionChoice.hasRemoteChanges
+                  ? 'Both you and another user made changes to this file.'
+                  : 'You were editing this file and made changes.'}{' '}
+                You may choose either to continue editing your draft or to discard your changes. In
+                particular, if you click <strong>Choose my version</strong> and then click{' '}
+                <strong>Save</strong>, you will overwrite the version of this file that is on disk.
+                If you instead click <strong>Choose their version</strong>, any changes you have
+                made to this file will be lost.
+              </Alert>
+            ) : null}
+          </div>
+          <div className="row">
+            <div id="file-editor-draft" className="col">
+              <div className="card p-0">
+                {showVersionChoice ? (
+                  <div className="card-header text-center">
+                    <h4 className="mb-4">My version</h4>
+                    <button className="btn btn-primary" type="button" onClick={takeOverDraft}>
+                      Choose my version (continue editing)
+                    </button>
+                  </div>
+                ) : null}
+                <div className="card-body p-0 position-relative">
+                  <AceFileEditor
+                    ref={editorRef}
+                    value={contents}
+                    mode={editorData.aceMode}
+                    readOnly={readOnly}
+                    className="editor"
+                    options={EDITOR_OPTIONS}
+                    focusOnMount
+                    onChange={setContents}
+                    onReady={handleEditorReady}
+                  />
+                  <ToastContainer
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="position-absolute top-0 end-0 m-3"
+                    style={{ zIndex: 10 }}
+                  >
+                    <ReformatErrorToast
+                      key={jsonReformatErrorToast.key}
+                      show={jsonReformatErrorToast.show}
+                      onClose={() =>
+                        setJsonReformatErrorToast((toast) => ({ ...toast, show: false }))
+                      }
+                    >
+                      Error formatting JSON. Please check your JSON syntax.
+                    </ReformatErrorToast>
+                    {editorData.lintHtmlMustache ? (
+                      <ReformatErrorToast
+                        key={htmlMustacheReformatErrorToast.key}
+                        show={htmlMustacheReformatErrorToast.show}
+                        onClose={() =>
+                          setHtmlMustacheReformatErrorToast((toast) => ({
+                            ...toast,
+                            show: false,
+                          }))
+                        }
+                      >
+                        Error reformatting file. Please check the syntax.
+                      </ReformatErrorToast>
+                    ) : null}
+                  </ToastContainer>
+                </div>
+              </div>
+            </div>
+            {showVersionChoice ? (
+              <div className="col">
+                <div className="card p-0">
+                  <div className="card-header text-center">
+                    <h4 className="mb-4">Their version</h4>
+                    <button className="btn btn-primary" type="button" onClick={discardDraft}>
+                      Choose their version (discard my changes)
+                    </button>
+                  </div>
+                  <div className="card-body p-0">
+                    <AceFileEditor
+                      value={diskContents}
+                      mode={editorData.aceMode}
+                      className="editor"
+                      options={EDITOR_OPTIONS}
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
       <Modal
         show={saveModalShown}
