@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -7,6 +5,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { validateAccessControlRules } from '../../lib/assessment-access-control/validation.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
   type AccessControlJsonWithId,
@@ -322,14 +321,8 @@ const saveAllRules = t.procedure
       }
     }
 
-    const assessmentDir = path.join(
-      opts.ctx.course.path,
-      'courseInstances',
-      opts.ctx.course_instance.short_name,
-      'assessments',
-      opts.ctx.assessment.tid!,
-    );
-    const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir(opts.ctx);
+    const assessmentPath = getAssessmentInfoJsonPath(opts.ctx);
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       applyChanges: (jsonContents) => {

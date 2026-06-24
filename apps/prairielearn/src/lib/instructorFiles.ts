@@ -4,6 +4,7 @@ import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
+import { getAssessmentDir } from './editorUtil.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 
 export interface InstructorFilePaths {
@@ -92,13 +93,11 @@ function getContextPaths(
       urlPrefix: `${locals.urlPrefix}/instance_admin`,
     };
   } else if (locals.navPage === 'assessment') {
-    const rootPath = path.join(
-      coursePath,
-      'courseInstances',
-      locals.course_instance.short_name,
-      'assessments',
-      locals.assessment.tid,
-    );
+    const rootPath = getAssessmentDir({
+      course: locals.course,
+      course_instance: locals.course_instance,
+      assessment: locals.assessment,
+    });
     return {
       rootPath,
       invalidRootPaths: [],

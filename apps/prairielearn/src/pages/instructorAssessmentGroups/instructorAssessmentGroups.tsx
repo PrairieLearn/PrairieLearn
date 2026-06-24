@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -12,10 +10,10 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl, getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash } from '../../lib/editorUtil.js';
+import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { type GroupSettingsFormValues, normalizeGroupSettings } from '../../lib/group-config.js';
 import { uploadInstanceGroups } from '../../lib/group-update.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectAssessmentHasInstances } from '../../models/assessment-instance.js';
@@ -29,19 +27,6 @@ import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 import { InstructorAssessmentGroups } from './instructorAssessmentGroups.html.js';
 
 const router = Router();
-
-function getAssessmentPath(
-  resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
-): string {
-  return path.join(
-    resLocals.course.path,
-    'courseInstances',
-    resLocals.course_instance.short_name,
-    'assessments',
-    resLocals.assessment.tid!,
-    'infoAssessment.json',
-  );
-}
 
 router.get(
   '/',
@@ -92,7 +77,7 @@ router.get(
       config.secretKey,
     );
 
-    const assessmentPath = getAssessmentPath(res.locals);
+    const assessmentPath = getAssessmentInfoJsonPath(res.locals);
     const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
       assessmentPath,
       (json) => json.groups ?? {},
