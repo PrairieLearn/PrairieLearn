@@ -12,8 +12,12 @@ import { computeStableHash } from './json.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+export function computeEncodedFileContentHash(encodedContents: string | Buffer): string {
+  return crypto.createHash('sha256').update(encodedContents).digest('hex');
+}
+
 export function computeFileContentHash(contents: string): string {
-  return crypto.createHash('sha256').update(b64EncodeUnicode(contents)).digest('hex');
+  return computeEncodedFileContentHash(b64EncodeUnicode(contents));
 }
 
 export async function getOriginalHash(filePath: string) {

@@ -30,9 +30,9 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { type FileEdit, FileEditSchema } from '../../lib/db-types.js';
+import { FileEditSchema } from '../../lib/db-types.js';
 import {
-  computeFileContentHash,
+  computeEncodedFileContentHash,
   getFileMetadataForPath,
   isV3QuestionHtmlFile,
 } from '../../lib/editorUtil.js';
@@ -128,7 +128,7 @@ router.get(
         normalizedFileName: path.normalize(relPath),
         aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
         diskContents: encodedContents,
-        diskHash: computeFileContentHash(stringContents),
+        diskHash: computeEncodedFileContentHash(encodedContents),
         fileMetadata,
         lintHtmlMustache,
       };
@@ -346,7 +346,7 @@ async function readDraftEdit({
   dir_name: string;
   file_name: string;
   authn_user_id: string;
-}): Promise<{ fileEdit: FileEdit; contents?: string; hash?: string } | null> {
+}) {
   const fileEdit = await queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },
@@ -375,7 +375,7 @@ async function readDraftEdit({
     const result = await getFile(fileEdit.file_id);
     const stringContents = result.contents.toString('utf8');
     contents = b64EncodeUnicode(stringContents);
-    hash = computeFileContentHash(stringContents);
+    hash = computeEncodedFileContentHash(contents);
 
     await deleteFile(fileEdit.file_id, authn_user_id);
   }
