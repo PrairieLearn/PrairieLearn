@@ -568,7 +568,7 @@ export function FileEditor({
                           </div>
                           <button
                             type="button"
-                            className="btn-close"
+                            className="btn-close btn-close-white me-2 m-auto"
                             data-bs-dismiss="toast"
                             aria-label="Close"
                           />
@@ -581,6 +581,7 @@ export function FileEditor({
                           role="alert"
                           aria-live="assertive"
                           aria-atomic="true"
+                          data-bs-delay="5000"
                         >
                           <div className="d-flex">
                             <div className="toast-body">
@@ -588,7 +589,7 @@ export function FileEditor({
                             </div>
                             <button
                               type="button"
-                              className="btn-close"
+                              className="btn-close btn-close-white me-2 m-auto"
                               data-bs-dismiss="toast"
                               aria-label="Close"
                             />
