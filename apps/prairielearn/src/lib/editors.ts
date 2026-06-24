@@ -64,7 +64,7 @@ function todayAsDatetimeLocal(
   return `${today.toString()}T00:00:00`;
 }
 
-export function getHash(contents: string | Buffer) {
+function getHash(contents: string | Buffer) {
   return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
