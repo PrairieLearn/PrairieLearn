@@ -5,7 +5,6 @@ import type { ElementSchemaModule } from '../types.ts';
 
 const plOrderBlocksAnswerAttributesSchema = z
   .object({
-    comment: z.string().optional(),
     correct: booleanFormat().optional(),
     depends: z.string().optional(),
     'distractor-feedback': z.string().optional(),

@@ -2,9 +2,6 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "comment": {
-      "type": "string"
-    },
     "correct": {
       "type": "string",
       "format": "boolean"

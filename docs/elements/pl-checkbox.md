@@ -68,6 +68,7 @@ The following deprecated attributes are still supported for backward compatibili
 | --------------------------------------------------- | ------------------------------ |
 | `partial-credit="false"`                            | `partial-credit="off"`         |
 | `partial-credit="true"`                             | `partial-credit="net-correct"` |
+| `partial-credit="true" partial-credit-method="PC"`  | `partial-credit="net-correct"` |
 | `partial-credit="true" partial-credit-method="EDC"` | `partial-credit="each-answer"` |
 | `partial-credit="true" partial-credit-method="COV"` | `partial-credit="coverage"`    |
 | `inline="true"`                                     | `display="inline"`             |

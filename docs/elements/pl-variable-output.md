@@ -38,7 +38,7 @@ Attributes for `<pl-variable-output>`:
 | Attribute          | Type                                                     | Default    | Description                                                          |
 | ------------------ | -------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
 | `default-tab`      | `"matlab"`, `"mathematica"`, `"numpy"`, `"r"`, `"sympy"` | `"matlab"` | Select the active tab.                                               |
-| `digits`           | integer                                                  | —          | Number of digits to display after the decimal.                       |
+| `digits`           | integer                                                  | 2          | Number of digits to display after the decimal.                       |
 | `show-mathematica` | boolean                                                  | true       | Toggles the display of the Mathematica tab.                          |
 | `show-matlab`      | boolean                                                  | true       | Toggles the display of the Matlab tab (also compatible with Octave). |
 | `show-numpy`       | boolean                                                  | true       | Toggles the display of the NumPy tab.                                |
@@ -47,11 +47,25 @@ Attributes for `<pl-variable-output>`:
 
 Attributes for `<pl-variable>` (one of these for each variable to display):
 
-| Attribute     | Type    | Default | Description                                                     |
-| ------------- | ------- | ------- | --------------------------------------------------------------- |
-| `comment`     | string  | —       | Comment to add after the displayed variable.                    |
-| `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
-| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
+| Attribute     | Type    | Default | Description                                                                                                                                 |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comment`     | string  | —       | Comment to add after the displayed variable.                                                                                                |
+| `digits`      | integer | 2       | Number of digits to display after the decimal for the variable. Defaults to the `digits` value set on the enclosing `<pl-variable-output>`. |
+| `params-name` | string  | —       | Name of variable in `data["params"]` to display. Required.                                                                                  |
+
+### Migrating from deprecated attributes
+
+The following deprecated attributes and values are still supported for backward compatibility:
+
+| Old syntax             | New syntax            |
+| ---------------------- | --------------------- |
+| `default-tab="python"` | `default-tab="numpy"` |
+| `show-python="false"`  | `show-numpy="false"`  |
+| `show-python="true"`   | `show-numpy="true"`   |
+
+`pl-matrix-output` is a deprecated alias for `pl-variable-output`. It supports only the Matlab and NumPy tabs and always defaults to the Matlab tab. Use `pl-variable-output` instead.
+
+The legacy `<variable>` child tag is still accepted as a deprecated alias for `<pl-variable>`. Use `<pl-variable>` instead.
 
 ## Details
 
@@ -93,16 +107,6 @@ A = Matrix([[1.23], [4.56]]) # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data["params"][params-name] = pl.to_json(v)`.
-
-### Migrating from deprecated attributes
-
-The following deprecated attributes and values are still supported for backward compatibility:
-
-| Old syntax             | New syntax            |
-| ---------------------- | --------------------- |
-| `default-tab="python"` | `default-tab="numpy"` |
-| `show-python="false"`  | `show-numpy="false"`  |
-| `show-python="true"`   | `show-numpy="true"`   |
 
 ## Example implementations
 
