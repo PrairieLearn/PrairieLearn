@@ -25,8 +25,12 @@ function MissingCourseSharingNameCard({ courseId }: { courseId: string }) {
 /**
  * Middleware to authorize access to public course or course instance routes.
  * Checks if the course or course instance exists, if question sharing is enabled,
- * if the course has a sharing name, and if the course instance is shared publicly
- * (if applicable).
+ * and if the course has a sharing name.
+ *
+ * It does not check whether the course instance itself is shared publicly, since
+ * individual assessments can be shared publicly without sharing the entire course
+ * instance. Pages that expose course-instance-level content (e.g. the list of all
+ * assessments) must additionally use `authzPublicCourseInstanceSource`.
  *
  * If authorization fails, responds with a 404 Not Found error.
  *
@@ -68,10 +72,6 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
       throw new HttpStatusError(404, 'Not Found');
     }
 
-    if (course_instance && !course_instance.share_source_publicly) {
-      throw new HttpStatusError(404, 'Not Found');
-    }
-
     res.locals.course = course;
     if (course_instance) res.locals.course_instance = course_instance;
 
@@ -90,6 +90,25 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
         }),
       );
       return;
+    }
+
+    next();
+  },
+);
+
+/**
+ * Middleware that gates pages exposing course-instance-level content (e.g. the
+ * list of all of an instance's publicly shared assessments) on the course
+ * instance itself being shared publicly.
+ *
+ * Must run after `authzPublicCourseOrInstance`, which sets res.locals.course_instance.
+ *
+ * If the course instance is not shared publicly, responds with a 404 Not Found error.
+ */
+export const authzPublicCourseInstanceSource = typedAsyncHandler<'public-course-instance'>(
+  async (req, res, next) => {
+    if (!res.locals.course_instance.share_source_publicly) {
+      throw new HttpStatusError(404, 'Not Found');
     }
 
     next();
