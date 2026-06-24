@@ -2803,6 +2803,32 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
     obj.evented = false;
     canvas.add(obj);
 
+    let textObj = null;
+    const updateLabel = function () {
+      if (textObj) {
+        textObj.left = obj.left + obj.offsetx;
+        textObj.top = obj.top + obj.offsety;
+        textObj.setCoords();
+      }
+    };
+    const removeLabel = function () {
+      if (textObj) {
+        canvas.remove(textObj);
+      }
+    };
+    if (obj.label) {
+      textObj = new mechanicsObjects.LatexText(obj.label, {
+        left: obj.left + obj.offsetx,
+        top: obj.top + obj.offsety,
+        fontSize: 16,
+        textAlign: 'left',
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+
     if (options.selectable) {
       const cc = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
       const c1 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
@@ -2824,11 +2850,13 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       cc.on('moving', function () {
         obj.set({ x1: cc.left, y1: cc.top });
         obj.fire('update_visuals');
+        updateLabel();
       });
 
       // c1
@@ -2845,6 +2873,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       c1.on('moving', function () {
@@ -2866,6 +2895,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c1);
+          removeLabel();
         },
       );
       c2.on('moving', function () {
@@ -4181,8 +4211,16 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (options.label) {
       const offsetlabel = 10;
       const textObj = new mechanicsObjects.LatexText(options.label, {
-        left: xm1 + (l / 2) * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2 + theta),
-        top: ym1 + (l / 2) * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2 + theta),
+        left:
+          xm1 +
+          (l / 2) * Math.cos(theta2 + theta) -
+          offsetlabel * Math.sin(theta2 + theta) +
+          options.offsetx,
+        top:
+          ym1 +
+          (l / 2) * Math.sin(theta2 + theta) +
+          offsetlabel * Math.cos(theta2 + theta) +
+          options.offsety,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,

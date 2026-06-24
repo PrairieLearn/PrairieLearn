@@ -1,0 +1,20 @@
+{
+  "tag": "pl-order-blocks",
+  "schema": "./schemas/pl-order-blocks.json",
+  "children": [
+    {
+      "tag": "pl-answer",
+      "schema": "./schemas/pl-answer.json"
+    },
+    {
+      "tag": "pl-block-group",
+      "schema": "./schemas/pl-block-group.json",
+      "children": [
+        {
+          "tag": "pl-answer",
+          "schema": "./schemas/pl-answer.json"
+        }
+      ]
+    }
+  ]
+}

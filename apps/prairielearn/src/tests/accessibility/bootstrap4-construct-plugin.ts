@@ -18,6 +18,7 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-keyboard',
   'data-html',
   'data-offset',
+  'data-parent',
   'data-pause',
   'data-placement',
   'data-popper-config',
@@ -25,6 +26,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-ride',
   'data-selector',
   'data-show',
+  'data-slide',
+  'data-slide-to',
   'data-spy',
   'data-target',
   'data-template',
@@ -118,7 +121,7 @@ class Bootstrap4ConstructRule extends Rule {
 
           this.report({
             node,
-            message: `Bootstrap 4 attribute "${attr}" should not be used. Use "${attr.replace('data-', 'data-bs-')}" instead.`,
+            message: `Bootstrap 4 attribute "${attr}" should not be used. Migrate to the Bootstrap 5 equivalent.`,
           });
         });
       });

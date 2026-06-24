@@ -321,9 +321,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
         "base_url": data["options"]["base_url"],
         "element_client_files": data["options"]["client_files_extensions_url"],
-        "render_scale": pl.get_float_attrib(
-            element, "render-scale", defaults.element_defaults["render-scale"]
-        ),
+        "render_scale": defaults.element_defaults["render-scale"],
         "width": pl.get_string_attrib(
             element, "width", defaults.element_defaults["width"]
         ),
@@ -397,7 +395,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
-    if data["panel"] == "submission":
+    if data["panel"] == "question" or data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
         show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)

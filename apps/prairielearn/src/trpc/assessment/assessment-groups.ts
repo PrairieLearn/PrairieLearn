@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -8,6 +6,7 @@ import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffGroupConfigSchema } from '../../lib/client/safe-db-types.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { saveJsonFile } from '../../lib/editors.js';
 import {
   cascadeRoleRenamesToZones,
@@ -247,14 +246,8 @@ async function saveAssessmentGroupsBlock({
     throw new TRPCError({ code: 'BAD_REQUEST', message: noInstancesMessage });
   }
 
-  const assessmentDir = path.join(
-    ctx.course.path,
-    'courseInstances',
-    ctx.course_instance.short_name,
-    'assessments',
-    ctx.assessment.tid!,
-  );
-  const assessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+  const assessmentDir = getAssessmentDir(ctx);
+  const assessmentPath = getAssessmentInfoJsonPath(ctx);
 
   const saveResult = await saveJsonFile<AssessmentJsonInput>({
     applyChanges,

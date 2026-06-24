@@ -18,6 +18,7 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
+  StaffJobSchema,
   StaffJobSequenceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
@@ -482,6 +483,22 @@ const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSe
   },
 };
 
+const minimalStaffJob: z.input<typeof StaffJobSchema> = {
+  arguments: ['--force'],
+  command: 'sync',
+  description: 'Sync course',
+  error_message: null,
+  exit_code: null,
+  exit_signal: null,
+  finish_date: null,
+  id: '13',
+  number_in_sequence: 1,
+  output: 'Done',
+  start_date: new Date(),
+  status: 'Success',
+  working_directory: null,
+};
+
 const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
   description: 'Regrade assessment',
   id: '12',
@@ -776,9 +793,28 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
   });
 
-  it('parses valid StaffJobSequence and drops extra fields', () => {
-    const parsed = StaffJobSequenceSchema.parse({ ...minimalStaffJobSequence, extra: 123 });
+  it('parses valid StaffJob and drops extra fields', () => {
+    const parsed = StaffJobSchema.parse({ ...minimalStaffJob, data: {}, env: {}, extra: 123 });
+    expect(parsed).not.toHaveProperty('data');
+    expect(parsed).not.toHaveProperty('env');
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffJob);
+  });
+
+  it('parses valid StaffJobSequence and drops extra fields', () => {
+    const parsed = StaffJobSequenceSchema.parse({
+      ...minimalStaffJobSequence,
+      assessment_id: '2',
+      authn_user_id: '4',
+      course_id: '1',
+      extra: 123,
+      user_id: '4',
+    });
+    expect(parsed).not.toHaveProperty('assessment_id');
+    expect(parsed).not.toHaveProperty('authn_user_id');
+    expect(parsed).not.toHaveProperty('course_id');
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('user_id');
     expect(parsed).toMatchObject(minimalStaffJobSequence);
   });
 

@@ -1,8 +1,12 @@
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
-type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
+export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
 export interface AccessControlValidationRule {
   rule: AccessControlJson;
@@ -661,7 +665,7 @@ export function getAfterCompleteCrossFieldIssue(
   if (score.hidden && !questions.hidden) {
     return {
       kind: 'score_hidden_requires_questions_hidden',
-      message: 'The score cannot be hidden after completion while questions are visible.',
+      message: 'Questions cannot be made visible after completion while the score is hidden.',
     };
   }
   if (!questions.hidden || questions.visibleFromDate === undefined) return null;
@@ -891,57 +895,98 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
+export function getAccessControlRuleTargetType(
+  rule: AccessControlJson,
+  index: number,
+): AccessControlRuleTargetType {
+  if (index === 0) return 'none';
+  return rule.labels == null ? 'enrollment' : 'student_label';
+}
+
 /**
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
  *
  * @param params
- * @param params.rules The full ordered list of access control rules: index 0 is the
- * default rule that applies to everyone (no labels), and all
- * subsequent entries are student-label rules that target specific labels.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules.
+ * @param params.rules The full ordered list of access control rules: index 0
+ * is the default rule that applies to everyone. Non-default entries with
+ * `labels` are student-label rules, and trailing entries without `labels` are
+ * student-specific rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
-  enrollmentRules,
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
-  enrollmentRules?: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const validationRules: AccessControlValidationRule[] = [];
-  const enrollmentRulesCount = enrollmentRules?.length ?? 0;
 
   // If the feature is completely unused, we can skip all validation and we don't need a default rule.
-  if (rules.length === 0 && enrollmentRulesCount === 0) {
+  if (rules.length === 0) {
     return { errors, warnings };
   }
 
-  // A default rule is identified by the absence of a `labels` key.
-  const defaultRules = rules.filter((rule) => rule.labels == null);
+  const targetTypes = rules.map((rule, index) => getAccessControlRuleTargetType(rule, index));
 
-  if (defaultRules.length === 0) {
-    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (defaultRules.length > 1) {
+  const studentLabelRuleCount = targetTypes.filter((type) => type === 'student_label').length;
+  if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
     errors.push(
-      `Found ${defaultRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
     );
-  } else {
-    // The DB constraint `check_first_rule_is_none` requires the default rule at index 0
-    const firstRule = rules[0];
-    if (firstRule.labels != null) {
-      errors.push('The defaults must be the first element in the array.');
+  }
+
+  const enrollmentRuleCount = targetTypes.filter((type) => type === 'enrollment').length;
+  if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
+    errors.push(
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
+  }
+
+  if (rules.slice(1).some((rule) => rule.uuid == null)) {
+    errors.push('Every non-default accessControl rule must specify uuid.');
+  }
+
+  if (rules[0].labels != null) {
+    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
+  }
+
+  const seenRuleUuids = new Set<string>();
+  const duplicateRuleUuids = new Set<string>();
+  for (const rule of rules.slice(1)) {
+    if (rule.uuid == null) continue;
+    if (seenRuleUuids.has(rule.uuid)) {
+      duplicateRuleUuids.add(rule.uuid);
+    } else {
+      seenRuleUuids.add(rule.uuid);
+    }
+  }
+  if (duplicateRuleUuids.size > 0) {
+    errors.push(`Found duplicate access control rule UUIDs: ${formatValues(duplicateRuleUuids)}.`);
+  }
+
+  let seenStudentSpecificRule = false;
+  for (const [index, targetType] of targetTypes.entries()) {
+    if (index === 0) continue;
+    if (targetType === 'enrollment') {
+      seenStudentSpecificRule = true;
+    } else if (targetType === 'student_label' && seenStudentSpecificRule) {
+      errors.push(
+        'Student-label access control rules must appear before student-specific access control rules.',
+      );
+      break;
     }
   }
 
-  // Index 0 is the default rule; everything else is a student-label rule.
-  rules.forEach((rule, index) => {
-    const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
+  rules.forEach((rule, ruleIndex) => {
+    const targetType = targetTypes[ruleIndex];
+    if (targetType === 'none' && rule.uuid != null) {
+      errors.push('uuid can only be specified on non-default access control rules.');
+    }
 
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
@@ -973,20 +1018,11 @@ export function validateAccessControlRules({
     validationRules.push({
       rule,
       targetType,
-      ruleIndex: validationRules.length,
+      ruleIndex,
     });
 
     errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
-
-  for (const rule of enrollmentRules ?? []) {
-    validationRules.push({
-      rule,
-      targetType: 'enrollment',
-      ruleIndex: validationRules.length,
-    });
-    errors.push(...validateRule(rule, 'enrollment', { includeAfterCompleteCrossField: false }));
-  }
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),

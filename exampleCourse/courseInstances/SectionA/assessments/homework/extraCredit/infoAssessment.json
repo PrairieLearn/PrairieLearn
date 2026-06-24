@@ -35,7 +35,7 @@
       "questions": [
         { "id": "demo/annotated/engCentroid", "autoPoints": 1, "maxAutoPoints": 3 },
         { "id": "demo/annotated/engLogic", "autoPoints": 1, "maxAutoPoints": 3 },
-        { "id": "workshop/PeriodicTable1", "autoPoints": 1, "maxAutoPoints": 3 }
+        { "id": "demo/custom/gradeAnyValidAnswer", "autoPoints": 1, "maxAutoPoints": 3 }
       ]
     },
     {

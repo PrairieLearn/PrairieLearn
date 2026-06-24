@@ -1,0 +1,19 @@
+<pl-question-panel>
+  <p>This is a workspace question that launches a version of VS Code directly in the browser. Use the "Open workspace" button below to open VS Code.</p>
+
+  <p>
+    The workspace is configured to use a custom home directory, so when you open the terminal in VS Code, the starter code and graded files will be located in the <code>/home/coder/workspace/subdir</code> directory. Files outside this subdirectory will not be included in the submission or saved between reboots.
+  </p>
+
+  <p>Your code snippet should define the following variables:</p>
+  <pl-external-grader-variables params-name="names_from_user">
+    <pl-variable name="fib" type="python function">Function to compute the $n^\text{th}$ Fibonacci number</pl-variable>
+  </pl-external-grader-variables>
+
+  <pl-workspace></pl-workspace>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
