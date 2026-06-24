@@ -1,6 +1,8 @@
+import { z } from 'zod';
+
 import { makeBatchedMigration, selectTableIdBounds } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import { escapeIdentifier, queryRows } from '@prairielearn/postgres';
+import { escapeIdentifier, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { type Course, CourseSchema } from '../../lib/db-types.js';
 import { createServerJob } from '../../lib/server-jobs.js';
@@ -9,15 +11,15 @@ import { syncDiskToSqlWithLock } from '../../sync/syncFromDisk.js';
 
 const COURSE_SYNC_BACKFILL_BATCH_SIZE = 10;
 
-type CourseTableName = 'courses' | 'pl_courses';
+const COURSE_TABLE_NAMES = ['pl_courses', 'courses'] as const;
 
-export function makeCourseSyncBackfillMigration({
-  boundsTableName = 'courses',
-  coursesTableName = 'courses',
-}: { boundsTableName?: CourseTableName; coursesTableName?: CourseTableName } = {}) {
+type CourseTableName = (typeof COURSE_TABLE_NAMES)[number];
+
+export function makeCourseSyncBackfillMigration() {
   return makeBatchedMigration({
     async getParameters() {
-      const bounds = await selectTableIdBounds(boundsTableName);
+      const courseTableName = await selectExistingCourseTableName();
+      const bounds = await selectTableIdBounds(courseTableName);
       return {
         min: bounds.min,
         max: bounds.max,
@@ -26,7 +28,7 @@ export function makeCourseSyncBackfillMigration({
     },
 
     async execute(min: bigint, max: bigint): Promise<void> {
-      const courses = await selectCoursesForSync(coursesTableName, min, max);
+      const courses = await selectCoursesForSync(min, max);
 
       const errors: Error[] = [];
       for (const course of courses) {
@@ -48,12 +50,46 @@ export function makeCourseSyncBackfillMigration({
   });
 }
 
-async function selectCoursesForSync(tableName: CourseTableName, min: bigint, max: bigint) {
-  const escapedTableName = escapeIdentifier(tableName);
+async function selectCoursesForSync(min: bigint, max: bigint) {
+  const existingTableName = await selectExistingCourseTableName();
+  const escapedTableName = escapeIdentifier(existingTableName);
   return await queryRows(
     `SELECT * FROM ${escapedTableName} WHERE id >= $min AND id <= $max AND deleted_at IS NULL`,
     { min, max },
     CourseSchema,
+  );
+}
+
+async function selectExistingCourseTableName() {
+  for (const tableName of COURSE_TABLE_NAMES) {
+    if (await courseTableExists(tableName)) return tableName;
+  }
+
+  throw new Error(`Could not find any usable course table (${COURSE_TABLE_NAMES.join(', ')})`);
+}
+
+async function courseTableExists(tableName: CourseTableName) {
+  return await queryScalar(
+    `
+    SELECT
+      to_regclass($table_name) IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM pg_attribute
+        WHERE attrelid = to_regclass($table_name)
+        AND attname = 'id'
+        AND NOT attisdropped
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM pg_attribute
+        WHERE attrelid = to_regclass($table_name)
+        AND attname = 'deleted_at'
+        AND NOT attisdropped
+      )
+    `,
+    { table_name: tableName },
+    z.boolean(),
   );
 }
 
