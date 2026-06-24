@@ -1,12 +1,11 @@
 import random
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -165,6 +164,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "default_base": base in (BASE_DEFAULT, 0),
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
+            display.value: True,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -228,6 +228,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "a_tru": a_tru_str,
             "suffix": suffix,
+            display.value: True,
         }
 
         return chevron.render(template, html_params).strip()

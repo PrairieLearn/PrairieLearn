@@ -1,15 +1,14 @@
+import crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { getOriginalHash } from '../lib/editors.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -452,7 +451,10 @@ describe('Editing assessment questions', () => {
       const csrfToken = questionsPageResponse.$('#test_csrf_token').text();
       // Calculate the orig_hash BEFORE we change the file
       const origContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
-      const origHash = sha256(b64EncodeUnicode(origContent)).toString();
+      const origHash = crypto
+        .createHash('sha256')
+        .update(b64EncodeUnicode(origContent))
+        .digest('hex');
 
       // Now change the file
       const assessmentInfo = JSON.parse(origContent);

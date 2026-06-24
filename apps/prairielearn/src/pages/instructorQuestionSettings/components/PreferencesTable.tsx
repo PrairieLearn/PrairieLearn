@@ -97,90 +97,92 @@ export function PreferencesTable({
   }
 
   return (
-    <div className="mb-3">
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h2 className="h4 mb-0">Preferences</h2>
-        <Button
-          variant="outline-primary"
-          size="sm"
-          disabled={!canEdit}
-          onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
-        >
-          <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-          Add preference
-        </Button>
-      </div>
-      <small className="text-muted d-block mb-3">
-        Configure{' '}
-        <a
-          href="https://docs.prairielearn.com/question/preferences/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          preferences
-        </a>{' '}
-        that can be specified when a question is used on an assessment. Values are available in{' '}
-        <code>server.py</code> and <code>question.html</code>.
-      </small>
-
-      {fields.length === 0 && (
-        <div className="border rounded p-4 text-center text-muted mb-3">
-          <i className="bi bi-sliders fs-3 d-block mb-2" aria-hidden="true" />
-          No preferences configured
+    <div className="card">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <h2 className="h5 card-title mb-0">Preferences</h2>
+          <Button
+            variant="outline-primary"
+            size="sm"
+            disabled={!canEdit}
+            onClick={() => append({ name: '', type: 'string', default: '', enum: [] })}
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+            Add preference
+          </Button>
         </div>
-      )}
+        <small className="text-muted d-block mb-3">
+          Configure{' '}
+          <a
+            href="https://docs.prairielearn.com/question/preferences/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            preferences
+          </a>{' '}
+          that can be specified when a question is used on an assessment. Values are available in{' '}
+          <code>server.py</code> and <code>question.html</code>.
+        </small>
 
-      {fields.length > 0 && (
-        <DndContext
-          // The card has overflow-x: auto for horizontal scrolling on narrow
-          // viewports, which makes dnd-kit treat it as scrollable on ALL axes
-          // (it checks /(auto|scroll|overlay)/ without distinguishing axes).
-          // Exclude it so dragging doesn't vertically scroll the card contents.
-          autoScroll={{
-            canScroll: (element) => element !== scrollContainerRef.current,
-          }}
-          collisionDetection={closestCenter}
-          id={dndId}
-          modifiers={[restrictToGridVertical]}
-          sensors={sensors}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-            <div
-              ref={scrollContainerRef}
-              className={clsx(
-                'card mb-3',
-                canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
-              )}
-            >
-              <div className="preferences-grid-header">
-                {canEdit && <div />}
-                <div>Name</div>
-                <div>Type</div>
-                <div>Default</div>
-                <div>Values</div>
-                {canEdit && <div />}
+        {fields.length === 0 && (
+          <div className="border rounded p-4 text-center text-muted">
+            <i className="bi bi-sliders fs-3 d-block mb-2" aria-hidden="true" />
+            No preferences configured
+          </div>
+        )}
+
+        {fields.length > 0 && (
+          <DndContext
+            // The grid wrapper has overflow-x: auto for horizontal scrolling on narrow
+            // viewports, which makes dnd-kit treat it as scrollable on ALL axes
+            // (it checks /(auto|scroll|overlay)/ without distinguishing axes).
+            // Exclude it so dragging doesn't vertically scroll the contents.
+            autoScroll={{
+              canScroll: (element) => element !== scrollContainerRef.current,
+            }}
+            collisionDetection={closestCenter}
+            id={dndId}
+            modifiers={[restrictToGridVertical]}
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+              <div
+                ref={scrollContainerRef}
+                className={clsx(
+                  'border rounded',
+                  canEdit ? 'preferences-grid-editable' : 'preferences-grid-readonly',
+                )}
+              >
+                <div className="preferences-grid-header">
+                  {canEdit && <div />}
+                  <div>Name</div>
+                  <div>Type</div>
+                  <div>Default</div>
+                  <div>Values</div>
+                  {canEdit && <div />}
+                </div>
+                <div ref={gridRef} className="preferences-grid-rows">
+                  {fields.map((field, index) => (
+                    <PreferenceRow
+                      key={field.id}
+                      field={field}
+                      index={index}
+                      canEdit={canEdit}
+                      register={register}
+                      watch={watch}
+                      setValue={setValue}
+                      errors={errors?.[index]}
+                      remove={remove}
+                      clearErrors={clearErrors}
+                    />
+                  ))}
+                </div>
               </div>
-              <div ref={gridRef} className="preferences-grid-rows">
-                {fields.map((field, index) => (
-                  <PreferenceRow
-                    key={field.id}
-                    field={field}
-                    index={index}
-                    canEdit={canEdit}
-                    register={register}
-                    watch={watch}
-                    setValue={setValue}
-                    errors={errors?.[index]}
-                    remove={remove}
-                    clearErrors={clearErrors}
-                  />
-                ))}
-              </div>
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
     </div>
   );
 }
@@ -223,12 +225,9 @@ function PreferenceRow({
     <div
       ref={setNodeRef}
       style={{
-        // Force scaleX/scaleY to 1: dnd-kit's `useDerivedTransform` animates
-        // index changes by computing scaleX/Y from old-rect/new-rect ratios,
-        // which warps tall rows when they land in shorter rows' slots.
-        transform: CSS.Transform.toString(
-          transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
-        ),
+        // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+        // which visually warps variable-height rows. See https://github.com/clauderic/dnd-kit/issues/44.
+        transform: CSS.Translate.toString(transform),
         transition,
         opacity: isDragging ? 0.6 : 1,
       }}
@@ -344,8 +343,8 @@ function PreferenceRow({
               validate: {
                 matchesType: (value) => {
                   const currentType = watch(`preferences.${index}.type`);
-                  if (currentType === 'number' && Number.isNaN(Number(value))) {
-                    return 'Must be a number';
+                  if (currentType === 'number' && !Number.isFinite(Number(value))) {
+                    return 'Must be a finite number';
                   }
                   return true;
                 },

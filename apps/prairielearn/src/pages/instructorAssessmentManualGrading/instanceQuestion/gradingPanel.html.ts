@@ -1,7 +1,5 @@
 import assert from 'assert';
 
-import mustache from 'mustache';
-
 import { html } from '@prairielearn/html';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
@@ -9,6 +7,8 @@ import { run } from '@prairielearn/run';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { safeMustacheRender } from '../../../lib/mustache.js';
+import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
@@ -16,6 +16,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
+import { AI_GRADING_MODAL_OPEN_EVENT } from './instanceQuestion.shared.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
 
 interface SubmissionOrGradingJob {
@@ -33,13 +34,15 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  aiGradingMode = false,
   showInstanceQuestionGroup = false,
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
+  gradedByHumanName = null,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
@@ -49,12 +52,22 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  /**
+   * Controls whether the "AI grade" button renders. Must match the hydrated
+   * InstanceQuestionAiGrade component's gating — both should depend on the
+   * `ai-grading` feature flag AND the assessment question's `ai_grading_mode`
+   * — so the button never appears without its event handler.
+   */
+  aiGradingMode?: boolean;
   showInstanceQuestionGroup?: boolean;
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
+  gradedByHumanName?: string | null;
 }) {
+  const gradedByAi = aiGradingInfo != null;
+  const gradedByHuman = gradedByHumanName != null;
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
@@ -67,6 +80,10 @@ export function GradingPanel({
 
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
+  // The conflict modal renders additional grading panels; shortcuts are reserved for the main panel.
+  const enableKeyboardShortcuts = context === 'main';
+  const enableEditKeyboardShortcuts = enableKeyboardShortcuts && !disable;
+  const showNextShortcut = enableKeyboardShortcuts && skip_text === 'Next';
 
   // Users are only assigned to grade submissions if they have edit permissions.
   // If the user has no edit permissions (view only), we set show_submissions_assigned_to_me_only to false so
@@ -97,9 +114,16 @@ export function GradingPanel({
     params: resLocals.submission.params ?? {},
     submitted_answers: resLocals.submission.submitted_answer,
   };
-  const graderGuidelinesRendered = graderGuidelines
-    ? markdownToHtml(mustache.render(graderGuidelines, mustacheParams), { inline: true })
-    : null;
+  const graderGuidelinesRendered = run(() => {
+    if (!graderGuidelines) return null;
+    const { rendered, error } = safeMustacheRender(graderGuidelines, mustacheParams);
+    const renderedHtml = markdownToHtml(rendered, { inline: true });
+    if (!error) return renderedHtml;
+    return (
+      renderedHtml +
+      html` <span class="text-danger small">(template error: ${error})</span>`.toString()
+    );
+  });
 
   return html`
     <form
@@ -223,11 +247,45 @@ export function GradingPanel({
               </li>
             `
           : ''}
+        ${gradedByAi || gradedByHuman
+          ? html`
+              <li class="list-group-item">
+                <div class="d-flex align-items-center flex-wrap gap-1">
+                  <span>Graded by:</span>
+                  ${run(() => {
+                    const aiBadge = html`<span class="badge text-bg-light border fw-medium"
+                      >AI</span
+                    >`;
+                    const viewExplanation = html`<a
+                      href="#ai-grading-explanation"
+                      class="btn btn-sm btn-link p-0 ms-auto text-decoration-none d-inline-flex align-items-center"
+                      onclick="event.preventDefault(); document.getElementById('ai-grading-explanation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
+                    >
+                      <i class="bi bi-stars me-1" aria-hidden="true"></i>View AI explanation
+                    </a>`;
+                    if (gradedByAi && gradedByHuman) {
+                      return html`${aiBadge}<span>+</span
+                        ><span>${gradedByHumanName}</span>${viewExplanation}`;
+                    }
+                    if (gradedByAi) {
+                      return html`${aiBadge}${viewExplanation}`;
+                    }
+                    return html`<span>${gradedByHumanName}</span>`;
+                  })}
+                </div>
+                ${gradedByAi && gradedByHuman
+                  ? html`<div class="text-muted small mt-1">
+                      Human grading always takes priority
+                    </div>`
+                  : ''}
+              </li>
+            `
+          : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable, aiGradingInfo })
+            ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -236,9 +294,9 @@ export function GradingPanel({
                 ${AutoPointsSection({ context, disable, auto_points, resLocals })}
               </li>
               <li class="list-group-item">
-                ${TotalPointsSection({ context, disable, points, resLocals })}
+                ${TotalPointsSection({ points, resLocals })}
                 ${resLocals.rubric_data?.rubric.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable, aiGradingInfo })
+                  ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
                   : ''}
               </li>
             `
@@ -246,12 +304,16 @@ export function GradingPanel({
         <li class="list-group-item">
           <label>
             Feedback:
+            ${enableEditKeyboardShortcuts
+              ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent mb-1 ms-2">F</kbd>`
+              : ''}
             <textarea
               name="submission_note"
               class="form-control js-submission-feedback"
               style="min-height: 1em;"
               ${disable ? 'readonly' : ''}
               aria-describedby="submission-feedback-help-${context}"
+              ${enableEditKeyboardShortcuts ? 'data-key-binding="f"' : ''}
             >
 ${submission.feedback?.manual}</textarea
             >
@@ -391,8 +453,7 @@ ${submission.feedback?.manual}</textarea
                             </button>
 
                             <div class="dropdown-item-text text-muted small">
-                              AI can make mistakes. Review submission group assignments before
-                              grading.
+                              AI can make mistakes. Review submission groups before grading.
                             </div>
                           </div>
                         </div>
@@ -401,22 +462,48 @@ ${submission.feedback?.manual}</textarea
                   <button
                     id="grade-button"
                     type="submit"
-                    class="btn btn-primary ${selectedInstanceQuestionGroup ? 'd-none' : ''}"
+                    class="btn btn-primary ${selectedInstanceQuestionGroup
+                      ? 'd-none'
+                      : 'd-inline-flex'} align-items-center"
                     name="__action"
                     value="add_manual_grade"
+                    ${enableEditKeyboardShortcuts ? 'data-key-binding="g"' : ''}
                   >
                     Grade
+                    ${enableEditKeyboardShortcuts
+                      ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2"
+                          >G</kbd
+                        >`
+                      : ''}
                   </button>
+                  ${context === 'main' && aiGradingMode
+                    ? html`
+                        <button
+                          id="ai-grade-button"
+                          type="button"
+                          class="btn btn-primary ms-1"
+                          onclick="document.dispatchEvent(new CustomEvent('${AI_GRADING_MODAL_OPEN_EVENT}'))"
+                        >
+                          <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
+                        </button>
+                      `
+                    : ''}
                 `
               : ''}
             <div class="btn-group">
               <button
                 type="submit"
-                class="btn btn-secondary"
+                class="btn btn-secondary ${showNextShortcut
+                  ? 'd-inline-flex align-items-center'
+                  : ''}"
                 name="__action"
                 value="next_instance_question"
+                ${showNextShortcut ? 'data-key-binding="n"' : ''}
               >
                 ${skip_text}
+                ${showNextShortcut
+                  ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">N</kbd>`
+                  : ''}
               </button>
               ${!disable
                 ? html`

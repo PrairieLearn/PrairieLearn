@@ -1,16 +1,10 @@
-import type { AccessControlJson } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
+} from '../../schemas/accessControl.js';
 
-/**
- * Maximum number of access control rules (main + overrides) per assessment.
- * Enforced during both JSON sync and tRPC input validation.
- */
-export const MAX_ACCESS_CONTROL_RULES = 50;
-
-/**
- * Maximum number of enrollment-targeted access control rules per assessment.
- * Enrollment rules are per-student overrides, so a lower limit is appropriate.
- */
-export const MAX_ENROLLMENT_RULES = 100;
+const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
 
 export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
@@ -20,13 +14,19 @@ export interface AccessControlValidationRule {
   ruleIndex: number;
 }
 
-export type AccessControlIssuePath =
-  | ['dateControl', 'releaseDate']
-  | ['dateControl', 'dueDate']
+type AccessControlIssuePath =
+  | ['dateControl', 'release', 'date']
+  | ['dateControl', 'due', 'date']
+  | ['dateControl', 'due', 'credit']
   | ['dateControl', 'earlyDeadlines', number, 'date']
+  | ['dateControl', 'earlyDeadlines', number, 'credit']
   | ['dateControl', 'lateDeadlines', number, 'date']
+  | ['dateControl', 'lateDeadlines', number, 'credit']
+  | ['dateControl', 'afterLastDeadline', 'credit']
+  | ['afterComplete', 'questions']
   | ['afterComplete', 'questions', 'visibleFromDate']
   | ['afterComplete', 'questions', 'visibleUntilDate']
+  | ['afterComplete', 'score']
   | ['afterComplete', 'score', 'visibleFromDate'];
 
 export interface AccessControlValidationIssue {
@@ -51,11 +51,12 @@ function pushIssue(
 }
 
 function findReleaseMs(rule: AccessControlJson): number | null {
-  return rule.dateControl?.releaseDate ? new Date(rule.dateControl.releaseDate).getTime() : null;
+  const releaseDate = rule.dateControl?.release?.date;
+  return releaseDate ? new Date(releaseDate).getTime() : null;
 }
 
 function findDueMs(rule: AccessControlJson): number | null {
-  return rule.dateControl?.dueDate ? new Date(rule.dateControl.dueDate).getTime() : null;
+  return rule.dateControl?.due?.date ? new Date(rule.dateControl.due.date).getTime() : null;
 }
 
 function findDueState(rule: AccessControlJson): {
@@ -63,12 +64,12 @@ function findDueState(rule: AccessControlJson): {
   dueMs: number | null;
 } {
   const dateControl = rule.dateControl;
-  if (dateControl?.dueDate === undefined) {
+  if (dateControl?.due === undefined) {
     return { hasConfiguredDue: false, dueMs: null };
   }
   return {
     hasConfiguredDue: true,
-    dueMs: dateControl.dueDate ? new Date(dateControl.dueDate).getTime() : null,
+    dueMs: dateControl.due.date ? new Date(dateControl.due.date).getTime() : null,
   };
 }
 
@@ -80,14 +81,6 @@ function findLastDeadlineMs(rule: AccessControlJson): number | null {
     return new Date(dc.lateDeadlines[dc.lateDeadlines.length - 1].date).getTime();
   }
   return findDueMs(rule);
-}
-
-function hasAnyDeadline(rule: AccessControlJson): boolean {
-  const dc = rule.dateControl;
-  if (!dc) return false;
-  if (dc.dueDate) return true;
-  if (dc.lateDeadlines && dc.lateDeadlines.length > 0) return true;
-  return false;
 }
 
 /**
@@ -102,63 +95,87 @@ export function validateRuleStructuralDependencyIssues(
   const rule = validationRule.rule;
   const dc = rule.dateControl;
 
-  // Constraint 1: Late deadlines require a due date.
-  // Late deadlines define credit after the due date, so they need one as an anchor.
-  // Early deadlines are standalone bonus-credit windows and don't need a due date.
-  // On overrides, dueDate === undefined means "inherit from main rule" (valid),
-  // while dueDate === null means "explicitly no due date" (invalid with late deadlines).
+  // Constraint 1: Late deadlines and afterLastDeadline (when allowSubmissions:
+  // true) need a due date as an anchor. Early deadlines are standalone bonus
+  // windows. The cross-rule "inherit from default" case is handled by
+  // `validateGlobalStructuralDependencyIssues`.
   if (dc) {
-    const dueDateMissing = validationRule.targetType === 'none' ? !dc.dueDate : dc.dueDate === null;
+    const dueDateMissing =
+      validationRule.targetType === 'none' ? !dc.due?.date : dc.due?.date === null;
 
-    if (dc.lateDeadlines && dc.lateDeadlines.length > 0 && dueDateMissing) {
+    if (dueDateMissing) {
+      if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'lateDeadlines', 0, 'date'],
+          'Late deadlines require a due date.',
+        );
+      }
+
+      if (dc.afterLastDeadline?.allowSubmissions === true) {
+        pushIssue(
+          issues,
+          validationRule,
+          ['dateControl', 'afterLastDeadline', 'credit'],
+          'After-last-deadline behavior requires a due date.',
+        );
+      }
+    }
+  }
+
+  // Constraint 2: Early deadlines are not allowed when due-date credit is
+  // below 100%. In that shape the due date is already the first below-full
+  // credit deadline, so there is no valid before-due deadline segment.
+  if ((dc?.due?.credit ?? 100) < 100 && dc?.earlyDeadlines && dc.earlyDeadlines.length > 0) {
+    pushIssue(
+      issues,
+      validationRule,
+      ['dateControl', 'earlyDeadlines', 0, 'date'],
+      'Early deadlines are not allowed when due date credit is below 100%.',
+    );
+  }
+
+  return issues;
+}
+
+/**
+ * Cross-rule structural check: complements the per-rule validator, which
+ * treats `dc.due === undefined` on overrides as "inherit from default" and so
+ * misses the case where the inherited value is also missing. Lenient like
+ * the other global checks — overrides can cascade, so any rule's due could
+ * anchor a given student's resolved timeline. Skips overrides that
+ * explicitly set their own `due`: either it provides an anchor, or per-rule
+ * already flagged the explicit-null case.
+ */
+export function validateGlobalStructuralDependencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+  if (validationRules.some(({ rule }) => findDueMs(rule) != null)) return issues;
+
+  for (const validationRule of validationRules) {
+    if (validationRule.targetType === 'none') continue;
+    const dc = validationRule.rule.dateControl;
+    if (!dc || dc.due !== undefined) continue;
+
+    if (dc.lateDeadlines && dc.lateDeadlines.length > 0) {
       pushIssue(
         issues,
         validationRule,
         ['dateControl', 'lateDeadlines', 0, 'date'],
-        'Late deadlines require a due date.',
+        'Late deadlines require a due date on at least one rule.',
       );
     }
-  }
 
-  // Constraint 2: After-complete date fields require at least one deadline.
-  // The date fields (visibleFromDate, visibleUntilDate) are meant to fire relative
-  // to the last deadline. Boolean fields (hidden) are fine without deadlines.
-  // PrairieTest and timed assessments manage completion independently,
-  // so after-complete dates are valid without deadlines in those cases.
-  // Only enforced on the main rule — overrides may inherit deadlines.
-  const hasPrairieTest = (rule.integrations?.prairieTest?.exams ?? []).length > 0;
-  const hasDuration = dc?.durationMinutes != null;
-  const ac = rule.afterComplete;
-  if (
-    validationRule.targetType === 'none' &&
-    ac &&
-    !hasAnyDeadline(rule) &&
-    !hasPrairieTest &&
-    !hasDuration
-  ) {
-    const q = ac.questions;
-    if (q?.visibleFromDate) {
+    // `allowSubmissions: false` is a no-op without a deadline.
+    if (dc.afterLastDeadline?.allowSubmissions === true) {
       pushIssue(
         issues,
         validationRule,
-        ['afterComplete', 'questions', 'visibleFromDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
-      );
-    }
-    if (q?.visibleUntilDate) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['afterComplete', 'questions', 'visibleUntilDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
-      );
-    }
-    if (ac.score?.visibleFromDate) {
-      pushIssue(
-        issues,
-        validationRule,
-        ['afterComplete', 'score', 'visibleFromDate'],
-        'After-complete dates require at least one deadline (due date or late deadline).',
+        ['dateControl', 'afterLastDeadline', 'credit'],
+        'After-last-deadline behavior requires a due date on at least one rule.',
       );
     }
   }
@@ -181,7 +198,7 @@ export function validateRuleDateOrderingIssues(
       pushIssue(
         issues,
         validationRule,
-        ['dateControl', 'dueDate'],
+        ['dateControl', 'due', 'date'],
         'Release date must be before due date.',
       );
     }
@@ -214,12 +231,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.earlyDeadlines) {
       for (const [index, deadline] of dc.earlyDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() >= dueMs) {
+        if (new Date(deadline.date).getTime() > dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'earlyDeadlines', index, 'date'],
-            `Early deadline date ${deadline.date} must be before the due date.`,
+            `Early deadline date ${deadline.date} must be on or before the due date.`,
           );
         }
       }
@@ -227,12 +244,12 @@ export function validateRuleDateOrderingIssues(
 
     if (dueMs != null && dc.lateDeadlines) {
       for (const [index, deadline] of dc.lateDeadlines.entries()) {
-        if (new Date(deadline.date).getTime() <= dueMs) {
+        if (new Date(deadline.date).getTime() < dueMs) {
           pushIssue(
             issues,
             validationRule,
             ['dateControl', 'lateDeadlines', index, 'date'],
-            `Late deadline date ${deadline.date} must be after the due date.`,
+            `Late deadline date ${deadline.date} must be on or after the due date.`,
           );
         }
       }
@@ -348,7 +365,7 @@ export function validateGlobalDateConsistencyIssues(
       pushIssue(
         issues,
         validationRule,
-        ['dateControl', 'dueDate'],
+        ['dateControl', 'due', 'date'],
         'Due date must be after the earliest possible release date.',
       );
     }
@@ -367,12 +384,12 @@ export function validateGlobalDateConsistencyIssues(
         );
       }
 
-      if (!dueCanBeUnset && maxDueMs != null && deadlineMs >= maxDueMs) {
+      if (!dueCanBeUnset && maxDueMs != null && deadlineMs > maxDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'earlyDeadlines', index, 'date'],
-          'Early deadline must be before the latest possible due date.',
+          'Early deadline must be on or before the latest possible due date.',
         );
       }
     }
@@ -382,14 +399,313 @@ export function validateGlobalDateConsistencyIssues(
     ).entries()) {
       const deadlineMs = new Date(deadline.date).getTime();
 
-      if (!dueCanBeUnset && minDueMs != null && deadlineMs <= minDueMs) {
+      if (!dueCanBeUnset && minDueMs != null && deadlineMs < minDueMs) {
         pushIssue(
           issues,
           validationRule,
           ['dateControl', 'lateDeadlines', index, 'date'],
-          'Late deadline must be after the earliest possible due date.',
+          'Late deadline must be on or after the earliest possible due date.',
         );
       }
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Checks each override's effective deadline sequence, after inheriting default
+ * fields, for post-due credit below 100% and strictly decreasing credit.
+ */
+export function validateGlobalCreditConsistencyIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  for (const [validationRuleIndex, validationRule] of validationRules.entries()) {
+    if (validationRule.targetType === 'none') continue;
+
+    const effectiveEntries = getEffectiveCreditEntries(validationRules, validationRuleIndex);
+
+    const dueEntry = effectiveEntries.find((entry) => entry.kind === 'due');
+    if (dueEntry && dueEntry.credit < 100) {
+      const earlyEntry = effectiveEntries.find((entry) => entry.kind === 'earlyDeadline');
+      const issueEntry = chooseEffectiveIssueEntry(validationRule, earlyEntry, dueEntry);
+      if (earlyEntry && issueEntry) {
+        pushIssue(
+          issues,
+          issueEntry.validationRule,
+          issueEntry.path,
+          'Early deadlines are not allowed when due date credit is below 100%.',
+        );
+      }
+    }
+
+    const postDueEntry = effectiveEntries.find(
+      (entry) =>
+        (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
+        entry.credit >= 100 &&
+        entry.validationRule === validationRule,
+    );
+    if (postDueEntry) {
+      pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+      continue;
+    }
+
+    for (let i = 1; i < effectiveEntries.length; i++) {
+      const previous = effectiveEntries[i - 1];
+      const current = effectiveEntries[i];
+      if (current.credit < previous.credit) continue;
+
+      const issueEntry = chooseEffectiveIssueEntry(validationRule, current, previous);
+      if (!issueEntry) continue;
+      pushIssue(
+        issues,
+        issueEntry.validationRule,
+        issueEntry.path,
+        'Deadline credits must strictly decrease over time.',
+      );
+      break;
+    }
+  }
+
+  return issues;
+}
+
+type CreditEntryKind = 'earlyDeadline' | 'due' | 'lateDeadline' | 'afterLastDeadline';
+
+/**
+ * One credit-bearing point in a rule's deadline timeline. The list of entries
+ * for a rule, in chronological order, is the model the credit validators
+ * operate on: post-due credit must be < 100% and credits must strictly
+ * decrease across the list. `validationRule` records which rule supplied the
+ * entry — under inheritance the source may differ from the rule being
+ * validated, and the path is relative to that source.
+ */
+interface CreditEntry {
+  kind: CreditEntryKind;
+  credit: number;
+  validationRule: AccessControlValidationRule;
+  path: AccessControlIssuePath;
+}
+
+type DateControlField = keyof NonNullable<AccessControlJson['dateControl']>;
+
+/**
+ * Builds the chronological credit timeline for a rule. `sourceForField`
+ * resolves where each `dateControl` field comes from: the rule itself for
+ * per-rule validation, or self-or-default for cross-rule validation.
+ *
+ * When `synthesizeImplicitDue` is true and the rule has any other credit
+ * field set without a `due`, an implicit 100% due entry is inserted so the
+ * strict-decrease check has an anchor. Per-rule validation only synthesizes
+ * for the default rule (overrides may legitimately omit `due` and inherit
+ * it); cross-rule validation always synthesizes since any override's
+ * effective timeline includes the inherited due.
+ */
+function buildCreditTimeline(
+  sourceForField: <K extends DateControlField>(field: K) => AccessControlValidationRule,
+  synthesizeImplicitDue: boolean,
+): CreditEntry[] {
+  const entries: CreditEntry[] = [];
+
+  const earlySource = sourceForField('earlyDeadlines');
+  for (const [index, deadline] of (earlySource.rule.dateControl?.earlyDeadlines ?? []).entries()) {
+    entries.push({
+      kind: 'earlyDeadline',
+      credit: deadline.credit,
+      validationRule: earlySource,
+      path: ['dateControl', 'earlyDeadlines', index, 'credit'],
+    });
+  }
+
+  const dueSource = sourceForField('due');
+  const due = dueSource.rule.dateControl?.due;
+
+  const lateSource = sourceForField('lateDeadlines');
+  const lateDeadlines = lateSource.rule.dateControl?.lateDeadlines ?? [];
+
+  const afterLastSource = sourceForField('afterLastDeadline');
+  const afterLast = afterLastSource.rule.dateControl?.afterLastDeadline;
+  const afterLastCredit = afterLast?.allowSubmissions === true ? afterLast.credit : undefined;
+
+  const needsImplicitDue =
+    synthesizeImplicitDue &&
+    (entries.length > 0 || lateDeadlines.length > 0 || afterLastCredit !== undefined);
+  if (due !== undefined || needsImplicitDue) {
+    entries.push({
+      kind: 'due',
+      credit: due?.credit ?? 100,
+      validationRule: dueSource,
+      path: ['dateControl', 'due', 'credit'],
+    });
+  }
+
+  for (const [index, deadline] of lateDeadlines.entries()) {
+    entries.push({
+      kind: 'lateDeadline',
+      credit: deadline.credit,
+      validationRule: lateSource,
+      path: ['dateControl', 'lateDeadlines', index, 'credit'],
+    });
+  }
+
+  if (afterLastCredit !== undefined) {
+    entries.push({
+      kind: 'afterLastDeadline',
+      credit: afterLastCredit,
+      validationRule: afterLastSource,
+      path: ['dateControl', 'afterLastDeadline', 'credit'],
+    });
+  }
+
+  return entries;
+}
+
+/** Per-rule credit timeline: every field is sourced from the rule itself. */
+function getRuleCreditEntries(validationRule: AccessControlValidationRule): CreditEntry[] {
+  if (!validationRule.rule.dateControl) return [];
+  return buildCreditTimeline(() => validationRule, validationRule.targetType === 'none');
+}
+
+/**
+ * Effective credit timeline for an override after inheritance: each field
+ * comes from the override itself if it sets it, otherwise from the default
+ * rule. We deliberately do not model label-on-label cascade — the other
+ * global validators are similarly coarse, and the enrollment case can't be
+ * modeled accurately without knowing each student's labels.
+ */
+function getEffectiveCreditEntries(
+  validationRules: AccessControlValidationRule[],
+  validationRuleIndex: number,
+): CreditEntry[] {
+  const validationRule = validationRules[validationRuleIndex];
+  const defaultValidationRule =
+    validationRules.find((rule) => rule.targetType === 'none') ?? validationRules[0];
+
+  const sourceForField = <K extends DateControlField>(field: K): AccessControlValidationRule =>
+    validationRule.rule.dateControl?.[field] !== undefined ? validationRule : defaultValidationRule;
+
+  return buildCreditTimeline(sourceForField, true);
+}
+
+/**
+ * Picks which credit entry to attach a cross-rule error to. If both endpoints
+ * of a violation belong to the current override, returns null — the per-rule
+ * validator already reports the same issue against that rule. Otherwise
+ * attributes the error to whichever endpoint is from the current rule, so
+ * the form highlights the field the author can actually edit.
+ */
+function chooseEffectiveIssueEntry(
+  currentValidationRule: AccessControlValidationRule,
+  preferredEntry: CreditEntry | undefined,
+  fallbackEntry: CreditEntry | undefined,
+): CreditEntry | null {
+  const preferredFromCurrent = preferredEntry?.validationRule === currentValidationRule;
+  const fallbackFromCurrent = fallbackEntry?.validationRule === currentValidationRule;
+  if (preferredFromCurrent && fallbackFromCurrent) return null;
+  if (preferredFromCurrent) return preferredEntry;
+  if (fallbackFromCurrent) return fallbackEntry;
+  return null;
+}
+
+type AfterCompleteQuestions = NonNullable<
+  NonNullable<AccessControlJson['afterComplete']>['questions']
+>;
+type AfterCompleteScore = NonNullable<NonNullable<AccessControlJson['afterComplete']>['score']>;
+
+type AfterCompleteCrossFieldIssueKind =
+  | 'score_hidden_requires_questions_hidden'
+  | 'questions_reveal_requires_score_reveal'
+  | 'score_reveal_after_questions_reveal';
+
+interface AfterCompleteCrossFieldIssue {
+  kind: AfterCompleteCrossFieldIssueKind;
+  message: string;
+}
+
+function resolveEffectiveAfterComplete(
+  rule: AccessControlJson,
+  defaultRule: AccessControlJson | undefined,
+): { questions: AfterCompleteQuestions; score: AfterCompleteScore } {
+  const ruleAc = rule.afterComplete;
+  const defaultAc = defaultRule?.afterComplete;
+  // Defaults: questions hidden, score visible. An override that doesn't
+  // include questions/score inherits the default rule's effective value.
+  // Inheritance is whole-object, not field-by-field: an override that sets
+  // `questions: { hidden: true }` (without dates) does NOT inherit the
+  // default's `visibleFromDate`.
+  const questions = ruleAc?.questions ?? defaultAc?.questions ?? { hidden: true };
+  const score = ruleAc?.score ?? defaultAc?.score ?? { hidden: false };
+  return { questions, score };
+}
+
+/**
+ * Checks the cross-field invariant between `afterComplete.questions` and
+ * `afterComplete.score`: questions cannot become visible while the score
+ * remains hidden. Returns `null` when the pair is consistent, otherwise an
+ * issue with a `kind` discriminator and a human-readable message. The kinds
+ * are:
+ *
+ * - `score_hidden_requires_questions_hidden`: score is hidden after completion
+ *   but questions are visible.
+ * - `questions_reveal_requires_score_reveal`: questions have a reveal date but
+ *   the score stays hidden forever.
+ * - `score_reveal_after_questions_reveal`: both reveal, but the score's reveal
+ *   date is after the questions' reveal date.
+ *
+ * Used by both the per-rule validator and the legacy migration's fix-up
+ * step, so the two stay aligned on what counts as a conflict.
+ */
+export function getAfterCompleteCrossFieldIssue(
+  questions: AfterCompleteQuestions,
+  score: AfterCompleteScore,
+): AfterCompleteCrossFieldIssue | null {
+  if (score.hidden && !questions.hidden) {
+    return {
+      kind: 'score_hidden_requires_questions_hidden',
+      message: 'Questions cannot be made visible after completion while the score is hidden.',
+    };
+  }
+  if (!questions.hidden || questions.visibleFromDate === undefined) return null;
+  if (!score.hidden) return null;
+  if (score.visibleFromDate === undefined) {
+    return {
+      kind: 'questions_reveal_requires_score_reveal',
+      message:
+        'Questions cannot become visible after completion while the score remains hidden. Either make the score visible after completion, or reveal the score on or before the question reveal date.',
+    };
+  }
+  if (new Date(score.visibleFromDate).getTime() > new Date(questions.visibleFromDate).getTime()) {
+    return {
+      kind: 'score_reveal_after_questions_reveal',
+      message: 'The score must become visible on or before the question reveal date.',
+    };
+  }
+  return null;
+}
+
+/**
+ * Cross-field afterComplete validation. Checks that the effective
+ * questions/score visibility is internally consistent, including for overrides
+ * that only override one of the two fields (the inherited side is resolved
+ * against the default rule). The error is reported on the questions field; the
+ * score field is treated as the trailing dependency in the relationship.
+ */
+export function validateAfterCompleteCrossFieldIssues(
+  validationRules: AccessControlValidationRule[],
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  if (validationRules.length === 0) return issues;
+
+  const defaultRule = validationRules.find((vr) => vr.targetType === 'none')?.rule;
+
+  for (const validationRule of validationRules) {
+    const { questions, score } = resolveEffectiveAfterComplete(validationRule.rule, defaultRule);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) {
+      pushIssue(issues, validationRule, ['afterComplete', 'questions'], issue.message);
     }
   }
 
@@ -409,88 +725,83 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
 }
 
 /**
- * Validates credit monotonicity within a single access control rule.
+ * Validates credit ordering within a single access control rule: post-due
+ * credits must be below 100%, and credits must strictly decrease across the
+ * timeline.
+ */
+export function validateRuleCreditOrderingIssues(
+  validationRule: AccessControlValidationRule,
+): AccessControlValidationIssue[] {
+  const issues: AccessControlValidationIssue[] = [];
+  const entries = getRuleCreditEntries(validationRule);
+
+  const postDueEntry = entries.find(
+    (entry) =>
+      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') && entry.credit >= 100,
+  );
+  if (postDueEntry) {
+    pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+    return issues;
+  }
+
+  for (let i = 1; i < entries.length; i++) {
+    if (entries[i].credit < entries[i - 1].credit) continue;
+    pushIssue(
+      issues,
+      validationRule,
+      entries[i].path,
+      'Deadline credits must strictly decrease over time.',
+    );
+    break;
+  }
+
+  return issues;
+}
+
+/**
+ * Validates credit ordering within a single access control rule.
  * Returns an array of error messages (empty if valid).
  */
-export function validateRuleCreditMonotonicity(rule: AccessControlJson): string[] {
-  const errors: string[] = [];
-  const dc = rule.dateControl;
-  if (!dc) return errors;
-
-  if (dc.earlyDeadlines) {
-    for (const d of dc.earlyDeadlines) {
-      if (d.credit < 101 || d.credit > 200) {
-        errors.push(`Early deadline credit must be between 101% and 200%, got ${d.credit}%.`);
-        break;
-      }
-    }
-  }
-
-  if (dc.earlyDeadlines && dc.earlyDeadlines.length > 1) {
-    for (let i = 1; i < dc.earlyDeadlines.length; i++) {
-      if (dc.earlyDeadlines[i].credit > dc.earlyDeadlines[i - 1].credit) {
-        errors.push('Early deadline credits must be monotonically decreasing.');
-        break;
-      }
-    }
-  }
-
-  if (dc.lateDeadlines) {
-    for (const d of dc.lateDeadlines) {
-      if (d.credit < 0 || d.credit > 99) {
-        errors.push(`Late deadline credit must be between 0% and 99%, got ${d.credit}%.`);
-        break;
-      }
-    }
-  }
-
-  if (dc.lateDeadlines && dc.lateDeadlines.length > 1) {
-    for (let i = 1; i < dc.lateDeadlines.length; i++) {
-      if (dc.lateDeadlines[i].credit > dc.lateDeadlines[i - 1].credit) {
-        errors.push('Late deadline credits must be monotonically decreasing.');
-        break;
-      }
-    }
-  }
-
-  const afterCredit =
-    dc.afterLastDeadline?.allowSubmissions === true ? dc.afterLastDeadline.credit : undefined;
-  if (afterCredit != null) {
-    // Determine the preceding credit in the timeline.
-    const precedingCredit =
-      dc.lateDeadlines?.at(-1)?.credit ?? (dc.dueDate != null ? 100 : undefined);
-
-    if (precedingCredit != null && afterCredit > precedingCredit) {
-      errors.push(
-        `After-last-deadline credit (${afterCredit}%) must not exceed the preceding deadline's credit (${precedingCredit}%).`,
-      );
-    }
-  }
-
-  return errors;
+export function validateRuleCreditOrdering(
+  rule: AccessControlJson,
+  targetType: AccessControlRuleTargetType = 'none',
+): string[] {
+  return validateRuleCreditOrderingIssues({
+    rule,
+    targetType,
+    ruleIndex: 0,
+  }).map((issue) => issue.message);
 }
 
 /**
  * Validates a single access control rule. Checks duplicates, date ordering,
- * credit monotonicity, and target-type constraints (e.g. integrations and
- * listBeforeRelease are only valid on the main rule).
+ * credit ordering, and target-type constraints (e.g. integrations and
+ * beforeRelease are only valid on the default rule).
  *
  * @param rule The access control rule to validate.
- * @param targetType 'none' for the main rule, 'student_label' or 'enrollment' for overrides.
+ * @param targetType 'none' for the default rule, 'student_label' or 'enrollment' for overrides.
+ * @param options Optional flags.
+ * @param options.includeAfterCompleteCrossField Whether to include the afterComplete
+ * cross-field check (defaults to `true`). Callers that also run
+ * {@link validateAfterCompleteCrossFieldIssues} across all rules should pass `false`
+ * to avoid duplicate errors, since that validator already covers the same constraint
+ * and additionally handles inheritance.
  */
 export function validateRule(
   rule: AccessControlJson,
   targetType: 'none' | 'student_label' | 'enrollment',
+  options: { includeAfterCompleteCrossField?: boolean } = {},
 ): string[] {
   const errors: string[] = [];
+  const includeAfterCompleteCrossField = options.includeAfterCompleteCrossField ?? true;
 
   if (targetType === 'none') {
-    if (rule.dateControl && !rule.dateControl.releaseDate) {
+    if (rule.dateControl && !rule.dateControl.release) {
       errors.push('Release date is required on the defaults when dateControl is specified.');
     }
   } else {
-    if (rule.listBeforeRelease !== undefined) {
-      errors.push('listBeforeRelease can only be specified on the defaults.');
+    if (rule.beforeRelease !== undefined) {
+      errors.push('beforeRelease can only be specified on the defaults.');
     }
     if (rule.integrations != null) {
       errors.push('integrations can only be specified on the defaults.');
@@ -504,6 +815,20 @@ export function validateRule(
       errors.push(`Duplicate PrairieTest exam UUID: ${e.examUuid}.`);
     }
     seenUuids.add(e.examUuid);
+
+    if (
+      e.readOnly === true &&
+      (e.afterComplete?.questions?.hidden === true || e.afterComplete?.score?.hidden === true)
+    ) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: readOnly: true cannot be combined with afterComplete.questions.hidden: true or afterComplete.score.hidden: true (a readOnly reservation is a review environment).`,
+      );
+    }
+    if (e.afterComplete?.score?.hidden === true && e.afterComplete.questions?.hidden !== true) {
+      errors.push(
+        `PrairieTest exam ${e.examUuid}: afterComplete.score.hidden: true requires afterComplete.questions.hidden: true.`,
+      );
+    }
   }
 
   const earlyDates = new Set<string>();
@@ -523,13 +848,6 @@ export function validateRule(
   }
 
   if (
-    rule.dateControl?.afterLastDeadline?.allowSubmissions === false &&
-    rule.dateControl.afterLastDeadline.credit !== undefined
-  ) {
-    errors.push('afterLastDeadline.credit cannot be set when allowSubmissions is false.');
-  }
-
-  if (
     rule.afterComplete?.questions?.hidden === false &&
     (rule.afterComplete.questions.visibleFromDate !== undefined ||
       rule.afterComplete.questions.visibleUntilDate !== undefined)
@@ -546,6 +864,12 @@ export function validateRule(
     errors.push('afterComplete.score cannot have visibleFromDate when hidden is false.');
   }
 
+  if (includeAfterCompleteCrossField) {
+    const { questions, score } = resolveEffectiveAfterComplete(rule, undefined);
+    const issue = getAfterCompleteCrossFieldIssue(questions, score);
+    if (issue) errors.push(issue.message);
+  }
+
   errors.push(
     ...validateRuleStructuralDependencyIssues({
       rule,
@@ -556,10 +880,10 @@ export function validateRule(
 
   const dateErrors = validateRuleDateOrdering(rule);
   errors.push(...dateErrors);
-  // Credit monotonicity assumes deadlines are chronological; skip if dates
-  // are out of order to avoid misleading "not monotonically decreasing" errors.
+  // Credit ordering assumes deadlines are chronological; skip if dates are
+  // out of order to avoid misleading "credits must strictly decrease" errors.
   if (dateErrors.length === 0) {
-    errors.push(...validateRuleCreditMonotonicity(rule));
+    errors.push(...validateRuleCreditOrdering(rule, targetType));
   }
 
   return errors;
@@ -571,64 +895,98 @@ function formatValues(values: Set<string> | string[]) {
     .join(', ');
 }
 
+export function getAccessControlRuleTargetType(
+  rule: AccessControlJson,
+  index: number,
+): AccessControlRuleTargetType {
+  if (index === 0) return 'none';
+  return rule.labels == null ? 'enrollment' : 'student_label';
+}
+
 /**
  * Validates an array of access control rules.
  * Returns a single object with all accumulated errors and warnings.
  *
  * @param params
- * @param params.rules The full ordered list of access control rules: index 0 is the
- * main (defaults) rule that applies to everyone (no labels), and all
- * subsequent entries are student-label rules that target specific labels.
- * @param params.enrollmentRules Optional separate list of enrollment-based rules.
+ * @param params.rules The full ordered list of access control rules: index 0
+ * is the default rule that applies to everyone. Non-default entries with
+ * `labels` are student-label rules, and trailing entries without `labels` are
+ * student-specific rules.
  * @param params.validStudentLabelNames Optional set of known student label names for
  * cross-referencing validation.
  */
 export function validateAccessControlRules({
   rules,
-  enrollmentRules,
   validStudentLabelNames,
 }: {
   rules: AccessControlJson[];
-  enrollmentRules?: AccessControlJson[];
   validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const validationRules: AccessControlValidationRule[] = [];
-  const enrollmentRulesCount = enrollmentRules?.length ?? 0;
 
   // If the feature is completely unused, we can skip all validation and we don't need a default rule.
-  if (rules.length === 0 && enrollmentRulesCount === 0) {
+  if (rules.length === 0) {
     return { errors, warnings };
   }
 
-  if (rules.length > MAX_ACCESS_CONTROL_RULES) {
+  const targetTypes = rules.map((rule, index) => getAccessControlRuleTargetType(rule, index));
+
+  const studentLabelRuleCount = targetTypes.filter((type) => type === 'student_label').length;
+  if (studentLabelRuleCount > MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES) {
     errors.push(
-      `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_ACCESS_CONTROL_RULES}.`,
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
     );
   }
 
-  // A main rule has no `labels` property (applies to everyone)
-  const mainRules = rules.filter((rule) => rule.labels == null || rule.labels.length === 0);
-
-  if (mainRules.length === 0) {
-    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
-  } else if (mainRules.length > 1) {
+  const enrollmentRuleCount = targetTypes.filter((type) => type === 'enrollment').length;
+  if (enrollmentRuleCount > MAX_ENROLLMENT_ACCESS_CONTROL_RULES) {
     errors.push(
-      `Found ${mainRules.length} defaults entries. Only one element of accessControl should apply to everyone.`,
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
     );
-  } else {
-    // The DB constraint `check_first_rule_is_none` requires the main rule at index 0
-    const firstRule = rules[0];
-    const isFirstRuleMain = firstRule.labels == null || firstRule.labels.length === 0;
-    if (!isFirstRuleMain) {
-      errors.push('The defaults must be the first element in the array.');
+  }
+
+  if (rules.slice(1).some((rule) => rule.uuid == null)) {
+    errors.push('Every non-default accessControl rule must specify uuid.');
+  }
+
+  if (rules[0].labels != null) {
+    errors.push('No defaults found. The first element of accessControl must apply to everyone.');
+  }
+
+  const seenRuleUuids = new Set<string>();
+  const duplicateRuleUuids = new Set<string>();
+  for (const rule of rules.slice(1)) {
+    if (rule.uuid == null) continue;
+    if (seenRuleUuids.has(rule.uuid)) {
+      duplicateRuleUuids.add(rule.uuid);
+    } else {
+      seenRuleUuids.add(rule.uuid);
+    }
+  }
+  if (duplicateRuleUuids.size > 0) {
+    errors.push(`Found duplicate access control rule UUIDs: ${formatValues(duplicateRuleUuids)}.`);
+  }
+
+  let seenStudentSpecificRule = false;
+  for (const [index, targetType] of targetTypes.entries()) {
+    if (index === 0) continue;
+    if (targetType === 'enrollment') {
+      seenStudentSpecificRule = true;
+    } else if (targetType === 'student_label' && seenStudentSpecificRule) {
+      errors.push(
+        'Student-label access control rules must appear before student-specific access control rules.',
+      );
+      break;
     }
   }
 
-  // Index 0 is the main rule; everything else is a student-label rule.
-  rules.forEach((rule, index) => {
-    const targetType: AccessControlRuleTargetType = index === 0 ? 'none' : 'student_label';
+  rules.forEach((rule, ruleIndex) => {
+    const targetType = targetTypes[ruleIndex];
+    if (targetType === 'none' && rule.uuid != null) {
+      errors.push('uuid can only be specified on non-default access control rules.');
+    }
 
     const labels = rule.labels ?? [];
     const seenLabels = new Set<string>();
@@ -660,24 +1018,18 @@ export function validateAccessControlRules({
     validationRules.push({
       rule,
       targetType,
-      ruleIndex: validationRules.length,
+      ruleIndex,
     });
 
-    errors.push(...validateRule(rule, targetType));
+    errors.push(...validateRule(rule, targetType, { includeAfterCompleteCrossField: false }));
   });
-
-  for (const rule of enrollmentRules ?? []) {
-    validationRules.push({
-      rule,
-      targetType: 'enrollment',
-      ruleIndex: validationRules.length,
-    });
-    errors.push(...validateRule(rule, 'enrollment'));
-  }
 
   errors.push(
     ...validateGlobalDateConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalCreditConsistencyIssues(validationRules).map((issue) => issue.message),
+    ...validateGlobalStructuralDependencyIssues(validationRules).map((issue) => issue.message),
+    ...validateAfterCompleteCrossFieldIssues(validationRules).map((issue) => issue.message),
   );
 
-  return { errors, warnings };
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }

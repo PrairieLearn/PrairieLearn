@@ -14,9 +14,9 @@ export const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
   job_count: z.coerce.number(),
   jobs: JobRowSchema.array(),
 });
-export type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
+type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
 
-export type JobWithToken = JobRow & { token: string };
+type JobWithToken = JobRow & { token: string };
 export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
   token: string;
   jobs: JobWithToken[];

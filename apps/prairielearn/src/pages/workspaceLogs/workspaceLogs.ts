@@ -1,21 +1,20 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fetch from 'node-fetch';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
-
 import {
-  type WorkspaceLogRow,
-  WorkspaceLogRowSchema,
-  WorkspaceLogs,
-  WorkspaceVersionLogs,
-} from './workspaceLogs.html.js';
+  WorkspaceHostSchema,
+  type WorkspaceLog,
+  WorkspaceLogSchema,
+  WorkspaceSchema,
+} from '../../lib/db-types.js';
+
+import { WorkspaceLogs, WorkspaceVersionLogs } from './workspaceLogs.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -24,7 +23,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * Given a list of workspace logs for a specific version sorted by date in
  * ascending order, checks if the logs are considered expired.
  */
-function areContainerLogsExpired(workspaceLogs: WorkspaceLogRow[]): boolean {
+function areContainerLogsExpired(workspaceLogs: WorkspaceLog[]): boolean {
   if (config.workspaceLogsExpirationDays === null) {
     // Expiration is disabled.
     return false;
@@ -134,13 +133,8 @@ router.get(
   asyncHandler(async (_req, res, _next) => {
     const workspaceLogs = await sqldb.queryRows(
       sql.select_workspace_logs,
-      {
-        workspace_id: res.locals.workspace_id,
-        workspace_version: null,
-        display_timezone:
-          res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
-      },
-      WorkspaceLogRowSchema,
+      { workspace_id: res.locals.workspace_id, workspace_version: null },
+      WorkspaceLogSchema,
     );
     res.send(WorkspaceLogs({ workspaceLogs, resLocals: res.locals }));
   }),
@@ -153,13 +147,8 @@ router.get(
   asyncHandler(async (req, res, _next) => {
     const workspaceLogs = await sqldb.queryRows(
       sql.select_workspace_logs,
-      {
-        workspace_id: res.locals.workspace_id,
-        workspace_version: req.params.version,
-        display_timezone:
-          res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
-      },
-      WorkspaceLogRowSchema,
+      { workspace_id: res.locals.workspace_id, workspace_version: req.params.version },
+      WorkspaceLogSchema,
     );
     const containerLogsEnabled = areContainerLogsEnabled();
     const containerLogsExpired = areContainerLogsExpired(workspaceLogs);

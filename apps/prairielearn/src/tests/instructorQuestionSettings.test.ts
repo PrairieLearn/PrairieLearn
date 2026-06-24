@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -332,8 +331,8 @@ describe('Editing question settings', () => {
         topic: 'Test',
         grading_method: 'Internal',
         workspace_image: 'test_image',
-        workspace_port: '1234',
-        workspace_home: '/home/test',
+        workspace_port: '',
+        workspace_home: '',
         workspace_graded_files: 'test_file.txt',
         workspace_args: '',
         workspace_environment: '',
@@ -345,8 +344,8 @@ describe('Editing question settings', () => {
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.workspaceOptions.image, 'test_image');
-    assert.equal(questionInfo.workspaceOptions.port, 1234);
-    assert.equal(questionInfo.workspaceOptions.home, '/home/test');
+    assert.notExists(questionInfo.workspaceOptions.port);
+    assert.notExists(questionInfo.workspaceOptions.home);
     assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');
     assert.notExists(questionInfo.workspaceOptions.args);
     assert.notExists(questionInfo.workspaceOptions.environment);

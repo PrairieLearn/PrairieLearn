@@ -1,3 +1,4 @@
+import pathlib
 from enum import Enum
 from typing import TypedDict
 
@@ -6,10 +7,21 @@ import prairielearn as pl
 from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
 
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
+
 
 class GroupInfo(TypedDict):
     tag: str | None
     depends: list[str] | None
+
+
+class DisplayBlocksType(Enum):
+    VERTICAL = "vertical"
+    INLINE_WRAP = "inline-wrap"
+    INLINE_NOWRAP = "inline-nowrap"
+
+    def is_inline(self) -> bool:
+        return self in {DisplayBlocksType.INLINE_WRAP, DisplayBlocksType.INLINE_NOWRAP}
 
 
 class GradingMethodType(Enum):
@@ -59,6 +71,46 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
+# The JSON schema accepts the union of answer attributes across grading methods.
+# Python owns the mode-specific attribute restrictions.
+GRADING_METHOD_ANSWER_ATTRIBUTES: dict[GradingMethodType, frozenset[str]] = {
+    GradingMethodType.EXTERNAL: frozenset(["correct", "initially-placed"]),
+    GradingMethodType.UNORDERED: frozenset([
+        "correct",
+        "initially-placed",
+        "indent",
+        "distractor-feedback",
+    ]),
+    GradingMethodType.ORDERED: frozenset([
+        "correct",
+        "initially-placed",
+        "indent",
+        "distractor-feedback",
+    ]),
+    GradingMethodType.RANKING: frozenset([
+        "correct",
+        "initially-placed",
+        "tag",
+        "ranking",
+        "indent",
+        "distractor-feedback",
+        "distractor-for",
+        "ordering-feedback",
+    ]),
+    GradingMethodType.DAG: frozenset([
+        "correct",
+        "initially-placed",
+        "tag",
+        "depends",
+        "comment",
+        "indent",
+        "distractor-feedback",
+        "distractor-for",
+        "ordering-feedback",
+        "final",
+    ]),
+}
+
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTATION_DEFAULT = 4
@@ -70,6 +122,7 @@ ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
+DISPLAY_BLOCKS_DEFAULT = DisplayBlocksType.VERTICAL
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -181,64 +234,14 @@ class AnswerOptions:
     def _check_options(
         self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
     ) -> None:
-        if html_element.tag != "pl-answer":
-            raise ValueError(
-                """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                    Any html tags nested inside <pl-block-group> must be <pl-answer>"""
-            )
-
-        if grading_method is GradingMethodType.EXTERNAL:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=["correct", "initially-placed"],
-            )
-        elif grading_method in [
-            GradingMethodType.UNORDERED,
-            GradingMethodType.ORDERED,
-        ]:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "indent",
-                    "distractor-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.RANKING:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "tag",
-                    "ranking",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.DAG:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "initially-placed",
-                    "tag",
-                    "depends",
-                    "comment",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                    "final",
-                ],
-            )
+        # The schema allows the union of attributes across all grading methods;
+        # restrict to the ones meaningful for the current method.
+        allowed_attribs = GRADING_METHOD_ANSWER_ATTRIBUTES[grading_method]
+        for attribute in html_element.attrib:
+            if attribute.replace("_", "-") not in allowed_attribs:
+                raise ValueError(
+                    f"pl-answer: {attribute} is not valid with this pl-order-blocks grading method."
+                )
 
 
 class OrderBlocksOptions:
@@ -264,6 +267,7 @@ class OrderBlocksOptions:
     format: FormatType
     code_language: str | None
     inline: bool
+    display_blocks: DisplayBlocksType
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -324,6 +328,12 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.display_blocks = pl.get_enum_attrib(
+            html_element,
+            "display-blocks",
+            DisplayBlocksType,
+            DISPLAY_BLOCKS_DEFAULT,
+        )
         self.has_optional_blocks = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
@@ -343,35 +353,7 @@ class OrderBlocksOptions:
         )
 
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
-        if html_element.tag != "pl-order-blocks":
-            raise ValueError("HTML element is not a pl-order-blocks")
-
-        required_attribs = ["answers-name"]
-        optional_attribs = [
-            "source-blocks-order",
-            "distractor-order",
-            "grading-method",
-            "indentation",
-            "source-header",
-            "solution-header",
-            "file-name",
-            "solution-placement",
-            "max-incorrect",
-            "min-incorrect",
-            "weight",
-            "inline",
-            "max-indent",
-            "feedback",
-            "partial-credit",
-            "format",
-            "code-language",
-            "allow-blank",
-        ]
-        pl.check_attribs(
-            html_element,
-            required_attribs=required_attribs,
-            optional_attribs=optional_attribs,
-        )
+        pl.validate_element_tree(html_element, SCHEMA_MANIFEST_PATH)
 
     def validate(self) -> None:
         self._validate_order_blocks_options()
@@ -386,7 +368,7 @@ class OrderBlocksOptions:
 
             if not has_final:
                 raise ValueError(
-                    "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering."
+                    'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.'
                 )
 
     def _validate_order_blocks_options(self) -> None:
@@ -433,9 +415,9 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if self.inline and self.indentation:
+        if (self.inline or self.display_blocks.is_inline()) and self.indentation:
             raise ValueError(
-                "The indentation attribute may not be used when inline is true."
+                'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".'
             )
 
         if (
@@ -561,9 +543,8 @@ def collect_answer_options(
                 )
                 answer_options.append(options)
             case _:
-                raise ValueError(
-                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                raise AssertionError(
+                    "validate_element_tree should reject unsupported pl-order-blocks children."
                 )
 
     return answer_options

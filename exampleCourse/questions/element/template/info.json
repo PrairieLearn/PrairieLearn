@@ -3,5 +3,8 @@
   "title": "Element pl-template: Template element for display",
   "topic": "Element",
   "tags": ["erobson2"],
-  "type": "v3"
+  "type": "v3",
+  "preferences": {
+    "footer": { "type": "string", "default": "This footer is set as a question preference" }
+  }
 }

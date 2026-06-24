@@ -1,20 +1,7 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
-import z from 'zod';
 
-import {
-  RawStudentCourseInstanceSchema,
-  RawStudentCourseSchema,
-  StudentEnrollmentSchema,
-} from '../../../lib/client/safe-db-types.js';
-
-export const StudentHomePageCourseSchema = z.object({
-  course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
-});
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+import type { StudentHomePageCourse } from '../home.types.js';
 
 export function StudentCoursesCard({
   studentCourses,
@@ -69,7 +56,7 @@ export function StudentCoursesCard({
           </div>
         ) : isDevMode ? (
           <div className="card-body">
-            No courses loaded. Click <strong>"Load from disk"</strong> above and then click
+            No courses loaded. Click <strong>"Load from disk"</strong> above and then click{' '}
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
           </div>
         ) : (

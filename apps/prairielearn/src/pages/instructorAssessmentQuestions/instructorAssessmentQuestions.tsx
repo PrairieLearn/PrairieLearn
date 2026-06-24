@@ -15,18 +15,21 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { getAssessmentInfoJsonPath, getOriginalHash } from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
+import {
+  selectGroupConfigForAssessment,
+  selectGroupRoleNamesForAssessment,
+} from '../../models/group.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
-import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
@@ -65,6 +68,18 @@ router.get(
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
+    const groupConfig = await selectGroupConfigForAssessment(res.locals.assessment.id);
+    const groupsConfigured = groupConfig != null;
+    const groupRoles = groupConfig
+      ? await selectGroupRoleNamesForAssessment(res.locals.assessment.id)
+      : [];
+    const assessmentCanView = res.locals.assessment.json_can_view?.length
+      ? res.locals.assessment.json_can_view
+      : undefined;
+    const assessmentCanSubmit = res.locals.assessment.json_can_submit?.length
+      ? res.locals.assessment.json_can_submit
+      : undefined;
+
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
@@ -93,7 +108,6 @@ router.get(
       'consume-public-questions',
       res.locals,
     );
-    const showEditor = req.query.view !== 'legacy';
 
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
@@ -116,19 +130,6 @@ router.get(
 
     const search = getUrl(req).search;
 
-    // Build toggle link that adds/removes the `view=legacy` query parameter.
-    const toggleUrl = (() => {
-      const url = getUrl(req);
-      const params = new URLSearchParams(url.search);
-      if (showEditor) {
-        params.set('view', 'legacy');
-      } else {
-        params.delete('view');
-      }
-      const qs = params.toString();
-      return `${url.pathname}${qs ? `?${qs}` : ''}`;
-    })();
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -145,47 +146,34 @@ router.get(
         },
         options: {
           fullWidth: true,
-          contentPadding: !showEditor,
+          contentPadding: false,
         },
         content: (
           <Hydrate>
-            {showEditor ? (
-              <AssessmentQuestionsEditor
-                course={pageContext.course}
-                courseInstance={pageContext.course_instance}
-                questionRows={questionRows}
-                jsonZones={jsonZones}
-                assessment={pageContext.assessment}
-                assessmentToolDefaults={assessmentToolDefaults}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
-                canEdit={canEdit}
-                csrfToken={res.locals.__csrf_token}
-                origHash={origHash}
-                trpcCsrfToken={trpcCsrfToken}
-                search={search}
-                switchViewUrl={toggleUrl}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            ) : (
-              <InstructorAssessmentQuestionsTableLegacy
-                course={pageContext.course}
-                questionRows={questionRows}
-                urlPrefix={pageContext.urlPrefix}
-                assessmentType={pageContext.assessment.type}
-                assessmentSetName={pageContext.assessment_set.name}
-                assessmentNumber={pageContext.assessment.number}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
-                csrfToken={res.locals.__csrf_token}
-                switchViewUrl={toggleUrl}
-              />
-            )}
+            <AssessmentQuestionsEditor
+              course={pageContext.course}
+              courseInstance={pageContext.course_instance}
+              questionRows={questionRows}
+              jsonZones={jsonZones}
+              assessment={pageContext.assessment}
+              assessmentToolDefaults={assessmentToolDefaults}
+              groupsConfigured={groupsConfigured}
+              groupRoles={groupRoles}
+              assessmentCanView={assessmentCanView}
+              assessmentCanSubmit={assessmentCanSubmit}
+              groupsPageUrl={`${pageContext.urlPrefix}/assessment/${res.locals.assessment.id}/groups`}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                pageContext.authz_data.has_course_instance_permission_edit
+              }
+              canEdit={canEdit}
+              csrfToken={res.locals.__csrf_token}
+              origHash={origHash}
+              trpcCsrfToken={trpcCsrfToken}
+              search={search}
+              questionSharingEnabled={questionSharingEnabled}
+              consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+            />
           </Hydrate>
         ),
       }),

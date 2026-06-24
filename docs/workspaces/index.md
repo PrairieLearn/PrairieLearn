@@ -48,8 +48,8 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - Note that new variants will still be generated in `Staff view`
 - `workspaceOptions` contains the following properties:
   - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
-  - `port`: port number used by the workspace app inside the Docker image
-  - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
+  - `port` (optional): port number used by the workspace app inside the Docker image. This is only required if the image doesn't provide a default port in its labels. If not provided, PrairieLearn will retrieve the port from the `com.prairielearn.workspace.port` label in the image. For PrairieLearn-maintained workspace images (or custom images using those as a base), the port is always provided in the image labels, so it doesn't need to be included in `info.json`.
+  - `home` (optional): home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory. If not provided, PrairieLearn will retrieve the home directory from the `com.prairielearn.workspace.home` label in the image. For PrairieLearn-maintained workspace images (or custom images using those as a base), the home directory is always provided in the image labels, so it doesn't need to be included in `info.json`.
   - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container when saving a submission. These files can then be used for grading (either auto-grading or manual grading), previewed in the submission panel, and included in instructor submission downloads. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
     - `*` matches everything except path separators and hidden files (names starting with `.`).
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
@@ -58,7 +58,9 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `args` (optional, default none): command line arguments to pass to the Docker image. It may be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
-  - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
+  - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). By default, PrairieLearn includes the following environment variables in all workspaces:
+    - `WORKSPACE_BASE_URL`: the base URL for the workspace container, which can be used to construct URLs for API requests to the workspace container.
+    - `WORKSPACE_NETWORKING_DISABLED`: set when the workspace has networking disabled. This can be used to conditionally enable or disable features in the workspace based on its ability to access the internet.
 
 #### `info.json` for ungraded workspace
 
@@ -73,10 +75,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "codercom/code-server",
-        "port": 8080,
-        "home": "/home/coder",
-        "args": "--auth none"
+        "image": "prairielearn/workspace-vscode-python"
     }
 }
 ```
@@ -94,10 +93,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "codercom/code-server",
-        "port": 8080,
-        "home": "/home/coder",
-        "args": "--auth none",
+        "image": "prairielearn/workspace-vscode-cpp",
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c",
@@ -106,10 +102,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     },
     "gradingMethod": "External",
     "externalGradingOptions": {
-        "enabled": true,
-        "image": "...",
-        "entrypoint": "...",
-        "timeout": 20
+        "image": "..."
     }
 }
 ```
@@ -150,7 +143,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 ## Creating files in the workspace home directory
 
-Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/overview.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
+Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/overview.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json` or the Docker image labels.
 
 Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/overview.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. Files in `workspaceTemplates/` will preserve their execute permissions (e.g., if you `chmod +x script.sh` in your course repository, it will remain executable in the workspace). For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
 
@@ -234,7 +227,6 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 PrairieLearn provides and maintains the following workspace images:
 
-- [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
 - [`prairielearn/workspace-jupyterlab-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-base/): JupyterLab without any additions (used to build the Python and R workspaces below)
 - [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.13
 - [`prairielearn/workspace-jupyterlab-r`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-r/): JupyterLab with R 4.5

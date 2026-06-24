@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -211,6 +210,22 @@ describe('effective user', { timeout: 60_000 }, function () {
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
   });
+
+  test.sequential(
+    'instructor can emulate student with active LockDown Browser reservation',
+    async () => {
+      await sqldb.execute(sql.create_active_lockdown_browser_reservation, { user_id: studentId });
+      try {
+        const headers = {
+          cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
+        };
+        const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
+        assert.equal(res.status, 200);
+      } finally {
+        await sqldb.execute(sql.delete_lockdown_browser_reservation, { user_id: studentId });
+      }
+    },
+  );
 
   test.sequential(
     'instructor can emulate student and override date in range (expect success)',

@@ -29,13 +29,17 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
-import { selectInstanceQuestionsForManualGrading } from './queries.js';
+import {
+  selectInstanceQuestionsForManualGrading,
+  selectRubricSettingsContextKeys,
+} from './queries.js';
 
 const router = Router();
 
@@ -49,21 +53,25 @@ router.get(
     const courseStaff = z.array(StaffUserSchema).parse(
       await selectCourseInstanceGraderStaff({
         courseInstance: res.locals.course_instance,
-        authzData: res.locals.authz_data,
-        requiredRole: ['Student Data Viewer'],
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiSubmissionGroupingEnabled = await features.enabledFromLocals(
+      'ai-submission-grouping',
+      res.locals,
+    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
-      await selectInstanceQuestionGroups({
-        assessmentQuestionId: res.locals.assessment_question.id,
-      }),
-    );
+    const instanceQuestionGroups = aiSubmissionGroupingEnabled
+      ? z.array(StaffInstanceQuestionGroupSchema).parse(
+          await selectInstanceQuestionGroups({
+            assessmentQuestionId: res.locals.assessment_question.id,
+          }),
+        )
+      : [];
 
     const unfilledInstanceQuestionInfo = await selectInstanceQuestionsForManualGrading({
       assessment: res.locals.assessment,
@@ -75,15 +83,18 @@ router.get(
       res.locals.assessment_question,
     );
 
+    const rubricSettingsContextKeys = await selectRubricSettingsContextKeys({
+      assessment_question: res.locals.assessment_question,
+    });
+
     const initialOngoingJobSequenceTokens = await run(async () => {
       if (!aiGradingEnabled) {
         return null;
       }
 
-      const ongoingJobSequenceIds = await getJobSequenceIds({
-        assessment_question_id: res.locals.assessment_question.id,
-        status: 'Running',
+      const ongoingJobSequenceIds = await getOngoingJobSequenceIds({
         type: 'ai_grading',
+        assessment_question_id: res.locals.assessment_question.id,
       });
 
       const jobSequenceTokens = ongoingJobSequenceIds.reduce(
@@ -112,7 +123,7 @@ router.get(
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
-    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit;
     const search = getUrl(req).search;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -170,6 +181,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiSubmissionGroupingEnabled={aiSubmissionGroupingEnabled}
                 initialAiGradingMode={
                   aiGradingEnabled &&
                   assessment_question.ai_grading_mode &&
@@ -190,6 +202,7 @@ router.get(
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
                 aiGradingRelativeCosts={aiGradingRelativeCosts}
+                rubricSettingsContextKeys={rubricSettingsContextKeys}
               />
             </Hydrate>
           </>
@@ -217,10 +230,10 @@ router.get(
       req.session.show_submissions_assigned_to_me_only ?? true;
 
     const use_instance_question_groups = await run(async () => {
-      const aiGradingMode =
-        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      const groupingAvailable =
+        (await features.enabledFromLocals('ai-submission-grouping', res.locals)) &&
         res.locals.assessment_question.ai_grading_mode;
-      if (!aiGradingMode) {
+      if (!groupingAvailable) {
         return false;
       }
       return await selectAssessmentQuestionHasInstanceQuestionGroups({
@@ -291,7 +304,18 @@ router.post(
           grader_guidelines: req.body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
-        res.redirect(req.originalUrl);
+        const updatedAssessmentQuestion = await selectAssessmentQuestionById(
+          res.locals.assessment_question.id,
+        );
+        const rubric_data = await manualGrading.selectRubricData({
+          assessment_question: updatedAssessmentQuestion,
+        });
+        const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+        const aiGradingStats =
+          aiGradingEnabled && updatedAssessmentQuestion.ai_grading_mode
+            ? await calculateAiGradingStats(updatedAssessmentQuestion)
+            : null;
+        res.json({ rubric_data, aiGradingStats });
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }

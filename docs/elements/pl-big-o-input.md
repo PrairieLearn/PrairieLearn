@@ -4,7 +4,7 @@ Fill in the blank field that allows for asymptotic mathematical input (i.e. big 
 Gives automated feedback in the case of improper asymptotic input.
 
 ```html title="question.html"
-<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+<pl-big-o-input answers-name="ans" variables="n" correct-answer="n**2" size="10"></pl-big-o-input>
 ```
 
 ## Customizations
@@ -22,13 +22,26 @@ Gives automated feedback in the case of improper asymptotic input.
 | `show-score`     | boolean                                                            | true                      | Whether to show the score badge and feedback next to this element.                                                                                                                |
 | `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                                            |
 | `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
-| `variable`       | string                                                             | —                         | A symbol for use in the symbolic expression. Only one variable supported.                                                                                                         |
+| `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported. If omitted, the variables are inferred from the `correct-answer`. |
 | `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
 
 ## Details
 
 Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
-the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Only one variable is supported.
+the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Up to 7 variables are supported.
+
+When the `variables` attribute is omitted, the element infers the variables from the free symbols of the
+`correct-answer` (e.g., `correct-answer="n**2"` infers `n`).
+
+### Multivariate Limitations
+
+The backend to evaluating Big-O statements and providing feedback takes the limit of the student's answer against the correct answer using Sympy. Sympy only supports single variable limits, so the best approximation is to evaluate all unidirectional limits in every nested order.
+This leads to a few limitations/behaviors that should be considered when using multiple variables:
+
+- Sympy views `x*y` and `y*x` as different expressions, thus students will not be told whether their expression is unsimplified (e.g. `n^(1+1)`).
+- Expressions with mixed lower-order terms which would evaluate to a constant when the limit is taken with equal growth rates will give the feedback that the student has included "lower-order terms" instead of the mathematically possible "additional constant factors" (e.g., `x^2+2xy+y^2` over `x^2+y^2`).
+- Some expressions (usually with nested exponentials & factorials) will have unsolvable limits with Sympy, and cannot give correct partial feedback. If you require such expressions it is recommended to use `pl-symbolic-input` instead, which will only check for equality.
+- Big-O expressions with many variables will be slower, and if multiple instances of 7-variable Big-O inputs exist, the question may timeout.
 
 ## Example implementations
 

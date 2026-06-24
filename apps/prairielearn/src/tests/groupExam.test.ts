@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
@@ -268,7 +267,6 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
           __action: 'new_instance',
           __csrf_token: secondUserCsrfToken,
         }),
-        follow: 1,
       });
       assert.isOk(response.ok);
       $ = cheerio.load(await response.text());
@@ -285,11 +283,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
       // Ensure all group members can access the assessment instance correctly
-      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null, '#leaveGroupModal');
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null);
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
 
-      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null, '#leaveGroupModal');
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null);
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
     });
@@ -348,7 +346,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
         __action: 'new_instance',
         __csrf_token: secondUserCsrfToken,
       }),
-      follow: 1,
     });
     assert.isOk(response.ok);
     $ = cheerio.load(await response.text());
@@ -368,7 +365,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
       studentUsers[1],
       assessmentUrl, // redirects to instance URL
       null,
-      '#leaveGroupModal',
     );
 
     // Leave exam group as second user

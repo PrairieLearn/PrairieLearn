@@ -7,8 +7,6 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-r",
-    "port": 8080,
-    "home": "/home/jovyan",
     "rewriteUrl": false,
     "gradedFiles": ["student.ipynb"],
     "environment": {
@@ -17,7 +15,6 @@
   },
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-r",
     "timeout": 20
   }

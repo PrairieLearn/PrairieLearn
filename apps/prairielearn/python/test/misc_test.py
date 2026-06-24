@@ -14,7 +14,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import prairielearn as pl
+import prairielearn.sympy_utils as psu
 import pytest
+import sympy
 from numpy.typing import ArrayLike
 
 
@@ -268,6 +270,27 @@ def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> No
     decoded_json_object = pl.from_json(json.loads(json_object))
 
     assert decoded_json_object == expected_result
+
+
+@pytest.mark.parametrize(
+    "sympy_set",
+    [
+        sympy.FiniteSet(1, 2, 3),
+        sympy.FiniteSet(),
+        sympy.Interval(0, 1),
+        sympy.Interval.open(0, 1),
+        sympy.Union(sympy.FiniteSet(1, 2), sympy.Interval(3, 4)),
+        sympy.Intersection(sympy.Interval(0, 2), sympy.Interval(1, 3)),
+    ],
+)
+def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
+    encoded = cast(psu.SympyJson, pl.to_json(sympy_set))
+
+    assert encoded["_type"] == "sympy"
+
+    json.dumps(encoded, allow_nan=False)
+
+    assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
 
 
 class DummyEnum(Enum):

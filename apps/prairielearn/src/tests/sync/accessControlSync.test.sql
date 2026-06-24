@@ -15,8 +15,9 @@ RETURNING
 INSERT INTO
   assessment_access_control_rules (
     assessment_id,
-    list_before_release,
+    before_release_listed,
     number,
+    uuid,
     target_type,
     date_control_duration_minutes,
     date_control_duration_minutes_overridden
@@ -26,6 +27,7 @@ VALUES
     $assessment_id,
     true,
     $number,
+    $uuid::uuid,
     'enrollment',
     $duration_minutes::integer,
     $duration_minutes::integer IS NOT null

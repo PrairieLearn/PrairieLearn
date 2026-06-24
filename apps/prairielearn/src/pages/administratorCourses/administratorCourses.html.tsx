@@ -175,7 +175,7 @@ const CourseRow = memo(({ row }: { row: CourseWithInstitution }) => {
       <CourseUpdateColumn row={row} columnName="title" label="title" />
       <CourseUpdateColumn row={row} columnName="display_timezone" label="timezone" />
       <CourseUpdateColumn row={row} columnName="path" label="path" />
-      <CourseUpdateColumn row={row} columnName="repository" label="repository" />
+      <CourseUpdateColumn row={row} columnName="repository" label="repository" required={false} />
       <CourseUpdateColumn row={row} columnName="branch" label="branch" />
       <td className="align-middle">
         <OverlayTrigger
@@ -227,7 +227,7 @@ function CourseDeleteForm({
     },
   });
 
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Delete']>(mutation.error);
 
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
@@ -292,7 +292,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Insert']>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -324,7 +324,9 @@ function CourseInsertModal({
         shortName: data.short_name,
         institutionId: data.institution_id,
         displayTimezone: data.display_timezone,
-        repository: `git@github.com:PrairieLearn/${data.repository_short_name}.git`,
+        repository: data.repository_short_name
+          ? `git@github.com:PrairieLearn/${data.repository_short_name}.git`
+          : null,
       },
       { onSuccess: () => window.location.reload() },
     );
@@ -350,6 +352,7 @@ function CourseInsertModal({
               coursesRoot={coursesRoot}
               prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
+              repositoryRequired={false}
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseAddInputBranch">
@@ -398,11 +401,13 @@ function CourseUpdateColumn({
   columnName,
   label,
   href,
+  required = true,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
   href?: string;
+  required?: boolean;
 }) {
   const [showPopover, setShowPopover] = useState(false);
 
@@ -419,6 +424,7 @@ function CourseUpdateColumn({
               row={row}
               columnName={columnName}
               label={label}
+              required={required}
               onCancel={() => setShowPopover(false)}
             />
           ),
@@ -443,16 +449,18 @@ function CourseUpdateColumnForm({
   row,
   columnName,
   label,
+  required,
   onCancel,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
+  required: boolean;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['UpdateColumn']>(mutation.error);
 
   const {
     register,
@@ -485,7 +493,7 @@ function CourseUpdateColumnForm({
           className={clsx('form-control', errors.value && 'is-invalid')}
           aria-label={label}
           {...register('value', {
-            required: `Enter a ${label}`,
+            required: required && `Enter a ${label}`,
             pattern:
               columnName === 'short_name'
                 ? {

@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -9,21 +10,29 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import {
   analyzeAssessmentFile,
   migrateAssessmentJson,
+  replaceJsonKey,
 } from '../../lib/assessment-access-control/migration.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
+import {
+  computeScopedJsonHash,
+  getAssessmentInfoJsonPath,
+  getOriginalHash,
+} from '../../lib/editorUtil.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { selectAccessControlRules } from '../../models/assessment-access-control-rules.js';
+import {
+  countEnrollmentAccessControlRules,
+  selectAccessControlRules,
+  selectPrairieTestExamMetadataByUuids,
+} from '../../models/assessment-access-control-rules.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
 
 import {
-  AssessmentAccessRulesSchema,
+  AssessmentAccessRuleRowSchema,
   InstructorAssessmentAccess,
   InstructorAssessmentAccessNew,
 } from './instructorAssessmentAccess.html.js';
@@ -31,16 +40,41 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
+function todayAsDatetimeLocal(timezone: string): string {
+  const today = Temporal.Now.plainDateISO(timezone);
+  return `${today.toString()}T00:00:00`;
+}
+
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const enhancedAccessControlEnabled = await features.enabledFromLocals(
-      'enhanced-access-control',
-      res.locals,
-    );
+    const permissions = {
+      isExampleCourse: res.locals.course.example_course,
+      hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      hasCourseInstancePermissionView: res.locals.authz_data.has_course_instance_permission_view,
+      hasCourseInstancePermissionEdit: res.locals.authz_data.has_course_instance_permission_edit,
+    };
 
-    if (enhancedAccessControlEnabled && res.locals.assessment.modern_access_control) {
-      const jsonRules = await selectAccessControlRules(res.locals.assessment);
+    if (res.locals.assessment.modern_access_control) {
+      const [jsonRules, hiddenEnrollmentRuleCount] = await Promise.all([
+        selectAccessControlRules(
+          res.locals.assessment,
+          permissions.hasCourseInstancePermissionView
+            ? ['none', 'student_label', 'enrollment']
+            : ['none', 'student_label'],
+        ),
+        permissions.hasCourseInstancePermissionView
+          ? 0
+          : countEnrollmentAccessControlRules(res.locals.assessment),
+      ]);
+      const initialExamUuids = Array.from(
+        new Set(
+          jsonRules.flatMap(
+            (r) => r.integrations?.prairieTest?.exams?.map((e) => e.examUuid) ?? [],
+          ),
+        ),
+      );
+      const prairieTestExamMetadata = await selectPrairieTestExamMetadataByUuids(initialExamUuids);
       const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
         assessmentPath,
@@ -62,6 +96,10 @@ router.get(
           origHash,
           trpcCsrfToken,
           initialData: jsonRules,
+          prairieTestExamMetadata,
+          ptHost: config.ptHost,
+          permissions,
+          hiddenEnrollmentRuleCount,
         }),
       );
       return;
@@ -70,7 +108,7 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      AssessmentAccessRulesSchema,
+      AssessmentAccessRuleRowSchema,
     );
 
     const assessmentPath = getAssessmentInfoJsonPath(res.locals);
@@ -79,36 +117,56 @@ router.get(
     let migrationPreview: {
       beforeJson: string;
       afterJson: string;
-      warnings: string[];
+      errors: string[];
+      notes: string[];
       hasUidRules: boolean;
+      isIncompatible: boolean;
+      fallbackReleaseDate: string;
     } | null = null;
 
-    if (enhancedAccessControlEnabled) {
-      migrationAnalysis = await analyzeAssessmentFile(assessmentPath, res.locals.assessment.tid!);
+    const fallbackReleaseDate = todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+    migrationAnalysis = await analyzeAssessmentFile(
+      assessmentPath,
+      res.locals.assessment.tid!,
+      fallbackReleaseDate,
+    );
 
-      if (migrationAnalysis?.canMigrate) {
-        const content = await fs.readFile(assessmentPath, 'utf-8');
-        const parsed = JSON.parse(content);
-        const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+    if (migrationAnalysis?.errors.length === 0) {
+      const content = await fs.readFile(assessmentPath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
 
-        const migrationResult = migrateAssessmentJson(content);
-        if (migrationResult) {
-          const migratedParsed = JSON.parse(migrationResult.json);
-          const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
-          migrationPreview = {
-            beforeJson,
-            afterJson,
-            warnings: migrationResult.warnings,
-            hasUidRules: migrationAnalysis.hasUidRules,
-          };
-        }
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+      if (migrationResult) {
+        const migratedParsed = JSON.parse(migrationResult.json);
+        const afterJson = JSON.stringify(migratedParsed.accessControl, null, 2);
+        migrationPreview = {
+          beforeJson,
+          afterJson,
+          errors: migrationResult.errors,
+          notes: migrationResult.notes,
+          hasUidRules: migrationAnalysis.hasUidRules,
+          isIncompatible: false,
+          fallbackReleaseDate,
+        };
       }
+    } else if (migrationAnalysis && migrationAnalysis.errors.length > 0) {
+      const content = await fs.readFile(assessmentPath, 'utf-8');
+      const parsed = JSON.parse(content);
+      const beforeJson = JSON.stringify(parsed.allowAccess, null, 2);
+      migrationPreview = {
+        beforeJson,
+        afterJson: '[]',
+        errors: migrationAnalysis.errors,
+        notes: migrationAnalysis.notes,
+        hasUidRules: migrationAnalysis.hasUidRules,
+        isIncompatible: true,
+        fallbackReleaseDate,
+      };
     }
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-
+    const canEdit = permissions.hasCoursePermissionEdit && !permissions.isExampleCourse;
     res.send(
       InstructorAssessmentAccess({
         resLocals: res.locals,
@@ -117,7 +175,6 @@ router.get(
         migrationPreview,
         origHash,
         canEdit,
-        enhancedAccessControlEnabled,
       }),
     );
   }),
@@ -131,28 +188,28 @@ router.post(
         throw new HttpStatusError(403, 'Access denied');
       }
 
-      const enhancedAccessControlEnabled = await features.enabledFromLocals(
-        'enhanced-access-control',
-        res.locals,
-      );
-      if (!enhancedAccessControlEnabled) {
-        throw new HttpStatusError(403, 'Enhanced access control is not enabled for this course.');
-      }
-
       const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
-      const migrationResult = migrateAssessmentJson(content);
-      if (!migrationResult) {
+      const fallbackReleaseDate =
+        req.body.fallback_release_date ??
+        todayAsDatetimeLocal(res.locals.course_instance.display_timezone);
+      const migrationResult = migrateAssessmentJson(content, fallbackReleaseDate);
+
+      let formattedJson: string;
+      if (migrationResult) {
+        formattedJson = await formatJsonWithPrettier(migrationResult.json);
+      } else if (req.body.migrate_strategy === 'clear') {
+        const data = replaceJsonKey(JSON.parse(content), 'allowAccess', 'accessControl', []);
+        formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
+      } else {
         flash('error', 'This assessment cannot be automatically migrated.');
         return res.redirect(req.originalUrl);
       }
 
-      const formattedJson = await formatJsonWithPrettier(migrationResult.json);
-
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -169,7 +226,12 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
-      flash('success', 'Access rules migrated to modern format.');
+      flash(
+        'success',
+        migrationResult
+          ? 'Access rules migrated to modern format.'
+          : 'Legacy access rules removed. You can now configure access rules in the modern format.',
+      );
       return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);

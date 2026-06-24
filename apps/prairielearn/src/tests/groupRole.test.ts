@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
@@ -24,7 +23,7 @@ import {
   type GroupRoleWithCount,
   type RoleAssignment,
   getGroupRoleReassignmentsAfterLeave,
-} from '../lib/groups.js';
+} from '../lib/groups.shared.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupsRoleJson } from '../schemas/index.js';

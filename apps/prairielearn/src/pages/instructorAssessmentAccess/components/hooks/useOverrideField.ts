@@ -1,16 +1,17 @@
 import { useCallback } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
+import { getOverrideFieldPaths } from '../overrideFields.js';
 import type { AccessControlFormData, OverridableFieldName } from '../types.js';
 
 /**
  * Hook that manages whether a single override field is active (overridden) or
- * inherited from the main rule.  The overridden state is tracked via the
+ * inherited from the default rule.  The overridden state is tracked via the
  * `overriddenFields` string array on the override – not by setting the value
  * to `undefined`, which react-hook-form does not support.
  */
 export function useOverrideField(index: number, fieldName: OverridableFieldName) {
-  const { setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues, clearErrors, trigger } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
@@ -23,18 +24,25 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
     if (!current.includes(fieldName)) {
       setValue(`overrides.${index}.overriddenFields`, [...current, fieldName], {
         shouldDirty: true,
+        shouldValidate: true,
       });
+      void trigger(getOverrideFieldPaths(index, fieldName));
     }
-  }, [index, fieldName, setValue, getValues]);
+  }, [index, fieldName, setValue, getValues, trigger]);
 
   const removeOverride = useCallback(() => {
     const current = getValues(`overrides.${index}.overriddenFields`);
     setValue(
       `overrides.${index}.overriddenFields`,
       current.filter((f) => f !== fieldName),
-      { shouldDirty: true },
+      { shouldDirty: true, shouldValidate: true },
     );
-  }, [index, fieldName, setValue, getValues]);
+    // The resolver ignores inactive override fields, but errors already stored
+    // on the field or its sub-paths can linger in formState while the UI is
+    // hiding those inputs. Clear them with the same path set we validate when
+    // enabling the override.
+    clearErrors(getOverrideFieldPaths(index, fieldName));
+  }, [index, fieldName, setValue, getValues, clearErrors]);
 
   return { isOverridden, addOverride, removeOverride };
 }

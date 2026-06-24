@@ -1,12 +1,15 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
 import type { FileMetadata } from '../../lib/editorUtil.shared.js';
+import type { EditOutcome } from '../../lib/editors.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
@@ -19,6 +22,7 @@ export interface FileEditorData {
   diskContents: string;
   diskHash: string;
   fileMetadata?: FileMetadata;
+  lintHtmlMustache: boolean;
 }
 
 export interface DraftEdit {
@@ -27,8 +31,59 @@ export interface DraftEdit {
   hash: string | undefined;
   jobSequence?: JobSequenceWithTokens;
   alertChoice?: boolean;
-  didSave?: boolean;
-  didSync?: boolean;
+  outcome?: EditOutcome;
+}
+
+/**
+ * Determines the alert style and message for the save/sync result banner.
+ *
+ * For a `sync_json_errors` outcome the sync ran to completion but some entity
+ * had invalid JSON. We use the edited file's own per-entity `sync_errors` to
+ * tell whether THIS file caused the errors vs. some unrelated file, so we can
+ * show a specific message instead of a blanket "sync failed" message.
+ *
+ * `outcome` is undefined when there is a draft but no associated edit job, in
+ * which case nothing was saved to disk yet.
+ */
+function getSyncAlert(
+  outcome: EditOutcome | undefined,
+  fileMetadata?: FileMetadata,
+): { alertClass: 'alert-success' | 'alert-danger' | 'alert-warning'; message: string } {
+  switch (outcome) {
+    case undefined:
+    case 'save_failed':
+      return { alertClass: 'alert-danger', message: 'Failed to save file.' };
+    case 'sync_failed':
+      return {
+        alertClass: 'alert-danger',
+        message: 'File was saved, but the course failed to sync.',
+      };
+    case 'sync_json_errors':
+      // The file's own entity has sync errors — the user's edit likely caused them.
+      if (fileMetadata?.syncErrors) {
+        return {
+          alertClass: 'alert-danger',
+          message:
+            'File was saved, but it contains errors that prevented it from syncing. See the details above.',
+        };
+      }
+      // The sync completed, but some *other* entity has JSON errors. The user's
+      // file synced fine — we show a warning so they're not alarmed.
+      //
+      // TODO: This can be misleading when the user's edit *caused* errors in other
+      // entities (e.g., renaming a QID that an assessment references). We'd need to
+      // snapshot sync_errors before the sync and diff afterward to distinguish
+      // "pre-existing errors" from "errors caused by this edit."
+      return {
+        alertClass: 'alert-warning',
+        message:
+          'File was saved and synced successfully. Other files in this course have sync errors.',
+      };
+    case 'success':
+      return { alertClass: 'alert-success', message: 'File was saved and synced successfully.' };
+    default:
+      assertNever(outcome);
+  }
 }
 
 export function InstructorFileEditor({
@@ -60,6 +115,21 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
+      ${editorData.lintHtmlMustache
+        ? html`
+            <meta
+              name="htmlmustache-runtime-wasm"
+              content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+            />
+            <meta
+              name="htmlmustache-grammar-wasm"
+              content="${nodeModulesAssetPath(
+                '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+              )}"
+            />
+            ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+          `
+        : ''}
       ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
@@ -147,6 +217,14 @@ export function InstructorFileEditor({
                       </button>
                     `
                   : ''}
+                ${editorData.lintHtmlMustache
+                  ? html`
+                      <button type="button" class="btn btn-light btn-sm js-reformat-html-mustache">
+                        <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                        Reformat
+                      </button>
+                    `
+                  : ''}
                 <button
                   id="file-editor-save-button"
                   name="__action"
@@ -155,7 +233,7 @@ export function InstructorFileEditor({
                   disabled
                 >
                   <i class="fas fa-save" aria-hidden="true"></i>
-                  Save and sync
+                  Save
                 </button>
               </div>
             </div>
@@ -163,8 +241,8 @@ export function InstructorFileEditor({
           <div class="collapse" id="help">
             <div class="card-body">
               You are editing the file <code>${editorData.normalizedFileName}</code>. To save
-              changes, click <strong>Save and sync</strong> or use
-              <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
+              changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or
+              <strong>Cmd-S</strong> (Mac).
               ${config.fileEditorUseGit
                 ? html`
                     Doing so will write your changes to disk, will push them to the remote GitHub
@@ -181,57 +259,56 @@ export function InstructorFileEditor({
           <div class="card-body p-0 row">
             <div class="container-fluid">
               ${draftEdit != null
-                ? html`
-                    <div
-                      class="alert ${draftEdit.didSave && draftEdit.didSync
-                        ? 'alert-success'
-                        : 'alert-danger'} alert-dismissible fade show m-2"
-                      role="alert"
-                    >
-                      <div class="row align-items-center">
-                        <div class="col-auto">
-                          ${draftEdit.didSave
-                            ? draftEdit.didSync
-                              ? 'File was both saved and synced successfully.'
-                              : 'File was saved, but failed to sync.'
-                            : 'Failed to save and sync file.'}
+                ? run(() => {
+                    const { alertClass, message } = getSyncAlert(
+                      draftEdit.outcome,
+                      editorData.fileMetadata,
+                    );
+                    return html`
+                      <div
+                        class="alert ${alertClass} alert-dismissible fade show m-2"
+                        role="alert"
+                        data-testid="save-sync-alert"
+                      >
+                        <div class="row align-items-center">
+                          <div class="col-auto">${message}</div>
+                          ${draftEdit.jobSequence != null
+                            ? html`
+                                <div class="col-auto">
+                                  <button
+                                    type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#job-sequence-results"
+                                    id="job-sequence-results-button"
+                                  >
+                                    Show detail
+                                  </button>
+                                </div>
+                              `
+                            : ''}
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Close"
+                          ></button>
                         </div>
                         ${draftEdit.jobSequence != null
                           ? html`
-                              <div class="col-auto">
-                                <button
-                                  type="button"
-                                  class="btn btn-secondary btn-sm"
-                                  data-bs-toggle="collapse"
-                                  data-bs-target="#job-sequence-results"
-                                  id="job-sequence-results-button"
-                                >
-                                  Show detail
-                                </button>
+                              <div class="row collapse mt-4" id="job-sequence-results">
+                                <div class="card card-body">
+                                  ${JobSequenceResultsHtml({
+                                    course,
+                                    jobSequence: draftEdit.jobSequence,
+                                  })}
+                                </div>
                               </div>
                             `
                           : ''}
-                        <button
-                          type="button"
-                          class="btn-close"
-                          data-bs-dismiss="alert"
-                          aria-label="Close"
-                        ></button>
                       </div>
-                      ${draftEdit.jobSequence != null
-                        ? html`
-                            <div class="row collapse mt-4" id="job-sequence-results">
-                              <div class="card card-body">
-                                ${JobSequenceResults({
-                                  course,
-                                  jobSequence: draftEdit.jobSequence,
-                                })}
-                              </div>
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  `
+                    `;
+                  })
                 : ''}
               ${draftEdit?.alertChoice
                 ? html`
@@ -244,10 +321,10 @@ export function InstructorFileEditor({
                         : 'Both you and another user made changes to this file.'}
                       You may choose either to continue editing your draft or to discard your
                       changes. In particular, if you click
-                      <strong>Choose my version</strong> and then click
-                      <strong>Save and sync</strong>, you will overwrite the version of this file
-                      that is on disk. If you instead click <strong>Choose their version</strong>,
-                      any changes you have made to this file will be lost.
+                      <strong>Choose my version</strong> and then click <strong>Save</strong>, you
+                      will overwrite the version of this file that is on disk. If you instead click
+                      <strong>Choose their version</strong>, any changes you have made to this file
+                      will be lost.
                       <button
                         type="button"
                         class="btn-close"
@@ -268,6 +345,7 @@ export function InstructorFileEditor({
               data-file-metadata="${editorData.fileMetadata
                 ? JSON.stringify(editorData.fileMetadata)
                 : ''}"
+              data-lint-html-mustache="${editorData.lintHtmlMustache}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice
@@ -309,6 +387,29 @@ export function InstructorFileEditor({
                         ></button>
                       </div>
                     </div>
+                    ${editorData.lintHtmlMustache
+                      ? html`
+                          <div
+                            id="js-html-mustache-reformat-error"
+                            class="toast hide text-bg-danger border-0"
+                            role="alert"
+                            aria-live="assertive"
+                            aria-atomic="true"
+                          >
+                            <div class="d-flex">
+                              <div class="toast-body">
+                                Error reformatting file. Please check the syntax.
+                              </div>
+                              <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"
+                              ></button>
+                            </div>
+                          </div>
+                        `
+                      : ''}
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ console.log('Enabling Bootstrap compatibility layer.');
 
 // The following list of attributes was compiled from the Bootstrap 4 docs:
 // https://getbootstrap.com/docs/4.6/components/carousel/
+// https://getbootstrap.com/docs/4.6/components/collapse/
 // https://getbootstrap.com/docs/4.6/components/dropdowns/
 // https://getbootstrap.com/docs/4.6/components/modal/
 // https://getbootstrap.com/docs/4.6/components/popovers/
@@ -29,6 +30,7 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-keyboard',
   'data-html',
   'data-offset',
+  'data-parent',
   'data-pause',
   'data-placement',
   'data-popper-config',
@@ -36,6 +38,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-ride',
   'data-selector',
   'data-show',
+  'data-slide',
+  'data-slide-to',
   'data-spy',
   'data-target',
   'data-template',
@@ -459,14 +463,6 @@ makeMigrator({
   migrate(el, { migrateClass }) {
     if (!el.classList.contains('dropdown-menu')) return [];
 
-    // The version of `bootstrap-table` we're locked to uses the old classname.
-    // It was fixed in this PR:
-    // https://github.com/wenzhixin/bootstrap-table/pull/6796
-    // However, we can't upgrade to that version because of this breaking change:
-    // https://github.com/wenzhixin/bootstrap-table/issues/6745
-    // For now, we'll just ignore this, since we don't control this markup.
-    if (el.closest('.bootstrap-table')) return;
-
     migrateClass(el, 'dropdown-menu-left', 'dropdown-menu-start');
     migrateClass(el, 'dropdown-menu-right', 'dropdown-menu-end');
   },
@@ -479,9 +475,6 @@ makeMigrator({
 makeMigrator({
   selector: '.float-left, .float-right',
   migrate(el, { migrateClass }) {
-    // `bootstrap-table` uses its own implementation of `float-left` and `float-right`.
-    if (el.closest('.bootstrap-table')) return;
-
     migrateClass(el, 'float-left', 'float-start');
     migrateClass(el, 'float-right', 'float-end');
   },

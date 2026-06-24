@@ -268,11 +268,16 @@ export function ColumnManager<RowDataModel>({
     // When we use the pin or reset button, we want to refocus to another element.
     // We want this in a useEffect so that this code runs after the component re-renders.
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (activeElementId) {
       document.getElementById(activeElementId)?.focus();
     }
   }, [activeElementId]);
+
+  const hasHideableColumns = allLeafColumns.some((c) => c.getCanHide());
+  if (!hasHideableColumns && !topContent) return null;
+
+  const hasMenuSectionsBelowTopContent =
+    pinnedMenuColumns.length > 0 || unpinnedRootColumns.length > 0 || showResetButton;
 
   return (
     <Dropdown
@@ -309,7 +314,7 @@ export function ColumnManager<RowDataModel>({
         {topContent && (
           <>
             {topContent}
-            <Dropdown.Divider />
+            {hasMenuSectionsBelowTopContent && <Dropdown.Divider />}
           </>
         )}
         {pinnedMenuColumns.length > 0 && (

@@ -67,3 +67,18 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
   }
   return opts.next();
 });
+
+export const requireCoursePermissionEditOrCourseInstancePermissionView = t.middleware(
+  async (opts) => {
+    if (
+      !opts.ctx.authz_data.has_course_permission_edit &&
+      !opts.ctx.authz_data.has_course_instance_permission_view
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a course editor or student data viewer)',
+      });
+    }
+    return opts.next();
+  },
+);

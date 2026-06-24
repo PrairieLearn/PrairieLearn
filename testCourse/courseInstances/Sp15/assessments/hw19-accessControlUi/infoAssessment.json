@@ -6,14 +6,23 @@
   "number": "19",
   "accessControl": [
     {
-      "listBeforeRelease": true,
+      "beforeRelease": { "listed": true },
       "dateControl": {
-        "releaseDate": "2026-04-10T00:00:01",
-        "afterLastDeadline": { "allowSubmissions": true }
+        "release": { "date": "2026-04-10T00:00:01" },
+        "due": { "date": "2026-05-01T23:59:59" },
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 }
       },
       "afterComplete": { "questions": { "hidden": false } }
     },
-    { "labels": ["Section A"], "dateControl": { "dueDate": "2026-05-28T20:15:00" } }
+    {
+      "uuid": "0b31c53c-0a94-4380-bd01-c75b8f5d3fcc",
+      "labels": ["Section A"],
+      "dateControl": { "due": { "date": "2026-05-28T20:15:00" } }
+    },
+    {
+      "uuid": "4a7a8e97-3298-46d4-abff-8781389afd5d",
+      "dateControl": { "due": { "date": "2026-06-01T23:59:00" } }
+    }
   ],
   "zones": [
     { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }

@@ -47,6 +47,8 @@ def assert_order_blocks_options(
         assert order_block_options.solution_header == options["solution-header"]
     if "partial-credit" in options:
         assert order_block_options.partial_credit.value == options["partial-credit"]
+    if "display-blocks" in options:
+        assert order_block_options.display_blocks.value == options["display-blocks"]
     if "solution-placement" in options:
         assert (
             order_block_options.solution_placement.value
@@ -139,9 +141,12 @@ def test_valid_order_block_options() -> None:
             {
                 "weight": 3,
             },
-            r'Required attribute "answers-name" missing',
+            r'pl-order-blocks is missing required attribute "answers-name"\.',
         ),
-        ({"answers-name": "test", "invalid": "test"}, r'Unknown attribute "invalid"'),
+        (
+            {"answers-name": "test", "invalid": "test"},
+            r'Unknown attribute "invalid" on pl-order-blocks\.',
+        ),
     ],
 )
 def test_check_attribute_failure(options: dict, error: str) -> None:
@@ -368,7 +373,7 @@ def test_initially_placed_validation(
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
+            'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.',
         ),
     ],
 )
@@ -401,7 +406,7 @@ def test_valid_final_tag(
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2"},
             ],
-            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
+            'Use of optional lines requires at least one <pl-answer final="true"> block that can be the final block in a valid ordering.',
         ),
     ],
 )
@@ -448,3 +453,59 @@ def test_shuffle_distractor_groups() -> None:
 
     # Third block should be last
     assert result[4]["tag"] == "third"
+
+
+@pytest.mark.parametrize(
+    ("options"),
+    [
+        {"answers-name": "test", "display-blocks": "vertical"},
+        {"answers-name": "test", "display-blocks": "inline-wrap"},
+        {"answers-name": "test", "display-blocks": "inline-nowrap"},
+        {"answers-name": "test", "display-blocks": "vertical", "indentation": True},
+    ],
+)
+def test_display_blocks_validation(options: dict) -> None:
+    """Tests valid pl-order-blocks display-blocks option validation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    order_blocks_options._validate_order_blocks_options()
+
+
+@pytest.mark.parametrize(
+    ("options", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "display-blocks": "inline-wrap",
+                "indentation": True,
+            },
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
+        ),
+        (
+            {
+                "answers-name": "test",
+                "display-blocks": "inline-nowrap",
+                "indentation": True,
+            },
+            'The indentation attribute may not be used when display-blocks is set to "inline-wrap" or "inline-nowrap".',
+        ),
+    ],
+)
+def test_display_blocks_validation_failure(options: dict, error: str) -> None:
+    """Tests pl-order-blocks display-blocks option failure with indentation"""
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag("pl-answer", {"correct": True}),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options._validate_order_blocks_options()

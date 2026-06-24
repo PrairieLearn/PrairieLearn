@@ -11,7 +11,6 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js
 import { type FileMetadata, FileType } from '../../src/lib/editorUtil.shared.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
-import './lib/verboseToggle.js';
 
 /**
  * Error codes for save validation issues.
@@ -176,6 +175,14 @@ class InstructorFileEditor {
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
         ?.addEventListener('click', async () => await this.reformatJSONFile());
+    }
+
+    if (element.dataset.lintHtmlMustache === 'true') {
+      document.dispatchEvent(
+        new CustomEvent('pl:html-mustache-linter-attach', {
+          detail: { editor: this.editor },
+        }),
+      );
     }
 
     // Override the save button click to show confirmation modal if needed
@@ -445,7 +452,7 @@ onDocumentReady(() => {
         .querySelectorAll('.js-version-choice-content')
         .forEach((element) => element.remove());
 
-      // Show div that contains "Show help" and "Save and sync" buttons
+      // Show div that contains "Show help" and "Save" buttons
       window.bootstrap.Collapse.getOrCreateInstance('#buttons').show();
 
       draftEditor?.takeOver();

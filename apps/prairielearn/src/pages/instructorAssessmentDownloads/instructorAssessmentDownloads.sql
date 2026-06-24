@@ -11,38 +11,20 @@ WITH
           WHEN $highest_score THEN NULL
           ELSE ai.id
         END
-      ) (aset.name || ' ' || a.number) AS assessment_label,
-      u.id,
+      ) u.id,
       u.uid,
       u.uin,
       u.name,
       users_get_displayed_role (u.id, ci.id) AS role,
-      substring(
-        u.uid
-        FROM
-          '^[^@]+'
-      ) AS username,
       ai.score_perc,
       ai.points,
       ai.max_points,
       ai.number,
       ai.id AS assessment_instance_id,
       ai.open,
-      CASE
-        WHEN ai.open
-        AND ai.date_limit IS NOT NULL THEN greatest(
-          0,
-          floor(
-            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
-          )
-        )::text || ' min'
-        WHEN ai.open THEN 'Open'
-        ELSE 'Closed'
-      END AS time_remaining,
-      format_date_iso8601 (ai.date, ci.display_timezone) AS date_formatted,
-      format_interval (ai.duration) AS duration,
-      DATE_PART('epoch', ai.duration) AS duration_secs,
-      DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
+      ai.date_limit,
+      ai.date,
+      ai.duration,
       g.name AS group_name,
       teams_uid_list (g.id) AS uid_list
     FROM
@@ -92,14 +74,12 @@ SELECT
   u.uin,
   u.name,
   users_get_displayed_role (u.id, ci.id) AS role,
-  (aset.name || ' ' || a.number) AS assessment_label,
   ai.number AS assessment_instance_number,
   z.number AS zone_number,
   z.title AS zone_title,
-  CASE
-    WHEN ci.course_id = q.course_id THEN q.qid
-    ELSE '@' || c.sharing_name || '/' || q.qid
-  END AS qid,
+  q.course_id AS question_course_id,
+  c.sharing_name AS course_sharing_name,
+  q.qid,
   iq.number AS instance_question_number,
   iq.points,
   iq.score_perc,
@@ -108,11 +88,11 @@ SELECT
   aq.max_points,
   aq.max_auto_points,
   aq.max_manual_points,
-  format_date_iso8601 (iq.created_at, ci.display_timezone) AS date_formatted,
+  iq.created_at AS instance_question_created_at,
   iq.highest_submission_score,
   iq.last_submission_score,
   iq.number_attempts,
-  DATE_PART('epoch', iq.duration) AS duration_seconds,
+  iq.duration,
   g.name AS group_name,
   teams_uid_list (g.id) AS uid_list,
   agu.uid AS assigned_grader,
@@ -174,10 +154,9 @@ WITH
       u.uin,
       z.number AS zone_number,
       z.title AS zone_title,
-      CASE
-        WHEN v.course_id = q.course_id THEN q.qid
-        ELSE '@' || c.sharing_name || '/' || q.qid
-      END AS qid,
+      q.course_id AS question_course_id,
+      c.sharing_name AS course_sharing_name,
+      q.qid,
       iq.score_perc AS old_score_perc,
       iq.auto_points AS old_auto_points,
       iq.manual_points AS old_manual_points,
@@ -229,14 +208,12 @@ WITH
       u.uin,
       u.name,
       users_get_displayed_role (u.id, ci.id) AS role,
-      (aset.name || ' ' || a.number) AS assessment_label,
       ai.number AS assessment_instance_number,
       z.number AS zone_number,
       z.title AS zone_title,
-      CASE
-        WHEN v.course_id = q.course_id THEN q.qid
-        ELSE '@' || c.sharing_name || '/' || q.qid
-      END AS qid,
+      q.course_id AS question_course_id,
+      c.sharing_name AS course_sharing_name,
+      q.qid,
       iq.number AS instance_question_number,
       iq.points,
       iq.score_perc,
@@ -252,49 +229,37 @@ WITH
       v.options,
       s.date,
       s.id AS submission_id,
-      format_date_iso8601 (s.date, ci.display_timezone) AS submission_date_formatted,
+      s.date AS submission_date,
       s.submitted_answer,
       s.partial_scores,
       s.override_score,
       s.credit,
       s.mode,
-      format_date_iso8601 (s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
-      format_date_iso8601 (s.graded_at, ci.display_timezone) AS graded_at_formatted,
+      s.grading_requested_at,
+      s.graded_at,
       s.score,
-      CASE
-        WHEN s.correct THEN 'TRUE'
-        WHEN NOT s.correct THEN 'FALSE'
-        ELSE NULL
-      END AS correct,
+      s.correct,
       s.feedback,
-      CASE
-        WHEN rg.id IS NOT NULL THEN (
-          SELECT
+      s.manual_rubric_grading_id,
+      TO_JSONB(rg) AS rubric_grading,
+      (
+        SELECT
+          JSONB_AGG(
             JSONB_BUILD_OBJECT(
-              'computed_points',
-              rg.computed_points,
-              'adjust_points',
-              rg.adjust_points,
-              'items',
-              COALESCE(
-                JSONB_AGG(
-                  JSONB_BUILD_OBJECT(
-                    'description',
-                    ri.description,
-                    'points',
-                    rgi.points
-                  )
-                ),
-                '[]'::jsonb
-              )
+              'description',
+              ri.description,
+              'points',
+              rgi.points
             )
-          FROM
-            rubric_grading_items rgi
-            JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
-          WHERE
-            rgi.rubric_grading_id = rg.id
-        )
-      END AS rubric_grading,
+            ORDER BY
+              ri.number
+          )
+        FROM
+          rubric_grading_items rgi
+          JOIN rubric_items ri ON (ri.id = rgi.rubric_item_id)
+        WHERE
+          rgi.rubric_grading_id = rg.id
+      ) AS rubric_grading_items,
       row_number() OVER (
         PARTITION BY
           v.id
@@ -418,3 +383,18 @@ WHERE
   AND max_points IS NOT NULL
 LIMIT
   1;
+
+-- BLOCK select_course_instance_users
+-- All enrolled users in the course instance. Used for Canvas matching, which
+-- is a course-level identity mapping and should not be restricted to users
+-- who happen to have instances for a particular assessment.
+SELECT
+  u.*,
+  users_get_displayed_role (u.id, $course_instance_id) AS role
+FROM
+  enrollments AS e
+  JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  e.course_instance_id = $course_instance_id
+ORDER BY
+  u.id;
