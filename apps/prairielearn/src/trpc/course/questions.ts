@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -12,6 +10,7 @@ import {
 } from '../../components/QuestionsTable.shared.js';
 import { config } from '../../lib/config.js';
 import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
+import { getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import {
   type FileModifyEditor,
   MultiEditor,
@@ -152,14 +151,11 @@ function assessmentInfoPath({
       message: 'Assessment directory is not available',
     });
   }
-  return path.join(
-    coursePath,
-    'courseInstances',
-    courseInstance.short_name,
-    'assessments',
-    assessment.tid,
-    'infoAssessment.json',
-  );
+  return getAssessmentInfoJsonPath({
+    course: { path: coursePath },
+    course_instance: courseInstance,
+    assessment,
+  });
 }
 
 function buildQuestionBlock(question: Question): ZoneQuestionBlockJsonInput {
@@ -432,14 +428,11 @@ const previewDeletion = t.procedure
           });
 
     for (const ref of refs) {
-      const jsonPath = path.join(
-        ctx.course.path,
-        'courseInstances',
-        ref.course_instance_short_name,
-        'assessments',
-        ref.assessment_directory,
-        'infoAssessment.json',
-      );
+      const jsonPath = getAssessmentInfoJsonPath({
+        course: ctx.course,
+        course_instance: { short_name: ref.course_instance_short_name },
+        assessment: { tid: ref.assessment_directory },
+      });
       // Fail closed: a file we can't read or parse here would also break the
       // actual deletion, so let the error propagate rather than silently
       // undercounting affected assessments in the preview.
