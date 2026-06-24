@@ -16,7 +16,12 @@ import { Alert, Collapse, Modal } from 'react-bootstrap';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
-import { AceFileEditor, type AceFileEditorHandle } from '../../components/AceFileEditor.js';
+import {
+  AceFileEditor,
+  type AceFileEditorHandle,
+  getCursorOffsetFromCursorPosition,
+  getCursorPositionFromCursorOffset,
+} from '../../components/AceFileEditor.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import type { JobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -44,6 +49,13 @@ enum SaveErrorCode {
   UUID_CHANGED = 'UUID_CHANGED',
   UUID_REMOVED = 'UUID_REMOVED',
 }
+
+const EDITOR_OPTIONS = {
+  autoScrollEditorIntoView: true,
+  maxLines: Infinity,
+  minLines: 10,
+  wrap: true,
+} satisfies Partial<ace.Ace.EditorOptions>;
 
 function InvalidJsonModalContent() {
   return (
@@ -95,26 +107,6 @@ function UuidChangeModalContent({
       <div>Clicking "Confirm save" will save this file with its original UUID.</div>
     </>
   );
-}
-
-function getCursorOffsetFromCursorPosition(position: ace.Ace.Point, lines: string[]): number {
-  const cursorOffset = lines.slice(0, position.row).reduce((acc, line) => acc + line.length + 1, 0);
-  return cursorOffset + position.column;
-}
-
-function getCursorPositionFromCursorOffset(cursorOffset: number, lines: string[]): ace.Ace.Point {
-  let row = 0;
-  let column = 0;
-  let offset = 0;
-  for (const line of lines) {
-    if (offset + line.length >= cursorOffset) {
-      column = cursorOffset - offset;
-      break;
-    }
-    offset += line.length + 1;
-    row += 1;
-  }
-  return { row, column };
 }
 
 type SaveIssue =
@@ -367,6 +359,12 @@ export function FileEditor({
     );
     const fileContentsInput = fileContentsInputRef.current;
     if (!fileContentsInput) return;
+    // This input's value is React-controlled, but we override it imperatively and
+    // submit synchronously so the native POST serializes the restored contents.
+    // The submit navigates away before any re-render (e.g. the modal's `onExited`)
+    // can overwrite the DOM value back to the editor's current contents. If this
+    // ever becomes an async (fetch/tRPC) submit, pass the restored contents to the
+    // request directly instead of relying on this synchronous-navigation timing.
     fileContentsInput.value = b64EncodeUnicode(restoredContents);
 
     bypassSaveCheckRef.current = true;
@@ -545,12 +543,7 @@ export function FileEditor({
                       mode={editorData.aceMode}
                       readOnly={readOnly}
                       className="editor"
-                      options={{
-                        autoScrollEditorIntoView: true,
-                        maxLines: Infinity,
-                        minLines: 10,
-                        wrap: true,
-                      }}
+                      options={EDITOR_OPTIONS}
                       focusOnMount
                       onChange={setContents}
                       onReady={handleEditorReady}
@@ -620,12 +613,7 @@ export function FileEditor({
                         value={diskContents}
                         mode={editorData.aceMode}
                         className="editor"
-                        options={{
-                          autoScrollEditorIntoView: true,
-                          maxLines: Infinity,
-                          minLines: 10,
-                          wrap: true,
-                        }}
+                        options={EDITOR_OPTIONS}
                         readOnly
                       />
                     </div>
