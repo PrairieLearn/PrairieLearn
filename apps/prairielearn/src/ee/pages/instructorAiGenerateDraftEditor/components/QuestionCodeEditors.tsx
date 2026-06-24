@@ -131,6 +131,8 @@ export function QuestionCodeEditors(props: QuestionCodeEditorsProps) {
   const savedPython = pythonContents ?? '';
 
   return (
+    // Remount the state-owning editor component when the saved file contents change so
+    // local edits, dirty state, cursor position, and undo history reset to the new baseline.
     <QuestionCodeEditorsInner
       key={`${savedHtml}\0${savedPython}`}
       {...editorProps}
