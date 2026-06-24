@@ -11,7 +11,6 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js
 import { type FileMetadata, FileType } from '../../src/lib/editorUtil.shared.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
-import './lib/verboseToggle.js';
 
 /**
  * Error codes for save validation issues.

@@ -36,6 +36,9 @@ def generate(data):
 ```
 
 ```python title="server.py"
+import random
+import string
+
 import prairielearn as pl
 import networkx as nx
 
@@ -50,20 +53,28 @@ def generate(data):
 
 ## Customizations
 
-| Attribute                   | Type    | Default              | Description                                                                                                                                                                                                                                                                   |
-| --------------------------- | ------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `directed`                  | boolean | true                 | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                                  |
-| `directory`                 | string  | `"."`                | Directory where the source file is located. Can be `"."` (question directory), `"clientFilesCourse"`, or `"serverFilesCourse"`.                                                                                                                                               |
-| `engine`                    | string  | dot                  | The rendering engine to use; supports `"circo"`, `"dot"`, `"fdp"`, `"neato"`, `"osage"`, and `"twopi"`.                                                                                                                                                                       |
-| `log-warnings`              | boolean | true                 | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                                 |
-| `negative-weights`          | boolean | false                | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                          |
-| `params-name`               | string  | —                    | The name of a parameter containing the data to use as input. Data type to use depends on `params-type` attribute.                                                                                                                                                             |
-| `params-name-labels`        | string  | —                    | When using an adjacency matrix, the parameter that contains the labels for each node.                                                                                                                                                                                         |
-| `params-type`               | string  | `"adjacency-matrix"` | Which backend to use for rendering a graph from data. By default, only `adjacency-matrix` and `networkx` exist, but custom types can be added through extensions.                                                                                                             |
-| `source-file-name`          | string  | —                    | Name of the file to load graph content from. If provided, the file content will be used instead of the element's inner HTML. Useful for complex graphs with special characters like angle brackets in record-based nodes.                                                     |
-| `weights`                   | boolean | —                    | When using an adjacency matrix, whether to show the edge weights. By default, will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                                     |
-| `weights-digits`            | integer | 2                    | When using an adjacency matrix, how many digits to show for the weights.                                                                                                                                                                                                      |
-| `weights-presentation-type` | string  | `"f"`                | Number display format for the weights when using an adjacency matrix. If `presentation-type` is `"sigfig"`, each number is formatted using the `to_precision` module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+| Attribute                   | Type    | Default              | Description                                                                                                                                                                                                                                                                           |
+| --------------------------- | ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `directed`                  | boolean | true                 | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                                          |
+| `directory`                 | string  | `"."`                | Directory where the source file is located. Can be `"."` (question directory), `"clientFilesCourse"`, or `"serverFilesCourse"`.                                                                                                                                                       |
+| `engine`                    | string  | dot                  | The rendering engine to use; supports `"circo"`, `"dot"`, `"fdp"`, `"neato"`, `"osage"`, and `"twopi"`.                                                                                                                                                                               |
+| `log-warnings`              | boolean | true                 | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                                         |
+| `negative-weights`          | boolean | false                | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                                  |
+| `params-name`               | string  | —                    | The name of a parameter containing the data to use as input. Data type to use depends on `params-type` attribute.                                                                                                                                                                     |
+| `params-name-labels`        | string  | —                    | When using an adjacency matrix, the parameter that contains the labels for each node.                                                                                                                                                                                                 |
+| `params-type`               | string  | `"adjacency-matrix"` | Which backend to use for rendering a graph from data. By default, only `adjacency-matrix` and `networkx` exist, but custom types can be added through extensions.                                                                                                                     |
+| `source-file-name`          | string  | —                    | Name of the file to load graph content from. If provided, the file content will be used instead of the element's inner HTML. Useful for complex graphs with special characters like angle brackets in record-based nodes.                                                             |
+| `weights`                   | boolean | —                    | When using an adjacency matrix, whether to show the edge weights. By default, will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                                             |
+| `weights-digits`            | integer | 2                    | When using an adjacency matrix, how many digits to show for the weights.                                                                                                                                                                                                              |
+| `weights-presentation-type` | string  | `"f"`                | Number display format for the weights when using an adjacency matrix. If `weights-presentation-type` is `"sigfig"`, each number is formatted using the `to_precision` module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+
+### Migrating from deprecated attributes
+
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax                    | New syntax             |
+| ----------------------------- | ---------------------- |
+| `params-name-matrix="<name>"` | `params-name="<name>"` |
 
 ## Details
 

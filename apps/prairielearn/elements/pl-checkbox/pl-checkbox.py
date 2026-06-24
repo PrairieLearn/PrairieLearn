@@ -47,6 +47,8 @@ SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
+SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
@@ -72,6 +74,7 @@ def generate_grading_text(
     insert_text: str,
     num_display_answers: int,
     partial_credit_mode: PartialCreditType,
+    allow_blank: bool,
 ) -> str:
     """Generate grading text for checkbox element."""
     grading_key = ""
@@ -93,10 +96,36 @@ def generate_grading_text(
         grading_key: True,
         "insert_text": insert_text,
         "num_display_answers": num_display_answers,
+        "allow_blank": allow_blank,
     }
 
     with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         return chevron.render(f, grading_text_params).strip()
+
+
+def generate_options_range_text(
+    *,
+    min_options_to_select: int,
+    max_options_to_select: int,
+    allow_blank: bool,
+) -> str:
+    """Generate text for the allowable number of selections."""
+    if min_options_to_select != max_options_to_select:
+        options_range_text = f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
+    elif min_options_to_select == 1:
+        options_range_text = (
+            f"You must select exactly <b>{min_options_to_select}</b> option"
+        )
+    else:
+        options_range_text = (
+            f"You must select exactly <b>{min_options_to_select}</b> options"
+        )
+    if allow_blank:
+        options_range_text += " (or skip this question by leaving it blank)."
+    else:
+        options_range_text += "."
+
+    return options_range_text
 
 
 def generate_insert_text(
@@ -109,6 +138,7 @@ def generate_insert_text(
     has_max_select_attrib: bool,
     min_options_to_select: int,
     max_options_to_select: int,
+    allow_blank: bool,
 ) -> str:
     """Generate help text for checkbox element.
 
@@ -121,6 +151,7 @@ def generate_insert_text(
         has_max_select_attrib: Whether max-select attribute is specified
         min_options_to_select: Minimum options that must be selected
         max_options_to_select: Maximum options that can be selected
+        allow_blank: Whether blank submissions are allowed
 
     Returns:
         HTML string for help text
@@ -129,24 +160,35 @@ def generate_insert_text(
         num_correct=num_correct, show_number_correct=show_number_correct
     )
 
-    show_min_select = (
-        has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
-    )
+    show_min_select = has_min_select_attrib
     show_max_select = (
         has_max_select_attrib and max_options_to_select != num_display_answers
     )
 
     if detailed_help_text or (show_min_select and show_max_select):
         if min_options_to_select != max_options_to_select:
-            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
+            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options"
+        elif min_options_to_select == 1:
+            insert_text = f" exactly <b>{min_options_to_select}</b> option"
         else:
-            insert_text = f" exactly <b>{min_options_to_select}</b> options."
+            insert_text = f" exactly <b>{min_options_to_select}</b> options"
     elif show_min_select:
-        insert_text = f" at least <b>{min_options_to_select}</b> options."
+        if min_options_to_select == 1:
+            insert_text = f" at least <b>{min_options_to_select}</b> option"
+        else:
+            insert_text = f" at least <b>{min_options_to_select}</b> options"
     elif show_max_select:
-        insert_text = f" at most <b>{max_options_to_select}</b> options."
+        if max_options_to_select == 1:
+            insert_text = f" at most <b>{max_options_to_select}</b> option"
+        else:
+            insert_text = f" at most <b>{max_options_to_select}</b> options"
     else:
-        insert_text = " at least 1 option."
+        insert_text = " all possible options that apply"
+
+    if allow_blank:
+        insert_text += " (you may also skip this question by leaving it blank)."
+    else:
+        insert_text += "."
 
     insert_text += number_correct_text
 
@@ -382,6 +424,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # Deprecated
         "fixed-order",
         "inline",
+        "allow-blank",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -563,6 +606,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             has_max_select_attrib = pl.has_attrib(element, "max-select")
             num_display_answers = len(display_answers)
 
+            allow_blank = pl.get_boolean_attrib(
+                element, "allow-blank", ALLOW_BLANK_DEFAULT
+            )
+
             insert_text = generate_insert_text(
                 num_correct=len(correct_answer_list),
                 num_display_answers=num_display_answers,
@@ -572,31 +619,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 has_max_select_attrib=has_max_select_attrib,
                 min_options_to_select=min_options_to_select,
                 max_options_to_select=max_options_to_select,
+                allow_blank=allow_blank,
             )
 
-            number_correct_text = generate_number_correct_text(
-                num_correct=len(correct_answer_list),
-                show_number_correct=show_number_correct,
+            helptext = (
+                f'<small class="form-text text-muted">Select {insert_text}</small>'
             )
-
-            show_min_select = (
-                has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
-            )
-            show_max_select = (
-                has_max_select_attrib and max_options_to_select != num_display_answers
-            )
-            if detailed_help_text or show_min_select or show_max_select:
-                helptext = (
-                    f'<small class="form-text text-muted">Select {insert_text}</small>'
-                )
-            else:
-                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
             grading_info = generate_grading_text(
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
                 partial_credit_mode=partial_credit_mode,
+                allow_blank=allow_blank,
             )
 
         html_params: dict[str, Any] = {
@@ -621,6 +655,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
+        blank_submission = False
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
@@ -628,6 +663,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score = partial_score.get("score", None)
 
             answers = []
+            if not submitted_keys:
+                answer_item = {
+                    "key": None,
+                    "html": SUBMITTED_ANSWER_BLANK["html"],
+                    "display_score_badge": score is not None and show_answer_feedback,
+                }
+                blank_submission = True
+                answers.append(answer_item)
             for submitted_key in submitted_keys:
                 submitted_answer = next(
                     filter(lambda a: a["key"] == submitted_key, display_answers), None
@@ -659,6 +702,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "hide_letter_keys": pl.get_boolean_attrib(
                     element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                 ),
+                "blank_submission": blank_submission,
             }
 
             # Add parameter for displaying overall score badge
@@ -705,13 +749,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
 
-    # Check that at least one option was selected
+    # Ensure that submitted_key can be converted to a set
     if submitted_key is None:
-        data["format_errors"][name] = "You must select at least one option."
-        return
+        submitted_key = []
 
     # Check that the selected options are a subset of the valid options
     submitted_key_set = set(submitted_key)
@@ -730,15 +775,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    if not (min_options_to_select <= len(submitted_key) <= max_options_to_select):
-        if min_options_to_select != max_options_to_select:
-            data["format_errors"][name] = (
-                f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
-            )
-        else:
-            data["format_errors"][name] = (
-                f"You must select exactly <b>{min_options_to_select}</b> options."
-            )
+    if not (
+        (allow_blank and len(submitted_key) == 0)
+        or min_options_to_select <= len(submitted_key) <= max_options_to_select
+    ):
+        data["format_errors"][name] = generate_options_range_text(
+            min_options_to_select=min_options_to_select,
+            max_options_to_select=max_options_to_select,
+            allow_blank=allow_blank,
+        )
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -774,10 +819,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         score = 1 - 1.0 * number_wrong / number_answers
     elif partial_credit_mode is PartialCreditType.COVERAGE:
-        n_correct_answers = len(correct_set & submitted_set)
-        base_score = n_correct_answers / len(correct_set)
-        guessing_factor = n_correct_answers / len(submitted_set)
-        score = base_score * guessing_factor
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        if allow_blank and len(submitted_set) == 0:
+            score = 0
+        else:
+            n_correct_answers = len(correct_set & submitted_set)
+            base_score = n_correct_answers / len(correct_set)
+            guessing_factor = n_correct_answers / len(submitted_set)
+            score = base_score * guessing_factor
     else:
         assert_never(partial_credit_mode)
 
@@ -801,6 +850,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     min_options_to_select = get_min_options_to_select(element, MIN_SELECT_DEFAULT)
     max_options_to_select = get_max_options_to_select(element, number_answers)
+
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     result = data["test_type"]
 
@@ -848,10 +899,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             )
             score = 1 - 1.0 * number_wrong / number_answers
         elif partial_credit_mode is PartialCreditType.COVERAGE:
-            n_correct_answers = len(set(correct_keys) & set(ans))
-            base_score = n_correct_answers / len(set(correct_keys))
-            guessing_factor = n_correct_answers / len(set(ans))
-            score = base_score * guessing_factor
+            if allow_blank and len(ans) == 0:
+                score = 0
+            else:
+                n_correct_answers = len(set(correct_keys) & set(ans))
+                base_score = n_correct_answers / len(set(correct_keys))
+                guessing_factor = n_correct_answers / len(set(ans))
+                score = base_score * guessing_factor
         else:
             assert_never(partial_credit_mode)
 
@@ -866,10 +920,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": feedback,
         }
     elif result == "invalid":
-        # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
-        # This mimics what a browser does when no checkbox is selected: we simply get no value
-        # for that form field.
-        data["format_errors"][name] = "You must select at least one option."
+        if allow_blank:
+            # Place an invalid key in raw_submitted_answers; this is invalid regardless of whether allow_blank is true
+            data["raw_submitted_answers"][name] = "0"
+            # Place any error message in format_errors[name]
+            data["format_errors"][name] = "You selected an invalid option: 0"
+        else:
+            # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
+            # This mimics what a browser does when no checkbox is selected: we simply get no value
+            # for that form field.
+            data["format_errors"][name] = "You must select at least one option."
     else:
         assert_never(result)
 

@@ -102,7 +102,6 @@ GRADING_METHOD_ANSWER_ATTRIBUTES: dict[GradingMethodType, frozenset[str]] = {
         "initially-placed",
         "tag",
         "depends",
-        "comment",
         "indent",
         "distractor-feedback",
         "distractor-for",
@@ -118,7 +117,7 @@ DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ANSWER_CORRECT_DEFAULT = True
 INITIALLY_PLACED_DEFAULT = False
-ANSWER_INDENT_DEFAULT = None
+ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
@@ -202,6 +201,7 @@ class AnswerOptions:
         group_info: GroupInfo,
         grading_method: GradingMethodType,
         has_optional_blocks: bool,
+        indentation: bool,
     ) -> None:
         self._check_options(html_element, grading_method)
         if has_optional_blocks:
@@ -216,9 +216,8 @@ class AnswerOptions:
             html_element, "initially-placed", INITIALLY_PLACED_DEFAULT
         )
         self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
-        self.indent = pl.get_integer_attrib(
-            html_element, "indent", ANSWER_INDENT_DEFAULT
-        )
+        indent_default = ANSWER_INDENT_DEFAULT if indentation else None
+        self.indent = pl.get_integer_attrib(html_element, "indent", indent_default)
         self.distractor_for = pl.get_string_attrib(
             html_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
         )
@@ -532,6 +531,7 @@ def collect_answer_options(
                         {"tag": group_tag, "depends": group_depends},
                         order_blocks_options.grading_method,
                         order_blocks_options.has_optional_blocks,
+                        order_blocks_options.indentation,
                     )
                     answer_options.append(options)
             case "pl-answer":
@@ -540,6 +540,7 @@ def collect_answer_options(
                     {"tag": None, "depends": None},
                     order_blocks_options.grading_method,
                     order_blocks_options.has_optional_blocks,
+                    order_blocks_options.indentation,
                 )
                 answer_options.append(options)
             case _:

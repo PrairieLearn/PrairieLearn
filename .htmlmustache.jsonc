@@ -99,6 +99,18 @@
       "message": "variable children in pl-variable-output are deprecated. Migrate to pl-variable. See https://docs.prairielearn.com/elements/pl-variable-output/."
     },
     {
+      "id": "pl-deprecated-variable-output-python-tab",
+      "selector": "pl-variable-output[default-tab=\"python\"]",
+      "message": "default-tab=\"python\" on pl-variable-output is deprecated. Use default-tab=\"numpy\" instead. See https://docs.prairielearn.com/elements/pl-variable-output/.",
+      "severity": "warning"
+    },
+    {
+      "id": "pl-deprecated-variable-output-show-python",
+      "selector": "pl-variable-output[show-python]",
+      "message": "show-python on pl-variable-output is deprecated. Use show-numpy instead. See https://docs.prairielearn.com/elements/pl-variable-output/.",
+      "severity": "warning"
+    },
+    {
       "id": "pl-prefer-pl-inputs",
       "selector": "input, textarea, select",
       "message": "Prefer PrairieLearn input elements over raw HTML form inputs.",

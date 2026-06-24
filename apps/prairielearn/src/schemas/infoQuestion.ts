@@ -150,8 +150,10 @@ const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string(), z.string())
-      .describe('Environment variables to set inside the workspace container.')
+      .record(z.string(), z.string().nullable())
+      .describe(
+        'Environment variables to set inside the workspace container. Use a null value to unset a variable.',
+      )
       .optional()
       .default({}),
     syncIgnore: z

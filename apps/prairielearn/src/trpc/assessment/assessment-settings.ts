@@ -10,6 +10,7 @@ import { run } from '@prairielearn/run';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
 import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -298,21 +299,6 @@ async function readInfoAssessment(infoAssessmentPath: string): Promise<Assessmen
   }
 }
 
-function infoAssessmentPathFor(
-  course: { path: string },
-  courseInstanceShortName: string,
-  tid: string,
-) {
-  return path.join(
-    course.path,
-    'courseInstances',
-    courseInstanceShortName,
-    'assessments',
-    tid,
-    'infoAssessment.json',
-  );
-}
-
 const updateAssessment = t.procedure
   .use(requireCoursePermissionEdit)
   .input(
@@ -398,14 +384,8 @@ const updateAssessment = t.procedure
       }
     });
 
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir({ course, course_instance, assessment });
+    const infoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
     const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
       jsonPath: infoAssessmentPath,
@@ -650,7 +630,7 @@ const analyzeTypeChange = t.procedure
     }
 
     const info = await readInfoAssessment(
-      infoAssessmentPathFor(course, course_instance.short_name, assessment.tid!),
+      getAssessmentInfoJsonPath({ course, course_instance, assessment }),
     );
 
     const { blockers, pointsListCollapses, pointsListPromotions } =
@@ -691,14 +671,8 @@ const changeAssessmentType = t.procedure
       });
     }
 
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir({ course, course_instance, assessment });
+    const infoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       jsonPath: infoAssessmentPath,
