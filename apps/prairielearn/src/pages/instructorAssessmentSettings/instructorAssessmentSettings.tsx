@@ -68,7 +68,11 @@ router.get(
       `${getPublicAssessmentUrl(course_instance.id, assessment.id)}/questions`,
       host,
     ).href;
-    const fullInfoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
+    const fullInfoAssessmentPath = getAssessmentInfoJsonPath({
+      course,
+      course_instance,
+      assessment,
+    });
 
     const origHash =
       (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
