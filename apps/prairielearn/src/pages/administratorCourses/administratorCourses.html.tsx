@@ -248,7 +248,11 @@ function CourseDeleteForm({
           id={`inputConfirm${id}`}
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? `inputConfirm${id}-error` : undefined}
-          {...register('short_name')}
+          {...register('short_name', {
+            validate: (value) =>
+              value === row.course.short_name ||
+              `Type "${row.course.short_name}" exactly to confirm deletion.`,
+          })}
         />
         {errors.short_name && (
           <div id={`inputConfirm${id}-error`} className="invalid-feedback">
@@ -353,6 +357,7 @@ function CourseInsertModal({
               prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
               repositoryRequired={false}
+              enforceShortNamePattern
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseAddInputBranch">
