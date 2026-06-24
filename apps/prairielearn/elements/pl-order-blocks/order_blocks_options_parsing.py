@@ -102,7 +102,6 @@ GRADING_METHOD_ANSWER_ATTRIBUTES: dict[GradingMethodType, frozenset[str]] = {
         "initially-placed",
         "tag",
         "depends",
-        "comment",
         "indent",
         "distractor-feedback",
         "distractor-for",
