@@ -136,28 +136,6 @@ async function selectAssessmentForEdit({
   return { assessment: result.assessment, courseInstance: result.course_instance };
 }
 
-function assessmentInfoPath({
-  coursePath,
-  courseInstance,
-  assessment,
-}: {
-  coursePath: string;
-  courseInstance: CourseInstance;
-  assessment: Assessment;
-}): string {
-  if (!assessment.tid) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'Assessment directory is not available',
-    });
-  }
-  return getAssessmentInfoJsonPath({
-    course: { path: coursePath },
-    course_instance: courseInstance,
-    assessment,
-  });
-}
-
 function buildQuestionBlock(question: Question): ZoneQuestionBlockJsonInput {
   if (!question.qid) {
     throw new TRPCError({
@@ -250,9 +228,9 @@ async function mutateAssessmentMembership({
       assessmentId,
       courseId: ctx.course.id,
     });
-    const jsonPath = assessmentInfoPath({
-      coursePath: ctx.course.path,
-      courseInstance,
+    const jsonPath = getAssessmentInfoJsonPath({
+      course: ctx.course,
+      course_instance: courseInstance,
       assessment,
     });
 
