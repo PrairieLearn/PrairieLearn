@@ -1579,12 +1579,8 @@ class Rectangle(BaseElement):
                 el, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1599,7 +1595,6 @@ class Rectangle(BaseElement):
             "color",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
@@ -1630,12 +1625,8 @@ class Triangle(BaseElement):
             "strokeUniform": True,
             "originX": "center",
             "originY": "center",
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1651,7 +1642,6 @@ class Triangle(BaseElement):
             "opacity",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
@@ -1676,12 +1666,8 @@ class Circle(BaseElement):
                 el, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
             "scaling": True,
         }
 
@@ -1698,7 +1684,6 @@ class Circle(BaseElement):
             "label",
             "offsetx",
             "offsety",
-            "selectable",
         ]
 
 
@@ -1721,12 +1706,8 @@ class Polygon(BaseElement):
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(el, "stroke-width", 1),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1737,7 +1718,6 @@ class Polygon(BaseElement):
             "color",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
