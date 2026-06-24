@@ -43,7 +43,7 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeFileContentHash } from './editorUtil.js';
+import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
@@ -62,10 +62,6 @@ function todayAsDatetimeLocal(
 ): string {
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   return `${today.toString()}T00:00:00`;
-}
-
-export function getHash(contents: string | Buffer) {
-  return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
 function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJsonInput) {
@@ -1628,7 +1624,7 @@ export class QuestionModifyEditor extends Editor {
         continue;
       }
 
-      const editHash = contents === null ? null : getHash(contents);
+      const editHash = contents === null ? null : computeEncodedFileContentHash(contents);
 
       // When the buffer still matches what the editor was opened with there is
       // nothing to save: skipping cannot clobber a concurrent change, and it
@@ -1641,7 +1637,7 @@ export class QuestionModifyEditor extends Editor {
       let diskHash: string | null = null;
       try {
         const diskContentsUTF = await fs.readFile(resolvedPath, 'utf8');
-        diskHash = getHash(b64EncodeUnicode(diskContentsUTF));
+        diskHash = computeEncodedFileContentHash(b64EncodeUnicode(diskContentsUTF));
       } catch (err: any) {
         if (err.code !== 'ENOENT') throw err;
         // The file was deleted on disk since the editor opened it.
@@ -2645,6 +2641,22 @@ export class FileModifyEditor extends Editor {
     this.force = force ?? false;
   }
 
+  shouldEdit() {
+    if (this.force) return true;
+
+    debug('get hash of edit contents');
+    const editHash = computeEncodedFileContentHash(this.editContents);
+    debug('editHash: ' + editHash);
+    debug('origHash: ' + this.origHash);
+    if (this.origHash === editHash) {
+      debug('edit contents are the same as orig contents, so abort');
+      return false;
+    } else {
+      debug('edit contents are different from orig contents, so continue');
+      return true;
+    }
+  }
+
   assertCanEdit() {
     if (!contains(this.container.rootPath, this.filePath)) {
       throw new AugmentedError('Invalid file path', {
@@ -2683,21 +2695,14 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    const editHash = getHash(this.editContents);
-
-    // When the buffer still matches what the editor was opened with, there is
-    // nothing to save: writing nothing cannot clobber a concurrent change, so
-    // this is a clean no-op rather than a conflict. This also lets an unrelated
-    // editor in the same `MultiEditor` (e.g. a rename) be the sole writer of the
-    // file. `force` skips this so an explicit overwrite still recreates a
-    // deleted file even when the buffer was never edited.
-    if (!this.force && editHash === this.origHash) return null;
+    const editHash = computeEncodedFileContentHash(this.editContents);
+    if (!this.shouldEdit()) return null;
 
     debug('read current disk contents');
     let diskHash: string | null = null;
     try {
       const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-      diskHash = getHash(b64EncodeUnicode(diskContentsUTF));
+      diskHash = computeEncodedFileContentHash(b64EncodeUnicode(diskContentsUTF));
     } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
       // The file was deleted on disk since the editor opened it.

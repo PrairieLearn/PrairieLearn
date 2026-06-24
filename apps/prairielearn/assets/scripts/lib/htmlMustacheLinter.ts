@@ -91,9 +91,6 @@ export function attachHtmlMustacheLinter({
   void runLint();
 
   if (reformatButton) {
-    window.bootstrap.Toast.getOrCreateInstance('#js-html-mustache-reformat-error', {
-      delay: 5000,
-    });
     reformatButton.addEventListener('click', async () => {
       try {
         const formatter = await getFormatter();

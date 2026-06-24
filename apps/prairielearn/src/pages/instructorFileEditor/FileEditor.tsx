@@ -3,13 +3,25 @@ import type * as bootstrap from 'bootstrap';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
-import { Fragment, type SubmitEvent, useCallback, useRef, useState } from 'react';
+import {
+  Fragment,
+  type SyntheticEvent,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Alert, Collapse, Modal } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
-import { AceFileEditor, type AceFileEditorHandle } from '../../components/AceFileEditor.js';
+import {
+  AceFileEditor,
+  type AceFileEditorHandle,
+  getCursorOffsetFromCursorPosition,
+  getCursorPositionFromCursorOffset,
+} from '../../components/AceFileEditor.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import type { JobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -37,6 +49,13 @@ enum SaveErrorCode {
   UUID_CHANGED = 'UUID_CHANGED',
   UUID_REMOVED = 'UUID_REMOVED',
 }
+
+const EDITOR_OPTIONS = {
+  autoScrollEditorIntoView: true,
+  maxLines: Infinity,
+  minLines: 10,
+  wrap: true,
+} satisfies Partial<ace.Ace.EditorOptions>;
 
 function InvalidJsonModalContent() {
   return (
@@ -88,26 +107,6 @@ function UuidChangeModalContent({
       <div>Clicking "Confirm save" will save this file with its original UUID.</div>
     </>
   );
-}
-
-function getCursorOffsetFromCursorPosition(position: ace.Ace.Point, lines: string[]): number {
-  const cursorOffset = lines.slice(0, position.row).reduce((acc, line) => acc + line.length + 1, 0);
-  return cursorOffset + position.column;
-}
-
-function getCursorPositionFromCursorOffset(cursorOffset: number, lines: string[]): ace.Ace.Point {
-  let row = 0;
-  let column = 0;
-  let offset = 0;
-  for (const line of lines) {
-    if (offset + line.length >= cursorOffset) {
-      column = cursorOffset - offset;
-      break;
-    }
-    offset += line.length + 1;
-    row += 1;
-  }
-  return { row, column };
 }
 
 type SaveIssue =
@@ -234,7 +233,7 @@ export function FileEditor({
   versionChoice: { hasRemoteChanges: boolean } | null;
   draftEditResult: {
     outcome: EditOutcome | undefined;
-    jobSequenceResults: JobSequenceResultsProps | null;
+    jobSequence: JobSequenceResultsProps | null;
   } | null;
   csrfToken: string;
   fileEditorUseGit: boolean;
@@ -249,9 +248,6 @@ export function FileEditor({
   const [showVersionChoice, setShowVersionChoice] = useState(hasVersionChoice);
   const [showVersionChoiceAlert, setShowVersionChoiceAlert] = useState(hasVersionChoice);
   const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
-  // The reformatted, UUID-restored contents for a confirmed save; `null` until
-  // it has been computed for the current UUID issue.
-  const [restoredContents, setRestoredContents] = useState<string | null>(null);
   const [saveModalShown, setSaveModalShown] = useState(false);
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [buttonsExpanded, setButtonsExpanded] = useState(!hasVersionChoice);
@@ -259,8 +255,10 @@ export function FileEditor({
   const [detailExpanded, setDetailExpanded] = useState(false);
   const editorRef = useRef<AceFileEditorHandle>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const fileContentsInputRef = useRef<HTMLInputElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const bypassSaveCheckRef = useRef(false);
+  const resizeAfterVersionChoiceRef = useRef(false);
 
   const isJson = editorData.aceMode === 'ace/mode/json';
 
@@ -315,19 +313,27 @@ export function FileEditor({
     [isJson, editorData.lintHtmlMustache],
   );
 
+  // Ace measures its container imperatively, so resize after React commits the single-pane layout.
+  useLayoutEffect(() => {
+    if (showVersionChoice || !resizeAfterVersionChoiceRef.current) return;
+
+    resizeAfterVersionChoiceRef.current = false;
+    editorRef.current?.resize();
+  }, [showVersionChoice]);
+
   const takeOverDraft = () => {
+    resizeAfterVersionChoiceRef.current = true;
     setShowVersionChoice(false);
     setShowVersionChoiceAlert(false);
     // Clearing `readOnly` re-renders and the `AceFileEditor` prop-sync effect
-    // propagates it to Ace; only the resize needs to be imperative.
+    // propagates it to Ace.
     setReadOnly(false);
     setButtonsExpanded(true);
-    editorRef.current?.resize();
   };
 
   const discardDraft = () => window.location.reload();
 
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
     if (bypassSaveCheckRef.current) {
       bypassSaveCheckRef.current = false;
       return;
@@ -339,30 +345,34 @@ export function FileEditor({
     event.preventDefault();
     setSaveIssue(issue);
     setSaveModalShown(true);
-
-    // Format the UUID-restored contents while the user reads the modal so they
-    // are ready by the time "Confirm save" is clicked.
-    if (issue.errorCode !== SaveErrorCode.INVALID_JSON) {
-      void contentsWithRestoredUuid(issue.parsedContent, issue.originalUuid).then(
-        setRestoredContents,
-      );
-    }
   };
 
-  const confirmSave = () => {
-    // "Confirm save" is enabled only once the UUID-restored contents are ready,
-    // so the hidden `file_edit_contents` input already carries them — confirming
-    // just needs to bypass re-validation and submit the form.
+  const confirmSave = async () => {
+    if (!saveIssue || saveIssue.errorCode === SaveErrorCode.INVALID_JSON) return;
+
+    setSaveModalShown(false);
+
+    // Restore only after confirmation so canceled UUID modals cannot affect a later save.
+    const restoredContents = await contentsWithRestoredUuid(
+      saveIssue.parsedContent,
+      saveIssue.originalUuid,
+    );
+    const fileContentsInput = fileContentsInputRef.current;
+    if (!fileContentsInput) return;
+    // This input's value is React-controlled, but we override it imperatively and
+    // submit synchronously so the native POST serializes the restored contents.
+    // The submit navigates away before any re-render (e.g. the modal's `onExited`)
+    // can overwrite the DOM value back to the editor's current contents. If this
+    // ever becomes an async (fetch/tRPC) submit, pass the restored contents to the
+    // request directly instead of relying on this synchronous-navigation timing.
+    fileContentsInput.value = b64EncodeUnicode(restoredContents);
+
     bypassSaveCheckRef.current = true;
     formRef.current?.requestSubmit();
   };
 
   const cancelSave = () => setSaveModalShown(false);
 
-  // The hidden field normally carries the editor contents; for a confirmed
-  // UUID-restore save it carries the contents with the original UUID re-inserted
-  // and reformatted.
-  const contentsToSubmit = restoredContents ?? contents;
   const saveDisabled = readOnly || contents === diskContents;
 
   return (
@@ -421,11 +431,12 @@ export function FileEditor({
                   ) : null}
                   <button
                     ref={saveButtonRef}
+                    id="file-editor-save-button"
                     type="submit"
                     className="btn btn-light btn-sm"
                     disabled={saveDisabled}
                   >
-                    <i className="fas fa-save" aria-hidden="true" /> Save and sync
+                    <i className="fas fa-save" aria-hidden="true" /> Save
                   </button>
                 </div>
               </Collapse>
@@ -435,8 +446,8 @@ export function FileEditor({
             <div id="help">
               <div className="card-body">
                 You are editing the file <code>{editorData.normalizedFileName}</code>. To save
-                changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong>{' '}
-                (Windows/Linux) or <strong>Cmd-S</strong> (Mac).{' '}
+                changes, click <strong>Save</strong> or use <strong>Ctrl-S</strong> (Windows/Linux)
+                or <strong>Cmd-S</strong> (Mac).{' '}
                 {fileEditorUseGit
                   ? 'Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.'
                   : 'Doing so will write your changes to disk and will sync them to your local database. You will need to push these changes to the GitHub repository manually (i.e., not in PrairieLearn), if desired.'}{' '}
@@ -463,7 +474,7 @@ export function FileEditor({
                       >
                         <div className="row align-items-center">
                           <div className="col-auto">{syncAlert.message}</div>
-                          {draftEditResult.jobSequenceResults != null ? (
+                          {draftEditResult.jobSequence != null ? (
                             <div className="col-auto">
                               <button
                                 type="button"
@@ -477,10 +488,10 @@ export function FileEditor({
                             </div>
                           ) : null}
                         </div>
-                        {draftEditResult.jobSequenceResults != null ? (
+                        {draftEditResult.jobSequence != null ? (
                           <Collapse in={detailExpanded}>
                             <div id="job-sequence-results" className="mt-4">
-                              <JobSequenceResults {...draftEditResult.jobSequenceResults} />
+                              <JobSequenceResults {...draftEditResult.jobSequence} />
                             </div>
                           </Collapse>
                         ) : null}
@@ -501,9 +512,9 @@ export function FileEditor({
                     : 'You were editing this file and made changes.'}{' '}
                   You may choose either to continue editing your draft or to discard your changes.
                   In particular, if you click <strong>Choose my version</strong> and then click{' '}
-                  <strong>Save and sync</strong>, you will overwrite the version of this file that
-                  is on disk. If you instead click <strong>Choose their version</strong>, any
-                  changes you have made to this file will be lost.
+                  <strong>Save</strong>, you will overwrite the version of this file that is on
+                  disk. If you instead click <strong>Choose their version</strong>, any changes you
+                  have made to this file will be lost.
                 </Alert>
               ) : null}
             </div>
@@ -521,9 +532,10 @@ export function FileEditor({
                   <div className="card-body p-0 position-relative">
                     <input type="hidden" name="file_edit_orig_hash" value={editorData.diskHash} />
                     <input
+                      ref={fileContentsInputRef}
                       type="hidden"
                       name="file_edit_contents"
-                      value={b64EncodeUnicode(contentsToSubmit)}
+                      value={b64EncodeUnicode(contents)}
                     />
                     <AceFileEditor
                       ref={editorRef}
@@ -531,12 +543,7 @@ export function FileEditor({
                       mode={editorData.aceMode}
                       readOnly={readOnly}
                       className="editor"
-                      options={{
-                        autoScrollEditorIntoView: true,
-                        maxLines: Infinity,
-                        minLines: 10,
-                        wrap: true,
-                      }}
+                      options={EDITOR_OPTIONS}
                       focusOnMount
                       onChange={setContents}
                       onReady={handleEditorReady}
@@ -561,7 +568,7 @@ export function FileEditor({
                           </div>
                           <button
                             type="button"
-                            className="btn-close"
+                            className="btn-close btn-close-white me-2 m-auto"
                             data-bs-dismiss="toast"
                             aria-label="Close"
                           />
@@ -574,6 +581,7 @@ export function FileEditor({
                           role="alert"
                           aria-live="assertive"
                           aria-atomic="true"
+                          data-bs-delay="5000"
                         >
                           <div className="d-flex">
                             <div className="toast-body">
@@ -581,7 +589,7 @@ export function FileEditor({
                             </div>
                             <button
                               type="button"
-                              className="btn-close"
+                              className="btn-close btn-close-white me-2 m-auto"
                               data-bs-dismiss="toast"
                               aria-label="Close"
                             />
@@ -606,12 +614,7 @@ export function FileEditor({
                         value={diskContents}
                         mode={editorData.aceMode}
                         className="editor"
-                        options={{
-                          autoScrollEditorIntoView: true,
-                          maxLines: Infinity,
-                          minLines: 10,
-                          wrap: true,
-                        }}
+                        options={EDITOR_OPTIONS}
                         readOnly
                       />
                     </div>
@@ -629,7 +632,6 @@ export function FileEditor({
         onHide={cancelSave}
         onExited={() => {
           setSaveIssue(null);
-          setRestoredContents(null);
         }}
       >
         <Modal.Header closeButton>
@@ -661,12 +663,7 @@ export function FileEditor({
             {saveIssue?.errorCode === SaveErrorCode.INVALID_JSON ? 'OK' : 'Cancel'}
           </button>
           {saveIssue?.errorCode === SaveErrorCode.INVALID_JSON ? null : (
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={restoredContents == null}
-              onClick={confirmSave}
-            >
+            <button type="button" className="btn btn-primary" onClick={() => void confirmSave()}>
               Confirm save
             </button>
           )}

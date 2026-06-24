@@ -11,8 +11,7 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../base64-util.js';
 import { config } from '../config.js';
 import { getCourseFilesClient } from '../course-files-api.js';
 import type { Course, Question } from '../db-types.js';
-import { readEditableTextFile } from '../editorUtil.js';
-import { getHash } from '../editors.js';
+import { computeEncodedFileContentHash, readEditableTextFile } from '../editorUtil.js';
 import { browseDirectory, getBinaryFileKind } from '../file-browser.js';
 
 import {
@@ -312,7 +311,7 @@ export async function getDraftQuestionFileContents({
           // of the on-disk contents, so the hash is computed through the same
           // round-trip rather than over the raw-byte base64 returned by
           // `getQuestionFiles`.
-          hash: getHash(b64EncodeUnicode(b64DecodeUnicode(encodedContents))),
+          hash: computeEncodedFileContentHash(b64EncodeUnicode(b64DecodeUnicode(encodedContents))),
         },
       ]),
     ),
