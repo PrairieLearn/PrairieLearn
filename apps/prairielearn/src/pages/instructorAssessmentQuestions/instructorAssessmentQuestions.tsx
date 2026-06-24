@@ -1,7 +1,4 @@
-import * as path from 'path';
-
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -17,11 +14,12 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { getOriginalHash } from '../../lib/editorUtil.js';
+import { getAssessmentInfoJsonPath, getOriginalHash } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
 import {
@@ -56,23 +54,21 @@ const SaveQuestionsSchema = z.object({
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_preview) {
       throw new HttpStatusError(403, 'Access denied (must be course previewer)');
     }
+
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
 
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
 
-    const assessmentPath = path.join(
-      res.locals.course.path,
-      'courseInstances',
-      res.locals.course_instance.short_name,
-      'assessments',
-      res.locals.assessment.tid,
-      'infoAssessment.json',
-    );
+    const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
     const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
@@ -90,7 +86,7 @@ router.get(
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
-    const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
+    const jsonZones = buildHierarchicalAssessment(pageContext.course, questionRows);
 
     // Populate zone-level tool overrides from the assessment_tools table.
     const zoneToolRows = await selectZoneToolOverrides({
@@ -116,11 +112,6 @@ router.get(
       'consume-public-questions',
       res.locals,
     );
-
-    const pageContext = extractPageContext(res.locals, {
-      pageType: 'assessment',
-      accessType: 'instructor',
-    });
 
     const canEdit =
       pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
@@ -191,7 +182,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
       if (!res.locals.authz_data.has_course_instance_permission_edit) {
         throw new HttpStatusError(403, 'Access denied (must be course instance editor)');
@@ -215,14 +206,7 @@ router.post(
 
       const body = SaveQuestionsSchema.parse(req.body);
 
-      const assessmentPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid,
-        'infoAssessment.json',
-      );
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
       if (!(await fs.pathExists(assessmentPath))) {
         throw new HttpStatusError(400, 'infoAssessment.json does not exist');
@@ -240,7 +224,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
