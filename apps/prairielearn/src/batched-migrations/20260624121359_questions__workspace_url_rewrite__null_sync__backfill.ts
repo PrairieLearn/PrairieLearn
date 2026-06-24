@@ -75,7 +75,10 @@ async function syncCourse(course: Course) {
       },
       async () => {
         job.info('Sync git repository to database');
-        await syncDiskToSqlWithLock(course, job);
+        const { status } = await syncDiskToSqlWithLock(course, job);
+        if (status !== 'complete') {
+          job.fail(`Sync failed with status: ${status}`);
+        }
       },
     );
   });
