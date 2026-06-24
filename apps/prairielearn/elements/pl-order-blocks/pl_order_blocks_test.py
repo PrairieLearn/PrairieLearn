@@ -1,5 +1,6 @@
 import importlib
 import random
+from copy import deepcopy
 
 import lxml.html
 import pytest
@@ -101,6 +102,17 @@ def assert_answer_options(
             assert answer_options.final == test_options["final"]
 
 
+def make_question_data() -> dict:
+    return {
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "raw_submitted_answers": {},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+
 def test_valid_order_block_options() -> None:
     tag1 = {
         "correct": True,
@@ -132,6 +144,59 @@ def test_valid_order_block_options() -> None:
     html_element = lxml.html.fromstring(question)
     order_block_options = OrderBlocksOptions(html_element)
     assert_order_blocks_options(order_block_options, options)
+
+
+def test_omitted_indent_defaults_to_ungraded_when_indentation_enabled() -> None:
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options={"answers-name": "test", "indentation": True},
+        inner_html="\n".join([
+            build_tag("pl-answer", {}, inner_html="First"),
+            build_tag("pl-answer", {"indent": 1}, inner_html="Second"),
+        ]),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_block_options = OrderBlocksOptions(html_element)
+    assert order_block_options.answer_options[0].indent == -1
+    assert order_block_options.answer_options[1].indent == 1
+
+    data = make_question_data()
+    pl_order_blocks.prepare(question, data)
+    answer = deepcopy(data["correct_answers"]["test"])
+    answer[0]["indent"] = 3
+    data["submitted_answers"]["test"] = answer
+    pl_order_blocks.grade(question, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_omitted_indent_stays_none_when_indentation_disabled() -> None:
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options={"answers-name": "test"},
+        inner_html=build_tag("pl-answer", {}, inner_html="First"),
+    )
+    html_element = lxml.html.fromstring(question)
+    order_block_options = OrderBlocksOptions(html_element)
+
+    assert order_block_options.answer_options[0].indent is None
+
+
+def test_stored_none_indent_is_treated_as_ungraded() -> None:
+    question = build_tag(
+        tag_name="pl-order-blocks",
+        options={"answers-name": "test", "indentation": True},
+        inner_html=build_tag("pl-answer", {}, inner_html="First"),
+    )
+    data = make_question_data()
+    pl_order_blocks.prepare(question, data)
+    data["correct_answers"]["test"][0]["indent"] = None
+    answer = deepcopy(data["correct_answers"]["test"])
+    answer[0]["indent"] = 2
+    data["submitted_answers"]["test"] = answer
+    pl_order_blocks.grade(question, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
 
 
 @pytest.mark.parametrize(
