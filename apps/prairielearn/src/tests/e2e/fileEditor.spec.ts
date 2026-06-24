@@ -39,7 +39,7 @@ test.describe('Instructor file editor', () => {
     const edited = `${original}\n# e2e round-trip edit\n`;
     await setAceEditorContent(page, edited);
 
-    const saveButton = page.getByRole('button', { name: /Save and sync/ });
+    const saveButton = page.getByRole('button', { name: 'Save' });
     await expect(saveButton).toBeEnabled();
     await saveButton.click();
 
@@ -59,7 +59,7 @@ test.describe('Instructor file editor', () => {
     // Another writer changes the file on disk after the editor was opened.
     await fs.writeFile(filePath, theirContent);
 
-    await page.getByRole('button', { name: /Save and sync/ }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
 
     // The stale-hash save is rejected and the version chooser is shown.
     await expect(page.getByRole('heading', { name: 'My version' })).toBeVisible({
@@ -70,7 +70,7 @@ test.describe('Instructor file editor', () => {
     expect(await getAceEditorContent(page, 1)).toBe(theirContent);
 
     await page.getByRole('button', { name: /Choose my version/ }).click();
-    await page.getByRole('button', { name: /Save and sync/ }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
 
     await expect(page.getByText('saved and synced successfully')).toBeVisible({ timeout: 15_000 });
     expect(await fs.readFile(filePath, 'utf8')).toBe(myContent);
@@ -86,7 +86,7 @@ test.describe('Instructor file editor', () => {
     await setAceEditorContent(page, myContent);
     await fs.writeFile(filePath, theirContent);
 
-    await page.getByRole('button', { name: /Save and sync/ }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('heading', { name: 'Their version' })).toBeVisible({
       timeout: 15_000,
     });
@@ -117,7 +117,7 @@ test.describe('Instructor file editor', () => {
     parsed.uuid = '11111111-1111-1111-1111-111111111111';
     await setAceEditorContent(page, `${JSON.stringify(parsed, null, 2)}\n`);
 
-    await page.getByRole('button', { name: /Save and sync/ }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
 
     // Changing the UUID opens a confirmation modal instead of saving directly.
     const dialog = page.getByRole('dialog');

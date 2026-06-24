@@ -1,6 +1,10 @@
 import * as path from 'path';
 
+// @ts-expect-error No types for ace-code/src/ext/modelist.js
+import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import { Router } from 'express';
+import fs from 'fs-extra';
+import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -12,13 +16,11 @@ import {
   queryScalars,
 } from '@prairielearn/postgres';
 import { hydrateHtml } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import {
-  getJobSequenceResultsProps,
-  type JobSequenceResultsProps,
-} from '../../components/JobSequenceResults.types.js';
+import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -26,9 +28,13 @@ import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { type FileEdit, FileEditSchema } from '../../lib/db-types.js';
-import { computeFileContentHash, readEditableTextFile } from '../../lib/editorUtil.js';
-import { type EditOutcome, FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
+import { FileEditSchema } from '../../lib/db-types.js';
+import {
+  computeEncodedFileContentHash,
+  getFileMetadataForPath,
+  isV3QuestionHtmlFile,
+} from '../../lib/editorUtil.js';
+import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -102,23 +108,26 @@ router.get(
       // page through our UI, which already tries to prevent letting users
       // go where they should not.
 
+      const fullPath = paths.workingPath;
       const relPath = paths.workingPathRelativeToCourse;
 
-      const editableFile = await readEditableTextFile({
-        courseId: res.locals.course.id,
-        coursePath: paths.coursePath,
-        fullPath: paths.workingPath,
-        courseRelativePath: relPath,
-      });
+      const contents = await fs.readFile(fullPath);
+      if (await isBinaryFile(contents)) {
+        throw new Error('Cannot edit binary file');
+      }
+
+      const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
+      const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
+      const lintHtmlMustache = await isV3QuestionHtmlFile(paths.coursePath, relPath);
 
       const editorData: FileEditorData = {
-        fileName: editableFile.fileName,
-        normalizedFileName: editableFile.normalizedFileName,
-        aceMode: editableFile.aceMode,
-        diskContents: editableFile.contents,
-        diskHash: editableFile.contentHash,
-        fileMetadata: editableFile.fileMetadata,
-        lintHtmlMustache: editableFile.lintHtmlMustache,
+        fileName: path.basename(relPath),
+        normalizedFileName: path.normalize(relPath),
+        aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
+        diskContents: encodedContents,
+        diskHash: computeEncodedFileContentHash(encodedContents),
+        fileMetadata,
+        lintHtmlMustache,
       };
 
       const draftEdit = await readDraftEdit({
@@ -129,49 +138,50 @@ router.get(
         file_name: editorData.fileName,
       });
 
-      let draftEditResult: {
-        outcome: EditOutcome | undefined;
-        jobSequenceResults: JobSequenceResultsProps | null;
-      } | null = null;
-      let versionChoice: { hasRemoteChanges: boolean } | null = null;
-      if (draftEdit != null) {
-        let outcome: EditOutcome | undefined;
-        let jobSequenceResults: JobSequenceResultsProps | null = null;
-        if (draftEdit.fileEdit.job_sequence_id != null) {
-          const fullJobSequence = await getJobSequence(
-            draftEdit.fileEdit.job_sequence_id,
-            res.locals.course.id,
-          );
-
-          if (fullJobSequence.status === 'Running') {
-            // Because of the redirect, if the job sequence ends up failing to save,
-            // then the corresponding draft will be lost (all drafts are soft-deleted
-            // from the database on readDraftEdit).
-            res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
-            return;
-          }
-
-          // Note that if using git, we pull before we push, so a failed save
-          // still syncs whatever was pulled from the remote repository (with
-          // the edit's changes discarded). We ignore that case in the UI.
-          outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
-          jobSequenceResults = getJobSequenceResultsProps({
-            course: res.locals.course,
-            jobSequence: fullJobSequence,
-          });
-        }
-        draftEditResult = { outcome, jobSequenceResults };
-
-        const editWasSaved = outcome != null && outcome !== 'save_failed';
-        if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
-          // There is a recently saved draft that was not written to disk and that differs from what is on disk.
-          versionChoice = {
-            hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
-          };
-        }
+      const fullJobSequence =
+        draftEdit?.fileEdit.job_sequence_id == null
+          ? null
+          : await getJobSequence(draftEdit.fileEdit.job_sequence_id, res.locals.course.id);
+      if (fullJobSequence?.status === 'Running') {
+        // In the normal save flow, the POST waits for this job to finish before
+        // redirecting back here. If a concurrent load reaches this page while
+        // the job is still running, send the user to the job sequence page to
+        // wait for completion. The above call to `readDraftEdit` has already
+        // consumed the stored draft, so if the job later fails before saving,
+        // the draft will no longer be recoverable.
+        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
+        return;
       }
 
-      const { __csrf_token } = res.locals;
+      const draftEditResult = run(() => {
+        if (draftEdit == null) return null;
+        if (fullJobSequence == null) return { outcome: undefined, jobSequence: null };
+
+        // Note that if using git, we pull before we push, so a failed save
+        // still syncs whatever was pulled from the remote repository (with
+        // the edit's changes discarded). We ignore that case in the UI.
+        const outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
+        return {
+          outcome,
+          jobSequence: getJobSequenceResultsProps({
+            course: res.locals.course,
+            jobSequence: fullJobSequence,
+          }),
+        };
+      });
+
+      const versionChoice = run(() => {
+        if (draftEdit == null || draftEditResult == null) return null;
+
+        const editWasSaved =
+          draftEditResult.outcome != null && draftEditResult.outcome !== 'save_failed';
+        if (editWasSaved || draftEdit.hash === editorData.diskHash) return null;
+
+        // There is a recently saved draft that was not written to disk and that differs from what is on disk.
+        return {
+          hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
+        };
+      });
 
       res.send(
         PageLayout({
@@ -251,7 +261,7 @@ router.get(
                 draftContents={draftEdit?.contents}
                 versionChoice={versionChoice}
                 draftEditResult={draftEditResult}
-                csrfToken={__csrf_token}
+                csrfToken={res.locals.__csrf_token}
                 fileEditorUseGit={config.fileEditorUseGit}
                 branch={paths.branch.map((dir) => ({
                   name: dir.name,
@@ -267,17 +277,6 @@ router.get(
   ),
 );
 
-// TODO: This page is a hydrated React component, but it still saves via a
-// full-page form POST + Post/Redirect/Get. The `file_edits` table and the
-// `readDraftEdit`/`writeDraftEdit`/`updateJobSequenceId` helpers below exist
-// only to carry the editor's contents and the sync job's result across that
-// redirect — `instructorFileEditor` is the sole consumer of `file_edits`.
-//
-// Converting this save to a tRPC mutation that stays on the
-// page would let the client keep its contents in React state and receive the
-// job result as a return value, retiring the `file_edits` mechanism and the
-// `versionChoice` UI. The concurrent-edit case is already handled cleanly by
-// the `STALE_EDIT` flow in `trpc/course/ai-draft-files.ts`.
 router.post(
   '/*',
   typedAsyncHandler<'course' | 'course-instance' | 'assessment'>(async (req, res) => {
@@ -345,7 +344,7 @@ async function readDraftEdit({
   dir_name: string;
   file_name: string;
   authn_user_id: string;
-}): Promise<{ fileEdit: FileEdit; contents?: string; hash?: string } | null> {
+}) {
   const fileEdit = await queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },
@@ -372,9 +371,8 @@ async function readDraftEdit({
   let hash: string | undefined;
   if (fileEdit.file_id != null) {
     const result = await getFile(fileEdit.file_id);
-    const stringContents = result.contents.toString('utf8');
-    contents = b64EncodeUnicode(stringContents);
-    hash = computeFileContentHash(stringContents);
+    contents = b64EncodeUnicode(result.contents.toString('utf8'));
+    hash = computeEncodedFileContentHash(contents);
 
     await deleteFile(fileEdit.file_id, authn_user_id);
   }

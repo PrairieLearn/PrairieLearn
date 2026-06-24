@@ -25,6 +25,44 @@ export interface AceFileEditorHandle {
   resize: () => void;
 }
 
+/**
+ * Given an Ace cursor position (row and column) and the document's lines,
+ * returns the cursor's offset from the start of the document.
+ */
+export function getCursorOffsetFromCursorPosition(
+  position: ace.Ace.Point,
+  lines: string[],
+): number {
+  const cursorOffset = lines.slice(0, position.row).reduce((acc, line) => acc + line.length + 1, 0);
+  return cursorOffset + position.column;
+}
+
+/**
+ * Given a cursor offset from the start of the document and the document's lines,
+ * returns the equivalent Ace cursor position (row and column).
+ */
+export function getCursorPositionFromCursorOffset(
+  cursorOffset: number,
+  lines: string[],
+): ace.Ace.Point {
+  let row = 0;
+  let column = 0;
+  let offset = 0;
+  for (const line of lines) {
+    if (offset + line.length >= cursorOffset) {
+      column = cursorOffset - offset;
+      break;
+    }
+    offset += line.length + 1;
+    row += 1;
+  }
+  if (row >= lines.length) {
+    const lastRow = Math.max(lines.length - 1, 0);
+    return { row: lastRow, column: lines[lastRow]?.length ?? 0 };
+  }
+  return { row, column };
+}
+
 export function AceFileEditor({
   value,
   mode = 'ace/mode/text',
@@ -114,7 +152,10 @@ export function AceFileEditor({
     editor.setReadOnly(readOnly);
   }, [mode, readOnly]);
 
-  // Reset Ace contents when the backing file changes.
+  // Reset Ace contents when the `value` prop changes out from under local edits
+  // (e.g. discarding changes back to a saved baseline). This is destructive: it
+  // replaces the document and clears the undo history and cursor position. During
+  // normal editing it's a no-op, since `value` tracks `valueRef` via `onChange`.
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor || value === valueRef.current) return;
