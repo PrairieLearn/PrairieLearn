@@ -169,10 +169,13 @@ export function TimeLimitEditForm({
   function handleSubmit() {
     const reopenWithoutLimit = showReopenRadios && form.reopen_without_limit;
     const action = reopenWithoutLimit ? 'reopen_without_limit' : form.action;
+    const actionUsesTimeAdd =
+      action === 'set_total' || action === 'set_rem' || action === 'add' || action === 'subtract';
+    if (actionUsesTimeAdd && !Number.isFinite(form.time_add)) return;
     mutation.mutate({
       assessmentInstanceIds,
       action,
-      time_add: form.time_add,
+      time_add: actionUsesTimeAdd ? form.time_add : undefined,
       date: form.date,
       // In single mode we always re-open the targeted instance (matching the
       // legacy ✎ behavior). In bulk mode this is the explicit checkbox.
