@@ -24,19 +24,12 @@ const INPUT_ELEMENTS = new Set([
 
 export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
 
-const PYTHON_CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
+const CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
   'pl-integer-input',
   'pl-number-input',
   'pl-string-input',
   'pl-symbolic-input',
 ]);
-const NON_TEMPLATE_CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
-  'pl-integer-input',
-  'pl-number-input',
-  'pl-symbolic-input',
-]);
-
-const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
 type MustacheTextToken = ['text', string, number, number];
 type MustacheNameToken = ['name', string, number, number];
@@ -148,20 +141,16 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
     );
   }
 
-  if (tagName && PYTHON_CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName)) {
+  if (tagName && CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName)) {
     const answersName = getAttribute(ast, 'answers-name');
     const correctAnswer = getAttribute(ast, 'correct-answer');
 
     if (answersName && correctAnswer === undefined) {
       mandatoryPythonCorrectAnswers.add(answersName);
     }
-    if (
-      correctAnswer !== undefined &&
-      NON_TEMPLATE_CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName) &&
-      mustacheTemplateRegex.test(correctAnswer)
-    ) {
+    if (correctAnswer !== undefined && extractMustacheTemplateNames(correctAnswer).size > 0) {
       errors.push(
-        `${tagName}: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set \`data['correct_answers']\` accordingly in \`server.py\` and remove this attribute.`,
+        `${tagName}: correct-answer attribute value must not contain a Mustache template. If the correct answer depends on dynamic parameters, set \`data['correct_answers']\` accordingly in \`server.py\` and remove this attribute.`,
       );
     }
   }

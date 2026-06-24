@@ -159,6 +159,43 @@ describe('validateHTML forbidden document tags', () => {
   });
 });
 
+describe('validateHTML correct answers', () => {
+  it('accepts static string correct answers without server.py', async () => {
+    const { errors } = await validateHTML(
+      '<pl-string-input answers-name="answer" correct-answer="H2O"></pl-string-input>',
+      false,
+    );
+
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects string correct answers that are Mustache templates', async () => {
+    const { errors } = await validateHTML(
+      '<pl-string-input answers-name="answer" correct-answer="{{params.answer}}"></pl-string-input>',
+      true,
+    );
+
+    assert.isTrue(
+      errors.some(
+        (error) => error.includes('pl-string-input') && error.includes('Mustache template'),
+      ),
+    );
+  });
+
+  it('rejects string correct answers that contain Mustache templates', async () => {
+    const { errors } = await validateHTML(
+      '<pl-string-input answers-name="answer" correct-answer="prefix {{params.answer}}"></pl-string-input>',
+      true,
+    );
+
+    assert.isTrue(
+      errors.some(
+        (error) => error.includes('pl-string-input') && error.includes('Mustache template'),
+      ),
+    );
+  });
+});
+
 describe('validateHTML integer attributes', () => {
   /** Test integer validation via pl-integer-input's weight attribute */
   async function validateIntegerAttr(value: string): Promise<string[]> {
