@@ -20,8 +20,6 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { JobSequenceResultsData } from '../components/JobSequenceResults.js';
-
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
 import { EnumJobStatusSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
@@ -590,10 +588,7 @@ function connection(socket: Socket) {
     'joinJob',
     function (
       msg: { job_id: string; token: string },
-      callback: (msg: {
-        status: JobSequenceResultsData['jobs'][0]['status'];
-        output: string;
-      }) => void,
+      callback: (msg: { status: Job['status']; output: string }) => void,
     ) {
       if (!('job_id' in msg)) {
         logger.error('socket.io joinJob called without job_id');

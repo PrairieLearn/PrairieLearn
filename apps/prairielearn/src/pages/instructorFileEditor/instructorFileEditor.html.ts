@@ -2,7 +2,7 @@ import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
@@ -298,7 +298,7 @@ export function InstructorFileEditor({
                           ? html`
                               <div class="row collapse mt-4" id="job-sequence-results">
                                 <div class="card card-body">
-                                  ${JobSequenceResults({
+                                  ${JobSequenceResultsHtml({
                                     course,
                                     jobSequence: draftEdit.jobSequence,
                                   })}
