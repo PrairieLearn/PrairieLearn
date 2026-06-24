@@ -2509,7 +2509,6 @@ class DrawingElement(UnplaceableBaseElement):
             "height",
             "grid-size",
             "snap-to-grid",
-            "correct-answer",
             "tol",
             "angle-tol",
             "show-tolerance-hint",
