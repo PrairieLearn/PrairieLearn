@@ -11,6 +11,9 @@ import { syncDiskToSqlWithLock } from '../../sync/syncFromDisk.js';
 
 const COURSE_SYNC_BACKFILL_BATCH_SIZE = 10;
 
+// Prefer the historical table name so fresh database migrations enqueue these
+// old backfills before `pl_courses` is renamed to `courses`. Fall back to the
+// current name so operators can retry old failed batched jobs after the rename.
 const COURSE_TABLE_NAMES = ['pl_courses', 'courses'] as const;
 
 type CourseTableName = (typeof COURSE_TABLE_NAMES)[number];
@@ -69,6 +72,9 @@ async function selectExistingCourseTableName() {
 }
 
 async function courseTableExists(tableName: CourseTableName) {
+  // A legacy `courses` table existed before `pl_courses` was renamed, so the
+  // relation name alone is not enough. Check columns that identify the actual
+  // course table shape used by this backfill.
   return await queryScalar(
     `
     SELECT
