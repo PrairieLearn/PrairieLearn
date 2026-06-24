@@ -43,7 +43,7 @@ import {
   type User,
 } from './db-types.js';
 import { discoverInfoDirs } from './discover-info-dirs.js';
-import { computeFileContentHash } from './editorUtil.js';
+import { computeEncodedFileContentHash, computeFileContentHash } from './editorUtil.js';
 import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
@@ -62,10 +62,6 @@ function todayAsDatetimeLocal(
 ): string {
   const today = instant.toZonedDateTimeISO(timezone).toPlainDate();
   return `${today.toString()}T00:00:00`;
-}
-
-export function getHash(contents: string | Buffer) {
-  return crypto.createHash('sha256').update(contents).digest('hex');
 }
 
 function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJsonInput) {
@@ -2522,7 +2518,7 @@ export class FileModifyEditor extends Editor {
 
   shouldEdit() {
     debug('get hash of edit contents');
-    const editHash = getHash(this.editContents);
+    const editHash = computeEncodedFileContentHash(this.editContents);
     debug('editHash: ' + editHash);
     debug('origHash: ' + this.origHash);
     if (this.origHash === editHash) {
@@ -2580,7 +2576,7 @@ export class FileModifyEditor extends Editor {
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
     const diskContents = b64EncodeUnicode(diskContentsUTF);
-    const diskHash = getHash(diskContents);
+    const diskHash = computeEncodedFileContentHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }
