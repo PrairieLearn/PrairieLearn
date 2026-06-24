@@ -57,7 +57,7 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 A background can be specified by wrapping HTML in a `<pl-background>` tag. If the contents of `<pl-background>` don't have a fixed size (e.g. using `<pl-figure>`, which uses a responsive width), then you should explicitly specify at least a `width` on `<pl-overlay>` to ensure that children will be displayed at the expected location no matter how big the browser viewport is. However, if the contents of `<pl-background>` have a fixed size (e.g. using `<pl-drawing width="500">`), then manually specifying a `width`/`height` on `<pl-overlay>` is not necessary.
 
-Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`. Each `<pl-location>` must specify exactly one of `left` or `right` and exactly one of `top` or `bottom`; specifying neither or both in a pair raises an error. Anything inside the location tag will be displayed at that position. Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`. Each `<pl-location>` must specify exactly one of `left` or `right` and exactly one of `top` or `bottom`. Anything inside the location tag will be displayed at that position. Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
 ## Example implementations
 
