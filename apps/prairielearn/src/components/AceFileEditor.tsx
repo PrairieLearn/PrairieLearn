@@ -56,6 +56,10 @@ export function getCursorPositionFromCursorOffset(
     offset += line.length + 1;
     row += 1;
   }
+  if (row >= lines.length) {
+    const lastRow = Math.max(lines.length - 1, 0);
+    return { row: lastRow, column: lines[lastRow]?.length ?? 0 };
+  }
   return { row, column };
 }
 
