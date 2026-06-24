@@ -1,21 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { Page } from '@playwright/test';
-
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { selectOrInsertUserByUid } from '../../models/user.js';
 
 import { createTest, expect } from './fixtures.js';
-import { setAceEditorContentAt } from './utils/ace.js';
+import { setAceEditorContent } from './utils/ace.js';
 
 // The AI draft editor is an enterprise-only page.
 const test = createTest({ isEnterprise: true });
-
-/** Locator for the ACE editor backing the open file on the "All files" tab. */
-function selectedFileEditor(page: Page) {
-  return page.getByTestId('selected-file-editor').locator('.ace_editor');
-}
 
 // The tests share a single draft question, so they must run serially. Loading
 // the editor renders a question variant, so allow more than the default budget.
@@ -54,7 +47,7 @@ test.describe('AI draft file editor', () => {
     await page.goto(`${editorUrl}?tab=all-files&selection=file%3Anotes.txt`);
 
     const editorStatus = page.getByTestId('selected-file-editor');
-    await setAceEditorContentAt(selectedFileEditor(page), 'edited but not saved\n');
+    await setAceEditorContent(page, 'edited but not saved\n');
     await expect(editorStatus.getByText('Unsaved changes.')).toBeVisible();
 
     await page.getByRole('link', { name: 'All files' }).click();
@@ -142,10 +135,7 @@ test.describe('AI draft file editor', () => {
     const htmlPath = path.join(testCoursePath, 'questions', questionQid, 'question.html');
 
     await page.goto(`${editorUrl}?tab=files`);
-    await setAceEditorContentAt(
-      page.getByTestId('question-html-editor').locator('.ace_editor'),
-      '<p>edited in the browser</p>\n',
-    );
+    await setAceEditorContent(page, '<p>edited in the browser</p>\n');
 
     // Another writer (e.g. the agent) changes the file after it was fetched.
     await fs.writeFile(htmlPath, '<p>changed on disk</p>\n');
@@ -171,7 +161,7 @@ test.describe('AI draft file editor', () => {
     const notesPath = path.join(testCoursePath, 'questions', questionQid, 'notes.txt');
 
     await page.goto(`${editorUrl}?tab=all-files&selection=file%3Anotes.txt`);
-    await setAceEditorContentAt(selectedFileEditor(page), 'edited after the file was deleted\n');
+    await setAceEditorContent(page, 'edited after the file was deleted\n');
 
     // Another writer deletes the file after the editor was opened.
     await fs.rm(notesPath);
