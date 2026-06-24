@@ -198,7 +198,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_tru, language="matlab", digits=12, presentation_type="g"
                 )
                 python_data = pl.string_from_2darray(
-                    a_tru, language="python", digits=12, presentation_type="g"
+                    a_tru, language="numpy", digits=12, presentation_type="g"
                 )
             elif comparison == "sigfig":
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
@@ -206,7 +206,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_tru, language="matlab", digits=digits, presentation_type="sigfig"
                 )
                 python_data = pl.string_from_2darray(
-                    a_tru, language="python", digits=digits, presentation_type="sigfig"
+                    a_tru, language="numpy", digits=digits, presentation_type="sigfig"
                 )
             elif comparison == "decdig":
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
@@ -214,7 +214,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_tru, language="matlab", digits=digits, presentation_type="f"
                 )
                 python_data = pl.string_from_2darray(
-                    a_tru, language="python", digits=digits, presentation_type="f"
+                    a_tru, language="numpy", digits=digits, presentation_type="f"
                 )
             else:
                 raise ValueError(

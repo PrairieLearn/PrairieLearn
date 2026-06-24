@@ -447,12 +447,12 @@ def numpy_to_matlab(
         return matrix_str
 
 
-_FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
+_FormatLanguage = Literal["numpy", "python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
     A: _NumericScalarType | npt.NDArray[Any],
-    language: _FormatLanguage = "python",
+    language: _FormatLanguage = "numpy",
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -465,13 +465,15 @@ def string_from_numpy(
     - a 1D ndarray (float or complex)
     - a 2D ndarray (float or complex)
 
-    If language is 'python' and A is a 2D ndarray, the string looks like this:
+    If language is `'numpy'` and A is a 2D ndarray, the string looks like this:
 
         [[ ..., ... ], [ ..., ... ]]
 
     If A is a 1D ndarray, the string looks like this:
 
         [ ..., ..., ... ]
+
+    The language value `'python'` is deprecated but remains supported as an alias for `'numpy'`.
 
     If language is `'matlab'` and A is a 2D ndarray, the string looks like this:
 
@@ -555,8 +557,11 @@ def string_from_numpy(
             ),
         }
 
-    # if A is a 1D or 2D ndarray
     if language == "python":
+        language = "numpy"
+
+    # if A is a 1D or 2D ndarray
+    if language == "numpy":
         return np.array2string(A, formatter=formatter, separator=", ").replace("\n", "")
     elif language == "matlab":
         if presentation_type == "sigfig":
@@ -598,7 +603,7 @@ def string_from_numpy(
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(  # noqa: D103
     A: npt.NDArray[Any],
-    language: _FormatLanguage = "python",
+    language: _FormatLanguage = "numpy",
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:

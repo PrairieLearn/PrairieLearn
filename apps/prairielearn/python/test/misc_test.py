@@ -598,6 +598,8 @@ def test_index2key(idx: int, expected_output: str) -> None:
         (np.float64(0.0), {"digits": 1}, "0.0"),
         (np.float64(0.0), {"presentation_type": "sigfig"}, "0.0"),
         (np.zeros(2), {}, "[0.00, 0.00]"),
+        (np.zeros(2), {"language": "numpy"}, "[0.00, 0.00]"),
+        (np.zeros(2), {"language": "python"}, "[0.00, 0.00]"),
         (np.zeros(2), {"digits": 1}, "[0.0, 0.0]"),
         (np.zeros(2), {"digits": 0}, "[0, 0]"),
         (np.zeros(2), {"language": "matlab"}, "[0.00, 0.00]"),

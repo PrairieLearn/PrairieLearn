@@ -10,18 +10,31 @@ import prairielearn as pl
 class TabType(Enum):
     MATLAB = 1
     MATHEMATICA = 2
-    PYTHON = 3
+    NUMPY = 3
     R = 4
     SYMPY = 5
+    # Deprecated alias for the NumPy tab.
+    PYTHON = 6
 
 
 DIGITS_DEFAULT = 2
 SHOW_MATLAB_DEFAULT = True
 SHOW_MATHEMATICA_DEFAULT = True
-SHOW_PYTHON_DEFAULT = True
+SHOW_NUMPY_DEFAULT = True
 SHOW_R_DEFAULT = True
 SHOW_SYMPY_DEFAULT = True
 DEFAULT_TAB_DEFAULT = TabType.MATLAB
+
+
+def get_show_numpy(element: lxml.html.HtmlElement) -> bool:
+    if pl.has_attrib(element, "show-numpy") and pl.has_attrib(element, "show-python"):
+        raise ValueError(
+            'Cannot set both "show-numpy" and "show-python" attributes. '
+            'Use only "show-numpy"; the "show-python" attribute is deprecated.'
+        )
+
+    show_python = pl.get_boolean_attrib(element, "show-python", SHOW_NUMPY_DEFAULT)
+    return pl.get_boolean_attrib(element, "show-numpy", show_python)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -32,6 +45,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "default-tab",
         "show-matlab",
         "show-mathematica",
+        "show-numpy",
         "show-python",
         "show-r",
         "show-sympy",
@@ -46,16 +60,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_mathematica = pl.get_boolean_attrib(
         element, "show-mathematica", SHOW_MATHEMATICA_DEFAULT
     )
-    show_python = pl.get_boolean_attrib(element, "show-python", SHOW_PYTHON_DEFAULT)
+    show_numpy = get_show_numpy(element)
     show_r = pl.get_boolean_attrib(element, "show-r", SHOW_R_DEFAULT)
     show_sympy = pl.get_boolean_attrib(element, "show-sympy", SHOW_SYMPY_DEFAULT)
     default_tab = pl.get_enum_attrib(
         element, "default-tab", TabType, DEFAULT_TAB_DEFAULT
     )
+    if default_tab is TabType.PYTHON:
+        default_tab = TabType.NUMPY
 
     if element.tag == "pl-matrix-output":
         # Backwards compatibility for pl-matrix-output, which is deprecated.
-        # This element only supports Matlab and Python, so we set the default
+        # This element only supports Matlab and NumPy, so we set the default
         # tab to Matlab and hide the other tabs.
         show_mathematica = False
         show_r = False
@@ -63,7 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         default_tab = TabType.MATLAB
 
     # Setting the default tab
-    displayed_tab = [show_matlab, show_mathematica, show_python, show_r, show_sympy]
+    displayed_tab = [show_matlab, show_mathematica, show_numpy, show_r, show_sympy]
     if not any(displayed_tab):
         raise ValueError(
             "All tabs have been hidden from display. At least one tab must be shown."
@@ -72,7 +88,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     tab_list = [
         TabType.MATLAB,
         TabType.MATHEMATICA,
-        TabType.PYTHON,
+        TabType.NUMPY,
         TabType.R,
         TabType.SYMPY,
     ]
@@ -88,7 +104,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     default_tab_keys = [
         "active_tab_matlab",
         "active_tab_mathematica",
-        "active_tab_python",
+        "active_tab_numpy",
         "active_tab_r",
         "active_tab_sympy",
     ]
@@ -97,7 +113,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Process parameter data
     matlab_data = ""
     mathematica_data = ""
-    python_data = "import numpy as np\n\n"
+    numpy_data = "import numpy as np\n\n"
     r_data = ""
     sympy_data = "from sympy import *\n\n"
     for child in element:
@@ -128,14 +144,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Get comment, if it exists
             var_matlab_comment = ""
             var_mathematica_comment = ""
-            var_python_comment = ""
+            var_numpy_comment = ""
             var_r_comment = ""
             var_sympy_comment = ""
             if pl.has_attrib(child, "comment"):
                 var_comment = pl.get_string_attrib(child, "comment")
                 var_matlab_comment = f" % {var_comment}"
                 var_mathematica_comment = f" (* {var_comment} *)"
-                var_python_comment = f" # {var_comment}"
+                var_numpy_comment = f" # {var_comment}"
                 var_r_comment = f" # {var_comment}"
                 var_sympy_comment = f" # {var_comment}"
 
@@ -145,7 +161,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             else:
                 var_digits = pl.get_integer_attrib(child, "digits")
 
-            # Assembling Python array formatting
+            # Assembling NumPy array formatting
             if np.isscalar(var_data):
                 assert not isinstance(var_data, (memoryview, str, bytes))
                 prefix = ""
@@ -160,7 +176,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         "pl-variable-output element must be a scalar, a vector, "
                         "or a 2D array."
                     )
-                # Create prefix/suffix so python string is np.array( ... )
+                # Create prefix/suffix so the NumPy string is np.array( ... )
                 prefix = "np.array("
                 suffix = ")"
 
@@ -171,7 +187,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             else:
                 mathematica_suffix = ""
 
-            # Create string for matlab and python format
+            # Create string for Matlab and NumPy format
             var_name_disp = pl.inner_html(child)
             var_matlab_data = pl.string_from_numpy(
                 var_data, language="matlab", digits=var_digits
@@ -179,8 +195,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             var_mathematica = pl.string_from_numpy(
                 var_data, language="mathematica", digits=var_digits
             )
-            var_python_data = pl.string_from_numpy(
-                var_data, language="python", digits=var_digits
+            var_numpy_data = pl.string_from_numpy(
+                var_data, language="numpy", digits=var_digits
             )
             var_r_data = pl.string_from_numpy(var_data, language="r", digits=var_digits)
             var_sympy_data = pl.string_from_numpy(
@@ -189,7 +205,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             matlab_data += f"{var_name_disp} = {var_matlab_data};{var_matlab_comment}\n"
             mathematica_data += f"{var_name_disp}{mathematica_suffix} = {var_mathematica};{var_mathematica_comment}\n"
-            python_data += f"{var_name_disp} = {prefix}{var_python_data}{suffix}{var_python_comment}\n"
+            numpy_data += f"{var_name_disp} = {prefix}{var_numpy_data}{suffix}{var_numpy_comment}\n"
             r_data += f"{var_name_disp} = {var_r_data}{var_r_comment}\n"
             sympy_data += f"{var_name_disp} = {var_sympy_data}{var_sympy_comment}\n"
 
@@ -205,12 +221,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         active_tab_key: True,
         "show_matlab": show_matlab,
         "show_mathematica": show_mathematica,
-        "show_python": show_python,
+        "show_numpy": show_numpy,
         "show_r": show_r,
         "show_sympy": show_sympy,
         "matlab_data": matlab_data,
         "mathematica_data": mathematica_data,
-        "python_data": python_data,
+        "numpy_data": numpy_data,
         "r_data": r_data,
         "sympy_data": sympy_data,
         "uuid": pl.get_uuid(),
