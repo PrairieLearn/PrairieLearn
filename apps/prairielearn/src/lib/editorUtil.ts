@@ -25,14 +25,23 @@ interface AssessmentLocation {
 /**
  * Returns the absolute filesystem path to an assessment's directory under its
  * course (`{course.path}/courseInstances/{short_name}/assessments/{tid}`).
+ *
+ * Throws if either path component is missing, rather than silently building a
+ * malformed path that could read or write the wrong location.
  */
 export function getAssessmentDir(loc: AssessmentLocation): string {
+  if (!loc.course_instance.short_name) {
+    throw new Error('Cannot locate assessment directory: course instance short_name is missing');
+  }
+  if (!loc.assessment.tid) {
+    throw new Error('Cannot locate assessment directory: assessment tid is missing');
+  }
   return path.join(
     loc.course.path,
     'courseInstances',
-    loc.course_instance.short_name!,
+    loc.course_instance.short_name,
     'assessments',
-    loc.assessment.tid!,
+    loc.assessment.tid,
   );
 }
 
