@@ -164,8 +164,8 @@ Click **Add override** in the **Overrides** section.
 
 Choose who the override applies to:
 
-- **Specific students**: select enrolled students. Student-specific overrides are stored in the database, not in `infoAssessment.json`, which keeps one-off accommodations and makeup windows out of the course's git history.
-- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them). Student-label overrides are stored in `infoAssessment.json` alongside the rest of the assessment configuration.
+- **Specific students**: select enrolled students. This is the usual choice for one-off accommodations and makeup windows.
+- **Students by label**: select one or more student labels, such as "Section A" or "Extra time". The override applies to students with _any_ of the selected labels (not all of them).
 
 [Student labels](../courseInstance/index.md#student-labels) are managed on the course instance **Students** page. They are the recommended way to handle repeated accommodations, sections, or cohort-specific deadlines.
 
@@ -202,7 +202,7 @@ The student inherits both overrides on top of the defaults: due date Feb 20, tim
 
 ## Save changes
 
-The page tracks unsaved changes at the bottom of the screen. Click **Save** to write file-backed access control to `infoAssessment.json`, store student-specific overrides in the database, and sync the course.
+The page tracks unsaved changes at the bottom of the screen. Click **Save** to apply your access-control changes.
 
 Click **Cancel** to discard unsaved UI changes.
 
@@ -434,7 +434,7 @@ In the UI:
 
 ### Extended access for specific students
 
-Use student-specific overrides for one-off accommodations or makeup windows. The selected student list is stored in PrairieLearn, not in course content.
+Use student-specific overrides for one-off accommodations or makeup windows.
 
 In the UI:
 

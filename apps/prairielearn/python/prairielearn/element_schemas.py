@@ -17,9 +17,9 @@ from jsonschema import FormatChecker, ValidationError
 from jsonschema.validators import validator_for
 
 from prairielearn.html_utils import (
-    is_boolean_attrib,
-    is_float_attrib,
-    is_integer_attrib,
+    is_boolean_value,
+    is_float_value,
+    is_integer_value,
 )
 
 __all__ = ["validate_element", "validate_element_tree"]
@@ -41,21 +41,21 @@ class ElementSchemaManifest(TypedDict):
 pl_format_checker = FormatChecker(formats=())
 
 
-def _check_boolean_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_boolean_attrib(value)
+def _check_boolean_format(value: object) -> bool:
+    return isinstance(value, str) and is_boolean_value(value)
 
 
-def _check_integer_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_integer_attrib(value)
+def _check_integer_format(value: object) -> bool:
+    return isinstance(value, str) and is_integer_value(value)
 
 
-def _check_float_attrib(value: object) -> bool:
-    return isinstance(value, str) and is_float_attrib(value)
+def _check_number_format(value: object) -> bool:
+    return isinstance(value, str) and is_float_value(value)
 
 
-pl_format_checker.checks("boolean")(_check_boolean_attrib)
-pl_format_checker.checks("integer")(_check_integer_attrib)
-pl_format_checker.checks("number")(_check_float_attrib)
+pl_format_checker.checks("boolean")(_check_boolean_format)
+pl_format_checker.checks("integer")(_check_integer_format)
+pl_format_checker.checks("number")(_check_number_format)
 
 
 @functools.cache
@@ -90,6 +90,8 @@ def validate_element(
 def validate_element_tree(
     element: lxml.html.HtmlElement,
     manifest_path: pathlib.Path,
+    *,
+    allow_legacy_underscore_tags: bool = False,
 ) -> None:
     """Validate an element subtree against an element schema manifest.
 
@@ -103,6 +105,7 @@ def validate_element_tree(
         manifest,
         manifest_path.parent,
         manifest["tag"],
+        allow_legacy_underscore_tags=allow_legacy_underscore_tags,
     )
 
 
@@ -122,8 +125,12 @@ def _validate_element_tree_node(
     manifest: ElementSchemaManifest | ElementSchemaManifestChild,
     manifest_dir: pathlib.Path,
     context: str,
+    *,
+    allow_legacy_underscore_tags: bool,
 ) -> None:
-    actual_tag = _manifest_tag_name(element)
+    actual_tag = _tree_tag_name(
+        element, allow_legacy_underscore_tags=allow_legacy_underscore_tags
+    )
     expected_tag = manifest["tag"]
     if actual_tag != expected_tag:
         raise ValueError(f"Expected {expected_tag} at {context}, not {actual_tag}.")
@@ -141,7 +148,9 @@ def _validate_element_tree_node(
     for child in element:
         if isinstance(child, lxml.etree._Comment):
             continue
-        child_tag = _manifest_tag_name(child)
+        child_tag = _tree_tag_name(
+            child, allow_legacy_underscore_tags=allow_legacy_underscore_tags
+        )
         child_counts[child_tag] = child_counts.get(child_tag, 0) + 1
         child_context = (
             f"{context} > {child_tag}:nth-of-type({child_counts[child_tag]})"
@@ -149,7 +158,11 @@ def _validate_element_tree_node(
         child_manifest = child_manifests.get(child_tag)
         if child_manifest is not None:
             _validate_element_tree_node(
-                child, child_manifest, manifest_dir, child_context
+                child,
+                child_manifest,
+                manifest_dir,
+                child_context,
+                allow_legacy_underscore_tags=allow_legacy_underscore_tags,
             )
         elif not manifest.get("allowAdditionalChildren", False):
             allowed = ", ".join(sorted(child_manifests))
@@ -163,8 +176,13 @@ def _tag_name(element: lxml.html.HtmlElement) -> str:
     return tag.lower() if isinstance(tag, str) else "element"
 
 
-def _manifest_tag_name(element: lxml.html.HtmlElement) -> str:
-    return _tag_name(element).replace("_", "-")
+def _tree_tag_name(
+    element: lxml.html.HtmlElement, *, allow_legacy_underscore_tags: bool
+) -> str:
+    tag = _tag_name(element)
+    if allow_legacy_underscore_tags:
+        return tag.replace("_", "-")
+    return tag
 
 
 def _normalize_attrs(attribs: Mapping[str, Any]) -> dict[str, Any]:

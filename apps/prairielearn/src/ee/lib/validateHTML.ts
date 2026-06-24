@@ -23,6 +23,7 @@ const INPUT_ELEMENTS = new Set([
   'pl-number-input',
   'pl-string-input',
   'pl-symbolic-input',
+  'pl-order-blocks',
 ]);
 
 export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
@@ -196,11 +197,13 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
       case 'pl-symbolic-input':
         return checkSymbolicInput(ast);
       case 'pl-multiple-choice':
+      case 'pl-order-blocks':
       case 'pl-question-panel':
       case 'pl-answer-panel':
       case 'pl-submission-panel':
         return { errors: [] };
       case 'pl-answer':
+      case 'pl-block-group':
         return { errors: [] }; // covered elsewhere
       default:
         if (ast.tagName.startsWith('pl-')) {
@@ -757,7 +760,9 @@ export async function validateHTML(
 
   const diagnostics = await lintQuestionHtml(file);
   for (const diagnostic of diagnostics) {
-    if (diagnostic.ruleName !== 'customTagSchema' && !diagnostic.ruleName?.startsWith('pl/')) {
+    // Selector-based project rules use hyphenated `pl-*` IDs and are editor lint
+    // guidance. Only surface JSON Schema diagnostics in AI HTML validation.
+    if (diagnostic.ruleName !== 'customTagSchema') {
       continue;
     }
     (diagnostic.severity === 'error' ? errors : warnings).push(diagnostic.message);

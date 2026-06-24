@@ -898,8 +898,6 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const ExamModeNetworkSchema = null;
-
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1716,6 +1714,7 @@ export const WorkspaceSchema = z.object({
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   state_updated_at: DateFromISOString,
   stopped_at: DateFromISOString.nullable(),
+  url_rewrite: z.boolean().nullable(),
   version: z.coerce.number(), // This is BIGINT, but always fits a number
   workspace_host_id: IdSchema.nullable(),
 });
@@ -1820,7 +1819,6 @@ export const TableNames = [
   'current_pages',
   'draft_question_metadata',
   'enrollments',
-  'exam_mode_networks',
   'feature_grants',
   'file_edits',
   'file_transfers',
