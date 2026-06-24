@@ -361,6 +361,25 @@ describe('validateHTML panel nesting', () => {
 });
 
 describe('validateHTML htmlmustache schema diagnostics', () => {
+  it('accepts schema child tags inside supported input elements', async () => {
+    const { errors, warnings } = await validateHTML(
+      '<pl-checkbox answers-name="choice"><pl-answer correct="true">A</pl-answer></pl-checkbox>',
+      true,
+    );
+
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it('surfaces schema child errors inside supported input elements', async () => {
+    const { errors } = await validateHTML(
+      '<pl-checkbox answers-name="choice"><pl-unknown>A</pl-unknown></pl-checkbox>',
+      true,
+    );
+
+    assert.isTrue(errors.some((error) => error.includes('only allows these child elements')));
+  });
+
   it('surfaces pl-multiple-choice schema errors', async () => {
     const { errors } = await validateHTML(
       '<pl-multiple-choice answers-name="choice" bogus="true"><pl-answer>A</pl-answer></pl-multiple-choice>',

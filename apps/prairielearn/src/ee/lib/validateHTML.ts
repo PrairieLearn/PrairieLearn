@@ -24,7 +24,6 @@ const INPUT_ELEMENTS = new Set([
 
 export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
 
-const AUXILIARY_ELEMENTS = new Set(['pl-answer', 'pl-block-group']);
 const PYTHON_CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
   'pl-integer-input',
   'pl-number-input',
@@ -108,18 +107,23 @@ interface DfsResult {
   mandatoryPythonCorrectAnswers: Set<string>;
 }
 
+function getTagName(ast: DocumentFragment | ChildNode): string | undefined {
+  return 'tagName' in ast ? ast.tagName : undefined;
+}
+
 function getAttribute(ast: DocumentFragment | ChildNode, name: string): string | undefined {
   if (!('attrs' in ast)) return undefined;
   return ast.attrs.find((attr) => attr.name === name)?.value;
 }
 
 function checkUnsupportedTag(ast: DocumentFragment | ChildNode): string[] {
-  if (!('tagName' in ast) || !ast.tagName.startsWith('pl-')) return [];
-  if (SUPPORTED_ELEMENTS.has(ast.tagName) || AUXILIARY_ELEMENTS.has(ast.tagName)) return [];
+  const tagName = getTagName(ast);
+  if (!tagName?.startsWith('pl-')) return [];
+  if (SUPPORTED_ELEMENTS.has(tagName)) return [];
 
   const formattedSupportedElements = Array.from(SUPPORTED_ELEMENTS).join(', ');
   return [
-    `${ast.tagName} is not a valid tag. You must use only the following tags: ${formattedSupportedElements}`,
+    `${tagName} is not a valid tag. You must use only the following tags: ${formattedSupportedElements}`,
   ];
 }
 
@@ -130,20 +134,21 @@ function checkUnsupportedTag(ast: DocumentFragment | ChildNode): string[] {
  * @returns Errors, warnings, and mandatory correct answers.
  */
 function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string): DfsResult {
+  const tagName = getTagName(ast);
   let errors = checkUnsupportedTag(ast);
   let warnings: string[] = [];
   const mandatoryPythonCorrectAnswers = new Set<string>();
 
-  if ('tagName' in ast && INPUT_ELEMENTS.has(ast.tagName) && enclosingPanel) {
+  if (tagName && INPUT_ELEMENTS.has(tagName) && enclosingPanel) {
     warnings.push(
-      `<${ast.tagName}> must not be placed inside <${enclosingPanel}>. ` +
+      `<${tagName}> must not be placed inside <${enclosingPanel}>. ` +
         'Input elements must be placed at the top level of question.html (outside any panel element) ' +
         'so they render correctly in the question, submission, and answer panels. ' +
-        `Move <${ast.tagName}> outside of <${enclosingPanel}>.`,
+        `Move <${tagName}> outside of <${enclosingPanel}>.`,
     );
   }
 
-  if ('tagName' in ast && PYTHON_CORRECT_ANSWER_INPUT_ELEMENTS.has(ast.tagName)) {
+  if (tagName && PYTHON_CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName)) {
     const answersName = getAttribute(ast, 'answers-name');
     const correctAnswer = getAttribute(ast, 'correct-answer');
 
@@ -152,17 +157,20 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
     }
     if (
       correctAnswer !== undefined &&
-      NON_TEMPLATE_CORRECT_ANSWER_INPUT_ELEMENTS.has(ast.tagName) &&
+      NON_TEMPLATE_CORRECT_ANSWER_INPUT_ELEMENTS.has(tagName) &&
       mustacheTemplateRegex.test(correctAnswer)
     ) {
       errors.push(
-        `${ast.tagName}: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set \`data['correct_answers']\` accordingly in \`server.py\` and remove this attribute.`,
+        `${tagName}: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set \`data['correct_answers']\` accordingly in \`server.py\` and remove this attribute.`,
       );
     }
   }
 
-  const childPanel =
-    'tagName' in ast && PANEL_ELEMENTS.has(ast.tagName) ? ast.tagName : enclosingPanel;
+  if (tagName && INPUT_ELEMENTS.has(tagName)) {
+    return { errors, warnings, mandatoryPythonCorrectAnswers };
+  }
+
+  const childPanel = tagName && PANEL_ELEMENTS.has(tagName) ? tagName : enclosingPanel;
 
   if ('childNodes' in ast) {
     for (const child of ast.childNodes) {

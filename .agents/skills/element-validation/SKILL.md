@@ -12,7 +12,8 @@ JSON Schema is the shared lightweight contract layer. Python is authoritative fo
 - JSON Schema owns local facts: allowed attribute names, required attributes, single-attribute formats/enums, deprecation metadata, and basic child tag structure.
 - Python owns semantics: cross-attribute rules, mode-dependent behavior, child count/content rules, uniqueness, ordering, parsing, defaults, and final validation wording.
 - Docs describe the author-facing contract and should match whichever layer owns the changed behavior.
-- AI HTML validation surfaces `customTagSchema` diagnostics from `lintQuestionHtml()` for schema-backed element attribute and child-tag contracts. `apps/prairielearn/src/ee/lib/validateHTML.ts` owns AI-generation support lists, unsupported-tag rejection, input-in-panel warnings, and `server.py` correct-answer bookkeeping; do not add per-element attribute validators there.
+- AI HTML validation surfaces `customTagSchema` diagnostics from `lintQuestionHtml()` for schema-backed element attribute and child-tag contracts. `apps/prairielearn/src/ee/lib/validateHTML.ts` owns AI-generation support lists, unsupported parent-tag rejection, input-in-panel warnings, and `server.py` correct-answer bookkeeping; do not add per-element attribute validators there.
+- AI-generation support should remain explicit. An element is ready for the support lists only when it has schema-backed validation and high-quality template questions in `exampleCourse/questions/template/` that show the model the expected authoring pattern.
 - AI element documentation context currently excludes `Migrating from deprecated attributes` and `Deprecated attributes` sections because it is used for new question generation. Put deprecated syntax there instead of in main customization tables when authors should not use it in new questions. If this context is reused to edit existing questions, make that exclusion conditional or provide separate migration context so the editor can recognize and migrate deprecated syntax.
 
 If a child attribute is only valid for some parent modes, keep the child schema permissive across the union of valid attributes and enforce the mode-specific subset in Python.
@@ -27,7 +28,7 @@ When adding Python tree validation to an existing element, preserve existing tag
 4. Put semantic validation changes in `apps/prairielearn/elements/<tag>/<tag>.py`.
 5. Update `docs/elements/<tag>.md` when the author-facing contract changes.
 
-Adding a schema module does not enable AI generation for that element. If AI should generate it, update the relevant support lists in `validateHTML.ts`: add renderable input elements to `INPUT_ELEMENTS`, panel-like elements to `PANEL_ELEMENTS`, schema-child-only tags to `AUXILIARY_ELEMENTS` when the unsupported-tag pass would otherwise reject them, and answer-bearing elements to the correct-answer bookkeeping sets when appropriate.
+Adding a schema module does not enable AI generation for that element. If AI should generate it, first make sure the example course has high-quality template questions for that element. Then update the relevant support lists in `validateHTML.ts`: add renderable input elements to `INPUT_ELEMENTS`, panel-like elements to `PANEL_ELEMENTS`, and answer-bearing elements to the correct-answer bookkeeping sets when appropriate.
 
 ## Schema Modules
 
