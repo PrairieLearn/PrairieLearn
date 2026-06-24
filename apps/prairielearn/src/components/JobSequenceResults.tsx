@@ -35,41 +35,7 @@ function redirectWithReferrer() {
   window.location.replace(redirectUrl.toString());
 }
 
-function JobOutput({ job }: { job: JobSequenceResultsJob }) {
-  const [showVerbose, setShowVerbose] = useState(false);
-  const outputStyle: CSSProperties & { '--verbose-display'?: string } = {
-    backgroundColor: 'black',
-  };
-  if (!showVerbose) outputStyle['--verbose-display'] = 'none';
-
-  return (
-    <>
-      <div className="d-flex justify-content-end float-md-end">
-        <div className="form-check form-switch">
-          <input
-            type="checkbox"
-            className="form-check-input"
-            id={`toggle-verbose-${job.id}`}
-            checked={showVerbose}
-            onChange={(event) => setShowVerbose(event.target.checked)}
-          />
-          <label className="form-check-label" htmlFor={`toggle-verbose-${job.id}`}>
-            Show verbose messages
-          </label>
-        </div>
-      </div>
-      <pre
-        id={`output-${job.id}`}
-        className="text-white rounded p-3 mb-0 mt-3"
-        style={outputStyle}
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{ __html: job.outputHtml }}
-      />
-    </>
-  );
-}
-
-function JobSequenceResultsJob({
+function JobSequenceResultsJobItem({
   authnUserUid,
   job,
   jobSequence,
@@ -82,9 +48,15 @@ function JobSequenceResultsJob({
   timeZone: string;
   userUid: string | null;
 }) {
+  const [showVerbose, setShowVerbose] = useState(false);
+  const outputStyle: CSSProperties & { '--verbose-display'?: string } = {
+    backgroundColor: 'black',
+  };
+  if (!showVerbose) outputStyle['--verbose-display'] = 'none';
+
   return (
     <div className="list-group">
-      <li className="list-group-item">
+      <div className="list-group-item">
         {jobSequence.legacy && (
           <>
             <h4 className="list-group-item-heading">
@@ -113,10 +85,25 @@ function JobSequenceResultsJob({
           {authnUserUid !== userUid ? `(really ${authnUserUid})` : ''}{' '}
           {job.finish_date && <>&mdash; finished at {formatDate(job.finish_date, timeZone)}</>}
         </p>
-        <p className="mb-1">
-          <JobStatus status={job.status} />{' '}
-          {job.status === 'Running' && <i className="fa fa-sync fa-spin" />}
-        </p>
+        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+          <div>
+            <JobStatus status={job.status} />{' '}
+            {job.status === 'Running' && <i className="fa fa-sync fa-spin" />}
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input
+              type="checkbox"
+              className="js-toggle-verbose form-check-input"
+              id={`toggle-verbose-${job.id}`}
+              data-target-id={`output-${job.id}`}
+              checked={showVerbose}
+              onChange={(event) => setShowVerbose(event.target.checked)}
+            />
+            <label className="form-check-label" htmlFor={`toggle-verbose-${job.id}`}>
+              Show verbose messages
+            </label>
+          </div>
+        </div>
         {jobSequence.legacy && (
           <>
             {job.status === 'Error' && job.exit_code != null && (
@@ -128,8 +115,14 @@ function JobSequenceResultsJob({
             )}
           </>
         )}
-        <JobOutput job={job} />
-      </li>
+        <pre
+          id={`output-${job.id}`}
+          className="text-white rounded p-3 mb-0 mt-3"
+          style={outputStyle}
+          // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+          dangerouslySetInnerHTML={{ __html: job.outputHtml }}
+        />
+      </div>
     </div>
   );
 }
@@ -196,7 +189,7 @@ export function JobSequenceResults({
         {jobSequence.description} #{jobSequence.number}
       </div>
       {jobs.map((job) => (
-        <JobSequenceResultsJob
+        <JobSequenceResultsJobItem
           key={job.id}
           authnUserUid={authnUserUid}
           job={job}
