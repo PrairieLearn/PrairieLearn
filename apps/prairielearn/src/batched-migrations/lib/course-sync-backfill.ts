@@ -1,34 +1,32 @@
-import { z } from 'zod';
-
-import { makeBatchedMigration } from '@prairielearn/migrations';
+import { makeBatchedMigration, selectTableIdBounds } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
+import { escapeIdentifier, queryRows } from '@prairielearn/postgres';
 
 import { type Course, CourseSchema } from '../../lib/db-types.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getLockNameForCoursePath } from '../../models/course.js';
 import { syncDiskToSqlWithLock } from '../../sync/syncFromDisk.js';
 
-const sql = loadSqlEquiv(import.meta.url);
-
 const COURSE_SYNC_BACKFILL_BATCH_SIZE = 10;
 
-export function makeCourseSyncBackfillMigration() {
+type CourseTableName = 'courses' | 'pl_courses';
+
+export function makeCourseSyncBackfillMigration({
+  boundsTableName = 'courses',
+  coursesTableName = 'courses',
+}: { boundsTableName?: CourseTableName; coursesTableName?: CourseTableName } = {}) {
   return makeBatchedMigration({
     async getParameters() {
-      const max = await queryScalar(
-        sql.select_max_course_id,
-        z.bigint({ coerce: true }).nullable(),
-      );
+      const bounds = await selectTableIdBounds(boundsTableName);
       return {
-        min: 1n,
-        max,
+        min: bounds.min,
+        max: bounds.max,
         batchSize: COURSE_SYNC_BACKFILL_BATCH_SIZE,
       };
     },
 
     async execute(min: bigint, max: bigint): Promise<void> {
-      const courses = await queryRows(sql.select_courses_for_sync, { min, max }, CourseSchema);
+      const courses = await selectCoursesForSync(coursesTableName, min, max);
 
       const errors: Error[] = [];
       for (const course of courses) {
@@ -48,6 +46,15 @@ export function makeCourseSyncBackfillMigration() {
       }
     },
   });
+}
+
+async function selectCoursesForSync(tableName: CourseTableName, min: bigint, max: bigint) {
+  const escapedTableName = escapeIdentifier(tableName);
+  return await queryRows(
+    `SELECT * FROM ${escapedTableName} WHERE id >= $min AND id <= $max AND deleted_at IS NULL`,
+    { min, max },
+    CourseSchema,
+  );
 }
 
 /**
