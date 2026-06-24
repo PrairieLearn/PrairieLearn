@@ -60,7 +60,7 @@ async function selectCoursesForSync(tableName: CourseTableName, min: bigint, max
 /**
  * Re-syncs an existing course. Does NOT pull new changes from the remote repository.
  */
-export async function syncCourse(course: Course) {
+async function syncCourse(course: Course) {
   const serverJob = await createServerJob({
     type: 'sync',
     description: 'Sync from disk',
