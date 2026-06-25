@@ -16,10 +16,11 @@ onDocumentReady(async () => {
       try {
         const outputJson = JSON.parse(outputText);
         if (typeof outputJson === 'object' && outputJson !== null && 'error' in outputJson) {
-          outputText = `Error: ${outputJson.error}`;
+          outputText = `Error: ${outputJson.error || 'Unknown error'}`;
         }
       } catch {
-        // Ignore JSON parse errors
+        // In case of JSON parse errors, use original text
+        outputText = `Error: ${outputText || 'Unknown error'}`;
       }
     }
 
