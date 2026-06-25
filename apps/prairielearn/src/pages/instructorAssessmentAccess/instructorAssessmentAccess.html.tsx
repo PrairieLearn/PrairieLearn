@@ -50,7 +50,6 @@ export function InstructorAssessmentAccess({
   migrationPreview,
   origHash,
   canEdit,
-  enhancedAccessControlEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRuleRow[];
@@ -58,7 +57,6 @@ export function InstructorAssessmentAccess({
   migrationPreview: MigrationPreview | null;
   origHash: string;
   canEdit: boolean;
-  enhancedAccessControlEnabled: boolean;
 }) {
   const showComments = accessRules.some((access_rule) =>
     isRenderableComment(access_rule.rule.json_comment),
@@ -94,19 +92,13 @@ export function InstructorAssessmentAccess({
             : ''}
         </div>
 
-        ${enhancedAccessControlEnabled
-          ? html`
-              <div
-                class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
-              >
-                ${migrationAnalysis && migrationAnalysis.errors.length > 0
-                  ? html`This assessment uses the legacy access control system. Automatic migration
-                    is not available for this assessment's access rules.`
-                  : html`This assessment uses the legacy access control system. Consider migrating
-                    to the modern format for a better editing experience.`}
-              </div>
-            `
-          : ''}
+        <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0">
+          ${migrationAnalysis && migrationAnalysis.errors.length > 0
+            ? html`This assessment uses the legacy access control system. Automatic migration is not
+              available for this assessment's access rules.`
+            : html`This assessment uses the legacy access control system. Consider migrating to the
+              modern format for a better editing experience.`}
+        </div>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Access rules">
@@ -214,7 +206,7 @@ export function InstructorAssessmentAccess({
           <small>
             Instructions on how to change the access rules can be found in the
             <a
-              href="https://docs.prairielearn.com/assessment/accessControl/"
+              href="https://docs.prairielearn.com/assessment/accessControlLegacy/"
               target="_blank"
               rel="noreferrer"
               >PrairieLearn documentation</a
@@ -425,6 +417,9 @@ export function InstructorAssessmentAccessNew({
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
           isExam={resLocals.assessment.type === 'Exam'}
+          hasExamAutoClose={
+            resLocals.assessment.type === 'Exam' && (resLocals.assessment.auto_close ?? true)
+          }
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}

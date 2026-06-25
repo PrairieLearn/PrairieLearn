@@ -368,7 +368,11 @@ async function makeAndInsertVariant({
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
-      workspace_id = await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema);
+      workspace_id = await sqldb.queryOptionalScalar(
+        sql.insert_workspace,
+        { url_rewrite: question.workspace_url_rewrite },
+        IdSchema,
+      );
     }
 
     return await sqldb.queryRow(

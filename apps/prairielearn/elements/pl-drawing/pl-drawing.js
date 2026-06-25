@@ -220,10 +220,14 @@ window.PLDrawingApi = {
     // Re-scale the html elements
     canvas.viewportTransform[0] = renderScale;
     canvas.viewportTransform[3] = renderScale;
-    canvas_elem.parentElement.style.width = canvas_width + 'px';
-    canvas_elem.parentElement.style.height = canvas_height + 'px';
-    $(canvas_elem.parentElement).children('canvas').width(canvas_width);
-    $(canvas_elem.parentElement).children('canvas').height(canvas_height);
+    const canvas_container = canvas_elem.parentElement;
+    const canvas_elements = $(canvas_container).children('canvas');
+    canvas_elements.width(canvas_width);
+    canvas_elements.height(canvas_height);
+    // jQuery preserves the logical content size. Use the rendered outer size for
+    // Fabric's wrapper so global canvas borders do not overflow the container.
+    canvas_container.style.width = canvas_elements.first().outerWidth() + 'px';
+    canvas_container.style.height = canvas_elements.first().outerHeight() + 'px';
 
     canvas.on('object:added', (ev) => {
       ev.target.cornerSize *= renderScale;

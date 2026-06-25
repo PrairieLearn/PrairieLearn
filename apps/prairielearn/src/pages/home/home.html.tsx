@@ -81,9 +81,8 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
       </div>
       <div className="card-body">
         <p>
-          PrairieLearn is running in Development Mode. Click the
-          <strong>"Load from disk"</strong> button above to load question and assessment definitions
-          from JSON files on disk.
+          PrairieLearn is running in Development Mode. Click the <strong>"Load from disk"</strong>{' '}
+          button above to load question and assessment definitions from JSON files on disk.
         </p>
         <p>
           You need to click "Load from disk" every time that a JSON file is changed on disk. Changes

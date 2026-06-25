@@ -1,8 +1,9 @@
 import { createWriteStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 
 import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { deleteQtiImportDraft } from '../../lib/qti-import-drafts.js';
@@ -75,7 +76,7 @@ async function buildQtiZip(
   </resources>
 </manifest>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   if (options?.includeManifest !== false) {
     archive.append(manifest, { name: 'imsmanifest.xml' });
@@ -129,7 +130,7 @@ async function buildQtiZipWithUnusedAsset(destPath: string): Promise<void> {
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'asset-quiz.xml' });
   archive.append(Buffer.from('used image'), { name: 'web_resources/used.png' });
@@ -225,7 +226,7 @@ async function buildEmbeddedBankCourseZip(destPath: string): Promise<void> {
   </resources>
 </manifest>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(manifest, { name: 'imsmanifest.xml' });
   archive.append('<quiz/>', { name: 'embedded_bank_assessment/assessment_meta.xml' });
@@ -266,7 +267,7 @@ async function buildExternalBankAssessmentZip(
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'bank-ref.xml' });
   void archive.finalize();
@@ -310,7 +311,7 @@ async function buildMultiExternalBankAssessmentZip(destPath: string): Promise<vo
   </assessment>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'multi-bank-ref.xml' });
   void archive.finalize();
@@ -376,7 +377,7 @@ async function buildQuestionBankZip(
   </objectbank>
 </questestinterop>`;
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   const output = createWriteStream(destPath);
   archive.append(qtiXml, { name: 'external-bank.xml' });
   void archive.finalize();
@@ -719,7 +720,7 @@ test.describe('QTI Import', () => {
     });
     await expect(firstBankUploadButton).toBeEnabled();
     await expect(firstBankUploadButton).toContainText('Upload export');
-    await expect(firstBankUploadButton).not.toContainText('Processing...');
+    await expect(firstBankUploadButton).not.toContainText('Uploading');
 
     // Hold the first supplemental upload open so we can verify that only its button shows
     // the processing state while other bank uploads are temporarily disabled.
@@ -727,7 +728,12 @@ test.describe('QTI Import', () => {
     const continueBankUploadPromise = new Promise<void>((resolve) => {
       continueBankUpload = resolve;
     });
-    await page.route('**/qti_import/upload', async (route) => {
+    let bankUploadStarted!: () => void;
+    const bankUploadStartedPromise = new Promise<void>((resolve) => {
+      bankUploadStarted = resolve;
+    });
+    await page.route('**/instructor/instance_admin/qti_import/upload', async (route) => {
+      bankUploadStarted();
       await continueBankUploadPromise;
       await route.fallback();
     });
@@ -737,14 +743,15 @@ test.describe('QTI Import', () => {
       .setInputFiles(firstBankZipPath);
     await firstBankUploadButton.click();
 
-    await expect(page.getByText('Processing...')).toHaveCount(1);
-    await expect(firstBankUploadButton).toContainText('Processing...');
+    await bankUploadStartedPromise;
+    await expect(page.getByText('Uploading')).toHaveCount(1);
+    await expect(firstBankUploadButton).toContainText('Uploading');
     await expect(secondBankUploadButton).toBeDisabled();
     await expect(secondBankUploadButton).toContainText('Upload export');
-    await expect(secondBankUploadButton).not.toContainText('Processing...');
+    await expect(secondBankUploadButton).not.toContainText('Uploading');
 
     continueBankUpload!();
-    await page.unroute('**/qti_import/upload');
+    await page.unroute('**/instructor/instance_admin/qti_import/upload');
 
     await expect(page.getByText('Matched 1 question bank from that upload.')).toBeVisible({
       timeout: 15000,
@@ -796,6 +803,48 @@ test.describe('QTI Import', () => {
 
     await expect(page.getByText('1 assessment imported successfully.')).toBeVisible();
     await expect(page.getByText('E2E Import Quiz')).toBeVisible();
+
+    // The written files should contain only the necessary properties; schema
+    // defaults (sharePublicly, dependencies, groupWork, ...) must not be
+    // materialized into imported info.json files.
+    const questionInfo = JSON.parse(
+      await readFile(
+        path.join(testCoursePath, 'questions/imported/e2e-import-quiz/sample-mc/info.json'),
+        'utf8',
+      ),
+    );
+    expect(questionInfo).toEqual({
+      uuid: expect.any(String),
+      title: 'Sample MC Question',
+      topic: 'E2E Import Quiz',
+      tags: ['imported'],
+      type: 'v3',
+      singleVariant: true,
+    });
+
+    const assessmentInfo = JSON.parse(
+      await readFile(
+        path.join(
+          testCoursePath,
+          'courseInstances/Sp15/assessments/e2e-import-quiz/infoAssessment.json',
+        ),
+        'utf8',
+      ),
+    );
+    expect(assessmentInfo).toEqual({
+      uuid: expect.any(String),
+      type: 'Homework',
+      title: 'E2E Import Quiz',
+      set: 'Homework',
+      number: expect.any(String),
+      allowAccess: [],
+      zones: [
+        {
+          title: 'Questions',
+          questions: [{ id: 'imported/e2e-import-quiz/sample-mc', autoPoints: 1 }],
+        },
+      ],
+    });
   });
 
   test('shows a clear error when review draft files have expired', async ({

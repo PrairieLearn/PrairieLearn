@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  type AccessControlRuleTargetType,
+  getAccessControlRuleTargetType,
+} from '../../lib/assessment-access-control/validation.js';
 import { config } from '../../lib/config.js';
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
@@ -26,7 +30,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 }
 
 const JSON_RULE_START = 0;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Validates constraints that require database state: student label existence
@@ -73,6 +76,7 @@ function prepareRuleRow(
   assessmentId: string,
   ruleNumber: number,
   rule: AccessControlJson,
+  targetType: AccessControlRuleTargetType,
   studentLabelIdByName: Map<string, string>,
 ): {
   ruleRow: string;
@@ -92,7 +96,11 @@ function prepareRuleRow(
   const lateDeadlinesField = mapField(dateControl.lateDeadlines);
   const durationMinutesField = mapField(dateControl.durationMinutes);
   const passwordField = mapField(dateControl.password);
-  const afterLastDeadlineField = mapField(afterLastDeadline);
+  // Only materialize the default `afterLastDeadline: false` when date control
+  // actually exists. Otherwise `null` keeps the date-control section absent.
+  const defaultRuleHasDateControl = isDefaultRule && dateControl.release != null;
+  const afterLastDeadlineAllowSubmissions =
+    afterLastDeadline?.allowSubmissions ?? (defaultRuleHasDateControl ? false : null);
   const questionsHiddenField = mapField(afterComplete.questions?.hidden);
   const scoreHiddenField = mapField(afterComplete.score?.hidden);
 
@@ -101,11 +109,10 @@ function prepareRuleRow(
     .map((label) => studentLabelIdByName.get(label))
     .filter((id): id is string => id !== undefined);
 
-  const targetType: 'none' | 'student_label' = isDefaultRule ? 'none' : 'student_label';
-
   const ruleRow = JSON.stringify({
     assessment_id: assessmentId,
     number: ruleNumber,
+    uuid: !isDefaultRule ? rule.uuid : null,
     // beforeRelease.listed is only configurable on the default rule.
     before_release_listed: isDefaultRule ? (beforeReleaseListed.value ?? false) : null,
     target_type: targetType,
@@ -115,13 +122,9 @@ function prepareRuleRow(
     date_control_due_credit: dueField.value?.credit ?? null,
     date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
     date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
-    date_control_after_last_deadline_overridden: afterLastDeadlineField.overridden,
-    date_control_after_last_deadline_allow_submissions:
-      afterLastDeadlineField.value?.allowSubmissions ?? null,
+    date_control_after_last_deadline_allow_submissions: afterLastDeadlineAllowSubmissions,
     date_control_after_last_deadline_credit:
-      afterLastDeadlineField.value?.allowSubmissions === true
-        ? (afterLastDeadlineField.value.credit ?? null)
-        : null,
+      afterLastDeadline?.allowSubmissions === true ? afterLastDeadline.credit : null,
     date_control_duration_minutes_overridden: durationMinutesField.overridden,
     date_control_duration_minutes: durationMinutesField.value,
     date_control_password_overridden: passwordField.overridden,
@@ -133,18 +136,20 @@ function prepareRuleRow(
     after_complete_score_visible_from_date: afterComplete.score?.visibleFromDate ?? null,
   });
 
-  // Child data arrays use [assessment_id, rule_number, ...data] format.
-  // The sproc joins on (assessment_id, rule_number) to resolve the access_control_id.
+  // Child data arrays identify rules by assessment ID and rule number.
+  // Early- and late-deadline arrays also include target type to disambiguate
+  // student-label rules from student-specific rules that can share a rule
+  // number.
   const studentLabels = studentLabelIds.map((labelId) =>
     JSON.stringify([assessmentId, ruleNumber, labelId]),
   );
 
   const earlyDeadlines = (earlyDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
   );
 
   const lateDeadlines = (lateDeadlinesField.value ?? []).map((d) =>
-    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+    JSON.stringify([assessmentId, ruleNumber, targetType, d.date, d.credit]),
   );
 
   const exams = rule.integrations?.prairieTest?.exams ?? [];
@@ -186,7 +191,7 @@ async function selectInvalidExamUuids(
   for (const { rules } of assessments) {
     for (const rule of rules) {
       for (const e of rule.integrations?.prairieTest?.exams ?? []) {
-        if (UUID_REGEX.test(e.examUuid)) {
+        if (z.uuid().safeParse(e.examUuid).success) {
           allExamUuids.add(e.examUuid);
         }
       }
@@ -256,9 +261,16 @@ export async function syncAccessControl(
   for (const { assessmentId, rules } of assessments) {
     assessmentIds.push(assessmentId);
 
-    for (let i = 0; i < rules.length; i++) {
+    for (const [ruleIndex, rule] of rules.entries()) {
+      const targetType = getAccessControlRuleTargetType(rule, ruleIndex);
       const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
-        prepareRuleRow(assessmentId, JSON_RULE_START + i, rules[i], studentLabelIdByName);
+        prepareRuleRow(
+          assessmentId,
+          JSON_RULE_START + ruleIndex,
+          rule,
+          targetType,
+          studentLabelIdByName,
+        );
 
       allRuleRows.push(ruleRow);
       allStudentLabels.push(...studentLabels);

@@ -4,6 +4,7 @@ import {
   type AccessControlFormData,
   type DefaultRuleData,
   type OverrideData,
+  createDefaultOverrideFormData,
   formDataToJson,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
@@ -28,6 +29,7 @@ const defaultRuleFixture: DefaultRuleData = {
 };
 
 const baseOverride: OverrideData = {
+  uuid: '11111111-1111-4111-8111-111111111111',
   trackingId: 'o-base',
   appliesTo: {
     targetType: 'enrollment',
@@ -105,6 +107,30 @@ describe('jsonToDefaultRuleFormData', () => {
 });
 
 describe('formDataToJson', () => {
+  it('preserves existing override UUIDs from JSON', () => {
+    const formData = jsonToOverrideFormData(
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+      },
+      TEST_TIMEZONE,
+    );
+
+    expect(formData.uuid).toBe('22222222-2222-4222-8222-222222222222');
+    expect(formDataToJson(buildFormData(formData))[1].uuid).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
+  });
+
+  it('generates UUIDs for new override form data', () => {
+    const formData = createDefaultOverrideFormData(defaultRuleFixture);
+
+    expect(formData.uuid).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(formDataToJson(buildFormData(formData))[1].uuid).toBe(formData.uuid);
+  });
+
   it('defaults beforeReleaseListed to false when omitted from the default rule JSON', () => {
     const defaultRule = jsonToDefaultRuleFormData({}, TEST_TIMEZONE);
 
@@ -162,6 +188,18 @@ describe('formDataToJson', () => {
     expect(result[0].dateControl?.due).toEqual({ date: null, credit: 80 });
   });
 
+  it('omits default afterLastDeadline when submissions are disabled', () => {
+    const result = formDataToJson({
+      defaultRule: {
+        ...defaultRuleFixture,
+        afterLastDeadline: { allowSubmissions: false },
+      },
+      overrides: [],
+    });
+
+    expect(result[0].dateControl?.afterLastDeadline).toBeUndefined();
+  });
+
   it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
       ...baseOverride,
@@ -207,6 +245,7 @@ describe('formDataToJson', () => {
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
+    expect(overrideJson.uuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(overrideJson.labels).toEqual(['label-a', 'label-b']);
     expect(overrideJson.ruleType).toBeUndefined();
     expect(overrideJson.enrollments).toBeUndefined();
@@ -224,6 +263,7 @@ describe('formDataToJson', () => {
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
+    expect(overrideJson.uuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.enrollments).toEqual([
       { enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' },
@@ -235,6 +275,7 @@ describe('formDataToJson', () => {
     const formData = jsonToOverrideFormData(
       {
         id: '1',
+        uuid: '22222222-2222-4222-8222-222222222222',
         ruleType: 'enrollment',
         enrollments: [],
       },
@@ -248,6 +289,7 @@ describe('formDataToJson', () => {
     });
 
     const overrideJson = formDataToJson(buildFormData(formData))[1];
+    expect(overrideJson.uuid).toBe('22222222-2222-4222-8222-222222222222');
     expect(overrideJson.ruleType).toBe('enrollment');
     expect(overrideJson.enrollments).toEqual([]);
     expect(overrideJson.labels).toBeUndefined();
@@ -270,7 +312,7 @@ describe('formDataToJson', () => {
     expect(overrideJson.afterComplete!.score!.hidden).toBe(true);
   });
 
-  it('omits default afterComplete when dateControl is on but no due date, late deadline, or duration is set', () => {
+  it('emits default afterComplete when dateControl is on but no due date, late deadline, or duration is set', () => {
     const result = formDataToJson({
       defaultRule: {
         ...defaultRuleFixture,
@@ -285,7 +327,10 @@ describe('formDataToJson', () => {
       overrides: [],
     });
 
-    expect(result[0].afterComplete).toBeUndefined();
+    expect(result[0].afterComplete).toEqual({
+      questions: { hidden: false },
+      score: { hidden: true },
+    });
   });
 
   it('omits afterComplete when neither visibility is overridden', () => {
@@ -436,7 +481,7 @@ describe('formDataToJson', () => {
   it('serializes afterLastDeadline overrides', () => {
     const noSubmissions: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-1',
+      trackingId: 'o-ald-0',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: false },
     };
@@ -446,17 +491,18 @@ describe('formDataToJson', () => {
 
     const practice: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-2',
+      trackingId: 'o-ald-1',
       overriddenFields: ['afterLastDeadline'],
-      afterLastDeadline: { allowSubmissions: true },
+      afterLastDeadline: { allowSubmissions: true, credit: 0 },
     };
     expect(formDataToJson(buildFormData(practice))[1].dateControl!.afterLastDeadline).toEqual({
       allowSubmissions: true,
+      credit: 0,
     });
 
     const partialCredit: OverrideData = {
       ...baseOverride,
-      trackingId: 'o-ald-3',
+      trackingId: 'o-ald-2',
       overriddenFields: ['afterLastDeadline'],
       afterLastDeadline: { allowSubmissions: true, credit: 50 },
     };

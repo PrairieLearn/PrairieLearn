@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 4.0.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
 ## 4.0.7
 
 ### Patch Changes

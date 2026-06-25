@@ -1042,14 +1042,9 @@ class ArcVector(BaseElement):
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
-
         grid_size = pl.get_integer_attrib(el, "grid-size", 20)
         tol = pl.get_float_attrib(el, "tol", grid_size / 2)
-        pc, hbox, wbox, _, _ = get_error_box(
-            x1, y1, 0, tol, offset_forward, offset_backward
-        )
+        pc, hbox, wbox, _, _ = get_error_box(x1, y1, 0, tol, 0, 0)
 
         return {
             "left": x1,
@@ -1078,8 +1073,6 @@ class ArcVector(BaseElement):
             "YcenterErrorBox": pc[1] if pc is not None else pc,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
-            "offset_forward": offset_forward,
-            "offset_backward": offset_backward,
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
             "clockwiseDirection": clockwise_direction,
@@ -1124,6 +1117,7 @@ class ArcVector(BaseElement):
             "arrow-head-length",
             "disregard-sense",
             "draw-error-box",
+            "optional-grading",
             "anchor-is-tail",
         ]
 
@@ -1295,6 +1289,7 @@ class DistributedLoad(BaseElement):
             "draw-error-box",
             "offset-forward",
             "offset-backward",
+            "optional-grading",
         ]
 
 
@@ -1311,14 +1306,9 @@ class Point(BaseElement):
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
-
         grid_size = pl.get_integer_attrib(el, "grid-size", 20)
         tol = pl.get_float_attrib(el, "tol", grid_size / 2)
-        pc, hbox, wbox, _, _ = get_error_box(
-            x1, y1, 0, tol, offset_forward, offset_backward
-        )
+        pc, hbox, wbox, _, _ = get_error_box(x1, y1, 0, tol, 0, 0)
 
         return {
             "left": pl.get_float_attrib(el, "x1", 20),
@@ -1329,8 +1319,6 @@ class Point(BaseElement):
             "YcenterErrorBox": pc[1] if pc is not None else pc,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
-            "offset_forward": offset_forward,
-            "offset_backward": offset_backward,
             "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
             "offsetx": pl.get_float_attrib(el, "offsetx", 5),
             "offsety": pl.get_float_attrib(el, "offsety", 5),
@@ -1356,7 +1344,17 @@ class Point(BaseElement):
 
     @staticmethod
     def get_attributes() -> list[str]:
-        return ["x1", "y1", "radius", "label", "offsetx", "offsety", "opacity", "color"]
+        return [
+            "x1",
+            "y1",
+            "radius",
+            "label",
+            "offsetx",
+            "offsety",
+            "opacity",
+            "color",
+            "draw-error-box",
+        ]
 
 
 class Coordinates(BaseElement):
@@ -1579,12 +1577,8 @@ class Rectangle(BaseElement):
                 el, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1599,7 +1593,6 @@ class Rectangle(BaseElement):
             "color",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
@@ -1630,12 +1623,8 @@ class Triangle(BaseElement):
             "strokeUniform": True,
             "originX": "center",
             "originY": "center",
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1651,7 +1640,6 @@ class Triangle(BaseElement):
             "opacity",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
@@ -1676,12 +1664,8 @@ class Circle(BaseElement):
                 el, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
             "scaling": True,
         }
 
@@ -1698,7 +1682,6 @@ class Circle(BaseElement):
             "label",
             "offsetx",
             "offsety",
-            "selectable",
         ]
 
 
@@ -1721,12 +1704,8 @@ class Polygon(BaseElement):
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(el, "stroke-width", 1),
             "strokeUniform": True,
-            "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
-            "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
-            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
         }
 
     @staticmethod
@@ -1737,7 +1716,6 @@ class Polygon(BaseElement):
             "color",
             "stroke-color",
             "stroke-width",
-            "selectable",
         ]
 
 
@@ -2529,7 +2507,6 @@ class DrawingElement(UnplaceableBaseElement):
             "height",
             "grid-size",
             "snap-to-grid",
-            "correct-answer",
             "tol",
             "angle-tol",
             "show-tolerance-hint",
