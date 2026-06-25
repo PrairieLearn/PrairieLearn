@@ -183,7 +183,6 @@ async function renderQuestionPreview(
   resLocals: InstructorQuestionRenderLocals,
   variantId: string | null,
 ) {
-  // Render the preview.
   await getAndRenderVariant(variantId, null, resLocals, {
     urlOverrides: {
       // By default, this would be the URL to the instructor question preview page.
