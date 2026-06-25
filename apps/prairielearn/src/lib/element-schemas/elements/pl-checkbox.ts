@@ -27,7 +27,9 @@ const plCheckboxAttributesSchema = z
     'fixed-order': booleanFormat()
       .meta({ deprecated: true, description: 'Use the "order" attribute instead.' })
       .optional(),
-    'hide-answer-panel': booleanFormat().optional(),
+    'hide-answer-panel': booleanFormat()
+      .meta({ deprecated: true, description: 'Use <pl-hide-in-panel> instead.' })
+      .optional(),
     'hide-help-text': booleanFormat().optional(),
     'hide-letter-keys': booleanFormat().optional(),
     'hide-score-badge': booleanFormat().optional(),

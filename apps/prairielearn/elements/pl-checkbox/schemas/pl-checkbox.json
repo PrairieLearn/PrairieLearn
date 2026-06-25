@@ -21,7 +21,9 @@
     },
     "hide-answer-panel": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use <pl-hide-in-panel> instead."
     },
     "hide-help-text": {
       "type": "string",
