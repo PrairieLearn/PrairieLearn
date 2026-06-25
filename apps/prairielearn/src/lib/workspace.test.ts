@@ -1,6 +1,7 @@
-import { assert, describe, it } from 'vitest';
+import { afterEach, assert, describe, it } from 'vitest';
 
-import { decideStartupAction } from './workspace.js';
+import { config } from './config.js';
+import { canLaunchAdditionalHosts, decideStartupAction } from './workspace.js';
 
 describe('decideStartupAction', () => {
   it('initializes and launches when uninit→uninit and the version still matches', () => {
@@ -82,5 +83,33 @@ describe('decideStartupAction', () => {
       }),
       'noop',
     );
+  });
+});
+
+describe('canLaunchAdditionalHosts', () => {
+  const originalAutoscalingEnabled = config.workspaceAutoscalingEnabled;
+  const originalLaunchTemplateId = config.workspaceLoadLaunchTemplateId;
+
+  afterEach(() => {
+    config.workspaceAutoscalingEnabled = originalAutoscalingEnabled;
+    config.workspaceLoadLaunchTemplateId = originalLaunchTemplateId;
+  });
+
+  it('can launch hosts when autoscaling is enabled and a launch template is configured', () => {
+    config.workspaceAutoscalingEnabled = true;
+    config.workspaceLoadLaunchTemplateId = 'lt-1234';
+    assert.isTrue(canLaunchAdditionalHosts());
+  });
+
+  it('cannot launch hosts when no launch template is configured (e.g. local development)', () => {
+    config.workspaceAutoscalingEnabled = true;
+    config.workspaceLoadLaunchTemplateId = null;
+    assert.isFalse(canLaunchAdditionalHosts());
+  });
+
+  it('cannot launch hosts when autoscaling is disabled', () => {
+    config.workspaceAutoscalingEnabled = false;
+    config.workspaceLoadLaunchTemplateId = 'lt-1234';
+    assert.isFalse(canLaunchAdditionalHosts());
   });
 });
