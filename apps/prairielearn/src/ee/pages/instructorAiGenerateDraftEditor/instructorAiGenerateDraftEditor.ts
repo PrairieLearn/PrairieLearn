@@ -1,7 +1,8 @@
 import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -20,13 +21,13 @@ import {
   type Question,
   type User,
 } from '../../../lib/db-types.js';
+import { classifyDraftQuestion } from '../../../lib/draft-question.ts';
 import { features } from '../../../lib/features/index.js';
-import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
@@ -47,6 +48,9 @@ import {
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
+type InstructorQuestionRenderLocals = InstructorQuestionLocals & ResLocalsQuestionRender;
 
 async function saveRevisedQuestion({
   course,
@@ -115,6 +119,91 @@ async function saveRevisedQuestion({
   });
 }
 
+function getVariantId(req: Request) {
+  const id = req.query.variant_id;
+  if (id == null || typeof id !== 'string' || id === '') return null;
+  return IdSchema.parse(id);
+}
+
+async function getValidatedInitialMessages(question: Question) {
+  const messages = await selectAiQuestionGenerationMessages(question);
+
+  const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
+    // Messages without parts will fail validation by `validateUIMessages()`.
+    // We'll inject an empty text part in that case.
+    //
+    // This is not expected to happen in most cases, but there's a possibility
+    // that it could in an error scenario.
+    const parts = run(() => {
+      if (message.parts.length === 0) {
+        return [{ type: 'text', text: '' }];
+      }
+      // Tool calls whose tool returned nothing (e.g. legacy `writeFile`) were
+      // persisted without an `output` field. Zod 4's `validateUIMessages()`
+      // rejects an `output-available` tool part that lacks `output`, so
+      // backfill a null output for these older parts.
+      //
+      // TODO: see the following issue and PR. If they're ever resolved,
+      // we can consider removing this workaround. Specifically, we'll need
+      // the AI SDK to be able to gracefully handle message parts that were
+      // persisted without an explicit `output` property.
+      //
+      // https://github.com/vercel/ai/issues/15854
+      // https://github.com/vercel/ai/pull/15855
+      return message.parts.map((part) =>
+        part?.state === 'output-available' && !('output' in part)
+          ? { ...part, output: null }
+          : part,
+      );
+    });
+
+    return {
+      id: message.id,
+      role: message.role,
+      parts,
+      metadata: {
+        job_sequence_id: message.job_sequence_id,
+        status: message.status,
+        include_in_context: message.include_in_context,
+        user_name: message.user_name,
+        created_at: message.created_at.toISOString(),
+      },
+    };
+  });
+
+  // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
+  if (initialMessages.length === 0) return [];
+
+  // TODO: we're currently lying to the compiler here. We should be passing schemas
+  // for our metadata and tools.
+  return await validateUIMessages<QuestionGenerationUIMessage>({ messages: initialMessages });
+}
+
+async function renderQuestionPreview(
+  resLocals: InstructorQuestionRenderLocals,
+  variantId: string | null,
+) {
+  // Render the preview.
+  await getAndRenderVariant(variantId, null, resLocals, {
+    urlOverrides: {
+      // By default, this would be the URL to the instructor question preview page.
+      // We need to redirect to this same page instead.
+      newVariantUrl: `${resLocals.urlPrefix}/ai_generate_editor/${resLocals.question.id}`,
+    },
+  });
+
+  const questionContainerHtml = QuestionContainer({
+    resLocals,
+    questionContext: 'instructor',
+  });
+
+  return {
+    questionContainerHtml: questionContainerHtml.toString(),
+    extraHeadersHtml: resLocals.extraHeadersHtml,
+    variantId: resLocals.variant.id,
+  };
+}
+
 function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
@@ -127,39 +216,40 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
+function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
+  Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  // `Readable.fromWeb` accepts node:stream/web's `ReadableStream`, but the `ai`
+  // package returns the global (lib.dom) `ReadableStream`. They are runtime-
+  // compatible (Node implements WHATWG streams) but TypeScript treats them as
+  // nominally distinct classes, so a cast is required.
+  Readable.fromWeb(stream as unknown as NodeReadableStream<string>).pipe(res);
+}
+
 router.use(
   typedAsyncHandler<'instructor-question'>(async (req, res, next) => {
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
     const question = await selectOptionalQuestionById(req.params.question_id);
+    const classification = classifyDraftQuestion(res.locals.course, question);
 
-    if (
-      question == null ||
-      !idsEqual(question.course_id, res.locals.course.id) ||
-      question.deleted_at != null ||
-      !question.draft
-    ) {
-      // If the question exists, belongs to this course, is non-deleted, but
-      // is no longer a draft (i.e. it was finalized), redirect to the question
-      // preview. This handles the common case of a user pressing the browser
-      // back button after finalizing a question.
-      if (
-        question != null &&
-        idsEqual(question.course_id, res.locals.course.id) &&
-        question.deleted_at == null &&
-        !question.draft
-      ) {
-        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
-        return;
-      }
-
-      // Otherwise, show an informational page.
+    if (classification.kind === 'not-found') {
       res.status(404).send(DraftNotFound({ resLocals: res.locals }));
       return;
     }
 
-    res.locals.question = question;
+    if (classification.kind === 'finalized') {
+      // If the question was already finalized, redirect to the question preview.
+      // This handles the common case of a user pressing the browser back button
+      // after finalizing a question.
+      res.redirect(`${res.locals.urlPrefix}/question/${classification.question.id}/preview`);
+      return;
+    }
+
+    res.locals.question = classification.question;
 
     assertCanCreateQuestion(res.locals);
 
@@ -170,92 +260,23 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const messages = await selectAiQuestionGenerationMessages(res.locals.question);
-
-    const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
-      // Messages without parts will fail validation by `validateUIMessages()`.
-      // We'll inject an empty text part in that case.
-      //
-      // This is not expected to happen in most cases, but there's a possibility
-      // that it could in an error scenario.
-      const parts = run(() => {
-        if (message.parts.length === 0) {
-          return [{ type: 'text', text: '' }];
-        }
-        // Tool calls whose tool returned nothing (e.g. legacy `writeFile`) were
-        // persisted without an `output` field. Zod 4's `validateUIMessages()`
-        // rejects an `output-available` tool part that lacks `output`, so
-        // backfill a null output for these older parts.
-        //
-        // TODO: see the following issue and PR. If they're ever resolved,
-        // we can consider removing this workaround. Specifically, we'll need
-        // the AI SDK to be able to gracefully handle message parts that were
-        // persisted without an explicit `output` property.
-        //
-        // https://github.com/vercel/ai/issues/15854
-        // https://github.com/vercel/ai/pull/15855
-        return message.parts.map((part) =>
-          part?.state === 'output-available' && !('output' in part)
-            ? { ...part, output: null }
-            : part,
-        );
-      });
-
-      return {
-        id: message.id,
-        role: message.role,
-        parts,
-        metadata: {
-          job_sequence_id: message.job_sequence_id,
-          status: message.status,
-          include_in_context: message.include_in_context,
-          user_name: message.user_name,
-          created_at: message.created_at.toISOString(),
-        },
-      };
-    });
-
-    // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
-    //
-    // TODO: we're currently lying to the compiler here. We should be passing schemas
-    // for our metadata and tools.
-    const validatedInitialMessages =
-      initialMessages.length > 0
-        ? await validateUIMessages<QuestionGenerationUIMessage>({
-            messages: initialMessages,
-          })
-        : [];
-
+    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+    const messages = await getValidatedInitialMessages(res.locals.question);
     const courseFilesClient = getCourseFilesClient();
     const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
       course_id: res.locals.course.id,
       question_id: res.locals.question.id,
     });
 
-    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+    const { questionContainerHtml } = await renderQuestionPreview(res.locals, getVariantId(req));
 
-    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
-
-    // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
-      urlOverrides: {
-        // By default, this would be the URL to the instructor question preview page.
-        // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-      },
-    });
     await logPageView('instructorQuestionPreview', req, res);
-
-    const questionContainerHtml = QuestionContainer({
-      resLocals: res.locals,
-      questionContext: 'instructor',
-    });
 
     res.send(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
         question: res.locals.question,
-        messages: validatedInitialMessages,
+        messages,
         questionFiles,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),
@@ -291,10 +312,7 @@ router.get(
       return;
     }
 
-    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-    Readable.fromWeb(stream as any).pipe(res);
+    pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -341,10 +359,7 @@ router.post(
       return;
     }
 
-    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-    Readable.fromWeb(stream as any).pipe(res);
+    pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -453,27 +468,18 @@ router.post(
 router.get(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    // This endpoint is JSON-only; the client patches the preview without a full page reload.
-    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+    const { questionContainerHtml, extraHeadersHtml, variantId } = await renderQuestionPreview(
+      res.locals,
+      getVariantId(req),
+    );
 
-    // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals, {
-      urlOverrides: {
-        // By default, this would be the URL to the instructor question preview page.
-        // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-      },
-    });
     await logPageView('instructorQuestionPreview', req, res);
 
-    const questionContainerHtml = QuestionContainer({
-      resLocals: res.locals,
-      questionContext: 'instructor',
-    });
-
+    // This endpoint is JSON-only; the client patches the preview without a full page reload.
     res.json({
-      questionContainerHtml: questionContainerHtml.toString(),
-      extraHeadersHtml: res.locals.extraHeadersHtml,
+      questionContainerHtml,
+      extraHeadersHtml,
+      variantId,
     });
   }),
 );
@@ -482,23 +488,16 @@ router.post(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      const { questionContainerHtml, extraHeadersHtml, variantId } = await renderQuestionPreview(
+        res.locals,
+        await processSubmission(req, res),
+      );
+
       // This endpoint is JSON-only; the client patches the preview without a full page reload.
-      const variantId = await processSubmission(req, res);
-
-      await getAndRenderVariant(variantId, null, res.locals, {
-        urlOverrides: {
-          newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
-        },
-      });
-
-      const questionContainerHtml = QuestionContainer({
-        resLocals: res.locals,
-        questionContext: 'instructor',
-      });
-
       res.json({
-        questionContainerHtml: questionContainerHtml.toString(),
-        extraHeadersHtml: res.locals.extraHeadersHtml,
+        questionContainerHtml,
+        extraHeadersHtml,
+        variantId,
       });
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
