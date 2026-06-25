@@ -868,7 +868,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
       // here, but in the proxy middleware logic, so we save it to the database
       // for later reference.
       const urlRewrite =
-        labels?.['com.prairielearn.workspace.url-rewrite']?.toLowerCase() ?? 'true';
+        labels?.['com.prairielearn.workspace.rewrite-url']?.toLowerCase() ?? 'true';
 
       if (!['true', 'false'].includes(urlRewrite)) {
         throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
