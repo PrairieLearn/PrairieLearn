@@ -126,7 +126,15 @@ async function syncCourse(course: Course) {
       },
       async () => {
         job.info('Sync git repository to database');
-        await syncDiskToSqlWithLock(course, job);
+
+        const syncResult = await syncDiskToSqlWithLock(course, job);
+        if (syncResult.status === 'sharing_error') {
+          // This is an error in course content and not something that an operator
+          // can fix or recover from.
+          job.warn(
+            'Skipping course sync backfill because the course has invalid content sharing configuration.',
+          );
+        }
       },
     );
   });
