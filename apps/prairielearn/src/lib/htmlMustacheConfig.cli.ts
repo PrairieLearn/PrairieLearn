@@ -17,6 +17,8 @@ export const cliInclude = [
 export const cliExclude = [
   // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
   'testCourse/questions/addVectors/question.html',
+  // Deliberately omits required element attributes to exercise prepare-time errors.
+  'testCourse/questions/brokenPrepare/question.html',
 ];
 
 export const cliPluginModule = './apps/prairielearn/src/lib/element-schemas/htmlmustache-plugin.ts';
