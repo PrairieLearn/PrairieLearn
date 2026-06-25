@@ -193,8 +193,7 @@ router.post(
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
           workspace_args: ArgumentsSchema,
-          workspace_rewrite_url_override: BooleanFromCheckboxSchema,
-          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_rewrite_url: z.enum(['true', 'false', 'null']).default('null'),
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
@@ -386,7 +385,8 @@ router.post(
           body.workspace_args,
           (v: any) => !v || v.length === 0,
         ),
-        rewriteUrl: body.workspace_rewrite_url_override ? body.workspace_rewrite_url : undefined,
+        rewriteUrl:
+          body.workspace_rewrite_url === 'null' ? undefined : body.workspace_rewrite_url === 'true',
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
           body.workspace_graded_files,

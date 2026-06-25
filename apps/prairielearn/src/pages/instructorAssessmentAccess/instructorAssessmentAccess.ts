@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import fs from 'fs-extra';
@@ -17,11 +15,15 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { computeScopedJsonHash, getOriginalHash } from '../../lib/editorUtil.js';
+import {
+  computeScopedJsonHash,
+  getAssessmentInfoJsonPath,
+  getOriginalHash,
+} from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   countEnrollmentAccessControlRules,
   selectAccessControlRules,
@@ -41,19 +43,6 @@ const sql = loadSqlEquiv(import.meta.url);
 function todayAsDatetimeLocal(timezone: string): string {
   const today = Temporal.Now.plainDateISO(timezone);
   return `${today.toString()}T00:00:00`;
-}
-
-function getAssessmentPath(
-  resLocals: Pick<ResLocalsForPage<'assessment'>, 'course' | 'course_instance' | 'assessment'>,
-): string {
-  return path.join(
-    resLocals.course.path,
-    'courseInstances',
-    resLocals.course_instance.short_name,
-    'assessments',
-    resLocals.assessment.tid!,
-    'infoAssessment.json',
-  );
 }
 
 router.get(
@@ -86,7 +75,7 @@ router.get(
         ),
       );
       const prairieTestExamMetadata = await selectPrairieTestExamMetadataByUuids(initialExamUuids);
-      const assessmentPath = getAssessmentPath(res.locals);
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const origHash = await computeScopedJsonHash<AssessmentJsonInput>(
         assessmentPath,
         (json) => json.accessControl ?? [],
@@ -122,7 +111,7 @@ router.get(
       AssessmentAccessRuleRowSchema,
     );
 
-    const assessmentPath = getAssessmentPath(res.locals);
+    const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
     let migrationAnalysis: Awaited<ReturnType<typeof analyzeAssessmentFile>> = null;
     let migrationPreview: {
@@ -199,7 +188,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied');
       }
 
-      const assessmentPath = getAssessmentPath(res.locals);
+      const assessmentPath = getAssessmentInfoJsonPath(res.locals);
       const content = await fs.readFile(assessmentPath, 'utf-8');
 
       const fallbackReleaseDate =

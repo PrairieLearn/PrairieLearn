@@ -409,7 +409,9 @@ def prepare_answers_to_display(
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)
+    pl.validate_element_tree(
+        element, SCHEMA_MANIFEST_PATH, allow_legacy_underscore_tags=True
+    )
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
 

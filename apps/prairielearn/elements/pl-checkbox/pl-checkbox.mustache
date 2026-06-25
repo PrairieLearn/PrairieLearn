@@ -65,7 +65,7 @@ is the number of false options that you do not select.
 {{#coverage}}
 You must select {{{insert_text}}} You will receive a score of <code>100% * (t / c) * (t / n)</code>,
 where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options,
-and <code>n</code> is the total number of options you select.
+and <code>n</code> is the total number of options you select{{#allow_blank}} (unless you leave the question blank, in which case your score will be 0%){{/allow_blank}}.
 {{/coverage}}
 
 {{#off}}
@@ -107,7 +107,7 @@ Otherwise, you will receive a score of 0%.
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
-        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+        <span>{{^blank_submission}}{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{/blank_submission}}{{{html}}}</span>
         {{#display_feedback}}
             <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
                 {{{feedback}}}
