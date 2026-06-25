@@ -26,11 +26,15 @@ Gives automated feedback in the case of improper asymptotic input.
 | `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported. If omitted, the variables are inferred from the `correct-answer`. |
 | `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
 
-## Deprecated attributes
+### Migrating from deprecated attributes
 
-| Attribute  | Type   | Default | Description                                                                                       |
-| ---------- | ------ | ------- | ------------------------------------------------------------------------------------------------- |
-| `variable` | string | —       | Deprecated alias for `variables`. Use `variables` instead. The two attributes cannot both be set. |
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax           | New syntax            |
+| -------------------- | --------------------- |
+| `variable="<value>"` | `variables="<value>"` |
+
+The `variable` attribute cannot be used together with `variables`.
 
 ## Details
 
