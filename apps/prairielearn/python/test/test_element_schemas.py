@@ -282,12 +282,30 @@ def test_validate_element_tree_success(tmp_path: Path) -> None:
     )
 
 
+def test_validate_element_tree_allows_legacy_underscore_tags_when_enabled(
+    tmp_path: Path,
+) -> None:
+    manifest_path = _write_element_tree_manifest(tmp_path)
+
+    validate_element_tree(
+        lxml.html.fragment_fromstring(
+            '<pl-widget answers-name="x"><pl_answer correct="true"></pl_answer></pl-widget>'
+        ),
+        manifest_path,
+        allow_legacy_underscore_tags=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("html", "expected"),
     [
         (
             '<pl-widget answers-name="x"><pl-answer bogus="1"></pl-answer></pl-widget>',
             r'Unknown attribute "bogus" on pl-widget > pl-answer:nth-of-type\(1\)\.',
+        ),
+        (
+            '<pl-widget answers-name="x"><pl_answer correct="true"></pl_answer></pl-widget>',
+            r"Unexpected child pl_answer at pl-widget > pl_answer:nth-of-type\(1\)\. Expected: pl-answer\.",
         ),
         (
             '<pl-widget answers-name="x"><p>A</p></pl-widget>',
