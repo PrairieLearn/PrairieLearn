@@ -1,22 +1,10 @@
 import type { SchemaFormat } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-export const BOOLEAN_TRUE_VALUES = [
-  'true',
-  't',
-  '1',
-  'True',
-  'T',
-  'TRUE',
-  'yes',
-  'y',
-  'Yes',
-  'Y',
-  'YES',
-];
+const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
 
 const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
 
-export const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
+const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const booleanValueSet = new Set(BOOLEAN_VALUES);
 
