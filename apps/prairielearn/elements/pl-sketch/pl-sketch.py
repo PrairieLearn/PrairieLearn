@@ -56,6 +56,25 @@ class OverlayTool(SketchTool):
     overlay: bool
 
 
+class _ToolDefaults(TypedDict, total=False):
+    name: str
+    label: str
+    color: str
+    readonly: bool
+    helper: bool
+    limit: int | None
+    group: str | None
+    dashStyle: str | None
+    directionConstraint: str | None
+    lengthConstraint: float | None
+    size: int | None
+    hollow: bool | None
+    opacity: float | None
+    fillColor: str | None
+    arrowHead: int | None
+    closed: bool | None
+
+
 ToolbarPlugin = SketchTool | AxesPlugin | SketchGroup | OverlayTool
 
 # lines are list[dict[str, float]], spline/freeform/polyline are list[list[dict[str, float]]]
@@ -311,7 +330,7 @@ def _split_range(
     Raises:
         ValueError: If the range is ill-formatted or otherwise invalid
     """
-    result = []
+    result: list[float | None] = []
     for x in xrange.split(","):
         if x.strip() == "":
             result.append(None)
@@ -325,19 +344,17 @@ def _split_range(
         raise ValueError(
             f"Invalid range: {xrange}. Ranges must contain two values (or empty placeholders) separated by a comma."
         )
-    if result[0] is None:
-        result[0] = default_start
-    if result[1] is None:
-        result[1] = default_end
-    if result[0] is None or result[1] is None:
+    start = default_start if result[0] is None else result[0]
+    end = default_end if result[1] is None else result[1]
+    if start is None or end is None:
         raise ValueError(
             f"Invalid range: {xrange}. No empty range placeholders are allowed for canvas ranges."
         )
-    if result[0] >= result[1]:
+    if start >= end:
         raise ValueError(
             f"Invalid range: {xrange}. Ranges must be ordered from low to high numbers and within the canvas bounds."
         )
-    return result
+    return [start, end]
 
 
 def _prepare_ranges(
@@ -392,11 +409,12 @@ def _check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
     # check that required parameters are there for all
     tool_type = pl.get_string_attrib(tool_tag, "type").strip()
     tool_id = pl.get_string_attrib(tool_tag, "id").strip()
-    defaults = {}
-    defaults["readonly"] = False
-    defaults["helper"] = False
-    defaults["limit"] = None
-    defaults["group"] = None
+    defaults: _ToolDefaults = {
+        "readonly": False,
+        "helper": False,
+        "limit": None,
+        "group": None,
+    }
     match tool_type:
         case "free-draw":
             defaults["name"] = "freeform"
@@ -1016,6 +1034,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                         raise TypeError(
                             f"gradeable[{tool_id}][{idx}] must be a dictionary"
                         )
+                    item = cast(dict[str, Any], item)
                     has_spline = "spline" in item
                     has_point = "point" in item
                     if not has_spline and not has_point:

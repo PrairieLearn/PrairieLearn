@@ -70,8 +70,8 @@ def categorize_matches(
     element: lxml.html.HtmlElement,
 ) -> tuple[list[dict[str, int | str]], list[dict[str, int | str]]]:
     """Get provided statements and options from the pl-matching element"""
-    options = {}
-    statements = []
+    options: dict[str, dict[str, int | str]] = {}
+    statements: list[dict[str, int | str]] = []
     index = 0
 
     # Sort the elements so that pl-options come first.
@@ -105,7 +105,7 @@ def categorize_matches(
 
             # A statement object has: the name attribute of the correct matching option; and
             # the html content.
-            statement = {"match": match_name, "html": child_html}
+            statement: dict[str, int | str] = {"match": match_name, "html": child_html}
             statements.append(statement)
 
     return list(options.values()), statements
@@ -405,7 +405,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 option_html = {"key": option["key"], "html": option["html"].strip()}
                 option_set.append(option_html)
 
-            html_params = {
+            html_params: dict[str, Any] = {
                 "submission": True,
                 "statements": statement_set,
                 "options": option_set,

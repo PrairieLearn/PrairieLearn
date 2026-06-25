@@ -270,6 +270,16 @@ exclude = [
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 
+[[tool.ty.overrides]]
+include = ["./graders/c/**"]
+
+[tool.ty.overrides.rules]
+invalid-argument-type = "ignore"
+unsupported-operator = "ignore"
+unresolved-attribute = "ignore"
+invalid-assignment = "ignore"
+not-subscriptable = "ignore"
+
 [tool.pytest]
 pythonpath = ["apps/prairielearn/python"]
 addopts = ["--cov=apps"]

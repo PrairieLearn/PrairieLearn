@@ -752,13 +752,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
         # Still test that valid and invalid submissions are handled correctly
         result = data["test_type"]
-        if result in {"correct", "incorrect"}:
+        if result == "correct" or result == "incorrect":
             data["raw_submitted_answers"][name] = random.choice(all_keys)
         elif result == "invalid":
             data["raw_submitted_answers"][name] = "0"
             data["format_errors"][name] = "INVALID choice"
         else:
-            assert_never(result)  # type: ignore[arg-type]
+            assert_never(result)
         return
 
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
