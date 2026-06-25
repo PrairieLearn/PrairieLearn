@@ -25,13 +25,7 @@ const insert = t.procedure
   .input(
     z.object({
       institutionId: IdSchema,
-      shortName: z
-        .string()
-        .min(1, 'Short name is required')
-        .regex(
-          /^[A-Z]+ [A-Z0-9]+$/,
-          'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-        ),
+      shortName: z.string().min(1, 'Short name is required'),
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),

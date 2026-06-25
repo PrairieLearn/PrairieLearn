@@ -19,10 +19,6 @@ export interface CourseFormFieldValues {
   repository_short_name: string;
 }
 
-const SHORT_NAME_PATTERN = /^[A-Z]+ [A-Z0-9]+$/;
-const SHORT_NAME_PATTERN_MESSAGE =
-  'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.';
-
 export function buildRepoShortName(prefix: string | null | undefined, shortName: string): string {
   const slug = shortName.replaceAll(' ', '').toLowerCase();
   return prefix ? `pl-${prefix}-${slug}` : `pl-${slug}`;
@@ -75,7 +71,6 @@ export function AdministratorCourseFormFields({
   aiSecretsConfigured,
   autoFilledInstitutionId,
   repositoryRequired,
-  enforceShortNamePattern = false,
   onInstitutionChange,
 }: {
   institutions: AdminInstitution[];
@@ -86,7 +81,6 @@ export function AdministratorCourseFormFields({
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
   repositoryRequired: boolean;
-  enforceShortNamePattern?: boolean;
   onInstitutionChange?: (institution: AdminInstitution) => void;
 }) {
   const trpc = useTRPC();
@@ -267,12 +261,7 @@ export function AdministratorCourseFormFields({
           placeholder="XC 101"
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? 'courseFormShortName-error' : undefined}
-          {...register('short_name', {
-            required: 'Enter a short name',
-            pattern: enforceShortNamePattern
-              ? { value: SHORT_NAME_PATTERN, message: SHORT_NAME_PATTERN_MESSAGE }
-              : undefined,
-          })}
+          {...register('short_name', { required: 'Enter a short name' })}
         />
         {errors.short_name && (
           <div id="courseFormShortName-error" className="invalid-feedback">
@@ -280,10 +269,11 @@ export function AdministratorCourseFormFields({
           </div>
         )}
         <div aria-live="polite" aria-atomic="true">
-          {shortName && !SHORT_NAME_PATTERN.test(shortName) && !errors.short_name && (
+          {shortName && !/^[A-Z]+ [A-Z0-9]+$/.test(shortName) && (
             <div className="form-text text-warning">
-              <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
-              {SHORT_NAME_PATTERN_MESSAGE}
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The course rubric and
+              number should be a series of upper case letters, followed by a space, followed by a
+              series of numbers and/or letters.
             </div>
           )}
         </div>

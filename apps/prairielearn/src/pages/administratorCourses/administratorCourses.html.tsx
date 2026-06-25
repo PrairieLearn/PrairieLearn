@@ -357,7 +357,6 @@ function CourseInsertModal({
               prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
               repositoryRequired={false}
-              enforceShortNamePattern
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseAddInputBranch">
@@ -499,14 +498,6 @@ function CourseUpdateColumnForm({
           aria-label={label}
           {...register('value', {
             required: required && `Enter a ${label}`,
-            pattern:
-              columnName === 'short_name'
-                ? {
-                    value: /^[A-Z]+ [A-Z0-9]+$/,
-                    message:
-                      'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
-                  }
-                : undefined,
           })}
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
