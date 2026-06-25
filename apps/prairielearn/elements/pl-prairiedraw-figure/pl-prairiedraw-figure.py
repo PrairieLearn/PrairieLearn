@@ -5,8 +5,8 @@ import lxml.html
 import prairielearn as pl
 
 PARAM_NAMES_DEFAULT = None
-WIDTH_DEFAULT = "500"
-HEIGHT_DEFAULT = "300"
+WIDTH_DEFAULT = 500
+HEIGHT_DEFAULT = 300
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -23,8 +23,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     with open(os.path.join(data["options"]["question_path"], script_name)) as f:
         script = f.read()
 
-    width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
-    height = pl.get_string_attrib(element, "height", HEIGHT_DEFAULT)
+    width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
+    height = pl.get_integer_attrib(element, "height", HEIGHT_DEFAULT)
 
     params_names = pl.get_string_attrib(element, "param-names", PARAM_NAMES_DEFAULT)
     if params_names is None:
