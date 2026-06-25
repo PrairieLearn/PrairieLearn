@@ -4,6 +4,7 @@ import os
 import sys
 import types
 from collections.abc import Callable, Generator, Sequence
+from typing import Any, cast
 
 
 @contextlib.contextmanager
@@ -26,10 +27,9 @@ def _suppress_panel_border() -> Generator[None]:
         if self.title:
             yield self.title
         renderable = self.renderable
+        renderables = getattr(renderable, "renderables", None)
         items = (
-            renderable.renderables
-            if hasattr(renderable, "renderables")
-            else [renderable]
+            [renderable] if renderables is None else cast(Sequence[Any], renderables)
         )
         for item in items:
             # Filter out empty-string separators that Rich inserts between frames

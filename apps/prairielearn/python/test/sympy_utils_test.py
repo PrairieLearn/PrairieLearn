@@ -483,8 +483,8 @@ class TestSympy:
         without_sets = psu.sympy_to_json(expr, allow_sets=False)
         with_sets = psu.sympy_to_json(expr, allow_sets=True)
 
-        assert without_sets["_custom_functions"] == [fn_name]  # type: ignore
-        assert with_sets["_custom_functions"] == []  # type: ignore
+        assert without_sets["_custom_functions"] == [fn_name]
+        assert with_sets["_custom_functions"] == []
 
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")

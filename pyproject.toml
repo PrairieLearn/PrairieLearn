@@ -55,7 +55,7 @@ dev = [
   "ruff==0.15.16",
   "sqlfluff==4.2.1",
   "squawk-cli==2.55.0",
-  "ty==0.0.44",
+  "ty==0.0.54",
   "tomlkit==0.15.0",
   "types-chevron==0.14.2.20260408",
   "types-lxml==2026.2.16",

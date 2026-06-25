@@ -9,7 +9,16 @@ import json
 import numbers
 import re
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, assert_never, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    TypedDict,
+    TypeGuard,
+    assert_never,
+    cast,
+    overload,
+)
 
 import networkx as nx
 import numpy as np
@@ -61,6 +70,10 @@ class _JSONSerializedComplexNdarray(_JSONSerializedGeneric, total=False):
 class _JSONSerializedSympyMatrix(_JSONSerializedGeneric):
     _variables: list[str]
     _shape: tuple[int, int]
+
+
+class _JSONSerializedValueDict(_JSONSerializedGeneric):
+    _value: dict[str, Any]
 
 
 # This represents the output object formats for the to_json function
@@ -183,10 +196,20 @@ def to_json(
         }
 
     if np.isscalar(v) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
+        # ty intentionally does not narrow `np.iscomplexobj`.
+        # https://github.com/astral-sh/ty/issues/3128
+        complex_scalar = cast(complex, v)
+        return {
+            "_type": "complex",
+            "_value": {"real": complex_scalar.real, "imag": complex_scalar.imag},
+        }
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
-            return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
+            return {
+                "_type": "ndarray",
+                "_value": v.tolist(),
+                "_dtype": str(v.dtype),
+            }
         elif np.iscomplexobj(v):
             return {
                 "_type": "complex_ndarray",
@@ -252,7 +275,9 @@ def to_json(
         return v
 
 
-def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:
+def _has_value_fields(
+    v: _JSONSerializedType, fields: list[str]
+) -> TypeGuard[_JSONSerializedValueDict]:
     """Return True if all fields in the '_value' dictionary are present."""
     return (
         "_value" in v
@@ -304,7 +329,8 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
                 )
         elif v_json["_type"] == "np_scalar":
             if "_concrete_type" in v_json and "_value" in v_json:
-                return getattr(np, v_json["_concrete_type"])(v_json["_value"])
+                concrete_type = cast(str, v_json["_concrete_type"])
+                return getattr(np, concrete_type)(v_json["_value"])
             else:
                 raise ValueError(
                     f"variable of type {v_json['_type']} needs both concrete type and value information"
@@ -312,7 +338,9 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
         elif v_json["_type"] == "ndarray":
             if "_value" in v_json:
                 if "_dtype" in v_json:
-                    return np.array(v_json["_value"]).astype(v_json["_dtype"])
+                    return np.array(v_json["_value"]).astype(
+                        cast(str, v_json["_dtype"])
+                    )
                 else:
                     return np.array(v_json["_value"])
             else:
@@ -323,7 +351,7 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
                     return (
                         np.array(v_json["_value"]["real"])
                         + np.array(v_json["_value"]["imag"]) * 1j
-                    ).astype(v_json["_dtype"])
+                    ).astype(cast(str, v_json["_dtype"]))
                 else:
                     return (
                         np.array(v_json["_value"]["real"])
@@ -345,9 +373,9 @@ def from_json(v: _JSONSerializedType | Any) -> Any:
                 and ("_variables" in v_json)
                 and ("_shape" in v_json)
             ):
-                value = v_json["_value"]
-                variables = v_json["_variables"]
-                shape = v_json["_shape"]
+                value = cast(list[list[str]], v_json["_value"])
+                variables = cast(list[str], v_json["_variables"])
+                shape = cast(tuple[int, int], v_json["_shape"])
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
                 for i in range(shape[0]):
                     for j in range(shape[1]):
