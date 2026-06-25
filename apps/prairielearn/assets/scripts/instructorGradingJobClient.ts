@@ -16,12 +16,12 @@ onDocumentReady(async () => {
       try {
         const outputJson = JSON.parse(outputText);
         if (typeof outputJson === 'object' && outputJson !== null && 'error' in outputJson) {
-          outputText = `Error: ${outputJson.error || 'Unknown error'}`;
+          outputText = outputJson.error;
         }
       } catch {
         // In case of JSON parse errors, use original text
-        outputText = `Error: ${outputText || 'Unknown error'}`;
       }
+      outputText = `Error: ${outputText || 'Unknown error'}`;
     }
 
     document.getElementById('job-output-loading')?.classList.add('d-none');
