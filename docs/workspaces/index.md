@@ -235,7 +235,13 @@ PrairieLearn provides and maintains the following workspace images:
 
 You can [build custom workspace images](../dockerImages.md#custom-variations-of-maintained-images) if you need to install specific dependencies for use by students that are not present in the default version of the images above. If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image.
 
-If you are creating a workspace image that is not derived from one of the maintained images above, you must ensure that it responds to regular HTTP request on an exposed port, and that it is configured to run as a user with UID 1001. The workspace image must run in a headless mode, i.e., without any GUI. You are strongly encouraged to include the following [Dockerfile labels](https://docs.docker.com/reference/dockerfile/#label) in your image:
+If you are creating a workspace image that is not derived from one of the
+maintained images above, you must ensure that it responds to regular HTTP
+request on an exposed port, and that it is configured to run as a user with UID 1001. The workspace image must run in a headless mode, i.e., without any GUI.
+You are strongly encouraged to include the following [Dockerfile
+labels](https://docs.docker.com/reference/dockerfile/#label) in your image. If
+you don't use these labels, the corresponding settings must be set at the
+question level in `info.json` (see [Setting up](#setting-up)).
 
 - `com.prairielearn.workspace.port`: the exposed port number used by the workspace app inside the Docker image. It must respond to HTTP requests.
 - `com.prairielearn.workspace.rewrite-url`: whether to rewrite URLs such that the workspace container will see all requests as originating from `/`.
