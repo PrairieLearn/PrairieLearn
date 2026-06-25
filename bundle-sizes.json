@@ -89,6 +89,11 @@
     "gzip": 109670,
     "brotli": 94773
   },
+  "scripts/instructorGradingJobClient.ts": {
+    "raw": 813,
+    "gzip": 499,
+    "brotli": 393
+  },
   "scripts/instructorQuestionStatisticsClient.ts": {
     "raw": 53463,
     "gzip": 18763,
