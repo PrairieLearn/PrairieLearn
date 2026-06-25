@@ -25,12 +25,16 @@ const insert = t.procedure
   .input(
     z.object({
       institutionId: IdSchema,
-      shortName: z.string().min(1, 'Short name is required'),
-      title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
-      displayTimezone: z.string().min(1, 'Timezone is required'),
-      path: z.string().min(1, 'Path is required'),
-      repository: z.string().nullable(),
-      branch: z.string().min(1, 'Branch is required'),
+      shortName: z.string().trim().min(1, 'Short name is required'),
+      title: z
+        .string()
+        .trim()
+        .min(1, 'Title is required')
+        .max(75, 'Title must be at most 75 characters'),
+      displayTimezone: z.string().trim().min(1, 'Timezone is required'),
+      path: z.string().trim().min(1, 'Path is required'),
+      repository: z.string().trim().nullable(),
+      branch: z.string().trim().min(1, 'Branch is required'),
     }),
   )
   .mutation(async ({ input, ctx }) => {
@@ -96,11 +100,11 @@ const updateColumn = t.procedure
       z.discriminatedUnion('columnName', [
         z.object({
           columnName: z.enum(['short_name', 'title', 'display_timezone', 'path', 'branch']),
-          value: z.string().min(1, 'Value is required'),
+          value: z.string().trim().min(1, 'Value is required'),
         }),
         z.object({
           columnName: z.literal('repository'),
-          value: z.string(), // Optional
+          value: z.string().trim(), // Optional
         }),
       ]),
     ),
