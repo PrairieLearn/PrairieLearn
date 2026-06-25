@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useMutation } from '@tanstack/react-query';
-import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
@@ -133,7 +132,6 @@ export function TimeLimitEditForm({
     form.action !== 'set_exact' &&
     form.action !== 'remove' &&
     form.action !== 'expire';
-  const timeAddInvalid = showTimeAddInput && !Number.isFinite(timeAddValue);
 
   const showRemove =
     mode === 'bulk' ||
@@ -176,7 +174,6 @@ export function TimeLimitEditForm({
     const action = reopenWithoutLimit ? 'reopen_without_limit' : form.action;
     const actionUsesTimeAdd =
       action === 'set_total' || action === 'set_rem' || action === 'add' || action === 'subtract';
-    if (actionUsesTimeAdd && !Number.isFinite(timeAddValue)) return;
     mutation.mutate({
       assessmentInstanceIds,
       action,
@@ -275,23 +272,17 @@ export function TimeLimitEditForm({
         </p>
       ) : null}
       {showTimeAddInput ? (
-        <div className={clsx('input-group mb-2', timeAddInvalid && 'has-validation')}>
+        <div className="input-group mb-2">
           <input
-            className={clsx('form-control time-limit-field', timeAddInvalid && 'is-invalid')}
+            className="form-control time-limit-field"
             type="number"
             name="time_add"
             aria-label="Time value"
-            aria-invalid={timeAddInvalid ? true : undefined}
-            aria-errormessage={timeAddInvalid ? 'time-add-error' : undefined}
             value={form.time_add}
+            required
             onChange={(e) => updateFormState('time_add', e.currentTarget.value)}
           />
           <span className="input-group-text time-limit-field">minutes</span>
-          {timeAddInvalid && (
-            <div id="time-add-error" className="invalid-feedback">
-              Enter a number of minutes.
-            </div>
-          )}
         </div>
       ) : null}
       {showTimeLimitOptions && form.action === 'set_exact' ? (
@@ -333,7 +324,7 @@ export function TimeLimitEditForm({
         <Button type="button" variant="secondary" className="me-2" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={mutation.isPending || timeAddInvalid}>
+        <Button type="submit" variant="primary" disabled={mutation.isPending}>
           {mutation.isPending ? 'Saving...' : 'Set'}
         </Button>
       </div>
