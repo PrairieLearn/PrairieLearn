@@ -20,7 +20,7 @@ function describeChangeResult({
   unchangedCount: number;
 }) {
   if (changedCount === 0) {
-    return 'All selected questions already used this topic.';
+    return 'All selected questions are already assigned to this topic.';
   }
 
   const parts = [
@@ -28,7 +28,7 @@ function describeChangeResult({
   ];
   if (unchangedCount > 0) {
     parts.push(
-      `${unchangedCount} ${unchangedCount === 1 ? 'question was' : 'questions were'} already set to this topic.`,
+      `${unchangedCount} ${unchangedCount === 1 ? 'question is' : 'questions are'} already assigned to this topic.`,
     );
   }
   return parts.join(' ');
@@ -122,7 +122,7 @@ export function ChangeTopicModal({
           disabled={!canSubmit || mutation.isPending}
           onClick={() => mutation.mutate({ questionIds, topic })}
         >
-          Change topic
+          {mutation.isPending ? 'Changing topic...' : 'Change topic'}
         </Button>
       </Modal.Footer>
     </Modal>

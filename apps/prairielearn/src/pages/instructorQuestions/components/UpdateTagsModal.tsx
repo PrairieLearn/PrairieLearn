@@ -32,9 +32,9 @@ const MODE_CONFIG: Record<
     title: 'Add tags',
     submitLabel: 'Add tags',
     submitVariant: 'primary',
-    noChangeMessage: 'All selected questions already had these tags.',
+    noChangeMessage: 'All selected questions are already assigned these tags.',
     changedMessageVerb: 'Added tags to',
-    unchangedMessageVerb: 'already had all selected tags',
+    unchangedMessageVerb: 'are already assigned all selected tags',
   },
   remove: {
     idPrefix: 'bulk-remove-tags',
@@ -205,7 +205,11 @@ export function UpdateTagsModal({
           disabled={selectedAvailableTagNames.length === 0 || mutation.isPending}
           onClick={() => mutation.mutate({ questionIds, tags: selectedAvailableTagNames })}
         >
-          {config.submitLabel}
+          {mutation.isPending
+            ? mode === 'add'
+              ? 'Adding tags...'
+              : 'Removing tags...'
+            : config.submitLabel}
         </Button>
       </Modal.Footer>
     </Modal>

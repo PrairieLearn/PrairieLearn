@@ -500,8 +500,9 @@ const addTags = t.procedure
       syncFailureMessage: 'Failed to add tags to questions',
       apply: (questionInfo) => {
         const existingTags = questionInfo.tags ?? [];
+        const existingTagNames = new Set(existingTags);
         const nextTags = [...new Set([...existingTags, ...requestedTags])];
-        const changed = nextTags.length !== existingTags.length;
+        const changed = requestedTags.some((tag) => !existingTagNames.has(tag));
         questionInfo.tags = propertyValueWithDefault(
           questionInfo.tags,
           nextTags,
@@ -545,8 +546,9 @@ const removeTags = t.procedure
       syncFailureMessage: 'Failed to remove tags from questions',
       apply: (questionInfo) => {
         const existingTags = questionInfo.tags ?? [];
+        const existingTagNames = new Set(existingTags);
         const nextTags = existingTags.filter((tag) => !requestedTags.includes(tag));
-        const changed = nextTags.length !== existingTags.length;
+        const changed = requestedTags.some((tag) => existingTagNames.has(tag));
         questionInfo.tags = propertyValueWithDefault(
           questionInfo.tags,
           nextTags,
