@@ -258,6 +258,43 @@ describe('Editing assessment settings', () => {
     assert.equal(assessment.tid, 'HW2');
   });
 
+  test.sequential(
+    'persists showQuestionTitles relative to the assessment type default',
+    async () => {
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'HW2',
+        ...defaultMutationFields,
+        showQuestionTitles: false,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+
+      let updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.isFalse(updatedAssessmentInfo.showQuestionTitles);
+
+      await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'HW2',
+        ...defaultMutationFields,
+        showQuestionTitles: true,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+
+      updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.notProperty(updatedAssessmentInfo, 'showQuestionTitles');
+
+      await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
+    },
+  );
+
   test.sequential('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',

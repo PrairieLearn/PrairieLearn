@@ -115,8 +115,10 @@ describe('Changing assessment type', () => {
       });
 
       assert.equal(result.assessment.type, 'Exam');
+      assert.isFalse(result.assessment.show_question_titles);
       const info = await readLiveInfo();
       assert.equal(info.type, 'Exam');
+      assert.notProperty(info, 'showQuestionTitles');
       assert.notProperty(info, 'constantQuestionValue');
       const question = info.zones?.[0].questions[0];
       assert.notProperty(question, 'maxAutoPoints');
@@ -129,6 +131,29 @@ describe('Changing assessment type', () => {
         AssessmentSchema,
       );
       assert.equal(dbAssessment.type, 'Exam');
+      assert.isFalse(dbAssessment.show_question_titles);
+    });
+
+    test.sequential('preserves explicit title visibility when converting to Exam', async () => {
+      await setupAssessmentInfo({
+        uuid: baseUuid,
+        type: 'Homework',
+        title: 'Type-change test',
+        set: 'Homework',
+        number: '1',
+        showQuestionTitles: true,
+        zones: [{ questions: [{ ...baseQuestion, autoPoints: 5 }] }],
+      });
+
+      const trpcClient = await createTrpcClient();
+      const result = await trpcClient.assessmentSettings.changeAssessmentType.mutate({
+        newType: 'Exam',
+        origHash: await getOrigHash(),
+      });
+
+      assert.isTrue(result.assessment.show_question_titles);
+      const info = await readLiveInfo();
+      assert.isTrue(info.showQuestionTitles);
     });
 
     test.sequential('strips maxAutoPoints from alternatives', async () => {
@@ -206,8 +231,10 @@ describe('Changing assessment type', () => {
       });
 
       assert.equal(result.assessment.type, 'Homework');
+      assert.isTrue(result.assessment.show_question_titles);
       const info = await readLiveInfo();
       assert.equal(info.type, 'Homework');
+      assert.notProperty(info, 'showQuestionTitles');
       assert.notProperty(info, 'multipleInstance');
       assert.notProperty(info, 'autoClose');
       assert.notProperty(info, 'requireHonorCode');
@@ -221,6 +248,29 @@ describe('Changing assessment type', () => {
         AssessmentSchema,
       );
       assert.equal(dbAssessment.type, 'Homework');
+      assert.isTrue(dbAssessment.show_question_titles);
+    });
+
+    test.sequential('preserves explicit hidden titles when converting to Homework', async () => {
+      await setupAssessmentInfo({
+        uuid: baseUuid,
+        type: 'Exam',
+        title: 'Type-change test',
+        set: 'Exam',
+        number: '1',
+        showQuestionTitles: false,
+        zones: [{ questions: [{ ...baseQuestion, autoPoints: [5] }] }],
+      });
+
+      const trpcClient = await createTrpcClient();
+      const result = await trpcClient.assessmentSettings.changeAssessmentType.mutate({
+        newType: 'Homework',
+        origHash: await getOrigHash(),
+      });
+
+      assert.isFalse(result.assessment.show_question_titles);
+      const info = await readLiveInfo();
+      assert.isFalse(info.showQuestionTitles);
     });
 
     test.sequential('strips allowRealTimeGrading from nested levels', async () => {

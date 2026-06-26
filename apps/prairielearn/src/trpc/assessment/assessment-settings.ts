@@ -9,7 +9,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
-import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import { type EnumAssessmentType, EnumAssessmentTypeSchema } from '../../lib/db-types.js';
 import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -56,6 +56,10 @@ export function settingsScope(json: AssessmentJsonInput) {
 
 const ChangeableAssessmentTypeSchema = EnumAssessmentTypeSchema.extract(['Exam', 'Homework']);
 type ChangeableAssessmentType = z.infer<typeof ChangeableAssessmentTypeSchema>;
+
+function defaultShowQuestionTitles(type: EnumAssessmentType) {
+  return type === 'Homework';
+}
 
 export type TypeChangeLocation =
   | { kind: 'assessment' }
@@ -410,6 +414,11 @@ const updateAssessment = t.procedure
           input.allow_personal_notes,
           true,
         );
+        assessmentInfo.showQuestionTitles = propertyValueWithDefault(
+          assessmentInfo.showQuestionTitles,
+          input.showQuestionTitles ?? assessmentInfo.showQuestionTitles,
+          defaultShowQuestionTitles(assessment.type),
+        );
 
         assessmentInfo.tools = assessmentInfo.tools ?? {};
         for (const tool of EnumAssessmentToolSchema.options) {
@@ -680,6 +689,11 @@ const changeAssessmentType = t.procedure
       conflictCheck: { origHash: input.origHash, scope: settingsScope },
       applyChanges: (info) => {
         info.type = input.newType;
+        info.showQuestionTitles = propertyValueWithDefault(
+          info.showQuestionTitles,
+          info.showQuestionTitles,
+          defaultShowQuestionTitles(input.newType),
+        );
 
         if (input.newType === 'Homework') {
           delete info.multipleInstance;
