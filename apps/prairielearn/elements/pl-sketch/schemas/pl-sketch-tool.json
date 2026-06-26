@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "arrowhead": {
+      "type": "string",
+      "format": "integer"
+    },
+    "color": {
+      "type": "string"
+    },
+    "dash-style": {
+      "type": "string",
+      "enum": ["solid", "dashed", "longdashed", "dotted", "dashdotted"]
+    },
+    "direction-constraint": {
+      "type": "string",
+      "enum": ["horizontal", "vertical", "none"]
+    },
+    "fill-color": {
+      "type": "string"
+    },
+    "group": {
+      "type": "string"
+    },
+    "helper": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "hollow": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "length-constraint": {
+      "type": "string",
+      "format": "number"
+    },
+    "limit": {
+      "type": "string",
+      "format": "integer"
+    },
+    "opacity": {
+      "type": "string",
+      "format": "number"
+    },
+    "read-only": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "free-draw",
+        "point",
+        "spline",
+        "polyline",
+        "polygon",
+        "line",
+        "horizontal-line",
+        "vertical-line"
+      ]
+    }
+  },
+  "required": ["id", "type"],
+  "additionalProperties": false
+}

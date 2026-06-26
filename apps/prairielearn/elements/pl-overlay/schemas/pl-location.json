@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "bottom": {
+      "type": "string",
+      "format": "number"
+    },
+    "halign": {
+      "type": "string",
+      "enum": ["left", "middle", "center", "right"]
+    },
+    "left": {
+      "type": "string",
+      "format": "number"
+    },
+    "right": {
+      "type": "string",
+      "format": "number"
+    },
+    "top": {
+      "type": "string",
+      "format": "number"
+    },
+    "valign": {
+      "type": "string",
+      "enum": ["top", "middle", "center", "bottom"]
+    }
+  },
+  "additionalProperties": false
+}

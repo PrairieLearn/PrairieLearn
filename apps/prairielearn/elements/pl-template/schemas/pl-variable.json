@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "directory": {
+      "type": "string",
+      "enum": [
+        "question",
+        "clientFilesQuestion",
+        "clientFilesCourse",
+        "serverFilesCourse",
+        "courseExtensions"
+      ]
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "trim-whitespace": {
+      "type": "string",
+      "format": "boolean"
+    }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}

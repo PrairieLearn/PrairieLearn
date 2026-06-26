@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "compact": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"compact-sequences\" attribute instead."
+    },
+    "compact-sequences": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "copy-code-button": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "depth": {
+      "type": "string",
+      "format": "integer"
+    },
+    "indent": {
+      "type": "string",
+      "format": "integer"
+    },
+    "no-highlight": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "params-name": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "string"
+    },
+    "prefix-newline": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-dimensions": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"pl-dataframe\" element instead."
+    },
+    "show-header": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"pl-dataframe\" element instead."
+    },
+    "show-index": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"pl-dataframe\" element instead."
+    },
+    "show-line-numbers": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "sort-dicts": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "suffix": {
+      "type": "string"
+    },
+    "suffix-newline": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "text": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"pl-dataframe\" element instead."
+    },
+    "width": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["params-name"],
+  "additionalProperties": false
+}

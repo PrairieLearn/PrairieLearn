@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "comment": {
+      "type": "string"
+    },
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "params-name": {
+      "type": "string"
+    }
+  },
+  "required": ["params-name"],
+  "additionalProperties": false
+}

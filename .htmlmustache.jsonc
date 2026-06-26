@@ -170,6 +170,18 @@
   ],
   "customTags": [
     {
+      "name": "pl-answer-panel",
+      "schema": "./apps/prairielearn/elements/pl-answer-panel/schemas/pl-answer-panel.json"
+    },
+    {
+      "name": "pl-big-o-input",
+      "schema": "./apps/prairielearn/elements/pl-big-o-input/schemas/pl-big-o-input.json"
+    },
+    {
+      "name": "pl-card",
+      "schema": "./apps/prairielearn/elements/pl-card/schemas/pl-card.json"
+    },
+    {
       "name": "pl-checkbox",
       "schema": "./apps/prairielearn/elements/pl-checkbox/schemas/pl-checkbox.json",
       "children": [
@@ -180,8 +192,170 @@
       ]
     },
     {
+      "name": "pl-code",
+      "schema": "./apps/prairielearn/elements/pl-code/schemas/pl-code.json"
+    },
+    {
+      "name": "pl-dataframe",
+      "schema": "./apps/prairielearn/elements/pl-dataframe/schemas/pl-dataframe.json"
+    },
+    {
+      "name": "pl-drawing",
+      "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing.json",
+      "children": [
+        {
+          "name": "pl-controls",
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls.json",
+          "children": [
+            {
+              "name": "pl-controls-group",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls-group.json",
+              "children": [
+                {
+                  "name": "pl-drawing-button",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
+                }
+              ]
+            },
+            {
+              "name": "pl-drawing-button",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
+            }
+          ]
+        },
+        {
+          "name": "pl-drawing-answer",
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-answer.json",
+          "children": [
+            {
+              "name": "pl-drawing-group",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+              "allowAdditionalChildren": true
+            }
+          ],
+          "allowAdditionalChildren": true
+        },
+        {
+          "name": "pl-drawing-initial",
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-initial.json",
+          "children": [
+            {
+              "name": "pl-drawing-group",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+              "allowAdditionalChildren": true
+            }
+          ],
+          "allowAdditionalChildren": true
+        }
+      ]
+    },
+    {
+      "name": "pl-dropdown",
+      "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-dropdown.json",
+      "children": [
+        {
+          "name": "pl-answer",
+          "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-answer.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-excalidraw",
+      "schema": "./apps/prairielearn/elements/pl-excalidraw/schemas/pl-excalidraw.json"
+    },
+    {
+      "name": "pl-external-grader-results",
+      "schema": "./apps/prairielearn/elements/pl-external-grader-results/schemas/pl-external-grader-results.json"
+    },
+    {
+      "name": "pl-external-grader-variables",
+      "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-external-grader-variables.json",
+      "children": [
+        {
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-variable.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-figure",
+      "schema": "./apps/prairielearn/elements/pl-figure/schemas/pl-figure.json"
+    },
+    {
+      "name": "pl-file-download",
+      "schema": "./apps/prairielearn/elements/pl-file-download/schemas/pl-file-download.json"
+    },
+    {
+      "name": "pl-file-editor",
+      "schema": "./apps/prairielearn/elements/pl-file-editor/schemas/pl-file-editor.json"
+    },
+    {
+      "name": "pl-file-preview",
+      "schema": "./apps/prairielearn/elements/pl-file-preview/schemas/pl-file-preview.json"
+    },
+    {
+      "name": "pl-file-upload",
+      "schema": "./apps/prairielearn/elements/pl-file-upload/schemas/pl-file-upload.json"
+    },
+    {
+      "name": "pl-graph",
+      "schema": "./apps/prairielearn/elements/pl-graph/schemas/pl-graph.json"
+    },
+    {
+      "name": "pl-hidden-hints",
+      "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hidden-hints.json",
+      "children": [
+        {
+          "name": "pl-hint",
+          "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hint.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-hide-in-manual-grading",
+      "schema": "./apps/prairielearn/elements/pl-hide-in-manual-grading/schemas/pl-hide-in-manual-grading.json"
+    },
+    {
+      "name": "pl-hide-in-panel",
+      "schema": "./apps/prairielearn/elements/pl-hide-in-panel/schemas/pl-hide-in-panel.json"
+    },
+    {
+      "name": "pl-image-capture",
+      "schema": "./apps/prairielearn/elements/pl-image-capture/schemas/pl-image-capture.json"
+    },
+    {
       "name": "pl-integer-input",
       "schema": "./apps/prairielearn/elements/pl-integer-input/schemas/pl-integer-input.json"
+    },
+    {
+      "name": "pl-manual-grading-only",
+      "schema": "./apps/prairielearn/elements/pl-manual-grading-only/schemas/pl-manual-grading-only.json"
+    },
+    {
+      "name": "pl-matching",
+      "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-matching.json",
+      "children": [
+        {
+          "name": "pl-statement",
+          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-statement.json"
+        },
+        {
+          "name": "pl-option",
+          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-option.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-matrix-component-input",
+      "schema": "./apps/prairielearn/elements/pl-matrix-component-input/schemas/pl-matrix-component-input.json"
+    },
+    {
+      "name": "pl-matrix-input",
+      "schema": "./apps/prairielearn/elements/pl-matrix-input/schemas/pl-matrix-input.json"
+    },
+    {
+      "name": "pl-matrix-latex",
+      "schema": "./apps/prairielearn/elements/pl-matrix-latex/schemas/pl-matrix-latex.json"
     },
     {
       "name": "pl-multiple-choice",
@@ -218,19 +392,116 @@
       ]
     },
     {
+      "name": "pl-overlay",
+      "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-overlay.json",
+      "children": [
+        {
+          "name": "pl-background",
+          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-background.json"
+        },
+        {
+          "name": "pl-location",
+          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-location.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-prairiedraw-figure",
+      "schema": "./apps/prairielearn/elements/pl-prairiedraw-figure/schemas/pl-prairiedraw-figure.json"
+    },
+    {
+      "name": "pl-python-variable",
+      "schema": "./apps/prairielearn/elements/pl-python-variable/schemas/pl-python-variable.json"
+    },
+    {
+      "name": "pl-question-panel",
+      "schema": "./apps/prairielearn/elements/pl-question-panel/schemas/pl-question-panel.json"
+    },
+    {
+      "name": "pl-rich-text-editor",
+      "schema": "./apps/prairielearn/elements/pl-rich-text-editor/schemas/pl-rich-text-editor.json"
+    },
+    {
+      "name": "pl-sketch",
+      "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch.json",
+      "children": [
+        {
+          "name": "pl-sketch-tool",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-tool.json"
+        },
+        {
+          "name": "pl-sketch-grade",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-grade.json"
+        },
+        {
+          "name": "pl-sketch-initial",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-initial.json"
+        },
+        {
+          "name": "pl-sketch-solution",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-solution.json"
+        }
+      ]
+    },
+    {
       "name": "pl-string-input",
       "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
+    },
+    {
+      "name": "pl-submission-panel",
+      "schema": "./apps/prairielearn/elements/pl-submission-panel/schemas/pl-submission-panel.json"
     },
     {
       "name": "pl-symbolic-input",
       "schema": "./apps/prairielearn/elements/pl-symbolic-input/schemas/pl-symbolic-input.json"
     },
     {
+      "name": "pl-template",
+      "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-template.json",
+      "children": [
+        {
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-variable.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-units-input",
+      "schema": "./apps/prairielearn/elements/pl-units-input/schemas/pl-units-input.json"
+    },
+    {
+      "name": "pl-variable-output",
+      "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable-output.json",
+      "children": [
+        {
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable.json"
+        },
+        {
+          "name": "variable",
+          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/variable.json"
+        }
+      ]
+    },
+    {
+      "name": "pl-variable-score",
+      "schema": "./apps/prairielearn/elements/pl-variable-score/schemas/pl-variable-score.json"
+    },
+    {
+      "name": "pl-workspace",
+      "schema": "./apps/prairielearn/elements/pl-workspace/schemas/pl-workspace.json"
+    },
+    {
+      "name": "pl-xss-safe",
+      "schema": "./apps/prairielearn/elements/pl-xss-safe/schemas/pl-xss-safe.json"
+    },
+    {
       "name": "pl-code",
       "display": "block",
       "languageAttribute": "language",
       "indent": "attribute",
-      "indentAttribute": "normalize-whitespace"
+      "indentAttribute": "normalize-whitespace",
+      "schema": "./apps/prairielearn/elements/pl-code/schemas/pl-code.json"
     },
     {
       "name": "pl-file-editor",
@@ -252,12 +523,14 @@
         "ace/mode/yaml": "yaml",
         "ace/mode/css": "css",
         "ace/mode/sh": "bash"
-      }
+      },
+      "schema": "./apps/prairielearn/elements/pl-file-editor/schemas/pl-file-editor.json"
     },
     {
       "name": "pl-rich-text-editor",
       "display": "block",
-      "languageAttribute": "format"
+      "languageAttribute": "format",
+      "schema": "./apps/prairielearn/elements/pl-rich-text-editor/schemas/pl-rich-text-editor.json"
     },
     {
       "name": "markdown",
@@ -267,153 +540,196 @@
     {
       "name": "pl-graph",
       "display": "block",
-      "languageDefault": "dot"
+      "languageDefault": "dot",
+      "schema": "./apps/prairielearn/elements/pl-graph/schemas/pl-graph.json"
     },
     {
       "name": "pl-question-panel",
-      "display": "block"
+      "display": "block",
+      "schema": "./apps/prairielearn/elements/pl-question-panel/schemas/pl-question-panel.json"
     },
     {
       "name": "pl-submission-panel",
-      "display": "block"
+      "display": "block",
+      "schema": "./apps/prairielearn/elements/pl-submission-panel/schemas/pl-submission-panel.json"
     },
     {
       "name": "pl-answer-panel",
-      "display": "block"
+      "display": "block",
+      "schema": "./apps/prairielearn/elements/pl-answer-panel/schemas/pl-answer-panel.json"
     },
     {
-      "name": "pl-big-o-input"
+      "name": "pl-big-o-input",
+      "schema": "./apps/prairielearn/elements/pl-big-o-input/schemas/pl-big-o-input.json"
     },
     {
-      "name": "pl-excalidraw"
+      "name": "pl-excalidraw",
+      "schema": "./apps/prairielearn/elements/pl-excalidraw/schemas/pl-excalidraw.json"
     },
     {
-      "name": "pl-file-upload"
+      "name": "pl-file-upload",
+      "schema": "./apps/prairielearn/elements/pl-file-upload/schemas/pl-file-upload.json"
     },
     {
-      "name": "pl-image-capture"
+      "name": "pl-image-capture",
+      "schema": "./apps/prairielearn/elements/pl-image-capture/schemas/pl-image-capture.json"
     },
     {
       "name": "pl-matching",
       "children": [
         {
-          "name": "pl-statement"
+          "name": "pl-statement",
+          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-statement.json"
         },
         {
-          "name": "pl-option"
+          "name": "pl-option",
+          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-option.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-matching.json"
     },
     {
-      "name": "pl-matrix-component-input"
+      "name": "pl-matrix-component-input",
+      "schema": "./apps/prairielearn/elements/pl-matrix-component-input/schemas/pl-matrix-component-input.json"
     },
     {
-      "name": "pl-matrix-input"
+      "name": "pl-matrix-input",
+      "schema": "./apps/prairielearn/elements/pl-matrix-input/schemas/pl-matrix-input.json"
     },
     {
-      "name": "pl-units-input"
+      "name": "pl-units-input",
+      "schema": "./apps/prairielearn/elements/pl-units-input/schemas/pl-units-input.json"
     },
     {
-      "name": "pl-card"
+      "name": "pl-card",
+      "schema": "./apps/prairielearn/elements/pl-card/schemas/pl-card.json"
     },
     {
-      "name": "pl-dataframe"
+      "name": "pl-dataframe",
+      "schema": "./apps/prairielearn/elements/pl-dataframe/schemas/pl-dataframe.json"
     },
     {
       "name": "pl-external-grader-variables",
       "children": [
         {
-          "name": "pl-variable"
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-variable.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-external-grader-variables.json"
     },
     {
-      "name": "pl-figure"
+      "name": "pl-figure",
+      "schema": "./apps/prairielearn/elements/pl-figure/schemas/pl-figure.json"
     },
     {
-      "name": "pl-file-download"
+      "name": "pl-file-download",
+      "schema": "./apps/prairielearn/elements/pl-file-download/schemas/pl-file-download.json"
     },
     {
-      "name": "pl-file-preview"
+      "name": "pl-file-preview",
+      "schema": "./apps/prairielearn/elements/pl-file-preview/schemas/pl-file-preview.json"
     },
     {
-      "name": "pl-matrix-latex"
+      "name": "pl-matrix-latex",
+      "schema": "./apps/prairielearn/elements/pl-matrix-latex/schemas/pl-matrix-latex.json"
     },
     {
-      "name": "pl-python-variable"
+      "name": "pl-python-variable",
+      "schema": "./apps/prairielearn/elements/pl-python-variable/schemas/pl-python-variable.json"
     },
     {
       "name": "pl-template",
       "children": [
         {
-          "name": "pl-variable"
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-variable.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-template.json"
     },
     {
       "name": "pl-variable-output",
       "children": [
         {
-          "name": "pl-variable"
+          "name": "pl-variable",
+          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable.json"
         },
         {
-          "name": "variable"
+          "name": "variable",
+          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/variable.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable-output.json"
     },
     {
-      "name": "pl-xss-safe"
+      "name": "pl-xss-safe",
+      "schema": "./apps/prairielearn/elements/pl-xss-safe/schemas/pl-xss-safe.json"
     },
     {
       "name": "pl-overlay",
       "children": [
         {
-          "name": "pl-background"
+          "name": "pl-background",
+          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-background.json"
         },
         {
-          "name": "pl-location"
+          "name": "pl-location",
+          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-location.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-overlay.json"
     },
     {
-      "name": "pl-external-grader-results"
+      "name": "pl-external-grader-results",
+      "schema": "./apps/prairielearn/elements/pl-external-grader-results/schemas/pl-external-grader-results.json"
     },
     {
       "name": "pl-hidden-hints",
       "children": [
         {
-          "name": "pl-hint"
+          "name": "pl-hint",
+          "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hint.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hidden-hints.json"
     },
     {
-      "name": "pl-hide-in-manual-grading"
+      "name": "pl-hide-in-manual-grading",
+      "schema": "./apps/prairielearn/elements/pl-hide-in-manual-grading/schemas/pl-hide-in-manual-grading.json"
     },
     {
-      "name": "pl-manual-grading-only"
+      "name": "pl-manual-grading-only",
+      "schema": "./apps/prairielearn/elements/pl-manual-grading-only/schemas/pl-manual-grading-only.json"
     },
     {
       "name": "pl-hide-in-answer-panel"
     },
     {
-      "name": "pl-workspace"
+      "name": "pl-workspace",
+      "schema": "./apps/prairielearn/elements/pl-workspace/schemas/pl-workspace.json"
     },
     {
-      "name": "pl-hide-in-panel"
+      "name": "pl-hide-in-panel",
+      "schema": "./apps/prairielearn/elements/pl-hide-in-panel/schemas/pl-hide-in-panel.json"
     },
     {
       "name": "pl-dropdown",
       "children": [
         {
-          "name": "pl-answer"
+          "name": "pl-answer",
+          "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-answer.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-dropdown.json"
     },
     {
-      "name": "pl-prairiedraw-figure"
+      "name": "pl-prairiedraw-figure",
+      "schema": "./apps/prairielearn/elements/pl-prairiedraw-figure/schemas/pl-prairiedraw-figure.json"
     },
     {
-      "name": "pl-variable-score"
+      "name": "pl-variable-score",
+      "schema": "./apps/prairielearn/elements/pl-variable-score/schemas/pl-variable-score.json"
     },
     {
       "name": "pl-matrix-output",
@@ -544,7 +860,8 @@
                   "name": "pl-vector"
                 }
               ],
-              "allowAdditionalChildren": true
+              "allowAdditionalChildren": true,
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json"
             },
             {
               "name": "pl-3pointrod"
@@ -652,7 +969,8 @@
               "name": "pl-vector"
             }
           ],
-          "allowAdditionalChildren": true
+          "allowAdditionalChildren": true,
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-answer.json"
         },
         {
           "name": "pl-drawing-initial",
@@ -769,7 +1087,8 @@
                   "name": "pl-vector"
                 }
               ],
-              "allowAdditionalChildren": true
+              "allowAdditionalChildren": true,
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json"
             },
             {
               "name": "pl-3pointrod"
@@ -877,42 +1196,53 @@
               "name": "pl-vector"
             }
           ],
-          "allowAdditionalChildren": true
+          "allowAdditionalChildren": true,
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-initial.json"
         },
         {
           "name": "pl-controls",
           "children": [
             {
-              "name": "pl-drawing-button"
+              "name": "pl-drawing-button",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
             },
             {
               "name": "pl-controls-group",
               "children": [
                 {
-                  "name": "pl-drawing-button"
+                  "name": "pl-drawing-button",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
                 }
-              ]
+              ],
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls-group.json"
             }
-          ]
+          ],
+          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing.json"
     },
     {
       "name": "pl-sketch",
       "children": [
         {
-          "name": "pl-sketch-grade"
+          "name": "pl-sketch-grade",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-grade.json"
         },
         {
-          "name": "pl-sketch-initial"
+          "name": "pl-sketch-initial",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-initial.json"
         },
         {
-          "name": "pl-sketch-solution"
+          "name": "pl-sketch-solution",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-solution.json"
         },
         {
-          "name": "pl-sketch-tool"
+          "name": "pl-sketch-tool",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-tool.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch.json"
     },
     {
       "name": "clickable-image"

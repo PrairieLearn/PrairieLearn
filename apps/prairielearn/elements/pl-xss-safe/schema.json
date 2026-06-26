@@ -1,0 +1,4 @@
+{
+  "tag": "pl-xss-safe",
+  "schema": "./schemas/pl-xss-safe.json"
+}

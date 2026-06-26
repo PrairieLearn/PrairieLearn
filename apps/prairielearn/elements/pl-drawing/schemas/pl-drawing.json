@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "angle-tol": {
+      "type": "string",
+      "format": "number"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-description": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "disregard-extra-elements": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "gradable": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "grid-size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "height": {
+      "type": "string",
+      "format": "number"
+    },
+    "hide-answer-panel": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-score": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-tolerance-hint": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "snap-to-grid": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "tol": {
+      "type": "string",
+      "format": "number"
+    },
+    "tolerance-hint": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    },
+    "width": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": {}
+}

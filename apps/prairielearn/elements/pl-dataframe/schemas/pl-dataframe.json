@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "display-language": {
+      "type": "string",
+      "enum": ["python", "r"]
+    },
+    "display-variable-name": {
+      "type": "string"
+    },
+    "params-name": {
+      "type": "string"
+    },
+    "presentation-type": {
+      "type": "string",
+      "enum": ["e", "E", "f", "F", "g", "G", "n", "%"]
+    },
+    "show-dimensions": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-dtype": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-header": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-index": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-python": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "width": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["params-name"],
+  "additionalProperties": false
+}

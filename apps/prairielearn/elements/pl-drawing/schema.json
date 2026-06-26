@@ -1,0 +1,50 @@
+{
+  "tag": "pl-drawing",
+  "schema": "./schemas/pl-drawing.json",
+  "children": [
+    {
+      "tag": "pl-controls",
+      "schema": "./schemas/pl-controls.json",
+      "children": [
+        {
+          "tag": "pl-controls-group",
+          "schema": "./schemas/pl-controls-group.json",
+          "children": [
+            {
+              "tag": "pl-drawing-button",
+              "schema": "./schemas/pl-drawing-button.json"
+            }
+          ]
+        },
+        {
+          "tag": "pl-drawing-button",
+          "schema": "./schemas/pl-drawing-button.json"
+        }
+      ]
+    },
+    {
+      "tag": "pl-drawing-answer",
+      "schema": "./schemas/pl-drawing-answer.json",
+      "children": [
+        {
+          "tag": "pl-drawing-group",
+          "schema": "./schemas/pl-drawing-group.json",
+          "allowAdditionalChildren": true
+        }
+      ],
+      "allowAdditionalChildren": true
+    },
+    {
+      "tag": "pl-drawing-initial",
+      "schema": "./schemas/pl-drawing-initial.json",
+      "children": [
+        {
+          "tag": "pl-drawing-group",
+          "schema": "./schemas/pl-drawing-group.json",
+          "allowAdditionalChildren": true
+        }
+      ],
+      "allowAdditionalChildren": true
+    }
+  ]
+}

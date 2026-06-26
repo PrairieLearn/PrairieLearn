@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "hint-name": {
+      "type": "string"
+    },
+    "show-after-submission": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "additionalProperties": false
+}

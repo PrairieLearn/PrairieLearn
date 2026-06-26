@@ -1,0 +1,10 @@
+{
+  "tag": "pl-dropdown",
+  "schema": "./schemas/pl-dropdown.json",
+  "children": [
+    {
+      "tag": "pl-answer",
+      "schema": "./schemas/pl-answer.json"
+    }
+  ]
+}

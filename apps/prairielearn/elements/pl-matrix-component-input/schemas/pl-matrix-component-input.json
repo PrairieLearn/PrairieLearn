@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-feedback": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-fractions": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "allow-partial-credit": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "atol": {
+      "type": "string",
+      "format": "number"
+    },
+    "blank-value": {
+      "type": "string"
+    },
+    "columns": {
+      "type": "string",
+      "format": "integer"
+    },
+    "comparison": {
+      "type": "string",
+      "enum": ["relabs", "sigfig", "decdig"]
+    },
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "label": {
+      "type": "string"
+    },
+    "rows": {
+      "type": "string",
+      "format": "integer"
+    },
+    "rtol": {
+      "type": "string",
+      "format": "number"
+    },
+    "suffix": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

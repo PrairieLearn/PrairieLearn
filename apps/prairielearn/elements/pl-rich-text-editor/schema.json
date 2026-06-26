@@ -1,0 +1,4 @@
+{
+  "tag": "pl-rich-text-editor",
+  "schema": "./schemas/pl-rich-text-editor.json"
+}

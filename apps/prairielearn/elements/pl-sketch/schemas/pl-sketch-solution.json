@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "coordinates": {
+      "type": "string"
+    },
+    "function": {
+      "type": "string"
+    },
+    "tool-id": {
+      "type": "string"
+    },
+    "x-range": {
+      "type": "string"
+    }
+  },
+  "required": ["tool-id"],
+  "additionalProperties": false
+}

@@ -1,0 +1,4 @@
+{
+  "tag": "pl-file-upload",
+  "schema": "./schemas/pl-file-upload.json"
+}

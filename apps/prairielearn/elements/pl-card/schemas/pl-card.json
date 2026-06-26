@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "footer": {
+      "type": "string"
+    },
+    "header": {
+      "type": "string"
+    },
+    "img-bottom-alt": {
+      "type": "string"
+    },
+    "img-bottom-src": {
+      "type": "string"
+    },
+    "img-top-alt": {
+      "type": "string"
+    },
+    "img-top-src": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "width": {
+      "type": "string",
+      "enum": ["25%", "50%", "75%", "auto"]
+    }
+  },
+  "additionalProperties": false
+}

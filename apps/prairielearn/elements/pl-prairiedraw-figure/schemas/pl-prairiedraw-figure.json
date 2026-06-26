@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "height": {
+      "type": "string",
+      "format": "integer"
+    },
+    "param-names": {
+      "type": "string"
+    },
+    "script-name": {
+      "type": "string"
+    },
+    "width": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["script-name"],
+  "additionalProperties": false
+}

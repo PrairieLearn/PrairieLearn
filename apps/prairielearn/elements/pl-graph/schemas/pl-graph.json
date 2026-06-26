@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "directed": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "directory": {
+      "type": "string"
+    },
+    "engine": {
+      "type": "string"
+    },
+    "log-warnings": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "negative-weights": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "params-name": {
+      "type": "string"
+    },
+    "params-name-labels": {
+      "type": "string"
+    },
+    "params-name-matrix": {
+      "type": "string",
+      "deprecated": true,
+      "description": "Use the \"params-name\" attribute instead."
+    },
+    "params-type": {
+      "type": "string"
+    },
+    "source-file-name": {
+      "type": "string"
+    },
+    "weights": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "weights-digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "weights-presentation-type": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": {}
+}

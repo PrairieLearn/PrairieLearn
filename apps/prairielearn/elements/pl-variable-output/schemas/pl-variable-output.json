@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "default-tab": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["matlab", "mathematica", "numpy", "r", "sympy"]
+        },
+        {
+          "type": "string",
+          "enum": ["python"],
+          "deprecated": true,
+          "description": "Use default-tab=\"numpy\" instead."
+        }
+      ]
+    },
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "show-mathematica": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-matlab": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-numpy": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-python": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"show-numpy\" attribute instead."
+    },
+    "show-r": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-sympy": {
+      "type": "string",
+      "format": "boolean"
+    }
+  },
+  "additionalProperties": false
+}
