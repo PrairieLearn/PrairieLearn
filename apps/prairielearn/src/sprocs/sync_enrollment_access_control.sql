@@ -25,6 +25,7 @@ BEGIN
     IF existing_rule_id IS NOT NULL THEN
         -- Update existing enrollment rule
         UPDATE assessment_access_control_rules SET
+            uuid = COALESCE(assessment_access_control_rules.uuid, gen_random_uuid()),
             number = (rule_data ->> 'number')::integer,
             before_release_listed = (rule_data ->> 'before_release_listed')::boolean,
             date_control_release_date = input_date(rule_data ->> 'date_control_release_date', ci_timezone),
@@ -35,7 +36,6 @@ BEGIN
             date_control_late_deadlines_overridden = (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             date_control_after_last_deadline_allow_submissions = (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
             date_control_after_last_deadline_credit = (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
-            date_control_after_last_deadline_overridden = (rule_data ->> 'date_control_after_last_deadline_overridden')::boolean,
             date_control_duration_minutes_overridden = (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             date_control_duration_minutes = (rule_data ->> 'date_control_duration_minutes')::integer,
             date_control_password_overridden = (rule_data ->> 'date_control_password_overridden')::boolean,
@@ -71,6 +71,7 @@ BEGIN
         INSERT INTO assessment_access_control_rules (
             assessment_id,
             number,
+            uuid,
             target_type,
             before_release_listed,
             date_control_release_date,
@@ -81,7 +82,6 @@ BEGIN
             date_control_late_deadlines_overridden,
             date_control_after_last_deadline_allow_submissions,
             date_control_after_last_deadline_credit,
-            date_control_after_last_deadline_overridden,
             date_control_duration_minutes_overridden,
             date_control_duration_minutes,
             date_control_password_overridden,
@@ -95,6 +95,7 @@ BEGIN
         ) VALUES (
             syncing_assessment_id,
             (rule_data ->> 'number')::integer,
+            gen_random_uuid(),
             'enrollment',
             (rule_data ->> 'before_release_listed')::boolean,
             input_date(rule_data ->> 'date_control_release_date', ci_timezone),
@@ -105,7 +106,6 @@ BEGIN
             (rule_data ->> 'date_control_late_deadlines_overridden')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_allow_submissions')::boolean,
             (rule_data ->> 'date_control_after_last_deadline_credit')::integer,
-            (rule_data ->> 'date_control_after_last_deadline_overridden')::boolean,
             (rule_data ->> 'date_control_duration_minutes_overridden')::boolean,
             (rule_data ->> 'date_control_duration_minutes')::integer,
             (rule_data ->> 'date_control_password_overridden')::boolean,

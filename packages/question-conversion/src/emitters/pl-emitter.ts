@@ -1,3 +1,5 @@
+import { type AnyNode, isTag } from 'domhandler';
+
 import type {
   IRAssessmentMeta,
   IRFeedback,
@@ -14,6 +16,7 @@ import type {
   PLQuestionInfoJson,
   PLQuestionOutput,
 } from '../types/pl-output.js';
+import { isWhitespaceText, loadHtmlFragment } from '../utils/html.js';
 import { slugify } from '../utils/slugify.js';
 import { stableUuid } from '../utils/uuid.js';
 
@@ -243,15 +246,22 @@ export class PLEmitter implements OutputEmitter {
 
     const uuid = stableUuid(options?.uuidNamespace ?? itemContainer.sourceId, question.sourceId);
 
+    // Omit properties whose values match the PrairieLearn schema defaults
+    // (singleVariant: false, gradingMethod: 'Internal') so the emitted
+    // info.json contains only what's strictly necessary.
     const infoJson: PLQuestionInfoJson = {
       uuid,
       title: question.title,
       topic,
       tags,
       type: 'v3',
-      singleVariant: question.body.type !== 'calculated',
-      gradingMethod: question.gradingMethod,
     };
+    if (question.body.type !== 'calculated') {
+      infoJson.singleVariant = true;
+    }
+    if (question.gradingMethod != null && question.gradingMethod !== 'Internal') {
+      infoJson.gradingMethod = question.gradingMethod;
+    }
 
     const questionHtml = this.renderQuestionHtml(question);
     const serverPy = this.renderServerPy(question);
@@ -358,12 +368,13 @@ export class PLEmitter implements OutputEmitter {
  * (e.g. `<pl-string-input>`) are emitted bare.
  */
 function wrapInlineInputPrompt(html: string): string[] {
-  // Split between adjacent top-level block elements. The lookbehind matches
-  // after a closing block tag; the lookahead matches the start of the next tag.
-  // Whitespace between them is consumed so it doesn't become a stray text node.
-  const blocks = html.split(
-    /(?<=<\/(?:p|div|ul|ol|table|blockquote|h[1-6]|pre|figure|section)>)\s*(?=<)/,
-  );
+  // Treat the prompt as a fragment so top-level paragraphs, inputs, and text nodes remain
+  // siblings. Wrapping a whole document would hide the boundaries we need for panel grouping.
+  const $ = loadHtmlFragment(html);
+  const blocks = $.root()
+    .contents()
+    .toArray()
+    .filter((node) => !isWhitespaceText(node));
 
   const parts: string[] = [];
   let panel: string[] = [];
@@ -376,12 +387,15 @@ function wrapInlineInputPrompt(html: string): string[] {
   }
 
   for (const block of blocks) {
-    if (!block.trim()) continue;
-    if (PL_INPUT_RE.test(block)) {
+    const blockHtml = $.html(block);
+    if (!blockHtml.trim()) continue;
+    // A paragraph that already contains an input must stay outside `<pl-question-panel>`;
+    // otherwise PrairieLearn would render an interactive element inside static prompt chrome.
+    if (containsPlInput(block)) {
       flushPanel();
-      parts.push(block);
+      parts.push(blockHtml);
     } else {
-      panel.push(block);
+      panel.push(blockHtml);
     }
   }
   flushPanel();
@@ -391,8 +405,30 @@ function wrapInlineInputPrompt(html: string): string[] {
   return parts;
 }
 
-const PL_INPUT_RE =
-  /<pl-(?:big-o-input|checkbox|excalidraw|image-capture|integer-input|matching|matrix-component-input|matrix-input|multiple-choice|number-input|order-blocks|rich-text-editor|string-input|symbolic-input|units-input|file-upload)\b/;
+const PL_INPUT_ELEMENTS = new Set([
+  'pl-big-o-input',
+  'pl-checkbox',
+  'pl-excalidraw',
+  'pl-image-capture',
+  'pl-integer-input',
+  'pl-matching',
+  'pl-matrix-component-input',
+  'pl-matrix-input',
+  'pl-multiple-choice',
+  'pl-number-input',
+  'pl-order-blocks',
+  'pl-rich-text-editor',
+  'pl-string-input',
+  'pl-symbolic-input',
+  'pl-units-input',
+  'pl-file-upload',
+]);
+
+function containsPlInput(node: AnyNode): boolean {
+  if (isTag(node) && PL_INPUT_ELEMENTS.has(node.name.toLowerCase())) return true;
+  if ('children' in node) return node.children.some((child) => containsPlInput(child));
+  return false;
+}
 
 /** Render the grade(data) function for types with only global correct/incorrect feedback. */
 function renderDefaultGradeFn(feedback: IRFeedback | undefined): string {

@@ -31,7 +31,6 @@ import {
   FileModifyEditor,
   MultiEditor,
 } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -116,18 +115,13 @@ router.get(
             course_instance_id: courseInstance.id,
           });
 
-    const enhancedAccessControlEnabled = await features.enabledFromLocals(
-      'enhanced-access-control',
-      res.locals,
-    );
-    const accessControlMigrationNeeded =
-      canEdit && enhancedAccessControlEnabled
-        ? await sqldb.queryScalar(
-            sql.select_access_control_migration_needed,
-            { course_instance_id: courseInstance.id },
-            z.boolean(),
-          )
-        : false;
+    const accessControlMigrationNeeded = canEdit
+      ? await sqldb.queryScalar(
+          sql.select_access_control_migration_needed,
+          { course_instance_id: courseInstance.id },
+          z.boolean(),
+        )
+      : false;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -298,11 +292,6 @@ router.post(
             }
           : undefined;
 
-      const enhancedAccessControlEnabled = await features.enabledFromLocals(
-        'enhanced-access-control',
-        res.locals,
-      );
-
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
@@ -315,7 +304,7 @@ router.post(
           selfEnrollment: resolvedSelfEnrollment,
         },
         accessControlMigration: {
-          strategy: enhancedAccessControlEnabled ? access_control_strategy : 'keep',
+          strategy: access_control_strategy,
           clearIncompatible: clear_incompatible,
         },
       });
@@ -462,10 +451,13 @@ router.post(
             course_instance_id: courseInstance.id,
           });
         }
+        // Native form POST: an unchecked box is absent, not `false`, so a missing
+        // value means "unchecked" → un-share (allowed for a course instance at any
+        // time). This differs from the assessment settings (tRPC), where a missing
+        // field may be a disabled checkbox whose current value must be preserved.
         courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
           courseInstanceInfo.shareSourcePublicly,
-          // If source is already public, preserve that setting regardless of the submitted value.
-          courseInstance.share_source_publicly || (parsedBody.share_source_publicly ?? false),
+          parsedBody.share_source_publicly ?? false,
           false,
         );
       }

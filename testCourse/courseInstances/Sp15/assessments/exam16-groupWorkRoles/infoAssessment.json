@@ -20,7 +20,7 @@
       "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
     }
   },
-  "allowAccess": [{ "credit": 100 }],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "canSubmit": ["Recorder"],

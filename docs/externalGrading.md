@@ -148,7 +148,7 @@ Other than `score` and `gradable`, you may add any additional data to that objec
 
 If `gradable` is set to false, error messages related to the formatting of the answer can be added to the grading results by setting the `format_errors` key. This can be either a string or an array of strings, depending on the number of error messages.
 
-The [`<pl-external-grader-results>` element](./elements/pl-external-grader-results.md) is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here is an example of well-formed results that can be rendered by this element. Note that all fields other than `score` (or `gradable`) are optional.
+The [`<pl-external-grader-results>` element](./elements/pl-external-grader-results.md) is capable of rendering a list of tests with associated test names, descriptions, point values, output, messages, and images. Here is an example of well-formed results that can be rendered by this element. Note that all fields other than `score` (or `gradable`) are optional.
 
 ```json
 {
@@ -196,6 +196,10 @@ The [`<pl-external-grader-results>` element](./elements/pl-external-grader-resul
   ]
 }
 ```
+
+The per-test points display is all-or-nothing: if `points` or `max_points` is omitted on _any_ single test, the detailed per-test points display (badges, colors, and the points list) is disabled for _all_ tests, and a warning banner is shown instead. To get the detailed display, include both `points` and `max_points` on every test.
+
+A test with `max_points` set to `0` is rendered neutrally (gray, with an info icon) rather than as correct or incorrect.
 
 Plots or images can be added to either individual test cases or to the main output by adding [base64-encoded data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data) to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1 MB listed above. Each element of the array is expected to be an object containing the following keys:
 

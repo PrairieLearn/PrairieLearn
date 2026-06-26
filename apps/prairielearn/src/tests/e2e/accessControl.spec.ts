@@ -6,7 +6,6 @@ import type { Locator, Page } from '@playwright/test';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
@@ -70,7 +69,6 @@ test.describe('Access control UI', () => {
       path.join(TEST_COURSE_PATH, relativePath),
       path.join(testCoursePath, relativePath),
     );
-    await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
 
@@ -140,13 +138,16 @@ test.describe('Access control UI', () => {
 
     // Verify DB: new rule with labels
     const records = await getAccessControlRecords(assessment.id);
-    const overrides = records.filter((r) => r.number > 0);
-    expect(overrides.length).toBe(2); // Section A + Extra time
+    const labelOverrides = records.filter((r) => r.number > 0 && r.target_type === 'student_label');
+    expect(labelOverrides.length).toBe(2); // Section A + Extra time
 
-    // Verify disk: accessControl array has 3 rules (main + 2 overrides)
+    // Verify disk: accessControl array has the 2 label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(3);
-    const overrideLabels = json.accessControl.slice(1).map((r: { labels: string[] }) => r.labels);
+    const overrideLabels = json.accessControl
+      .slice(1)
+      .map((r: { labels?: string[] }) => r.labels)
+      .filter((labels: string[] | undefined) => labels !== undefined);
+    expect(overrideLabels).toHaveLength(2);
     expect(overrideLabels).toContainEqual(['Section A']);
     expect(overrideLabels).toContainEqual(['Extra time']);
   });
@@ -196,7 +197,7 @@ test.describe('Access control UI', () => {
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
     await sectionACard.getByRole('button', { name: /Remove/i }).click();
-    await expect(page.getByText('No overrides configured')).toBeVisible();
+    await expect(sectionACard).toBeHidden();
 
     // Save
     await page.getByRole('button', { name: 'Save' }).click();
@@ -207,10 +208,11 @@ test.describe('Access control UI', () => {
     const overrideCount = records.filter((r) => r.number > 0).length;
     expect(overrideCount).toBe(initialOverrideCount - 1);
 
-    // Verify disk: accessControl array has only 1 rule (main, no overrides)
+    // Verify disk: accessControl array has no label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(1);
-    expect(json.accessControl[0].labels).toBeUndefined();
+    expect(json.accessControl.every((r: { labels?: string[] }) => r.labels === undefined)).toBe(
+      true,
+    );
   });
 
   test('can edit override with duration and question visibility', async ({

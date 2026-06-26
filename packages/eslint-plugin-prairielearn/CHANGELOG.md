@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 4.3.3
+
+### Patch Changes
+
+- c0a8c3d: Remove stale modern access-control feature-gate examples from tRPC permission middleware docs and tests.
+
 ## 4.3.2
 
 ### Patch Changes

@@ -150,6 +150,7 @@ markdown_extensions:
 
   - toc:
       permalink: true
+      toc_depth: 3
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=pymdownx+blocks+caption#caption
   - pymdownx.blocks.caption
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/?h=attribute+list#attribute-lists
@@ -204,27 +205,24 @@ nav:
       - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
   - Instructor Guide:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
-      # Hidden until the qti-content-import feature flag is generally available:
-      # - 'Importing content from other platforms': 'importingContent.md'
+      - 'Importing content': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
-          # TODO: unhide once modern access control is generally available.
-          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
+          - 'AI question generation': 'question/ai-generation.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Preferences': 'question/preferences.md'
@@ -293,6 +291,7 @@ nav:
           - 'Questions': python-reference/prairielearn/question_utils.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'Schema': python-reference/prairielearn/element_schemas.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
@@ -335,13 +334,9 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+      - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
 
 not_in_nav: |
-  workshop/lesson1.md
-  workshop/lesson2.md
-  workshop/lesson3.md
-  workshop/lesson4.md
-  workshop/lesson5.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md
   schemas/questionOptionsFile.md

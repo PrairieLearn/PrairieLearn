@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,7 +16,6 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2",
     "zod": "^4.3.0"
   },
   "devDependencies": {

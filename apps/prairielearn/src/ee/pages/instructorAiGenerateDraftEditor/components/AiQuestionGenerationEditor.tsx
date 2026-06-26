@@ -6,6 +6,7 @@ import { run } from '@prairielearn/run';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import { DRAFT_QID_PREFIX } from '../../../../lib/draft-question.ts';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -15,7 +16,7 @@ import {
   type NewVariantHandle,
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
-import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import { QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 
 async function fetchQuestionFiles(
   urlPrefix: string,
@@ -33,6 +34,7 @@ interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
+  currentUserName: string | null;
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
@@ -47,6 +49,7 @@ function AiQuestionGenerationEditorInner({
   chatCsrfToken,
   question,
   initialMessages,
+  currentUserName,
   questionFiles: initialQuestionFiles,
   richTextEditorEnabled,
   urlPrefix,
@@ -95,6 +98,7 @@ function AiQuestionGenerationEditorInner({
       <AiQuestionGenerationChat
         chatCsrfToken={chatCsrfToken}
         initialMessages={initialMessages}
+        currentUserName={currentUserName}
         questionId={question.id}
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
