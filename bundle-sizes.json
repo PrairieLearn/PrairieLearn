@@ -290,9 +290,9 @@
     "brotli": 352365
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1514725,
-    "gzip": 423831,
-    "brotli": 346150
+    "raw": 1514831,
+    "gzip": 423938,
+    "brotli": 346233
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
     "raw": 259014,
@@ -400,9 +400,9 @@
     "brotli": 327790
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2724274,
-    "gzip": 781839,
-    "brotli": 666380
+    "raw": 2724400,
+    "gzip": 781970,
+    "brotli": 666489
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1580706,
