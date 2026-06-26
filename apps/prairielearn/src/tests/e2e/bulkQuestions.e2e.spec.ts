@@ -25,6 +25,12 @@ async function readInfoAssessment(testCoursePath: string, tid: string) {
   return JSON.parse(await fs.readFile(infoAssessmentPath(testCoursePath, tid), 'utf-8'));
 }
 
+async function readInfoQuestion(testCoursePath: string, qid: string) {
+  return JSON.parse(
+    await fs.readFile(path.join(testCoursePath, 'questions', qid, 'info.json'), 'utf-8'),
+  );
+}
+
 async function writeBulkAssessment({
   testCoursePath,
   tid,
@@ -117,6 +123,124 @@ async function selectQuestions(page: Page, qids: string[]) {
 }
 
 test.describe('Bulk question table actions', () => {
+  test('can change the topic for selected questions and restore it', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qids = [`bulktopic${suffix}a`, `bulktopic${suffix}b`];
+
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qids[0],
+      title: 'Bulk topic first question',
+    });
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qids[1],
+      title: 'Bulk topic second question',
+    });
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, `bulktopic${suffix}`);
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Change topic' }).click();
+
+    const topicModal = page.getByRole('dialog', { name: 'Change topic' });
+    await expect(topicModal).toBeVisible();
+    await topicModal.getByLabel('Topic').selectOption('Calculus');
+    await topicModal.getByRole('button', { name: 'Change topic' }).click();
+
+    await expect(topicModal).not.toBeVisible();
+    await expect(page.getByText('Changed topic for 2 questions.')).toBeVisible();
+
+    for (const qid of qids) {
+      const info = await readInfoQuestion(testCoursePath, qid);
+      expect(info.topic).toBe('Calculus');
+    }
+
+    await selectQuestions(page, qids);
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Change topic' }).click();
+
+    const restoreModal = page.getByRole('dialog', { name: 'Change topic' });
+    await expect(restoreModal).toBeVisible();
+    await restoreModal.getByLabel('Topic').selectOption('Algebra');
+    await restoreModal.getByRole('button', { name: 'Change topic' }).click();
+
+    await expect(restoreModal).not.toBeVisible();
+    for (const qid of qids) {
+      const info = await readInfoQuestion(testCoursePath, qid);
+      expect(info.topic).toBe('Algebra');
+    }
+  });
+
+  test('can add and remove tags for selected questions', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const suffix = uniqueSuffix();
+    const qids = [`bulktags${suffix}a`, `bulktags${suffix}b`];
+
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addNumbers',
+      targetQid: qids[0],
+      title: 'Bulk tags first question',
+    });
+    await copyQuestion({
+      testCoursePath,
+      sourceQid: 'addVectors',
+      targetQid: qids[1],
+      title: 'Bulk tags second question',
+    });
+    await syncCourse(testCoursePath);
+
+    await openQuestionsTable(page, courseInstance.id, `bulktags${suffix}`);
+    await selectQuestions(page, qids);
+
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Add tags' }).click();
+
+    const addModal = page.getByRole('dialog', { name: 'Add tags' });
+    await expect(addModal).toBeVisible();
+    await addModal.getByRole('checkbox', { name: 'balamut2' }).check();
+    await addModal.getByRole('button', { name: 'Add tags' }).click();
+
+    await expect(addModal).not.toBeVisible();
+    await expect(page.getByText('Added tags to 2 questions.')).toBeVisible();
+
+    for (const qid of qids) {
+      const info = await readInfoQuestion(testCoursePath, qid);
+      expect(info.tags).toContain('balamut2');
+    }
+
+    await selectQuestions(page, qids);
+    await page.getByRole('button', { name: 'Manage questions' }).click();
+    await page.getByRole('button', { name: 'Remove tags' }).click();
+
+    const removeModal = page.getByRole('dialog', { name: 'Remove tags' });
+    await expect(removeModal).toBeVisible();
+    await expect(removeModal.getByRole('checkbox', { name: 'balamut2' })).toBeVisible();
+    await expect(removeModal.getByRole('checkbox', { name: 'eliving2' })).toHaveCount(0);
+    await removeModal.getByRole('checkbox', { name: 'balamut2' }).check();
+    await removeModal.getByRole('button', { name: 'Remove tags' }).click();
+
+    await expect(removeModal).not.toBeVisible();
+    await expect(page.getByText('Removed tags from 2 questions.')).toBeVisible();
+
+    for (const qid of qids) {
+      const info = await readInfoQuestion(testCoursePath, qid);
+      expect(info.tags).not.toContain('balamut2');
+    }
+  });
+
   test('can add selected questions to an assessment and remove them again', async ({
     page,
     testCoursePath,
