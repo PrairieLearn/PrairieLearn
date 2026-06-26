@@ -372,10 +372,8 @@ async function startup(workspace_id: string): Promise<void> {
       break; // success, we got a host
     }
     if (!canLaunchAdditionalHosts()) {
-      // No autoscaler is configured to launch new hosts (e.g. local
-      // development), so if no host is available now, none will become
-      // available by retrying. Fail fast with an actionable message instead
-      // of spinning on the retry loop for several minutes.
+      // in local development, when no autoscaler is configured
+      // to launch new hosts, none will become available after retrying
       throw new Error(
         'No workspace host is available. Ensure the workspace-host process is running ' +
           '(when running in Docker, mount /var/run/docker.sock so that workspaces are started).',
@@ -679,12 +677,6 @@ export async function generateWorkspaceFiles({
   return { fileGenerationErrors };
 }
 
-/**
- * Whether the deployment is able to launch additional workspace hosts on
- * demand. This is only true when autoscaling is enabled and a launch template
- * is configured; in local development neither is set, so the set of available
- * hosts is fixed and retrying host assignment can never succeed.
- */
 export function canLaunchAdditionalHosts(): boolean {
   return config.workspaceAutoscalingEnabled && config.workspaceLoadLaunchTemplateId != null;
 }
