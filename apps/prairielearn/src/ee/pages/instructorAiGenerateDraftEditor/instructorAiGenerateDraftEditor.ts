@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
@@ -121,8 +122,16 @@ async function saveRevisedQuestion({
 
 function getVariantId(req: Request) {
   const id = req.query.variant_id;
-  if (id == null || typeof id !== 'string' || id === '') return null;
-  return IdSchema.parse(id);
+  if (id == null || id === '') return null;
+  if (typeof id !== 'string') {
+    throw new error.HttpStatusError(400, 'Invalid variant_id');
+  }
+
+  const result = IdSchema.safeParse(id);
+  if (!result.success) {
+    throw new error.HttpStatusError(400, 'Invalid variant_id');
+  }
+  return result.data;
 }
 
 async function getValidatedInitialMessages(question: Question) {
@@ -215,7 +224,7 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
-function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
+async function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
   Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
@@ -224,7 +233,7 @@ function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
   // package returns the global (lib.dom) `ReadableStream`. They are runtime-
   // compatible (Node implements WHATWG streams) but TypeScript treats them as
   // nominally distinct classes, so a cast is required.
-  Readable.fromWeb(stream as unknown as NodeReadableStream<string>).pipe(res);
+  await pipeline(Readable.fromWeb(stream as unknown as NodeReadableStream<string>), res);
 }
 
 router.use(
@@ -311,7 +320,7 @@ router.get(
       return;
     }
 
-    pipeUiMessageStream(stream, res);
+    await pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -358,7 +367,7 @@ router.post(
       return;
     }
 
-    pipeUiMessageStream(stream, res);
+    await pipeUiMessageStream(stream, res);
   }),
 );
 

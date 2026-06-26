@@ -174,35 +174,37 @@ router.post(
           if (req.body.file_path && req.files.length > 1) {
             throw new Error('Cannot upload multiple files when file path is specified');
           }
-          const duplicateNames = Object.entries(countBy(req.files, (file) => file.originalname))
+          const fileEntries = req.files.map((file) => {
+            let filePath: string;
+            if (req.body.file_path) {
+              try {
+                filePath = path.join(res.locals.course.path, req.body.file_path);
+              } catch {
+                throw new Error(`Invalid file path: ${req.body.file_path}`);
+              }
+            } else {
+              try {
+                filePath = path.join(req.body.working_path, file.originalname);
+              } catch {
+                throw new Error(
+                  `Invalid file path: ${req.body.working_path} / ${file.originalname}`,
+                );
+              }
+            }
+            return { filePath, buffer: file.buffer };
+          });
+
+          const duplicatePaths = Object.entries(countBy(fileEntries, (file) => file.filePath))
             .filter(([, count]) => count > 1)
-            .map(([name]) => name);
-          if (duplicateNames.length > 0) {
+            .map(([filePath]) => filePath);
+          if (duplicatePaths.length > 0) {
             throw new Error(
-              `Duplicate file names in upload: ${duplicateNames.join(', ')}. Please rename files to have unique names and try again.`,
+              `Duplicate destination paths in upload: ${duplicatePaths.join(', ')}. Please rename files to have unique destinations and try again.`,
             );
           }
 
           const files = Object.fromEntries(
-            req.files.map((file) => {
-              let filePath: string;
-              if (req.body.file_path) {
-                try {
-                  filePath = path.join(res.locals.course.path, req.body.file_path);
-                } catch {
-                  throw new Error(`Invalid file path: ${req.body.file_path}`);
-                }
-              } else {
-                try {
-                  filePath = path.join(req.body.working_path, file.originalname);
-                } catch {
-                  throw new Error(
-                    `Invalid file path: ${req.body.working_path} / ${file.originalname}`,
-                  );
-                }
-              }
-              return [filePath, file.buffer];
-            }),
+            fileEntries.map(({ filePath, buffer }) => [filePath, buffer]),
           );
 
           const editor = new FileUploadEditor({ locals: res.locals, container, files });
