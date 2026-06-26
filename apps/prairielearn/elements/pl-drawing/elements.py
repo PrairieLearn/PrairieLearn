@@ -255,8 +255,8 @@ class Roller(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
-            "drawGround": json.loads(pl.get_string_attrib(el, "draw-ground", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
+            "drawGround": pl.get_boolean_attrib(el, "draw-ground", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -337,8 +337,8 @@ class FixedPin(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
-            "drawGround": json.loads(pl.get_string_attrib(el, "draw-ground", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
+            "drawGround": pl.get_boolean_attrib(el, "draw-ground", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -393,7 +393,7 @@ class Rod(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -448,7 +448,7 @@ class CollarRod(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -513,7 +513,7 @@ class ThreePointRod(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -585,7 +585,7 @@ class FourPointRod(BaseElement):
             "strokeWidth": pl.get_float_attrib(
                 el, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -1055,9 +1055,7 @@ class ArcVector(BaseElement):
             "radius": pl.get_float_attrib(el, "radius", 30),
             "startAngle": pl.get_float_attrib(el, "start-angle", 0),
             "endAngle": pl.get_float_attrib(el, "end-angle", 210),
-            "drawCenterPoint": json.loads(
-                pl.get_string_attrib(el, "draw-center", "true")
-            ),
+            "drawCenterPoint": pl.get_boolean_attrib(el, "draw-center", True),
             "drawStartArrow": draw_start_arrow,
             "drawEndArrow": draw_end_arrow,
             "label": pl.get_string_attrib(el, "label", ""),
@@ -1191,7 +1189,7 @@ class DistributedLoad(BaseElement):
             "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 3),
             "drawStartArrow": False,
             "drawEndArrow": True,
-            "anchor_is_tail": pl.get_string_attrib(el, "anchor-is-tail", "true"),
+            "anchor_is_tail": anchor_is_tail,
             "trueHandles": ["mtr"],
             "disregard_sense": disregard_sense,
             "optional_grading": pl.get_boolean_attrib(el, "optional-grading", False),
@@ -1464,12 +1462,8 @@ class Dimensions(BaseElement):
             "offsety": pl.get_float_attrib(el, "offsety", 0),
             "xlabel": float(rlabel[0]),
             "ylabel": float(rlabel[1]),
-            "drawStartArrow": json.loads(
-                pl.get_string_attrib(el, "draw-start-arrow", "true")
-            ),
-            "drawEndArrow": json.loads(
-                pl.get_string_attrib(el, "draw-end-arrow", "true")
-            ),
+            "drawStartArrow": pl.get_boolean_attrib(el, "draw-start-arrow", True),
+            "drawEndArrow": pl.get_boolean_attrib(el, "draw-end-arrow", True),
             "startSupportLine": pl.get_boolean_attrib(el, "start-support-line", False),
             "endSupportLine": pl.get_boolean_attrib(el, "end-support-line", False),
             "originY": "center",
