@@ -216,8 +216,8 @@
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
     "raw": 1529574,
-    "gzip": 429802,
-    "brotli": 351046
+    "gzip": 429807,
+    "brotli": 351050
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
     "raw": 1601561,
@@ -241,7 +241,7 @@
   },
   "scripts/esm-bundles/hydrated-components/PublicQuestionsTable.ts": {
     "raw": 1073679,
-    "gzip": 330552,
+    "gzip": 330557,
     "brotli": 267742
   },
   "scripts/esm-bundles/hydrated-components/QtiImportForm.ts": {
