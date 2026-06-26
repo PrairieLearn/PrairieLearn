@@ -34,4 +34,26 @@ describe('pl-order-blocks schema', () => {
 
     assert.deepEqual(messages, []);
   });
+
+  it('rejects disallowed direct child tags', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks">
+        <p>First</p>
+      </pl-order-blocks>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('only allows these child elements')));
+  });
+
+  it('rejects disallowed block group child tags', async () => {
+    const messages = await lintMessages(`
+      <pl-order-blocks answers-name="blocks" grading-method="dag">
+        <pl-block-group tag="case-a">
+          <p>First case</p>
+        </pl-block-group>
+      </pl-order-blocks>
+    `);
+
+    assert.isTrue(messages.some((message) => message.includes('only allows these child elements')));
+  });
 });

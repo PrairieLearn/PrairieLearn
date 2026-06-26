@@ -35,6 +35,14 @@ def create_test_data(
     }
 
 
+def create_prepare_data() -> dict[str, Any]:
+    return {
+        "params": {},
+        "correct_answers": {},
+        "answers_names": {},
+    }
+
+
 # Named tuples for test parameters
 class HelpTextTestCase(NamedTuple):
     num_correct: int
@@ -827,25 +835,7 @@ def test_max_correct_respected_without_number_answers() -> None:
     </pl-checkbox>
     """
 
-    data: dict[str, Any] = {
-        "params": {},
-        "correct_answers": {},
-        "submitted_answers": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "score": 0,
-        "feedback": {},
-        "variant_seed": "12345",
-        "options": {},
-        "raw_submitted_answers": {},
-        "editable": True,
-        "panel": "question",
-        "extensions": {},
-        "num_valid_submissions": 0,
-        "manual_points": 0,
-        "auto_points": 0,
-        "answers_names": {},
-    }
+    data = create_prepare_data()
 
     # Run prepare multiple times to check that max-correct is always respected
     for _ in range(10):
@@ -869,3 +859,31 @@ def test_max_correct_respected_without_number_answers() -> None:
         assert num_correct >= 2, (
             f"min-correct=2 was specified but only {num_correct} correct answers were shown."
         )
+
+
+def test_prepare_rejects_unsupported_child_tags() -> None:
+    element_html = """
+    <pl-checkbox answers-name="ans">
+        <p>Unsupported child</p>
+        <pl-answer correct="true">Correct</pl-answer>
+    </pl-checkbox>
+    """
+
+    with pytest.raises(ValueError, match="Unexpected child p"):
+        pl_checkbox.prepare(element_html, create_prepare_data())
+
+
+def test_prepare_allows_legacy_underscore_answer_tags() -> None:
+    element_html = """
+    <pl-checkbox answers-name="ans" order="fixed">
+        <pl_answer correct="true">Correct</pl_answer>
+        <pl_answer>Incorrect</pl_answer>
+    </pl-checkbox>
+    """
+    data = create_prepare_data()
+
+    pl_checkbox.prepare(element_html, data)
+
+    assert data["correct_answers"]["ans"] == [
+        {"key": "a", "html": "Correct", "feedback": None}
+    ]

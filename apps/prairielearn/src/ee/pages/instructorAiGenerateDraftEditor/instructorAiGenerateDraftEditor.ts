@@ -1,8 +1,9 @@
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
-import { type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -22,8 +23,8 @@ import {
   getDraftQuestionFileContents,
 } from '../../../lib/draft-question-files/browser.js';
 import { renameDraftQuestion } from '../../../lib/draft-question-files/mutations.js';
-import { classifyDraftQuestion } from '../../../lib/draft-question-files/question.js';
 import { parseSelectionQueryParam } from '../../../lib/draft-question-files/selection.js';
+import { classifyDraftQuestion } from '../../../lib/draft-question.ts';
 import { features } from '../../../lib/features/index.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
@@ -32,6 +33,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-local
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
+import { selectOptionalQuestionById } from '../../../models/question.js';
 import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
@@ -56,8 +58,18 @@ function getEditorUrl(resLocals: InstructorQuestionLocals) {
   return `${resLocals.urlPrefix}/ai_generate_editor/${resLocals.question.id}`;
 }
 
-function getVariantId(queryValue: unknown) {
-  return queryValue == null || queryValue === '' ? null : IdSchema.parse(queryValue);
+function getVariantId(req: Request) {
+  const id = req.query.variant_id;
+  if (id == null || id === '') return null;
+  if (typeof id !== 'string') {
+    throw new error.HttpStatusError(400, 'Invalid variant_id');
+  }
+
+  const result = IdSchema.safeParse(id);
+  if (!result.success) {
+    throw new error.HttpStatusError(400, 'Invalid variant_id');
+  }
+  return result.data;
 }
 
 async function getValidatedInitialMessages(question: Question) {
@@ -149,15 +161,16 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   }
 }
 
-function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
+async function pipeUiMessageStream(stream: ReadableStream<string>, res: Response) {
   Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
+
   // `Readable.fromWeb` accepts node:stream/web's `ReadableStream`, but the `ai`
   // package returns the global (lib.dom) `ReadableStream`. They are runtime-
   // compatible (Node implements WHATWG streams) but TypeScript treats them as
   // nominally distinct classes, so a cast is required.
-  Readable.fromWeb(stream as unknown as NodeReadableStream<string>).pipe(res);
+  await pipeline(Readable.fromWeb(stream as unknown as NodeReadableStream<string>), res);
 }
 
 router.use(
@@ -166,24 +179,23 @@ router.use(
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
 
-    const classified = await classifyDraftQuestion({
-      courseId: res.locals.course.id,
-      questionId: req.params.question_id,
-    });
+    const question = await selectOptionalQuestionById(req.params.question_id);
+    const classification = classifyDraftQuestion(res.locals.course, question);
 
-    if (classified.kind === 'finalized') {
-      // The question was finalized; this commonly happens when a user presses
-      // the browser back button after finalizing. Send them to the preview.
-      res.redirect(`${res.locals.urlPrefix}/question/${classified.question.id}/preview`);
-      return;
-    }
-
-    if (classified.kind === 'not-found') {
+    if (classification.kind === 'not-found') {
       res.status(404).send(DraftNotFound({ resLocals: res.locals }));
       return;
     }
 
-    res.locals.question = classified.question;
+    if (classification.kind === 'finalized') {
+      // If the question was already finalized, redirect to the question preview.
+      // This handles the common case of a user pressing the browser back button
+      // after finalizing a question.
+      res.redirect(`${res.locals.urlPrefix}/question/${classification.question.id}/preview`);
+      return;
+    }
+
+    res.locals.question = classification.question;
 
     assertCanCreateQuestion(res.locals);
 
@@ -207,10 +219,7 @@ router.get(
       }),
     ]);
 
-    const { questionContainerHtml } = await renderQuestionPreview(
-      res.locals,
-      getVariantId(req.query.variant_id),
-    );
+    const { questionContainerHtml } = await renderQuestionPreview(res.locals, getVariantId(req));
     await logPageView('instructorQuestionPreview', req, res);
 
     res.send(
@@ -255,7 +264,7 @@ router.get(
       return;
     }
 
-    pipeUiMessageStream(stream, res);
+    await pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -302,7 +311,7 @@ router.post(
       return;
     }
 
-    pipeUiMessageStream(stream, res);
+    await pipeUiMessageStream(stream, res);
   }),
 );
 
@@ -349,7 +358,7 @@ router.post(
 router.get(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const preview = await renderQuestionPreview(res.locals, getVariantId(req.query.variant_id));
+    const preview = await renderQuestionPreview(res.locals, getVariantId(req));
     await logPageView('instructorQuestionPreview', req, res);
 
     res.json(preview);

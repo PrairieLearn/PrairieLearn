@@ -7,17 +7,12 @@ import {
   renderAppError,
   syncJobFailedRenderer,
 } from '../../../../lib/client/errors.js';
+import { DRAFT_QID_PREFIX, isDraftQid } from '../../../../lib/draft-question.ts';
 import { validateShortName } from '../../../../lib/short-name.js';
 import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 import { useTRPC } from '../../../../trpc/course/context.js';
 
 import { useDraftFiles } from './draftFilesContext.js';
-
-export const DRAFT_QID_PREFIX = '__drafts__/';
-
-function isDraftQid(qid: string): boolean {
-  return qid.startsWith(DRAFT_QID_PREFIX);
-}
 
 function InlineEditableField({
   value,

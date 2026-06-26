@@ -1,5 +1,4 @@
 import type ace from 'ace-builds';
-import type * as bootstrap from 'bootstrap';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -11,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Collapse, Modal } from 'react-bootstrap';
+import { Alert, Collapse, Modal, Toast, ToastContainer } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
@@ -27,12 +26,6 @@ import type { JobSequenceResultsProps } from '../../components/JobSequenceResult
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { type FileMetadata, FileType } from '../../lib/editorUtil.shared.js';
 import type { EditOutcome } from '../../lib/editors.js';
-
-declare global {
-  interface Window {
-    bootstrap: typeof bootstrap;
-  }
-}
 
 export interface FileEditorData {
   fileName: string;
@@ -253,6 +246,11 @@ export function FileEditor({
   const [buttonsExpanded, setButtonsExpanded] = useState(!hasVersionChoice);
   const [showStatusAlert, setShowStatusAlert] = useState(draftEditResult != null);
   const [detailExpanded, setDetailExpanded] = useState(false);
+
+  // Incrementing these ids remounts the matching toast so repeated
+  // formatter failures restart React Bootstrap's autohide timer.
+  const [reformatToastIds, setReformatToastIds] = useState({ json: 0, html: 0 });
+
   const editorRef = useRef<AceFileEditorHandle>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileContentsInputRef = useRef<HTMLInputElement>(null);
@@ -286,8 +284,12 @@ export function FileEditor({
       editor.focus();
     } catch (err) {
       console.error(err);
-      window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error').show();
+      setReformatToastIds((ids) => ({ ...ids, json: ids.json + 1 }));
     }
+  }, []);
+
+  const showHtmlMustacheReformatErrorToast = useCallback(() => {
+    setReformatToastIds((ids) => ({ ...ids, html: ids.html + 1 }));
   }, []);
 
   const handleEditorReady = useCallback(
@@ -305,12 +307,12 @@ export function FileEditor({
       if (editorData.lintHtmlMustache) {
         document.dispatchEvent(
           new CustomEvent('pl:html-mustache-linter-attach', {
-            detail: { editor },
+            detail: { editor, onReformatError: showHtmlMustacheReformatErrorToast },
           }),
         );
       }
     },
-    [isJson, editorData.lintHtmlMustache],
+    [isJson, editorData.lintHtmlMustache, showHtmlMustacheReformatErrorToast],
   );
 
   // Ace measures its container imperatively, so resize after React commits the single-pane layout.
@@ -548,55 +550,57 @@ export function FileEditor({
                       onChange={setContents}
                       onReady={handleEditorReady}
                     />
-                    <div
+                    <ToastContainer
                       aria-live="polite"
                       aria-atomic="true"
-                      className="position-absolute m-3"
-                      style={{ top: 0, right: 0, zIndex: 10 }}
+                      containerPosition="absolute"
+                      position="top-end"
+                      className="m-3"
+                      style={{ zIndex: 10 }}
                     >
-                      <div
-                        id="js-json-reformat-error"
-                        className="toast hide text-bg-danger border-0"
-                        role="alert"
-                        aria-live="assertive"
-                        aria-atomic="true"
-                        data-bs-delay="5000"
+                      <Toast
+                        key={`json-${reformatToastIds.json}`}
+                        show={reformatToastIds.json > 0}
+                        delay={5000}
+                        className="text-bg-danger border-0"
+                        autohide
+                        onClose={() => setReformatToastIds((ids) => ({ ...ids, json: 0 }))}
                       >
                         <div className="d-flex">
-                          <div className="toast-body">
+                          <Toast.Body>
                             Error formatting JSON. Please check your JSON syntax.
-                          </div>
+                          </Toast.Body>
                           <button
                             type="button"
                             className="btn-close btn-close-white me-2 m-auto"
-                            data-bs-dismiss="toast"
                             aria-label="Close"
+                            onClick={() => setReformatToastIds((ids) => ({ ...ids, json: 0 }))}
                           />
                         </div>
-                      </div>
+                      </Toast>
                       {editorData.lintHtmlMustache ? (
-                        <div
-                          id="js-html-mustache-reformat-error"
-                          className="toast hide text-bg-danger border-0"
-                          role="alert"
-                          aria-live="assertive"
-                          aria-atomic="true"
-                          data-bs-delay="5000"
+                        <Toast
+                          key={`html-mustache-${reformatToastIds.html}`}
+                          show={reformatToastIds.html > 0}
+                          delay={5000}
+                          className="text-bg-danger border-0"
+                          autohide
+                          onClose={() => setReformatToastIds((ids) => ({ ...ids, html: 0 }))}
                         >
                           <div className="d-flex">
-                            <div className="toast-body">
+                            <Toast.Body>
                               Error reformatting file. Please check the syntax.
-                            </div>
+                            </Toast.Body>
                             <button
                               type="button"
                               className="btn-close btn-close-white me-2 m-auto"
-                              data-bs-dismiss="toast"
                               aria-label="Close"
+                              onClick={() => setReformatToastIds((ids) => ({ ...ids, html: 0 }))}
                             />
                           </div>
-                        </div>
+                        </Toast>
                       ) : null}
-                    </div>
+                    </ToastContainer>
                   </div>
                 </div>
               </div>

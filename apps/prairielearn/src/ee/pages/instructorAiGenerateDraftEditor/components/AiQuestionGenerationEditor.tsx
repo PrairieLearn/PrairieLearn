@@ -20,6 +20,7 @@ import {
   parseSelectionQueryParam,
   selectionParser,
 } from '../../../../lib/draft-question-files/selection.js';
+import { DRAFT_QID_PREFIX } from '../../../../lib/draft-question.ts';
 import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
 import { createCourseTrpcClient } from '../../../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../../../trpc/course/context.js';
@@ -32,7 +33,7 @@ import { AllQuestionFiles } from './AllQuestionFiles.js';
 import { FinalizeModal } from './FinalizeModal.js';
 import { QuestionCodeEditors } from './QuestionCodeEditors.js';
 import { QuestionPreviewPane } from './QuestionPreviewPane.js';
-import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import { QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 import {
   DraftFilesContext,
   type DraftFilesContextValue,

@@ -106,22 +106,32 @@ export function TimeLimitEditForm({
 
   const [form, setForm] = useState<{
     action: TimeLimitAction;
-    time_add: number;
+    /**
+     * Kept as the raw input string so in-progress edits (empty, trailing dot)
+     * aren't collapsed to NaN; parsed to a number only when used.
+     */
+    time_add: string;
     date: string;
     reopen_closed: boolean;
     reopen_without_limit: boolean;
   }>(() => ({
     action: canAddSubtract ? 'add' : 'set_total',
-    time_add: 5,
+    time_add: '5',
     date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
     reopen_closed: false,
     reopen_without_limit: true,
   }));
+  const timeAddValue = Number.parseFloat(form.time_add);
 
   // In single mode a closed instance shows the re-open radios; choosing
   // "re-open without time limit" hides the time-limit options entirely.
   const showReopenRadios = mode === 'single' && singleRow != null && !singleRow.open;
   const showTimeLimitOptions = mode === 'bulk' || singleRow?.open || !form.reopen_without_limit;
+  const showTimeAddInput =
+    showTimeLimitOptions &&
+    form.action !== 'set_exact' &&
+    form.action !== 'remove' &&
+    form.action !== 'expire';
 
   const showRemove =
     mode === 'bulk' ||
@@ -136,19 +146,19 @@ export function TimeLimitEditForm({
   }
 
   function proposedClosingTime() {
-    if (singleRow == null || !Number.isFinite(form.time_add)) return null;
+    if (singleRow == null || !Number.isFinite(timeAddValue)) return null;
     const totalTime = Math.round(singleRow.total_time_sec ?? 0);
 
     try {
       let startDate = Temporal.Instant.from(singleRow.date).toZonedDateTimeISO(timezone);
       if (form.action === 'set_total') {
-        startDate = startDate.add({ minutes: form.time_add });
+        startDate = startDate.add({ minutes: timeAddValue });
       } else if (form.action === 'set_rem') {
-        startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
+        startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: timeAddValue });
       } else if (form.action === 'add') {
-        startDate = startDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
+        startDate = startDate.add({ seconds: totalTime }).add({ minutes: timeAddValue });
       } else if (form.action === 'subtract') {
-        startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: form.time_add });
+        startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: timeAddValue });
       }
 
       return formatDate(new Date(startDate.epochMilliseconds), timezone);
@@ -162,10 +172,12 @@ export function TimeLimitEditForm({
   function handleSubmit() {
     const reopenWithoutLimit = showReopenRadios && form.reopen_without_limit;
     const action = reopenWithoutLimit ? 'reopen_without_limit' : form.action;
+    const actionUsesTimeAdd =
+      action === 'set_total' || action === 'set_rem' || action === 'add' || action === 'subtract';
     mutation.mutate({
       assessmentInstanceIds,
       action,
-      time_add: form.time_add,
+      time_add: actionUsesTimeAdd ? timeAddValue : undefined,
       date: form.date,
       // In single mode we always re-open the targeted instance (matching the
       // legacy ✎ behavior). In bulk mode this is the explicit checkbox.
@@ -259,10 +271,7 @@ export function TimeLimitEditForm({
           <TimeLimitExplanation action={form.action} />
         </p>
       ) : null}
-      {showTimeLimitOptions &&
-      form.action !== 'set_exact' &&
-      form.action !== 'remove' &&
-      form.action !== 'expire' ? (
+      {showTimeAddInput ? (
         <div className="input-group mb-2">
           <input
             className="form-control time-limit-field"
@@ -270,7 +279,8 @@ export function TimeLimitEditForm({
             name="time_add"
             aria-label="Time value"
             value={form.time_add}
-            onChange={(e) => updateFormState('time_add', Number.parseFloat(e.currentTarget.value))}
+            required
+            onChange={(e) => updateFormState('time_add', e.currentTarget.value)}
           />
           <span className="input-group-text time-limit-field">minutes</span>
         </div>

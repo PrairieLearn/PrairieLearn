@@ -18,6 +18,7 @@ export {
   selectBatchedMigrationForTimestamp,
   selectRecentJobsWithStatus,
   retryFailedBatchedMigrationJobs,
+  selectTableIdBounds,
 } from './batched-migrations/index.js';
 
 export { extractTimestampFromFilename } from './load-migrations.js';
