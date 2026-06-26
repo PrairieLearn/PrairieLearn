@@ -14,6 +14,7 @@ import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzA
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
 import type { ResLocalsInstructorQuestion } from '../middlewares/selectAndAuthzInstructorQuestion.js';
+import type { ResLocalsPublicAssessment } from '../middlewares/selectAndAuthzPublicAssessment.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
@@ -33,6 +34,10 @@ interface ResLocalsForPageLookup {
     course: Course;
     course_instance: CourseInstance;
   };
+  'public-assessment': ResLocals & {
+    course: Course;
+    course_instance: CourseInstance;
+  } & ResLocalsPublicAssessment;
   'instructor-instance-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
@@ -81,7 +86,10 @@ type PageType = keyof ResLocalsForPageLookup;
  *
  * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
  * - `course`: A course page.
+ * - `public-course`: A public (shared) course page.
  * - `course-instance`: A course instance page.
+ * - `public-course-instance`: A public (shared) course instance page.
+ * - `public-assessment`: A public (shared) assessment page.
  * - `instructor-instance-question`: An instructor instance question page.
  * - `instructor-question`: An instructor question page.
  * - `instructor-assessment-question`: An instructor assessment question page.
