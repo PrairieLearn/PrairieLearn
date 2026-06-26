@@ -265,54 +265,33 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-excalidraw' },
     { name: 'pl-file-upload' },
     { name: 'pl-image-capture' },
-    {
-      name: 'pl-matching',
-      children: [{ name: 'pl-statement' }, { name: 'pl-option' }],
-    },
+    { name: 'pl-matching' },
     { name: 'pl-matrix-component-input' },
     { name: 'pl-matrix-input' },
     { name: 'pl-units-input' },
     // Decorative
     { name: 'pl-card' },
     { name: 'pl-dataframe' },
-    {
-      name: 'pl-external-grader-variables',
-      children: [{ name: 'pl-variable' }],
-    },
+    { name: 'pl-external-grader-variables' },
     { name: 'pl-figure' },
     { name: 'pl-file-download' },
     { name: 'pl-file-preview' },
     { name: 'pl-matrix-latex' },
     { name: 'pl-python-variable' },
-    {
-      name: 'pl-template',
-      children: [{ name: 'pl-variable' }],
-    },
-    {
-      name: 'pl-variable-output',
-      children: [{ name: 'pl-variable' }, { name: 'variable' }],
-    },
+    { name: 'pl-template' },
+    { name: 'pl-variable-output' },
     { name: 'pl-xss-safe' },
-    {
-      name: 'pl-overlay',
-      children: [{ name: 'pl-background' }, { name: 'pl-location' }],
-    },
+    { name: 'pl-overlay' },
     // Conditional elements
     { name: 'pl-external-grader-results' },
-    {
-      name: 'pl-hidden-hints',
-      children: [{ name: 'pl-hint' }],
-    },
+    { name: 'pl-hidden-hints' },
     { name: 'pl-hide-in-manual-grading' },
     { name: 'pl-manual-grading-only' },
     { name: 'pl-hide-in-answer-panel' },
     { name: 'pl-workspace' },
     { name: 'pl-hide-in-panel' },
     // Deprecated elements
-    {
-      name: 'pl-dropdown',
-      children: [{ name: 'pl-answer' }],
-    },
+    { name: 'pl-dropdown' },
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
     {

@@ -1150,16 +1150,6 @@
     },
     {
       "name": "pl-matching",
-      "children": [
-        {
-          "name": "pl-statement",
-          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-statement.json"
-        },
-        {
-          "name": "pl-option",
-          "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-option.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-matching/schemas/pl-matching.json"
     },
     {
@@ -1184,12 +1174,6 @@
     },
     {
       "name": "pl-external-grader-variables",
-      "children": [
-        {
-          "name": "pl-variable",
-          "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-variable.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-external-grader-variables/schemas/pl-external-grader-variables.json"
     },
     {
@@ -1214,26 +1198,10 @@
     },
     {
       "name": "pl-template",
-      "children": [
-        {
-          "name": "pl-variable",
-          "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-variable.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-template/schemas/pl-template.json"
     },
     {
       "name": "pl-variable-output",
-      "children": [
-        {
-          "name": "pl-variable",
-          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable.json"
-        },
-        {
-          "name": "variable",
-          "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/variable.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-variable-output/schemas/pl-variable-output.json"
     },
     {
@@ -1242,16 +1210,6 @@
     },
     {
       "name": "pl-overlay",
-      "children": [
-        {
-          "name": "pl-background",
-          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-background.json"
-        },
-        {
-          "name": "pl-location",
-          "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-location.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-overlay/schemas/pl-overlay.json"
     },
     {
@@ -1260,12 +1218,6 @@
     },
     {
       "name": "pl-hidden-hints",
-      "children": [
-        {
-          "name": "pl-hint",
-          "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hint.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-hidden-hints/schemas/pl-hidden-hints.json"
     },
     {
@@ -1289,12 +1241,6 @@
     },
     {
       "name": "pl-dropdown",
-      "children": [
-        {
-          "name": "pl-answer",
-          "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-answer.json"
-        }
-      ],
       "schema": "./apps/prairielearn/elements/pl-dropdown/schemas/pl-dropdown.json"
     },
     {

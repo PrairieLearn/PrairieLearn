@@ -6,7 +6,8 @@
       "type": "string"
     },
     "draw-pin": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "label1": {
       "type": "string"

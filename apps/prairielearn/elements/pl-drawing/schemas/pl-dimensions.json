@@ -23,10 +23,12 @@
       "format": "number"
     },
     "draw-end-arrow": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "draw-start-arrow": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "end-support-line": {
       "type": "string",

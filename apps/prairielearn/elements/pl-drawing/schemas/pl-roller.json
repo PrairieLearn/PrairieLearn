@@ -10,10 +10,12 @@
       "type": "string"
     },
     "draw-ground": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "draw-pin": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "height": {
       "type": "string",

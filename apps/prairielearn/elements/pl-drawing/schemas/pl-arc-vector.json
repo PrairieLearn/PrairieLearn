@@ -3,7 +3,8 @@
   "type": "object",
   "properties": {
     "anchor-is-tail": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "arrow-head-length": {
       "type": "string",
@@ -25,7 +26,8 @@
       "format": "boolean"
     },
     "draw-center": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "draw-error-box": {
       "type": "string",

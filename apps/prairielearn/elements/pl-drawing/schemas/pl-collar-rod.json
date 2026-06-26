@@ -14,7 +14,8 @@
       "format": "boolean"
     },
     "draw-pin": {
-      "type": "string"
+      "type": "string",
+      "format": "boolean"
     },
     "h1": {
       "type": "string",
