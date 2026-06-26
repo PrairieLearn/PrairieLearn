@@ -1,5 +1,6 @@
-import { useState } from 'react';
 import { Badge, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+
+import { useModalState } from '@prairielearn/ui';
 
 import {
   MAX_BULK_QUESTION_SELECTION,
@@ -37,13 +38,12 @@ export function QuestionSelectionToolbar({
   urlPrefix: string;
   onActionSuccess: (message: string) => void;
 }) {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [showChangeTopicModal, setShowChangeTopicModal] = useState(false);
-  const [showAddTagsModal, setShowAddTagsModal] = useState(false);
-  const [showRemoveTagsModal, setShowRemoveTagsModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const questionIds = selectedQuestions.map((question) => question.id);
+  const addAssessmentModal = useModalState<SafeQuestionsPageData[]>();
+  const removeAssessmentModal = useModalState<SafeQuestionsPageData[]>();
+  const changeTopicModal = useModalState<SafeQuestionsPageData[]>();
+  const addTagsModal = useModalState<SafeQuestionsPageData[]>();
+  const removeTagsModal = useModalState<SafeQuestionsPageData[]>();
+  const deleteModal = useModalState<SafeQuestionsPageData[]>();
   const selectionLimitExceeded = selectedQuestions.length > MAX_BULK_QUESTION_SELECTION;
   const selectionLimitMessage = `Select ${MAX_BULK_QUESTION_SELECTION} or fewer questions to use bulk actions`;
 
@@ -71,100 +71,115 @@ export function QuestionSelectionToolbar({
           variant="light"
           disabled={selectionLimitExceeded}
         >
-          <Dropdown.Item onClick={() => setShowAddModal(true)}>
+          <Dropdown.Item onClick={() => addAssessmentModal.showWithData(selectedQuestions)}>
             <i className="bi bi-plus-square me-2" aria-hidden="true" />
             Add to assessments
           </Dropdown.Item>
-          <Dropdown.Item onClick={() => setShowRemoveModal(true)}>
+          <Dropdown.Item onClick={() => removeAssessmentModal.showWithData(selectedQuestions)}>
             <i className="bi bi-dash-square me-2" aria-hidden="true" />
             Remove from assessments
           </Dropdown.Item>
           <Dropdown.Divider />
-          <Dropdown.Item onClick={() => setShowChangeTopicModal(true)}>
+          <Dropdown.Item onClick={() => changeTopicModal.showWithData(selectedQuestions)}>
             <i className="bi bi-collection me-2" aria-hidden="true" />
             Change topic
           </Dropdown.Item>
-          <Dropdown.Item onClick={() => setShowAddTagsModal(true)}>
+          <Dropdown.Item onClick={() => addTagsModal.showWithData(selectedQuestions)}>
             <i className="bi bi-bookmark-plus me-2" aria-hidden="true" />
             Add tags
           </Dropdown.Item>
-          <Dropdown.Item onClick={() => setShowRemoveTagsModal(true)}>
+          <Dropdown.Item onClick={() => removeTagsModal.showWithData(selectedQuestions)}>
             <i className="bi bi-bookmark-dash me-2" aria-hidden="true" />
             Remove tags
           </Dropdown.Item>
           <Dropdown.Divider />
-          <Dropdown.Item className="text-danger" onClick={() => setShowDeleteModal(true)}>
+          <Dropdown.Item
+            className="text-danger"
+            onClick={() => deleteModal.showWithData(selectedQuestions)}
+          >
             <i className="bi bi-trash3 me-2" aria-hidden="true" />
             Delete
           </Dropdown.Item>
         </DropdownButton>
       </div>
 
-      <AssessmentMembershipModal
-        mode="add"
-        show={showAddModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        courseInstances={courseInstances}
-        currentCourseInstanceId={currentCourseInstanceId}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowAddModal(false)}
-      />
-      <AssessmentMembershipModal
-        mode="remove"
-        show={showRemoveModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        courseInstances={courseInstances}
-        currentCourseInstanceId={currentCourseInstanceId}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowRemoveModal(false)}
-      />
-      <ChangeTopicModal
-        show={showChangeTopicModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        topics={topics}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowChangeTopicModal(false)}
-      />
-      <UpdateTagsModal
-        mode="add"
-        show={showAddTagsModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        tags={tags}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowAddTagsModal(false)}
-      />
-      <UpdateTagsModal
-        mode="remove"
-        show={showRemoveTagsModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        tags={tags}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowRemoveTagsModal(false)}
-      />
-      <DeleteQuestionsModal
-        show={showDeleteModal}
-        selectedQuestions={selectedQuestions}
-        questionIds={questionIds}
-        urlPrefix={urlPrefix}
-        clearSelection={clearSelection}
-        onActionSuccess={onActionSuccess}
-        onHide={() => setShowDeleteModal(false)}
-      />
+      {addAssessmentModal.data && (
+        <AssessmentMembershipModal
+          mode="add"
+          show={addAssessmentModal.show}
+          selectedQuestions={addAssessmentModal.data}
+          questionIds={addAssessmentModal.data.map((q) => q.id)}
+          courseInstances={courseInstances}
+          currentCourseInstanceId={currentCourseInstanceId}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={addAssessmentModal.hide}
+        />
+      )}
+      {removeAssessmentModal.data && (
+        <AssessmentMembershipModal
+          mode="remove"
+          show={removeAssessmentModal.show}
+          selectedQuestions={removeAssessmentModal.data}
+          questionIds={removeAssessmentModal.data.map((q) => q.id)}
+          courseInstances={courseInstances}
+          currentCourseInstanceId={currentCourseInstanceId}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={removeAssessmentModal.hide}
+        />
+      )}
+      {changeTopicModal.data && (
+        <ChangeTopicModal
+          show={changeTopicModal.show}
+          selectedQuestions={changeTopicModal.data}
+          questionIds={changeTopicModal.data.map((q) => q.id)}
+          topics={topics}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={changeTopicModal.hide}
+        />
+      )}
+      {addTagsModal.data && (
+        <UpdateTagsModal
+          mode="add"
+          show={addTagsModal.show}
+          selectedQuestions={addTagsModal.data}
+          questionIds={addTagsModal.data.map((q) => q.id)}
+          tags={tags}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={addTagsModal.hide}
+        />
+      )}
+      {removeTagsModal.data && (
+        <UpdateTagsModal
+          mode="remove"
+          show={removeTagsModal.show}
+          selectedQuestions={removeTagsModal.data}
+          questionIds={removeTagsModal.data.map((q) => q.id)}
+          tags={tags}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={removeTagsModal.hide}
+        />
+      )}
+      {deleteModal.data && (
+        <DeleteQuestionsModal
+          show={deleteModal.show}
+          selectedQuestions={deleteModal.data}
+          questionIds={deleteModal.data.map((q) => q.id)}
+          urlPrefix={urlPrefix}
+          clearSelection={clearSelection}
+          onActionSuccess={onActionSuccess}
+          onHide={deleteModal.hide}
+        />
+      )}
     </>
   );
 }
