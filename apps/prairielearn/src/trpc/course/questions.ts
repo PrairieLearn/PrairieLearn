@@ -145,7 +145,10 @@ async function mutateQuestionInfoFiles({
   selectedQuestions: Question[];
   describe: (changedCount: number) => string;
   syncFailureMessage: string;
-  apply: (questionInfo: QuestionJsonInput) => QuestionJsonInput;
+  apply: (questionInfo: QuestionJsonInput) => {
+    questionInfo: QuestionJsonInput;
+    changed: boolean;
+  };
 }) {
   const results: { questionId: string; changed: boolean }[] = [];
   const editors: FileModifyEditor[] = [];
@@ -154,10 +157,13 @@ async function mutateQuestionInfoFiles({
     const questionDirectory = z.string().parse(question.directory ?? question.qid);
 
     const infoPath = path.join(ctx.course.path, 'questions', questionDirectory, 'info.json');
+    let changedCount = 0;
 
     const prepared = await prepareJsonFileEditor<QuestionJsonInput>({
       applyChanges: (questionInfo) => {
-        return apply(questionInfo);
+        const applied = apply(questionInfo);
+        if (applied.changed) changedCount += 1;
+        return applied.questionInfo;
       },
       jsonPath: infoPath,
       // This edit is initiated from a bulk action, not from an open file hash.
@@ -173,15 +179,14 @@ async function mutateQuestionInfoFiles({
       });
     }
 
-    const changed = prepared.editor.shouldEdit();
-    if (changed) editors.push(prepared.editor);
-    results.push({ questionId: question.id, changed });
+    if (changedCount > 0) editors.push(prepared.editor);
+    results.push({ questionId: question.id, changed: changedCount > 0 });
   }
 
-  const changedCount = editors.length;
-  if (changedCount > 0) {
+  const totalChangedCount = editors.length;
+  if (totalChangedCount > 0) {
     const editor = new MultiEditor(
-      { locals: ctx.locals, description: describe(changedCount) },
+      { locals: ctx.locals, description: describe(totalChangedCount) },
       editors,
     );
     const serverJob = await editor.prepareServerJob();
@@ -199,8 +204,8 @@ async function mutateQuestionInfoFiles({
   }
 
   return {
-    changedCount,
-    unchangedCount: selectedQuestions.length - changedCount,
+    changedCount: totalChangedCount,
+    unchangedCount: selectedQuestions.length - totalChangedCount,
     results,
   };
 }
@@ -455,8 +460,9 @@ const changeTopic = t.procedure
         `Change topic to ${input.topic} for ${changedCount} ${changedCount === 1 ? 'question' : 'questions'}`,
       syncFailureMessage: 'Failed to change question topic',
       apply: (questionInfo) => {
+        const changed = questionInfo.topic !== input.topic;
         questionInfo.topic = input.topic;
-        return questionInfo;
+        return { questionInfo, changed };
       },
     });
   });
@@ -495,12 +501,13 @@ const addTags = t.procedure
       apply: (questionInfo) => {
         const existingTags = questionInfo.tags ?? [];
         const nextTags = [...new Set([...existingTags, ...requestedTags])];
+        const changed = nextTags.length !== existingTags.length;
         questionInfo.tags = propertyValueWithDefault(
           questionInfo.tags,
           nextTags,
           (val: string[] | undefined) => !val || val.length === 0,
         );
-        return questionInfo;
+        return { questionInfo, changed };
       },
     });
   });
@@ -539,12 +546,13 @@ const removeTags = t.procedure
       apply: (questionInfo) => {
         const existingTags = questionInfo.tags ?? [];
         const nextTags = existingTags.filter((tag) => !requestedTags.includes(tag));
+        const changed = nextTags.length !== existingTags.length;
         questionInfo.tags = propertyValueWithDefault(
           questionInfo.tags,
           nextTags,
           (val: string[] | undefined) => !val || val.length === 0,
         );
-        return questionInfo;
+        return { questionInfo, changed };
       },
     });
   });
