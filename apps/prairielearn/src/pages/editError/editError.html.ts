@@ -4,6 +4,7 @@ import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.ts';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
@@ -11,7 +12,7 @@ export function EditError({
   jobSequence,
   outcome,
 }: {
-  resLocals: any;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   jobSequence: JobSequenceWithTokens;
   outcome: EditOutcome;
 }) {
@@ -25,20 +26,20 @@ export function EditError({
       type: 'plain',
       page: 'error',
     },
-    content: html`
-      <script>
-        $(function () {
-          const button = document.querySelector('#job-sequence-results-button');
-          $('#job-sequence-results')
-            .on('show.bs.collapse', () => {
-              button.textContent = 'Hide detail';
-            })
-            .on('hide.bs.collapse', () => {
-              button.textContent = 'Show detail';
-            });
+    headContent: html`
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const button = document.getElementById('job-sequence-results-button');
+        const results = document.getElementById('job-sequence-results');
+        results.addEventListener('show.bs.collapse', () => {
+          button.textContent = 'Hide detail';
+        });
+        results.addEventListener('hide.bs.collapse', () => {
+          button.textContent = 'Show detail';
         });
       </script>
-
+    `,
+    content: html`
       <div class="card mb-4">
         <div
           class="card-header ${isWarning

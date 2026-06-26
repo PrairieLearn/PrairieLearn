@@ -1105,7 +1105,7 @@ function testUploadMultipleFiles(params: {
       const res = await fetch(params.url, { method: 'POST', body: formData });
       assert.isNotOk(res.ok);
       const text = await res.text();
-      assert.include(text, 'Duplicate file names in upload');
+      assert.include(text, 'Duplicate destination paths in upload');
     });
   });
 }
