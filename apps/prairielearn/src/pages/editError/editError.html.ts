@@ -25,20 +25,20 @@ export function EditError({
       type: 'plain',
       page: 'error',
     },
-    content: html`
-      <script>
-        $(function () {
-          const button = document.querySelector('#job-sequence-results-button');
-          $('#job-sequence-results')
-            .on('show.bs.collapse', () => {
-              button.textContent = 'Hide detail';
-            })
-            .on('hide.bs.collapse', () => {
-              button.textContent = 'Show detail';
-            });
+    headContent: html`
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const button = document.getElementById('job-sequence-results-button');
+        const results = document.getElementById('job-sequence-results');
+        results.addEventListener('show.bs.collapse', () => {
+          button.textContent = 'Hide detail';
+        });
+        results.addEventListener('hide.bs.collapse', () => {
+          button.textContent = 'Show detail';
         });
       </script>
-
+    `,
+    content: html`
       <div class="card mb-4">
         <div
           class="card-header ${isWarning
