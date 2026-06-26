@@ -1821,7 +1821,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).authzPublicCourse,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourse,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1902,21 +1902,18 @@ export async function initExpress(): Promise<Express> {
       res.locals.navbarType = 'public';
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).authzPublicCourseInstance,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
   ]);
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).authzPublicCourseInstanceSource,
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/publicAssessments/publicAssessments.js')).default,
-  ]);
+  );
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
   });
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
-    [
-      (await import('./middlewares/selectAndAuthzPublicAssessment.js')).default,
-      (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
-    ],
+    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////

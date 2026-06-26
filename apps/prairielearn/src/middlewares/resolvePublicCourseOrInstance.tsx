@@ -70,9 +70,12 @@ async function enforcePublicCourseSharing(res: Response, course: Course): Promis
  * sharing is enabled, and that the course has a sharing name, then sets
  * `res.locals.course`.
  *
- * If authorization fails, responds with a 404 Not Found error.
+ * This does **not** authorize access to any specific shared resource; pages are
+ * responsible for checking the relevant `share_*` flags themselves.
+ *
+ * If resolution fails, responds with a 404 Not Found error.
  */
-export const authzPublicCourse = typedAsyncHandler<'public-course'>(async (req, res, next) => {
+export const resolvePublicCourse = typedAsyncHandler<'public-course'>(async (req, res, next) => {
   const course = await selectOptionalCourseById(req.params.course_id);
   if (!course) throw new HttpStatusError(404, 'Not Found');
 
@@ -88,14 +91,18 @@ export const authzPublicCourse = typedAsyncHandler<'public-course'>(async (req, 
  * its course) exist, that question sharing is enabled, and that the course has a
  * sharing name, then sets `res.locals.course` and `res.locals.course_instance`.
  *
- * It does **not** check whether the course instance itself is shared publicly,
- * since individual assessments can be shared publicly without sharing the entire
- * course instance. Pages that expose course-instance-level content (e.g. the list
- * of all assessments) must additionally use `authzPublicCourseInstanceSource`.
+ * This does **not** authorize access to any specific shared resource. In
+ * particular, it does **not** check whether the course instance itself is shared
+ * publicly, since individual assessments can be shared publicly without sharing
+ * the entire course instance. Pages are responsible for checking the relevant
+ * `share_*` flags themselves: e.g. pages that expose course-instance-level
+ * content (like the list of all assessments) must check
+ * `course_instance.share_source_publicly`, while an individual shared assessment
+ * page checks the assessment's own `share_source_publicly`.
  *
- * If authorization fails, responds with a 404 Not Found error.
+ * If resolution fails, responds with a 404 Not Found error.
  */
-export const authzPublicCourseInstance = typedAsyncHandler<'public-course-instance'>(
+export const resolvePublicCourseInstance = typedAsyncHandler<'public-course-instance'>(
   async (req, res, next) => {
     const course_instance = await selectOptionalCourseInstanceById(req.params.course_instance_id);
     if (!course_instance) throw new HttpStatusError(404, 'Not Found');
@@ -107,25 +114,6 @@ export const authzPublicCourseInstance = typedAsyncHandler<'public-course-instan
     res.locals.course_instance = course_instance;
 
     if (await enforcePublicCourseSharing(res, course)) return;
-
-    next();
-  },
-);
-
-/**
- * Gates pages that expose course-instance-level content (e.g. the list of all of
- * an instance's publicly shared assessments) on the course instance itself being
- * shared publicly.
- *
- * Must run after `authzPublicCourseInstance`, which sets `res.locals.course_instance`.
- *
- * If the course instance is not shared publicly, responds with a 404 Not Found error.
- */
-export const authzPublicCourseInstanceSource = typedAsyncHandler<'public-course-instance'>(
-  async (req, res, next) => {
-    if (!res.locals.course_instance.share_source_publicly) {
-      throw new HttpStatusError(404, 'Not Found');
-    }
 
     next();
   },
