@@ -182,23 +182,25 @@ router.post(
           if (uploadTarget == null) {
             throw new Error('Either file_path or working_path must be provided');
           }
-          const duplicateNames = Object.entries(countBy(req.files, (file) => file.originalname))
+          const fileEntries = req.files.map((file) => {
+            const filePath =
+              uploadTarget.type === 'file'
+                ? path.join(res.locals.course.path, uploadTarget.path)
+                : path.join(uploadTarget.path, file.originalname);
+            return { filePath, buffer: file.buffer };
+          });
+
+          const duplicatePaths = Object.entries(countBy(fileEntries, (file) => file.filePath))
             .filter(([, count]) => count > 1)
-            .map(([name]) => name);
-          if (duplicateNames.length > 0) {
+            .map(([filePath]) => filePath);
+          if (duplicatePaths.length > 0) {
             throw new Error(
-              `Duplicate file names in upload: ${duplicateNames.join(', ')}. Please rename files to have unique names and try again.`,
+              `Duplicate destination paths in upload: ${duplicatePaths.join(', ')}. Please rename files to have unique destinations and try again.`,
             );
           }
 
           const files = Object.fromEntries(
-            req.files.map((file) => {
-              const filePath =
-                uploadTarget.type === 'file'
-                  ? path.join(res.locals.course.path, uploadTarget.path)
-                  : path.join(uploadTarget.path, file.originalname);
-              return [filePath, file.buffer];
-            }),
+            fileEntries.map(({ filePath, buffer }) => [filePath, buffer]),
           );
 
           const result = await runEditorJob(
