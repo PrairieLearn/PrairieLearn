@@ -7,6 +7,7 @@ import type {
   CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
 } from '../ee/lib/ai-grading/types.js';
+import { formatStudentQuestionTitle } from '../lib/assessment.shared.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
@@ -459,16 +460,23 @@ export function QuestionTitle({
   const hasTitle = !!question.title?.trim();
 
   if (questionContext === 'student_homework') {
-    return showQuestionTitles && hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
+    return formatStudentQuestionTitle({
+      assessmentType: 'Homework',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
   }
 
-  // Questions titles are controlled by an assessment setting.
-  // The default depends on the assessment type.
   if (questionContext === 'student_exam') {
-    return showQuestionTitles && hasTitle
-      ? `Question ${questionNumber}: ${question.title}`
-      : `Question ${questionNumber}`;
+    return formatStudentQuestionTitle({
+      assessmentType: 'Exam',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
   }
+
   return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
 }
 
@@ -881,7 +889,7 @@ function QuestionPanel({
             questionContext,
             question,
             questionNumber: instance_question_info?.question_number,
-            // The assessment setting only applies in the student exam context.
+            // Student contexts honor the assessment setting; other contexts always render titles.
             showQuestionTitles:
               questionContext === 'student_exam' || questionContext === 'student_homework'
                 ? !!resLocals.assessment?.show_question_titles

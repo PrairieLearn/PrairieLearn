@@ -42,7 +42,7 @@ In addition to those properties, the following properties can be used to further
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
 | [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
-| `showQuestionTitles`                                           | boolean | Whether to show question titles to students. ( Exam (default: `false`) Homeworks (default: `true`) )                        |
+| `showQuestionTitles`                                           | boolean | Whether to show question titles to students. (default: `false` for Exam, `true` for Homework)                               |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -1068,8 +1068,6 @@ For example:
 ## Question titles
 
 By default, `Homework` assessments show question titles to students, while `Exam` assessments hide them.
-
-If the `showQuestionTitles` option is not specified in the `infoAssessment.json` file, these default values are used.
 
 This behavior can be overridden by setting `showQuestionTitles` as a top-level option in the `infoAssessment.json` file.
 
