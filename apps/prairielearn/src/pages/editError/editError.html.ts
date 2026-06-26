@@ -4,6 +4,7 @@ import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.ts';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
@@ -11,7 +12,7 @@ export function EditError({
   jobSequence,
   outcome,
 }: {
-  resLocals: any;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   jobSequence: JobSequenceWithTokens;
   outcome: EditOutcome;
 }) {

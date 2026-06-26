@@ -15,6 +15,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { isDraftQid } from '../lib/draft-question.ts';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
@@ -35,7 +36,6 @@ import * as schemas from '../schemas/index.js';
 
 import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
-import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true, formats: { uuid: true } });
