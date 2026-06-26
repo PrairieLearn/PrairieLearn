@@ -159,7 +159,7 @@ async function mutateQuestionInfoFiles({
     const infoPath = path.join(ctx.course.path, 'questions', questionDirectory, 'info.json');
     let changedCount = 0;
 
-    const prepared = await prepareJsonFileEditor<QuestionJsonInput>({
+    const result = await prepareJsonFileEditor<QuestionJsonInput>({
       applyChanges: (questionInfo) => {
         const applied = apply(questionInfo);
         if (applied.changed) changedCount += 1;
@@ -172,14 +172,9 @@ async function mutateQuestionInfoFiles({
       container: { rootPath: ctx.course.path, invalidRootPaths: [] },
     });
 
-    if (!prepared.success) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: 'Failed to update one or more selected questions due to a file conflict',
-      });
-    }
-
-    if (changedCount > 0) editors.push(prepared.editor);
+    // `origHash` is null, so `result` is always a success; only bundle an
+    // editor when topic/tag values actually changed.
+    if (result.success && changedCount > 0) editors.push(result.editor);
     results.push({ questionId: question.id, changed: changedCount > 0 });
   }
 
