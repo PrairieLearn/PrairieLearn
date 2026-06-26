@@ -22,7 +22,7 @@ function assessmentLiveDir() {
   return path.join(courseRepo.courseLiveDir, 'courseInstances', 'Fa18', 'assessments');
 }
 
-describe('Creating an assessment', () => {
+describe('Creating an assessment', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
@@ -31,7 +31,7 @@ describe('Creating an assessment', () => {
 
   afterAll(helperServer.after);
 
-  test('create a new assessment without module', { concurrent: false }, async () => {
+  test('create a new assessment without module', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -63,7 +63,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  test('verify the assessment has the correct info', { concurrent: false }, async () => {
+  test('verify the assessment has the correct info', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir(),
       'HW2', // Verify that the aid was used as the assessment folder's name
@@ -75,7 +75,7 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.set, 'Practice Quiz');
   });
 
-  test('create new assessment with module', { concurrent: false }, async () => {
+  test('create new assessment with module', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -108,24 +108,20 @@ describe('Creating an assessment', () => {
     );
   });
 
-  test(
-    'verify the assessment has the correct info, including the module',
-    { concurrent: false },
-    async () => {
-      const assessmentLiveInfoPath = path.join(
-        assessmentLiveDir(),
-        'HW3', // Verify that the aid was used as the assessment folder's name
-        'infoAssessment.json',
-      );
-      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      assert.equal(assessmentInfo.title, 'Test Title 3');
-      assert.equal(assessmentInfo.type, 'Homework');
-      assert.equal(assessmentInfo.set, 'Practice Quiz');
-      assert.equal(assessmentInfo.module, 'Module2');
-    },
-  );
+  test('verify the assessment has the correct info, including the module', async () => {
+    const assessmentLiveInfoPath = path.join(
+      assessmentLiveDir(),
+      'HW3', // Verify that the aid was used as the assessment folder's name
+      'infoAssessment.json',
+    );
+    const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+    assert.equal(assessmentInfo.title, 'Test Title 3');
+    assert.equal(assessmentInfo.type, 'Homework');
+    assert.equal(assessmentInfo.set, 'Practice Quiz');
+    assert.equal(assessmentInfo.module, 'Module2');
+  });
 
-  test('create new assessment with duplicate aid, title', { concurrent: false }, async () => {
+  test('create new assessment with duplicate aid, title', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -157,7 +153,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  test('verify that the title and aid had 2 appended to them', { concurrent: false }, async () => {
+  test('verify that the title and aid had 2 appended to them', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir(),
       'HW2_2', // Verify that the aid was used as the assessment folder's name
@@ -169,71 +165,63 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.set, 'Practice Quiz');
   });
 
-  test(
-    'should not be able to create an assessment without fields',
-    { concurrent: false },
-    async () => {
-      // Fetch the assessments page for the course instance
-      const assessmentsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-      );
+  test('should not be able to create an assessment without fields', async () => {
+    // Fetch the assessments page for the course instance
+    const assessmentsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
 
-      assert.equal(assessmentsPageResponse.status, 200);
+    assert.equal(assessmentsPageResponse.status, 200);
 
-      // Create a new assessment without a module
-      const assessmentCreationResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_assessment',
-            __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
-          }),
-        },
-      );
+    // Create a new assessment without a module
+    const assessmentCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_assessment',
+          __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
+        }),
+      },
+    );
 
-      assert.equal(assessmentCreationResponse.status, 400);
-      assert.equal(
-        assessmentCreationResponse.url,
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-      );
-    },
-  );
+    assert.equal(assessmentCreationResponse.status, 400);
+    assert.equal(
+      assessmentCreationResponse.url,
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
+  });
 
-  test(
-    'should not be able to create an assessment with aid not contained in the root directory',
-    { concurrent: false },
-    async () => {
-      // Fetch the assessments page for the course instance
-      const assessmentsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-      );
+  test('should not be able to create an assessment with aid not contained in the root directory', async () => {
+    // Fetch the assessments page for the course instance
+    const assessmentsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
 
-      assert.equal(assessmentsPageResponse.status, 200);
+    assert.equal(assessmentsPageResponse.status, 200);
 
-      // Create a new assessment with aid that is not contained in the root directory
-      const assessmentCreationResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_assessment',
-            __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test Assessment',
-            aid: '../test-assessment',
-            type: 'Homework',
-            set: 'Practice Quiz',
-          }),
-        },
-      );
+    // Create a new assessment with aid that is not contained in the root directory
+    const assessmentCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_assessment',
+          __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Test Assessment',
+          aid: '../test-assessment',
+          type: 'Homework',
+          set: 'Practice Quiz',
+        }),
+      },
+    );
 
-      assert.equal(assessmentCreationResponse.status, 400);
-      assert.equal(
-        assessmentCreationResponse.url,
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
-      );
-    },
-  );
+    assert.equal(assessmentCreationResponse.status, 400);
+    assert.equal(
+      assessmentCreationResponse.url,
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
+    );
+  });
 });

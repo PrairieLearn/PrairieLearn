@@ -262,6 +262,7 @@ export function InstanceQuestionPoints({
     | 'status'
     | 'requires_manual_grading'
     | 'last_grader'
+    | 'used_for_grade'
   >;
   assessment_question: Pick<
     AssessmentQuestion,
@@ -297,7 +298,7 @@ export function InstanceQuestionPoints({
   }
 
   return html`
-    <span class="text-nowrap">
+    <span class="text-nowrap ${instance_question.used_for_grade === false ? 'text-muted' : ''}">
       ${
         // If the question is unanswered show a dash instead of 0 points, unless
         // the question was manually graded or a regrading process forced the
@@ -313,6 +314,19 @@ export function InstanceQuestionPoints({
               : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
       }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
+      ${instance_question.used_for_grade === false && component === 'total' && (points ?? 0) !== 0
+        ? html`
+            <button
+              type="button"
+              class="btn btn-xs"
+              data-bs-toggle="tooltip"
+              aria-label="Not included in grade"
+              title="This zone uses only the best questions for score, and this question is not included."
+            >
+              <i class="far fa-question-circle" aria-hidden="true"></i>
+            </button>
+          `
+        : ''}
     </span>
   `;
 }

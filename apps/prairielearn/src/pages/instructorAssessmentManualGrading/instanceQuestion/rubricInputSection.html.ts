@@ -23,6 +23,7 @@ export function RubricInputSection({
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
+  const enableKeyboardShortcuts = context === 'main' && !disable;
 
   return html`
     <style>
@@ -46,6 +47,7 @@ export function RubricInputSection({
       disable,
       aiGradingInfo,
       showEditRubricButton: context === 'main',
+      enableKeyboardShortcuts,
     })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
@@ -54,8 +56,12 @@ export function RubricInputSection({
         disable
           ? 'd-none'
           : ''}"
+        ${enableKeyboardShortcuts ? 'data-key-binding="a"' : ''}
       >
         Apply adjustment
+        ${enableKeyboardShortcuts
+          ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">A</kbd>`
+          : ''}
       </button>
       <div
         class="js-adjust-points-input-container w-25 ${rubric_grading?.adjust_points
@@ -114,6 +120,7 @@ function RubricItems({
   disable,
   aiGradingInfo,
   showEditRubricButton,
+  enableKeyboardShortcuts,
 }: {
   rubric_items: RubricData['rubric_items'][0][] | null | undefined;
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
@@ -121,6 +128,7 @@ function RubricItems({
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   showEditRubricButton: boolean;
+  enableKeyboardShortcuts: boolean;
 }) {
   const ai_selected_rubric_item_ids_set = aiGradingInfo?.submissionManuallyGraded
     ? new Set(aiGradingInfo.selectedRubricItemIds)
@@ -158,6 +166,7 @@ function RubricItems({
             item_grading: rubric_grading_items?.[item.rubric_item.id],
             assessment_question,
             disable,
+            enableKeyboardShortcuts,
             ai_checked: ai_selected_rubric_item_ids_set
               ? ai_selected_rubric_item_ids_set.has(item.rubric_item.id)
               : undefined,
@@ -172,12 +181,14 @@ function RubricItem({
   item_grading,
   assessment_question,
   disable,
+  enableKeyboardShortcuts,
   ai_checked,
 }: {
   item: RenderedRubricItem;
   item_grading: RubricGradingItem | undefined | null;
   assessment_question: AssessmentQuestion;
   disable: boolean;
+  enableKeyboardShortcuts: boolean;
   ai_checked?: boolean;
 }) {
   return html`
@@ -206,9 +217,15 @@ function RubricItem({
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
           data-rubric-item-points="${item.rubric_item.points}"
-          data-key-binding="${item.rubric_item.key_binding}"
+          ${enableKeyboardShortcuts && item.rubric_item.key_binding
+            ? html`data-key-binding="${item.rubric_item.key_binding}"`
+            : ''}
         />
-        <span class="badge text-bg-info">${item.rubric_item.key_binding}</span>
+        ${enableKeyboardShortcuts && item.rubric_item.key_binding
+          ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent"
+              >${item.rubric_item.key_binding}</kbd
+            >`
+          : ''}
         <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
             <span class="js-manual-grading-points" data-testid="rubric-item-points">

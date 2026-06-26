@@ -19,7 +19,7 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoFixture;
 
-describe('Creating a question', () => {
+describe('Creating a question', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
@@ -28,7 +28,7 @@ describe('Creating a question', () => {
 
   afterAll(helperServer.after);
 
-  test('create a new empty question', { concurrent: false }, async () => {
+  test('create a new empty question', async () => {
     // Fetch the questions page for the course instance. This will fail loudly
     // if any of the template questions are misconfigured.
     const questionsResponse = await fetchCheerio(
@@ -61,62 +61,54 @@ describe('Creating a question', () => {
     );
   });
 
-  test(
-    'verify that the new empty question has the correct info',
-    { concurrent: false },
-    async () => {
-      const questionLiveInfoPath = path.join(
-        courseRepo.courseLiveDir,
-        'questions',
-        'test-question', // Verify that the qid was used as the question folder's name
-        'info.json',
-      );
-      const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+  test('verify that the new empty question has the correct info', async () => {
+    const questionLiveInfoPath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'test-question', // Verify that the qid was used as the question folder's name
+      'info.json',
+    );
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
-      assert.equal(questionInfo.title, 'Test Question');
-      assert.equal(questionInfo.topic, 'Default');
-      assert.isUndefined(questionInfo.shareSourcePublicly);
-    },
-  );
+    assert.equal(questionInfo.title, 'Test Question');
+    assert.equal(questionInfo.topic, 'Default');
+    assert.isUndefined(questionInfo.shareSourcePublicly);
+  });
 
-  test(
-    'create a new question from the example course templates',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
+  test('create a new question from the example course templates', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
 
-      assert.equal(questionsResponse.status, 200);
+    assert.equal(questionsResponse.status, 200);
 
-      // Create the new template question based on the random graph template question
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test Random Graph',
-            qid: 'test-random-graph',
-            start_from: 'example',
-            template_qid: 'template/matrix-component-input/random-graph',
-          }),
-        },
-      );
+    // Create the new template question based on the random graph template question
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Test Random Graph',
+          qid: 'test-random-graph',
+          start_from: 'example',
+          template_qid: 'template/matrix-component-input/random-graph',
+        }),
+      },
+    );
 
-      assert.equal(createQuestionResponse.status, 200);
+    assert.equal(createQuestionResponse.status, 200);
 
-      assert.equal(
-        createQuestionResponse.url,
-        `${siteUrl}/pl/course_instance/1/instructor/question/3/preview`,
-      );
-    },
-  );
+    assert.equal(
+      createQuestionResponse.url,
+      `${siteUrl}/pl/course_instance/1/instructor/question/3/preview`,
+    );
+  });
 
-  test('verify that the new question has the correct info', { concurrent: false }, async () => {
+  test('verify that the new question has the correct info', async () => {
     const questionLivePath = path.join(courseRepo.courseLiveDir, 'questions', 'test-random-graph');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
@@ -161,7 +153,7 @@ describe('Creating a question', () => {
     assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
   });
 
-  test('create a new question to be used as template', { concurrent: false }, async () => {
+  test('create a new question to be used as template', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
@@ -206,44 +198,40 @@ describe('Creating a question', () => {
     await fs.writeFile(newQuestionServerFilePath, 'def grade(data):\n    data["score"] = 0.5\n');
   });
 
-  test(
-    'create a new question from the new course-specific template',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
+  test('create a new question from the new course-specific template', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
 
-      assert.equal(questionsResponse.status, 200);
+    assert.equal(questionsResponse.status, 200);
 
-      // Create the new template question based on the course-specific template question
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test Course-specific Template',
-            qid: 'test-course-template',
-            start_from: 'course',
-            template_qid: 'template/courseTemplate',
-          }),
-        },
-      );
+    // Create the new template question based on the course-specific template question
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Test Course-specific Template',
+          qid: 'test-course-template',
+          start_from: 'course',
+          template_qid: 'template/courseTemplate',
+        }),
+      },
+    );
 
-      assert.equal(createQuestionResponse.status, 200);
+    assert.equal(createQuestionResponse.status, 200);
 
-      assert.equal(
-        createQuestionResponse.url,
-        `${siteUrl}/pl/course_instance/1/instructor/question/5/preview`,
-      );
-    },
-  );
+    assert.equal(
+      createQuestionResponse.url,
+      `${siteUrl}/pl/course_instance/1/instructor/question/5/preview`,
+    );
+  });
 
-  test('verify that the new question has the correct info', { concurrent: false }, async () => {
+  test('verify that the new question has the correct info', async () => {
     const questionLivePath = path.join(
       courseRepo.courseLiveDir,
       'questions',
@@ -290,7 +278,7 @@ describe('Creating a question', () => {
     assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
   });
 
-  test('create new question with duplicate qid, title', { concurrent: false }, async () => {
+  test('create new question with duplicate qid, title', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
@@ -319,7 +307,7 @@ describe('Creating a question', () => {
     );
   });
 
-  test('verify that the title and qid had 2 appended to them', { concurrent: false }, async () => {
+  test('verify that the title and qid had 2 appended to them', async () => {
     const questionLiveInfoPath = path.join(
       courseRepo.courseLiveDir,
       'questions',
@@ -332,219 +320,191 @@ describe('Creating a question', () => {
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  test(
-    'should not be able to create a question without a title or qid',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question without a title or qid', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      // Create a new empty question without a title or qid
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            start_from: 'empty',
-          }),
-        },
-      );
-      assert.equal(createQuestionResponse.status, 400);
-    },
-  );
+    // Create a new empty question without a title or qid
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          start_from: 'empty',
+        }),
+      },
+    );
+    assert.equal(createQuestionResponse.status, 400);
+  });
 
-  test(
-    'should not be able to create a question without specifying start_from',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question without specifying start_from', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      // Create a new empty question without specifying start_from
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-          }),
-        },
-      );
-      assert.equal(createQuestionResponse.status, 400);
-    },
-  );
+    // Create a new empty question without specifying start_from
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'New Test Question',
+          qid: 'new-test-question',
+        }),
+      },
+    );
+    assert.equal(createQuestionResponse.status, 400);
+  });
 
-  test(
-    'should not be able to create a question with qid not contained in the root directory',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question with qid not contained in the root directory', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      // Create a new empty question with a qid not contained in the root directory
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: '../new-test-question',
-            start_from: 'empty',
-          }),
-        },
-      );
+    // Create a new empty question with a qid not contained in the root directory
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'New Test Question',
+          qid: '../new-test-question',
+          start_from: 'empty',
+        }),
+      },
+    );
 
-      assert.equal(createQuestionResponse.status, 400);
-    },
-  );
+    assert.equal(createQuestionResponse.status, 400);
+  });
 
-  test(
-    'should not be able to create a question from a non-existent template question',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question from a non-existent template question', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      // Create a new empty question with a non-existent template question qid
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-            start_from: 'example',
-            template_qid: 'template/non-existent-template',
-          }),
-        },
-      );
+    // Create a new empty question with a non-existent template question qid
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'New Test Question',
+          qid: 'new-test-question',
+          start_from: 'example',
+          template_qid: 'template/non-existent-template',
+        }),
+      },
+    );
 
-      assert.equal(createQuestionResponse.status, 200);
-      assert.match(
-        createQuestionResponse.url,
-        /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
-      );
-    },
-  );
+    assert.equal(createQuestionResponse.status, 200);
+    assert.match(
+      createQuestionResponse.url,
+      /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
+    );
+  });
 
-  test(
-    'should not be able to create a question with template_qid not contained in the root directory',
-    { concurrent: false },
-    async () => {
-      // Fetch the questions page for the course instance
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question with template_qid not contained in the root directory', async () => {
+    // Fetch the questions page for the course instance
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      // Create a new question from a template with a template_qid not contained in the correct root directory
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'New Test Question',
-            qid: 'new-test-question',
-            start_from: 'example',
-            template_qid: '../template/matrix-component-input/random-graph',
-          }),
-        },
-      );
+    // Create a new question from a template with a template_qid not contained in the correct root directory
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'New Test Question',
+          qid: 'new-test-question',
+          start_from: 'example',
+          template_qid: '../template/matrix-component-input/random-graph',
+        }),
+      },
+    );
 
-      assert.equal(createQuestionResponse.status, 200);
-      assert.match(
-        createQuestionResponse.url,
-        /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
-      );
-    },
-  );
+    assert.equal(createQuestionResponse.status, 200);
+    assert.match(
+      createQuestionResponse.url,
+      /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
+    );
+  });
 
-  test(
-    'should not be able to create a question that is a subdirectory of an existing question',
-    { concurrent: false },
-    async () => {
-      // "test-question" already exists. Try to create "test-question/nested".
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question that is a subdirectory of an existing question', async () => {
+    // "test-question" already exists. Try to create "test-question/nested".
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Nested Question',
-            qid: 'test-question/nested',
-            start_from: 'empty',
-          }),
-        },
-      );
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Nested Question',
+          qid: 'test-question/nested',
+          start_from: 'empty',
+        }),
+      },
+    );
 
-      await assertEditError(createQuestionResponse, 'is a subdirectory of the existing question');
-    },
-  );
+    await assertEditError(createQuestionResponse, 'is a subdirectory of the existing question');
+  });
 
-  test(
-    'should not be able to create a question that is a parent directory of an existing question',
-    { concurrent: false },
-    async () => {
-      // "test/question" already exists. Try to create "test".
-      const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(questionsResponse.status, 200);
+  test('should not be able to create a question that is a parent directory of an existing question', async () => {
+    // "test/question" already exists. Try to create "test".
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+    );
+    assert.equal(questionsResponse.status, 200);
 
-      const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Parent Question',
-            qid: 'test',
-            start_from: 'empty',
-          }),
-        },
-      );
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          title: 'Parent Question',
+          qid: 'test',
+          start_from: 'empty',
+        }),
+      },
+    );
 
-      await assertEditError(
-        createQuestionResponse,
-        'would be a parent directory of the existing question',
-      );
-    },
-  );
+    await assertEditError(
+      createQuestionResponse,
+      'would be a parent directory of the existing question',
+    );
+  });
 });

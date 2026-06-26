@@ -14,7 +14,7 @@ import type { ElementExtensionNameDirMap } from '../question-servers/freeform.js
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
-describe('Course element extensions', { timeout: 60_000 }, function () {
+describe('Course element extensions', { timeout: 60_000, concurrent: false }, function () {
   describe('Extensions can be loaded', function () {
     const extDir = path.resolve(EXAMPLE_COURSE_PATH, 'elementExtensions');
     const element = 'extendable-element';
@@ -95,44 +95,40 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
     const incImg =
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
-    test('find the example question in the database', { concurrent: false }, async () => {
+    test('find the example question in the database', async () => {
       locals.question = await selectQuestionByQid({ qid: testQid, course_id: '1' });
     });
-    test(
-      'check the question page for extension css and js files',
-      { concurrent: false },
-      async () => {
-        const questionUrl =
-          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-        const response = await helperClient.fetchCheerio(questionUrl);
-        assert.isTrue(response.ok, 'could not fetch question page');
+    test('check the question page for extension css and js files', async () => {
+      const questionUrl =
+        locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
+      const response = await helperClient.fetchCheerio(questionUrl);
+      assert.isTrue(response.ok, 'could not fetch question page');
 
-        const page$ = response.$;
-        assert.lengthOf(
-          page$(`script[src$="${incJs}"]`),
-          1,
-          'page did not load extension javascript',
-        );
-        assert.lengthOf(
-          page$(`link[rel="stylesheet"][href$="${incCss}"]`),
-          1,
-          'page did not load extension css',
-        );
+      const page$ = response.$;
+      assert.lengthOf(
+        page$(`script[src$="${incJs}"]`),
+        1,
+        'page did not load extension javascript',
+      );
+      assert.lengthOf(
+        page$(`link[rel="stylesheet"][href$="${incCss}"]`),
+        1,
+        'page did not load extension css',
+      );
 
-        const importMap = page$('script[type="importmap"]').html();
-        const importMapData = JSON.parse(importMap ?? '');
-        assert.property(
-          importMapData.imports,
-          incDynamicJsKey,
-          'importmap did not include dynamic extension js',
-        );
-        assert.equal(
-          importMapData.imports[incDynamicJsKey].slice(-incDynamicJs.length),
-          incDynamicJs,
-        );
-      },
-    );
-    test('check the question page for a client-side image', { concurrent: false }, async () => {
+      const importMap = page$('script[type="importmap"]').html();
+      const importMapData = JSON.parse(importMap ?? '');
+      assert.property(
+        importMapData.imports,
+        incDynamicJsKey,
+        'importmap did not include dynamic extension js',
+      );
+      assert.equal(
+        importMapData.imports[incDynamicJsKey].slice(-incDynamicJs.length),
+        incDynamicJs,
+      );
+    });
+    test('check the question page for a client-side image', async () => {
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);

@@ -31,7 +31,7 @@ const testUsers = [
   { authUid: 'student3@example.com', authName: 'Student User 3', authUin: '00000003' },
 ] as const;
 
-describe('Assessment lockpoints', { timeout: 60_000 }, function () {
+describe('Assessment lockpoints', { timeout: 60_000, concurrent: false }, function () {
   const context = { siteUrl: `http://localhost:${config.serverPort}` } as {
     siteUrl: string;
     baseUrl: string;
@@ -169,32 +169,28 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     });
   }
 
-  test(
-    'creates an assessment instance and initializes lockpoint state',
-    { concurrent: false },
-    async function () {
-      const created = await createAssessmentInstance(context.assessmentId);
-      context.assessmentInstanceUrl = created.assessmentInstanceUrl;
-      context.assessmentInstanceId = created.assessmentInstanceId;
-      const response = await helperClient.fetchCheerio(created.assessmentInstanceUrl);
-      assert.isTrue(response.ok);
+  test('creates an assessment instance and initializes lockpoint state', async function () {
+    const created = await createAssessmentInstance(context.assessmentId);
+    context.assessmentInstanceUrl = created.assessmentInstanceUrl;
+    context.assessmentInstanceId = created.assessmentInstanceId;
+    const response = await helperClient.fetchCheerio(created.assessmentInstanceUrl);
+    assert.isTrue(response.ok);
 
-      await refreshQuestionStates();
-      assert.lengthOf(context.questionStates, 3);
-      assert.deepEqual(
-        context.questionStates.map((row) => row.question_access_mode),
-        ['default', 'blocked_lockpoint', 'blocked_lockpoint'],
-      );
+    await refreshQuestionStates();
+    assert.lengthOf(context.questionStates, 3);
+    assert.deepEqual(
+      context.questionStates.map((row) => row.question_access_mode),
+      ['default', 'blocked_lockpoint', 'blocked_lockpoint'],
+    );
 
-      assert.equal(response.$('button[data-bs-target^="#crossLockpointModal-"]').length, 1);
-      assert.equal(
-        response.$(`a[href*="instance_question/${context.questionStates[1].id}"]`).length,
-        0,
-      );
-    },
-  );
+    assert.equal(response.$('button[data-bs-target^="#crossLockpointModal-"]').length, 1);
+    assert.equal(
+      response.$(`a[href*="instance_question/${context.questionStates[1].id}"]`).length,
+      0,
+    );
+  });
 
-  test('lockpoints cannot be crossed out of order', { concurrent: false }, async function () {
+  test('lockpoints cannot be crossed out of order', async function () {
     const response = await postCrossLockpointForInstance(
       context.assessmentInstanceUrl,
       context.lockpointZoneIds[1],
@@ -209,314 +205,274 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     );
   });
 
-  test(
-    'instructor can access lockpoint-blocked question',
-    { concurrent: false },
-    async function () {
-      const response = await helperClient.fetchCheerio(context.questionStates[1].url);
-      assert.isTrue(response.ok);
-    },
-  );
+  test('instructor can access lockpoint-blocked question', async function () {
+    const response = await helperClient.fetchCheerio(context.questionStates[1].url);
+    assert.isTrue(response.ok);
+  });
 
-  test(
-    'next-question navigation explains lockpoint requirement',
-    { concurrent: false },
-    async function () {
-      const response = await helperClient.fetchCheerio(context.questionStates[0].url);
-      assert.isTrue(response.ok);
-      assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-      assert.include(
-        response.$('#question-nav-next').attr('data-bs-content') ?? '',
-        'You must cross the lockpoint on the assessment overview page',
+  test('next-question navigation explains lockpoint requirement', async function () {
+    const response = await helperClient.fetchCheerio(context.questionStates[0].url);
+    assert.isTrue(response.ok);
+    assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+    assert.include(
+      response.$('#question-nav-next').attr('data-bs-content') ?? '',
+      'You must cross the lockpoint on the assessment overview page',
+    );
+  });
+
+  test('crossing the first lockpoint makes previous questions read-only', async function () {
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[0],
+    );
+    assert.isTrue(response.ok);
+    await refreshQuestionStates();
+
+    assert.deepEqual(
+      context.questionStates.map((row) => row.question_access_mode),
+      ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
+    );
+
+    // The read_only_lockpoint question should have a lock icon button.
+    // (blocked_lockpoint shows status in the Status column on exams, so
+    // only the one read_only_lockpoint row produces this button.)
+    assert.equal(response.$('[data-testid="locked-instance-question-row"]').length, 1);
+
+    assert.include(
+      response.$.html(),
+      'You can no longer submit answers to this question because you have advanced past a lockpoint',
+    );
+  });
+
+  test('crossing an already crossed lockpoint is idempotent', async function () {
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[0],
+    );
+    assert.isTrue(response.ok);
+
+    await refreshQuestionStates();
+    assert.deepEqual(
+      context.questionStates.map((row) => row.question_access_mode),
+      ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
+    );
+  });
+
+  test('read-only questions can be viewed but cannot be submitted', async function () {
+    const questionResponse = await helperClient.fetchCheerio(context.questionStates[0].url);
+    assert.isTrue(questionResponse.ok);
+    assert.include(
+      questionResponse.$.html(),
+      'This question is read-only because you advanced past a lockpoint',
+    );
+
+    helperClient.extractAndSaveCSRFToken(context, questionResponse.$, '.question-form');
+    context.__variant_id =
+      questionResponse.$('.question-form input[name="__variant_id"]').attr('value') ?? '';
+    assert.isNotEmpty(context.__variant_id);
+
+    const submitResponse = await helperClient.fetchCheerio(context.questionStates[0].url, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'grade',
+        __variant_id: context.__variant_id,
+        __csrf_token: context.__csrf_token,
+      }),
+    });
+    assert.isFalse(submitResponse.ok);
+    assert.equal(submitResponse.status, 403);
+  });
+
+  test('crossing subsequent lockpoints is sequential and updates read-only state', async function () {
+    const response = await postCrossLockpointForInstance(
+      context.assessmentInstanceUrl,
+      context.lockpointZoneIds[1],
+    );
+    assert.isTrue(response.ok);
+    await refreshQuestionStates();
+
+    assert.deepEqual(
+      context.questionStates.map((row) => row.question_access_mode),
+      ['read_only_lockpoint', 'read_only_lockpoint', 'default'],
+    );
+  });
+
+  test('finish action is allowed with uncrossed lockpoints', async function () {
+    const previousUser = {
+      authUid: config.authUid,
+      authName: config.authName,
+      authUin: config.authUin,
+    };
+    helperClient.setUser(testUsers[0]);
+    try {
+      const created = await createAssessmentInstance(context.assessmentId);
+      const assessmentInstanceResponse = await helperClient.fetchCheerio(
+        created.assessmentInstanceUrl,
       );
-    },
-  );
+      assert.isTrue(assessmentInstanceResponse.ok);
+      const csrfToken = helperClient.getCSRFToken(assessmentInstanceResponse.$);
 
-  test(
-    'crossing the first lockpoint makes previous questions read-only',
-    { concurrent: false },
-    async function () {
-      const response = await postCrossLockpointForInstance(
-        context.assessmentInstanceUrl,
-        context.lockpointZoneIds[0],
-      );
-      assert.isTrue(response.ok);
-      await refreshQuestionStates();
-
-      assert.deepEqual(
-        context.questionStates.map((row) => row.question_access_mode),
-        ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
-      );
-
-      // The read_only_lockpoint question should have a lock icon button.
-      // (blocked_lockpoint shows status in the Status column on exams, so
-      // only the one read_only_lockpoint row produces this button.)
-      assert.equal(response.$('[data-testid="locked-instance-question-row"]').length, 1);
-
-      assert.include(
-        response.$.html(),
-        'You can no longer submit answers to this question because you have advanced past a lockpoint',
-      );
-    },
-  );
-
-  test(
-    'crossing an already crossed lockpoint is idempotent',
-    { concurrent: false },
-    async function () {
-      const response = await postCrossLockpointForInstance(
-        context.assessmentInstanceUrl,
-        context.lockpointZoneIds[0],
-      );
-      assert.isTrue(response.ok);
-
-      await refreshQuestionStates();
-      assert.deepEqual(
-        context.questionStates.map((row) => row.question_access_mode),
-        ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
-      );
-    },
-  );
-
-  test(
-    'read-only questions can be viewed but cannot be submitted',
-    { concurrent: false },
-    async function () {
-      const questionResponse = await helperClient.fetchCheerio(context.questionStates[0].url);
-      assert.isTrue(questionResponse.ok);
-      assert.include(
-        questionResponse.$.html(),
-        'This question is read-only because you advanced past a lockpoint',
-      );
-
-      helperClient.extractAndSaveCSRFToken(context, questionResponse.$, '.question-form');
-      context.__variant_id =
-        questionResponse.$('.question-form input[name="__variant_id"]').attr('value') ?? '';
-      assert.isNotEmpty(context.__variant_id);
-
-      const submitResponse = await helperClient.fetchCheerio(context.questionStates[0].url, {
+      const finishResponse = await helperClient.fetchCheerio(created.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'grade',
-          __variant_id: context.__variant_id,
-          __csrf_token: context.__csrf_token,
+          __action: 'finish',
+          __csrf_token: csrfToken,
         }),
       });
-      assert.isFalse(submitResponse.ok);
-      assert.equal(submitResponse.status, 403);
-    },
-  );
+      assert.isTrue(finishResponse.ok);
 
-  test(
-    'crossing subsequent lockpoints is sequential and updates read-only state',
-    { concurrent: false },
-    async function () {
-      const response = await postCrossLockpointForInstance(
-        context.assessmentInstanceUrl,
-        context.lockpointZoneIds[1],
-      );
-      assert.isTrue(response.ok);
-      await refreshQuestionStates();
+      const assessmentInstance = await selectAssessmentInstanceById(created.assessmentInstanceId);
+      assert.isFalse(assessmentInstance.open);
+    } finally {
+      helperClient.setUser(previousUser);
+    }
+  });
 
+  test('advanceScorePerc in prior zones blocks lockpoint crossing until satisfied', async function () {
+    const previousUser = {
+      authUid: config.authUid,
+      authName: config.authName,
+      authUin: config.authUin,
+    };
+    helperClient.setUser(testUsers[1]);
+    try {
+      const advanceLockpointZoneIds = (
+        await sqldb.queryScalars(
+          sql.select_lockpoint_zone_ids,
+          { assessment_id: context.lockpointAdvanceAssessmentId },
+          IdSchema,
+        )
+      ).map(String);
+      assert.lengthOf(advanceLockpointZoneIds, 1);
+
+      const created = await createAssessmentInstance(context.lockpointAdvanceAssessmentId);
+
+      let questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      // Q0 has advanceScorePerc, so Q1-Q3 are all blocked_sequence.
       assert.deepEqual(
-        context.questionStates.map((row) => row.question_access_mode),
-        ['read_only_lockpoint', 'read_only_lockpoint', 'default'],
+        questionStates.map((row) => row.question_access_mode),
+        ['default', 'blocked_sequence', 'blocked_sequence', 'blocked_sequence'],
       );
-    },
-  );
 
-  test(
-    'finish action is allowed with uncrossed lockpoints',
-    { concurrent: false },
-    async function () {
-      const previousUser = {
-        authUid: config.authUid,
-        authName: config.authName,
-        authUin: config.authUin,
-      };
-      helperClient.setUser(testUsers[0]);
-      try {
-        const created = await createAssessmentInstance(context.assessmentId);
-        const assessmentInstanceResponse = await helperClient.fetchCheerio(
-          created.assessmentInstanceUrl,
-        );
-        assert.isTrue(assessmentInstanceResponse.ok);
-        const csrfToken = helperClient.getCSRFToken(assessmentInstanceResponse.$);
+      // Crossing should be rejected because the first advanceScorePerc is unmet.
+      const rejectedCrossResponse = await postCrossLockpointForInstance(
+        created.assessmentInstanceUrl,
+        advanceLockpointZoneIds[0],
+      );
+      assert.isFalse(rejectedCrossResponse.ok);
+      assert.equal(rejectedCrossResponse.status, 403);
 
-        const finishResponse = await helperClient.fetchCheerio(created.assessmentInstanceUrl, {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'finish',
-            __csrf_token: csrfToken,
-          }),
-        });
-        assert.isTrue(finishResponse.ok);
+      // Satisfy Q0's advanceScorePerc.
+      const gradeResponse = await gradeQuestionWithScore(questionStates[0].url, 100);
+      assert.isTrue(gradeResponse.ok);
 
-        const assessmentInstance = await selectAssessmentInstanceById(created.assessmentInstanceId);
-        assert.isFalse(assessmentInstance.open);
-      } finally {
-        helperClient.setUser(previousUser);
-      }
-    },
-  );
+      questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      // Q0 and Q1 are now accessible. Q2 has advanceScorePerc (last in zone 1),
+      // so its blocked_sequence propagates into the lockpoint zone (Q3).
+      assert.deepEqual(
+        questionStates.map((row) => row.question_access_mode),
+        ['default', 'default', 'default', 'blocked_sequence'],
+      );
 
-  test(
-    'advanceScorePerc in prior zones blocks lockpoint crossing until satisfied',
-    { concurrent: false },
-    async function () {
-      const previousUser = {
-        authUid: config.authUid,
-        authName: config.authName,
-        authUin: config.authUin,
-      };
-      helperClient.setUser(testUsers[1]);
-      try {
-        const advanceLockpointZoneIds = (
-          await sqldb.queryScalars(
-            sql.select_lockpoint_zone_ids,
-            { assessment_id: context.lockpointAdvanceAssessmentId },
-            IdSchema,
-          )
-        ).map(String);
-        assert.lengthOf(advanceLockpointZoneIds, 1);
+      // Crossing should still be rejected because Q2's advanceScorePerc is unmet.
+      const stillRejectedResponse = await postCrossLockpointForInstance(
+        created.assessmentInstanceUrl,
+        advanceLockpointZoneIds[0],
+      );
+      assert.isFalse(stillRejectedResponse.ok);
+      assert.equal(stillRejectedResponse.status, 403);
 
-        const created = await createAssessmentInstance(context.lockpointAdvanceAssessmentId);
+      // Satisfy Q2's advanceScorePerc.
+      const gradeResponse2 = await gradeQuestionWithScore(questionStates[2].url, 100);
+      assert.isTrue(gradeResponse2.ok);
 
-        let questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        // Q0 has advanceScorePerc, so Q1-Q3 are all blocked_sequence.
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['default', 'blocked_sequence', 'blocked_sequence', 'blocked_sequence'],
-        );
+      questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      assert.deepEqual(
+        questionStates.map((row) => row.question_access_mode),
+        ['default', 'default', 'default', 'blocked_lockpoint'],
+      );
 
-        // Crossing should be rejected because the first advanceScorePerc is unmet.
-        const rejectedCrossResponse = await postCrossLockpointForInstance(
-          created.assessmentInstanceUrl,
-          advanceLockpointZoneIds[0],
-        );
-        assert.isFalse(rejectedCrossResponse.ok);
-        assert.equal(rejectedCrossResponse.status, 403);
+      // Now crossing should succeed.
+      const acceptedCrossResponse = await postCrossLockpointForInstance(
+        created.assessmentInstanceUrl,
+        advanceLockpointZoneIds[0],
+      );
+      assert.isTrue(acceptedCrossResponse.ok);
 
-        // Satisfy Q0's advanceScorePerc.
-        const gradeResponse = await gradeQuestionWithScore(questionStates[0].url, 100);
-        assert.isTrue(gradeResponse.ok);
+      questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      assert.deepEqual(
+        questionStates.map((row) => row.question_access_mode),
+        ['read_only_lockpoint', 'read_only_lockpoint', 'read_only_lockpoint', 'default'],
+      );
+    } finally {
+      helperClient.setUser(previousUser);
+    }
+  });
 
-        questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        // Q0 and Q1 are now accessible. Q2 has advanceScorePerc (last in zone 1),
-        // so its blocked_sequence propagates into the lockpoint zone (Q3).
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['default', 'default', 'default', 'blocked_sequence'],
-        );
+  test('homework lockpoints transition from blocked to read-only after crossing', async function () {
+    const previousUser = {
+      authUid: config.authUid,
+      authName: config.authName,
+      authUin: config.authUin,
+    };
+    helperClient.setUser(testUsers[2]);
+    try {
+      const homeworkLockpointZoneIds = (
+        await sqldb.queryScalars(
+          sql.select_lockpoint_zone_ids,
+          { assessment_id: context.lockpointHomeworkAssessmentId },
+          IdSchema,
+        )
+      ).map(String);
+      assert.lengthOf(homeworkLockpointZoneIds, 1);
 
-        // Crossing should still be rejected because Q2's advanceScorePerc is unmet.
-        const stillRejectedResponse = await postCrossLockpointForInstance(
-          created.assessmentInstanceUrl,
-          advanceLockpointZoneIds[0],
-        );
-        assert.isFalse(stillRejectedResponse.ok);
-        assert.equal(stillRejectedResponse.status, 403);
+      const created = await createAssessmentInstance(context.lockpointHomeworkAssessmentId);
 
-        // Satisfy Q2's advanceScorePerc.
-        const gradeResponse2 = await gradeQuestionWithScore(questionStates[2].url, 100);
-        assert.isTrue(gradeResponse2.ok);
+      let questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      assert.deepEqual(
+        questionStates.map((row) => row.question_access_mode),
+        ['default', 'blocked_lockpoint'],
+      );
 
-        questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['default', 'default', 'default', 'blocked_lockpoint'],
-        );
+      const crossResponse = await postCrossLockpointForInstance(
+        created.assessmentInstanceUrl,
+        homeworkLockpointZoneIds[0],
+      );
+      assert.isTrue(crossResponse.ok);
 
-        // Now crossing should succeed.
-        const acceptedCrossResponse = await postCrossLockpointForInstance(
-          created.assessmentInstanceUrl,
-          advanceLockpointZoneIds[0],
-        );
-        assert.isTrue(acceptedCrossResponse.ok);
+      questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      assert.deepEqual(
+        questionStates.map((row) => row.question_access_mode),
+        ['read_only_lockpoint', 'default'],
+      );
+    } finally {
+      helperClient.setUser(previousUser);
+    }
+  });
 
-        questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['read_only_lockpoint', 'read_only_lockpoint', 'read_only_lockpoint', 'default'],
-        );
-      } finally {
-        helperClient.setUser(previousUser);
-      }
-    },
-  );
+  test('student cannot access lockpoint-blocked question', async function () {
+    const studentUser: AuthUser = {
+      uid: 'lockpoint-student@example.com',
+      name: 'Lockpoint Student',
+      uin: '000000099',
+      email: 'lockpoint-student@example.com',
+    };
+    await enrollUser('1', studentUser);
+    await withUser(studentUser, async () => {
+      const created = await createAssessmentInstance(context.assessmentId);
+      const questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      const unlockedQuestion = questionStates.find((q) => q.question_access_mode === 'default');
+      assert.isDefined(unlockedQuestion);
+      const unlockedResponse = await helperClient.fetchCheerio(unlockedQuestion.url);
+      assert.isTrue(unlockedResponse.ok);
 
-  test(
-    'homework lockpoints transition from blocked to read-only after crossing',
-    { concurrent: false },
-    async function () {
-      const previousUser = {
-        authUid: config.authUid,
-        authName: config.authName,
-        authUin: config.authUin,
-      };
-      helperClient.setUser(testUsers[2]);
-      try {
-        const homeworkLockpointZoneIds = (
-          await sqldb.queryScalars(
-            sql.select_lockpoint_zone_ids,
-            { assessment_id: context.lockpointHomeworkAssessmentId },
-            IdSchema,
-          )
-        ).map(String);
-        assert.lengthOf(homeworkLockpointZoneIds, 1);
-
-        const created = await createAssessmentInstance(context.lockpointHomeworkAssessmentId);
-
-        let questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['default', 'blocked_lockpoint'],
-        );
-
-        const crossResponse = await postCrossLockpointForInstance(
-          created.assessmentInstanceUrl,
-          homeworkLockpointZoneIds[0],
-        );
-        assert.isTrue(crossResponse.ok);
-
-        questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        assert.deepEqual(
-          questionStates.map((row) => row.question_access_mode),
-          ['read_only_lockpoint', 'default'],
-        );
-      } finally {
-        helperClient.setUser(previousUser);
-      }
-    },
-  );
-
-  test(
-    'student cannot access lockpoint-blocked question',
-    { concurrent: false },
-    async function () {
-      const studentUser: AuthUser = {
-        uid: 'lockpoint-student@example.com',
-        name: 'Lockpoint Student',
-        uin: '000000099',
-        email: 'lockpoint-student@example.com',
-      };
-      await enrollUser('1', studentUser);
-      await withUser(studentUser, async () => {
-        const created = await createAssessmentInstance(context.assessmentId);
-        const questionStates = await selectQuestionStates(created.assessmentInstanceId);
-        const unlockedQuestion = questionStates.find((q) => q.question_access_mode === 'default');
-        assert.isDefined(unlockedQuestion);
-        const unlockedResponse = await helperClient.fetchCheerio(unlockedQuestion.url);
-        assert.isTrue(unlockedResponse.ok);
-
-        const lockedQuestion = questionStates.find(
-          (q) => q.question_access_mode === 'blocked_lockpoint',
-        );
-        assert.isDefined(lockedQuestion);
-        const lockedResponse = await helperClient.fetchCheerio(lockedQuestion.url);
-        assert.isFalse(lockedResponse.ok);
-        assert.equal(lockedResponse.status, 403);
-      });
-    },
-  );
+      const lockedQuestion = questionStates.find(
+        (q) => q.question_access_mode === 'blocked_lockpoint',
+      );
+      assert.isDefined(lockedQuestion);
+      const lockedResponse = await helperClient.fetchCheerio(lockedQuestion.url);
+      assert.isFalse(lockedResponse.ok);
+      assert.equal(lockedResponse.status, 403);
+    });
+  });
 });

@@ -13,7 +13,7 @@ import { getOrCreateUser } from '../utils/auth.js';
 const courseId = '1';
 const courseInstanceId = '1';
 
-describe('publishing page access', { timeout: 60_000 }, function () {
+describe('publishing page access', { timeout: 60_000, concurrent: false }, function () {
   const publishingUrl = `http://localhost:${config.serverPort}${getCourseInstancePublishingUrl(courseInstanceId)}`;
 
   async function postUpdatePublishing(
@@ -94,13 +94,13 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('page access with different permission levels', () => {
-    test('course owner can view publishing page', { concurrent: false }, async () => {
+    test('course owner can view publishing page', async () => {
       const headers = { cookie: 'pl_test_user=test_instructor' };
       const response = await helperClient.fetchCheerio(publishingUrl, { headers });
       assert.isTrue(response.ok);
     });
 
-    test('course viewer can view publishing page', { concurrent: false }, async () => {
+    test('course viewer can view publishing page', async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
@@ -109,7 +109,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
     });
 
-    test('student data viewer can view publishing page', { concurrent: false }, async () => {
+    test('student data viewer can view publishing page', async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
@@ -118,20 +118,16 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
     });
 
-    test(
-      'user with no permissions cannot view publishing page',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.equal(response.status, 403);
-      },
-    );
+    test('user with no permissions cannot view publishing page', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.equal(response.status, 403);
+    });
 
-    test('course previewer cannot view publishing page', { concurrent: false }, async () => {
+    test('course previewer cannot view publishing page', async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
@@ -142,171 +138,131 @@ describe('publishing page access', { timeout: 60_000 }, function () {
   });
 
   describe('publishing settings edit permissions', () => {
-    test(
-      'course viewer sees "no permission to edit" alert for publishing settings',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
-          1,
-        );
-      },
-    );
+    test('course viewer sees "no permission to edit" alert for publishing settings', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
+        1,
+      );
+    });
 
-    test(
-      'course editor can edit publishing settings (no alert shown)',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
-          0,
-        );
-      },
-    );
+    test('course editor can edit publishing settings (no alert shown)', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
+        0,
+      );
+    });
 
-    test(
-      'student data editor (without course editor) sees "no permission to edit" alert',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
-          1,
-        );
-      },
-    );
+    test('student data editor (without course editor) sees "no permission to edit" alert', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
+        1,
+      );
+    });
 
-    test(
-      'course editor with student data editor can edit publishing settings (no alert shown)',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
-          0,
-        );
-      },
-    );
+    test('course editor with student data editor can edit publishing settings (no alert shown)', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
+        0,
+      );
+    });
   });
 
   describe('publishing settings POST permissions', () => {
-    test(
-      'student data editor (without course editor) cannot POST to update publishing settings',
-      { concurrent: false },
-      async () => {
-        const cookie =
-          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
-        const response = await postUpdatePublishing(cookie, {
-          startDate: '2024-01-01T00:00',
-          endDate: '2024-12-31T23:59',
-        });
-        assert.equal(response.status, 403);
-      },
-    );
+    test('student data editor (without course editor) cannot POST to update publishing settings', async () => {
+      const cookie =
+        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
+      const response = await postUpdatePublishing(cookie, {
+        startDate: '2024-01-01T00:00',
+        endDate: '2024-12-31T23:59',
+      });
+      assert.equal(response.status, 403);
+    });
 
-    test(
-      'course editor (without student data) can POST to update publishing settings',
-      { concurrent: false },
-      async () => {
-        const cookie =
-          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
-        const response = await postUpdatePublishing(cookie);
-        assert.equal(response.status, 302);
-      },
-    );
+    test('course editor (without student data) can POST to update publishing settings', async () => {
+      const cookie =
+        'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
+      const response = await postUpdatePublishing(cookie);
+      assert.equal(response.status, 302);
+    });
   });
 
   describe('extensions POST permissions', () => {
-    test(
-      'student data editor (without course editor) cannot POST to add extension',
-      { concurrent: false },
-      async () => {
-        const cookie =
-          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
-        const response = await postAddExtension(cookie, {
-          name: 'Test Extension',
-          endDate: '2024-12-31T23:59',
-          uids: 'student@example.com',
-        });
-        assert.equal(response.status, 403);
-      },
-    );
+    test('student data editor (without course editor) cannot POST to add extension', async () => {
+      const cookie =
+        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
+      const response = await postAddExtension(cookie, {
+        name: 'Test Extension',
+        endDate: '2024-12-31T23:59',
+        uids: 'student@example.com',
+      });
+      assert.equal(response.status, 403);
+    });
 
-    test(
-      'course editor (without student data editor) cannot POST to add extension',
-      { concurrent: false },
-      async () => {
-        const cookie =
-          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
-        const response = await postAddExtension(cookie, {
-          name: 'Test Extension',
-          endDate: '2024-12-31T23:59',
-          uids: 'student@example.com',
-        });
-        assert.equal(response.status, 403);
-      },
-    );
+    test('course editor (without student data editor) cannot POST to add extension', async () => {
+      const cookie =
+        'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
+      const response = await postAddExtension(cookie, {
+        name: 'Test Extension',
+        endDate: '2024-12-31T23:59',
+        uids: 'student@example.com',
+      });
+      assert.equal(response.status, 403);
+    });
   });
 
   describe('extensions view permissions', () => {
-    test(
-      'course viewer (no course instance permission) sees "no permission to view extensions" alert',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$(
-            '.alert:contains("You must have student data viewer permissions to view extensions.")',
-          ),
-          1,
-        );
-      },
-    );
+    test('course viewer (no course instance permission) sees "no permission to view extensions" alert', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Viewer; pl2_requested_course_instance_role=None',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$(
+          '.alert:contains("You must have student data viewer permissions to view extensions.")',
+        ),
+        1,
+      );
+    });
 
-    test(
-      'course instance viewer can view extensions (no "no permission" alert)',
-      { concurrent: false },
-      async () => {
-        const headers = {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
-        };
-        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
-        assert.isTrue(response.ok);
-        assert.lengthOf(
-          response.$(
-            '.alert:contains("You must have student data viewer permissions to view extensions.")',
-          ),
-          0,
-        );
-      },
-    );
+    test('course instance viewer can view extensions (no "no permission" alert)', async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
+      };
+      const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+      assert.isTrue(response.ok);
+      assert.lengthOf(
+        response.$(
+          '.alert:contains("You must have student data viewer permissions to view extensions.")',
+        ),
+        0,
+      );
+    });
   });
 });

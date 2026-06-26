@@ -39,12 +39,16 @@ generation if two (or more) choices are identical.
 | `size`                       | integer                                              | —                           | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`.                  |
 | `weight`                     | integer                                              | 1                           | Weight to use when computing a weighted average score over elements.                                                                                                                                        |
 
+### Automatically added answer choices
+
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
 - `"false"`: the corresponding choice will not be shown in the list of choices. This is the default.
 - `"random"`: the corresponding choice will always be shown, and will be randomly correct, with probability proportional to the total number of correct choices. In other words, if there are `N` possible correct choices in total, this choice will be correct with probability `1/N`.
 - `"correct"`: the corresponding choice will always be shown and will always be the correct answer.
 - `"incorrect"`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
+
+When enabled, "All of the above" and "None of the above" are included in the `number-answers` limit. These choices are always displayed after the other choices, regardless of the `order` setting. If both choices are shown, "All of the above" is listed before "None of the above".
 
 ### Disabling built-in grading
 
@@ -67,19 +71,28 @@ When `builtin-grading="false"` is set:
 
     Even when built-in grading is disabled, the `correct="true"` attribute on a `pl-answer` still controls which single answer is selected when the element prepares its display. If there is truly no correct answer (e.g., a survey), you can omit `correct="true"` from all choices.
 
-### :pencil: Notes
+## Answer choices
 
-- "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
-- Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
+Inside the `pl-multiple-choice` element, each choice must be specified with a `pl-answer` child element.
 
-Inside the `pl-multiple-choice` element, each choice must be specified with
-a `pl-answer` that has attributes:
+| Attribute  | Type                          | Default         | Description                                                                                                                                    |
+| ---------- | ----------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `correct`  | boolean                       | false           | Is this a correct answer to the question?                                                                                                      |
+| `feedback` | string                        | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
+| `score`    | float in the range [0.0, 1.0] | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
-| Attribute  | Type    | Default         | Description                                                                                                                                    |
-| ---------- | ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`  | boolean | false           | Is this a correct answer to the question?                                                                                                      |
-| `feedback` | string  | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`    | float   | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+### Migrating from deprecated attributes
+
+The following deprecated attributes are still supported for backward compatibility:
+
+| Old syntax                 | New syntax                   |
+| -------------------------- | ---------------------------- |
+| `inline="true"`            | `display="inline"`           |
+| `fixed-order="true"`       | `order="fixed"`              |
+| `all-of-the-above="true"`  | `all-of-the-above="random"`  |
+| `none-of-the-above="true"` | `none-of-the-above="random"` |
+
+Defining answer choices with external JSON files via the `external-json`, `external-json-correct-key`, and `external-json-incorrect-key` attributes is also deprecated. Define answer choices inline with `pl-answer` elements instead.
 
 ## Example implementations
 

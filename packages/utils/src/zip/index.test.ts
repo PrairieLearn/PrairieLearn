@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { describe, expect, it } from 'vitest';
 
 import { ZipArchiveValidationError, extractZipArchive } from './index.js';
@@ -22,7 +22,7 @@ async function buildZip(
   destPath: string,
   entries: { name: string; content: string | Buffer }[],
 ): Promise<void> {
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   for (const entry of entries) {
     archive.append(entry.content, { name: entry.name });
   }
@@ -122,7 +122,7 @@ describe('extractZipArchive', () => {
     await withTempDir(async (tempDir) => {
       const zipPath = path.join(tempDir, 'symlink.zip');
       const outputDir = path.join(tempDir, 'output');
-      const archive = archiver('zip');
+      const archive = new ZipArchive();
       archive.symlink('link.txt', 'target.txt');
       void archive.finalize();
       await pipeline(archive, createWriteStream(zipPath));

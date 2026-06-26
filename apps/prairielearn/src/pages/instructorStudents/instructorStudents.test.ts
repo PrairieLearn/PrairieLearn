@@ -21,7 +21,7 @@ const baseUrl = `${siteUrl}/pl`;
 const instructorHeaders = { cookie: 'pl_test_user=test_instructor' };
 const studentsUrl = `${baseUrl}/course_instance/1/instructor/instance_admin/students`;
 
-describe('Instructor Students - Invite by UID', () => {
+describe('Instructor Students - Invite by UID', { concurrent: false }, () => {
   let csrfToken: string;
 
   beforeAll(helperServer.before());
@@ -63,7 +63,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
-  test('should successfully invite a nonexistent user', { concurrent: false }, async () => {
+  test('should successfully invite a nonexistent user', async () => {
     const response = await fetch(studentsUrl, {
       method: 'POST',
       headers: {
@@ -98,7 +98,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test('should skip when user is an instructor', { concurrent: false }, async () => {
+  test('should skip when user is an instructor', async () => {
     await getOrCreateUser({
       uid: 'another_instructor@example.com',
       name: 'Another Instructor',
@@ -147,7 +147,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test('should skip when trying to invite a blocked user', { concurrent: false }, async () => {
+  test('should skip when trying to invite a blocked user', async () => {
     const blockedStudent = await getOrCreateUser({
       uid: 'blocked_student@example.com',
       name: 'Blocked Student',
@@ -200,7 +200,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test('should successfully invite a new student', { concurrent: false }, async () => {
+  test('should successfully invite a new student', async () => {
     await getOrCreateUser({
       uid: 'new_student@example.com',
       name: 'New Student',
@@ -241,7 +241,7 @@ describe('Instructor Students - Invite by UID', () => {
     );
   });
 
-  test('should successfully invite multiple students', { concurrent: false }, async () => {
+  test('should successfully invite multiple students', async () => {
     await getOrCreateUser({
       uid: 'bulk_student1@example.com',
       name: 'Bulk Student 1',

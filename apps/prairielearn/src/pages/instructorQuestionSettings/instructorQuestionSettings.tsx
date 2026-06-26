@@ -193,7 +193,7 @@ router.post(
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
           workspace_args: ArgumentsSchema,
-          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_rewrite_url: z.enum(['true', 'false', 'null']).default('null'),
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
@@ -385,11 +385,8 @@ router.post(
           body.workspace_args,
           (v: any) => !v || v.length === 0,
         ),
-        rewriteUrl: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.rewriteUrl,
-          body.workspace_rewrite_url,
-          true,
-        ),
+        rewriteUrl:
+          body.workspace_rewrite_url === 'null' ? undefined : body.workspace_rewrite_url === 'true',
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
           body.workspace_graded_files,
@@ -408,9 +405,9 @@ router.post(
       };
 
       // We'll only write the workspace options if the request contains the
-      // required fields. Client-side validation will ensure that these are
-      // present if a workspace is configured.
-      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+      // image. Client-side validation will ensure that it is present if a
+      // workspace is configured.
+      if (workspaceOptions.image) {
         const filteredOptions = Object.fromEntries(
           Object.entries(
             propertyValueWithDefault(

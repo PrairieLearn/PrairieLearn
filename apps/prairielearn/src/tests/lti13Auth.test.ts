@@ -29,13 +29,12 @@ const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
-describe('LTI 1.3 authentication', () => {
+describe('LTI 1.3 authentication', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
   beforeAll(async () => {
     config.isEnterprise = true;
-    config.features.lti13 = true;
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
@@ -53,10 +52,9 @@ describe('LTI 1.3 authentication', () => {
   afterAll(async () => {
     await helperServer.after();
     config.isEnterprise = false;
-    config.features = {};
   });
 
-  test('create and configure an LTI instance', { concurrent: false }, async () => {
+  test('create and configure an LTI instance', async () => {
     await createLti13Instance({
       siteUrl,
       issuer_params: {
@@ -68,7 +66,7 @@ describe('LTI 1.3 authentication', () => {
     });
   });
 
-  test('enable LTI 1.3 as an authentication provider', { concurrent: false }, async () => {
+  test('enable LTI 1.3 as an authentication provider', async () => {
     const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
     assert.equal(ssoResponse.status, 200);
 
@@ -91,7 +89,7 @@ describe('LTI 1.3 authentication', () => {
     assert.equal(enableLtiResponse.status, 200);
   });
 
-  test('validate metadata', { concurrent: false }, async () => {
+  test('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
     const data: any = await fetch(url).then((res) => res.json());
     assert.isObject(data);
@@ -103,7 +101,7 @@ describe('LTI 1.3 authentication', () => {
     assert.equal(data.custom_fields.uin, '$Canvas.user.sisIntegrationId');
   });
 
-  test('perform login', { concurrent: false }, async () => {
+  test('perform login', async () => {
     const fetchWithCookies = fetchCookie(fetch);
 
     const executor = await makeLoginExecutor({
@@ -131,7 +129,7 @@ describe('LTI 1.3 authentication', () => {
     });
   });
 
-  test('validate login', { concurrent: false }, async () => {
+  test('validate login', async () => {
     const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
     assert.equal(user.uid, 'test-user@example.com');
@@ -149,7 +147,7 @@ describe('LTI 1.3 authentication', () => {
     assert.equal(ltiUser.lti13_instance_id, '1');
   });
 
-  test('malformed requests fail', { concurrent: false }, async () => {
+  test('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
     // Malformed login - missing login_hint
@@ -206,7 +204,7 @@ describe('LTI 1.3 authentication', () => {
     });
   });
 
-  test('request access token', { concurrent: false }, async () => {
+  test('request access token', async () => {
     const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
 
     const app = express();
@@ -246,7 +244,7 @@ describe('LTI 1.3 authentication', () => {
     // Shared cookie jar for tests that need session continuity (login flow spanning multiple tests)
     const sharedFetchWithCookies = fetchCookie(fetch);
 
-    test('create second LTI 1.3 instance', { concurrent: false }, async () => {
+    test('create second LTI 1.3 instance', async () => {
       await createLti13Instance({
         siteUrl,
         issuer_params: {
@@ -264,7 +262,7 @@ describe('LTI 1.3 authentication', () => {
       });
     });
 
-    test('perform LTI 1.3 login without prior auth', { concurrent: false }, async () => {
+    test('perform LTI 1.3 login without prior auth', async () => {
       const callbackUrl = `${siteUrl}/pl/lti13_instance/2/auth/callback`;
       const executor = await makeLoginExecutor({
         user: {
@@ -289,7 +287,7 @@ describe('LTI 1.3 authentication', () => {
       assert.isNull(user);
     });
 
-    test('authenticate with dev mode login', { concurrent: false }, async () => {
+    test('authenticate with dev mode login', async () => {
       const res = await fetchCheerio(`${siteUrl}/pl/login`);
       assert.equal(res.status, 200);
 
@@ -325,7 +323,7 @@ describe('LTI 1.3 authentication', () => {
       assert.equal(ltiUser.lti13_instance_id, '2');
     });
 
-    test('perform LTI 1.3 login after prior auth', { concurrent: false }, async () => {
+    test('perform LTI 1.3 login after prior auth', async () => {
       const fetchWithCookies = fetchCookie(fetch);
 
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/2/course_navigation`;
@@ -351,126 +349,114 @@ describe('LTI 1.3 authentication', () => {
   });
 
   describe('LTI 1.3 instance that does not provide UINs', () => {
-    test(
-      'create LTI 1.3 instance with UID but no UIN attribute',
-      { concurrent: false },
-      async () => {
-        await createLti13Instance({
-          siteUrl,
-          issuer_params: {
-            issuer: `http://localhost:${oidcProviderPort}`,
-            authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-            jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-            token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-          },
-          attributes: {
-            uid_attribute: 'email',
-            uin_attribute: '',
-            email_attribute: 'email',
-            name_attribute: 'name',
-          },
-        });
-      },
-    );
+    test('create LTI 1.3 instance with UID but no UIN attribute', async () => {
+      await createLti13Instance({
+        siteUrl,
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          uid_attribute: 'email',
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
 
-    test(
-      'should update UID when user is found by LTI sub but has different UID',
-      { concurrent: false },
-      async () => {
-        const initialUid = 'old-uid-no-uin@example.com';
-        const newUid = 'new-uid-no-uin@example.com';
-        const testSub = 'uid-update-test-sub-no-uin-67890';
-        const testUin = '1234512345';
+    test('should update UID when user is found by LTI sub but has different UID', async () => {
+      const initialUid = 'old-uid-no-uin@example.com';
+      const newUid = 'new-uid-no-uin@example.com';
+      const testSub = 'uid-update-test-sub-no-uin-67890';
+      const testUin = '1234512345';
 
-        // Fresh cookie jar for initial login
-        const fetchWithCookies = fetchCookie(fetch);
+      // Fresh cookie jar for initial login
+      const fetchWithCookies = fetchCookie(fetch);
 
-        const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
-        const initialExecutor = await makeLoginExecutor({
-          user: {
-            name: 'Test User No UIN',
-            email: initialUid,
-            uin: null,
-            sub: testSub,
-          },
-          fetchWithCookies,
-          oidcProviderPort,
-          keystore,
-          loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
-          callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-          targetLinkUri,
-        });
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
+      const initialExecutor = await makeLoginExecutor({
+        user: {
+          name: 'Test User No UIN',
+          email: initialUid,
+          uin: null,
+          sub: testSub,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+        targetLinkUri,
+      });
 
-        const initialLoginResult = await initialExecutor.login();
-        assert.equal(initialLoginResult.status, 200);
-        assert.equal(initialLoginResult.url, targetLinkUri);
+      const initialLoginResult = await initialExecutor.login();
+      assert.equal(initialLoginResult.status, 200);
+      assert.equal(initialLoginResult.url, targetLinkUri);
 
-        const initialUser = await selectOptionalUserByUid(initialUid);
-        assert.ok(initialUser);
-        assert.equal(initialUser.uid, initialUid);
+      const initialUser = await selectOptionalUserByUid(initialUid);
+      assert.ok(initialUser);
+      assert.equal(initialUser.uid, initialUid);
 
-        await execute('UPDATE users SET uin = $uin WHERE id = $user_id', {
-          user_id: initialUser.id,
-          uin: testUin,
-        });
+      await execute('UPDATE users SET uin = $uin WHERE id = $user_id', {
+        user_id: initialUser.id,
+        uin: testUin,
+      });
 
-        const executor = await makeLoginExecutor({
-          user: {
-            name: 'UID Update Test User No UIN',
-            email: newUid,
-            uin: null,
-            sub: testSub,
-          },
-          fetchWithCookies: fetchCookie(fetch),
-          oidcProviderPort,
-          keystore,
-          loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
-          callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-          targetLinkUri,
-        });
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'UID Update Test User No UIN',
+          email: newUid,
+          uin: null,
+          sub: testSub,
+        },
+        fetchWithCookies: fetchCookie(fetch),
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+        targetLinkUri,
+      });
 
-        const loginResult = await executor.login();
-        assert.equal(loginResult.status, 200);
-        assert.equal(loginResult.url, targetLinkUri);
+      const loginResult = await executor.login();
+      assert.equal(loginResult.status, 200);
+      assert.equal(loginResult.url, targetLinkUri);
 
-        const updatedUser = await selectOptionalUserByUid(newUid);
-        const oldUser = await selectOptionalUserByUid(initialUid);
+      const updatedUser = await selectOptionalUserByUid(newUid);
+      const oldUser = await selectOptionalUserByUid(initialUid);
 
-        assert.ok(updatedUser);
-        assert.equal(updatedUser.id, initialUser.id);
-        assert.equal(updatedUser.uid, newUid);
-        assert.equal(updatedUser.uin, testUin);
-        assert.isNull(oldUser);
-      },
-    );
+      assert.ok(updatedUser);
+      assert.equal(updatedUser.id, initialUser.id);
+      assert.equal(updatedUser.uid, newUid);
+      assert.equal(updatedUser.uin, testUin);
+      assert.isNull(oldUser);
+    });
   });
 
   describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
     const fetchWithCookies = fetchCookie(fetch);
 
-    test(
-      'create fourth LTI 1.3 instance without UID or UIN attributes',
-      { concurrent: false },
-      async () => {
-        await createLti13Instance({
-          siteUrl,
-          issuer_params: {
-            issuer: `http://localhost:${oidcProviderPort}`,
-            authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-            jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-            token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-          },
-          attributes: {
-            uid_attribute: '',
-            uin_attribute: '',
-            email_attribute: 'email',
-            name_attribute: 'name',
-          },
-        });
-      },
-    );
+    test('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
+      await createLti13Instance({
+        siteUrl,
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          uid_attribute: '',
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
 
-    test('login should fail with misconfiguration error', { concurrent: false }, async () => {
+    test('login should fail with misconfiguration error', async () => {
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
 
       await withoutLogging(async () => {

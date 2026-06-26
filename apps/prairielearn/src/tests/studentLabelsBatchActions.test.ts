@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 
 import { TRPCClientError } from '@trpc/client';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -41,7 +40,7 @@ function createTrpcClient() {
   });
 }
 
-describe('Student labels batch actions', () => {
+describe('Student labels batch actions', { concurrent: false }, () => {
   let courseInstance: CourseInstance;
   let label: StudentLabel;
   let enrollmentIds: string[];
@@ -72,12 +71,12 @@ describe('Student labels batch actions', () => {
 
   afterAll(helperServer.after);
 
-  test('should load the students page', { concurrent: false }, async () => {
+  test('should load the students page', async () => {
     const response = await fetch(studentsUrl);
     assert.equal(response.status, 200);
   });
 
-  test('should batch add label to multiple students', { concurrent: false }, async () => {
+  test('should batch add label to multiple students', async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchAdd.mutate({
       enrollmentIds,
@@ -97,7 +96,7 @@ describe('Student labels batch actions', () => {
     assert.includeMembers(studentsWithLabel, enrollmentIds);
   });
 
-  test('should batch remove label from multiple students', { concurrent: false }, async () => {
+  test('should batch remove label from multiple students', async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[0], enrollmentIds[1]],
@@ -108,7 +107,7 @@ describe('Student labels batch actions', () => {
     assert.deepEqual(studentsWithLabel, [enrollmentIds[2]]);
   });
 
-  test('should remove label from the last student', { concurrent: false }, async () => {
+  test('should remove label from the last student', async () => {
     const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[2]],
@@ -119,7 +118,7 @@ describe('Student labels batch actions', () => {
     assert.equal(studentsWithLabel.length, 0);
   });
 
-  test('should fail when adding non-existent label', { concurrent: false }, async () => {
+  test('should fail when adding non-existent label', async () => {
     const trpcClient = createTrpcClient();
     try {
       await trpcClient.studentLabels.batchAdd.mutate({

@@ -176,6 +176,7 @@ export const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxFiles: z.number().default(20),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z
     .string()

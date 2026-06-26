@@ -13,7 +13,7 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 
-describe('Course request note', { timeout: 60_000 }, function () {
+describe('Course request note', { timeout: 60_000, concurrent: false }, function () {
   let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
 
   beforeAll(helperServer.before());
@@ -33,7 +33,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
   const note = 'This is a test note';
 
   describe('create course request note', () => {
-    test('insert a course request', { concurrent: false }, async () => {
+    test('insert a course request', async () => {
       courseRequestId = await insertCourseRequest({
         short_name: shortName,
         title: 'Test Course',
@@ -47,14 +47,14 @@ describe('Course request note', { timeout: 60_000 }, function () {
       });
     });
 
-    test('update the note on the course request', { concurrent: false }, async () => {
+    test('update the note on the course request', async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note,
       });
     });
 
-    test('check note information', { concurrent: false }, async () => {
+    test('check note information', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
       assert.isTrue(response.ok);
 
@@ -68,28 +68,28 @@ describe('Course request note', { timeout: 60_000 }, function () {
     const firstNote = 'First note';
     const secondNote = 'Updated note';
 
-    test('update with first note', { concurrent: false }, async () => {
+    test('update with first note', async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: firstNote,
       });
     });
 
-    test('verify first note is saved', { concurrent: false }, async () => {
+    test('verify first note is saved', async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);
       assert.equal(request.note, firstNote);
     });
 
-    test('update with second note overwrites first', { concurrent: false }, async () => {
+    test('update with second note overwrites first', async () => {
       await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: secondNote,
       });
     });
 
-    test('verify note was overwritten, not appended', { concurrent: false }, async () => {
+    test('verify note was overwritten, not appended', async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
       assert.isDefined(request);

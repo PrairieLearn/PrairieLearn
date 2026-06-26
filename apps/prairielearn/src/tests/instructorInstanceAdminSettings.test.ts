@@ -56,7 +56,7 @@ async function setSharingFilesPublic(sharePublicly: boolean) {
   );
 }
 
-describe('Updating a course instance ID', () => {
+describe('Updating a course instance ID', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
@@ -71,37 +71,33 @@ describe('Updating a course instance ID', () => {
     await helperServer.after();
   });
 
-  test(
-    'should not be able to change course instance id to one that falls outside the correct root directory',
-    { concurrent: false },
-    async () => {
-      const courseInstancePageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-      );
+  test('should not be able to change course instance id to one that falls outside the correct root directory', async () => {
+    const courseInstancePageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+    );
 
-      assert.equal(courseInstancePageResponse.status, 200);
+    assert.equal(courseInstancePageResponse.status, 200);
 
-      // Attempt to update the course instance id to one that falls outside the correct root directory
-      // It should fail
-      const courseInstanceCreationResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'change_id',
-            __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-            id: '../Fa25',
-          }),
-        },
-      );
+    // Attempt to update the course instance id to one that falls outside the correct root directory
+    // It should fail
+    const courseInstanceCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'change_id',
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          id: '../Fa25',
+        }),
+      },
+    );
 
-      assert.equal(courseInstanceCreationResponse.status, 400);
-      assert.equal(
-        courseInstanceCreationResponse.url,
-        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-      );
-    },
-  );
+    assert.equal(courseInstanceCreationResponse.status, 400);
+    assert.equal(
+      courseInstanceCreationResponse.url,
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+    );
+  });
 
   async function buildUpdateConfigurationBody({
     shareSourcePublicly,
@@ -136,50 +132,42 @@ describe('Updating a course instance ID', () => {
     return body;
   }
 
-  test(
-    'cannot share course instance source publicly while it contains non-public assessments',
-    { concurrent: false },
-    async () => {
+  test('cannot share course instance source publicly while it contains non-public assessments', async () => {
+    const response = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
+      {
+        method: 'POST',
+        body: new URLSearchParams(
+          await buildUpdateConfigurationBody({ shareSourcePublicly: true }),
+        ),
+      },
+    );
+    assert.equal(response.status, 400);
+  });
+
+  test('un-shares course instance source', async () => {
+    await setSharingFilesPublic(true);
+    try {
       const response = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
         {
           method: 'POST',
           body: new URLSearchParams(
-            await buildUpdateConfigurationBody({ shareSourcePublicly: true }),
+            await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
           ),
         },
       );
-      assert.equal(response.status, 400);
-    },
-  );
-
-  test(
-    'ignores course instance source sharing when source is already public',
-    { concurrent: false },
-    async () => {
-      await setSharingFilesPublic(true);
-      try {
-        const response = await fetchCheerio(
-          `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-          {
-            method: 'POST',
-            body: new URLSearchParams(
-              await buildUpdateConfigurationBody({ shareSourcePublicly: false }),
-            ),
-          },
-        );
-        assert.equal(response.status, 200);
-        const courseInstanceInfoPath = path.join(
-          courseRepo.courseLiveDir,
-          'courseInstances',
-          'Fa18',
-          'infoCourseInstance.json',
-        );
-        const courseInstanceInfo = await fs.readJSON(courseInstanceInfoPath);
-        assert.equal(courseInstanceInfo.shareSourcePublicly, true);
-      } finally {
-        await setSharingFilesPublic(false);
-      }
-    },
-  );
+      assert.equal(response.status, 200);
+      const courseInstanceInfoPath = path.join(
+        courseRepo.courseLiveDir,
+        'courseInstances',
+        'Fa18',
+        'infoCourseInstance.json',
+      );
+      const courseInstanceInfo = await fs.readJSON(courseInstanceInfoPath);
+      assert.isUndefined(courseInstanceInfo.shareSourcePublicly);
+    } finally {
+      await setSharingFilesPublic(false);
+    }
+  });
 });
