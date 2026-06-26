@@ -267,6 +267,7 @@ test.describe('Bulk question table actions', () => {
     await addModal.getByRole('button', { name: 'Add to 1 assessment' }).click();
 
     await expect(addModal).not.toBeVisible();
+    await expect(page.getByText('Added selected questions to 1 assessment.')).toBeVisible();
     await expect(page.getByRole('link', { name: assessmentLabel, exact: true })).toHaveCount(2);
 
     // The added questions go into a new zone appended to the end of the
@@ -295,6 +296,7 @@ test.describe('Bulk question table actions', () => {
     await removeModal.getByRole('button', { name: 'Remove from 1 assessment' }).click();
 
     await expect(removeModal).not.toBeVisible();
+    await expect(page.getByText('Removed selected questions from 1 assessment.')).toBeVisible();
     await expect(page.getByRole('link', { name: assessmentLabel, exact: true })).toHaveCount(0);
 
     const savedAfterRemove = await readInfoAssessment(testCoursePath, assessmentTid);
@@ -331,6 +333,7 @@ test.describe('Bulk question table actions', () => {
     await addModal.getByRole('button', { name: 'Add to 2 assessments' }).click();
 
     await expect(addModal).not.toBeVisible();
+    await expect(page.getByText('Added selected questions to 2 assessments.')).toBeVisible();
 
     // Each assessment gets the questions appended in a new trailing zone, in a
     // single sync.
