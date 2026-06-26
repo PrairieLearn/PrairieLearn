@@ -5,14 +5,22 @@ import {
   MAX_BULK_QUESTION_SELECTION,
   type SafeQuestionsPageData,
 } from '../../../components/QuestionsTable.shared.js';
-import type { PublicCourseInstance } from '../../../lib/client/safe-db-types.js';
+import type {
+  PublicCourseInstance,
+  PublicTag,
+  PublicTopic,
+} from '../../../lib/client/safe-db-types.js';
 
 import { AssessmentMembershipModal } from './AssessmentMembershipModal.js';
+import { ChangeTopicModal } from './ChangeTopicModal.js';
 import { DeleteQuestionsModal } from './DeleteQuestionsModal.js';
+import { UpdateTagsModal } from './UpdateTagsModal.js';
 
 export function QuestionSelectionToolbar({
   selectedQuestions,
   clearSelection,
+  topics,
+  tags,
   courseInstances,
   currentCourseInstanceId,
   trimSelection,
@@ -21,6 +29,8 @@ export function QuestionSelectionToolbar({
 }: {
   selectedQuestions: SafeQuestionsPageData[];
   clearSelection: () => void;
+  topics: PublicTopic[];
+  tags: PublicTag[];
   courseInstances: PublicCourseInstance[];
   currentCourseInstanceId?: string;
   trimSelection: (count: number) => void;
@@ -29,6 +39,9 @@ export function QuestionSelectionToolbar({
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [showChangeTopicModal, setShowChangeTopicModal] = useState(false);
+  const [showAddTagsModal, setShowAddTagsModal] = useState(false);
+  const [showRemoveTagsModal, setShowRemoveTagsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const questionIds = selectedQuestions.map((question) => question.id);
   const selectionLimitExceeded = selectedQuestions.length > MAX_BULK_QUESTION_SELECTION;
@@ -67,6 +80,19 @@ export function QuestionSelectionToolbar({
             Remove from assessments
           </Dropdown.Item>
           <Dropdown.Divider />
+          <Dropdown.Item onClick={() => setShowChangeTopicModal(true)}>
+            <i className="bi bi-collection me-2" aria-hidden="true" />
+            Change topic
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => setShowAddTagsModal(true)}>
+            <i className="bi bi-bookmark-plus me-2" aria-hidden="true" />
+            Add tags
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => setShowRemoveTagsModal(true)}>
+            <i className="bi bi-bookmark-dash me-2" aria-hidden="true" />
+            Remove tags
+          </Dropdown.Item>
+          <Dropdown.Divider />
           <Dropdown.Item className="text-danger" onClick={() => setShowDeleteModal(true)}>
             <i className="bi bi-trash3 me-2" aria-hidden="true" />
             Delete
@@ -97,6 +123,38 @@ export function QuestionSelectionToolbar({
         clearSelection={clearSelection}
         onActionSuccess={onActionSuccess}
         onHide={() => setShowRemoveModal(false)}
+      />
+      <ChangeTopicModal
+        show={showChangeTopicModal}
+        selectedQuestions={selectedQuestions}
+        questionIds={questionIds}
+        topics={topics}
+        urlPrefix={urlPrefix}
+        clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
+        onHide={() => setShowChangeTopicModal(false)}
+      />
+      <UpdateTagsModal
+        mode="add"
+        show={showAddTagsModal}
+        selectedQuestions={selectedQuestions}
+        questionIds={questionIds}
+        tags={tags}
+        urlPrefix={urlPrefix}
+        clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
+        onHide={() => setShowAddTagsModal(false)}
+      />
+      <UpdateTagsModal
+        mode="remove"
+        show={showRemoveTagsModal}
+        selectedQuestions={selectedQuestions}
+        questionIds={questionIds}
+        tags={tags}
+        urlPrefix={urlPrefix}
+        clearSelection={clearSelection}
+        onActionSuccess={onActionSuccess}
+        onHide={() => setShowRemoveTagsModal(false)}
       />
       <DeleteQuestionsModal
         show={showDeleteModal}
