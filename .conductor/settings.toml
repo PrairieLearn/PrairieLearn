@@ -2,4 +2,12 @@
 
 [scripts]
 setup = "./scripts/conductor-setup.sh"
-run = "make dev"
+
+[scripts.run.app]
+command = "make dev"
+default = true
+icon = "play"
+
+[scripts.run.docs]
+command = "make dev-docs"
+icon = "book-open"
