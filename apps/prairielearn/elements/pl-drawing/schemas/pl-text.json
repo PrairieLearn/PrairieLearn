@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "font-size": {
+      "type": "string",
+      "format": "number"
+    },
+    "label": {
+      "type": "string"
+    },
+    "latex": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "offsetx": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

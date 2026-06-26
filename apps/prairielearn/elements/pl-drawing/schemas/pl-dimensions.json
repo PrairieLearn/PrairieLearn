@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-length": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "dim-offset": {
+      "type": "string",
+      "format": "number"
+    },
+    "dim-offset-angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "draw-end-arrow": {
+      "type": "string"
+    },
+    "draw-start-arrow": {
+      "type": "string"
+    },
+    "end-support-line": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "label": {
+      "type": "string"
+    },
+    "offsetx": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety": {
+      "type": "string",
+      "format": "number"
+    },
+    "start-support-line": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "stroke-color": {
+      "type": "string"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "width": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "x2": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y2": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

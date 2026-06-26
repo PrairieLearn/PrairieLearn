@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "dashed-size": {
+      "type": "string",
+      "format": "number"
+    },
+    "end-angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "opacity": {
+      "type": "string",
+      "format": "number"
+    },
+    "radius": {
+      "type": "string",
+      "format": "number"
+    },
+    "start-angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "stroke-color": {
+      "type": "string"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

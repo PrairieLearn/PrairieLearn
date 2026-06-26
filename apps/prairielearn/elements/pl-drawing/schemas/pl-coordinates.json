@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-length": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "color": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "label-x": {
+      "type": "string"
+    },
+    "label-y": {
+      "type": "string"
+    },
+    "offsetx": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsetx-label-x": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsetx-label-y": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety-label-x": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety-label-y": {
+      "type": "string",
+      "format": "number"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "width": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

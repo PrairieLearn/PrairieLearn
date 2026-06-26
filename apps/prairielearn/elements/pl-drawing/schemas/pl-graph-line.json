@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "color": {
+      "type": "string"
+    },
+    "draw-error-box": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "end-gradients": {
+      "type": "string"
+    },
+    "end-points": {
+      "type": "string"
+    },
+    "offset-control-tol-x": {
+      "type": "string",
+      "format": "number"
+    },
+    "offset-control-tol-y": {
+      "type": "string",
+      "format": "number"
+    },
+    "offset-tol-x": {
+      "type": "string",
+      "format": "number"
+    },
+    "offset-tol-y": {
+      "type": "string",
+      "format": "number"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

@@ -27,9 +27,296 @@
       "schema": "./schemas/pl-drawing-answer.json",
       "children": [
         {
+          "tag": "pl-3pointrod",
+          "schema": "./schemas/pl-3pointrod.json"
+        },
+        {
+          "tag": "pl-4pointrod",
+          "schema": "./schemas/pl-4pointrod.json"
+        },
+        {
+          "tag": "pl-arc",
+          "schema": "./schemas/pl-arc.json"
+        },
+        {
+          "tag": "pl-arc-dimensions",
+          "schema": "./schemas/pl-arc-dimensions.json"
+        },
+        {
+          "tag": "pl-arc-vector",
+          "schema": "./schemas/pl-arc-vector.json"
+        },
+        {
+          "tag": "pl-axes",
+          "schema": "./schemas/pl-axes.json"
+        },
+        {
+          "tag": "pl-battery",
+          "schema": "./schemas/pl-battery.json"
+        },
+        {
+          "tag": "pl-capacitor",
+          "schema": "./schemas/pl-capacitor.json"
+        },
+        {
+          "tag": "pl-circle",
+          "schema": "./schemas/pl-circle.json"
+        },
+        {
+          "tag": "pl-clamped",
+          "schema": "./schemas/pl-clamped.json"
+        },
+        {
+          "tag": "pl-coil",
+          "schema": "./schemas/pl-coil.json"
+        },
+        {
+          "tag": "pl-collar-rod",
+          "schema": "./schemas/pl-collar-rod.json"
+        },
+        {
+          "tag": "pl-controlled-curved-line",
+          "schema": "./schemas/pl-controlled-curved-line.json"
+        },
+        {
+          "tag": "pl-controlled-line",
+          "schema": "./schemas/pl-controlled-line.json"
+        },
+        {
+          "tag": "pl-coordinates",
+          "schema": "./schemas/pl-coordinates.json"
+        },
+        {
+          "tag": "pl-dimensions",
+          "schema": "./schemas/pl-dimensions.json"
+        },
+        {
+          "tag": "pl-distributed-load",
+          "schema": "./schemas/pl-distributed-load.json"
+        },
+        {
+          "tag": "pl-double-headed-vector",
+          "schema": "./schemas/pl-double-headed-vector.json"
+        },
+        {
           "tag": "pl-drawing-group",
           "schema": "./schemas/pl-drawing-group.json",
+          "children": [
+            {
+              "tag": "pl-3pointrod",
+              "schema": "./schemas/pl-3pointrod.json"
+            },
+            {
+              "tag": "pl-4pointrod",
+              "schema": "./schemas/pl-4pointrod.json"
+            },
+            {
+              "tag": "pl-arc",
+              "schema": "./schemas/pl-arc.json"
+            },
+            {
+              "tag": "pl-arc-dimensions",
+              "schema": "./schemas/pl-arc-dimensions.json"
+            },
+            {
+              "tag": "pl-arc-vector",
+              "schema": "./schemas/pl-arc-vector.json"
+            },
+            {
+              "tag": "pl-axes",
+              "schema": "./schemas/pl-axes.json"
+            },
+            {
+              "tag": "pl-battery",
+              "schema": "./schemas/pl-battery.json"
+            },
+            {
+              "tag": "pl-capacitor",
+              "schema": "./schemas/pl-capacitor.json"
+            },
+            {
+              "tag": "pl-circle",
+              "schema": "./schemas/pl-circle.json"
+            },
+            {
+              "tag": "pl-clamped",
+              "schema": "./schemas/pl-clamped.json"
+            },
+            {
+              "tag": "pl-coil",
+              "schema": "./schemas/pl-coil.json"
+            },
+            {
+              "tag": "pl-collar-rod",
+              "schema": "./schemas/pl-collar-rod.json"
+            },
+            {
+              "tag": "pl-controlled-curved-line",
+              "schema": "./schemas/pl-controlled-curved-line.json"
+            },
+            {
+              "tag": "pl-controlled-line",
+              "schema": "./schemas/pl-controlled-line.json"
+            },
+            {
+              "tag": "pl-coordinates",
+              "schema": "./schemas/pl-coordinates.json"
+            },
+            {
+              "tag": "pl-dimensions",
+              "schema": "./schemas/pl-dimensions.json"
+            },
+            {
+              "tag": "pl-distributed-load",
+              "schema": "./schemas/pl-distributed-load.json"
+            },
+            {
+              "tag": "pl-double-headed-vector",
+              "schema": "./schemas/pl-double-headed-vector.json"
+            },
+            {
+              "tag": "pl-drawing-group",
+              "schema": "./schemas/pl-drawing-group.json",
+              "allowAdditionalChildren": true
+            },
+            {
+              "tag": "pl-fixed-pin",
+              "schema": "./schemas/pl-fixed-pin.json"
+            },
+            {
+              "tag": "pl-graph-line",
+              "schema": "./schemas/pl-graph-line.json"
+            },
+            {
+              "tag": "pl-inductor",
+              "schema": "./schemas/pl-inductor.json"
+            },
+            {
+              "tag": "pl-line",
+              "schema": "./schemas/pl-line.json"
+            },
+            {
+              "tag": "pl-paired-vector",
+              "schema": "./schemas/pl-paired-vector.json"
+            },
+            {
+              "tag": "pl-point",
+              "schema": "./schemas/pl-point.json"
+            },
+            {
+              "tag": "pl-polygon",
+              "schema": "./schemas/pl-polygon.json"
+            },
+            {
+              "tag": "pl-pulley",
+              "schema": "./schemas/pl-pulley.json"
+            },
+            {
+              "tag": "pl-rectangle",
+              "schema": "./schemas/pl-rectangle.json"
+            },
+            {
+              "tag": "pl-resistor",
+              "schema": "./schemas/pl-resistor.json"
+            },
+            {
+              "tag": "pl-rod",
+              "schema": "./schemas/pl-rod.json"
+            },
+            {
+              "tag": "pl-roller",
+              "schema": "./schemas/pl-roller.json"
+            },
+            {
+              "tag": "pl-spring",
+              "schema": "./schemas/pl-spring.json"
+            },
+            {
+              "tag": "pl-switch",
+              "schema": "./schemas/pl-switch.json"
+            },
+            {
+              "tag": "pl-text",
+              "schema": "./schemas/pl-text.json"
+            },
+            {
+              "tag": "pl-triangle",
+              "schema": "./schemas/pl-triangle.json"
+            },
+            {
+              "tag": "pl-vector",
+              "schema": "./schemas/pl-vector.json"
+            }
+          ],
           "allowAdditionalChildren": true
+        },
+        {
+          "tag": "pl-fixed-pin",
+          "schema": "./schemas/pl-fixed-pin.json"
+        },
+        {
+          "tag": "pl-graph-line",
+          "schema": "./schemas/pl-graph-line.json"
+        },
+        {
+          "tag": "pl-inductor",
+          "schema": "./schemas/pl-inductor.json"
+        },
+        {
+          "tag": "pl-line",
+          "schema": "./schemas/pl-line.json"
+        },
+        {
+          "tag": "pl-paired-vector",
+          "schema": "./schemas/pl-paired-vector.json"
+        },
+        {
+          "tag": "pl-point",
+          "schema": "./schemas/pl-point.json"
+        },
+        {
+          "tag": "pl-polygon",
+          "schema": "./schemas/pl-polygon.json"
+        },
+        {
+          "tag": "pl-pulley",
+          "schema": "./schemas/pl-pulley.json"
+        },
+        {
+          "tag": "pl-rectangle",
+          "schema": "./schemas/pl-rectangle.json"
+        },
+        {
+          "tag": "pl-resistor",
+          "schema": "./schemas/pl-resistor.json"
+        },
+        {
+          "tag": "pl-rod",
+          "schema": "./schemas/pl-rod.json"
+        },
+        {
+          "tag": "pl-roller",
+          "schema": "./schemas/pl-roller.json"
+        },
+        {
+          "tag": "pl-spring",
+          "schema": "./schemas/pl-spring.json"
+        },
+        {
+          "tag": "pl-switch",
+          "schema": "./schemas/pl-switch.json"
+        },
+        {
+          "tag": "pl-text",
+          "schema": "./schemas/pl-text.json"
+        },
+        {
+          "tag": "pl-triangle",
+          "schema": "./schemas/pl-triangle.json"
+        },
+        {
+          "tag": "pl-vector",
+          "schema": "./schemas/pl-vector.json"
         }
       ],
       "allowAdditionalChildren": true
@@ -39,9 +326,296 @@
       "schema": "./schemas/pl-drawing-initial.json",
       "children": [
         {
+          "tag": "pl-3pointrod",
+          "schema": "./schemas/pl-3pointrod.json"
+        },
+        {
+          "tag": "pl-4pointrod",
+          "schema": "./schemas/pl-4pointrod.json"
+        },
+        {
+          "tag": "pl-arc",
+          "schema": "./schemas/pl-arc.json"
+        },
+        {
+          "tag": "pl-arc-dimensions",
+          "schema": "./schemas/pl-arc-dimensions.json"
+        },
+        {
+          "tag": "pl-arc-vector",
+          "schema": "./schemas/pl-arc-vector.json"
+        },
+        {
+          "tag": "pl-axes",
+          "schema": "./schemas/pl-axes.json"
+        },
+        {
+          "tag": "pl-battery",
+          "schema": "./schemas/pl-battery.json"
+        },
+        {
+          "tag": "pl-capacitor",
+          "schema": "./schemas/pl-capacitor.json"
+        },
+        {
+          "tag": "pl-circle",
+          "schema": "./schemas/pl-circle.json"
+        },
+        {
+          "tag": "pl-clamped",
+          "schema": "./schemas/pl-clamped.json"
+        },
+        {
+          "tag": "pl-coil",
+          "schema": "./schemas/pl-coil.json"
+        },
+        {
+          "tag": "pl-collar-rod",
+          "schema": "./schemas/pl-collar-rod.json"
+        },
+        {
+          "tag": "pl-controlled-curved-line",
+          "schema": "./schemas/pl-controlled-curved-line.json"
+        },
+        {
+          "tag": "pl-controlled-line",
+          "schema": "./schemas/pl-controlled-line.json"
+        },
+        {
+          "tag": "pl-coordinates",
+          "schema": "./schemas/pl-coordinates.json"
+        },
+        {
+          "tag": "pl-dimensions",
+          "schema": "./schemas/pl-dimensions.json"
+        },
+        {
+          "tag": "pl-distributed-load",
+          "schema": "./schemas/pl-distributed-load.json"
+        },
+        {
+          "tag": "pl-double-headed-vector",
+          "schema": "./schemas/pl-double-headed-vector.json"
+        },
+        {
           "tag": "pl-drawing-group",
           "schema": "./schemas/pl-drawing-group.json",
+          "children": [
+            {
+              "tag": "pl-3pointrod",
+              "schema": "./schemas/pl-3pointrod.json"
+            },
+            {
+              "tag": "pl-4pointrod",
+              "schema": "./schemas/pl-4pointrod.json"
+            },
+            {
+              "tag": "pl-arc",
+              "schema": "./schemas/pl-arc.json"
+            },
+            {
+              "tag": "pl-arc-dimensions",
+              "schema": "./schemas/pl-arc-dimensions.json"
+            },
+            {
+              "tag": "pl-arc-vector",
+              "schema": "./schemas/pl-arc-vector.json"
+            },
+            {
+              "tag": "pl-axes",
+              "schema": "./schemas/pl-axes.json"
+            },
+            {
+              "tag": "pl-battery",
+              "schema": "./schemas/pl-battery.json"
+            },
+            {
+              "tag": "pl-capacitor",
+              "schema": "./schemas/pl-capacitor.json"
+            },
+            {
+              "tag": "pl-circle",
+              "schema": "./schemas/pl-circle.json"
+            },
+            {
+              "tag": "pl-clamped",
+              "schema": "./schemas/pl-clamped.json"
+            },
+            {
+              "tag": "pl-coil",
+              "schema": "./schemas/pl-coil.json"
+            },
+            {
+              "tag": "pl-collar-rod",
+              "schema": "./schemas/pl-collar-rod.json"
+            },
+            {
+              "tag": "pl-controlled-curved-line",
+              "schema": "./schemas/pl-controlled-curved-line.json"
+            },
+            {
+              "tag": "pl-controlled-line",
+              "schema": "./schemas/pl-controlled-line.json"
+            },
+            {
+              "tag": "pl-coordinates",
+              "schema": "./schemas/pl-coordinates.json"
+            },
+            {
+              "tag": "pl-dimensions",
+              "schema": "./schemas/pl-dimensions.json"
+            },
+            {
+              "tag": "pl-distributed-load",
+              "schema": "./schemas/pl-distributed-load.json"
+            },
+            {
+              "tag": "pl-double-headed-vector",
+              "schema": "./schemas/pl-double-headed-vector.json"
+            },
+            {
+              "tag": "pl-drawing-group",
+              "schema": "./schemas/pl-drawing-group.json",
+              "allowAdditionalChildren": true
+            },
+            {
+              "tag": "pl-fixed-pin",
+              "schema": "./schemas/pl-fixed-pin.json"
+            },
+            {
+              "tag": "pl-graph-line",
+              "schema": "./schemas/pl-graph-line.json"
+            },
+            {
+              "tag": "pl-inductor",
+              "schema": "./schemas/pl-inductor.json"
+            },
+            {
+              "tag": "pl-line",
+              "schema": "./schemas/pl-line.json"
+            },
+            {
+              "tag": "pl-paired-vector",
+              "schema": "./schemas/pl-paired-vector.json"
+            },
+            {
+              "tag": "pl-point",
+              "schema": "./schemas/pl-point.json"
+            },
+            {
+              "tag": "pl-polygon",
+              "schema": "./schemas/pl-polygon.json"
+            },
+            {
+              "tag": "pl-pulley",
+              "schema": "./schemas/pl-pulley.json"
+            },
+            {
+              "tag": "pl-rectangle",
+              "schema": "./schemas/pl-rectangle.json"
+            },
+            {
+              "tag": "pl-resistor",
+              "schema": "./schemas/pl-resistor.json"
+            },
+            {
+              "tag": "pl-rod",
+              "schema": "./schemas/pl-rod.json"
+            },
+            {
+              "tag": "pl-roller",
+              "schema": "./schemas/pl-roller.json"
+            },
+            {
+              "tag": "pl-spring",
+              "schema": "./schemas/pl-spring.json"
+            },
+            {
+              "tag": "pl-switch",
+              "schema": "./schemas/pl-switch.json"
+            },
+            {
+              "tag": "pl-text",
+              "schema": "./schemas/pl-text.json"
+            },
+            {
+              "tag": "pl-triangle",
+              "schema": "./schemas/pl-triangle.json"
+            },
+            {
+              "tag": "pl-vector",
+              "schema": "./schemas/pl-vector.json"
+            }
+          ],
           "allowAdditionalChildren": true
+        },
+        {
+          "tag": "pl-fixed-pin",
+          "schema": "./schemas/pl-fixed-pin.json"
+        },
+        {
+          "tag": "pl-graph-line",
+          "schema": "./schemas/pl-graph-line.json"
+        },
+        {
+          "tag": "pl-inductor",
+          "schema": "./schemas/pl-inductor.json"
+        },
+        {
+          "tag": "pl-line",
+          "schema": "./schemas/pl-line.json"
+        },
+        {
+          "tag": "pl-paired-vector",
+          "schema": "./schemas/pl-paired-vector.json"
+        },
+        {
+          "tag": "pl-point",
+          "schema": "./schemas/pl-point.json"
+        },
+        {
+          "tag": "pl-polygon",
+          "schema": "./schemas/pl-polygon.json"
+        },
+        {
+          "tag": "pl-pulley",
+          "schema": "./schemas/pl-pulley.json"
+        },
+        {
+          "tag": "pl-rectangle",
+          "schema": "./schemas/pl-rectangle.json"
+        },
+        {
+          "tag": "pl-resistor",
+          "schema": "./schemas/pl-resistor.json"
+        },
+        {
+          "tag": "pl-rod",
+          "schema": "./schemas/pl-rod.json"
+        },
+        {
+          "tag": "pl-roller",
+          "schema": "./schemas/pl-roller.json"
+        },
+        {
+          "tag": "pl-spring",
+          "schema": "./schemas/pl-spring.json"
+        },
+        {
+          "tag": "pl-switch",
+          "schema": "./schemas/pl-switch.json"
+        },
+        {
+          "tag": "pl-text",
+          "schema": "./schemas/pl-text.json"
+        },
+        {
+          "tag": "pl-triangle",
+          "schema": "./schemas/pl-triangle.json"
+        },
+        {
+          "tag": "pl-vector",
+          "schema": "./schemas/pl-vector.json"
         }
       ],
       "allowAdditionalChildren": true

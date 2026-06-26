@@ -230,7 +230,294 @@
             {
               "name": "pl-drawing-group",
               "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+              "children": [
+                {
+                  "name": "pl-drawing-group",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+                  "allowAdditionalChildren": true
+                },
+                {
+                  "name": "pl-3pointrod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-3pointrod.json"
+                },
+                {
+                  "name": "pl-4pointrod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-4pointrod.json"
+                },
+                {
+                  "name": "pl-arc",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc.json"
+                },
+                {
+                  "name": "pl-arc-dimensions",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-dimensions.json"
+                },
+                {
+                  "name": "pl-arc-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-vector.json"
+                },
+                {
+                  "name": "pl-axes",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-axes.json"
+                },
+                {
+                  "name": "pl-battery",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-battery.json"
+                },
+                {
+                  "name": "pl-capacitor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-capacitor.json"
+                },
+                {
+                  "name": "pl-circle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-circle.json"
+                },
+                {
+                  "name": "pl-clamped",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-clamped.json"
+                },
+                {
+                  "name": "pl-coil",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coil.json"
+                },
+                {
+                  "name": "pl-collar-rod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-collar-rod.json"
+                },
+                {
+                  "name": "pl-controlled-curved-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-curved-line.json"
+                },
+                {
+                  "name": "pl-controlled-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-line.json"
+                },
+                {
+                  "name": "pl-coordinates",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coordinates.json"
+                },
+                {
+                  "name": "pl-dimensions",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-dimensions.json"
+                },
+                {
+                  "name": "pl-distributed-load",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-distributed-load.json"
+                },
+                {
+                  "name": "pl-double-headed-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-double-headed-vector.json"
+                },
+                {
+                  "name": "pl-fixed-pin",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-fixed-pin.json"
+                },
+                {
+                  "name": "pl-graph-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-graph-line.json"
+                },
+                {
+                  "name": "pl-inductor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-inductor.json"
+                },
+                {
+                  "name": "pl-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-line.json"
+                },
+                {
+                  "name": "pl-paired-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-paired-vector.json"
+                },
+                {
+                  "name": "pl-point",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-point.json"
+                },
+                {
+                  "name": "pl-polygon",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-polygon.json"
+                },
+                {
+                  "name": "pl-pulley",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-pulley.json"
+                },
+                {
+                  "name": "pl-rectangle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rectangle.json"
+                },
+                {
+                  "name": "pl-resistor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-resistor.json"
+                },
+                {
+                  "name": "pl-rod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rod.json"
+                },
+                {
+                  "name": "pl-roller",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-roller.json"
+                },
+                {
+                  "name": "pl-spring",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-spring.json"
+                },
+                {
+                  "name": "pl-switch",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-switch.json"
+                },
+                {
+                  "name": "pl-text",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-text.json"
+                },
+                {
+                  "name": "pl-triangle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-triangle.json"
+                },
+                {
+                  "name": "pl-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-vector.json"
+                }
+              ],
               "allowAdditionalChildren": true
+            },
+            {
+              "name": "pl-3pointrod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-3pointrod.json"
+            },
+            {
+              "name": "pl-4pointrod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-4pointrod.json"
+            },
+            {
+              "name": "pl-arc",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc.json"
+            },
+            {
+              "name": "pl-arc-dimensions",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-dimensions.json"
+            },
+            {
+              "name": "pl-arc-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-vector.json"
+            },
+            {
+              "name": "pl-axes",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-axes.json"
+            },
+            {
+              "name": "pl-battery",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-battery.json"
+            },
+            {
+              "name": "pl-capacitor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-capacitor.json"
+            },
+            {
+              "name": "pl-circle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-circle.json"
+            },
+            {
+              "name": "pl-clamped",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-clamped.json"
+            },
+            {
+              "name": "pl-coil",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coil.json"
+            },
+            {
+              "name": "pl-collar-rod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-collar-rod.json"
+            },
+            {
+              "name": "pl-controlled-curved-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-curved-line.json"
+            },
+            {
+              "name": "pl-controlled-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-line.json"
+            },
+            {
+              "name": "pl-coordinates",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coordinates.json"
+            },
+            {
+              "name": "pl-dimensions",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-dimensions.json"
+            },
+            {
+              "name": "pl-distributed-load",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-distributed-load.json"
+            },
+            {
+              "name": "pl-double-headed-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-double-headed-vector.json"
+            },
+            {
+              "name": "pl-fixed-pin",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-fixed-pin.json"
+            },
+            {
+              "name": "pl-graph-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-graph-line.json"
+            },
+            {
+              "name": "pl-inductor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-inductor.json"
+            },
+            {
+              "name": "pl-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-line.json"
+            },
+            {
+              "name": "pl-paired-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-paired-vector.json"
+            },
+            {
+              "name": "pl-point",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-point.json"
+            },
+            {
+              "name": "pl-polygon",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-polygon.json"
+            },
+            {
+              "name": "pl-pulley",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-pulley.json"
+            },
+            {
+              "name": "pl-rectangle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rectangle.json"
+            },
+            {
+              "name": "pl-resistor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-resistor.json"
+            },
+            {
+              "name": "pl-rod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rod.json"
+            },
+            {
+              "name": "pl-roller",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-roller.json"
+            },
+            {
+              "name": "pl-spring",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-spring.json"
+            },
+            {
+              "name": "pl-switch",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-switch.json"
+            },
+            {
+              "name": "pl-text",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-text.json"
+            },
+            {
+              "name": "pl-triangle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-triangle.json"
+            },
+            {
+              "name": "pl-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-vector.json"
             }
           ],
           "allowAdditionalChildren": true
@@ -242,7 +529,294 @@
             {
               "name": "pl-drawing-group",
               "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+              "children": [
+                {
+                  "name": "pl-drawing-group",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json",
+                  "allowAdditionalChildren": true
+                },
+                {
+                  "name": "pl-3pointrod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-3pointrod.json"
+                },
+                {
+                  "name": "pl-4pointrod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-4pointrod.json"
+                },
+                {
+                  "name": "pl-arc",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc.json"
+                },
+                {
+                  "name": "pl-arc-dimensions",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-dimensions.json"
+                },
+                {
+                  "name": "pl-arc-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-vector.json"
+                },
+                {
+                  "name": "pl-axes",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-axes.json"
+                },
+                {
+                  "name": "pl-battery",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-battery.json"
+                },
+                {
+                  "name": "pl-capacitor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-capacitor.json"
+                },
+                {
+                  "name": "pl-circle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-circle.json"
+                },
+                {
+                  "name": "pl-clamped",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-clamped.json"
+                },
+                {
+                  "name": "pl-coil",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coil.json"
+                },
+                {
+                  "name": "pl-collar-rod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-collar-rod.json"
+                },
+                {
+                  "name": "pl-controlled-curved-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-curved-line.json"
+                },
+                {
+                  "name": "pl-controlled-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-line.json"
+                },
+                {
+                  "name": "pl-coordinates",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coordinates.json"
+                },
+                {
+                  "name": "pl-dimensions",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-dimensions.json"
+                },
+                {
+                  "name": "pl-distributed-load",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-distributed-load.json"
+                },
+                {
+                  "name": "pl-double-headed-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-double-headed-vector.json"
+                },
+                {
+                  "name": "pl-fixed-pin",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-fixed-pin.json"
+                },
+                {
+                  "name": "pl-graph-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-graph-line.json"
+                },
+                {
+                  "name": "pl-inductor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-inductor.json"
+                },
+                {
+                  "name": "pl-line",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-line.json"
+                },
+                {
+                  "name": "pl-paired-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-paired-vector.json"
+                },
+                {
+                  "name": "pl-point",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-point.json"
+                },
+                {
+                  "name": "pl-polygon",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-polygon.json"
+                },
+                {
+                  "name": "pl-pulley",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-pulley.json"
+                },
+                {
+                  "name": "pl-rectangle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rectangle.json"
+                },
+                {
+                  "name": "pl-resistor",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-resistor.json"
+                },
+                {
+                  "name": "pl-rod",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rod.json"
+                },
+                {
+                  "name": "pl-roller",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-roller.json"
+                },
+                {
+                  "name": "pl-spring",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-spring.json"
+                },
+                {
+                  "name": "pl-switch",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-switch.json"
+                },
+                {
+                  "name": "pl-text",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-text.json"
+                },
+                {
+                  "name": "pl-triangle",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-triangle.json"
+                },
+                {
+                  "name": "pl-vector",
+                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-vector.json"
+                }
+              ],
               "allowAdditionalChildren": true
+            },
+            {
+              "name": "pl-3pointrod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-3pointrod.json"
+            },
+            {
+              "name": "pl-4pointrod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-4pointrod.json"
+            },
+            {
+              "name": "pl-arc",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc.json"
+            },
+            {
+              "name": "pl-arc-dimensions",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-dimensions.json"
+            },
+            {
+              "name": "pl-arc-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-arc-vector.json"
+            },
+            {
+              "name": "pl-axes",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-axes.json"
+            },
+            {
+              "name": "pl-battery",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-battery.json"
+            },
+            {
+              "name": "pl-capacitor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-capacitor.json"
+            },
+            {
+              "name": "pl-circle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-circle.json"
+            },
+            {
+              "name": "pl-clamped",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-clamped.json"
+            },
+            {
+              "name": "pl-coil",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coil.json"
+            },
+            {
+              "name": "pl-collar-rod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-collar-rod.json"
+            },
+            {
+              "name": "pl-controlled-curved-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-curved-line.json"
+            },
+            {
+              "name": "pl-controlled-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controlled-line.json"
+            },
+            {
+              "name": "pl-coordinates",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-coordinates.json"
+            },
+            {
+              "name": "pl-dimensions",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-dimensions.json"
+            },
+            {
+              "name": "pl-distributed-load",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-distributed-load.json"
+            },
+            {
+              "name": "pl-double-headed-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-double-headed-vector.json"
+            },
+            {
+              "name": "pl-fixed-pin",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-fixed-pin.json"
+            },
+            {
+              "name": "pl-graph-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-graph-line.json"
+            },
+            {
+              "name": "pl-inductor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-inductor.json"
+            },
+            {
+              "name": "pl-line",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-line.json"
+            },
+            {
+              "name": "pl-paired-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-paired-vector.json"
+            },
+            {
+              "name": "pl-point",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-point.json"
+            },
+            {
+              "name": "pl-polygon",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-polygon.json"
+            },
+            {
+              "name": "pl-pulley",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-pulley.json"
+            },
+            {
+              "name": "pl-rectangle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rectangle.json"
+            },
+            {
+              "name": "pl-resistor",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-resistor.json"
+            },
+            {
+              "name": "pl-rod",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-rod.json"
+            },
+            {
+              "name": "pl-roller",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-roller.json"
+            },
+            {
+              "name": "pl-spring",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-spring.json"
+            },
+            {
+              "name": "pl-switch",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-switch.json"
+            },
+            {
+              "name": "pl-text",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-text.json"
+            },
+            {
+              "name": "pl-triangle",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-triangle.json"
+            },
+            {
+              "name": "pl-vector",
+              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-vector.json"
             }
           ],
           "allowAdditionalChildren": true
@@ -741,508 +1315,6 @@
     },
     {
       "name": "pl-github-link"
-    },
-    {
-      "name": "pl-drawing",
-      "children": [
-        {
-          "name": "pl-drawing-answer",
-          "children": [
-            {
-              "name": "pl-drawing-group",
-              "children": [
-                {
-                  "name": "pl-drawing-group"
-                },
-                {
-                  "name": "pl-3pointrod"
-                },
-                {
-                  "name": "pl-4pointrod"
-                },
-                {
-                  "name": "pl-arc"
-                },
-                {
-                  "name": "pl-arc-dimensions"
-                },
-                {
-                  "name": "pl-arc-vector"
-                },
-                {
-                  "name": "pl-axes"
-                },
-                {
-                  "name": "pl-battery"
-                },
-                {
-                  "name": "pl-capacitor"
-                },
-                {
-                  "name": "pl-circle"
-                },
-                {
-                  "name": "pl-clamped"
-                },
-                {
-                  "name": "pl-coil"
-                },
-                {
-                  "name": "pl-collar-rod"
-                },
-                {
-                  "name": "pl-controlled-curved-line"
-                },
-                {
-                  "name": "pl-controlled-line"
-                },
-                {
-                  "name": "pl-coordinates"
-                },
-                {
-                  "name": "pl-dimensions"
-                },
-                {
-                  "name": "pl-distributed-load"
-                },
-                {
-                  "name": "pl-double-headed-vector"
-                },
-                {
-                  "name": "pl-fixed-pin"
-                },
-                {
-                  "name": "pl-graph-line"
-                },
-                {
-                  "name": "pl-inductor"
-                },
-                {
-                  "name": "pl-line"
-                },
-                {
-                  "name": "pl-paired-vector"
-                },
-                {
-                  "name": "pl-point"
-                },
-                {
-                  "name": "pl-polygon"
-                },
-                {
-                  "name": "pl-pulley"
-                },
-                {
-                  "name": "pl-rectangle"
-                },
-                {
-                  "name": "pl-resistor"
-                },
-                {
-                  "name": "pl-rod"
-                },
-                {
-                  "name": "pl-roller"
-                },
-                {
-                  "name": "pl-spring"
-                },
-                {
-                  "name": "pl-switch"
-                },
-                {
-                  "name": "pl-text"
-                },
-                {
-                  "name": "pl-triangle"
-                },
-                {
-                  "name": "pl-vector"
-                }
-              ],
-              "allowAdditionalChildren": true,
-              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json"
-            },
-            {
-              "name": "pl-3pointrod"
-            },
-            {
-              "name": "pl-4pointrod"
-            },
-            {
-              "name": "pl-arc"
-            },
-            {
-              "name": "pl-arc-dimensions"
-            },
-            {
-              "name": "pl-arc-vector"
-            },
-            {
-              "name": "pl-axes"
-            },
-            {
-              "name": "pl-battery"
-            },
-            {
-              "name": "pl-capacitor"
-            },
-            {
-              "name": "pl-circle"
-            },
-            {
-              "name": "pl-clamped"
-            },
-            {
-              "name": "pl-coil"
-            },
-            {
-              "name": "pl-collar-rod"
-            },
-            {
-              "name": "pl-controlled-curved-line"
-            },
-            {
-              "name": "pl-controlled-line"
-            },
-            {
-              "name": "pl-coordinates"
-            },
-            {
-              "name": "pl-dimensions"
-            },
-            {
-              "name": "pl-distributed-load"
-            },
-            {
-              "name": "pl-double-headed-vector"
-            },
-            {
-              "name": "pl-fixed-pin"
-            },
-            {
-              "name": "pl-graph-line"
-            },
-            {
-              "name": "pl-inductor"
-            },
-            {
-              "name": "pl-line"
-            },
-            {
-              "name": "pl-paired-vector"
-            },
-            {
-              "name": "pl-point"
-            },
-            {
-              "name": "pl-polygon"
-            },
-            {
-              "name": "pl-pulley"
-            },
-            {
-              "name": "pl-rectangle"
-            },
-            {
-              "name": "pl-resistor"
-            },
-            {
-              "name": "pl-rod"
-            },
-            {
-              "name": "pl-roller"
-            },
-            {
-              "name": "pl-spring"
-            },
-            {
-              "name": "pl-switch"
-            },
-            {
-              "name": "pl-text"
-            },
-            {
-              "name": "pl-triangle"
-            },
-            {
-              "name": "pl-vector"
-            }
-          ],
-          "allowAdditionalChildren": true,
-          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-answer.json"
-        },
-        {
-          "name": "pl-drawing-initial",
-          "children": [
-            {
-              "name": "pl-drawing-group",
-              "children": [
-                {
-                  "name": "pl-drawing-group"
-                },
-                {
-                  "name": "pl-3pointrod"
-                },
-                {
-                  "name": "pl-4pointrod"
-                },
-                {
-                  "name": "pl-arc"
-                },
-                {
-                  "name": "pl-arc-dimensions"
-                },
-                {
-                  "name": "pl-arc-vector"
-                },
-                {
-                  "name": "pl-axes"
-                },
-                {
-                  "name": "pl-battery"
-                },
-                {
-                  "name": "pl-capacitor"
-                },
-                {
-                  "name": "pl-circle"
-                },
-                {
-                  "name": "pl-clamped"
-                },
-                {
-                  "name": "pl-coil"
-                },
-                {
-                  "name": "pl-collar-rod"
-                },
-                {
-                  "name": "pl-controlled-curved-line"
-                },
-                {
-                  "name": "pl-controlled-line"
-                },
-                {
-                  "name": "pl-coordinates"
-                },
-                {
-                  "name": "pl-dimensions"
-                },
-                {
-                  "name": "pl-distributed-load"
-                },
-                {
-                  "name": "pl-double-headed-vector"
-                },
-                {
-                  "name": "pl-fixed-pin"
-                },
-                {
-                  "name": "pl-graph-line"
-                },
-                {
-                  "name": "pl-inductor"
-                },
-                {
-                  "name": "pl-line"
-                },
-                {
-                  "name": "pl-paired-vector"
-                },
-                {
-                  "name": "pl-point"
-                },
-                {
-                  "name": "pl-polygon"
-                },
-                {
-                  "name": "pl-pulley"
-                },
-                {
-                  "name": "pl-rectangle"
-                },
-                {
-                  "name": "pl-resistor"
-                },
-                {
-                  "name": "pl-rod"
-                },
-                {
-                  "name": "pl-roller"
-                },
-                {
-                  "name": "pl-spring"
-                },
-                {
-                  "name": "pl-switch"
-                },
-                {
-                  "name": "pl-text"
-                },
-                {
-                  "name": "pl-triangle"
-                },
-                {
-                  "name": "pl-vector"
-                }
-              ],
-              "allowAdditionalChildren": true,
-              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-group.json"
-            },
-            {
-              "name": "pl-3pointrod"
-            },
-            {
-              "name": "pl-4pointrod"
-            },
-            {
-              "name": "pl-arc"
-            },
-            {
-              "name": "pl-arc-dimensions"
-            },
-            {
-              "name": "pl-arc-vector"
-            },
-            {
-              "name": "pl-axes"
-            },
-            {
-              "name": "pl-battery"
-            },
-            {
-              "name": "pl-capacitor"
-            },
-            {
-              "name": "pl-circle"
-            },
-            {
-              "name": "pl-clamped"
-            },
-            {
-              "name": "pl-coil"
-            },
-            {
-              "name": "pl-collar-rod"
-            },
-            {
-              "name": "pl-controlled-curved-line"
-            },
-            {
-              "name": "pl-controlled-line"
-            },
-            {
-              "name": "pl-coordinates"
-            },
-            {
-              "name": "pl-dimensions"
-            },
-            {
-              "name": "pl-distributed-load"
-            },
-            {
-              "name": "pl-double-headed-vector"
-            },
-            {
-              "name": "pl-fixed-pin"
-            },
-            {
-              "name": "pl-graph-line"
-            },
-            {
-              "name": "pl-inductor"
-            },
-            {
-              "name": "pl-line"
-            },
-            {
-              "name": "pl-paired-vector"
-            },
-            {
-              "name": "pl-point"
-            },
-            {
-              "name": "pl-polygon"
-            },
-            {
-              "name": "pl-pulley"
-            },
-            {
-              "name": "pl-rectangle"
-            },
-            {
-              "name": "pl-resistor"
-            },
-            {
-              "name": "pl-rod"
-            },
-            {
-              "name": "pl-roller"
-            },
-            {
-              "name": "pl-spring"
-            },
-            {
-              "name": "pl-switch"
-            },
-            {
-              "name": "pl-text"
-            },
-            {
-              "name": "pl-triangle"
-            },
-            {
-              "name": "pl-vector"
-            }
-          ],
-          "allowAdditionalChildren": true,
-          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-initial.json"
-        },
-        {
-          "name": "pl-controls",
-          "children": [
-            {
-              "name": "pl-drawing-button",
-              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
-            },
-            {
-              "name": "pl-controls-group",
-              "children": [
-                {
-                  "name": "pl-drawing-button",
-                  "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing-button.json"
-                }
-              ],
-              "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls-group.json"
-            }
-          ],
-          "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-controls.json"
-        }
-      ],
-      "schema": "./apps/prairielearn/elements/pl-drawing/schemas/pl-drawing.json"
-    },
-    {
-      "name": "pl-sketch",
-      "children": [
-        {
-          "name": "pl-sketch-grade",
-          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-grade.json"
-        },
-        {
-          "name": "pl-sketch-initial",
-          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-initial.json"
-        },
-        {
-          "name": "pl-sketch-solution",
-          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-solution.json"
-        },
-        {
-          "name": "pl-sketch-tool",
-          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-tool.json"
-        }
-      ],
-      "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch.json"
     },
     {
       "name": "clickable-image"
