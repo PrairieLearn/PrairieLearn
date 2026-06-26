@@ -291,8 +291,8 @@
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
     "raw": 1514831,
-    "gzip": 423938,
-    "brotli": 346233
+    "gzip": 423942,
+    "brotli": 346243
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
     "raw": 259014,
