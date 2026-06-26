@@ -125,11 +125,7 @@ function paramsToArray(
  * Escapes the given identifier for use in an SQL query. Useful for preventing
  * SQL injection.
  */
-function escapeIdentifier(identifier: string): string {
-  // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-  // https://github.com/brianc/node-postgres/pull/396
-  // https://github.com/brianc/node-postgres/issues/1978
-  // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
+export function escapeIdentifier(identifier: string): string {
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 

@@ -1,6 +1,11 @@
-import { selectOptionalQuestionById } from '../../models/question.js';
-import type { Question } from '../db-types.js';
-import { idsEqual } from '../id.js';
+import type { Course, Question } from './db-types.ts';
+import { idsEqual } from './id.ts';
+
+export const DRAFT_QID_PREFIX = '__drafts__/';
+
+export function isDraftQid(qid: string): boolean {
+  return qid.startsWith(DRAFT_QID_PREFIX);
+}
 
 /** A draft question, guaranteed to have a QID. */
 type DraftQuestion = Question & { qid: string };
@@ -17,20 +22,11 @@ type ClassifiedDraftQuestion =
   | { kind: 'finalized'; question: Question }
   | { kind: 'not-found' };
 
-/**
- * Resolves a question id and classifies it for the draft editor. Both the
- * Express page and the `aiDraftFiles` tRPC router use this so their notion of a
- * valid draft question can never drift apart.
- */
-export async function classifyDraftQuestion({
-  questionId,
-  courseId,
-}: {
-  questionId: string;
-  courseId: string;
-}): Promise<ClassifiedDraftQuestion> {
-  const question = await selectOptionalQuestionById(questionId);
-  if (question == null || !idsEqual(question.course_id, courseId) || question.deleted_at != null) {
+export function classifyDraftQuestion(
+  course: Course,
+  question: Question | null,
+): ClassifiedDraftQuestion {
+  if (question == null || question.deleted_at != null || !idsEqual(question.course_id, course.id)) {
     return { kind: 'not-found' };
   }
   if (!question.draft) {

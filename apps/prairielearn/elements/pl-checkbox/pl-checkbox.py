@@ -1,4 +1,5 @@
 import html
+import pathlib
 import random
 from enum import Enum
 from itertools import count
@@ -50,6 +51,7 @@ ALLOW_BLANK_DEFAULT = False
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
 
 def generate_number_correct_text(
@@ -397,6 +399,9 @@ def categorize_options(
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
+    pl.validate_element_tree(
+        element, SCHEMA_MANIFEST_PATH, allow_legacy_underscore_tags=True
+    )
 
     required_attribs = ["answers-name"]
     optional_attribs = [

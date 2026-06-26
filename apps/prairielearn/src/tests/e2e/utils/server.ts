@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { WorkerInfo } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
-import type { Config } from '../../../lib/config.js';
+import type { Config } from '../../../lib/config.ts';
 
 const BASE_PORT = 3014;
 
@@ -29,7 +29,7 @@ export async function setupWorkerServer(
   const port = BASE_PORT + workerInfo.workerIndex + 1;
 
   // Initialize the database with the test utils.
-  const { setupDatabases, after: destroyDatabases } = await import('../../helperDb.js');
+  const { setupDatabases, after: destroyDatabases } = await import('../../helperDb.ts');
   const setupResults = await setupDatabases({ configurePool: true });
 
   await tmp.withFile(

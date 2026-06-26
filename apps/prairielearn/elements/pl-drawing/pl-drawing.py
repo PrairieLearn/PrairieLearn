@@ -322,10 +322,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "base_url": data["options"]["base_url"],
         "element_client_files": data["options"]["client_files_extensions_url"],
         "render_scale": defaults.element_defaults["render-scale"],
-        "width": pl.get_string_attrib(
+        "width": pl.get_float_attrib(
             element, "width", defaults.element_defaults["width"]
         ),
-        "height": pl.get_string_attrib(
+        "height": pl.get_float_attrib(
             element, "height", defaults.element_defaults["height"]
         ),
     }
@@ -357,10 +357,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "uuid": pl.get_uuid(),
-        "width": pl.get_string_attrib(
+        "width": pl.get_float_attrib(
             element, "width", defaults.element_defaults["width"]
         ),
-        "height": pl.get_string_attrib(
+        "height": pl.get_float_attrib(
             element, "height", defaults.element_defaults["height"]
         ),
         "options_json": json.dumps(js_options),

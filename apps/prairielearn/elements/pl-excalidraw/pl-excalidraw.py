@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 from pathlib import Path
 
 import chevron
@@ -7,12 +8,7 @@ import lxml.html
 import prairielearn as pl
 from lxml.html import HtmlElement
 
-ATTR_ANSWER_NAME = "answers-name"
-ATTR_WIDTH = "width"
-ATTR_HEIGHT = "height"
-ATTR_SOURCE_FILE_NAME = "source-file-name"
-ATTR_SOURCE_DIRECTORY = "directory"
-ATTR_GRADABLE = "gradable"
+UNITLESS_NUMBER_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$")
 
 
 SOURCE_DIRECTORY_MAP = {
@@ -21,6 +17,16 @@ SOURCE_DIRECTORY_MAP = {
     "clientFilesQuestion": "client_files_question_path",
     ".": "question_path",
 }
+
+
+def check_css_size_attrib(element: HtmlElement, attrib: str) -> None:
+    value = pl.get_string_attrib(element, attrib, None)
+    if value is not None and UNITLESS_NUMBER_RE.match(value.strip()):
+        raise ValueError(
+            f'Attribute "{attrib}" must be a CSS size value, not the unitless number '
+            f'"{value}". Use a value with units, such as "900px" for pixels.'
+        )
+
 
 # -----------------------------------------------------------------------------
 # The logic below is derived from the combinations at
@@ -51,27 +57,29 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attrs = []
     optional_attrs = [
-        ATTR_GRADABLE,
-        ATTR_ANSWER_NAME,
-        ATTR_WIDTH,
-        ATTR_HEIGHT,
-        ATTR_SOURCE_FILE_NAME,
-        ATTR_SOURCE_DIRECTORY,
+        "gradable",
+        "answers-name",
+        "width",
+        "height",
+        "source-file-name",
+        "directory",
     ]
     pl.check_attribs(element, required_attrs, optional_attrs)
+    check_css_size_attrib(element, "width")
+    check_css_size_attrib(element, "height")
 
-    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+    gradable = pl.get_boolean_attrib(element, "gradable", True)
 
-    name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
+    name = pl.get_string_attrib(element, "answers-name", None)
     if name:
         pl.check_answers_names(data, name)
 
     if is_answer_name_required(gradable) and name is None:
         raise RuntimeError(
-            f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
+            "Missing required attribute answers-name (Required when `gradable` is set)"
         )
 
-    source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
+    source_dir = pl.get_string_attrib(element, "directory", ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
         raise RuntimeError(
             f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
@@ -79,11 +87,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
-    file_dir = SOURCE_DIRECTORY_MAP[
-        pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
-    ]
+    file_dir = SOURCE_DIRECTORY_MAP[pl.get_string_attrib(element, "directory", ".")]
     file = Path(data["options"][file_dir]) / pl.get_string_attrib(
-        element, ATTR_SOURCE_FILE_NAME
+        element, "source-file-name"
     )
     if not file.exists():
         raise RuntimeError(f"Unknown file path: {file}")
@@ -93,18 +99,18 @@ def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
 def render(element_html: str, data: pl.QuestionData) -> str:
     empty_diagram = ""  # pick a default representation
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
+    drawing_name = pl.get_string_attrib(element, "answers-name", None)
 
-    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+    gradable = pl.get_boolean_attrib(element, "gradable", True)
     fresh = drawing_name not in data["submitted_answers"]
     panel = data["panel"]
-    source_available = pl.has_attrib(element, ATTR_SOURCE_FILE_NAME)
+    source_available = pl.has_attrib(element, "source-file-name")
 
     # the state space (for debugging)
     matrix = f"{gradable=} {fresh=} {panel=} {source_available=}"
 
     if is_source_file_name_required(panel, gradable, fresh) and not source_available:
-        raise RuntimeError(f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`")
+        raise RuntimeError("Missing required attribute `source-file-name`")
 
     initial_content: str = empty_diagram
 
@@ -156,8 +162,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     content_bytes = json.dumps({
         "read_only": not is_widget_editable(panel, gradable, data["editable"]),
         "initial_content": initial_content,
-        "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
-        "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
+        "width": pl.get_string_attrib(element, "width", "100%"),
+        "height": pl.get_string_attrib(element, "height", "800px"),
     }).encode()
 
     errors: list[str] = []
@@ -178,7 +184,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
+    drawing_name = pl.get_string_attrib(element, "answers-name", None)
 
     if drawing_name:
         try:
@@ -195,11 +201,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+    gradable = pl.get_boolean_attrib(element, "gradable", True)
     if not gradable:
         return
 
-    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
+    drawing_name = pl.get_string_attrib(element, "answers-name")
     result = data["test_type"]
 
     if result in {"correct", "incorrect"}:

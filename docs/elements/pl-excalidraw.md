@@ -26,8 +26,11 @@ Note that only manual grading is supported. For auto-gradable drawings, consider
 | `answers-name`     | string                                                                         | —         | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
 | `directory`        | `"serverFilesCourse"`, `"clientFilesCourse"`, `"clientFilesQuestion"` or `"."` | `"."`     | Directory where the `"source-file-name"` is loaded from. By default, it refers to the question directory `"."`.         |
 | `gradable`         | boolean                                                                        | "true"    | Whether a diagram accepts input from the user.                                                                          |
-| `height`           | string                                                                         | `"800px"` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
+| `height`           | string                                                                         | `"800px"` | Height of the widget, compatible with the [CSS height][css-height-mdn] specification.                                   |
 | `source-file-name` | string                                                                         | —         | Optional file to load as the starter diagram.                                                                           |
 | `width`            | string                                                                         | `"100%"`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
 
+The `width` and `height` attributes are used as CSS property values. Unitless numbers such as `height="900"` are invalid; use `height="900px"` for pixels.
+
+[css-height-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/height
 [css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width

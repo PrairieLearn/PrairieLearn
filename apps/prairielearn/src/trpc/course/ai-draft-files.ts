@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { Question } from '../../lib/db-types.js';
+import type { Course, Question } from '../../lib/db-types.js';
 import {
   browseDraftQuestionFiles,
   getDraftQuestionFileContents,
@@ -27,11 +27,12 @@ import {
   requireQuestionQid,
 } from '../../lib/draft-question-files/paths.js';
 import { getReservedDraftUploadReason } from '../../lib/draft-question-files/paths.shared.js';
-import { classifyDraftQuestion } from '../../lib/draft-question-files/question.js';
 import { ROOT_SELECTION } from '../../lib/draft-question-files/selection.js';
+import { classifyDraftQuestion } from '../../lib/draft-question.ts';
 import { FileModifyConflictError } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { selectOptionalQuestionById } from '../../models/question.js';
 import { throwAppError } from '../app-errors.js';
 
 import { requireCoursePermissionEdit, requireNotExampleCourse, t } from './init.js';
@@ -83,13 +84,14 @@ const requireAiQuestionGenerationEnabled = t.middleware(async (opts) => {
 
 /** Resolves `questionId` to a draft question in this course, or throws `NOT_FOUND`. */
 async function resolveDraftQuestionOrThrow({
-  courseId,
+  course,
   questionId,
 }: {
-  courseId: string;
+  course: Course;
   questionId: string;
 }) {
-  const classified = await classifyDraftQuestion({ courseId, questionId });
+  const question = await selectOptionalQuestionById(questionId);
+  const classified = classifyDraftQuestion(course, question);
   if (classified.kind !== 'draft') {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Draft question not found' });
   }
@@ -100,7 +102,7 @@ async function resolveDraftQuestionOrThrow({
 const resolveDraftQuestion = t.middleware(async (opts) => {
   const { questionId } = z.object({ questionId: IdSchema }).parse(await opts.getRawInput());
   const question = await resolveDraftQuestionOrThrow({
-    courseId: opts.ctx.course.id,
+    course: opts.ctx.locals.course,
     questionId,
   });
   return opts.next({ ctx: { question } });
@@ -319,7 +321,7 @@ export const aiDraftFilesRouter = t.router({
     }
 
     const question = await resolveDraftQuestionOrThrow({
-      courseId: ctx.locals.course.id,
+      course: ctx.locals.course,
       questionId: fields.data.questionId,
     });
 
