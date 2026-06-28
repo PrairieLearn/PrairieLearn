@@ -371,12 +371,11 @@ async function startup(workspace_id: string): Promise<void> {
     if (workspace_host_id != null) {
       break; // success, we got a host
     }
-    if (!canLaunchAdditionalHosts()) {
+    if (!config.workspaceAutoscalingEnabled || !config.workspaceLoadLaunchTemplateId) {
       // in local development, when no autoscaler is configured
       // to launch new hosts, none will become available after retrying
       throw new Error(
-        'No workspace host is available. Ensure the workspace-host process is running ' +
-          '(when running in Docker, mount /var/run/docker.sock so that workspaces are started).',
+        'No workspace host is available. Ensure the workspace-host process is running ',
       );
     }
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
@@ -675,10 +674,6 @@ export async function generateWorkspaceFiles({
   }
 
   return { fileGenerationErrors };
-}
-
-export function canLaunchAdditionalHosts(): boolean {
-  return config.workspaceAutoscalingEnabled && config.workspaceLoadLaunchTemplateId != null;
 }
 
 /**
