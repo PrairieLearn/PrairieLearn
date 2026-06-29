@@ -144,7 +144,7 @@ const defaultMutationFields = {
   grade_rate_minutes: null,
 };
 
-describe('Editing assessment settings', () => {
+describe('Editing assessment settings', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW1', 'infoAssessment.json');
@@ -161,12 +161,12 @@ describe('Editing assessment settings', () => {
     await helperServer.after();
   });
 
-  test.sequential('access the test assessment info file', async () => {
+  test('access the test assessment info file', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.title, 'Homework for file editor test');
   });
 
-  test.sequential('change assessment info', async () => {
+  test('change assessment info', async () => {
     const trpcClient = await createTrpcClient('1');
     const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
       title: 'Test Title',
@@ -180,7 +180,7 @@ describe('Editing assessment settings', () => {
     assert.ok(result.origHash);
   });
 
-  test.sequential('verify assessment info change', async () => {
+  test('verify assessment info change', async () => {
     assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW2', 'infoAssessment.json');
     const assessmentLiveInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentLiveInfo.title, 'Test Title');
@@ -190,7 +190,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentLiveInfo.module, 'Module2');
   });
 
-  test.sequential('verify nesting an assessment id', async () => {
+  test('verify nesting an assessment id', async () => {
     const trpcClient = await createTrpcClient('1');
     const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
       title: 'Test Title',
@@ -204,7 +204,7 @@ describe('Editing assessment settings', () => {
     assert.ok(result.origHash);
   });
 
-  test.sequential('verify changing aid did not leave empty directories', async () => {
+  test('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir(), 'HW2');
     assert.notOk(await fs.pathExists(assessmentDir));
     assessmentLiveInfoPath = path.join(
@@ -215,7 +215,7 @@ describe('Editing assessment settings', () => {
     );
   });
 
-  test.sequential('verify reverting a nested assessment id works correctly', async () => {
+  test('verify reverting a nested assessment id works correctly', async () => {
     const trpcClient = await createTrpcClient('1');
     const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
       title: 'Test Title',
@@ -230,7 +230,7 @@ describe('Editing assessment settings', () => {
     assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW2', 'infoAssessment.json');
   });
 
-  test.sequential('pull and verify changes', async () => {
+  test('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
     assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW2', 'infoAssessment.json');
     const assessmentDevInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
@@ -241,7 +241,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentDevInfo.module, 'Module2');
   });
 
-  test.sequential('verify assessment info change in db', async () => {
+  test('verify assessment info change in db', async () => {
     const assessment = await queryRow(
       sql.select_assessment_by_id,
       { id: 1 },
@@ -258,7 +258,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessment.tid, 'HW2');
   });
 
-  test.sequential('should not be able to submit without being an authorized user', async () => {
+  test('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -311,7 +311,7 @@ describe('Editing assessment settings', () => {
     });
   });
 
-  test.sequential('should not be able to submit without assessment info file', async () => {
+  test('should not be able to submit without assessment info file', async () => {
     const origHash = await getOrigHash(assessmentLiveInfoPath);
     await fs.move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
@@ -338,7 +338,7 @@ describe('Editing assessment settings', () => {
     }
   });
 
-  test.sequential('should be able to submit without any changes', async () => {
+  test('should be able to submit without any changes', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     const trpcClient = await createTrpcClient('1');
     const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
@@ -353,45 +353,42 @@ describe('Editing assessment settings', () => {
     assert.ok(result.origHash);
   });
 
-  test.sequential(
-    'should not be able to submit if repo course info file has been changed',
-    async () => {
-      const staleOrigHash = await getOrigHash(assessmentLiveInfoPath);
+  test('should not be able to submit if repo course info file has been changed', async () => {
+    const staleOrigHash = await getOrigHash(assessmentLiveInfoPath);
 
-      const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
-      const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
-      await fs.writeFile(assessmentDevInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
-      await execa('git', ['commit', '-m', 'Change assessment info'], {
-        cwd: courseRepo.courseDevDir,
-        env: process.env,
+    const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
+    const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
+    await fs.writeFile(assessmentDevInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
+    await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
+    await execa('git', ['commit', '-m', 'Change assessment info'], {
+      cwd: courseRepo.courseDevDir,
+      env: process.env,
+    });
+    await execa('git', ['push', 'origin', 'master'], {
+      cwd: courseRepo.courseDevDir,
+      env: process.env,
+    });
+
+    const trpcClient = await createTrpcClient('1');
+    try {
+      await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: 'Test Title2',
+        set: 'Homework',
+        number: '1',
+        module: 'Module1',
+        aid: 'HW1',
+        ...defaultMutationFields,
+        origHash: staleOrigHash,
       });
-      await execa('git', ['push', 'origin', 'master'], {
-        cwd: courseRepo.courseDevDir,
-        env: process.env,
-      });
+      assert.fail('Expected mutation to throw');
+    } catch (err: unknown) {
+      const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+      assert.isNotNull(appError);
+      assert.equal(appError.code, 'SYNC_JOB_FAILED');
+    }
+  });
 
-      const trpcClient = await createTrpcClient('1');
-      try {
-        await trpcClient.assessmentSettings.updateAssessment.mutate({
-          title: 'Test Title2',
-          set: 'Homework',
-          number: '1',
-          module: 'Module1',
-          aid: 'HW1',
-          ...defaultMutationFields,
-          origHash: staleOrigHash,
-        });
-        assert.fail('Expected mutation to throw');
-      } catch (err: unknown) {
-        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
-        assert.isNotNull(appError);
-        assert.equal(appError.code, 'SYNC_JOB_FAILED');
-      }
-    },
-  );
-
-  test.sequential('change assessment id', async () => {
+  test('change assessment id', async () => {
     const trpcClient = await createTrpcClient('1');
     const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
       title: 'Test Title',
@@ -405,78 +402,96 @@ describe('Editing assessment settings', () => {
     assert.ok(result.origHash);
   });
 
-  test.sequential('verify change assessment id', async () => {
+  test('verify change assessment id', async () => {
     const assessmentDir = path.join(assessmentLiveDir(), 'A1');
     assert.ok(await fs.pathExists(assessmentDir));
     assessmentLiveInfoPath = path.join(assessmentDir, 'infoAssessment.json');
   });
 
-  test.sequential(
-    'should not be able to submit if provided assessment id falls outside the correct root directory',
-    async () => {
-      const trpcClient = await createTrpcClient('1');
-      try {
-        await trpcClient.assessmentSettings.updateAssessment.mutate({
-          title: 'Test Title',
-          set: 'Homework',
-          number: '1',
-          module: 'Module1',
-          aid: '../A2',
-          ...defaultMutationFields,
-          origHash: await getOrigHash(assessmentLiveInfoPath),
-        });
-        assert.fail('Expected mutation to throw');
-      } catch (err: unknown) {
-        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
-        assert.isNotNull(appError);
-        assert.equal(appError.code, 'UNKNOWN');
-        assert.match(appError.message, /path segments cannot start with a dot/i);
-      }
-    },
-  );
+  test('should not be able to submit if provided assessment id falls outside the correct root directory', async () => {
+    const trpcClient = await createTrpcClient('1');
+    try {
+      await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: 'Test Title',
+        set: 'Homework',
+        number: '1',
+        module: 'Module1',
+        aid: '../A2',
+        ...defaultMutationFields,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+      assert.fail('Expected mutation to throw');
+    } catch (err: unknown) {
+      const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+      assert.isNotNull(appError);
+      assert.equal(appError.code, 'UNKNOWN');
+      assert.match(appError.message, /path segments cannot start with a dot/i);
+    }
+  });
 
-  test.sequential(
-    'cannot share assessment source publicly while it contains non-public questions',
-    async () => {
-      // Force every question on this course to be non-public, so the gate in the mutation
-      // can detect them before reaching the file editor.
-      await setQuestionsPrivateForCourse('1');
+  test('cannot share assessment source publicly while it contains non-public questions', async () => {
+    // Force every question on this course to be non-public, so the gate in the mutation
+    // can detect them before reaching the file editor.
+    await setQuestionsPrivateForCourse('1');
 
+    const trpcClient = await createTrpcClient('1');
+    const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+    try {
+      await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'A1',
+        ...defaultMutationFields,
+        share_source_publicly: true,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+      assert.fail('Expected mutation to throw');
+    } catch (err: unknown) {
+      const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
+      assert.isNotNull(appError);
+      assert.equal(appError.code, 'UNKNOWN');
+      assert.include(
+        appError.message,
+        'Cannot share this assessment publicly because it contains questions that are not publicly shared',
+      );
+    }
+  });
+
+  test('un-shares assessment source when its course instance is not publicly shared', async () => {
+    await setAssessmentSharingFilesPublic(true);
+
+    try {
       const trpcClient = await createTrpcClient('1');
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-      try {
-        await trpcClient.assessmentSettings.updateAssessment.mutate({
-          title: assessmentInfo.title,
-          set: assessmentInfo.set,
-          number: assessmentInfo.number,
-          module: assessmentInfo.module ?? 'Default',
-          aid: 'A1',
-          ...defaultMutationFields,
-          share_source_publicly: true,
-          origHash: await getOrigHash(assessmentLiveInfoPath),
-        });
-        assert.fail('Expected mutation to throw');
-      } catch (err: unknown) {
-        const appError = getAppError<AssessmentSettingsError['UpdateAssessment']>(err);
-        assert.isNotNull(appError);
-        assert.equal(appError.code, 'UNKNOWN');
-        assert.include(
-          appError.message,
-          'Cannot share this assessment publicly because it contains questions that are not publicly shared',
-        );
-      }
-    },
-  );
+      const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+        title: assessmentInfo.title,
+        set: assessmentInfo.set,
+        number: assessmentInfo.number,
+        module: assessmentInfo.module ?? 'Default',
+        aid: 'A1',
+        ...defaultMutationFields,
+        share_source_publicly: false,
+        origHash: await getOrigHash(assessmentLiveInfoPath),
+      });
+      assert.ok(result.origHash);
+      const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.isUndefined(updatedAssessmentInfo.shareSourcePublicly);
+    } finally {
+      await setAssessmentSharingFilesPublic(false);
+    }
+  });
 
-  test.sequential(
-    'un-shares assessment source when its course instance is not publicly shared',
-    async () => {
-      await setAssessmentSharingFilesPublic(true);
+  test('cannot un-share assessment source while its course instance is publicly shared', async () => {
+    await setAssessmentSharingFilesPublic(true);
+    await setCourseInstanceSharingFilePublic(true);
 
-      try {
-        const trpcClient = await createTrpcClient('1');
-        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        const result = await trpcClient.assessmentSettings.updateAssessment.mutate({
+    try {
+      const trpcClient = await createTrpcClient('1');
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      await expect(
+        trpcClient.assessmentSettings.updateAssessment.mutate({
           title: assessmentInfo.title,
           set: assessmentInfo.set,
           number: assessmentInfo.number,
@@ -485,45 +500,15 @@ describe('Editing assessment settings', () => {
           ...defaultMutationFields,
           share_source_publicly: false,
           origHash: await getOrigHash(assessmentLiveInfoPath),
-        });
-        assert.ok(result.origHash);
-        const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        assert.isUndefined(updatedAssessmentInfo.shareSourcePublicly);
-      } finally {
-        await setAssessmentSharingFilesPublic(false);
-      }
-    },
-  );
-
-  test.sequential(
-    'cannot un-share assessment source while its course instance is publicly shared',
-    async () => {
-      await setAssessmentSharingFilesPublic(true);
-      await setCourseInstanceSharingFilePublic(true);
-
-      try {
-        const trpcClient = await createTrpcClient('1');
-        const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        await expect(
-          trpcClient.assessmentSettings.updateAssessment.mutate({
-            title: assessmentInfo.title,
-            set: assessmentInfo.set,
-            number: assessmentInfo.number,
-            module: assessmentInfo.module ?? 'Default',
-            aid: 'A1',
-            ...defaultMutationFields,
-            share_source_publicly: false,
-            origHash: await getOrigHash(assessmentLiveInfoPath),
-          }),
-        ).rejects.toThrow(
-          'Cannot un-share this assessment publicly because its course instance is publicly shared',
-        );
-        const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-        assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
-      } finally {
-        await setCourseInstanceSharingFilePublic(false);
-        await setAssessmentSharingFilesPublic(false);
-      }
-    },
-  );
+        }),
+      ).rejects.toThrow(
+        'Cannot un-share this assessment publicly because its course instance is publicly shared',
+      );
+      const updatedAssessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.equal(updatedAssessmentInfo.shareSourcePublicly, true);
+    } finally {
+      await setCourseInstanceSharingFilePublic(false);
+      await setAssessmentSharingFilesPublic(false);
+    }
+  });
 });

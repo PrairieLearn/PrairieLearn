@@ -17,7 +17,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe(
   'Exam assessment with questions hidden after completion',
-  { timeout: 60_000 },
+  { timeout: 60_000, concurrent: false },
   function () {
     const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
@@ -44,14 +44,14 @@ describe(
     afterAll(helperServer.after);
 
     // we need to access the homepage to create the test_student user in the DB
-    test.sequential('visit home page', async () => {
+    test('visit home page', async () => {
       const response = await helperClient.fetchCheerio(context.baseUrl, {
         headers,
       });
       assert.isTrue(response.ok);
     });
 
-    test.sequential('enroll the test student user in the course', async () => {
+    test('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
       await ensureUncheckedEnrollment({
@@ -63,7 +63,7 @@ describe(
       });
     });
 
-    test.sequential('visit start exam page', async () => {
+    test('visit start exam page', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl, {
         headers,
       });
@@ -74,7 +74,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
     });
 
-    test.sequential('start the exam', async () => {
+    test('start the exam', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -97,7 +97,7 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
     });
 
-    test.sequential('simulate a time limit expiration', async () => {
+    test('simulate a time limit expiration', async () => {
       const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -120,7 +120,7 @@ describe(
       assert.match(msg.text(), /Assessment .* is no longer available/);
     });
 
-    test.sequential('check the assessment instance is closed', async () => {
+    test('check the assessment instance is closed', async () => {
       const result = await sqldb.queryRow(
         sql.select_assessment_instances,
         AssessmentInstanceSchema,
@@ -128,17 +128,14 @@ describe(
       assert.equal(result.open, false);
     });
 
-    test.sequential(
-      'check that accessing a question gives the "assessment closed" message',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.questionUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
+    test('check that accessing a question gives the "assessment closed" message', async () => {
+      const response = await helperClient.fetchCheerio(context.questionUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+      assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    });
   },
 );

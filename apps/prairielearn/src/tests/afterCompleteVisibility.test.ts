@@ -15,7 +15,7 @@ import * as helperServer from './helperServer.js';
 
 describe(
   'Modern access control: afterComplete visibility applies only after completion',
-  { timeout: 60_000 },
+  { timeout: 60_000, concurrent: false },
   function () {
     const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
@@ -104,23 +104,20 @@ describe(
         context.assessmentInstanceUrl = assessmentInstanceUrl(assessmentInstanceId);
       });
 
-      test.sequential(
-        'student assessments list shows the score during the active window',
-        async () => {
-          const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
-            headers: { cookie: activeWindowCookie },
-          });
-          assert.isTrue(response.ok);
+      test('student assessments list shows the score during the active window', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
 
-          const row = response.$('tr:contains("After complete visibility")');
-          assert.lengthOf(row, 1);
-          // While active, the afterComplete policy must NOT apply: the score
-          // cell renders a scorebar.
-          assert.lengthOf(row.find('[data-testid="scorebar"]'), 1);
-        },
-      );
+        const row = response.$('tr:contains("After complete visibility")');
+        assert.lengthOf(row, 1);
+        // While active, the afterComplete policy must NOT apply: the score
+        // cell renders a scorebar.
+        assert.lengthOf(row.find('[data-testid="scorebar"]'), 1);
+      });
 
-      test.sequential('student gradebook shows the score during the active window', async () => {
+      test('student gradebook shows the score during the active window', async () => {
         const response = await helperClient.fetchCheerio(context.gradebookUrl, {
           headers: { cookie: activeWindowCookie },
         });
@@ -131,32 +128,26 @@ describe(
         assert.lengthOf(row.find('[data-testid="scorebar"]'), 1);
       });
 
-      test.sequential(
-        'student assessment instance page is accessible during the active window',
-        async () => {
-          const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
-            headers: { cookie: activeWindowCookie },
-          });
-          assert.isTrue(response.ok);
-          assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 0);
-        },
-      );
+      test('student assessment instance page is accessible during the active window', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+          headers: { cookie: activeWindowCookie },
+        });
+        assert.isTrue(response.ok);
+        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 0);
+      });
 
-      test.sequential(
-        'student assessments list hides the score after the deadline passes',
-        async () => {
-          const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
-            headers: { cookie: afterCompleteCookie },
-          });
-          assert.isTrue(response.ok);
+      test('student assessments list hides the score after the deadline passes', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
+          headers: { cookie: afterCompleteCookie },
+        });
+        assert.isTrue(response.ok);
 
-          const row = response.$('tr:contains("After complete visibility")');
-          assert.lengthOf(row, 1);
-          assert.lengthOf(row.find('[data-testid="scorebar"]'), 0);
-        },
-      );
+        const row = response.$('tr:contains("After complete visibility")');
+        assert.lengthOf(row, 1);
+        assert.lengthOf(row.find('[data-testid="scorebar"]'), 0);
+      });
 
-      test.sequential('student gradebook hides the score after the deadline passes', async () => {
+      test('student gradebook hides the score after the deadline passes', async () => {
         const response = await helperClient.fetchCheerio(context.gradebookUrl, {
           headers: { cookie: afterCompleteCookie },
         });
@@ -167,24 +158,21 @@ describe(
         assert.lengthOf(row.find('[data-testid="scorebar"]'), 0);
       });
 
-      test.sequential(
-        'student assessment instance page shows the closed message after the deadline passes',
-        async () => {
-          const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
-            headers: { cookie: afterCompleteCookie },
-          });
-          assert.equal(response.status, 403);
+      test('student assessment instance page shows the closed message after the deadline passes', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+          headers: { cookie: afterCompleteCookie },
+        });
+        assert.equal(response.status, 403);
 
-          const message = response.$('[data-testid="assessment-closed-message"]');
-          assert.lengthOf(message, 1);
-          assert.match(message.text(), /Assessment is no longer available/);
-          assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
-        },
-      );
+        const message = response.$('[data-testid="assessment-closed-message"]');
+        assert.lengthOf(message, 1);
+        assert.match(message.text(), /Assessment is no longer available/);
+        assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
+      });
     });
 
     describe('timed exam completion after the time limit expires', () => {
-      test.sequential('student starts the timed exam during the active window', async () => {
+      test('student starts the timed exam during the active window', async () => {
         const timedExamAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.timedExamAssessment.id}/`;
         const startPage = await helperClient.fetchCheerio(timedExamAssessmentUrl, {
           headers: { cookie: activeWindowCookie },
@@ -211,7 +199,7 @@ describe(
         context.timedExamCsrfToken = helperClient.getCSRFToken(response.$);
       });
 
-      test.sequential('student assessments list omits available credit', async () => {
+      test('student assessments list omits available credit', async () => {
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, {
           headers: { cookie: afterTimeLimitCookie },
         });
@@ -222,7 +210,7 @@ describe(
         assert.equal(row.find('td').eq(2).text().trim(), '');
       });
 
-      test.sequential('student assessment instance GET shows the closed message', async () => {
+      test('student assessment instance GET shows the closed message', async () => {
         const response = await helperClient.fetchCheerio(context.timedExamAssessmentInstanceUrl, {
           headers: { cookie: afterTimeLimitCookie },
         });
@@ -234,7 +222,7 @@ describe(
         assert.lengthOf(response.$('[data-testid="scorebar"]'), 0);
       });
 
-      test.sequential('timeLimitFinish closes the hidden expired assessment instance', async () => {
+      test('timeLimitFinish closes the hidden expired assessment instance', async () => {
         const response = await helperClient.fetchCheerio(context.timedExamAssessmentInstanceUrl, {
           method: 'POST',
           body: new URLSearchParams({
@@ -266,19 +254,16 @@ describe(
         context.passwordTimedExamInstanceUrl = assessmentInstanceUrl(assessmentInstanceId);
       });
 
-      test.sequential(
-        'student can review after the time limit expires without a password prompt',
-        async () => {
-          const response = await helperClient.fetchCheerio(context.passwordTimedExamInstanceUrl, {
-            headers: { cookie: afterTimeLimitCookie },
-          });
-          assert.isTrue(response.ok);
-          assert.include(response.url, '/assessment_instance/');
-          assert.notInclude(response.url, '/password');
-        },
-      );
+      test('student can review after the time limit expires without a password prompt', async () => {
+        const response = await helperClient.fetchCheerio(context.passwordTimedExamInstanceUrl, {
+          headers: { cookie: afterTimeLimitCookie },
+        });
+        assert.isTrue(response.ok);
+        assert.include(response.url, '/assessment_instance/');
+        assert.notInclude(response.url, '/password');
+      });
 
-      test.sequential('student assessments list omits available credit after close', async () => {
+      test('student assessments list omits available credit after close', async () => {
         await gradeAssessmentInstance({
           assessment_instance_id: context.passwordTimedExamInstanceId,
           user_id: context.userId,

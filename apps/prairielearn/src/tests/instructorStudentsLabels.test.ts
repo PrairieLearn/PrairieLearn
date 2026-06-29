@@ -68,7 +68,7 @@ function createTrpcClient() {
   });
 }
 
-describe('Instructor student labels page', () => {
+describe('Instructor student labels page', { concurrent: false }, () => {
   let enrollmentIds: string[];
   let studentUids: string[];
   let courseRepo: CourseRepoFixture;
@@ -117,7 +117,7 @@ describe('Instructor student labels page', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential('should load page and API endpoints correctly', async () => {
+  test('should load page and API endpoints correctly', async () => {
     const pageResponse = await fetch(labelsUrl);
     assert.equal(pageResponse.status, 200);
 
@@ -144,7 +144,7 @@ describe('Instructor student labels page', () => {
     assert.deepEqual(mixedCheckResult.unenrolledUids, [invalidUid]);
   });
 
-  test.sequential('should handle create label operations', async () => {
+  test('should handle create label operations', async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -215,40 +215,37 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential(
-    'should require student data view and only show label management actions to users with both permissions',
-    async () => {
-      const courseEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
-        headers: {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
-        },
-      });
-      assert.equal(courseEditorOnly.status, 403);
+  test('should require student data view and only show label management actions to users with both permissions', async () => {
+    const courseEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+      },
+    });
+    assert.equal(courseEditorOnly.status, 403);
 
-      const studentDataEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
-        headers: {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
-        },
-      });
-      assert.equal(studentDataEditorOnly.status, 200);
-      assert.lengthOf(studentDataEditorOnly.$('button:contains("Add label")'), 0);
-      assert.lengthOf(studentDataEditorOnly.$('th:contains("Students")'), 1);
+    const studentDataEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+      },
+    });
+    assert.equal(studentDataEditorOnly.status, 200);
+    assert.lengthOf(studentDataEditorOnly.$('button:contains("Add label")'), 0);
+    assert.lengthOf(studentDataEditorOnly.$('th:contains("Students")'), 1);
 
-      const editorAndStudentDataEditor = await helperClient.fetchCheerio(labelsUrl, {
-        headers: {
-          cookie:
-            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
-        },
-      });
-      assert.equal(editorAndStudentDataEditor.status, 200);
-      assert.lengthOf(editorAndStudentDataEditor.$('button:contains("Add label")'), 1);
-      assert.lengthOf(editorAndStudentDataEditor.$('th:contains("Students")'), 1);
-    },
-  );
+    const editorAndStudentDataEditor = await helperClient.fetchCheerio(labelsUrl, {
+      headers: {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
+      },
+    });
+    assert.equal(editorAndStudentDataEditor.status, 200);
+    assert.lengthOf(editorAndStudentDataEditor.$('button:contains("Add label")'), 1);
+    assert.lengthOf(editorAndStudentDataEditor.$('th:contains("Students")'), 1);
+  });
 
-  test.sequential('should handle edit label operations', async () => {
+  test('should handle edit label operations', async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -349,7 +346,7 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential('should handle delete label operations', async () => {
+  test('should handle delete label operations', async () => {
     const trpcClient = createTrpcClient();
     let origHash = await computeScopedJsonHash<CourseInstanceJsonInput>(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -385,7 +382,7 @@ describe('Instructor student labels page', () => {
     }
   });
 
-  test.sequential('should support invited (pending) students in labels', async () => {
+  test('should support invited (pending) students in labels', async () => {
     const trpcClient = createTrpcClient();
     const invitedUid = 'invited-student@example.com';
 
@@ -434,7 +431,7 @@ describe('Instructor student labels page', () => {
     assert.include(uidsInLabel, studentUids[0]);
   });
 
-  test.sequential('renames propagate to accessControl entries in infoAssessment.json', async () => {
+  test('renames propagate to accessControl entries in infoAssessment.json', async () => {
     const trpcClient = createTrpcClient();
     const assessmentJsonPath = path.join(
       courseRepo.courseLiveDir,
@@ -469,7 +466,7 @@ describe('Instructor student labels page', () => {
     assert.deepEqual(after.accessControl?.[1].labels, ['Section A Renamed']);
   });
 
-  test.sequential('deletes propagate to accessControl entries, leaving labels: []', async () => {
+  test('deletes propagate to accessControl entries, leaving labels: []', async () => {
     const trpcClient = createTrpcClient();
     const assessmentJsonPath = path.join(
       courseRepo.courseLiveDir,
@@ -501,7 +498,7 @@ describe('Instructor student labels page', () => {
     assert.isDefined(after.accessControl?.[1].dateControl);
   });
 
-  test.sequential('should enforce the student label limit only for new labels', async () => {
+  test('should enforce the student label limit only for new labels', async () => {
     const trpcClient = createTrpcClient();
     const originInfoPath = getCourseInstanceJsonPath(
       courseRepo.courseOriginDir,

@@ -385,13 +385,7 @@ async function buildQuestionBankZip(
 }
 
 test.describe('QTI Import', () => {
-  test('can navigate to the import page with feature flag enabled', async ({
-    page,
-    courseInstance,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('qti-content-import');
-
+  test('can navigate to the import page', async ({ page, courseInstance }) => {
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
     );
@@ -402,33 +396,14 @@ test.describe('QTI Import', () => {
     await expect(page.getByLabel('Export file')).toBeVisible();
   });
 
-  test('shows 403 when feature flag is disabled', async ({ page, courseInstance }) => {
-    const response = await page.goto(
-      `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/qti_import`,
-    );
-    expect(response?.status()).toBe(403);
-  });
-
-  test('import button appears on assessments page when flag is enabled', async ({
-    page,
-    courseInstance,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('qti-content-import');
-
+  test('import button appears on assessments page', async ({ page, courseInstance }) => {
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
     );
     await expect(page.getByRole('link', { name: 'Import content' })).toBeVisible();
   });
 
-  test('import button appears on questions page when flag is enabled', async ({
-    page,
-    courseInstance,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('qti-content-import');
-
+  test('import button appears on questions page', async ({ page, courseInstance }) => {
     await page.goto(getCourseAdminQuestionsUrl({ courseInstanceId: courseInstance.id }));
     await page.getByRole('button', { name: 'Add questions' }).click();
     const link = page.getByRole('link', { name: 'Import questions' });
@@ -441,10 +416,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
@@ -472,10 +444,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-no-manifest-fixture.zip');
     await buildQtiZip(zipPath, { includeManifest: false });
 
@@ -495,10 +464,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-unused-asset-fixture.zip');
     await buildQtiZipWithUnusedAsset(zipPath);
 
@@ -524,10 +490,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-plain-imsqti-fixture.zip');
     await buildQtiZip(zipPath, { resourceType: 'imsqti_xmlv1p2' });
 
@@ -548,10 +511,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-embedded-bank-course-fixture.imscc');
     await buildEmbeddedBankCourseZip(zipPath);
 
@@ -574,10 +534,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const assessmentZipPath = path.join(testCoursePath, 'qti-missing-bank-ref.zip');
     const bankZipPath = path.join(testCoursePath, 'qti-missing-bank.zip');
     await buildExternalBankAssessmentZip(assessmentZipPath, { includeCourseId: false });
@@ -617,10 +574,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const assessmentZipPath = path.join(testCoursePath, 'qti-external-bank-ref.zip');
     const bankZipPath = path.join(testCoursePath, 'qti-external-bank.zip');
     await buildExternalBankAssessmentZip(assessmentZipPath);
@@ -660,10 +614,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const assessmentZipPath = path.join(testCoursePath, 'qti-multi-bank-ref.zip');
     const firstBankZipPath = path.join(testCoursePath, 'qti-first-bank.zip');
     const secondBankZipPath = path.join(testCoursePath, 'qti-second-bank.zip');
@@ -774,14 +725,7 @@ test.describe('QTI Import', () => {
     await expect(page.getByText('(2 questions)')).toBeVisible();
   });
 
-  test('can complete the full import flow', async ({
-    page,
-    courseInstance,
-    testCoursePath,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('qti-content-import');
-
+  test('can complete the full import flow', async ({ page, courseInstance, testCoursePath }) => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
@@ -851,10 +795,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-expired-draft-fixture.zip');
     await buildQtiZip(zipPath);
 
@@ -888,10 +829,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 
@@ -918,10 +856,7 @@ test.describe('QTI Import', () => {
     page,
     courseInstance,
     testCoursePath,
-    enableFeatureFlag,
   }) => {
-    await enableFeatureFlag('qti-content-import');
-
     const zipPath = path.join(testCoursePath, 'qti-conflict-fixture.zip');
     await buildQtiZip(zipPath);
 
@@ -950,14 +885,7 @@ test.describe('QTI Import', () => {
     await expect(page.getByRole('button', { name: 'Rename all' })).toBeVisible();
   });
 
-  test('can start over from the review step', async ({
-    page,
-    courseInstance,
-    testCoursePath,
-    enableFeatureFlag,
-  }) => {
-    await enableFeatureFlag('qti-content-import');
-
+  test('can start over from the review step', async ({ page, courseInstance, testCoursePath }) => {
     const zipPath = path.join(testCoursePath, 'qti-test-fixture.zip');
     await buildQtiZip(zipPath);
 

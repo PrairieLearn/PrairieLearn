@@ -27,7 +27,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 //   beforeRelease.listed true.
 describe(
   'Exam and homework assessment with date control and after-complete restrictions',
-  { timeout: 60_000 },
+  { timeout: 60_000, concurrent: false },
   function () {
     const storedConfig: Record<string, any> = {};
     const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
@@ -73,14 +73,14 @@ describe(
       Object.assign(config, storedConfig);
     });
 
-    test.sequential('visit home page', async () => {
+    test('visit home page', async () => {
       const response = await helperClient.fetchCheerio(context.baseUrl, {
         headers,
       });
       assert.isTrue(response.ok);
     });
 
-    test.sequential('enroll the test student user in the course', async () => {
+    test('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
       await ensureUncheckedEnrollment({
@@ -92,20 +92,17 @@ describe(
       });
     });
 
-    test.sequential(
-      'ensure that the exam is visible without a link on the assessments page before it is released',
-      async () => {
-        headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
+    test('ensure that the exam is visible without a link on the assessments page before it is released', async () => {
+      headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+      assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('td:contains("Test Active Access Rule")'), 1);
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0); // there should be no link
-      },
-    );
+      assert.lengthOf(response.$('td:contains("Test Active Access Rule")'), 1);
+      assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0); // there should be no link
+    });
 
-    test.sequential('try to access the exam before it is released', async () => {
+    test('try to access the exam before it is released', async () => {
       headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -120,7 +117,7 @@ describe(
       );
     });
 
-    test.sequential('check that an assessment instance was not created', async () => {
+    test('check that an assessment instance was not created', async () => {
       const results = await sqldb.queryRows(
         sql.select_assessment_instances,
         AssessmentInstanceSchema,
@@ -128,19 +125,16 @@ describe(
       assert.equal(results.length, 0);
     });
 
-    test.sequential(
-      'ensure that a link to the exam is visible on the assessments page during the access window',
-      async () => {
-        headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
+    test('ensure that a link to the exam is visible on the assessments page during the access window', async () => {
+      headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
-        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+      assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
-      },
-    );
+      assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
+    });
 
-    test.sequential('visit start exam page during the access window', async () => {
+    test('visit start exam page during the access window', async () => {
       headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -153,7 +147,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
     });
 
-    test.sequential('start the exam and access questions', async () => {
+    test('start the exam and access questions', async () => {
       const response = await helperClient.fetchCheerio(context.examUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -200,7 +194,7 @@ describe(
       assert.isTrue(workspaceResponse.ok);
     });
 
-    test.sequential('count number of variants generated', async () => {
+    test('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
@@ -209,7 +203,7 @@ describe(
       assert.equal(context.numberOfVariants, 2);
     });
 
-    test.sequential('access the exam after the time limit has expired', async () => {
+    test('access the exam after the time limit has expired', async () => {
       // The exam was started at 23:50 with a 50-minute duration, so the time
       // limit has expired one hour later. Questions and score are hidden
       // after completion until 2020-01-01.
@@ -225,23 +219,20 @@ describe(
       assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 
-    test.sequential(
-      'a timeLimitFinish POST closes the assessment after the time limit has expired',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'timeLimitFinish',
-            __csrf_token: context.__csrf_token,
-          }),
-          headers,
-        });
-        assert.equal(response.status, 403);
-        assert.equal(response.url, `${context.examInstanceUrl}?timeLimitExpired=true`);
-      },
-    );
+    test('a timeLimitFinish POST closes the assessment after the time limit has expired', async () => {
+      const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'timeLimitFinish',
+          __csrf_token: context.__csrf_token,
+        }),
+        headers,
+      });
+      assert.equal(response.status, 403);
+      assert.equal(response.url, `${context.examInstanceUrl}?timeLimitExpired=true`);
+    });
 
-    test.sequential('check that the assessment instance is closed', async () => {
+    test('check that the assessment instance is closed', async () => {
       const results = await sqldb.queryRows(
         sql.select_assessment_instances,
         AssessmentInstanceSchema,
@@ -250,82 +241,67 @@ describe(
       assert.equal(results[0].open, false);
     });
 
-    test.sequential(
-      'ensure that a link to the exam is visible on the assessments page after the student has started the exam',
-      async () => {
-        headers.cookie = 'pl_test_date=2010-01-02T00:50:01Z';
+    test('ensure that a link to the exam is visible on the assessments page after the student has started the exam', async () => {
+      headers.cookie = 'pl_test_date=2010-01-02T00:50:01Z';
 
-        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+      assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
-      },
-    );
+      assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
+    });
 
-    test.sequential(
-      'access a question with an existing variant while questions are hidden',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
+    test('access a question with an existing variant while questions are hidden', async () => {
+      const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-        assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-      },
-    );
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+    });
 
-    test.sequential('access a workspace while questions are hidden', async () => {
+    test('access a workspace while questions are hidden', async () => {
       const response = await helperClient.fetchCheerio(context.examWorkspaceUrl, { headers });
       assert.equal(response.status, 403);
 
       assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
     });
 
-    test.sequential(
-      'access the exam instance once questions become visible after completion',
-      async () => {
-        headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
+    test('access the exam instance once questions become visible after completion', async () => {
+      headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
 
-        const msg = response.$('p.small.mb-0');
-        assert.lengthOf(msg, 1);
-        assert.match(
-          msg.text(),
-          /Notes can't be added or deleted because the assessment is closed\./,
-        );
-      },
-    );
+      const msg = response.$('p.small.mb-0');
+      assert.lengthOf(msg, 1);
+      assert.match(
+        msg.text(),
+        /Notes can't be added or deleted because the assessment is closed\./,
+      );
+    });
 
-    test.sequential(
-      'access a question with an existing variant during the review window',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
+    test('access a question with an existing variant during the review window', async () => {
+      const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
 
-        // There should be no save or grade buttons
-        assert.lengthOf(response.$('button.question-save'), 0);
-        assert.lengthOf(response.$('button.question-grade'), 0);
-      },
-    );
+      // There should be no save or grade buttons
+      assert.lengthOf(response.$('button.question-save'), 0);
+      assert.lengthOf(response.$('button.question-grade'), 0);
+    });
 
-    test.sequential(
-      'access a question without an existing variant during the review window',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
-        assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
-      },
-    );
+    test('access a question without an existing variant during the review window', async () => {
+      const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
+      assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+    });
 
-    test.sequential('access clientFilesCourse during the review window', async () => {
+    test('access clientFilesCourse during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesCourse/data.txt`, {
         headers,
       });
@@ -333,7 +309,7 @@ describe(
       assert.equal(await response.text(), 'This data is specific to the course.');
     });
 
-    test.sequential('access clientFilesCourseInstance during the review window', async () => {
+    test('access clientFilesCourseInstance during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesCourseInstance/data.txt`, {
         headers,
       });
@@ -341,7 +317,7 @@ describe(
       assert.equal(await response.text(), 'This data is specific to the course instance.');
     });
 
-    test.sequential('access clientFilesAssessment during the review window', async () => {
+    test('access clientFilesAssessment during the review window', async () => {
       const response = await fetch(`${context.examUrl}clientFilesAssessment/data.txt`, {
         headers,
       });
@@ -349,7 +325,7 @@ describe(
       assert.equal(await response.text(), 'This data is specific to the assessment.');
     });
 
-    test.sequential('ensure that no new variants have been created', async () => {
+    test('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
@@ -358,7 +334,7 @@ describe(
       assert.equal(countVariantsResult, context.numberOfVariants);
     });
 
-    test.sequential('try to access the homework before it is released', async () => {
+    test('try to access the homework before it is released', async () => {
       headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -373,7 +349,7 @@ describe(
       );
     });
 
-    test.sequential('access the homework during the access window', async () => {
+    test('access the homework during the access window', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -397,7 +373,7 @@ describe(
       context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
     });
 
-    test.sequential('access a question during the access window', async () => {
+    test('access a question during the access window', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       // Access the question to create a variant.
@@ -410,7 +386,7 @@ describe(
       helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
     });
 
-    test.sequential('count number of variants generated', async () => {
+    test('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
@@ -419,7 +395,7 @@ describe(
       assert.equal(context.numberOfVariants, 1);
     });
 
-    test.sequential('access the homework during the after-complete review window', async () => {
+    test('access the homework during the after-complete review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -435,32 +411,26 @@ describe(
       );
     });
 
-    test.sequential(
-      'access a question with an existing variant during the review window',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
+    test('access a question with an existing variant during the review window', async () => {
+      const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
 
-        // There should be no save or grade buttons
-        assert.lengthOf(response.$('button.question-save'), 0);
-        assert.lengthOf(response.$('button.question-grade'), 0);
-      },
-    );
+      // There should be no save or grade buttons
+      assert.lengthOf(response.$('button.question-save'), 0);
+      assert.lengthOf(response.$('button.question-grade'), 0);
+    });
 
-    test.sequential(
-      'access a question without an existing variant during the review window',
-      async () => {
-        const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
-        assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
-      },
-    );
+    test('access a question without an existing variant during the review window', async () => {
+      const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
+      assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+    });
 
-    test.sequential('ensure that no new variants have been created', async () => {
+    test('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
@@ -469,7 +439,7 @@ describe(
       assert.equal(countVariantsResult, context.numberOfVariants);
     });
 
-    test.sequential('access the homework during the late 75% credit window', async () => {
+    test('access the homework during the late 75% credit window', async () => {
       headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -479,43 +449,37 @@ describe(
       assert.match(response.$('body').text(), /Available credit:\s+75%/);
     });
 
-    test.sequential(
-      'access the homework when it is complete and questions are hidden',
-      async () => {
-        headers.cookie = 'pl_test_date=2036-06-01T00:00:01Z';
+    test('access the homework when it is complete and questions are hidden', async () => {
+      headers.cookie = 'pl_test_date=2036-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-        const msg = response.$('[data-testid="assessment-closed-message"]');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment is no longer available\./);
+      const msg = response.$('[data-testid="assessment-closed-message"]');
+      assert.lengthOf(msg, 1);
+      assert.match(msg.text(), /Assessment is no longer available\./);
 
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
+      assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    });
 
-    test.sequential(
-      'access the homework after the after-complete review window has ended',
-      async () => {
-        headers.cookie = 'pl_test_date=2050-06-01T00:00:01Z';
+    test('access the homework after the after-complete review window has ended', async () => {
+      headers.cookie = 'pl_test_date=2050-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
-          headers,
-        });
-        assert.equal(response.status, 403);
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-        const msg = response.$('[data-testid="assessment-closed-message"]');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment is no longer available\./);
+      const msg = response.$('[data-testid="assessment-closed-message"]');
+      assert.lengthOf(msg, 1);
+      assert.match(msg.text(), /Assessment is no longer available\./);
 
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-      },
-    );
+      assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    });
 
-    test.sequential('submit an answer to a question during the review window', async () => {
+    test('submit an answer to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -531,34 +495,28 @@ describe(
       assert.equal(response.status, 400);
     });
 
-    test.sequential(
-      'check that no credit is received for an answer submitted during the review window',
-      async () => {
-        const points = await sqldb.queryScalar(
-          sql.read_assessment_instance_points,
-          { assessment_id: context.hwId },
-          z.number(),
-        );
-        assert.equal(points, 0);
-      },
-    );
+    test('check that no credit is received for an answer submitted during the review window', async () => {
+      const points = await sqldb.queryScalar(
+        sql.read_assessment_instance_points,
+        { assessment_id: context.hwId },
+        z.number(),
+      );
+      assert.equal(points, 0);
+    });
 
-    test.sequential(
-      'get CSRF token and variant ID for attaching file on question page',
-      async () => {
-        headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
+    test('get CSRF token and variant ID for attaching file on question page', async () => {
+      headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
 
-        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
-        helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
-      },
-    );
+      helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
+      helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
+    });
 
-    test.sequential('try to attach a file to a question during the review window', async () => {
+    test('try to attach a file to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -575,7 +533,7 @@ describe(
       assert.equal(response.status, 403);
     });
 
-    test.sequential('get CSRF token for attaching file on assessment instance page', async () => {
+    test('get CSRF token for attaching file on assessment instance page', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -586,7 +544,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
     });
 
-    test.sequential('try to attach a file to the assessment during the review window', async () => {
+    test('try to attach a file to the assessment during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -603,22 +561,19 @@ describe(
       assert.equal(response.status, 403);
     });
 
-    test.sequential(
-      'get CSRF token and variant ID for attaching text on question page',
-      async () => {
-        headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
+    test('get CSRF token and variant ID for attaching text on question page', async () => {
+      headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
-          headers,
-        });
-        assert.isTrue(response.ok);
+      const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
 
-        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
-        helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
-      },
-    );
+      helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
+      helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
+    });
 
-    test.sequential('try to attach text to a question during the review window', async () => {
+    test('try to attach text to a question during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -635,7 +590,7 @@ describe(
       assert.equal(response.status, 403);
     });
 
-    test.sequential('get CSRF token for attaching text on assessment instance page', async () => {
+    test('get CSRF token for attaching text on assessment instance page', async () => {
       headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -646,7 +601,7 @@ describe(
       helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
     });
 
-    test.sequential('try to attach text to the assessment during the review window', async () => {
+    test('try to attach text to the assessment during the review window', async () => {
       headers.cookie = 'pl_test_date=2041-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -663,7 +618,7 @@ describe(
       assert.equal(response.status, 403);
     });
 
-    test.sequential('check that no files or text were attached', async () => {
+    test('check that no files or text were attached', async () => {
       const numberOfFiles = await sqldb.queryScalar(
         sql.get_attached_files,
         { assessment_id: context.hwId },

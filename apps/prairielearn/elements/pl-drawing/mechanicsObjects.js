@@ -1,4 +1,4 @@
-/* eslint-disable no-alert, unicorn/no-immediate-mutation */
+/* eslint-disable no-alert */
 /* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 const $V = Sylvester.Vector.create;
@@ -20,6 +20,11 @@ const vec2pt = function (v) {
 };
 
 const mechanicsObjects = {};
+
+const isTrueBooleanOption = function (value) {
+  // Existing saved submissions may contain string booleans; new generated options use booleans.
+  return value === true || value === 'true';
+};
 
 /**
  * New object types.
@@ -1074,7 +1079,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
   initialize(options) {
     this.callSuper('initialize', options);
     this.spacing = options.spacing;
-    this.anchor_is_tail = options.anchor_is_tail === 'true';
+    this.anchor_is_tail = isTrueBooleanOption(options.anchor_is_tail);
     this.w1 = options.w1;
     this.w2 = options.w2;
     this.width = options.range;
@@ -3330,20 +3335,20 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
   }
 
   static get_button_icon(options) {
-    const wdef = { w1: 60, w2: 60, anchor_is_tail: false };
+    const wdef = { w1: 60, w2: 60 };
     const opts = { ...wdef, ...options };
     const w1 = opts['w1'];
     const w2 = opts['w2'];
-    const anchor = opts['anchor_is_tail'];
+    const anchor = isTrueBooleanOption(opts['anchor_is_tail']);
 
     let file_name;
     if (w1 === w2) {
       file_name = 'DUD';
-    } else if (w1 < w2 && anchor === 'true') {
+    } else if (w1 < w2 && anchor) {
       file_name = 'DTDA';
     } else if (w1 < w2) {
       file_name = 'DTUD';
-    } else if (w1 > w2 && anchor === 'true') {
+    } else if (w1 > w2 && anchor) {
       file_name = 'DTUA';
     } else {
       file_name = 'DTDD';

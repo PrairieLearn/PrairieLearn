@@ -193,16 +193,12 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const courseInstance = await selectCourseInstanceById('1');
 
-        await expect(
-          selectStudentLabelById({ id: '999999', courseInstance }),
-        ).rejects.toThrowError();
+        await expect(selectStudentLabelById({ id: '999999', courseInstance })).rejects.toThrow();
 
         const label = await createTestLabel('Test Label');
         await deleteStudentLabel(label);
 
-        await expect(
-          selectStudentLabelById({ id: label.id, courseInstance }),
-        ).rejects.toThrowError();
+        await expect(selectStudentLabelById({ id: label.id, courseInstance })).rejects.toThrow();
       });
     });
 
@@ -216,7 +212,7 @@ describe('Student Label Model', () => {
             id: label.id,
             courseInstance: courseInstance2,
           }),
-        ).rejects.toThrowError(
+        ).rejects.toThrow(
           expect.objectContaining({
             status: 403,
           }),
@@ -236,7 +232,7 @@ describe('Student Label Model', () => {
             color: 'gray1',
             uuid: crypto.randomUUID(),
           }),
-        ).rejects.toThrowError();
+        ).rejects.toThrow();
       });
     });
   });

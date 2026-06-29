@@ -71,6 +71,7 @@ const WorkspaceSettingsRowSchema = z.object({
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
   workspace_environment: z.record(z.string(), z.any()).nullable(),
+  workspace_url_rewrite: z.boolean().nullable(),
 });
 
 // _getWorkspaceSettings transforms WorkspaceSettingsRowSchema into this shape.
@@ -645,17 +646,14 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   }
 
   const settings = {
-    workspace_image: row.workspace_image,
-    workspace_port: row.workspace_port,
-    workspace_home: row.workspace_home,
-    workspace_graded_files: row.workspace_graded_files,
+    ...row,
     workspace_args: row.workspace_args || '',
     workspace_enable_networking: !!row.workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
       v === null ? k : `${k}=${v}`,
     ),
-  };
+  } satisfies WorkspaceSettings;
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
@@ -836,9 +834,15 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
   const [containerPath, workspacePort] = await run(async () => {
-    if (settings.workspace_home != null && settings.workspace_port != null) {
+    // If all three of these are known, inspect is not necessary.
+    if (
+      settings.workspace_home != null &&
+      settings.workspace_port != null &&
+      settings.workspace_url_rewrite != null
+    ) {
       return [settings.workspace_home, settings.workspace_port];
     }
+
     const inspectResults = await docker.getImage(settings.workspace_image).inspect();
     const labels = inspectResults.Config.Labels;
     const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
@@ -857,6 +861,24 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     if (Number.isNaN(port) || port <= 0 || port > 65535) {
       throw new SafeForStudentError('Workspace port is not a valid port number');
     }
+
+    if (settings.workspace_url_rewrite == null) {
+      // If the url_rewrite setting was not previously set, we'll use the label
+      // value and default to true if not specified. This value is not used
+      // here, but in the proxy middleware logic, so we save it to the database
+      // for later reference.
+      const urlRewrite =
+        labels?.['com.prairielearn.workspace.rewrite-url']?.toLowerCase() ?? 'true';
+
+      if (!['true', 'false'].includes(urlRewrite)) {
+        throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
+      }
+      await sqldb.execute(sql.update_workspace_url_rewrite, {
+        workspace_id: workspace.id,
+        url_rewrite: urlRewrite === 'true',
+      });
+    }
+
     return [home, port];
   });
   const args = settings.workspace_args.trim();

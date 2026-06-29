@@ -53,7 +53,7 @@ function makeRule(overrides: Partial<AccessControlJsonInput> = {}): AccessContro
   );
 }
 
-describe('Access control save via tRPC', () => {
+describe('Access control save via tRPC', { concurrent: false }, () => {
   let courseRepo: CourseRepoFixture;
   let assessmentId: string;
   let enrollmentOverrideStudentUid: string;
@@ -152,60 +152,57 @@ describe('Access control save via tRPC', () => {
     );
   }
 
-  test.sequential(
-    'saves rules to disk and preserves omitted student-specific rule bodies',
-    async () => {
-      const client = await createClient();
-      const origHash = await getOrigHash();
+  test('saves rules to disk and preserves omitted student-specific rule bodies', async () => {
+    const client = await createClient();
+    const origHash = await getOrigHash();
 
-      const rules: AccessControlJsonInput[] = [
-        makeRule({ beforeRelease: { listed: true } }),
-        makeRule({
-          uuid: '11111111-1111-4111-8111-111111111111',
-          labels: ['Section A'],
-          dateControl: { due: { date: '2024-04-01T23:59:00' } },
-        }),
-      ];
+    const rules: AccessControlJsonInput[] = [
+      makeRule({ beforeRelease: { listed: true } }),
+      makeRule({
+        uuid: '11111111-1111-4111-8111-111111111111',
+        labels: ['Section A'],
+        dateControl: { due: { date: '2024-04-01T23:59:00' } },
+      }),
+    ];
 
-      const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
-      assert.isString(result.newHash);
-      assert.notEqual(result.newHash, origHash);
+    const result = await client.accessControl.saveAllRules.mutate({ rules, origHash });
+    assert.isString(result.newHash);
+    assert.notEqual(result.newHash, origHash);
 
-      // Verify the file on disk was updated
-      const fileContent = await fs.readFile(assessmentPath(), 'utf8');
-      const parsed = JSON.parse(fileContent);
+    // Verify the file on disk was updated
+    const fileContent = await fs.readFile(assessmentPath(), 'utf8');
+    const parsed = JSON.parse(fileContent);
 
-      assert.isArray(parsed.accessControl);
-      assert.equal(parsed.accessControl.length, 3);
-      assert.deepEqual(parsed.accessControl[0].beforeRelease, { listed: true });
-      assert.equal(parsed.accessControl[1].uuid, '11111111-1111-4111-8111-111111111111');
-      assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
-      assert.equal(parsed.accessControl[1].dateControl.due?.date, '2024-04-01T23:59:00');
-      assert.isString(parsed.accessControl[2].uuid);
-      assert.notProperty(parsed.accessControl[2], 'labels');
-      assert.notProperty(parsed.accessControl[2], 'enrollments');
+    assert.isArray(parsed.accessControl);
+    assert.equal(parsed.accessControl.length, 3);
+    assert.deepEqual(parsed.accessControl[0].beforeRelease, { listed: true });
+    assert.equal(parsed.accessControl[1].uuid, '11111111-1111-4111-8111-111111111111');
+    assert.deepEqual(parsed.accessControl[1].labels, ['Section A']);
+    assert.equal(parsed.accessControl[1].dateControl.due?.date, '2024-04-01T23:59:00');
+    assert.isString(parsed.accessControl[2].uuid);
+    assert.notProperty(parsed.accessControl[2], 'labels');
+    assert.notProperty(parsed.accessControl[2], 'enrollments');
 
-      // Verify other keys are preserved
-      assert.equal(parsed.uuid, 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f');
-      assert.equal(parsed.type, 'Homework');
-      assert.isArray(parsed.zones);
+    // Verify other keys are preserved
+    assert.equal(parsed.uuid, 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f');
+    assert.equal(parsed.type, 'Homework');
+    assert.isArray(parsed.zones);
 
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid: 'hw19-accessControlUi',
-      });
-      const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
-      assert.lengthOf(enrollmentRules, 1);
-      assert.isString(enrollmentRules[0].uuid);
-      assert.isTrue(
-        enrollmentRules[0].enrollments?.some(
-          (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
-        ),
-      );
-    },
-  );
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw19-accessControlUi',
+    });
+    const enrollmentRules = await selectAccessControlRules(assessment, ['enrollment']);
+    assert.lengthOf(enrollmentRules, 1);
+    assert.isString(enrollmentRules[0].uuid);
+    assert.isTrue(
+      enrollmentRules[0].enrollments?.some(
+        (enrollment) => enrollment.uid === enrollmentOverrideStudentUid,
+      ),
+    );
+  });
 
-  test.sequential('saves existing student-specific override with no label rules', async () => {
+  test('saves existing student-specific override with no label rules', async () => {
     const client = await createClient();
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -245,7 +242,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(enrollmentRules[0].uuid, enrollmentRuleUuid);
   });
 
-  test.sequential('saves mixed override rules to disk and syncs enrollments', async () => {
+  test('saves mixed override rules to disk and syncs enrollments', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
     const assessment = await selectAssessmentByTid({
@@ -307,27 +304,24 @@ describe('Access control save via tRPC', () => {
     );
   });
 
-  test.sequential(
-    'rejects student-specific rules submitted in the label/default rules array',
-    async () => {
-      const client = await createClient();
+  test('rejects student-specific rules submitted in the label/default rules array', async () => {
+    const client = await createClient();
 
-      await expect(
-        client.accessControl.saveAllRules.mutate({
-          rules: [
-            makeRule(),
-            makeRule({
-              uuid: '44444444-4444-4444-8444-444444444444',
-              dateControl: { due: { date: '2024-04-22T23:59:00' } },
-            }),
-          ],
-          origHash: await getOrigHash(),
-        }),
-      ).rejects.toThrow(/must be submitted via enrollmentRules/);
-    },
-  );
+    await expect(
+      client.accessControl.saveAllRules.mutate({
+        rules: [
+          makeRule(),
+          makeRule({
+            uuid: '44444444-4444-4444-8444-444444444444',
+            dateControl: { due: { date: '2024-04-22T23:59:00' } },
+          }),
+        ],
+        origHash: await getOrigHash(),
+      }),
+    ).rejects.toThrow(/must be submitted via enrollmentRules/);
+  });
 
-  test.sequential('rejects student-label rules without UUIDs', async () => {
+  test('rejects student-label rules without UUIDs', async () => {
     const client = await createClient();
 
     await expect(
@@ -338,7 +332,7 @@ describe('Access control save via tRPC', () => {
     ).rejects.toThrow(/must include a UUID/);
   });
 
-  test.sequential('rejects student-specific rules without UUIDs', async () => {
+  test('rejects student-specific rules without UUIDs', async () => {
     const client = await createClient();
 
     await expect(
@@ -355,7 +349,7 @@ describe('Access control save via tRPC', () => {
     ).rejects.toThrow(/must include a UUID/);
   });
 
-  test.sequential('rejects student-label rules submitted as enrollment rules', async () => {
+  test('rejects student-label rules submitted as enrollment rules', async () => {
     const client = await createClient();
 
     await expect(
@@ -376,7 +370,7 @@ describe('Access control save via tRPC', () => {
     ).rejects.toThrow(/must be submitted via rules/);
   });
 
-  test.sequential('rejects duplicate enrollment IDs in one student-specific rule', async () => {
+  test('rejects duplicate enrollment IDs in one student-specific rule', async () => {
     const client = await createClient();
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -404,7 +398,7 @@ describe('Access control save via tRPC', () => {
     ).rejects.toThrow(/Duplicate enrollment IDs/);
   });
 
-  test.sequential('omits beforeRelease.listed: false and empty objects from rules', async () => {
+  test('omits beforeRelease.listed: false and empty objects from rules', async () => {
     const client = await createClient();
     const origHash = await getOrigHash();
 
@@ -422,7 +416,7 @@ describe('Access control save via tRPC', () => {
     assert.isString(parsed.accessControl[1].uuid);
   });
 
-  test.sequential('course editor without student data permissions', async () => {
+  test('course editor without student data permissions', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'hw19-accessControlUi',
@@ -512,7 +506,7 @@ describe('Access control save via tRPC', () => {
     assert.include(html, 'hidden because you do not have student data viewer permissions');
   });
 
-  test.sequential('course editor with student data view permissions', async () => {
+  test('course editor with student data view permissions', async () => {
     const courseEditorWithStudentDataView = await getOrCreateUser({
       uid: 'access-control-student-data-viewer@example.com',
       name: 'Access Control Student Data Viewer',
@@ -547,7 +541,7 @@ describe('Access control save via tRPC', () => {
     assert.include(html, '"hiddenEnrollmentRuleCount":0');
   });
 
-  test.sequential('persists student-specific override order', async () => {
+  test('persists student-specific override order', async () => {
     const client = await createClient();
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -639,7 +633,7 @@ describe('Access control save via tRPC', () => {
     assert.equal(reorderedRuleA.number, 2);
   });
 
-  test.sequential('rejects duplicate student-specific override ids', async () => {
+  test('rejects duplicate student-specific override ids', async () => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'hw19-accessControlUi',
@@ -679,7 +673,7 @@ describe('Access control save via tRPC', () => {
     );
   });
 
-  test.sequential('rejects save with stale origHash', async () => {
+  test('rejects save with stale origHash', async () => {
     const client = await createClient();
     const staleHash = await getOrigHash();
 

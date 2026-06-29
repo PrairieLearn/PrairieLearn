@@ -38,7 +38,6 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseInstanceTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { discoverInfoDirs } from '../../lib/discover-info-dirs.js';
-import { features } from '../../lib/features/index.js';
 import { createQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -97,17 +96,17 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
   });
 };
 
-// Gate all routes behind the feature flag and require edit permissions.
+// Require edit permissions for all routes.
 router.use(
   typedAsyncHandler<'course-instance'>(async (req, res, next) => {
-    const enabled = await features.enabledFromLocals('qti-content-import', res.locals);
-    if (!enabled) {
-      throw new HttpStatusError(403, 'QTI content import is not enabled for this course');
-    }
-    if (!res.locals.authz_data.has_course_permission_edit) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    if (!authzData.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
-    if (res.locals.course.example_course) {
+    if (course.example_course) {
       throw new HttpStatusError(403, 'Cannot import into the example course');
     }
     next();
