@@ -25,120 +25,124 @@ describe('Issues', { timeout: 15_000 }, function () {
 });
 
 function doTest(issuesUrl: string, label: string) {
-  describe(`Report issue with question and close all issues in ${label}`, () => {
-    let questionUrl;
+  describe(
+    `Report issue with question and close all issues in ${label}`,
+    { concurrent: false },
+    () => {
+      let questionUrl;
 
-    test.sequential('should report issues to a question', async () => {
-      const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
-      questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
-      let res = await fetch(questionUrl);
-      const $ = cheerio.load(await res.text());
+      test('should report issues to a question', async () => {
+        const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
+        questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
+        let res = await fetch(questionUrl);
+        const $ = cheerio.load(await res.text());
 
-      const csrfToken = $('div[id="issueCollapse"] input[name="__csrf_token"]')
-        .first()
-        .attr('value');
-      assert(typeof csrfToken === 'string');
+        const csrfToken = $('div[id="issueCollapse"] input[name="__csrf_token"]')
+          .first()
+          .attr('value');
+        assert(typeof csrfToken === 'string');
 
-      const variantId = $('div[id="issueCollapse"] input[name="__variant_id"]')
-        .first()
-        .attr('value');
-      assert(typeof variantId === 'string');
+        const variantId = $('div[id="issueCollapse"] input[name="__variant_id"]')
+          .first()
+          .attr('value');
+        assert(typeof variantId === 'string');
 
-      // We'll report three issues total so that we have a variety to close.
-      // We give them distinct descriptions to test that "close matching" works.
+        // We'll report three issues total so that we have a variety to close.
+        // We give them distinct descriptions to test that "close matching" works.
 
-      res = await fetch(questionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'report_issue',
-          __csrf_token: csrfToken,
-          __variant_id: variantId,
-          description: 'mountain breeze crisp',
-        }),
+        res = await fetch(questionUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'report_issue',
+            __csrf_token: csrfToken,
+            __variant_id: variantId,
+            description: 'mountain breeze crisp',
+          }),
+        });
+        assert.equal(res.status, 200);
+
+        res = await fetch(questionUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'report_issue',
+            __csrf_token: csrfToken,
+            __variant_id: variantId,
+            description: 'velvet sunset glow',
+          }),
+        });
+        assert.equal(res.status, 200);
+
+        res = await fetch(questionUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'report_issue',
+            __csrf_token: csrfToken,
+            __variant_id: variantId,
+            description: 'whispering river serenade',
+          }),
+        });
+        assert.equal(res.status, 200);
+
+        const rowCount = await sqldb.execute(sql.select_open_issues);
+        assert.equal(rowCount, 3, 'Expected three open issues');
       });
-      assert.equal(res.status, 200);
 
-      res = await fetch(questionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'report_issue',
-          __csrf_token: csrfToken,
-          __variant_id: variantId,
-          description: 'velvet sunset glow',
-        }),
+      test('should close issues matching a query', async () => {
+        const issuesUrlWithQuery = `${issuesUrl}?q=is%3Aopen+mountain`;
+        let res = await fetch(issuesUrlWithQuery);
+        const $ = cheerio.load(await res.text());
+
+        const csrfToken = $('div#closeMatchingIssuesModal input[name="__csrf_token"]')
+          .first()
+          .attr('value');
+        assert(typeof csrfToken === 'string');
+
+        const issueIds = $('div#closeMatchingIssuesModal input[name="unsafe_issue_ids"]')
+          .first()
+          .attr('value');
+        assert(typeof issueIds === 'string');
+
+        res = await fetch(issuesUrlWithQuery, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'close_matching',
+            __csrf_token: csrfToken,
+            unsafe_issue_ids: issueIds,
+          }),
+        });
+        assert.equal(res.status, 200);
+
+        const rowCount = await sqldb.execute(sql.select_open_issues);
+        assert.equal(rowCount, 2, 'Expected two open issues');
       });
-      assert.equal(res.status, 200);
 
-      res = await fetch(questionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'report_issue',
-          __csrf_token: csrfToken,
-          __variant_id: variantId,
-          description: 'whispering river serenade',
-        }),
+      test('should close all open issues', async () => {
+        let res = await fetch(issuesUrl);
+        const $ = cheerio.load(await res.text());
+
+        const csrfToken = $('div#closeMatchingIssuesModal input[name="__csrf_token"]')
+          .first()
+          .attr('value');
+        assert(typeof csrfToken === 'string');
+
+        const issueIds = $('div#closeMatchingIssuesModal input[name="unsafe_issue_ids"]')
+          .first()
+          .attr('value');
+        assert(typeof issueIds === 'string');
+
+        res = await fetch(issuesUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'close_matching',
+            __csrf_token: csrfToken,
+            unsafe_issue_ids: issueIds,
+          }),
+        });
+        assert.equal(res.status, 200);
+
+        const rowCount = await sqldb.execute(sql.select_open_issues);
+        assert.equal(rowCount, 0, 'Expected zero open issues');
       });
-      assert.equal(res.status, 200);
-
-      const rowCount = await sqldb.execute(sql.select_open_issues);
-      assert.equal(rowCount, 3, 'Expected three open issues');
-    });
-
-    test.sequential('should close issues matching a query', async () => {
-      const issuesUrlWithQuery = `${issuesUrl}?q=is%3Aopen+mountain`;
-      let res = await fetch(issuesUrlWithQuery);
-      const $ = cheerio.load(await res.text());
-
-      const csrfToken = $('div#closeMatchingIssuesModal input[name="__csrf_token"]')
-        .first()
-        .attr('value');
-      assert(typeof csrfToken === 'string');
-
-      const issueIds = $('div#closeMatchingIssuesModal input[name="unsafe_issue_ids"]')
-        .first()
-        .attr('value');
-      assert(typeof issueIds === 'string');
-
-      res = await fetch(issuesUrlWithQuery, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'close_matching',
-          __csrf_token: csrfToken,
-          unsafe_issue_ids: issueIds,
-        }),
-      });
-      assert.equal(res.status, 200);
-
-      const rowCount = await sqldb.execute(sql.select_open_issues);
-      assert.equal(rowCount, 2, 'Expected two open issues');
-    });
-
-    test.sequential('should close all open issues', async () => {
-      let res = await fetch(issuesUrl);
-      const $ = cheerio.load(await res.text());
-
-      const csrfToken = $('div#closeMatchingIssuesModal input[name="__csrf_token"]')
-        .first()
-        .attr('value');
-      assert(typeof csrfToken === 'string');
-
-      const issueIds = $('div#closeMatchingIssuesModal input[name="unsafe_issue_ids"]')
-        .first()
-        .attr('value');
-      assert(typeof issueIds === 'string');
-
-      res = await fetch(issuesUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'close_matching',
-          __csrf_token: csrfToken,
-          unsafe_issue_ids: issueIds,
-        }),
-      });
-      assert.equal(res.status, 200);
-
-      const rowCount = await sqldb.execute(sql.select_open_issues);
-      assert.equal(rowCount, 0, 'Expected zero open issues');
-    });
-  });
+    },
+  );
 }

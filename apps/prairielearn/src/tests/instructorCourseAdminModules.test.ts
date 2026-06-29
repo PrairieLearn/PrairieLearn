@@ -33,7 +33,7 @@ function createTrpcClient() {
   return createCourseTrpcClient({ csrfToken, courseId: '1', urlBase: siteUrl });
 }
 
-describe('Instructor course admin modules page', () => {
+describe('Instructor course admin modules page', { concurrent: false }, () => {
   let courseRepo: CourseRepoFixture;
 
   function infoCoursePath() {
@@ -76,7 +76,7 @@ describe('Instructor course admin modules page', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential('loads the page and the list endpoint', async () => {
+  test('loads the page and the list endpoint', async () => {
     const pageResponse = await fetch(modulesUrl);
     assert.equal(pageResponse.status, 200);
 
@@ -90,7 +90,7 @@ describe('Instructor course admin modules page', () => {
     );
   });
 
-  test.sequential('list includes each module with its assessments', async () => {
+  test('list includes each module with its assessments', async () => {
     const client = createTrpcClient();
     const result = await client.assessmentModules.list.query();
 
@@ -107,7 +107,7 @@ describe('Instructor course admin modules page', () => {
     assert.lengthOf(module4.assessments, 0);
   });
 
-  test.sequential('creates a new module', async () => {
+  test('creates a new module', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -129,7 +129,7 @@ describe('Instructor course admin modules page', () => {
     assert.isDefined(fileJson.assessmentModules?.find((m) => m.name === 'Quizzes'));
   });
 
-  test.sequential('persists reordered modules', async () => {
+  test('persists reordered modules', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -149,7 +149,7 @@ describe('Instructor course admin modules page', () => {
     );
   });
 
-  test.sequential('renames a module heading', async () => {
+  test('renames a module heading', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -163,7 +163,7 @@ describe('Instructor course admin modules page', () => {
     assert.equal(updated.heading, 'Renamed module 1');
   });
 
-  test.sequential('renaming a module updates referencing assessments', async () => {
+  test('renaming a module updates referencing assessments', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -182,7 +182,7 @@ describe('Instructor course admin modules page', () => {
     assert.equal(assessmentJson.module, 'Module2Renamed');
   });
 
-  test.sequential('deleting a module reassigns its assessments to Default', async () => {
+  test('deleting a module reassigns its assessments to Default', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -205,7 +205,7 @@ describe('Instructor course admin modules page', () => {
     assert.isUndefined(assessmentJson.module);
   });
 
-  test.sequential('deletes a module', async () => {
+  test('deletes a module', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
@@ -216,7 +216,7 @@ describe('Instructor course admin modules page', () => {
     assert.notInclude(remaining, 'Quizzes');
   });
 
-  test.sequential('rejects a stale hash with a conflict error', async () => {
+  test('rejects a stale hash with a conflict error', async () => {
     const client = createTrpcClient();
 
     await expect(
@@ -227,7 +227,7 @@ describe('Instructor course admin modules page', () => {
     ).rejects.toThrow(/modified since/);
   });
 
-  test.sequential('rejects duplicate module names', async () => {
+  test('rejects duplicate module names', async () => {
     const client = createTrpcClient();
     const origHash = await currentOrigHash();
 
