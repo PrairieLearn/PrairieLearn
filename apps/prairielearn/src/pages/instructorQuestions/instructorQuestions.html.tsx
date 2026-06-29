@@ -6,7 +6,11 @@ import { NuqsAdapter } from '@prairielearn/ui';
 
 import { QuestionsTable } from '../../components/QuestionsTable.js';
 import type { SafeQuestionsPageData } from '../../components/QuestionsTable.shared.js';
-import type { PublicCourseInstance } from '../../lib/client/safe-db-types.js';
+import type {
+  PublicCourseInstance,
+  PublicTag,
+  PublicTopic,
+} from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createCourseTrpcClient } from '../../trpc/course/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/course/context.js';
@@ -16,10 +20,11 @@ import { QuestionSelectionToolbar } from './components/QuestionSelectionToolbar.
 interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
+  topics: PublicTopic[];
+  tags: PublicTag[];
   courseId: string;
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
-  showImportQuestionsButton: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   canEditQuestions: boolean;
@@ -38,10 +43,11 @@ type InstructorQuestionsTableInnerProps = Omit<
 function InstructorQuestionsTableInner({
   questions,
   courseInstances,
+  topics,
+  tags,
   courseId,
   currentCourseInstanceId,
   showAddQuestionButton,
-  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   canEditQuestions,
@@ -76,13 +82,14 @@ function InstructorQuestionsTableInner({
         addQuestionUrl={
           showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
         }
-        showImportQuestionsButton={showImportQuestionsButton}
         renderSelectionToolbar={
           canEditQuestions
             ? ({ selectedQuestions, clearSelection, trimSelection }) => (
                 <QuestionSelectionToolbar
                   selectedQuestions={selectedQuestions}
                   clearSelection={clearSelection}
+                  topics={topics}
+                  tags={tags}
                   courseInstances={courseInstances}
                   currentCourseInstanceId={currentCourseInstanceId}
                   trimSelection={trimSelection}

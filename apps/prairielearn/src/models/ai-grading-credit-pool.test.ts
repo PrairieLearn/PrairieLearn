@@ -610,7 +610,7 @@ describe('setCreditPoolBalance', () => {
         user_id: userId,
         reason: 'Admin set balance',
       }),
-    ).rejects.toThrowError(/Non-transferable credit balance cannot be set below 0/);
+    ).rejects.toThrow(/Non-transferable credit balance cannot be set below 0/);
   });
 
   it('leaves non-selected credit type unchanged', async () => {

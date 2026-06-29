@@ -227,7 +227,7 @@ lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 build-docs:
 	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload --dev-addr "127.0.0.1:$$(( $${CONDUCTOR_PORT:-7999} + 1 ))"
 
 format-d2:
 	@d2 fmt docs/**/*.d2

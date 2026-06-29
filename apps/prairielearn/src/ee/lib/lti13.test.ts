@@ -66,7 +66,7 @@ function productApi(req: Request, res: Response) {
   res.json(returning);
 }
 
-describe('fetchRetry()', () => {
+describe('fetchRetry()', { concurrent: false }, () => {
   const app = express();
 
   // Run a server to respond to API requests.
@@ -101,7 +101,7 @@ describe('fetchRetry()', () => {
 
   let apiCount: number;
 
-  test.sequential('should return the full list by iterating', async () => {
+  test('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
@@ -114,7 +114,7 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should return the full list with a large limit', async () => {
+  test('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
@@ -128,7 +128,7 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should throw an error on all 403s', async () => {
+  test('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
@@ -138,7 +138,7 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential('should return the full list by iterating with intermittent 403s', async () => {
+  test('should return the full list by iterating with intermittent 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url + '/403oddAttempt', {}, { sleepMs: 100 });
@@ -150,24 +150,17 @@ describe('fetchRetry()', () => {
     });
   });
 
-  test.sequential(
-    'should return the full list by iterating with intermittent connection interruptions',
-    async () => {
-      apiCount = 0;
-      await withServer(app, async ({ url }) => {
-        const resultArray = await fetchRetryPaginated(
-          url + '/socketCloseOdd',
-          {},
-          { sleepMs: 100 },
-        );
-        assert.equal(resultArray.length, 3);
-        const products = z.string().array().array().parse(resultArray);
-        const fullList = products.flat();
-        assert.equal(fullList.length, 26);
-        assert.equal(apiCount, 6);
-      });
-    },
-  );
+  test('should return the full list by iterating with intermittent connection interruptions', async () => {
+    apiCount = 0;
+    await withServer(app, async ({ url }) => {
+      const resultArray = await fetchRetryPaginated(url + '/socketCloseOdd', {}, { sleepMs: 100 });
+      assert.equal(resultArray.length, 3);
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 6);
+    });
+  });
 });
 
 describe('findValueByKey() generic tests', () => {

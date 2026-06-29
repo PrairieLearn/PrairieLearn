@@ -9,36 +9,37 @@ import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { ASSESSMENT_ID, getCourseData, writeCourseToTempDirectory } from './sync/util.js';
 
-describe('Modern access control on the student assessments page', { timeout: 60_000 }, () => {
-  const siteUrl = `http://localhost:${config.serverPort}`;
-  const assessmentTitle = 'Explicit empty access control';
-  let assessmentsUrl: string;
+describe(
+  'Modern access control on the student assessments page',
+  { timeout: 60_000, concurrent: false },
+  () => {
+    const siteUrl = `http://localhost:${config.serverPort}`;
+    const assessmentTitle = 'Explicit empty access control';
+    let assessmentsUrl: string;
 
-  beforeAll(async () => {
-    const course = getCourseData();
-    course.courseInstances.Fa19.assessments[ASSESSMENT_ID] = {
-      ...course.courseInstances.Fa19.assessments[ASSESSMENT_ID],
-      title: assessmentTitle,
-      accessControl: [],
-    };
+    beforeAll(async () => {
+      const course = getCourseData();
+      course.courseInstances.Fa19.assessments[ASSESSMENT_ID] = {
+        ...course.courseInstances.Fa19.assessments[ASSESSMENT_ID],
+        title: assessmentTitle,
+        accessControl: [],
+      };
 
-    const courseDir = await writeCourseToTempDirectory(course);
-    await helperServer.before(courseDir)();
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: 'instructor@example.com',
-      course_role: 'Previewer',
-      authn_user_id: '1',
+      const courseDir = await writeCourseToTempDirectory(course);
+      await helperServer.before(courseDir)();
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: 'instructor@example.com',
+        course_role: 'Previewer',
+        authn_user_id: '1',
+      });
+
+      assessmentsUrl = `${siteUrl}/pl/course_instance/1/assessments`;
     });
 
-    assessmentsUrl = `${siteUrl}/pl/course_instance/1/assessments`;
-  });
+    afterAll(helperServer.after);
 
-  afterAll(helperServer.after);
-
-  test.sequential(
-    'syncs explicit empty access control as a modern assessment with no rules',
-    async () => {
+    test('syncs explicit empty access control as a modern assessment with no rules', async () => {
       const assessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: ASSESSMENT_ID,
@@ -51,25 +52,25 @@ describe('Modern access control on the student assessments page', { timeout: 60_
 
       assert.isTrue(assessment.modern_access_control);
       assert.lengthOf(rules, 0);
-    },
-  );
-
-  test.sequential('hides the assessment from students', async () => {
-    const response = await helperClient.fetchCheerio(assessmentsUrl, {
-      headers: { cookie: 'pl_test_user=test_student' },
     });
 
-    assert.isTrue(response.ok);
-    assert.lengthOf(response.$(`td:contains("${assessmentTitle}")`), 0);
-    assert.lengthOf(response.$(`a:contains("${assessmentTitle}")`), 0);
-  });
+    test('hides the assessment from students', async () => {
+      const response = await helperClient.fetchCheerio(assessmentsUrl, {
+        headers: { cookie: 'pl_test_user=test_student' },
+      });
 
-  test.sequential('shows the assessment to staff via the staff override', async () => {
-    const response = await helperClient.fetchCheerio(assessmentsUrl, {
-      headers: { cookie: 'pl_test_user=test_instructor' },
+      assert.isTrue(response.ok);
+      assert.lengthOf(response.$(`td:contains("${assessmentTitle}")`), 0);
+      assert.lengthOf(response.$(`a:contains("${assessmentTitle}")`), 0);
     });
 
-    assert.isTrue(response.ok);
-    assert.lengthOf(response.$(`a:contains("${assessmentTitle}")`), 1);
-  });
-});
+    test('shows the assessment to staff via the staff override', async () => {
+      const response = await helperClient.fetchCheerio(assessmentsUrl, {
+        headers: { cookie: 'pl_test_user=test_instructor' },
+      });
+
+      assert.isTrue(response.ok);
+      assert.lengthOf(response.$(`a:contains("${assessmentTitle}")`), 1);
+    });
+  },
+);

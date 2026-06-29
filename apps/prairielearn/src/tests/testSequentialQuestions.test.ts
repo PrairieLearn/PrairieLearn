@@ -16,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe(
   'Assessment that forces students to complete questions in-order',
-  { timeout: 60_000 },
+  { timeout: 60_000, concurrent: false },
   function () {
     const context = { siteUrl: `http://localhost:${config.serverPort}` } as {
       siteUrl: string;
@@ -45,19 +45,16 @@ describe(
 
     afterAll(helperServer.after);
 
-    test.sequential(
-      'Minimum advancement score is computed correctly for each question',
-      async function () {
-        context.expectedPercentages = [0, 60, 75, 0, 30, 100];
-        const questionRows = await selectAssessmentQuestions({
-          assessment_id: context.assessmentId,
-        });
-        const computedPercentages = questionRows.map(
-          (row) => row.assessment_question.effective_advance_score_perc,
-        );
-        assert.deepEqual(computedPercentages, context.expectedPercentages);
-      },
-    );
+    test('Minimum advancement score is computed correctly for each question', async function () {
+      context.expectedPercentages = [0, 60, 75, 0, 30, 100];
+      const questionRows = await selectAssessmentQuestions({
+        assessment_id: context.assessmentId,
+      });
+      const computedPercentages = questionRows.map(
+        (row) => row.assessment_question.effective_advance_score_perc,
+      );
+      assert.deepEqual(computedPercentages, context.expectedPercentages);
+    });
 
     /**
      * Updates context.instanceQuestions to the current state of the assessment instance
@@ -77,94 +74,82 @@ describe(
       });
     }
 
-    test.sequential(
-      'Questions are locked/unlocked properly on student assessment page',
-      async function () {
-        // Generate assessment instance
-        const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
-        helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
-        const response = await helperClient.fetchCheerio(context.assessmentUrl, {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'new_instance',
-            __csrf_token: context.__csrf_token,
-          }),
-        });
-        assert.isTrue(response.ok);
+    test('Questions are locked/unlocked properly on student assessment page', async function () {
+      // Generate assessment instance
+      const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
+      helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
+      const response = await helperClient.fetchCheerio(context.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'new_instance',
+          __csrf_token: context.__csrf_token,
+        }),
+      });
+      assert.isTrue(response.ok);
 
-        // We should have been redirected to the assessment instance
-        context.assessmentInstanceUrl = response.url;
-        assert.include(context.assessmentInstanceUrl, '/assessment_instance/');
+      // We should have been redirected to the assessment instance
+      context.assessmentInstanceUrl = response.url;
+      assert.include(context.assessmentInstanceUrl, '/assessment_instance/');
 
-        const urlParts = context.assessmentInstanceUrl.split('/');
-        context.assessmentInstanceId = urlParts[urlParts.length - 1];
-        await refreshContextQuestions();
+      const urlParts = context.assessmentInstanceUrl.split('/');
+      context.assessmentInstanceId = urlParts[urlParts.length - 1];
+      await refreshContextQuestions();
 
-        const initialExpectedLocks = [false, false, true, true, true, true];
+      const initialExpectedLocks = [false, false, true, true, true, true];
 
-        assert.deepEqual(
-          context.instanceQuestions.map((e) => {
-            return e.locked;
-          }),
-          initialExpectedLocks,
-        );
+      assert.deepEqual(
+        context.instanceQuestions.map((e) => {
+          return e.locked;
+        }),
+        initialExpectedLocks,
+      );
 
-        const computedLocks = response
+      const computedLocks = response
+        .$('table[data-testid="assessment-questions"] tbody tr')
+        .filter((i, elem) => response.$(elem).find('td').length > 0)
+        .map((i, elem) => {
+          return response.$(elem).hasClass('pl-sequence-locked');
+        })
+        .get();
+      assert.deepEqual(computedLocks, initialExpectedLocks);
+
+      assert.include(
+        response
           .$('table[data-testid="assessment-questions"] tbody tr')
           .filter((i, elem) => response.$(elem).find('td').length > 0)
-          .map((i, elem) => {
-            return response.$(elem).hasClass('pl-sequence-locked');
-          })
-          .get();
-        assert.deepEqual(computedLocks, initialExpectedLocks);
+          .eq(2)
+          .html(),
+        '60% on Question 2',
+      );
+    });
 
-        assert.include(
-          response
-            .$('table[data-testid="assessment-questions"] tbody tr')
-            .filter((i, elem) => response.$(elem).find('td').length > 0)
-            .eq(2)
-            .html(),
-          '60% on Question 2',
-        );
-      },
-    );
-
-    test.sequential('Instructor can access sequence-locked Question 3', async function () {
+    test('Instructor can access sequence-locked Question 3', async function () {
       context.lockedQuestion = context.instanceQuestions[2];
       const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
       assert.isTrue(response.ok);
     });
 
-    test.sequential(
-      'Question 3 URL is not exposed from student assessment page',
-      async function () {
-        const response = await helperClient.fetchCheerio(context.assessmentUrl);
-        assert.isTrue(response.ok);
-        assert.equal(
-          response.$(`a[href*="instance_question/${context.lockedQuestion.id}"]`).length,
-          0,
-        );
-      },
-    );
+    test('Question 3 URL is not exposed from student assessment page', async function () {
+      const response = await helperClient.fetchCheerio(context.assessmentUrl);
+      assert.isTrue(response.ok);
+      assert.equal(
+        response.$(`a[href*="instance_question/${context.lockedQuestion.id}"]`).length,
+        0,
+      );
+    });
 
-    test.sequential(
-      'Question 2 "next question" link is locked before any submissions',
-      async function () {
-        context.firstUnlockedQuestion = context.instanceQuestions[1];
-        const response = await helperClient.fetchCheerio(context.firstUnlockedQuestion.url);
-        assert.isTrue(response.ok);
+    test('Question 2 "next question" link is locked before any submissions', async function () {
+      context.firstUnlockedQuestion = context.instanceQuestions[1];
+      const response = await helperClient.fetchCheerio(context.firstUnlockedQuestion.url);
+      assert.isTrue(response.ok);
 
-        assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-      },
-    );
+      assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+    });
 
-    test.sequential(
-      'Question 2 "next question" link contains the correct advanceScorePerc',
-      async function () {
-        const response = await submitQuestion(50, context.firstUnlockedQuestion);
-        assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
-      },
-    );
+    test('Question 2 "next question" link contains the correct advanceScorePerc', async function () {
+      const response = await submitQuestion(50, context.firstUnlockedQuestion);
+      assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
+    });
 
     async function submitQuestion(score: number, question: { id: number; url: string }) {
       const preSubmissionResponse = await helperClient.fetchCheerio(question.url);
@@ -186,93 +171,84 @@ describe(
       return response;
     }
 
-    test.sequential('Submitting 50% on Question 2 does not unlock Question 3', async function () {
+    test('Submitting 50% on Question 2 does not unlock Question 3', async function () {
       const response = await submitQuestion(50, context.firstUnlockedQuestion);
       assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
     });
 
-    test.sequential('Submitting 75% on Question 2 unlocks Question 3', async function () {
+    test('Submitting 75% on Question 2 unlocks Question 3', async function () {
       const response = await submitQuestion(75, context.firstUnlockedQuestion);
       assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
     });
 
-    test.sequential('Submitting 0% on Question 2 leaves Question 3 unlocked', async function () {
+    test('Submitting 0% on Question 2 leaves Question 3 unlocked', async function () {
       const response = await submitQuestion(0, context.firstUnlockedQuestion);
       assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
     });
 
-    test.sequential(
-      'Accessing Question 3 no longer returns a 403 and Question 4 is locked',
-      async function () {
-        const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
-        assert.isTrue(response.ok);
-        assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-      },
-    );
+    test('Accessing Question 3 no longer returns a 403 and Question 4 is locked', async function () {
+      const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
+      assert.isTrue(response.ok);
+      assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+    });
 
-    test.sequential(
-      'Submitting 0% on Question 3 unlocks Question 4 (run out of attempts)',
-      async function () {
-        const response = await submitQuestion(0, context.lockedQuestion);
-        assert.isTrue(response.ok);
-        assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
-      },
-    );
+    test('Submitting 0% on Question 3 unlocks Question 4 (run out of attempts)', async function () {
+      const response = await submitQuestion(0, context.lockedQuestion);
+      assert.isTrue(response.ok);
+      assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+    });
 
-    test.sequential('Unlocking question 4 cascades to question 5', async function () {
+    test('Unlocking question 4 cascades to question 5', async function () {
       await refreshContextQuestions();
       assert.isFalse(context.instanceQuestions[4].locked);
     });
 
-    test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
+    test('Unlocking question 4 does NOT cascade to question 6', function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
 
-    test.sequential(
-      'student gets 403 when accessing a sequence-locked question',
-      async function () {
-        const studentUser: AuthUser = {
-          uid: 'student@example.com',
-          name: 'Student User',
-          uin: '000000001',
-          email: 'student@example.com',
-        };
-        await enrollUser('1', studentUser);
-        await withUser(studentUser, async () => {
-          const csrfResponse = await helperClient.fetchCheerio(context.assessmentUrl);
-          const csrfToken = helperClient.getCSRFToken(csrfResponse.$('form'));
-          const instanceResponse = await helperClient.fetchCheerio(context.assessmentUrl, {
-            method: 'POST',
-            body: new URLSearchParams({
-              __action: 'new_instance',
-              __csrf_token: csrfToken,
-            }),
-          });
-          assert.isTrue(instanceResponse.ok);
-
-          // Locked questions don't have links in the HTML, so we use the
-          // question_order sproc to find a locked instance_question_id.
-          const urlParts = instanceResponse.url.split('/');
-          const assessmentInstanceId = urlParts[urlParts.length - 1];
-          const results = await sqldb.callRows(
-            'question_order',
-            [assessmentInstanceId],
-            SprocQuestionOrderSchema,
-          );
-          const unlockedQuestion = results.find((e) => e.question_access_mode === 'default');
-          assert.isDefined(unlockedQuestion);
-          const unlockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${unlockedQuestion.instance_question_id}/`;
-          const unlockedResponse = await helperClient.fetchCheerio(unlockedUrl);
-          assert.isTrue(unlockedResponse.ok);
-
-          const lockedQuestion = results.find((e) => e.question_access_mode === 'blocked_sequence');
-          assert.isDefined(lockedQuestion);
-          const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion.instance_question_id}/`;
-          const lockedResponse = await helperClient.fetchCheerio(lockedUrl);
-          assert.isFalse(lockedResponse.ok);
-          assert.equal(lockedResponse.status, 403);
+    test('student gets 403 when accessing a sequence-locked question', async function () {
+      const studentUser: AuthUser = {
+        uid: 'student@example.com',
+        name: 'Student User',
+        uin: '000000001',
+        email: 'student@example.com',
+      };
+      await enrollUser('1', studentUser);
+      await withUser(studentUser, async () => {
+        const csrfResponse = await helperClient.fetchCheerio(context.assessmentUrl);
+        const csrfToken = helperClient.getCSRFToken(csrfResponse.$('form'));
+        const instanceResponse = await helperClient.fetchCheerio(context.assessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: csrfToken,
+          }),
         });
-      },
-    );
+        assert.isTrue(instanceResponse.ok);
+
+        // Locked questions don't have links in the HTML, so we use the
+        // question_order sproc to find a locked instance_question_id.
+        const urlParts = instanceResponse.url.split('/');
+        const assessmentInstanceId = urlParts[urlParts.length - 1];
+        const results = await sqldb.callRows(
+          'question_order',
+          [assessmentInstanceId],
+          SprocQuestionOrderSchema,
+        );
+        const unlockedQuestion = results.find((e) => e.question_access_mode === 'default');
+        assert.isDefined(unlockedQuestion);
+        const unlockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${unlockedQuestion.instance_question_id}/`;
+        const unlockedResponse = await helperClient.fetchCheerio(unlockedUrl);
+        assert.isTrue(unlockedResponse.ok);
+
+        const lockedQuestion = results.find((e) => e.question_access_mode === 'blocked_sequence');
+        assert.isDefined(lockedQuestion);
+        const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion.instance_question_id}/`;
+        const lockedResponse = await helperClient.fetchCheerio(lockedUrl);
+        assert.isFalse(lockedResponse.ok);
+        assert.equal(lockedResponse.status, 403);
+      });
+    });
   },
 );

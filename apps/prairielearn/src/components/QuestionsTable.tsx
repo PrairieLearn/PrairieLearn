@@ -90,7 +90,6 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   courseId: string;
   currentCourseInstanceId?: string;
   addQuestionUrl?: string;
-  showImportQuestionsButton?: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -113,7 +112,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   courseId,
   currentCourseInstanceId,
   addQuestionUrl,
-  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -292,7 +290,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
   const importQuestionsUrl =
-    showImportQuestionsButton && courseInstances.length > 0
+    addQuestionUrl && courseInstances.length > 0
       ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
       : undefined;
 
@@ -326,19 +324,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   const addQuestionButtons = run(() => {
     if (!addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
       return null;
-    }
-
-    if (addQuestionUrl && !importQuestionsUrl && !showAiGenerateQuestionButton) {
-      // Special case: we have two feature-flagged buttons, we don't want to show a
-      // dropdown if only a single button is available.
-      //
-      // TODO: once QTI importing is unflagged, remove this branch.
-      return (
-        <a className="btn btn-sm btn-light" href={addQuestionUrl}>
-          <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-          Create new question
-        </a>
-      );
     }
 
     return (

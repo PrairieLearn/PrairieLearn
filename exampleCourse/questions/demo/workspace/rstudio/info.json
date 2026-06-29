@@ -5,11 +5,7 @@
   "tags": ["sp23", "echuber2", "balamut2", "eddelbuettel", "v3", "demo", "r-autograder", "rstudio"],
   "type": "v3",
   "singleVariant": true,
-  "workspaceOptions": {
-    "image": "prairielearn/workspace-rstudio",
-    "rewriteUrl": false,
-    "gradedFiles": ["student.R"]
-  },
+  "workspaceOptions": { "image": "prairielearn/workspace-rstudio", "gradedFiles": ["student.R"] },
   "gradingMethod": "External",
   "externalGradingOptions": {
     "image": "prairielearn/grader-r",

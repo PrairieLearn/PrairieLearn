@@ -348,7 +348,6 @@ not_in_nav: |
   elements/pl-variable-score.md
   dev-guide/contrib/*
   assessment/accessControlModern.md
-  importingContent.md
 
 validation:
   omitted_files: warn

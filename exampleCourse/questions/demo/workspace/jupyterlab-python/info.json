@@ -7,7 +7,6 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-python",
-    "rewriteUrl": false,
     "gradedFiles": ["Workbook.ipynb"]
   },
   "gradingMethod": "External",
