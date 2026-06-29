@@ -14,10 +14,10 @@ export function TimeLimitExpiredModal({ showAutomatically }: { showAutomatically
     })}
     ${showAutomatically
       ? html`
-          <script>
-            $(function () {
-              $('#timeLimitExpiredModal').modal('show');
-            });
+          <script type="module">
+            // This script is type="module" so that it is deferred and runs after the DOM is ready.
+            const modalElement = document.getElementById('timeLimitExpiredModal');
+            window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
           </script>
         `
       : ''}

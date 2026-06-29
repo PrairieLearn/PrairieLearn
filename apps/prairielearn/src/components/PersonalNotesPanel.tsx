@@ -131,15 +131,14 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
           </div>
         </form>
 
-        <script>
-          $(() => {
+        <script type="module">
+          // This script is type="module" so that it is deferred and runs after the DOM is ready.
+          const form = document.querySelector('form.attach-file-form');
+          const fileInput = form.querySelector('#attachFileInput');
+          const submitButton = form.querySelector('button[type="submit"]');
+          fileInput.addEventListener('change', (e) => {
             // Only enable the "submit" button if a file is selected.
-            const form = document.querySelector('form.attach-file-form');
-            const fileInput = form.querySelector('#attachFileInput');
-            const submitButton = form.querySelector('button[type="submit"]');
-            fileInput.addEventListener('change', (e) => {
-              submitButton.disabled = fileInput.files.length === 0;
-            });
+            submitButton.disabled = fileInput.files.length === 0;
           });
         </script>
       </div>
