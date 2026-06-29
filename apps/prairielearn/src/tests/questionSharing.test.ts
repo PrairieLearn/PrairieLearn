@@ -1042,6 +1042,23 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       assert.isFalse(syncResult.hadJsonErrorsOrWarnings);
     });
 
+    test('Access a publicly shared assessment whose course instance is not shared publicly', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+
+      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+      const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+      assert(sharedAssessmentPage.ok);
+
+      const courseInstanceAssessmentsUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessments`;
+      const courseInstanceAssessmentsPage = await fetchCheerio(courseInstanceAssessmentsUrl);
+      assert.equal(courseInstanceAssessmentsPage.status, 404);
+    });
+
     test('Fail to unshare a publicly shared question that is in a publicly shared assessment in the same course', async () => {
       sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
         false;

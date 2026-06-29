@@ -1821,7 +1821,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourse,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1902,7 +1902,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.navbarType = 'public';
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
   ]);
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
