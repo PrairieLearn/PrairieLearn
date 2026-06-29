@@ -56,7 +56,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     - `?` matches any single character except path separators.
     - `[seq]` matches any character in `seq`.
   - `args` (optional, default none): command line arguments to pass to the Docker image. It may be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
-  - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+  - `rewriteUrl` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from `/`. If false, the workspace container will see all requests as originating from `/pl/workspace/&lt;workspace_id&gt;/container/`. If not specified, the URL rewrite setting is retrieved from the workspace image label `com.prairielearn.workspace.rewrite-url`. This label is set to a value appropriate for the functionality of each workspace for PrairieLearn-maintained workspace images (or custom images using those as a base), so it doesn't need to be included in `info.json`.
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
   - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). By default, PrairieLearn includes the following environment variables in all workspaces:
     - `WORKSPACE_BASE_URL`: the base URL for the workspace container, which can be used to construct URLs for API requests to the workspace container.
@@ -68,15 +68,13 @@ For an ungraded workspace, a full `info.json` file should look something like:
 
 ```json title="info.json"
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode-python"
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": { "image": "prairielearn/workspace-vscode-python" }
 }
 ```
 
@@ -86,24 +84,20 @@ For an externally graded workspace, a full `info.json` file should look somethin
 
 ```json title="info.json"
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode-cpp",
-        "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c",
-            "docs/*.txt"
-        ]
-    },
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "image": "..."
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-cpp",
+    "gradedFiles": ["starter_code.h", "starter_code.c", "docs/*.txt"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "image": "..."
+  }
 }
 ```
 
@@ -241,7 +235,13 @@ PrairieLearn provides and maintains the following workspace images:
 
 You can [build custom workspace images](../dockerImages.md#custom-variations-of-maintained-images) if you need to install specific dependencies for use by students that are not present in the default version of the images above. If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image.
 
-If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
+If you are creating a workspace image that is not derived from one of the maintained images above, you must ensure that it responds to regular HTTP request on an exposed port, and that it is configured to run as a user with UID 1001. The workspace image must run in a headless mode, i.e., without any GUI. You are strongly encouraged to include the following [Dockerfile labels](https://docs.docker.com/reference/dockerfile/#label) in your image. If you don't use these labels, the corresponding settings must be set at the question level in `info.json` (see [Setting up](#setting-up)).
+
+- `com.prairielearn.workspace.port`: the exposed port number used by the workspace app inside the Docker image. It must respond to HTTP requests.
+- `com.prairielearn.workspace.rewrite-url`: whether to rewrite URLs such that the workspace container will see all requests as originating from `/`.
+- `com.prairielearn.workspace.home`: the home directory inside the Docker image. This will be the base directory for [initial workspace files](#creating-files-in-the-workspace-home-directory), as well as for any graded files copied out of the workspace container when saving a submission.
+
+If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk at the home directory specified above. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 
 ## Running locally (on Docker)
 

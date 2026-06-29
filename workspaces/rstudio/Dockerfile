@@ -29,10 +29,7 @@
 # Set up your question with these options in info.json, editing the "image"
 # parameter if you are using a custom image build for testing:
 
-#    "workspaceOptions": {
-#        "image": "prairielearn/workspace-rstudio",
-#        "rewriteUrl": false
-#    }
+#    "workspaceOptions": { "image": "prairielearn/workspace-rstudio" }
 
 # If you just want to use RStudio locally for its own sake:
 # $ docker build -t rstudio-local .

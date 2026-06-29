@@ -12,7 +12,6 @@
   },
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-python",
-    "rewriteUrl": false,
     "gradedFiles": ["Markov-Chains-1.ipynb"]
   }
 }
