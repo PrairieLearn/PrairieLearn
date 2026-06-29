@@ -106,13 +106,7 @@ Dropping a sproc (stored procedure) only requires removing the file from `apps/p
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
-When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
-
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
-
-### SQL query conventions
-
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
@@ -120,6 +114,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Many tables (e.g. `courses`, `course_instances`, `assessments`; see `deleted_at` in `database/tables/`) are soft-deleted: deleting only sets a `deleted_at` timestamp, and child rows are generally NOT cascade-deleted. When selecting from or joining these tables, filter with `deleted_at IS NULL` unless the row was already validated as live upstream (e.g. loaded by a middleware like `authzCourseOrInstance` and passed down by primary key) or deleted rows are intentionally needed (e.g. rendering historical submissions, sync code).
 - Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
