@@ -63,7 +63,7 @@ async function insertUser(user: AuthUser) {
   }
 }
 
-describe('institution administrators', () => {
+describe('institution administrators', { concurrent: false }, () => {
   beforeAll(() => (config.isEnterprise = true));
   afterAll(() => (config.isEnterprise = false));
 
@@ -85,54 +85,45 @@ describe('institution administrators', () => {
     });
   });
 
-  test.sequential('global admin can access institution admin courses', async () => {
+  test('global admin can access institution admin courses', async () => {
     const res = await withUser(ADMIN_USER, () => fetch(INSTITUTION_ADMIN_COURSES));
     assert.equal(res.status, 200);
   });
 
-  test.sequential('global admin can access course', async () => {
+  test('global admin can access course', async () => {
     const res = await withUser(ADMIN_USER, () => fetch(COURSE_URL));
     assert.equal(res.status, 200);
   });
 
-  test.sequential('global admin can access course instance', async () => {
+  test('global admin can access course instance', async () => {
     const url = getCourseInstanceUrl(courseInstance);
     const res = await withUser(ADMIN_USER, () => fetch(url));
     assert.equal(res.status, 200);
   });
 
-  test.sequential(
-    'user without institution administrator grant cannot access institution admin courses',
-    async () => {
-      const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(INSTITUTION_ADMIN_COURSES));
-      assert.equal(res.status, 403);
-    },
-  );
+  test('user without institution administrator grant cannot access institution admin courses', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(INSTITUTION_ADMIN_COURSES));
+    assert.equal(res.status, 403);
+  });
 
-  test.sequential('user without institution administrator grant cannot access course', async () => {
+  test('user without institution administrator grant cannot access course', async () => {
     const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_URL));
     assert.equal(res.status, 403);
   });
 
-  test.sequential(
-    'user without institution administrator grant cannot access course instance',
-    async () => {
-      const url = getCourseInstanceUrl(courseInstance);
-      const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
-      assert.equal(res.status, 403);
-    },
-  );
+  test('user without institution administrator grant cannot access course instance', async () => {
+    const url = getCourseInstanceUrl(courseInstance);
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+    assert.equal(res.status, 403);
+  });
 
-  test.sequential(
-    'user without institution administrator grant cannot access assessment instances',
-    async () => {
-      const url = getAssessmentInstancesUrl(courseInstance, assessment);
-      const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
-      assert.equal(res.status, 403);
-    },
-  );
+  test('user without institution administrator grant cannot access assessment instances', async () => {
+    const url = getAssessmentInstancesUrl(courseInstance, assessment);
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+    assert.equal(res.status, 403);
+  });
 
-  test.sequential('grant institution admin permissions', async () => {
+  test('grant institution admin permissions', async () => {
     const user = await selectOptionalUserByUid(INSTITUTION_ADMIN_USER.uid);
     assert(user);
     await ensureInstitutionAdministrator({
@@ -142,23 +133,23 @@ describe('institution administrators', () => {
     });
   });
 
-  test.sequential('institution admin can access institution admin courses', async () => {
+  test('institution admin can access institution admin courses', async () => {
     const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(INSTITUTION_ADMIN_COURSES));
     assert.equal(res.status, 200);
   });
 
-  test.sequential('institution admin can access course', async () => {
+  test('institution admin can access course', async () => {
     const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_URL));
     assert.equal(res.status, 200);
   });
 
-  test.sequential('institution admin can access course instance', async () => {
+  test('institution admin can access course instance', async () => {
     const url = getCourseInstanceUrl(courseInstance);
     const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
     assert.equal(res.status, 200);
   });
 
-  test.sequential('institution admin can access assessment instances', async () => {
+  test('institution admin can access assessment instances', async () => {
     const url = getAssessmentInstancesUrl(courseInstance, assessment);
     const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
     assert.equal(res.status, 200);

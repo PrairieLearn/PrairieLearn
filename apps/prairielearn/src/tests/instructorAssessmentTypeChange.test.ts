@@ -83,7 +83,7 @@ async function createTrpcClient() {
 const baseUuid = 'c2f20e45-0449-46c6-9418-b65a734870bd';
 const baseQuestion = { id: 'test/question' };
 
-describe('Changing assessment type', () => {
+describe('Changing assessment type', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
@@ -97,7 +97,7 @@ describe('Changing assessment type', () => {
   });
 
   describe('Homework → Exam', () => {
-    test.sequential('strips Homework-only fields and updates type in DB', async () => {
+    test('strips Homework-only fields and updates type in DB', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -131,7 +131,7 @@ describe('Changing assessment type', () => {
       assert.equal(dbAssessment.type, 'Exam');
     });
 
-    test.sequential('strips maxAutoPoints from alternatives', async () => {
+    test('strips maxAutoPoints from alternatives', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -161,7 +161,7 @@ describe('Changing assessment type', () => {
       assert.equal(alternative?.autoPoints, 5);
     });
 
-    test.sequential('strips maxPoints from questions', async () => {
+    test('strips maxPoints from questions', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -183,7 +183,7 @@ describe('Changing assessment type', () => {
   });
 
   describe('Exam → Homework', () => {
-    test.sequential('strips Exam-only top-level fields and updates type in DB', async () => {
+    test('strips Exam-only top-level fields and updates type in DB', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -223,7 +223,7 @@ describe('Changing assessment type', () => {
       assert.equal(dbAssessment.type, 'Homework');
     });
 
-    test.sequential('strips allowRealTimeGrading from nested levels', async () => {
+    test('strips allowRealTimeGrading from nested levels', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -259,7 +259,7 @@ describe('Changing assessment type', () => {
       assert.notProperty(question?.alternatives?.[0], 'allowRealTimeGrading');
     });
 
-    test.sequential('collapses autoPoints array to first element', async () => {
+    test('collapses autoPoints array to first element', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -279,7 +279,7 @@ describe('Changing assessment type', () => {
       assert.equal(info.zones?.[0].questions[0].autoPoints, 10);
     });
 
-    test.sequential('collapses points array on alternatives to first element', async () => {
+    test('collapses points array on alternatives to first element', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -305,7 +305,7 @@ describe('Changing assessment type', () => {
   });
 
   describe('Guards', () => {
-    test.sequential('rejects when newType matches currentType', async () => {
+    test('rejects when newType matches currentType', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -324,7 +324,7 @@ describe('Changing assessment type', () => {
       ).rejects.toThrow(/matches the current type/);
     });
 
-    test.sequential('rejects when student instances exist', async () => {
+    test('rejects when student instances exist', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -353,7 +353,7 @@ describe('Changing assessment type', () => {
       }
     });
 
-    test.sequential('rejects with CONFLICT when origHash is stale', async () => {
+    test('rejects with CONFLICT when origHash is stale', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -385,7 +385,7 @@ describe('Changing assessment type', () => {
   });
 
   describe('analyzeTypeChange', () => {
-    test.sequential('reports HW→Exam blockers and single-attempt promotions', async () => {
+    test('reports HW→Exam blockers and single-attempt promotions', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -411,7 +411,7 @@ describe('Changing assessment type', () => {
       assert.deepEqual(result.pointsListPromotions[0].newValue, [5]);
     });
 
-    test.sequential('reports Exam→HW blockers and array collapses', async () => {
+    test('reports Exam→HW blockers and array collapses', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
@@ -458,7 +458,7 @@ describe('Changing assessment type', () => {
       assert.lengthOf(result.pointsListPromotions, 0);
     });
 
-    test.sequential('reports no blockers and no collapses for a clean HW assessment', async () => {
+    test('reports no blockers and no collapses for a clean HW assessment', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',

@@ -181,51 +181,52 @@ async function buildAssessmentUrls(courseInstanceUrl: string): Promise<Assessmen
   ) as AssessmentUrls;
 }
 
-describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, () => {
-  const siteUrl = `http://localhost:${config.serverPort}`;
-  const courseInstanceUrl = `${siteUrl}/pl/course_instance/1`;
-  const assessmentsUrl = `${courseInstanceUrl}/assessments`;
-  const storedConfig: Partial<Config> = {};
-  const studentHeaders = {
-    cookie: 'pl_test_user=test_student; pl_test_date=2024-06-01T00:00:00Z',
-  };
-  const examStudentHeaders = {
-    cookie: `${studentHeaders.cookie}; pl_test_mode=Exam`,
-  };
-  const otherStudentHeaders = {
-    cookie: 'pl_test_date=2024-06-01T00:00:00Z',
-  };
-  let assessmentUrls: AssessmentUrls;
+describe(
+  'Legacy allowAccess on student assessment pages',
+  { timeout: 60_000, concurrent: false },
+  () => {
+    const siteUrl = `http://localhost:${config.serverPort}`;
+    const courseInstanceUrl = `${siteUrl}/pl/course_instance/1`;
+    const assessmentsUrl = `${courseInstanceUrl}/assessments`;
+    const storedConfig: Partial<Config> = {};
+    const studentHeaders = {
+      cookie: 'pl_test_user=test_student; pl_test_date=2024-06-01T00:00:00Z',
+    };
+    const examStudentHeaders = {
+      cookie: `${studentHeaders.cookie}; pl_test_mode=Exam`,
+    };
+    const otherStudentHeaders = {
+      cookie: 'pl_test_date=2024-06-01T00:00:00Z',
+    };
+    let assessmentUrls: AssessmentUrls;
 
-  beforeAll(async () => {
-    storedConfig.authUid = config.authUid;
-    storedConfig.authName = config.authName;
-    storedConfig.authUin = config.authUin;
-    storedConfig.checkAccessRulesExamUuid = config.checkAccessRulesExamUuid;
-    config.authUid = 'other-student@example.com';
-    config.authName = 'Other Student';
-    config.authUin = '000000002';
-    config.checkAccessRulesExamUuid = false;
+    beforeAll(async () => {
+      storedConfig.authUid = config.authUid;
+      storedConfig.authName = config.authName;
+      storedConfig.authUin = config.authUin;
+      storedConfig.checkAccessRulesExamUuid = config.checkAccessRulesExamUuid;
+      config.authUid = 'other-student@example.com';
+      config.authName = 'Other Student';
+      config.authUin = '000000002';
+      config.checkAccessRulesExamUuid = false;
 
-    const course = getCourseData();
-    const courseInstance = course.courseInstances[COURSE_INSTANCE_TID];
-    courseInstance.assessments = Object.fromEntries(
-      assessmentEntries().map(([, fixture]) => [fixture.tid, makeLegacyAssessment(fixture)]),
-    );
+      const course = getCourseData();
+      const courseInstance = course.courseInstances[COURSE_INSTANCE_TID];
+      courseInstance.assessments = Object.fromEntries(
+        assessmentEntries().map(([, fixture]) => [fixture.tid, makeLegacyAssessment(fixture)]),
+      );
 
-    const courseDir = await writeCourseToTempDirectory(course);
-    await helperServer.before(courseDir)();
-    assessmentUrls = await buildAssessmentUrls(courseInstanceUrl);
-  });
+      const courseDir = await writeCourseToTempDirectory(course);
+      await helperServer.before(courseDir)();
+      assessmentUrls = await buildAssessmentUrls(courseInstanceUrl);
+    });
 
-  afterAll(async () => {
-    await helperServer.after();
-    Object.assign(config, storedConfig);
-  });
+    afterAll(async () => {
+      await helperServer.after();
+      Object.assign(config, storedConfig);
+    });
 
-  test.sequential(
-    'syncs the fixture assessments as legacy access-control assessments',
-    async () => {
+    test('syncs the fixture assessments as legacy access-control assessments', async () => {
       await Promise.all(
         assessmentEntries().map(async ([, { tid }]) => {
           const assessment = await selectAssessmentByTid({
@@ -236,118 +237,118 @@ describe('Legacy allowAccess on student assessment pages', { timeout: 60_000 }, 
           assert.isFalse(assessment.modern_access_control);
         }),
       );
-    },
-  );
-
-  test.sequential('applies legacy rules on the student assessments page', async () => {
-    const response = await helperClient.fetchCheerio(assessmentsUrl, {
-      headers: studentHeaders,
     });
 
-    assert.isTrue(response.ok);
-    assertLinkedAssessment(response.$, assessmentFixtures.open.title);
-    assertLinkedAssessment(response.$, assessmentFixtures.matchingUid.title);
-    assertLinkedAssessment(response.$, assessmentFixtures.password.title);
-    assertPlainAssessment(response.$, assessmentFixtures.inactive.title);
-    assertNoAssessment(response.$, assessmentFixtures.future.title);
-    assertNoAssessment(response.$, assessmentFixtures.prairieTest.title);
-  });
-
-  test.sequential('hides a UID-gated legacy assessment from other students', async () => {
-    const response = await helperClient.fetchCheerio(assessmentsUrl, {
-      headers: otherStudentHeaders,
-    });
-
-    assert.isTrue(response.ok);
-    assertNoAssessment(response.$, assessmentFixtures.matchingUid.title);
-  });
-
-  test.sequential('allows direct access when a legacy rule authorizes the student', async () => {
-    for (const key of ['open', 'matchingUid'] as const) {
-      const response = await helperClient.fetchCheerio(assessmentUrls[key], {
+    test('applies legacy rules on the student assessments page', async () => {
+      const response = await helperClient.fetchCheerio(assessmentsUrl, {
         headers: studentHeaders,
       });
 
       assert.isTrue(response.ok);
-      assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
-    }
-  });
-
-  test.sequential('blocks direct access when legacy date, UID, or active checks fail', async () => {
-    for (const { key, headers } of [
-      { key: 'future', headers: studentHeaders },
-      { key: 'matchingUid', headers: otherStudentHeaders },
-    ] satisfies { key: AssessmentKey; headers: typeof studentHeaders }[]) {
-      const response = await helperClient.fetchCheerio(assessmentUrls[key], { headers });
-      assert.equal(response.status, 403);
-    }
-
-    const inactiveResponse = await helperClient.fetchCheerio(assessmentUrls.inactive, {
-      headers: studentHeaders,
-    });
-    assert.equal(inactiveResponse.status, 403);
-    assert.lengthOf(inactiveResponse.$('[data-testid="assessment-closed-message"]'), 1);
-  });
-
-  test.sequential('requires the legacy assessment password before direct access', async () => {
-    const response = await helperClient.fetchCheerio(assessmentUrls.password, {
-      headers: studentHeaders,
-      redirect: 'manual',
+      assertLinkedAssessment(response.$, assessmentFixtures.open.title);
+      assertLinkedAssessment(response.$, assessmentFixtures.matchingUid.title);
+      assertLinkedAssessment(response.$, assessmentFixtures.password.title);
+      assertPlainAssessment(response.$, assessmentFixtures.inactive.title);
+      assertNoAssessment(response.$, assessmentFixtures.future.title);
+      assertNoAssessment(response.$, assessmentFixtures.prairieTest.title);
     });
 
-    assert.equal(response.status, 302);
-    assert.equal(response.headers.get('location'), '/pl/password');
-  });
+    test('hides a UID-gated legacy assessment from other students', async () => {
+      const response = await helperClient.fetchCheerio(assessmentsUrl, {
+        headers: otherStudentHeaders,
+      });
 
-  test.sequential('requires a matching PrairieTest reservation in Exam mode', async () => {
-    const noReservationAssessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
-      headers: examStudentHeaders,
+      assert.isTrue(response.ok);
+      assertNoAssessment(response.$, assessmentFixtures.matchingUid.title);
     });
-    assert.isTrue(noReservationAssessmentsResponse.ok);
-    assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.open.title);
-    assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.prairieTest.title);
 
-    const noReservationAssessmentResponse = await helperClient.fetchCheerio(
-      assessmentUrls.prairieTest,
-      {
+    test('allows direct access when a legacy rule authorizes the student', async () => {
+      for (const key of ['open', 'matchingUid'] as const) {
+        const response = await helperClient.fetchCheerio(assessmentUrls[key], {
+          headers: studentHeaders,
+        });
+
+        assert.isTrue(response.ok);
+        assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
+      }
+    });
+
+    test('blocks direct access when legacy date, UID, or active checks fail', async () => {
+      for (const { key, headers } of [
+        { key: 'future', headers: studentHeaders },
+        { key: 'matchingUid', headers: otherStudentHeaders },
+      ] satisfies { key: AssessmentKey; headers: typeof studentHeaders }[]) {
+        const response = await helperClient.fetchCheerio(assessmentUrls[key], { headers });
+        assert.equal(response.status, 403);
+      }
+
+      const inactiveResponse = await helperClient.fetchCheerio(assessmentUrls.inactive, {
+        headers: studentHeaders,
+      });
+      assert.equal(inactiveResponse.status, 403);
+      assert.lengthOf(inactiveResponse.$('[data-testid="assessment-closed-message"]'), 1);
+    });
+
+    test('requires the legacy assessment password before direct access', async () => {
+      const response = await helperClient.fetchCheerio(assessmentUrls.password, {
+        headers: studentHeaders,
+        redirect: 'manual',
+      });
+
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('location'), '/pl/password');
+    });
+
+    test('requires a matching PrairieTest reservation in Exam mode', async () => {
+      const noReservationAssessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
         headers: examStudentHeaders,
-      },
-    );
-    assert.equal(noReservationAssessmentResponse.status, 403);
+      });
+      assert.isTrue(noReservationAssessmentsResponse.ok);
+      assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.open.title);
+      assertNoAssessment(noReservationAssessmentsResponse.$, assessmentFixtures.prairieTest.title);
 
-    const student = await selectOrInsertUserByUid('student@example.com');
-    await withPTReservation(
-      {
-        userId: student.id,
-        accessStart: new Date('2024-05-31T00:00:00Z'),
-        accessEnd: new Date('2024-06-02T00:00:00Z'),
-        examUuid: legacyPrairieTestExamUuid,
-      },
-      async () => {
-        const assessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
+      const noReservationAssessmentResponse = await helperClient.fetchCheerio(
+        assessmentUrls.prairieTest,
+        {
           headers: examStudentHeaders,
-        });
-        assert.isTrue(assessmentsResponse.ok);
-        assertNoAssessment(assessmentsResponse.$, assessmentFixtures.open.title);
-        assertLinkedAssessment(assessmentsResponse.$, assessmentFixtures.prairieTest.title);
+        },
+      );
+      assert.equal(noReservationAssessmentResponse.status, 403);
 
-        const publicAssessmentResponse = await helperClient.fetchCheerio(assessmentUrls.open, {
-          headers: examStudentHeaders,
-        });
-        assert.equal(publicAssessmentResponse.status, 403);
-
-        const prairieTestAssessmentResponse = await helperClient.fetchCheerio(
-          assessmentUrls.prairieTest,
-          {
+      const student = await selectOrInsertUserByUid('student@example.com');
+      await withPTReservation(
+        {
+          userId: student.id,
+          accessStart: new Date('2024-05-31T00:00:00Z'),
+          accessEnd: new Date('2024-06-02T00:00:00Z'),
+          examUuid: legacyPrairieTestExamUuid,
+        },
+        async () => {
+          const assessmentsResponse = await helperClient.fetchCheerio(assessmentsUrl, {
             headers: examStudentHeaders,
-          },
-        );
-        assert.isTrue(prairieTestAssessmentResponse.ok);
-        assert.equal(
-          prairieTestAssessmentResponse.$('#start-assessment').text().trim(),
-          'Start assessment',
-        );
-      },
-    );
-  });
-});
+          });
+          assert.isTrue(assessmentsResponse.ok);
+          assertNoAssessment(assessmentsResponse.$, assessmentFixtures.open.title);
+          assertLinkedAssessment(assessmentsResponse.$, assessmentFixtures.prairieTest.title);
+
+          const publicAssessmentResponse = await helperClient.fetchCheerio(assessmentUrls.open, {
+            headers: examStudentHeaders,
+          });
+          assert.equal(publicAssessmentResponse.status, 403);
+
+          const prairieTestAssessmentResponse = await helperClient.fetchCheerio(
+            assessmentUrls.prairieTest,
+            {
+              headers: examStudentHeaders,
+            },
+          );
+          assert.isTrue(prairieTestAssessmentResponse.ok);
+          assert.equal(
+            prairieTestAssessmentResponse.$('#start-assessment').text().trim(),
+            'Start assessment',
+          );
+        },
+      );
+    });
+  },
+);

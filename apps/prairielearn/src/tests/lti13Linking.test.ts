@@ -27,7 +27,7 @@ import {
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
-describe('LTI 1.3 course instance linking', () => {
+describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
@@ -83,7 +83,7 @@ describe('LTI 1.3 course instance linking', () => {
     config.isEnterprise = false;
   });
 
-  test.sequential('linkLtiContext helper creates link record', async () => {
+  test('linkLtiContext helper creates link record', async () => {
     await execute(
       `DELETE FROM lti13_course_instances
        WHERE lti13_instance_id = '1'
@@ -120,7 +120,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor sees linking UI for unlinked context', async () => {
+  test('instructor sees linking UI for unlinked context', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -163,7 +163,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('student sees "not ready" page for unlinked context', async () => {
+  test('student sees "not ready" page for unlinked context', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -194,7 +194,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor can link course instance via POST', async () => {
+  test('instructor can link course instance via POST', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -263,7 +263,7 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(linkRecord.course_instance_id, '1');
   });
 
-  test.sequential('already linked context redirects instructor to course instance', async () => {
+  test('already linked context redirects instructor to course instance', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -299,7 +299,7 @@ describe('LTI 1.3 course instance linking', () => {
     assert.include(res.url, '/pl/course_instance/1/instructor/');
   });
 
-  test.sequential('already linked context redirects student to course instance', async () => {
+  test('already linked context redirects student to course instance', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -326,7 +326,7 @@ describe('LTI 1.3 course instance linking', () => {
   });
 
   describe('LTI 1.3 linking authorization', () => {
-    test.sequential('instructor without course permissions does not see linking form', async () => {
+    test('instructor without course permissions does not see linking form', async () => {
       // First, clean up any existing link to test the unauthorized view
       await execute(
         `DELETE FROM lti13_course_instances
@@ -388,7 +388,7 @@ describe('LTI 1.3 course instance linking', () => {
       assert.isNull(linkRecord);
     });
 
-    test.sequential('cannot link course instance from different institution', async () => {
+    test('cannot link course instance from different institution', async () => {
       // Create a second institution with its own course and course instance
       const { courseId, courseInstanceId } = await createCrossInstitutionFixture();
 
@@ -470,7 +470,7 @@ describe('LTI 1.3 course instance linking', () => {
   });
 
   describe('LTI 1.3 instructor admin page', () => {
-    test.sequential('GET admin page shows linked instance', async () => {
+    test('GET admin page shows linked instance', async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -526,7 +526,7 @@ describe('LTI 1.3 course instance linking', () => {
       );
     });
 
-    test.sequential('GET admin page redirects when no ID provided', async () => {
+    test('GET admin page redirects when no ID provided', async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 

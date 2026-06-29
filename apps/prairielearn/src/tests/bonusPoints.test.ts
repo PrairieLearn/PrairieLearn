@@ -12,7 +12,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
+describe('Exam assessment with bonus points', { timeout: 60_000, concurrent: false }, function () {
   const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
@@ -29,7 +29,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  test.sequential('visit start exam page', async () => {
+  test('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -44,7 +44,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  test.sequential('visit first question', async () => {
+  test('visit first question', async () => {
     const response = await helperClient.fetchCheerio(context.question1Url);
     assert.isTrue(response.ok);
 
@@ -52,7 +52,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  test.sequential('submit an answer to the first question', async () => {
+  test('submit an answer to the first question', async () => {
     const response = await fetch(context.question1Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -65,7 +65,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     assert.isTrue(response.ok);
   });
 
-  test.sequential('check assessment points', async () => {
+  test('check assessment points', async () => {
     const result = await sqldb.queryRow(
       sql.read_assessment_instance_points,
       { assessment_id: context.assessmentId },
@@ -78,7 +78,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     assert.equal(result.score_perc, 60);
   });
 
-  test.sequential('visit second question', async () => {
+  test('visit second question', async () => {
     const response = await helperClient.fetchCheerio(context.question2Url);
     assert.isTrue(response.ok);
 
@@ -86,7 +86,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  test.sequential('submit an answer to the second question', async () => {
+  test('submit an answer to the second question', async () => {
     const response = await fetch(context.question2Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -100,7 +100,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
     assert.isTrue(response.ok);
   });
 
-  test.sequential('check assessment points', async () => {
+  test('check assessment points', async () => {
     const result = await sqldb.queryRow(
       sql.read_assessment_instance_points,
       { assessment_id: context.assessmentId },
