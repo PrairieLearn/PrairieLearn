@@ -96,8 +96,9 @@ describe(
         context.assessmentInstanceUrl = response.url;
         assert.include(context.assessmentInstanceUrl, '/assessment_instance/');
 
-        const urlParts = context.assessmentInstanceUrl.split('/');
-        context.assessmentInstanceId = urlParts[urlParts.length - 1];
+        context.assessmentInstanceId = String(
+          helperClient.parseAssessmentInstanceId(context.assessmentInstanceUrl),
+        );
         await refreshContextQuestions();
 
         const initialExpectedLocks = [false, false, true, true, true, true];
@@ -252,8 +253,9 @@ describe(
 
           // Locked questions don't have links in the HTML, so we use the
           // question_order sproc to find a locked instance_question_id.
-          const urlParts = instanceResponse.url.split('/');
-          const assessmentInstanceId = urlParts[urlParts.length - 1];
+          const assessmentInstanceId = String(
+            helperClient.parseAssessmentInstanceId(instanceResponse.url),
+          );
           const results = await sqldb.callRows(
             'question_order',
             [assessmentInstanceId],

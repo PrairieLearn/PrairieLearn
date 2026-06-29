@@ -147,8 +147,12 @@ describe(
       const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
       assert.equal(response.status, 200);
 
-      assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
-      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+      const row = response.$(
+        'tr:contains("Test disabling real-time grading and withholding grades")',
+      );
+      assert.lengthOf(row, 1);
+      assert.lengthOf(row.find('td:contains("Score not shown")'), 1);
+      assert.lengthOf(row.find('div.progress'), 0);
     });
 
     test.sequential('check that accessing gradebook shows score as withheld', async () => {

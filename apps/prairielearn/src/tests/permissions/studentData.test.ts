@@ -360,16 +360,19 @@ describe('student data access', { timeout: 60_000 }, function () {
     assert.equal(response.status, 403);
   });
 
+  test.sequential('grant instructor Student Data Editor role', async () => {
+    await updateCourseInstancePermissionsRole({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: '2',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '2',
+    });
+  });
+
   test.sequential(
     'instructor (student data editor) cannot attach file to HW1 instance of student',
     async () => {
-      await updateCourseInstancePermissionsRole({
-        course_id: '1',
-        course_instance_id: '1',
-        user_id: '2',
-        course_instance_role: 'Student Data Editor',
-        authn_user_id: '2',
-      });
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
