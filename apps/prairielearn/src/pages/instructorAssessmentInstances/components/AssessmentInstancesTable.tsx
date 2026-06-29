@@ -237,6 +237,10 @@ export function AssessmentInstancesTable({
       [roleColumnId]: {
         urlKey: 'role',
         parser: parseAsMultiSelectFilter(ROLE_VALUES),
+        // Default to all roles rather than students-only so deep links to a
+        // specific instance (e.g. prompts to close or delete a staff-owned or
+        // test instance) aren't hidden by the filter. The role column is shown
+        // by default to match (see defaultColumnVisibility).
         defaultValue: ALL_ROLES_FILTER,
       },
     };
