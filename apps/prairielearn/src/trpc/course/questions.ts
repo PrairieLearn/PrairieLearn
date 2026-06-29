@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -11,6 +13,7 @@ import {
 import { config } from '../../lib/config.js';
 import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
 import { getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   type FileModifyEditor,
   MultiEditor,
@@ -36,11 +39,14 @@ import {
 } from '../../models/course-instances.js';
 import { selectLiveQuestionsByIdsAndCourseId } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 import type { AssessmentForPicker } from '../../pages/instructorAssessmentQuestions/types.js';
 import type {
   AssessmentJsonInput,
   ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
+import type { QuestionJsonInput } from '../../schemas/infoQuestion.js';
 import { throwAppError } from '../app-errors.js';
 
 import {
@@ -71,6 +77,15 @@ export interface QuestionsError {
   PreviewDeletion: never;
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RemoveFromAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  ChangeTopic:
+    | { code: 'INVALID_TOPIC'; topic: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  AddTags:
+    | { code: 'INVALID_TAGS'; tags: string[] }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  RemoveTags:
+    | { code: 'INVALID_TAGS'; tags: string[] }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteQuestions:
     | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string }
     | { code: 'QUESTIONS_USED_IN_OTHER_COURSES'; qids: string[] };
@@ -117,6 +132,77 @@ async function selectQuestionsForMutation({
     });
   }
   return selectedQuestions;
+}
+
+async function mutateQuestionInfoFiles({
+  ctx,
+  selectedQuestions,
+  describe,
+  syncFailureMessage,
+  apply,
+}: {
+  ctx: TRPCContext;
+  selectedQuestions: Question[];
+  describe: (changedCount: number) => string;
+  syncFailureMessage: string;
+  apply: (questionInfo: QuestionJsonInput) => {
+    questionInfo: QuestionJsonInput;
+    changed: boolean;
+  };
+}) {
+  const results: { questionId: string; changed: boolean }[] = [];
+  const editors: FileModifyEditor[] = [];
+
+  for (const question of selectedQuestions) {
+    const questionDirectory = z.string().parse(question.directory ?? question.qid);
+
+    const infoPath = path.join(ctx.course.path, 'questions', questionDirectory, 'info.json');
+    let changedCount = 0;
+
+    const result = await prepareJsonFileEditor<QuestionJsonInput>({
+      applyChanges: (questionInfo) => {
+        const applied = apply(questionInfo);
+        if (applied.changed) changedCount += 1;
+        return applied.questionInfo;
+      },
+      jsonPath: infoPath,
+      // This edit is initiated from a bulk action, not from an open file hash.
+      conflictCheck: { origHash: null, scope: (json) => ({ topic: json.topic, tags: json.tags }) },
+      locals: ctx.locals,
+      container: { rootPath: ctx.course.path, invalidRootPaths: [] },
+    });
+
+    // `origHash` is null, so `result` is always a success; only bundle an
+    // editor when topic/tag values actually changed.
+    if (result.success && changedCount > 0) editors.push(result.editor);
+    results.push({ questionId: question.id, changed: changedCount > 0 });
+  }
+
+  const totalChangedCount = editors.length;
+  if (totalChangedCount > 0) {
+    const editor = new MultiEditor(
+      { locals: ctx.locals, description: describe(totalChangedCount) },
+      editors,
+    );
+    const serverJob = await editor.prepareServerJob();
+    try {
+      await editor.executeWithServerJob(serverJob);
+    } catch {
+      throwAppError<
+        QuestionsError['ChangeTopic'] | QuestionsError['AddTags'] | QuestionsError['RemoveTags']
+      >({
+        code: 'SYNC_JOB_FAILED',
+        message: syncFailureMessage,
+        jobSequenceId: serverJob.jobSequenceId,
+      });
+    }
+  }
+
+  return {
+    changedCount: totalChangedCount,
+    unchangedCount: selectedQuestions.length - totalChangedCount,
+    results,
+  };
 }
 
 async function selectAssessmentForEdit({
@@ -340,6 +426,134 @@ const removeFromAssessment = t.procedure
     });
   });
 
+const changeTopic = t.procedure
+  .use(requireCoursePermissionEdit)
+  .use(requireNotExampleCourse)
+  .input(
+    QuestionIdsInputSchema.extend({
+      topic: z.string().min(1),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const [selectedQuestions, courseTopics] = await Promise.all([
+      selectQuestionsForMutation({ questionIds: input.questionIds, courseId: ctx.course.id }),
+      selectTopicsByCourseId(ctx.course.id),
+    ]);
+    const topicNames = new Set(courseTopics.map((topic) => topic.name));
+    if (!topicNames.has(input.topic)) {
+      throwAppError<QuestionsError['ChangeTopic']>({
+        code: 'INVALID_TOPIC',
+        message: `Invalid topic: ${input.topic}`,
+        topic: input.topic,
+      });
+    }
+
+    return mutateQuestionInfoFiles({
+      ctx,
+      selectedQuestions,
+      describe: (changedCount) =>
+        `Change topic to ${input.topic} for ${changedCount} ${changedCount === 1 ? 'question' : 'questions'}`,
+      syncFailureMessage: 'Failed to change question topic',
+      apply: (questionInfo) => {
+        const changed = questionInfo.topic !== input.topic;
+        questionInfo.topic = input.topic;
+        return { questionInfo, changed };
+      },
+    });
+  });
+
+const addTags = t.procedure
+  .use(requireCoursePermissionEdit)
+  .use(requireNotExampleCourse)
+  .input(
+    QuestionIdsInputSchema.extend({
+      tags: z.array(z.string().min(1)).min(1),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const [selectedQuestions, courseTags] = await Promise.all([
+      selectQuestionsForMutation({ questionIds: input.questionIds, courseId: ctx.course.id }),
+      selectTagsByCourseId(ctx.course.id),
+    ]);
+
+    const validTags = new Set(courseTags.map((tag) => tag.name));
+    const requestedTags = [...new Set(input.tags)];
+    const invalidTags = requestedTags.filter((tag) => !validTags.has(tag));
+    if (invalidTags.length > 0) {
+      throwAppError<QuestionsError['AddTags']>({
+        code: 'INVALID_TAGS',
+        message: `Invalid tags: ${invalidTags.join(', ')}`,
+        tags: invalidTags,
+      });
+    }
+
+    return mutateQuestionInfoFiles({
+      ctx,
+      selectedQuestions,
+      describe: (changedCount) =>
+        `Add tags to ${changedCount} ${changedCount === 1 ? 'question' : 'questions'}`,
+      syncFailureMessage: 'Failed to add tags to questions',
+      apply: (questionInfo) => {
+        const existingTags = questionInfo.tags ?? [];
+        const existingTagNames = new Set(existingTags);
+        const nextTags = [...new Set([...existingTags, ...requestedTags])];
+        const changed = requestedTags.some((tag) => !existingTagNames.has(tag));
+        questionInfo.tags = propertyValueWithDefault(
+          questionInfo.tags,
+          nextTags,
+          (val: string[] | undefined) => !val || val.length === 0,
+        );
+        return { questionInfo, changed };
+      },
+    });
+  });
+
+const removeTags = t.procedure
+  .use(requireCoursePermissionEdit)
+  .use(requireNotExampleCourse)
+  .input(
+    QuestionIdsInputSchema.extend({
+      tags: z.array(z.string().min(1)).min(1),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const [selectedQuestions, courseTags] = await Promise.all([
+      selectQuestionsForMutation({ questionIds: input.questionIds, courseId: ctx.course.id }),
+      selectTagsByCourseId(ctx.course.id),
+    ]);
+
+    const validTags = new Set(courseTags.map((tag) => tag.name));
+    const requestedTags = [...new Set(input.tags)];
+    const invalidTags = requestedTags.filter((tag) => !validTags.has(tag));
+    if (invalidTags.length > 0) {
+      throwAppError<QuestionsError['RemoveTags']>({
+        code: 'INVALID_TAGS',
+        message: `Invalid tags: ${invalidTags.join(', ')}`,
+        tags: invalidTags,
+      });
+    }
+
+    return mutateQuestionInfoFiles({
+      ctx,
+      selectedQuestions,
+      describe: (changedCount) =>
+        `Remove tags from ${changedCount} ${changedCount === 1 ? 'question' : 'questions'}`,
+      syncFailureMessage: 'Failed to remove tags from questions',
+      apply: (questionInfo) => {
+        const existingTags = questionInfo.tags ?? [];
+        const existingTagNames = new Set(existingTags);
+        const nextTags = existingTags.filter((tag) => !requestedTags.includes(tag));
+        const changed = requestedTags.some((tag) => existingTagNames.has(tag));
+        questionInfo.tags = propertyValueWithDefault(
+          questionInfo.tags,
+          nextTags,
+          (val: string[] | undefined) => !val || val.length === 0,
+        );
+        return { questionInfo, changed };
+      },
+    });
+  });
+
 type AssessmentRef = Awaited<ReturnType<typeof selectAssessmentsReferencingQuestions>>[number];
 
 function refToAssessmentForPicker(ref: AssessmentRef): AssessmentForPicker {
@@ -541,6 +755,9 @@ export const questionsRouter = t.router({
   listAssessments,
   addToAssessment,
   removeFromAssessment,
+  changeTopic,
+  addTags,
+  removeTags,
   previewDeletion,
   deleteQuestions,
 });

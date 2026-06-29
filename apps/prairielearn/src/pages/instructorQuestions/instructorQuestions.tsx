@@ -12,7 +12,11 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { PublicCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
+import {
+  PublicCourseInstanceSchema,
+  PublicTagSchema,
+  PublicTopicSchema,
+} from '../../lib/client/safe-db-types.js';
 import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
@@ -24,6 +28,8 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import { InstructorQuestionsTable } from './instructorQuestions.html.js';
 
@@ -72,6 +78,8 @@ router.get(
     );
 
     const questions = rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
+    const topics = await selectTopicsByCourseId(course.id);
+    const tags = await selectTagsByCourseId(course.id);
 
     const courseDirExists = await fs.pathExists(course.path);
     const search = getUrl(req).search;
@@ -87,6 +95,8 @@ router.get(
       (await features.enabledFromLocals('ai-question-generation', res.locals));
 
     const mappedCourseInstances = z.array(PublicCourseInstanceSchema).parse(courseInstances);
+    const mappedTopics = z.array(PublicTopicSchema).parse(topics);
+    const mappedTags = z.array(PublicTagSchema).parse(tags);
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: getCourseTrpcUrl(course.id), authn_user_id: res.locals.authn_user.id },
       config.secretKey,
@@ -110,6 +120,8 @@ router.get(
             <InstructorQuestionsTable
               questions={questions}
               courseInstances={mappedCourseInstances}
+              topics={mappedTopics}
+              tags={mappedTags}
               courseId={course.id}
               currentCourseInstanceId={res.locals.course_instance?.id}
               showAddQuestionButton={showAddQuestionButton}
