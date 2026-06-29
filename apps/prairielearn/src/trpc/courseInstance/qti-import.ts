@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
@@ -8,7 +7,6 @@ import {
   QtiImportEditor,
   type QtiImportQuestionData,
 } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { readQtiImportDraft } from '../../lib/qti-import-drafts.js';
 import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { AssessmentJsonSchema } from '../../schemas/infoAssessment.js';
@@ -91,17 +89,6 @@ type StoredSerializedConversionResultForHydration = z.infer<
   typeof StoredSerializedConversionResultForHydrationSchema
 >;
 
-const requireQtiImportEnabled = t.middleware(async (opts) => {
-  const enabled = await features.enabledFromLocals('qti-content-import', opts.ctx.locals);
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'QTI content import is not enabled for this course',
-    });
-  }
-  return opts.next();
-});
-
 export interface QtiImportError {
   Create:
     | { code: 'QTI_IMPORT_DRAFT_UNAVAILABLE'; message: string }
@@ -110,7 +97,6 @@ export interface QtiImportError {
 
 const create = t.procedure
   .use(requireCoursePermissionEdit)
-  .use(requireQtiImportEnabled)
   .input(
     z
       .object({

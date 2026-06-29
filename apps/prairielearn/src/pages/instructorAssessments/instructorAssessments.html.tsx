@@ -29,7 +29,6 @@ export function InstructorAssessments({
   assessmentSets,
   assessmentModules,
   assessmentsGroupBy,
-  qtiImportEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
@@ -38,7 +37,6 @@ export function InstructorAssessments({
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
-  qtiImportEnabled: boolean;
 }) {
   const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
@@ -64,23 +62,17 @@ export function InstructorAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
-          ${authz_data.has_course_permission_edit &&
-          !course.example_course &&
-          (rows.length > 0 || qtiImportEnabled)
+          ${authz_data.has_course_permission_edit && !course.example_course
             ? html`
                 <div class="d-flex gap-2 ms-auto">
-                  ${qtiImportEnabled
-                    ? html`
-                        <a
-                          href="${urlPrefix}/instance_admin/qti_import"
-                          class="btn btn-sm btn-light"
-                          aria-label="Import content"
-                        >
-                          <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Import content</span>
-                        </a>
-                      `
-                    : ''}
+                  <a
+                    href="${urlPrefix}/instance_admin/qti_import"
+                    class="btn btn-sm btn-light"
+                    aria-label="Import content"
+                  >
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Import content</span>
+                  </a>
                   ${rows.length > 0
                     ? html`
                         <button
