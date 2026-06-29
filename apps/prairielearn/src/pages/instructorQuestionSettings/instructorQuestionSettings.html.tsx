@@ -95,11 +95,13 @@ type SharingMessage =
 function getSharingControlState({
   canEdit,
   constraints,
+  persistedSharePublicly,
   sharePublicly,
   shareSourcePublicly,
 }: {
   canEdit: boolean;
   constraints: QuestionSharingConstraints;
+  persistedSharePublicly: boolean;
   sharePublicly: boolean;
   shareSourcePublicly: boolean;
 }): {
@@ -108,8 +110,10 @@ function getSharingControlState({
   sharePubliclyMessage: SharingMessage | null;
   shareSourcePubliclyMessage: SharingMessage | null;
 } {
+  const sharePubliclyLockedByOtherCourse =
+    persistedSharePublicly && constraints.used_in_other_course;
   const canUncheckSharePublicly =
-    !constraints.used_in_other_course &&
+    !sharePubliclyLockedByOtherCourse &&
     (!constraints.used_in_same_course_public_assessment || shareSourcePublicly);
   const canUncheckShareSourcePublicly =
     !constraints.used_in_same_course_public_assessment || sharePublicly;
@@ -119,7 +123,7 @@ function getSharingControlState({
     shareSourcePubliclyDisabled:
       !canEdit || (shareSourcePublicly && !canUncheckShareSourcePublicly),
     sharePubliclyMessage:
-      sharePublicly && constraints.used_in_other_course
+      sharePublicly && sharePubliclyLockedByOtherCourse
         ? 'used-in-other-course'
         : sharePublicly && constraints.used_in_same_course_public_assessment && !shareSourcePublicly
           ? 'public-assessment-share-publicly'
@@ -304,6 +308,7 @@ export const InstructorQuestionSettingsForm = ({
   } = getSharingControlState({
     canEdit,
     constraints: sharing.constraints,
+    persistedSharePublicly: defaultValues.share_publicly,
     sharePublicly,
     shareSourcePublicly,
   });
