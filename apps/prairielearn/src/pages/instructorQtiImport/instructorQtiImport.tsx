@@ -99,10 +99,14 @@ const qtiImportUploadSingle: RequestHandler = (req, res, next) => {
 // Require edit permissions for all routes.
 router.use(
   typedAsyncHandler<'course-instance'>(async (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_edit) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    if (!authzData.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
-    if (res.locals.course.example_course) {
+    if (course.example_course) {
       throw new HttpStatusError(403, 'Cannot import into the example course');
     }
     next();
