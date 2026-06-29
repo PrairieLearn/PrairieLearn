@@ -129,8 +129,8 @@ export function InstanceQuestion({
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       ${EncodedData(
         {
-          instanceQuestionId: resLocals.instance_question.id,
           instanceQuestionGroupsExist,
+          manualInstanceQuestionGroupUrl: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}/manual_instance_question_group`,
         },
         'instance-question-data',
       )}
