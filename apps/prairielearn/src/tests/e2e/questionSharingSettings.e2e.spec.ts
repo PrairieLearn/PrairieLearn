@@ -26,10 +26,20 @@ async function addSharedQuestionUsageInOtherCourse({
     { path: `${testCoursePath}-consuming` },
     IdSchema,
   );
-  await sqldb.execute(sql.share_final_exam_set_with_consuming_course, {
-    consuming_course_id: consumingCourseId,
-    test_course_id: testCourseId,
-  });
+  const sharingSetId = await sqldb.queryScalar(
+    sql.share_final_exam_set_with_consuming_course,
+    {
+      consuming_course_id: consumingCourseId,
+      test_course_id: testCourseId,
+    },
+    IdSchema,
+  );
+  const questionIsInSharingSet = await sqldb.queryScalar(
+    sql.select_question_is_in_sharing_set,
+    { question_id: questionId, sharing_set_id: sharingSetId },
+    z.boolean(),
+  );
+  expect(questionIsInSharingSet).toBe(true);
   const courseInstanceId = await sqldb.queryScalar(
     sql.insert_consuming_course_instance,
     { course_id: consumingCourseId },

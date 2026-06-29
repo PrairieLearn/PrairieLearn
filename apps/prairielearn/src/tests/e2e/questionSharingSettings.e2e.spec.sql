@@ -22,7 +22,21 @@ FROM
 WHERE
   ss.course_id = $test_course_id
   AND ss.name = 'final-exam'
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING
+  sharing_set_id;
+
+-- BLOCK select_question_is_in_sharing_set
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      sharing_set_questions
+    WHERE
+      question_id = $question_id
+      AND sharing_set_id = $sharing_set_id
+  );
 
 -- BLOCK insert_consuming_course_instance
 INSERT INTO
