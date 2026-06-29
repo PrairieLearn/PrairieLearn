@@ -78,6 +78,45 @@ const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
   'gpt-5.4-2026-03-05',
 ]);
 
+export function isNoObjectGeneratedResponseError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+
+  return (
+    err.name === 'AI_NoObjectGeneratedError' ||
+    err.name === 'NoObjectGeneratedError' ||
+    err.message === 'No object generated: the model did not return a response.'
+  );
+}
+
+export async function retryNoObjectGeneratedResponse<T>({
+  operation,
+  maxRetries = 1,
+  onRetry,
+}: {
+  operation: () => Promise<T>;
+  maxRetries?: number;
+  onRetry?: (attempt: number, err: Error) => void;
+}): Promise<T> {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (
+        !(err instanceof Error) ||
+        !isNoObjectGeneratedResponseError(err) ||
+        attempt >= maxRetries
+      ) {
+        throw err;
+      }
+
+      attempt += 1;
+      onRetry?.(attempt, err);
+    }
+  }
+}
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -848,12 +887,15 @@ async function correctImageOrientation({
     });
   }
 
-  const response = await generateText({
-    model,
-    output: Output.object({ schema: RotationCorrectionOutputSchema }),
-    messages: prompt,
-    // System messages in `messages` are hard-coded authored strings; safe to allow.
-    allowSystemInMessages: true,
+  const response = await retryNoObjectGeneratedResponse({
+    operation: () =>
+      generateText({
+        model,
+        output: Output.object({ schema: RotationCorrectionOutputSchema }),
+        messages: prompt,
+        // System messages in `messages` are hard-coded authored strings; safe to allow.
+        allowSystemInMessages: true,
+      }),
   });
 
   const index = Number.parseInt(response.output.upright_image) - 1;

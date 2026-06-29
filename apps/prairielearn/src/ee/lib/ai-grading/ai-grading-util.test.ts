@@ -1,6 +1,6 @@
 import { Output, generateText } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { sanitizeObject } from '@prairielearn/sanitize';
@@ -10,8 +10,10 @@ import { type RubricItem } from '../../../lib/db-types.js';
 import {
   extractAiGradingExplanationFromCompletion,
   generatePrompt,
+  isNoObjectGeneratedResponseError,
   parseAiRubricItems,
   parseSubmission,
+  retryNoObjectGeneratedResponse,
 } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
@@ -320,6 +322,57 @@ describe('extractAiGradingExplanationFromCompletion', () => {
     expect(completion).toHaveProperty('_output');
 
     expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
+  });
+});
+
+describe('retryNoObjectGeneratedResponse', () => {
+  function makeNoObjectError() {
+    const err = new Error('No object generated: the model did not return a response.');
+    err.name = 'AI_NoObjectGeneratedError';
+    return err;
+  }
+
+  it('identifies the transient structured-output empty-response error', () => {
+    expect(isNoObjectGeneratedResponseError(makeNoObjectError())).toBe(true);
+    expect(isNoObjectGeneratedResponseError(new Error('schema validation failed'))).toBe(false);
+    expect(isNoObjectGeneratedResponseError('No object generated')).toBe(false);
+  });
+
+  it('retries a transient empty structured-output response once and returns the next result', async () => {
+    const operation = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(makeNoObjectError())
+      .mockResolvedValueOnce('graded');
+    const onRetry = vi.fn();
+
+    await expect(retryNoObjectGeneratedResponse({ operation, onRetry })).resolves.toBe('graded');
+
+    expect(operation).toHaveBeenCalledTimes(2);
+    expect(onRetry).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ name: 'AI_NoObjectGeneratedError' }),
+    );
+  });
+
+  it('does not retry non-transient structured-output failures', async () => {
+    const err = new Error('schema validation failed');
+    const operation = vi.fn<() => Promise<string>>().mockRejectedValue(err);
+
+    await expect(retryNoObjectGeneratedResponse({ operation })).rejects.toThrow(err);
+
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
+
+  it('honors the retry limit for repeated empty structured-output responses', async () => {
+    const operation = vi.fn<() => Promise<string>>().mockRejectedValue(makeNoObjectError());
+
+    await expect(
+      retryNoObjectGeneratedResponse({ operation, maxRetries: 2 }),
+    ).rejects.toMatchObject({
+      name: 'AI_NoObjectGeneratedError',
+    });
+
+    expect(operation).toHaveBeenCalledTimes(3);
   });
 });
 
