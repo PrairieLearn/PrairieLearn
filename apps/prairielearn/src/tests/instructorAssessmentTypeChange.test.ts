@@ -134,7 +134,7 @@ describe('Changing assessment type', { concurrent: false }, () => {
       assert.isFalse(dbAssessment.show_question_titles);
     });
 
-    test.sequential('preserves explicit title visibility when converting to Exam', async () => {
+    test('preserves explicit title visibility when converting to Exam', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Homework',
@@ -251,7 +251,7 @@ describe('Changing assessment type', { concurrent: false }, () => {
       assert.isTrue(dbAssessment.show_question_titles);
     });
 
-    test.sequential('preserves explicit hidden titles when converting to Homework', async () => {
+    test('preserves explicit hidden titles when converting to Homework', async () => {
       await setupAssessmentInfo({
         uuid: baseUuid,
         type: 'Exam',
