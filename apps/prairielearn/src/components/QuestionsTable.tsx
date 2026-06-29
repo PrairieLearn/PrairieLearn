@@ -90,7 +90,6 @@ interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly un
   courseId: string;
   currentCourseInstanceId?: string;
   addQuestionUrl?: string;
-  showImportQuestionsButton?: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
@@ -113,7 +112,6 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   courseId,
   currentCourseInstanceId,
   addQuestionUrl,
-  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
@@ -292,7 +290,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
 
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
   const importQuestionsUrl =
-    showImportQuestionsButton && courseInstances.length > 0
+    addQuestionUrl && courseInstances.length > 0
       ? `${getCourseInstanceBaseUrl(currentCourseInstanceId ?? courseInstances[0].id)}/instructor/instance_admin/qti_import?return_to=questions`
       : undefined;
 

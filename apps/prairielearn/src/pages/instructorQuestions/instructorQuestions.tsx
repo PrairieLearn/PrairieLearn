@@ -111,7 +111,6 @@ router.get(
               courseId={course.id}
               currentCourseInstanceId={res.locals.course_instance?.id}
               showAddQuestionButton={showAddQuestionButton}
-              showImportQuestionsButton={showAddQuestionButton}
               showAiGenerateQuestionButton={showAiGenerateQuestionButton}
               showSharingSets={res.locals.question_sharing_enabled}
               canEditQuestions={showAddQuestionButton}

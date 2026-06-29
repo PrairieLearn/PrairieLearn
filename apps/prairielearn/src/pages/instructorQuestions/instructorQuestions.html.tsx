@@ -19,7 +19,6 @@ interface InstructorQuestionsTableProps {
   courseId: string;
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
-  showImportQuestionsButton: boolean;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   canEditQuestions: boolean;
@@ -41,7 +40,6 @@ function InstructorQuestionsTableInner({
   courseId,
   currentCourseInstanceId,
   showAddQuestionButton,
-  showImportQuestionsButton,
   showAiGenerateQuestionButton,
   showSharingSets,
   canEditQuestions,
@@ -76,7 +74,6 @@ function InstructorQuestionsTableInner({
         addQuestionUrl={
           showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
         }
-        showImportQuestionsButton={showImportQuestionsButton}
         renderSelectionToolbar={
           canEditQuestions
             ? ({ selectedQuestions, clearSelection, trimSelection }) => (
