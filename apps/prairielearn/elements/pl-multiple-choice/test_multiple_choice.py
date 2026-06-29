@@ -122,6 +122,19 @@ def test_prepare_no_correct_answers_from_html() -> None:
     assert data["correct_answers"]["survey"] is None
 
 
+def test_prepare_accepts_legacy_underscore_answer_tags() -> None:
+    data = _make_question_data()
+    pl_multiple_choice.prepare(
+        mc_html(
+            answers='<pl_answer correct="true">A</pl_answer><pl_answer>B</pl_answer>',
+            builtin_grading=True,
+        ),
+        data,
+    )
+
+    assert len(data["params"]["survey"]) == 2
+
+
 def test_prepare_no_correct_answers_default_raises() -> None:
     data = _make_question_data()
     with pytest.raises(ValueError, match="at least 1 correct answer"):

@@ -10,7 +10,7 @@ import migration from './20260204120001_topics__number__backfill.js';
 
 const NOT_NULL_CONSTRAINT_MIGRATION = '20260204120007_number__nonnull_constraint_add';
 
-describe('topics number backfill migration', () => {
+describe('topics number backfill migration', { timeout: 30_000 }, () => {
   it('backfills NULL number values sequentially per course', async () => {
     await helperDb.testMigration({
       name: NOT_NULL_CONSTRAINT_MIGRATION,

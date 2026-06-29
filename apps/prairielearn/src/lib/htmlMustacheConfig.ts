@@ -182,6 +182,20 @@ export const htmlMustacheConfig: Config = {
         'variable children in pl-variable-output are deprecated. Migrate to pl-variable. See https://docs.prairielearn.com/elements/pl-variable-output/.',
     },
     {
+      id: 'pl-deprecated-variable-output-python-tab',
+      selector: 'pl-variable-output[default-tab="python"]',
+      message:
+        'default-tab="python" on pl-variable-output is deprecated. Use default-tab="numpy" instead. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+      severity: 'warning',
+    },
+    {
+      id: 'pl-deprecated-variable-output-show-python',
+      selector: 'pl-variable-output[show-python]',
+      message:
+        'show-python on pl-variable-output is deprecated. Use show-numpy instead. See https://docs.prairielearn.com/elements/pl-variable-output/.',
+      severity: 'warning',
+    },
+    {
       id: 'pl-prefer-pl-inputs',
       selector: 'input, textarea, select',
       message: 'Prefer PrairieLearn input elements over raw HTML form inputs.',
@@ -298,30 +312,12 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-excalidraw' },
     { name: 'pl-file-upload' },
     { name: 'pl-image-capture' },
-    { name: 'pl-integer-input' },
     {
       name: 'pl-matching',
       children: [{ name: 'pl-statement' }, { name: 'pl-option' }],
     },
     { name: 'pl-matrix-component-input' },
     { name: 'pl-matrix-input' },
-    {
-      name: 'pl-checkbox',
-      children: [{ name: 'pl-answer' }],
-    },
-    {
-      name: 'pl-order-blocks',
-      children: [
-        { name: 'pl-answer' },
-        {
-          name: 'pl-block-group',
-          children: [{ name: 'pl-answer' }],
-        },
-      ],
-    },
-    { name: 'pl-number-input' },
-    { name: 'pl-string-input' },
-    { name: 'pl-symbolic-input' },
     { name: 'pl-units-input' },
     // Decorative
     { name: 'pl-card' },

@@ -84,102 +84,97 @@ router.post(
       // (or anything else). However, nowhere do we check that it is actually being
       // applied to a file and not to a directory.
 
-      if (req.body.__action === 'delete_file') {
-        let deletePath: string;
-        try {
-          deletePath = path.join(res.locals.course.path, req.body.file_path);
-        } catch {
-          throw new Error(`Invalid file path: ${req.body.file_path}`);
-        }
-        const editor = new FileDeleteEditor({
-          locals: res.locals,
-          container,
-          deletePath,
-        });
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-          return;
-        }
-        res.redirect(req.originalUrl);
-      } else if (req.body.__action === 'rename_file') {
-        let oldPath: string;
-        try {
-          oldPath = path.join(req.body.working_path, req.body.old_file_name);
-        } catch {
-          throw new Error(
-            `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
-          );
-        }
-        if (!req.body.new_file_name) {
-          throw new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`);
-        }
-        if (
-          !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
-            req.body.new_file_name,
-          )
-        ) {
-          throw new Error(
-            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
-          );
-        }
-        let newPath: string;
-        try {
-          newPath = path.join(req.body.working_path, req.body.new_file_name);
-        } catch {
-          throw new Error(
-            `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
-          );
-        }
-
-        if (oldPath === newPath) {
-          // The new file name is the same as old file name; do nothing.
+      switch (req.body.__action) {
+        case 'delete_file': {
+          let deletePath: string;
+          try {
+            deletePath = path.join(res.locals.course.path, req.body.file_path);
+          } catch {
+            throw new Error(`Invalid file path: ${req.body.file_path}`);
+          }
+          const editor = new FileDeleteEditor({
+            locals: res.locals,
+            container,
+            deletePath,
+          });
+          const serverJob = await editor.prepareServerJob();
+          try {
+            await editor.executeWithServerJob(serverJob);
+          } catch {
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+            return;
+          }
           res.redirect(req.originalUrl);
           return;
         }
+        case 'rename_file': {
+          let oldPath: string;
+          try {
+            oldPath = path.join(req.body.working_path, req.body.old_file_name);
+          } catch {
+            throw new Error(
+              `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
+            );
+          }
+          if (!req.body.new_file_name) {
+            throw new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`);
+          }
+          if (
+            !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
+              req.body.new_file_name,
+            )
+          ) {
+            throw new Error(
+              `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
+            );
+          }
+          let newPath: string;
+          try {
+            newPath = path.join(req.body.working_path, req.body.new_file_name);
+          } catch {
+            throw new Error(
+              `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
+            );
+          }
 
-        const editor = new FileRenameEditor({
-          locals: res.locals,
-          container,
-          oldPath,
-          newPath,
-        });
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+          if (oldPath === newPath) {
+            // The new file name is the same as old file name; do nothing.
+            res.redirect(req.originalUrl);
+            return;
+          }
+
+          const editor = new FileRenameEditor({
+            locals: res.locals,
+            container,
+            oldPath,
+            newPath,
+          });
+          const serverJob = await editor.prepareServerJob();
+          try {
+            await editor.executeWithServerJob(serverJob);
+          } catch {
+            res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+            return;
+          }
+          if (req.body.was_viewing_file) {
+            res.redirect(
+              `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
+                path.relative(res.locals.course.path, newPath),
+              )}`,
+            );
+          } else {
+            res.redirect(req.originalUrl);
+          }
           return;
         }
-        if (req.body.was_viewing_file) {
-          res.redirect(
-            `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-              path.relative(res.locals.course.path, newPath),
-            )}`,
-          );
-        } else {
-          res.redirect(req.originalUrl);
-        }
-      } else if (req.body.__action === 'upload_file') {
-        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-          throw new Error('No file uploaded');
-        }
-        if (req.body.file_path && req.files.length > 1) {
-          throw new Error('Cannot upload multiple files when file path is specified');
-        }
-        const duplicateNames = Object.entries(countBy(req.files, (file) => file.originalname))
-          .filter(([, count]) => count > 1)
-          .map(([name]) => name);
-        if (duplicateNames.length > 0) {
-          throw new Error(
-            `Duplicate file names in upload: ${duplicateNames.join(', ')}. Please rename files to have unique names and try again.`,
-          );
-        }
-
-        const files = Object.fromEntries(
-          req.files.map((file) => {
+        case 'upload_file': {
+          if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+            throw new Error('No file uploaded');
+          }
+          if (req.body.file_path && req.files.length > 1) {
+            throw new Error('Cannot upload multiple files when file path is specified');
+          }
+          const fileEntries = req.files.map((file) => {
             let filePath: string;
             if (req.body.file_path) {
               try {
@@ -196,22 +191,37 @@ router.post(
                 );
               }
             }
-            return [filePath, file.buffer];
-          }),
-        );
+            return { filePath, buffer: file.buffer };
+          });
 
-        const editor = new FileUploadEditor({ locals: res.locals, container, files });
+          const duplicatePaths = Object.entries(countBy(fileEntries, (file) => file.filePath))
+            .filter(([, count]) => count > 1)
+            .map(([filePath]) => filePath);
+          if (duplicatePaths.length > 0) {
+            throw new Error(
+              `Duplicate destination paths in upload: ${duplicatePaths.join(', ')}. Please rename files to have unique destinations and try again.`,
+            );
+          }
 
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+          const files = Object.fromEntries(
+            fileEntries.map(({ filePath, buffer }) => [filePath, buffer]),
+          );
+
+          const editor = new FileUploadEditor({ locals: res.locals, container, files });
+
+          const serverJob = await editor.prepareServerJob();
+          try {
+            await editor.executeWithServerJob(serverJob);
+          } catch {
+            res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
+            return;
+          }
+          res.redirect(req.originalUrl);
           return;
         }
-        res.redirect(req.originalUrl);
-      } else {
-        throw new Error(`unknown __action: ${req.body.__action}`);
+        default: {
+          throw new Error(`unknown __action: ${req.body.__action}`);
+        }
       }
     },
   ),

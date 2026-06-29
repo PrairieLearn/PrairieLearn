@@ -7,6 +7,7 @@ import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { html, unsafeHtml } from '@prairielearn/html';
 import {
   execute,
   loadSqlEquiv,
@@ -14,27 +15,35 @@ import {
   queryScalar,
   queryScalars,
 } from '@prairielearn/postgres';
+import { hydrateHtml } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { getJobSequenceResultsProps } from '../../components/JobSequenceResults.types.js';
 import type { NavPage } from '../../components/Navbar.types.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
+import { ansiToHtml } from '../../lib/chalk.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
-import { getFileMetadataForPath, isV3QuestionHtmlFile } from '../../lib/editorUtil.js';
-import { FileModifyEditor, classifyEditOutcome, getHash } from '../../lib/editors.js';
+import {
+  computeEncodedFileContentHash,
+  getFileMetadataForPath,
+  isV3QuestionHtmlFile,
+} from '../../lib/editorUtil.js';
+import { FileModifyEditor, classifyEditOutcome } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
+import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import {
-  type DraftEdit,
-  type FileEditorData,
-  InstructorFileEditor,
-} from './instructorFileEditor.html.js';
+import { FileEditor, type FileEditorData } from './FileEditor.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -116,7 +125,7 @@ router.get(
         normalizedFileName: path.normalize(relPath),
         aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(relPath).mode,
         diskContents: encodedContents,
-        diskHash: getHash(encodedContents),
+        diskHash: computeEncodedFileContentHash(encodedContents),
         fileMetadata,
         lintHtmlMustache,
       };
@@ -129,37 +138,141 @@ router.get(
         file_name: editorData.fileName,
       });
 
-      if (draftEdit != null) {
-        if (draftEdit.fileEdit.job_sequence_id != null) {
-          draftEdit.jobSequence = await getJobSequence(
-            draftEdit.fileEdit.job_sequence_id,
-            res.locals.course.id,
-          );
-        }
-
-        if (draftEdit.jobSequence) {
-          if (draftEdit.jobSequence.status === 'Running') {
-            // Because of the redirect, if the job sequence ends up failing to save,
-            // then the corresponding draft will be lost (all drafts are soft-deleted
-            // from the database on readDraftEdit).
-            res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
-            return;
-          }
-
-          // Note that if using git, we pull before we push, so a failed save
-          // still syncs whatever was pulled from the remote repository (with
-          // the edit's changes discarded). We ignore that case in the UI.
-          draftEdit.outcome = classifyEditOutcome(draftEdit.jobSequence.jobs[0].data);
-        }
-
-        const editWasSaved = draftEdit.outcome != null && draftEdit.outcome !== 'save_failed';
-        if (!editWasSaved && draftEdit.hash !== editorData.diskHash) {
-          // There is a recently saved draft that was not written to disk and that differs from what is on disk.
-          draftEdit.alertChoice = true;
-        }
+      const fullJobSequence =
+        draftEdit?.fileEdit.job_sequence_id == null
+          ? null
+          : await getJobSequence(draftEdit.fileEdit.job_sequence_id, res.locals.course.id);
+      if (fullJobSequence?.status === 'Running') {
+        // In the normal save flow, the POST waits for this job to finish before
+        // redirecting back here. If a concurrent load reaches this page while
+        // the job is still running, send the user to the job sequence page to
+        // wait for completion. The above call to `readDraftEdit` has already
+        // consumed the stored draft, so if the job later fails before saving,
+        // the draft will no longer be recoverable.
+        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fullJobSequence.id}`);
+        return;
       }
 
-      res.send(InstructorFileEditor({ resLocals: res.locals, editorData, paths, draftEdit }));
+      const draftEditResult = run(() => {
+        if (draftEdit == null) return null;
+        if (fullJobSequence == null) return { outcome: undefined, jobSequence: null };
+
+        // Note that if using git, we pull before we push, so a failed save
+        // still syncs whatever was pulled from the remote repository (with
+        // the edit's changes discarded). We ignore that case in the UI.
+        const outcome = classifyEditOutcome(fullJobSequence.jobs[0].data);
+        return {
+          outcome,
+          jobSequence: getJobSequenceResultsProps({
+            course: res.locals.course,
+            jobSequence: fullJobSequence,
+          }),
+        };
+      });
+
+      const versionChoice = run(() => {
+        if (draftEdit == null || draftEditResult == null) return null;
+
+        const editWasSaved =
+          draftEditResult.outcome != null && draftEditResult.outcome !== 'save_failed';
+        if (editWasSaved || draftEdit.hash === editorData.diskHash) return null;
+
+        // There is a recently saved draft that was not written to disk and that differs from what is on disk.
+        return {
+          hasRemoteChanges: draftEdit.fileEdit.orig_hash !== editorData.diskHash,
+        };
+      });
+
+      res.send(
+        PageLayout({
+          resLocals: res.locals,
+          pageTitle: `Edit ${editorData.fileName}`,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
+          options: {
+            fullWidth: true,
+          },
+          headContent: html`
+            <meta
+              name="ace-base-path"
+              content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+            />
+            ${editorData.lintHtmlMustache
+              ? html`
+                  <meta
+                    name="htmlmustache-runtime-wasm"
+                    content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+                  />
+                  <meta
+                    name="htmlmustache-grammar-wasm"
+                    content="${nodeModulesAssetPath(
+                      '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+                    )}"
+                  />
+                  ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+                `
+              : ''}
+          `,
+          content: html`
+            ${editorData.fileMetadata?.syncErrors
+              ? html`
+                  <div class="alert alert-danger" role="alert">
+                    <h2 class="h5 alert-heading">Sync error</h2>
+                    <p>
+                      There were one or more errors in this file the last time you tried to sync.
+                      This file will not be able to be synced until the errors are corrected. The
+                      errors are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
+                      ansiToHtml(editorData.fileMetadata.syncErrors),
+                    )}</code></pre>
+                  </div>
+                `
+              : ''}
+            ${editorData.fileMetadata?.syncWarnings
+              ? html`
+                  <div class="alert alert-warning" role="alert">
+                    <h2 class="h5 alert-heading">Sync warning</h2>
+                    <p>
+                      There were one or more warnings in this file the last time you tried to sync.
+                      These warnings do not prevent this file from being synced, but they should
+                      still be fixed. The warnings are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
+                      ansiToHtml(editorData.fileMetadata.syncWarnings),
+                    )}</code></pre>
+                  </div>
+                `
+              : ''}
+            <h1 class="visually-hidden">File editor</h1>
+
+            ${hydrateHtml(
+              <FileEditor
+                editorData={editorData}
+                draftContents={draftEdit?.contents}
+                versionChoice={versionChoice}
+                draftEditResult={draftEditResult}
+                csrfToken={res.locals.__csrf_token}
+                fileEditorUseGit={config.fileEditorUseGit}
+                branch={paths.branch.map((dir) => ({
+                  name: dir.name,
+                  path: dir.path,
+                  href: dir.canView ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}` : null,
+                }))}
+              />,
+            )}
+          `,
+        }),
+      );
     },
   ),
 );
@@ -231,7 +344,7 @@ async function readDraftEdit({
   dir_name: string;
   file_name: string;
   authn_user_id: string;
-}): Promise<DraftEdit | null> {
+}) {
   const fileEdit = await queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },
@@ -259,7 +372,7 @@ async function readDraftEdit({
   if (fileEdit.file_id != null) {
     const result = await getFile(fileEdit.file_id);
     contents = b64EncodeUnicode(result.contents.toString('utf8'));
-    hash = getHash(contents);
+    hash = computeEncodedFileContentHash(contents);
 
     await deleteFile(fileEdit.file_id, authn_user_id);
   }

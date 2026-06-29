@@ -304,14 +304,14 @@ function CourseDirectoryMissingAlert({
   if (!coursePathExists) {
     return (
       <div className="alert alert-danger">
-        Course directory not found. You must
+        Course directory not found. You must{' '}
         <a href={`${urlPrefix}/course_admin/syncs`}>sync your course</a>.
       </div>
     );
   } else if (!courseInfoExists) {
     return (
       <form name="add-configuration-form" method="POST" className="alert alert-danger">
-        <code>infoCourse.json</code> is missing. You must
+        <code>infoCourse.json</code> is missing. You must{' '}
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <button
           name="__action"
@@ -319,7 +319,7 @@ function CourseDirectoryMissingAlert({
           className="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
-        </button>
+        </button>{' '}
         to edit your course settings.
       </form>
     );

@@ -240,12 +240,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
     upload.array('files'),
   );
-
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
-
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -309,6 +307,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
+
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
   // globally for the entire server.

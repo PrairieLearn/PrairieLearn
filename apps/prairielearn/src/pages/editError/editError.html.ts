@@ -1,10 +1,10 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.ts';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
@@ -12,7 +12,7 @@ export function EditError({
   jobSequence,
   outcome,
 }: {
-  resLocals: any;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   jobSequence: JobSequenceWithTokens;
   outcome: EditOutcome;
 }) {
@@ -26,21 +26,20 @@ export function EditError({
       type: 'plain',
       page: 'error',
     },
-    headContent: compiledScriptTag('editErrorClient.ts'),
-    content: html`
-      <script>
-        $(function () {
-          const button = document.querySelector('#job-sequence-results-button');
-          $('#job-sequence-results')
-            .on('show.bs.collapse', () => {
-              button.textContent = 'Hide detail';
-            })
-            .on('hide.bs.collapse', () => {
-              button.textContent = 'Show detail';
-            });
+    headContent: html`
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const button = document.getElementById('job-sequence-results-button');
+        const results = document.getElementById('job-sequence-results');
+        results.addEventListener('show.bs.collapse', () => {
+          button.textContent = 'Hide detail';
+        });
+        results.addEventListener('hide.bs.collapse', () => {
+          button.textContent = 'Show detail';
         });
       </script>
-
+    `,
+    content: html`
       <div class="card mb-4">
         <div
           class="card-header ${isWarning
@@ -98,7 +97,7 @@ export function EditError({
       </div>
 
       <div class="collapse" id="job-sequence-results">
-        ${JobSequenceResults({ course, jobSequence })}
+        ${JobSequenceResultsHtml({ course, jobSequence })}
       </div>
     `,
   });

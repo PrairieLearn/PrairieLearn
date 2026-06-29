@@ -26,9 +26,9 @@ __all__ = [
     "get_string_attrib",
     "has_attrib",
     "inner_html",
-    "is_boolean_attrib",
-    "is_float_attrib",
-    "is_integer_attrib",
+    "is_boolean_value",
+    "is_float_value",
+    "is_integer_value",
 ]
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
@@ -76,12 +76,12 @@ _PL_BOOLEAN_FALSE = frozenset({
 })
 
 
-def is_boolean_attrib(value: str) -> bool:
+def is_boolean_value(value: str) -> bool:
     """Return whether a string is a PrairieLearn boolean value."""
     return value in _PL_BOOLEAN_TRUE or value in _PL_BOOLEAN_FALSE
 
 
-def is_integer_attrib(value: str) -> bool:
+def is_integer_value(value: str) -> bool:
     """Return whether a string is a PrairieLearn integer value.
 
     This is the authoritative `integer` format check (it matches how
@@ -98,13 +98,13 @@ def is_integer_attrib(value: str) -> bool:
     return True
 
 
-def is_float_attrib(value: str) -> bool:
+def is_float_value(value: str) -> bool:
     """Return whether a string is a PrairieLearn floating-point value.
 
     Authoritative `number` format check, mirroring `get_float_attrib`. The
     linter-side regex is stricter: ``float()`` also accepts ``inf``/``nan``,
     ``1_000.0``, ``+5``, and surrounding whitespace. See the note in
-    `is_integer_attrib`.
+    `is_integer_value`.
     """
     try:
         float(value)

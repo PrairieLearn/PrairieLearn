@@ -13,8 +13,9 @@ Gives automated feedback in the case of improper asymptotic input.
 | ---------------- | ------------------------------------------------------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `allow-blank`    | boolean                                                            | false                     | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                         |
 | `answers-name`   | string                                                             | —                         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.              |
+| `aria-label`     | string                                                             | —                         | An accessible label for the input.                                                                                                                                                |
 | `blank-value`    | string                                                             | 1 (one)                   | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input. |
-| `correct-answer` | string                                                             | —                         | Correct answer for grading.                                                                                                                                                       |
+| `correct-answer` | string                                                             | —                         | Correct answer for grading. A blank correct answer (`correct-answer=""`) is only valid when `allow-blank="true"` and `blank-value=""`.                                            |
 | `display`        | `"block"` or `"inline"`                                            | `"inline"`                | How to display the input field.                                                                                                                                                   |
 | `initial-value`  | string                                                             | —                         | Initial value to prefill the input box the first time it is rendered.                                                                                                             |
 | `placeholder`    | string                                                             | `"asymptotic expression"` | Hint displayed inside the input box describing the expected type of input.                                                                                                        |
@@ -24,6 +25,16 @@ Gives automated feedback in the case of improper asymptotic input.
 | `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
 | `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported. If omitted, the variables are inferred from the `correct-answer`. |
 | `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
+
+### Migrating from deprecated attributes
+
+The following deprecated attribute is still supported for backward compatibility:
+
+| Old syntax           | New syntax            |
+| -------------------- | --------------------- |
+| `variable="<value>"` | `variables="<value>"` |
+
+The `variable` attribute cannot be used together with `variables`.
 
 ## Details
 
