@@ -90,19 +90,30 @@ function useRadioGroupNavigation({
   items,
   selectedValue,
   onSelect,
+  allowDeselect = false,
 }: {
   items: string[];
   selectedValue: string;
   onSelect: (value: string) => void;
+  allowDeselect?: boolean;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
   const hasSelection = items.includes(selectedValue);
+
+  // Re-activating the already-selected item clears the selection when
+  // `allowDeselect` is set; otherwise activation always selects the item.
+  const activate = useCallback(
+    (index: number) => {
+      onSelect(allowDeselect && items[index] === selectedValue ? '' : items[index]);
+    },
+    [allowDeselect, items, onSelect, selectedValue],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, index: number) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        onSelect(items[index]);
+        activate(index);
         return;
       }
 
@@ -137,7 +148,7 @@ function useRadioGroupNavigation({
         cardsRef.current[newIndex]?.focus();
       }, 0);
     },
-    [items, onSelect],
+    [items, onSelect, activate],
   );
 
   function getItemProps(index: number) {
@@ -148,7 +159,7 @@ function useRadioGroupNavigation({
       role: 'radio' as const,
       tabIndex: items[index] === selectedValue || (!hasSelection && index === 0) ? 0 : -1,
       'aria-checked': items[index] === selectedValue,
-      onClick: () => onSelect(items[index]),
+      onClick: () => activate(index),
       onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, index),
     };
   }
@@ -353,11 +364,13 @@ export function CreateQuestionForm({
     items: exampleQids,
     selectedValue: selectedTemplateQid,
     onSelect: setSelectedTemplateQid,
+    allowDeselect: true,
   });
   const courseNav = useRadioGroupNavigation({
     items: courseQids,
     selectedValue: selectedTemplateQid,
     onSelect: setSelectedTemplateQid,
+    allowDeselect: true,
   });
 
   const totalFilteredCount = run(() => {
