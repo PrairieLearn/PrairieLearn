@@ -17,7 +17,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
-import { idsEqual } from '../../lib/id.ts';
+import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
