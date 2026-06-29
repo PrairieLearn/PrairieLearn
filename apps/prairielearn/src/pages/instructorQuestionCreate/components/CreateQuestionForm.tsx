@@ -319,6 +319,7 @@ export function CreateQuestionForm({
   );
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasExampleTemplates = exampleCourseZones.length > 0;
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
@@ -431,7 +432,7 @@ export function CreateQuestionForm({
             </li>
           </ol>
         </nav>
-        <form method="POST" autoComplete="off">
+        <form method="POST" autoComplete="off" onSubmit={() => setIsSubmitting(true)}>
           <div className="mb-5">
             <h2 className="h5">Name your question</h2>
             <div className="mb-3">
@@ -606,7 +607,7 @@ export function CreateQuestionForm({
           <input type="hidden" name="__csrf_token" value={csrfToken} />
 
           {/* Empty question state */}
-          {startFrom === 'empty' && <StartFromScratchState />}
+          {startFrom === 'empty' && <StartFromScratchState isSubmitting={isSubmitting} />}
 
           {/* Sticky footer for template states */}
           {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
@@ -622,9 +623,9 @@ export function CreateQuestionForm({
                 <button
                   type="submit"
                   className="btn btn-primary text-center"
-                  disabled={!selectedTemplateQid}
+                  disabled={!selectedTemplateQid || isSubmitting}
                 >
-                  Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+                  <CreateQuestionButtonContent isSubmitting={isSubmitting} />
                 </button>
               </div>
             </div>
@@ -666,16 +667,33 @@ function EmptyCourseTemplatesState() {
   );
 }
 
-function StartFromScratchState() {
+function StartFromScratchState({ isSubmitting }: { isSubmitting: boolean }) {
   return (
     <div className="d-grid gap-3">
       <p className="mb-0">
         You'll start with empty <code>question.html</code> and <code>server.py</code> files.
       </p>
       <NewToPrairieLearnCard />
-      <button type="submit" className="btn btn-primary text-nowrap">
-        Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+      <button type="submit" className="btn btn-primary text-nowrap" disabled={isSubmitting}>
+        <CreateQuestionButtonContent isSubmitting={isSubmitting} />
       </button>
     </div>
+  );
+}
+
+/** Button content for the "Create question" submit buttons; shows a spinner while submitting. */
+function CreateQuestionButtonContent({ isSubmitting }: { isSubmitting: boolean }) {
+  if (isSubmitting) {
+    return (
+      <>
+        <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
+        Creating...
+      </>
+    );
+  }
+  return (
+    <>
+      Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+    </>
   );
 }

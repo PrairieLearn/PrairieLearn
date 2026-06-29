@@ -26,6 +26,7 @@ import {
   selectGroupConfigForAssessment,
   selectGroupRoleNamesForAssessment,
 } from '../../models/group.js';
+import { selectCourseHasQuestions } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { type EnumAssessmentTool, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
@@ -116,6 +117,8 @@ router.get(
     const canEdit =
       pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
+    const courseHasQuestions = await selectCourseHasQuestions(pageContext.course.id);
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: getAssessmentTrpcUrl({
@@ -166,6 +169,7 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
+              courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
               trpcCsrfToken={trpcCsrfToken}

@@ -517,7 +517,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
   });
 
-  test('can add a question to an empty assessment via zone and picker', async ({
+  test('can add a question to an empty assessment via the empty-state CTA', async ({
     page,
     testCoursePath,
     courseInstance,
@@ -531,10 +531,11 @@ test.describe('Assessment questions', () => {
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
     );
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
 
-    await page.getByRole('button', { name: 'Add zone' }).click();
-    await page.getByRole('button', { name: 'Add question' }).click();
+    // An assessment with no zones shows an empty state. Its call-to-action
+    // enters edit mode, creates the first zone, and opens the question picker.
+    await expect(page.getByText('This assessment has no questions yet')).toBeVisible();
+    await page.getByRole('button', { name: 'Add questions' }).click();
     await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
     await page.getByLabel('Search by QID or title').fill('partialCredit1');
