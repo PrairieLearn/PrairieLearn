@@ -248,7 +248,11 @@ function CourseDeleteForm({
           id={`inputConfirm${id}`}
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? `inputConfirm${id}-error` : undefined}
-          {...register('short_name')}
+          {...register('short_name', {
+            validate: (value) =>
+              value === row.course.short_name ||
+              `Type "${row.course.short_name}" exactly to confirm deletion.`,
+          })}
         />
         {errors.short_name && (
           <div id={`inputConfirm${id}-error`} className="invalid-feedback">
@@ -494,14 +498,6 @@ function CourseUpdateColumnForm({
           aria-label={label}
           {...register('value', {
             required: required && `Enter a ${label}`,
-            pattern:
-              columnName === 'short_name'
-                ? {
-                    value: /^[A-Z]+ [A-Z0-9]+$/,
-                    message:
-                      'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
-                  }
-                : undefined,
           })}
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}

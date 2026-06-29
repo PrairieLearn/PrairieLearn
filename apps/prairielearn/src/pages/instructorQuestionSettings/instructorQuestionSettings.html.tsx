@@ -568,64 +568,6 @@ export const InstructorQuestionSettingsForm = ({
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label" htmlFor="workspace_port">
-                    Port
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    className={clsx('form-control', errors.workspace_port && 'is-invalid')}
-                    id="workspace_port"
-                    disabled={!canEdit}
-                    aria-invalid={!!errors.workspace_port || undefined}
-                    defaultValue={defaultValues.workspace_port}
-                    aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
-                    {...register('workspace_port', {
-                      validate: (value) => {
-                        if (value === '') return true;
-                        const n = Number(value);
-                        if (!Number.isInteger(n)) return 'Port must be an integer';
-                        return true;
-                      },
-                    })}
-                  />
-                  {errors.workspace_port && (
-                    <div id="workspace_port-error" className="invalid-feedback">
-                      {errors.workspace_port.message}
-                    </div>
-                  )}
-                  <small className="form-text text-muted">
-                    The port number used in the Docker image. If not provided, the default port for
-                    the image will be used.
-                  </small>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label" htmlFor="workspace_home">
-                    Home
-                  </label>
-                  <input
-                    type="text"
-                    className={clsx('form-control', errors.workspace_home && 'is-invalid')}
-                    id="workspace_home"
-                    disabled={!canEdit}
-                    aria-invalid={!!errors.workspace_home || undefined}
-                    defaultValue={defaultValues.workspace_home}
-                    aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
-                    {...register('workspace_home')}
-                  />
-                  {errors.workspace_home && (
-                    <div id="workspace_home-error" className="invalid-feedback">
-                      {errors.workspace_home.message}
-                    </div>
-                  )}
-                  <small className="form-text text-muted">
-                    The home directory of the workspace container. If not provided, the default home
-                    directory for the image will be used.
-                  </small>
-                </div>
-
-                <div className="mb-3">
                   <label className="form-label" htmlFor="workspace_graded_files">
                     Graded files
                   </label>
@@ -706,6 +648,64 @@ export const InstructorQuestionSettingsForm = ({
                   <div className="small text-muted">
                     Whether the workspace should have network access. Access is disabled by default.
                   </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_port">
+                    Port
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    className={clsx('form-control', errors.workspace_port && 'is-invalid')}
+                    id="workspace_port"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_port || undefined}
+                    defaultValue={defaultValues.workspace_port}
+                    aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
+                    {...register('workspace_port', {
+                      validate: (value) => {
+                        if (value === '') return true;
+                        const n = Number(value);
+                        if (!Number.isInteger(n)) return 'Port must be an integer';
+                        return true;
+                      },
+                    })}
+                  />
+                  {errors.workspace_port && (
+                    <div id="workspace_port-error" className="invalid-feedback">
+                      {errors.workspace_port.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The port number used in the Docker image. If not provided, the default port for
+                    the image will be used.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_home">
+                    Home
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.workspace_home && 'is-invalid')}
+                    id="workspace_home"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_home || undefined}
+                    defaultValue={defaultValues.workspace_home}
+                    aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
+                    {...register('workspace_home')}
+                  />
+                  {errors.workspace_home && (
+                    <div id="workspace_home-error" className="invalid-feedback">
+                      {errors.workspace_home.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The home directory of the workspace container. If not provided, the default home
+                    directory for the image will be used.
+                  </small>
                 </div>
 
                 <div className="mb-3">

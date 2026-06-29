@@ -152,6 +152,7 @@ for (const dep of AUTO_DETECTED_BUT_ALSO_IMPORTED) {
 const config: KnipConfig = {
   tags: ['-knipignore'],
   treatConfigHintsAsErrors: true,
+  treatTagHintsAsErrors: true,
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],

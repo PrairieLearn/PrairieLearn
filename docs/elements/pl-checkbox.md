@@ -26,7 +26,6 @@ as checkboxes.
 | `answers-name`        | string  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                |
 | `detailed-help-text`  | boolean | false           | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.                                                                                                                                                                |
 | `display`             | string  | `"block"`       | How to display answer choices: `"block"` (separate lines) or `"inline"` (single line).                                                                                                                                                                                              |
-| `hide-answer-panel`   | boolean | false           | Option to not display the correct answer in the correct panel.                                                                                                                                                                                                                      |
 | `hide-help-text`      | boolean | false           | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"off"`, `"coverage"`, `"each-answer"`, or `"net-correct"`).                                                                                                       |
 | `hide-letter-keys`    | boolean | false           | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                                                                                                                  |
 | `hide-score-badge`    | boolean | false           | Hide badges next to selected answers.                                                                                                                                                                                                                                               |
@@ -64,15 +63,16 @@ Four grading methods are available using the `partial-credit` attribute:
 
 The following deprecated attributes are still supported for backward compatibility:
 
-| Old syntax                                          | New syntax                     |
-| --------------------------------------------------- | ------------------------------ |
-| `partial-credit="false"`                            | `partial-credit="off"`         |
-| `partial-credit="true"`                             | `partial-credit="net-correct"` |
-| `partial-credit="true" partial-credit-method="PC"`  | `partial-credit="net-correct"` |
-| `partial-credit="true" partial-credit-method="EDC"` | `partial-credit="each-answer"` |
-| `partial-credit="true" partial-credit-method="COV"` | `partial-credit="coverage"`    |
-| `inline="true"`                                     | `display="inline"`             |
-| `fixed-order="true"`                                | `order="fixed"`                |
+| Old syntax                                          | New syntax                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `partial-credit="false"`                            | `partial-credit="off"`                                                       |
+| `partial-credit="true"`                             | `partial-credit="net-correct"`                                               |
+| `partial-credit="true" partial-credit-method="PC"`  | `partial-credit="net-correct"`                                               |
+| `partial-credit="true" partial-credit-method="EDC"` | `partial-credit="each-answer"`                                               |
+| `partial-credit="true" partial-credit-method="COV"` | `partial-credit="coverage"`                                                  |
+| `inline="true"`                                     | `display="inline"`                                                           |
+| `fixed-order="true"`                                | `order="fixed"`                                                              |
+| `hide-answer-panel="true"`                          | Wrap the element in `<pl-hide-in-panel answer="true">...</pl-hide-in-panel>` |
 
 ## Using the `detailed-help-text` attribute
 
