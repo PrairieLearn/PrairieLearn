@@ -56,7 +56,7 @@ export function RubricInputSection({
         disable
           ? 'd-none'
           : ''}"
-        ${enableKeyboardShortcuts ? 'data-key-binding="a"' : ''}
+        ${enableKeyboardShortcuts ? 'data-key-binding=a' : ''}
       >
         Apply adjustment
         ${enableKeyboardShortcuts
