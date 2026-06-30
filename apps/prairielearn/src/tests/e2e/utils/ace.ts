@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 interface AceEditor {
   setValue: (val: string, pos: number) => void;
@@ -25,6 +25,14 @@ async function waitForAceReady(page: Page, count = 1): Promise<void> {
   }, count);
 }
 
+async function waitForAceRuntime(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(() => {
+    const w = window as unknown as Partial<AceWindow>;
+    return Boolean(w.ace?.edit);
+  });
+}
+
 /**
  * Sets the contents of the `index`-th ACE editor on the page (0-based). Most
  * pages have a single editor; the file editor's conflict view has two.
@@ -38,6 +46,18 @@ export async function setAceEditorContent(page: Page, content: string, index = 0
     },
     { newContent: content, editorIndex: index },
   );
+}
+
+export async function setAceEditorContentInLocator(
+  page: Page,
+  editor: Locator,
+  content: string,
+): Promise<void> {
+  await waitForAceRuntime(page);
+  await editor.waitFor({ state: 'attached', timeout: 60_000 });
+  await editor.evaluate((el, newContent) => {
+    (window as unknown as AceWindow).ace.edit(el as HTMLElement).setValue(newContent, -1);
+  }, content);
 }
 
 /** Returns the contents of the `index`-th ACE editor on the page (0-based). */

@@ -473,6 +473,31 @@ export abstract class Editor {
   }
 }
 
+interface EditorJobResult {
+  status: 'ok' | 'error';
+  /** Identifies the server job, e.g. to build an `edit_error` link on failure. */
+  jobSequenceId: string;
+}
+
+/**
+ * Runs an editor's server job to completion and reports whether it succeeded.
+ * Editor failures are expected (e.g. a failed sync); they are surfaced via the
+ * returned status rather than thrown.
+ */
+export async function runEditorJob(editor: Editor): Promise<EditorJobResult> {
+  const serverJob = await editor.prepareServerJob();
+  try {
+    await editor.executeWithServerJob(serverJob);
+  } catch (err) {
+    // A stale-edit conflict is a typed outcome the caller maps to its own error,
+    // not a generic job failure. Only the file-modify editors
+    // (`FileModifyEditor`, `QuestionModifyEditor`) throw this.
+    if (err instanceof FileModifyConflictError) throw err;
+    return { status: 'error', jobSequenceId: serverJob.jobSequenceId };
+  }
+  return { status: 'ok', jobSequenceId: serverJob.jobSequenceId };
+}
+
 /**
  * Validates that a new QID does not conflict with any existing question QIDs
  * by being a subdirectory or parent directory of an existing question. The sync
@@ -1530,15 +1555,30 @@ export class QuestionAddEditor extends Editor {
 export class QuestionModifyEditor extends Editor {
   private question: Question;
   private files: Record<string, string | null>;
+  private origHashes: Record<string, string | null> | undefined;
+  /** Overwrite even if a file changed on disk, and recreate it if it was deleted. */
+  private force: boolean;
 
   constructor(
     params: BaseEditorOptions<{ question: Question }> & {
+      /** Base64-encoded contents per question-relative path; `null` deletes the file. */
       files: Record<string, string | null>;
+      /**
+       * Per-file hash of the contents the caller's editor was opened with, as
+       * the save's stale-edit guard (see {@link FileModifyEditor} for the hash
+       * convention). `null` means the file did not exist when it was opened.
+       * Files without an entry — and all files when the map is omitted — are
+       * written unconditionally.
+       */
+      origHashes?: Record<string, string | null>;
+      force?: boolean;
     },
   ) {
     const {
       locals: { question },
       files,
+      origHashes,
+      force,
     } = params;
 
     super({
@@ -1548,6 +1588,8 @@ export class QuestionModifyEditor extends Editor {
 
     this.question = question;
     this.files = files;
+    this.origHashes = origHashes;
+    this.force = force ?? false;
   }
 
   async write() {
@@ -1568,11 +1610,66 @@ export class QuestionModifyEditor extends Editor {
     // `clientFilesQuestion` directory. We don't want to remove them, and we also
     // don't want to mandate that the caller must always read all existing files
     // and provide them in the `files` object.
+    //
+    // The job runs in two passes — decide, then apply — so a stale-edit
+    // conflict on any file is raised before a single byte is written and can
+    // never leave the question half-modified.
+    const writes: { resolvedPath: string; contents: string | null }[] = [];
     for (const [filePath, contents] of Object.entries(this.files)) {
       const resolvedPath = path.join(questionPath, filePath);
+      const origHash = this.origHashes?.[filePath];
+
+      if (origHash === undefined) {
+        writes.push({ resolvedPath, contents });
+        continue;
+      }
+
+      const editHash = contents === null ? null : computeEncodedFileContentHash(contents);
+
+      // When the buffer still matches what the editor was opened with there is
+      // nothing to save: skipping cannot clobber a concurrent change, and it
+      // means an untouched sibling file never conflicts with (or overwrites)
+      // another writer's changes to it. `force` skips this so an explicit
+      // overwrite still recreates a deleted file even when the buffer was
+      // never edited.
+      if (!this.force && editHash === origHash) continue;
+
+      let diskHash: string | null = null;
+      try {
+        const diskContentsUTF = await fs.readFile(resolvedPath, 'utf8');
+        diskHash = computeEncodedFileContentHash(b64EncodeUnicode(diskContentsUTF));
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') throw err;
+        // The file was deleted on disk since the editor opened it.
+      }
+
+      // The same under-lock stale-edit contract as `FileModifyEditor.write()`:
+      // if the file changed on disk (or appeared, for a file opened as absent)
+      // since it was opened, this save would clobber that change.
+      if (!this.force) {
+        if (origHash === null) {
+          if (diskHash !== null) throw new FileModifyConflictError('changed', filePath);
+        } else if (diskHash === null) {
+          // Deleting an already-deleted file is convergent, not a conflict.
+          if (contents !== null) throw new FileModifyConflictError('deleted', filePath);
+        } else if (diskHash !== origHash) {
+          throw new FileModifyConflictError('changed', filePath);
+        }
+      }
+
+      // Skip a no-op write or delete when disk already matches the buffer.
+      if (editHash === diskHash) continue;
+
+      writes.push({ resolvedPath, contents });
+    }
+
+    if (writes.length === 0) return null;
+
+    for (const { resolvedPath, contents } of writes) {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
+        await fs.ensureDir(path.dirname(resolvedPath));
         await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
@@ -2465,6 +2562,29 @@ export class FileUploadEditor extends Editor {
   }
 }
 
+/**
+ * Thrown by {@link FileModifyEditor} when the file on disk no longer matches the
+ * `origHash` the editor was opened with — because it changed (`'changed'`) or was
+ * deleted (`'deleted'`). The check runs under the course lock at write time, so
+ * this is the single source of truth for a stale-edit conflict. `runEditorJob`
+ * rethrows it (rather than reporting a generic job failure) so callers can map it
+ * to a typed conflict.
+ */
+export class FileModifyConflictError extends Error {
+  constructor(
+    readonly reason: 'changed' | 'deleted',
+    /** Path of the conflicting file, relative to the editor's root, when known. */
+    readonly filePath?: string,
+  ) {
+    super(
+      reason === 'deleted'
+        ? 'The file was deleted since it was opened.'
+        : 'The file changed since it was opened.',
+    );
+    this.name = 'FileModifyConflictError';
+  }
+}
+
 export class FileModifyEditor extends Editor {
   // Naming convention for contents and hashes in FileModifyEditor:
   //
@@ -2483,6 +2603,8 @@ export class FileModifyEditor extends Editor {
   private filePath: string;
   private editContents: string;
   private origHash: string;
+  /** Overwrite even if the file changed, and recreate it if it was deleted. */
+  private force: boolean;
 
   constructor(
     params: BaseEditorOptions & {
@@ -2490,6 +2612,7 @@ export class FileModifyEditor extends Editor {
       filePath: string;
       editContents: string;
       origHash: string;
+      force?: boolean;
     },
   ) {
     const {
@@ -2498,6 +2621,7 @@ export class FileModifyEditor extends Editor {
       filePath,
       editContents,
       origHash,
+      force,
     } = params;
 
     let prefix = '';
@@ -2514,9 +2638,12 @@ export class FileModifyEditor extends Editor {
     this.filePath = filePath;
     this.editContents = editContents;
     this.origHash = origHash;
+    this.force = force ?? false;
   }
 
   shouldEdit() {
+    if (this.force) return true;
+
     debug('get hash of edit contents');
     const editHash = computeEncodedFileContentHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2568,20 +2695,36 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
+    const editHash = computeEncodedFileContentHash(this.editContents);
     if (!this.shouldEdit()) return null;
 
-    debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
-
-    debug('verify disk hash matches orig hash');
-    const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64EncodeUnicode(diskContentsUTF);
-    const diskHash = computeEncodedFileContentHash(diskContents);
-    if (this.origHash !== diskHash) {
-      throw new Error('Another user made changes to the file you were editing.');
+    debug('read current disk contents');
+    let diskHash: string | null = null;
+    try {
+      const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
+      diskHash = computeEncodedFileContentHash(b64EncodeUnicode(diskContentsUTF));
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') throw err;
+      // The file was deleted on disk since the editor opened it.
     }
 
+    // The buffer differs from `origHash`, so the user is saving an actual edit.
+    // The under-lock disk check is the single source of truth for stale edits:
+    // if the file changed or was deleted on disk since it was opened, this save
+    // would clobber that change, so surface a conflict. `force` overwrites it,
+    // recreating the file if it was deleted.
+    if (!this.force) {
+      if (diskHash === null) throw new FileModifyConflictError('deleted');
+      if (diskHash !== this.origHash) throw new FileModifyConflictError('changed');
+    }
+
+    // Skip a no-op write when the buffer already matches what is on disk; this
+    // avoids an empty commit. A deleted file (`diskHash === null`) never matches,
+    // so a forced save always recreates it.
+    if (editHash === diskHash) return null;
+
     debug('write file');
+    await fs.ensureDir(path.dirname(this.filePath));
     await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
@@ -3017,7 +3160,7 @@ export async function prepareAccessControlLabelRewriteEditors({
       jsonPath: infoPath,
       // No scoped hash: this edit is not driven by a user-held origHash.
       // FileModifyEditor's full-file hash still guards against TOCTOU at
-      // write time, and shouldEdit() makes unchanged files a no-op.
+      // write time, and an unchanged file is a no-op.
       conflictCheck: { origHash: null, scope: (json) => json.accessControl ?? [] },
       locals,
       container: { rootPath: assessmentDir, invalidRootPaths: [] },

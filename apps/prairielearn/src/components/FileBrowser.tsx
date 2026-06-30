@@ -1,261 +1,42 @@
-import * as path from 'node:path';
+import { Fragment } from 'react';
 
-import * as async from 'async';
-import { fileTypeFromFile } from 'file-type';
-import { filesize } from 'filesize';
-import fs from 'fs-extra';
-import hljs from 'highlight.js';
-import { isBinaryFile } from 'isbinaryfile';
-
-import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { contains } from '@prairielearn/path-utils';
+import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
-import * as editorUtil from '../lib/editorUtil.js';
+import {
+  type DirectoryListings,
+  type FileInfo,
+  browseDirectoryOrFile,
+  getFileDownloadUrl,
+} from '../lib/file-browser.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { encodePath } from '../lib/uri-util.js';
 
+import { FileBrowserActionButton } from './FileBrowserActionButton.js';
+import { FileDeleteForm, FileRenameForm, FileUploadForm } from './FileBrowserForms.js';
 import { PageLayout } from './PageLayout.js';
-import { SyncProblemButtonHtml } from './SyncProblemButton.js';
-
-interface FileInfo {
-  id: number;
-  name: string;
-  path: string;
-  dir: string;
-  canEdit: boolean;
-  canUpload: boolean;
-  canDownload: boolean;
-  canRename: boolean;
-  canDelete: boolean;
-  canView: boolean;
-  isBinary: boolean;
-  isImage: boolean;
-  isPDF: boolean;
-  isText: boolean;
-  contents?: string | null;
-}
-
-interface DirectoryEntry {
-  id: string | number;
-  name: string;
-  path: string;
-  canView: boolean;
-}
-
-interface DirectoryEntryDirectory extends DirectoryEntry {
-  isFile: false;
-}
-
-interface DirectoryEntryFile extends DirectoryEntry {
-  isFile: true;
-  dir: string;
-  canEdit: boolean;
-  canUpload: boolean;
-  canDownload: boolean;
-  canRename: boolean;
-  canDelete: boolean;
-  sync_errors: string | null;
-  sync_warnings: string | null;
-  uuid: string | null;
-}
-
-interface DirectoryListings {
-  dirs: DirectoryEntryDirectory[];
-  files: DirectoryEntryFile[];
-}
-
-type FileUploadInfo = {
-  id: string | number;
-  info?: HtmlValue;
-} & (
-  | {
-      path: string;
-      working_path?: unknown;
-    }
-  | {
-      path?: null | undefined;
-      working_path: string;
-    }
-);
-
-interface FileDeleteInfo {
-  id: string | number;
-  name: string;
-  path: string;
-}
-
-interface FileRenameInfo {
-  id: string | number;
-  name: string;
-  dir: string;
-}
-
-async function browseDirectory({
-  paths,
-}: {
-  paths: InstructorFilePaths;
-}): Promise<DirectoryListings> {
-  const filenames = await fs.readdir(paths.workingPath);
-  const all_files = await async.mapLimit(
-    filenames.sort().map((name, index) => ({ name, index })),
-    3,
-    async (file: { name: string; index: number }) => {
-      const filepath = path.join(paths.workingPath, file.name);
-      const stats = await fs.lstat(filepath);
-      if (stats.isFile()) {
-        const editable = !(await isBinaryFile(filepath));
-        const movable = !paths.cannotMove.includes(filepath);
-        const relative_path = path.relative(paths.coursePath, filepath);
-        const fileMetadata = await editorUtil.getFileMetadataForPath(paths.courseId, relative_path);
-        const result: DirectoryEntryFile = {
-          id: file.index,
-          name: file.name,
-          isFile: true,
-          path: relative_path,
-          dir: paths.workingPath,
-          canEdit: editable && paths.hasEditPermission,
-          canUpload: paths.hasEditPermission,
-          canDownload: true, // we already know the user is a course Viewer (checked on GET)
-          canRename: movable && paths.hasEditPermission,
-          canDelete: movable && paths.hasEditPermission,
-          canView: !paths.invalidRootPaths.some((invalidRootPath) =>
-            contains(invalidRootPath, filepath),
-          ),
-          sync_errors: fileMetadata.syncErrors,
-          sync_warnings: fileMetadata.syncWarnings,
-          uuid: fileMetadata.uuid,
-        };
-        return result;
-      } else if (stats.isDirectory()) {
-        // The .git directory is hidden in the browser interface.
-        if (file.name === '.git') return null;
-        const result: DirectoryEntryDirectory = {
-          id: file.index,
-          name: file.name,
-          isFile: false,
-          path: path.relative(paths.coursePath, filepath),
-          canView: !paths.invalidRootPaths.some((invalidRootPath) =>
-            contains(invalidRootPath, filepath),
-          ),
-        };
-        return result;
-      } else {
-        return null;
-      }
-    },
-  );
-  return {
-    files: all_files.filter((f): f is DirectoryEntryFile => f?.isFile === true),
-    dirs: all_files.filter((f): f is DirectoryEntryDirectory => f?.isFile === false),
-  };
-}
-
-async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
-  const filepath = paths.workingPath;
-  const movable = !paths.cannotMove.includes(filepath);
-  const file: FileInfo = {
-    id: 0,
-    name: path.basename(paths.workingPath),
-    path: path.relative(paths.coursePath, filepath),
-    dir: path.dirname(paths.workingPath),
-    canEdit: false, // will be overridden only if the file is a text file
-    canUpload: paths.hasEditPermission,
-    canDownload: true, // we already know the user is a course Viewer (checked on GET)
-    canRename: movable && paths.hasEditPermission,
-    canDelete: movable && paths.hasEditPermission,
-    canView: !paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
-    isBinary: await isBinaryFile(paths.workingPath),
-    isImage: false,
-    isPDF: false,
-    isText: false,
-  };
-
-  if (file.isBinary) {
-    const type = await fileTypeFromFile(paths.workingPath);
-    if (type) {
-      if (type.mime.startsWith('image')) {
-        file.isImage = true;
-      } else if (type.mime === 'application/pdf') {
-        file.isPDF = true;
-      }
-    }
-  } else {
-    // This is probably a text file. If it's is larger that 1MB, don't
-    // attempt to read it; treat it like an opaque binary file.
-    const { size } = await fs.stat(paths.workingPath);
-    if (size > 1 * 1024 * 1024) {
-      return { ...file, isBinary: true };
-    }
-
-    file.isText = true;
-    file.canEdit = paths.hasEditPermission;
-
-    const fileContents = await fs.readFile(paths.workingPath);
-    const stringifiedContents = fileContents.toString('utf8');
-
-    // Try to guess the language from the file extension. This takes
-    // advantage of the fact that Highlight.js includes common file extensions
-    // as aliases for each supported language, and `getLanguage()` allows
-    // us to look up a language by its alias.
-    //
-    // If we don't get a match, we'll try to guess the language by running
-    // `highlightAuto()` on the first few thousand characters of the file.
-    //
-    // Note that we deliberately exclude `ml` and `ls` from the extensions
-    // that we try to guess from, as they're ambiguous (OCaml/Standard ML
-    // and LiveScript/Lasso, respectively). For more details, see
-    // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
-    let language: string | undefined = undefined;
-    const extension = path.extname(paths.workingPath).slice(1);
-    if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
-      language = extension;
-    } else {
-      const result = hljs.highlightAuto(stringifiedContents.slice(0, 2000));
-      language = result.language;
-    }
-    file.contents = hljs.highlight(stringifiedContents, {
-      language: language ?? 'plaintext',
-    }).value;
-  }
-
-  return file;
-}
+import { SyncProblemButton } from './SyncProblemButton.js';
 
 export async function createFileBrowser({
   resLocals,
   paths,
-  isReadOnly,
 }: {
   resLocals: UntypedResLocals;
   paths: InstructorFilePaths;
-  isReadOnly: boolean;
 }) {
-  const stats = await fs.lstat(paths.workingPath);
-  if (stats.isDirectory()) {
-    return FileBrowser({
-      resLocals,
-      paths,
-      isFile: false,
-      directoryListings: await browseDirectory({ paths }),
-      isReadOnly,
-    });
-  } else if (stats.isFile()) {
-    return FileBrowser({
-      resLocals,
-      paths,
-      isFile: true,
-      fileInfo: await browseFile({ paths }),
-      isReadOnly,
-    });
-  } else {
-    throw new Error(
-      `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
-    );
+  const browseResult = await browseDirectoryOrFile({ paths });
+  if (browseResult.isFile) {
+    return FileBrowser({ resLocals, paths, isFile: true, fileInfo: browseResult.fileInfo });
   }
+  return FileBrowser({
+    resLocals,
+    paths,
+    isFile: false,
+    directoryListings: browseResult.directoryListings,
+  });
 }
 
 function FileBrowser({
@@ -264,8 +45,7 @@ function FileBrowser({
   isFile,
   fileInfo,
   directoryListings,
-  isReadOnly,
-}: { resLocals: UntypedResLocals; paths: InstructorFilePaths; isReadOnly: boolean } & (
+}: { resLocals: UntypedResLocals; paths: InstructorFilePaths } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
@@ -309,133 +89,146 @@ function FileBrowser({
         }
       </style>
     `,
-    content: html`
-      <h1 class="visually-hidden">Files</h1>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <div class="row align-items-center justify-content-between">
-            <div class="col-auto font-monospace d-flex">
-              ${joinHtml(
-                breadcrumbPaths.map(
-                  (dir) => html`
-                    ${dir.canView
-                      ? html`
-                          <a
-                            class="text-white"
-                            href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
-                          >
-                            ${dir.name}
-                          </a>
-                        `
-                      : html`<span>${dir.name}</span>`}
-                  `,
-                ),
-                html`<span class="mx-2">/</span>`,
-              )}
-            </div>
-            <div class="col-auto">
-              ${isFile
-                ? FileBrowserActions({ paths, fileInfo, isReadOnly, csrfToken })
-                : paths.hasEditPermission && !isReadOnly
-                  ? DirectoryBrowserActions({ paths, csrfToken })
-                  : ''}
+    content: (
+      <>
+        <h1 className="visually-hidden">Files</h1>
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white">
+            <div className="row align-items-center justify-content-between">
+              <div className="col-auto font-monospace d-flex">
+                {breadcrumbPaths.map((dir, index) => (
+                  <Fragment key={dir.path}>
+                    {dir.canView ? (
+                      <a
+                        className="text-white"
+                        href={`${paths.urlPrefix}/file_view/${encodePath(dir.path)}`}
+                      >
+                        {dir.name}
+                      </a>
+                    ) : (
+                      <span>{dir.name}</span>
+                    )}
+                    {index < breadcrumbPaths.length - 1 ? <span className="mx-2">/</span> : null}
+                  </Fragment>
+                ))}
+              </div>
+              <div className="col-auto">
+                {isFile ? (
+                  <FileBrowserActions paths={paths} fileInfo={fileInfo} csrfToken={csrfToken} />
+                ) : paths.hasEditPermission ? (
+                  <DirectoryBrowserActions paths={paths} csrfToken={csrfToken} />
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
 
-        ${isFile
-          ? html`<div class="card-body">${FileContentPreview({ paths, fileInfo })}</div>`
-          : DirectoryBrowserBody({ paths, directoryListings, isReadOnly, csrfToken })}
-      </div>
-    `,
+          {isFile ? (
+            <div className="card-body">
+              <FileContentPreview paths={paths} fileInfo={fileInfo} />
+            </div>
+          ) : (
+            <DirectoryBrowserTable
+              paths={paths}
+              directoryListings={directoryListings}
+              csrfToken={csrfToken}
+            />
+          )}
+        </div>
+      </>
+    ),
   });
 }
 
 function FileBrowserActions({
   paths,
   fileInfo,
-  isReadOnly,
   csrfToken,
 }: {
   paths: InstructorFilePaths;
   fileInfo: FileInfo;
-  isReadOnly: boolean;
   csrfToken: string;
 }) {
   const encodedPath = encodePath(fileInfo.path);
-  return html`
-    <div class="d-flex flex-wrap gap-2">
-      ${isReadOnly
-        ? ''
-        : html`
-            <a
-              tabindex="0"
-              class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
-              href="${paths.urlPrefix}/file_edit/${encodedPath}"
-            >
-              <i class="fa fa-edit"></i>
-              <span>Edit</span>
-            </a>
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Upload file"
-              data-bs-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
-              ${fileInfo.canUpload ? '' : 'disabled'}
-            >
-              <i class="fa fa-arrow-up"></i>
-              <span>Upload</span>
-            </button>
-          `}
-      <a
-        class="btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}"
-        href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
-          fileInfo.name,
-        )}"
-      >
-        <i class="fa fa-arrow-down"></i>
-        <span>Download</span>
-      </a>
-      ${isReadOnly
-        ? ''
-        : html`
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Rename file"
-              data-bs-content="${escapeHtml(
-                FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
-              )}"
-              ${fileInfo.canRename ? '' : 'disabled'}
-            >
-              <i class="fa fa-i-cursor"></i>
-              <span>Rename</span>
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Confirm delete"
-              data-bs-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-              ${fileInfo.canDelete ? '' : 'disabled'}
-            >
-              <i class="far fa-trash-alt"></i>
-              <span>Delete</span>
-            </button>
-          `}
+  return (
+    <div className="d-flex flex-wrap gap-2">
+      {!paths.hasEditPermission ? null : (
+        <>
+          <FileBrowserActionButton
+            icon="fa fa-edit"
+            label="Edit"
+            href={`${paths.urlPrefix}/file_edit/${encodedPath}`}
+            className="btn btn-sm btn-light"
+            disabled={!fileInfo.canEdit}
+          />
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Upload file"
+            data-bs-content={FileUploadForm({
+              file: fileInfo,
+              csrfToken,
+              maxFileSizeBytes: config.fileUploadMaxBytes,
+            }).toString()}
+            disabled={!fileInfo.canUpload}
+          >
+            <i className="fa fa-arrow-up" />
+            <span>Upload</span>
+          </button>
+        </>
+      )}
+      <FileBrowserActionButton
+        icon="fa fa-arrow-down"
+        label="Download"
+        href={getFileDownloadUrl({
+          urlPrefix: paths.urlPrefix,
+          path: fileInfo.path,
+          name: fileInfo.name,
+        })}
+        className="btn btn-sm btn-light"
+        disabled={!fileInfo.canDownload}
+      />
+      {!paths.hasEditPermission ? null : (
+        <>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Rename file"
+            data-bs-content={FileRenameForm({
+              file: fileInfo,
+              csrfToken,
+              isViewingFile: true,
+            }).toString()}
+            disabled={!fileInfo.canRename}
+          >
+            <i className="fa fa-i-cursor" />
+            <span>Rename</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-light"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Confirm delete"
+            data-bs-content={FileDeleteForm({ file: fileInfo, csrfToken }).toString()}
+            disabled={!fileInfo.canDelete}
+          >
+            <i className="far fa-trash-alt" />
+            <span>Delete</span>
+          </button>
+        </>
+      )}
     </div>
-  `;
+  );
 }
 
 function DirectoryBrowserActions({
@@ -445,53 +238,203 @@ function DirectoryBrowserActions({
   paths: InstructorFilePaths;
   csrfToken: string;
 }) {
-  return html`
-    <div class="d-flex flex-wrap gap-2">
-      ${paths.specialDirs.map(
-        (d) => html`
-          <button
-            type="button"
-            id="instructorFileUploadForm-New${d.label}"
-            class="btn btn-sm btn-light"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-placement="auto"
-            data-bs-title="Upload files"
-            data-bs-content="${escapeHtml(
-              FileUploadForm({
-                file: { id: `New${d.label}`, info: d.info, working_path: d.path },
-                csrfToken,
-              }),
-            )}
-          "
-          >
-            <i class="fa fa-plus"></i>
-            <span>Add new ${d.label.toLowerCase()} files</span>
-          </button>
-        `,
-      )}
+  return (
+    <div className="d-flex flex-wrap gap-2">
+      {paths.specialDirs.map((d) => (
+        <button
+          key={d.label}
+          type="button"
+          id={`instructorFileUploadForm-New${d.label}`}
+          className="btn btn-sm btn-light"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Upload files"
+          data-bs-content={FileUploadForm({
+            file: { id: `New${d.label}`, info: d.info, working_path: d.path },
+            csrfToken,
+            maxFileSizeBytes: config.fileUploadMaxBytes,
+          }).toString()}
+        >
+          <i className="fa fa-plus" />
+          <span>Add new {d.label.toLowerCase()} files</span>
+        </button>
+      ))}
       <button
         type="button"
         id="instructorFileUploadForm-New"
-        class="btn btn-sm btn-light"
+        className="btn btn-sm btn-light"
         data-bs-toggle="popover"
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
         data-bs-title="Upload files"
-        data-bs-content="${escapeHtml(
-          FileUploadForm({
-            file: { id: 'New', working_path: paths.workingPath },
-            csrfToken,
-          }),
-        )}"
+        data-bs-content={FileUploadForm({
+          file: { id: 'New', working_path: paths.workingPath },
+          csrfToken,
+          maxFileSizeBytes: config.fileUploadMaxBytes,
+        }).toString()}
       >
-        <i class="fa fa-plus"></i>
+        <i className="fa fa-plus" />
         <span>Add new files</span>
       </button>
     </div>
-  `;
+  );
+}
+
+function getDefaultFileViewUrl({
+  paths,
+  filePath,
+}: {
+  paths: InstructorFilePaths;
+  filePath: string;
+}) {
+  const encodedPath = encodePath(filePath);
+  return encodedPath === ''
+    ? `${paths.urlPrefix}/file_view`
+    : `${paths.urlPrefix}/file_view/${encodedPath}`;
+}
+
+function DirectoryBrowserTable({
+  paths,
+  directoryListings,
+  csrfToken,
+}: {
+  paths: InstructorFilePaths;
+  directoryListings: DirectoryListings;
+  csrfToken: string;
+}) {
+  return (
+    <div className="table-responsive">
+      <table className="table table-sm table-hover" aria-label="Directories and files">
+        <thead className="visually-hidden">
+          <tr>
+            <th>File</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {directoryListings.files.map((f) => {
+            const fileUrl = getDefaultFileViewUrl({ paths, filePath: f.path });
+            const editFileUrl = `${paths.urlPrefix}/file_edit/${encodePath(f.path)}`;
+
+            return (
+              <tr key={`file-${f.path}`}>
+                <td className="align-middle">
+                  <div className="d-flex align-items-center">
+                    <i className="far fa-file-alt" />
+                    {f.syncErrors ? (
+                      <SyncProblemButton type="error" output={f.syncErrors} />
+                    ) : f.syncWarnings ? (
+                      <SyncProblemButton type="warning" output={f.syncWarnings} />
+                    ) : null}
+                    {f.canView ? <a href={fileUrl}>{f.name}</a> : <span>{f.name}</span>}
+                  </div>
+                </td>
+                <td className="align-middle">
+                  <div className="d-flex gap-2 file-browser-row-actions">
+                    {!paths.hasEditPermission ? null : (
+                      <>
+                        <FileBrowserActionButton
+                          icon="fa fa-edit"
+                          label="Edit"
+                          href={editFileUrl}
+                          disabled={!f.canEdit}
+                        />
+                        <button
+                          type="button"
+                          id={`instructorFileUploadForm-${f.id}`}
+                          className="btn btn-xs btn-secondary text-nowrap"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Upload file"
+                          data-bs-content={FileUploadForm({
+                            file: f,
+                            csrfToken,
+                            maxFileSizeBytes: config.fileUploadMaxBytes,
+                          }).toString()}
+                          disabled={!f.canUpload}
+                        >
+                          <i className="fa fa-arrow-up" />
+                          <span>Upload</span>
+                        </button>
+                      </>
+                    )}
+                    <FileBrowserActionButton
+                      icon="fa fa-arrow-down"
+                      label="Download"
+                      href={getFileDownloadUrl({
+                        urlPrefix: paths.urlPrefix,
+                        path: f.path,
+                        name: f.name,
+                      })}
+                      disabled={!f.canDownload}
+                    />
+                    {!paths.hasEditPermission ? null : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-secondary text-nowrap"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Rename file"
+                          data-bs-content={FileRenameForm({
+                            file: f,
+                            csrfToken,
+                            isViewingFile: false,
+                          }).toString()}
+                          data-testid="rename-file-button"
+                          disabled={!f.canRename}
+                        >
+                          <i className="fa fa-i-cursor" />
+                          <span>Rename</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-secondary text-nowrap"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Confirm delete"
+                          data-bs-content={FileDeleteForm({
+                            file: f,
+                            csrfToken,
+                          }).toString()}
+                          data-testid="delete-file-button"
+                          disabled={!f.canDelete}
+                        >
+                          <i className="far fa-trash-alt" />
+                          <span>Delete</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+          {directoryListings.dirs.map((d) => {
+            const directoryUrl = getDefaultFileViewUrl({ paths, filePath: d.path });
+
+            return (
+              <tr key={`dir-${d.path}`}>
+                <td colSpan={2}>
+                  <i className="fa fa-folder" />{' '}
+                  {d.canView ? <a href={directoryUrl}>{d.name}</a> : <span>{d.name}</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function FileContentPreview({
@@ -502,293 +445,37 @@ function FileContentPreview({
   fileInfo: FileInfo;
 }) {
   if (fileInfo.isImage) {
-    return html`
+    return (
       <img
-        src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}"
-        class="img-fluid"
-        alt="Preview of ${fileInfo.name}"
+        src={`${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}`}
+        className="img-fluid"
+        alt={`Preview of ${fileInfo.name}`}
       />
-    `;
+    );
   }
   if (fileInfo.isText) {
-    return html`<pre><code>${unsafeHtml(fileInfo.contents ?? '')}</code></pre>`;
+    return (
+      <pre>
+        {/* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */}
+        <code dangerouslySetInnerHTML={{ __html: fileInfo.contents ?? '' }} />
+      </pre>
+    );
   }
   if (fileInfo.isPDF) {
-    return html`
-      <div class="ratio ratio-4x3">
+    return (
+      <div className="ratio ratio-4x3">
         <iframe
-          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          title="PDF preview of ${fileInfo.name}"
+          src={`${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH`}
+          title={`PDF preview of ${fileInfo.name}`}
         >
           This PDF cannot be displayed.
         </iframe>
       </div>
-    `;
+    );
   }
-  return html`<div class="alert alert-warning" role="alert">No preview available.</div>`;
-}
-
-function DirectoryBrowserBody({
-  paths,
-  directoryListings,
-  isReadOnly,
-  csrfToken,
-}: {
-  paths: InstructorFilePaths;
-  directoryListings: DirectoryListings;
-  isReadOnly: boolean;
-  csrfToken: string;
-}) {
-  return html`
-    <div class="table-responsive">
-      <table class="table table-sm table-hover" aria-label="Directories and files">
-        <thead class="visually-hidden">
-          <tr>
-            <th>File</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${directoryListings.files.map(
-            (f) => html`
-              <tr>
-                <td class="align-middle">
-                  <div class="d-flex align-items-center">
-                    <i class="far fa-file-alt"></i>
-                    ${f.sync_errors
-                      ? SyncProblemButtonHtml({
-                          type: 'error',
-                          output: f.sync_errors,
-                        })
-                      : f.sync_warnings
-                        ? SyncProblemButtonHtml({
-                            type: 'warning',
-                            output: f.sync_warnings,
-                          })
-                        : ''}
-                    ${f.canView
-                      ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}"
-                          >${f.name}</a
-                        >`
-                      : html`<span>${f.name}</span>`}
-                  </div>
-                </td>
-                <td class="align-middle">
-                  <div class="d-flex gap-2">
-                    ${isReadOnly
-                      ? ''
-                      : html`
-                          <a
-                            class="btn btn-xs btn-secondary text-nowrap ${f.canEdit
-                              ? ''
-                              : 'disabled'}"
-                            href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
-                          >
-                            <i class="fa fa-edit"></i>
-                            <span>Edit</span>
-                          </a>
-                          <button
-                            type="button"
-                            id="instructorFileUploadForm-${f.id}"
-                            class="btn btn-xs btn-secondary text-nowrap"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Upload file"
-                            data-bs-content="
-                  ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                            ${f.canUpload ? '' : 'disabled'}
-                          >
-                            <i class="fa fa-arrow-up"></i>
-                            <span>Upload</span>
-                          </button>
-                        `}
-                    <a
-                      class="btn btn-xs btn-secondary text-nowrap ${f.canDownload
-                        ? ''
-                        : 'disabled'}"
-                      href="${paths.urlPrefix}/file_download/${encodePath(
-                        f.path,
-                      )}?attachment=${encodeURIComponent(f.name)}"
-                    >
-                      <i class="fa fa-arrow-down"></i>
-                      <span>Download</span>
-                    </a>
-                    ${isReadOnly
-                      ? ''
-                      : html`
-                          <button
-                            type="button"
-                            class="btn btn-xs btn-secondary text-nowrap"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Rename file"
-                            data-bs-content="${escapeHtml(
-                              FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
-                            )}"
-                            data-testid="rename-file-button"
-                            ${f.canRename ? '' : 'disabled'}
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Rename</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-xs btn-secondary text-nowrap"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Confirm delete"
-                            data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                            data-testid="delete-file-button"
-                            ${f.canDelete ? '' : 'disabled'}
-                          >
-                            <i class="far fa-trash-alt"></i>
-                            <span>Delete</span>
-                          </button>
-                        `}
-                  </div>
-                </td>
-              </tr>
-            `,
-          )}
-          ${directoryListings.dirs.map(
-            (d) => html`
-              <tr>
-                <td colspan="2">
-                  <i class="fa fa-folder"></i>
-                  ${d.canView
-                    ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}"
-                        >${d.name}</a
-                      >`
-                    : html`<span>${d.name}</span>`}
-                </td>
-              </tr>
-            `,
-          )}
-        </tbody>
-      </table>
+  return (
+    <div className="alert alert-warning" role="alert">
+      No preview available.
     </div>
-  `;
-}
-
-function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: string }) {
-  const maxFileSizeFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
-  return html`
-    <form
-      class="needs-validation"
-      name="instructor-file-upload-form-${file.id}"
-      method="POST"
-      enctype="multipart/form-data"
-      novalidate
-    >
-      ${file.info ? html`<div class="mb-3">${file.info}</div>` : ''}
-
-      <div class="mb-3">
-        <label class="form-label" for="attachFileInput-${file.id}"
-          >Choose ${file.path == null ? 'files' : 'file'}</label
-        >
-        <input
-          type="file"
-          name="files"
-          ${file.path == null
-            ? html`multiple data-max-file-count="${config.fileUploadMaxFiles}"`
-            : ''}
-          data-max-file-size="${config.fileUploadMaxBytes}"
-          data-max-file-size-formatted="${maxFileSizeFormatted}"
-          class="form-control"
-          id="attachFileInput-${file.id}"
-          required
-        />
-        <small class="form-text text-muted">
-          Max file size: ${maxFileSizeFormatted}
-          ${file.path == null ? `per file (at most ${config.fileUploadMaxFiles} files)` : ''}
-        </small>
-      </div>
-
-      <div class="mb-3">
-        <input type="hidden" name="__action" value="upload_file" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        ${file.path != null
-          ? html`<input type="hidden" name="file_path" value="${file.path}" />`
-          : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
-        <div class="text-end justify-content-end gap-2 d-flex flex-wrap">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            Upload ${file.path == null ? 'files' : 'file'}
-          </button>
-        </div>
-      </div>
-    </form>
-  `;
-}
-
-function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: string }) {
-  return html`
-    <form name="instructor-file-delete-form-${file.id}" method="POST">
-      <p>Are you sure you want to delete <strong>${file.name}</strong>?</p>
-      <input type="hidden" name="__action" value="delete_file" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="file_path" value="${file.path}" />
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete</button>
-      </div>
-    </form>
-  `;
-}
-
-function FileRenameForm({
-  file,
-  csrfToken,
-  isViewingFile,
-}: {
-  file: FileRenameInfo;
-  csrfToken: string;
-  isViewingFile: boolean;
-}) {
-  const FILE_NAME_PATTERN =
-    /(?:[A-Za-z0-9_-]+|\.\.)(?:\/(?:[A-Za-z0-9_-]+|\.\.))*(?:\.[A-Za-z0-9_-]+)?/;
-  return html`
-    <form
-      name="instructor-file-rename-form-${file.id}"
-      method="POST"
-      class="needs-validation"
-      novalidate
-    >
-      <input type="hidden" name="__action" value="rename_file" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="working_path" value="${file.dir}" />
-      ${isViewingFile ? html`<input type="hidden" name="was_viewing_file" value="true" />` : ''}
-      <input type="hidden" name="old_file_name" value="${file.name}" />
-      <div class="container p-0 mb-4">
-        Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is
-        recommended, delimited by a period. If you want to move the file to a different directory,
-        you can specify a relative path that is delimited by a forward slash and that includes
-        "<code>..</code>".
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="renameFileInput${file.id}">Path:</label>
-        <input
-          type="text"
-          class="form-control js-rename-input"
-          id="renameFileInput${file.id}"
-          name="new_file_name"
-          value="${file.name}"
-          data-original-value="${file.name}"
-          size="${1.5 * file.name.length}"
-          pattern="${FILE_NAME_PATTERN.source}"
-          required
-        />
-      </div>
-      <div class="text-end justify-content-end gap-2 d-flex flex-wrap">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Change</button>
-      </div>
-    </form>
-  `;
+  );
 }

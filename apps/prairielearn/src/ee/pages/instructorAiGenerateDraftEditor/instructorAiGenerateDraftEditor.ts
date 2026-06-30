@@ -12,27 +12,28 @@ import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
-import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
-  type Course,
   type EnumAiQuestionGenerationMessageStatus,
   type Question,
-  type User,
 } from '../../../lib/db-types.js';
+import {
+  browseDraftQuestionFiles,
+  getDraftQuestionFileContents,
+} from '../../../lib/draft-question-files/browser.js';
+import { renameDraftQuestion } from '../../../lib/draft-question-files/mutations.js';
+import { parseSelectionQueryParam } from '../../../lib/draft-question-files/selection.js';
 import { classifyDraftQuestion } from '../../../lib/draft-question.ts';
 import { features } from '../../../lib/features/index.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import { processSubmission } from '../../../lib/question-submission.js';
-import { HttpRedirect } from '../../../lib/redirect.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
-import { validateShortName } from '../../../lib/short-name.js';
+import { getUrl } from '../../../lib/url.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
+import { selectOptionalQuestionById } from '../../../models/question.js';
 import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
@@ -53,71 +54,8 @@ const sql = loadSqlEquiv(import.meta.url);
 type InstructorQuestionLocals = ResLocalsForPage<'instructor-question'>;
 type InstructorQuestionRenderLocals = InstructorQuestionLocals & ResLocalsQuestionRender;
 
-async function saveRevisedQuestion({
-  course,
-  question,
-  user,
-  authn_user,
-  authz_data,
-  urlPrefix,
-  html,
-  python,
-  prompt,
-  promptType,
-}: {
-  course: Course;
-  question: Question;
-  user: User;
-  authn_user: User;
-  authz_data: {
-    has_course_permission_edit: boolean;
-  };
-  urlPrefix: string;
-  html: string;
-  python?: string;
-  prompt: string;
-  promptType: 'manual_change' | 'manual_revert';
-}) {
-  const client = getCourseFilesClient();
-
-  const files: Record<string, string | null> = {
-    'question.html': b64EncodeUnicode(html),
-  };
-
-  // We'll delete the `server.py` file if the Python code is empty. Setting
-  // it to `null` instructs the editor to delete the file.
-  const trimmedPython = python?.trim() ?? '';
-  if (trimmedPython !== '') {
-    files['server.py'] = b64EncodeUnicode(trimmedPython);
-  } else {
-    files['server.py'] = null;
-  }
-
-  const result = await client.updateQuestionFiles.mutate({
-    course_id: course.id,
-    user_id: user.id,
-    authn_user_id: authn_user.id,
-    question_id: question.id,
-    has_course_permission_edit: authz_data.has_course_permission_edit,
-    files,
-  });
-
-  if (result.status === 'error') {
-    throw new HttpRedirect(urlPrefix + '/edit_error/' + result.job_sequence_id);
-  }
-
-  const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
-
-  await execute(sql.insert_ai_question_generation_prompt, {
-    question_id: question.id,
-    prompting_user_id: authn_user.id,
-    prompt_type: promptType,
-    user_prompt: prompt,
-    system_prompt: prompt,
-    response,
-    html,
-    python,
-  });
+function getEditorUrl(resLocals: InstructorQuestionLocals) {
+  return `${resLocals.urlPrefix}/ai_generate_editor/${resLocals.question.id}`;
 }
 
 function getVariantId(req: Request) {
@@ -181,11 +119,14 @@ async function getValidatedInitialMessages(question: Question) {
   });
 
   // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
-  if (initialMessages.length === 0) return [];
-
+  //
   // TODO: we're currently lying to the compiler here. We should be passing schemas
   // for our metadata and tools.
-  return await validateUIMessages<QuestionGenerationUIMessage>({ messages: initialMessages });
+  return initialMessages.length > 0
+    ? await validateUIMessages<QuestionGenerationUIMessage>({
+        messages: initialMessages,
+      })
+    : [];
 }
 
 async function renderQuestionPreview(
@@ -194,19 +135,15 @@ async function renderQuestionPreview(
 ) {
   await getAndRenderVariant(variantId, null, resLocals, {
     urlOverrides: {
-      // By default, this would be the URL to the instructor question preview page.
-      // We need to redirect to this same page instead.
-      newVariantUrl: `${resLocals.urlPrefix}/ai_generate_editor/${resLocals.question.id}`,
+      newVariantUrl: getEditorUrl(resLocals),
     },
   });
 
-  const questionContainerHtml = QuestionContainer({
-    resLocals,
-    questionContext: 'instructor',
-  });
-
   return {
-    questionContainerHtml: questionContainerHtml.toString(),
+    questionContainerHtml: QuestionContainer({
+      resLocals,
+      questionContext: 'instructor',
+    }).toString(),
     extraHeadersHtml: resLocals.extraHeadersHtml,
     variantId: resLocals.variant.id,
   };
@@ -241,6 +178,7 @@ router.use(
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
+
     const question = await selectOptionalQuestionById(req.params.question_id);
     const classification = classifyDraftQuestion(res.locals.course, question);
 
@@ -268,16 +206,20 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
-    const messages = await getValidatedInitialMessages(res.locals.question);
-    const courseFilesClient = getCourseFilesClient();
-    const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
-      course_id: res.locals.course.id,
-      question_id: res.locals.question.id,
-    });
+    const [richTextEditorEnabled, messages, fileContents, browseData] = await Promise.all([
+      features.enabledFromLocals('rich-text-editor', res.locals),
+      getValidatedInitialMessages(res.locals.question),
+      getDraftQuestionFileContents({
+        courseId: res.locals.course.id,
+        questionId: res.locals.question.id,
+      }),
+      browseDraftQuestionFiles({
+        resLocals: res.locals,
+        selection: parseSelectionQueryParam(req.query.selection),
+      }),
+    ]);
 
     const { questionContainerHtml } = await renderQuestionPreview(res.locals, getVariantId(req));
-
     await logPageView('instructorQuestionPreview', req, res);
 
     res.send(
@@ -285,9 +227,11 @@ router.get(
         resLocals: res.locals,
         question: res.locals.question,
         messages,
-        questionFiles,
+        fileContents,
+        browseData,
         richTextEditorEnabled,
-        questionContainerHtml: questionContainerHtml.toString(),
+        questionContainerHtml,
+        search: getUrl(req).search,
       }),
     );
   }),
@@ -388,80 +332,18 @@ router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {
-      const client = getCourseFilesClient();
-
-      const result = await client.renameQuestion.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_id: res.locals.question.id,
+      const updatedQuestion = await renameDraftQuestion({
+        course: res.locals.course,
+        question: res.locals.question,
+        user: res.locals.user,
+        authz_data: res.locals.authz_data,
         qid: req.body.qid,
         title: req.body.title,
       });
 
-      if (result.status === 'error') {
-        throw new Error('Renaming question failed.');
-      }
-
-      // Re-fetch the question in case the QID was changed to avoid conflicts.
-      const updatedQuestion = await selectQuestionById(res.locals.question.id);
-
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
-    } else if (req.body.__action === 'rename_draft_question') {
-      if (req.accepts('html')) {
-        throw new error.HttpStatusError(406, 'Not Acceptable');
-      }
-
-      const qid =
-        typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
-          ? req.body.qid
-          : res.locals.question.qid;
-      const title =
-        typeof req.body.title === 'string' && req.body.title.trim() !== ''
-          ? req.body.title
-          : res.locals.question.title;
-
-      const validation = validateShortName(qid);
-      if (!validation.valid) {
-        throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
-      }
-
-      const client = getCourseFilesClient();
-
-      const result = await client.renameQuestion.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_id: res.locals.question.id,
-        qid,
-        title,
-      });
-
-      if (result.status === 'error') {
-        throw new Error('Renaming question failed.');
-      }
-
-      const updatedQuestion = await selectQuestionById(res.locals.question.id);
-      res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
-    } else if (req.body.__action === 'submit_manual_revision') {
-      await saveRevisedQuestion({
-        course: res.locals.course,
-        question: res.locals.question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        urlPrefix: res.locals.urlPrefix,
-        html: b64DecodeUnicode(req.body.html),
-        python: b64DecodeUnicode(req.body.python),
-        prompt: 'Manually update question.',
-        promptType: 'manual_change',
-      });
-
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
+      res.redirect(`${res.locals.urlPrefix}/question/${res.locals.question.id}/preview`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
@@ -476,19 +358,10 @@ router.post(
 router.get(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
-    const { questionContainerHtml, extraHeadersHtml, variantId } = await renderQuestionPreview(
-      res.locals,
-      getVariantId(req),
-    );
-
+    const preview = await renderQuestionPreview(res.locals, getVariantId(req));
     await logPageView('instructorQuestionPreview', req, res);
 
-    // This endpoint is JSON-only; the client patches the preview without a full page reload.
-    res.json({
-      questionContainerHtml,
-      extraHeadersHtml,
-      variantId,
-    });
+    res.json(preview);
   }),
 );
 
@@ -496,33 +369,11 @@ router.post(
   '/variant',
   typedAsyncHandler<'instructor-question', ResLocalsQuestionRender>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      const { questionContainerHtml, extraHeadersHtml, variantId } = await renderQuestionPreview(
-        res.locals,
-        await processSubmission(req, res),
-      );
-
-      // This endpoint is JSON-only; the client patches the preview without a full page reload.
-      res.json({
-        questionContainerHtml,
-        extraHeadersHtml,
-        variantId,
-      });
+      const variantId = await processSubmission(req, res);
+      res.json(await renderQuestionPreview(res.locals, variantId));
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
-  }),
-);
-
-router.get(
-  '/files',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    const courseFilesClient = getCourseFilesClient();
-    const { files } = await courseFilesClient.getQuestionFiles.query({
-      course_id: res.locals.course.id,
-      question_id: res.locals.question.id,
-    });
-
-    res.json({ files });
   }),
 );
 

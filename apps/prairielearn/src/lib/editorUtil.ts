@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
 import * as path from 'path';
 
+// @ts-expect-error No types for ace-code/src/ext/modelist.js
+import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import fs from 'fs-extra';
+import { isBinaryFile } from 'isbinaryfile';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -196,4 +199,49 @@ export async function computeScopedJsonHash<T extends Record<string, unknown>>(
     if (err.code === 'ENOENT') return null;
     throw err;
   }
+}
+
+interface EditableTextFile {
+  fileName: string;
+  normalizedFileName: string;
+  contents: string;
+  contentHash: string;
+  aceMode: string;
+  fileMetadata: FileMetadata;
+  lintHtmlMustache: boolean;
+}
+
+/**
+ * Reads a text file's contents and the metadata the Ace-based file editors need
+ * to display it. Throws if the file is binary.
+ */
+export async function readEditableTextFile({
+  courseId,
+  coursePath,
+  fullPath,
+  courseRelativePath,
+}: {
+  courseId: string;
+  coursePath: string;
+  fullPath: string;
+  courseRelativePath: string;
+}): Promise<EditableTextFile> {
+  const contents = await fs.readFile(fullPath);
+  if (await isBinaryFile(contents)) {
+    throw new Error('Cannot edit binary file');
+  }
+
+  const stringContents = contents.toString('utf8');
+  const encodedContents = b64EncodeUnicode(stringContents);
+  const lintHtmlMustache = await isV3QuestionHtmlFile(coursePath, courseRelativePath);
+
+  return {
+    fileName: path.basename(courseRelativePath),
+    normalizedFileName: path.normalize(courseRelativePath),
+    contents: encodedContents,
+    contentHash: computeFileContentHash(stringContents),
+    aceMode: lintHtmlMustache ? 'ace/mode/handlebars' : getModeForPath(courseRelativePath).mode,
+    fileMetadata: await getFileMetadataForPath(courseId, courseRelativePath),
+    lintHtmlMustache,
+  };
 }

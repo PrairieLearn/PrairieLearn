@@ -137,6 +137,22 @@
   grid-area: python;
 }
 
+.selected-file-editor {
+  min-height: 0;
+}
+
+.selected-file-editor-toolbar {
+  min-height: 3.5rem;
+}
+
+.selected-file-editor-ace {
+  min-height: 0;
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
   .app-content {

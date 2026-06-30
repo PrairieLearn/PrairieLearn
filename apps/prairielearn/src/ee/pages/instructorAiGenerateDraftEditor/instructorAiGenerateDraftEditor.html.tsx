@@ -9,9 +9,13 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
-import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
+import { getAiQuestionGenerationDraftsUrl, getCourseTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
+import type {
+  DraftQuestionBrowseData,
+  DraftQuestionFileContents,
+} from '../../../lib/draft-question-files/browser.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -23,16 +27,20 @@ export function InstructorAiGenerateDraftEditor({
   resLocals,
   question,
   messages,
-  questionFiles,
+  fileContents,
+  browseData,
   richTextEditorEnabled,
   questionContainerHtml,
+  search,
 }: {
   resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
-  questionFiles: Record<string, string>;
+  fileContents: DraftQuestionFileContents;
+  browseData: DraftQuestionBrowseData;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
+  search: string;
 }) {
   const chatCsrfToken = generatePrefixCsrfToken(
     {
@@ -47,6 +55,14 @@ export function InstructorAiGenerateDraftEditor({
     url: variantUrl,
     authnUserId: resLocals.authn_user.id,
   });
+  const trpcUrl = getCourseTrpcUrl(resLocals.course.id);
+  const trpcCsrfToken = generatePrefixCsrfToken(
+    {
+      url: trpcUrl,
+      authn_user_id: resLocals.authn_user.id,
+    },
+    config.secretKey,
+  );
 
   return PageLayout({
     resLocals,
@@ -77,16 +93,30 @@ export function InstructorAiGenerateDraftEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
+        <meta
+          name="htmlmustache-runtime-wasm"
+          content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+        />
+        <meta
+          name="htmlmustache-grammar-wasm"
+          content="${nodeModulesAssetPath(
+            '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
+          )}"
+        />
       `,
+      compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts'),
     ],
     content: (
       <Hydrate className="app-content-container">
         <AiQuestionGenerationEditor
           chatCsrfToken={chatCsrfToken}
+          trpcCsrfToken={trpcCsrfToken}
+          courseId={resLocals.course.id}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
+          fileContents={fileContents}
+          browseData={browseData}
           currentUserName={resLocals.authn_user.name}
-          questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}
@@ -94,6 +124,7 @@ export function InstructorAiGenerateDraftEditor({
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
+          search={search}
         />
       </Hydrate>
     ),

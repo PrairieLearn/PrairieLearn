@@ -1,12 +1,4 @@
-import { useChat } from '@ai-sdk/react';
-import {
-  DefaultChatTransport,
-  type ReasoningUIPart,
-  type TextUIPart,
-  type ToolUIPart,
-  type UIMessage,
-  type UIToolInvocation,
-} from 'ai';
+import { type ReasoningUIPart, type TextUIPart, type ToolUIPart, type UIToolInvocation } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Modal } from 'react-bootstrap';
@@ -23,10 +15,12 @@ import type {
 
 import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
-
-function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
-  return part.type.startsWith('tool-');
-}
+import { useDraftFiles } from './draftFilesContext.js';
+import {
+  type QuestionGenerationChat,
+  RateLimitError,
+  isToolPart,
+} from './useQuestionGenerationChat.js';
 
 function ProgressStatus({
   state,
@@ -484,12 +478,6 @@ function Messages({
   );
 }
 
-/**
- * This custom error is used to signal that a rate limit has been exceeded, which
- * we'll know happens when we get a 429 response from the server.
- */
-class RateLimitError extends Error {}
-
 function useShowSpinner({
   status,
   messages,
@@ -526,127 +514,33 @@ function useShowSpinner({
 }
 
 export function AiQuestionGenerationChat({
+  chat,
   chatCsrfToken,
-  initialMessages,
-  currentUserName,
   questionId,
   showJobLogsLink,
   urlPrefix,
-  refreshQuestionPreview,
-  onGeneratingChange,
-  onGenerationComplete,
-  hasUnsavedChanges,
-  discardUnsavedChanges,
   isQuestionEmpty,
 }: {
+  chat: QuestionGenerationChat;
   chatCsrfToken: string;
-  initialMessages: QuestionGenerationUIMessage[];
-  currentUserName: string | null;
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
-  refreshQuestionPreview: () => void;
-  onGeneratingChange?: (isGenerating: boolean) => void;
-  onGenerationComplete?: () => void;
-  hasUnsavedChanges: boolean;
-  discardUnsavedChanges: () => void;
   isQuestionEmpty: boolean;
 }) {
-  const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
-    useState(true);
+  const { getHasUnsavedChanges, discardUnsavedChanges } = useDraftFiles();
+  const {
+    messages,
+    status,
+    error,
+    isGenerating,
+    sendPrompt,
+    refreshQuestionPreviewAfterChanges,
+    setRefreshQuestionPreviewAfterChanges,
+  } = chat;
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
-  const prevIsGeneratingRef = useRef<boolean | null>(null);
-  const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
-    // Currently, we assume one chat per question. This should change in the future.
-    id: questionId,
-    messages: initialMessages,
-    resume: true,
-    transport: new DefaultChatTransport({
-      api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
-      headers: { 'X-CSRF-Token': chatCsrfToken },
-      prepareSendMessagesRequest: ({ messages, headers }) => {
-        // Only send the latest message to the server. The server sources
-        // conversation context from the database, so we don't need to
-        // send the full history.
-        const lastMessage = messages.at(-1);
-        return {
-          body: { message: lastMessage ?? null },
-          headers,
-        };
-      },
-      prepareReconnectToStreamRequest: ({ id }) => {
-        return {
-          api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
-        };
-      },
-      async fetch(input, init) {
-        const res = await fetch(input, init);
-        if (res.status === 429) {
-          throw new RateLimitError();
-        }
-        return res;
-      },
-    }),
-    // Limit the frequency of updates to avoid overwhelming React. This approach
-    // was recommended on https://github.com/vercel/ai/issues/6166.
-    experimental_throttle: 100,
-    onFinish({ messages, message }) {
-      // We receive this event on page load, even when there's no active streaming in progress.
-      // In that case, we want to avoid immediately loading a new variant.
-      //
-      // TODO: is there a better way to detect this case? We could watch for changes to
-      // the `status` signal.
-      const isExistingMessage =
-        messages.length === initialMessages.length &&
-        message.parts.length === initialMessages.at(-1)?.parts.length;
-      if (isExistingMessage) return;
-
-      const didWriteFile = message.parts.some((part) => {
-        return (
-          isToolPart(part) && part.type === 'tool-writeFile' && part.state === 'output-available'
-        );
-      });
-
-      if (didWriteFile && refreshQuestionPreviewAfterChanges) {
-        refreshQuestionPreview();
-      }
-    },
-    onError(error) {
-      console.error('Chat error:', error);
-    },
-  });
-
-  const isGenerating = status === 'streaming' || status === 'submitted';
-
-  // Notify parent of generation state changes.
-  // We need to use an effect here because `useChat` doesn't provide callbacks for
-  // status changes, only for message completion. The parent needs to know about
-  // the generating state to control read-only mode on editors.
-  useEffect(() => {
-    // Skip initial render
-    if (prevIsGeneratingRef.current === null) {
-      prevIsGeneratingRef.current = isGenerating;
-      // If we're already generating on mount (e.g., resuming a stream), notify parent
-
-      if (isGenerating) {
-        onGeneratingChange?.(true);
-      }
-      return;
-    }
-
-    if (prevIsGeneratingRef.current !== isGenerating) {
-      prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
-      onGeneratingChange?.(isGenerating);
-
-      // If generation just finished, call the completion callback
-
-      if (!isGenerating) {
-        onGenerationComplete?.();
-      }
-    }
-  }, [isGenerating, onGeneratingChange, onGenerationComplete]);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const showSpinner = useShowSpinner({ status, messages });
 
@@ -665,6 +559,12 @@ export function AiQuestionGenerationChat({
     maxWidth: 800,
     ariaLabel: 'Resize chat',
   });
+
+  const submitPrompt = (text: string) => {
+    sendPrompt(text);
+    void stickToBottom.scrollToBottom();
+    setPromptInput('');
+  };
 
   const hasMessages = messages.length > 0;
 
@@ -717,6 +617,11 @@ export function AiQuestionGenerationChat({
               })}
             </div>
           )}
+          {cancelError && (
+            <div className="alert alert-danger mb-2" role="alert">
+              {cancelError}
+            </div>
+          )}
           <PromptInput
             value={promptInput}
             disabled={status !== 'ready' && status !== 'error'}
@@ -728,27 +633,29 @@ export function AiQuestionGenerationChat({
             }
             onChange={setPromptInput}
             onSubmit={(text) => {
-              if (hasUnsavedChanges) {
+              if (getHasUnsavedChanges()) {
                 setShowUnsavedChangesModal(true);
               } else {
-                void sendMessage({
-                  text,
-                  metadata: {
-                    job_sequence_id: null,
-                    status: 'completed',
-                    user_name: currentUserName,
-                    created_at: new Date().toISOString(),
-                  },
-                });
-                void stickToBottom.scrollToBottom();
-                setPromptInput('');
+                submitPrompt(text);
               }
             }}
             onStop={async () => {
-              await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`, {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': chatCsrfToken },
-              });
+              setCancelError(null);
+              try {
+                const res = await fetch(
+                  `${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`,
+                  {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': chatCsrfToken },
+                  },
+                );
+                if (!res.ok) {
+                  throw new Error(`Server returned status ${res.status}`);
+                }
+              } catch (err) {
+                console.error('Failed to cancel generation:', err);
+                setCancelError('Failed to stop generation. Please try again.');
+              }
             }}
           />
         </div>
@@ -783,17 +690,7 @@ export function AiQuestionGenerationChat({
               discardUnsavedChanges();
               const text = promptInput.trim();
               if (text) {
-                void sendMessage({
-                  text,
-                  metadata: {
-                    job_sequence_id: null,
-                    status: 'completed',
-                    user_name: currentUserName,
-                    created_at: new Date().toISOString(),
-                  },
-                });
-                void stickToBottom.scrollToBottom();
-                setPromptInput('');
+                submitPrompt(text);
               }
             }}
           >

@@ -2,34 +2,17 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
+import {
+  getAppError,
+  renderAppError,
+  syncJobFailedRenderer,
+} from '../../../../lib/client/errors.js';
 import { DRAFT_QID_PREFIX, isDraftQid } from '../../../../lib/draft-question.ts';
 import { validateShortName } from '../../../../lib/short-name.js';
+import type { AiDraftFilesError } from '../../../../trpc/course/ai-draft-files.js';
+import { useTRPC } from '../../../../trpc/course/context.js';
 
-async function renameDraftQuestion({
-  csrfToken,
-  qid,
-  title,
-}: {
-  csrfToken: string;
-  qid?: string;
-  title?: string;
-}): Promise<{ qid: string; title: string | null }> {
-  const response = await fetch(window.location.href, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      __action: 'rename_draft_question',
-      __csrf_token: csrfToken,
-      ...(qid != null ? { qid } : {}),
-      ...(title != null ? { title } : {}),
-    }),
-  });
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error ?? 'Failed to rename question');
-  }
-  return response.json();
-}
+import { useDraftFiles } from './draftFilesContext.js';
 
 function InlineEditableField({
   value,
@@ -57,7 +40,7 @@ function InlineEditableField({
   displayValue?: string;
   placeholder: string;
   isPending: boolean;
-  serverError: string | null;
+  serverError: ReactNode;
   onSave: (newValue: string) => void;
   onResetServerError: () => void;
   /** Accessible label for both the edit trigger and the input field. */
@@ -173,7 +156,7 @@ function InlineEditableField({
           disabled={isPending}
           aria-label={fieldLabel}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
+          aria-errormessage={error ? errorId : undefined}
           onChange={(e) => {
             setLocalValue(e.target.value);
             setValidationError(null);
@@ -218,37 +201,44 @@ function InlineEditableField({
 export function QuestionTitleAndQid({
   currentQid,
   currentTitle,
-  csrfToken,
   onSaved,
 }: {
   currentQid: string | null;
   currentTitle: string | null;
-  csrfToken: string;
   onSaved: (update: { qid: string | null; title: string | null }) => void;
 }) {
+  const trpc = useTRPC();
+  const { questionId, urlPrefix } = useDraftFiles();
   const [editingField, setEditingField] = useState<'title' | 'qid' | null>(null);
 
   const qid = currentQid ?? '';
   const hasDraftPrefix = isDraftQid(qid);
   const qidSuffix = hasDraftPrefix ? qid.slice(DRAFT_QID_PREFIX.length) : qid;
 
-  const renameMutation = useMutation({
-    mutationFn: renameDraftQuestion,
-    onSuccess: (result) => {
-      onSaved(result);
-      setEditingField(null);
-    },
-  });
+  const renameMutation = useMutation(
+    trpc.aiDraftFiles.renameQuestion.mutationOptions({
+      onSuccess: (result) => {
+        onSaved(result);
+        setEditingField(null);
+      },
+    }),
+  );
 
-  const serverError = renameMutation.isError ? renameMutation.error.message : null;
+  const renameError = getAppError<AiDraftFilesError['RenameQuestion']>(renameMutation.error);
+  const serverError: ReactNode = renameError
+    ? renderAppError(renameError, {
+        SYNC_JOB_FAILED: syncJobFailedRenderer(urlPrefix),
+        UNKNOWN: ({ message }) => message,
+      })
+    : null;
 
   function handleSaveTitle(newTitle: string) {
-    renameMutation.mutate({ csrfToken, title: newTitle || undefined });
+    renameMutation.mutate({ questionId, title: newTitle || undefined });
   }
 
   function handleSaveQid(newQidSuffix: string) {
     const fullQid = hasDraftPrefix ? DRAFT_QID_PREFIX + newQidSuffix : newQidSuffix;
-    renameMutation.mutate({ csrfToken, qid: fullQid });
+    renameMutation.mutate({ questionId, qid: fullQid });
   }
 
   function validateQid(newQidSuffix: string) {
