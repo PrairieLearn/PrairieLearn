@@ -325,14 +325,14 @@
     "brotli": 99149
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 1364955,
-    "gzip": 376862,
-    "brotli": 323356
+    "raw": 1364845,
+    "gzip": 376850,
+    "brotli": 323347
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstances.ts": {
-    "raw": 1247195,
-    "gzip": 379980,
-    "brotli": 310584
+    "raw": 1247191,
+    "gzip": 379979,
+    "brotli": 310573
   },
   "scripts/esm-bundles/hydrated-components/AssessmentModulesPage.ts": {
     "raw": 1292528,
@@ -345,9 +345,9 @@
     "brotli": 369534
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1713671,
-    "gzip": 481783,
-    "brotli": 396331
+    "raw": 1715456,
+    "gzip": 482198,
+    "brotli": 396674
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 1213210,
@@ -370,9 +370,9 @@
     "brotli": 349430
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
-    "raw": 397652,
-    "gzip": 123380,
-    "brotli": 107696
+    "raw": 397939,
+    "gzip": 123486,
+    "brotli": 107765
   },
   "scripts/esm-bundles/hydrated-components/AdminCreditPoolSection.ts": {
     "raw": 2334077,
