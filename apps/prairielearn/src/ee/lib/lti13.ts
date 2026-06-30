@@ -1030,6 +1030,9 @@ export async function updateLti13Scores({
 const RosterMemberSchema = z
   .object({
     user_id: z.string(),
+    // NRPS flattens the lis sourcedid onto the member rather than nesting it under
+    // the lis claim the way a launch id_token does.
+    lis_person_sourcedid: z.string().optional(),
     // Present only when the roster is fetched with a resource link id (`?rlid=`).
     message: z.array(z.record(z.string(), z.unknown())).optional(),
   })
@@ -1037,25 +1040,34 @@ const RosterMemberSchema = z
 type RosterMember = z.infer<typeof RosterMemberSchema>;
 
 /**
- * Resolves the UIN for a roster member from its per-message custom claims using
- * the instance's configured `uin_attribute` path. Returns null if the attribute
- * isn't configured or no message resolves a non-empty value.
+ * Resolves the UIN for a roster member using the instance's configured
+ * `uin_attribute` path. That path is written against the launch id_token, but NRPS
+ * represents a member differently: standard claims and the lis sourcedid are
+ * flattened onto the member, while per-resource-link claims (e.g. custom) live in
+ * `message[]`. We rebuild a launch-claim-shaped object so the same path resolves
+ * for the configurations seen in practice — both `…/claim/custom` and
+ * `…/claim/lis`. Returns null when the attribute isn't configured or nothing
+ * resolves to a non-empty value.
  */
 function resolveRosterMemberUin(member: RosterMember, uin_attribute: string | null): string | null {
-  if (!uin_attribute || !member.message) return null;
-  for (const message of member.message) {
-    // Each `message[]` entry holds its own `…/claim/custom` block at the same
-    // top-level position the launch id_token holds it, so a `uin_attribute` that
-    // targets the custom claim resolves when applied to an entry. es-toolkit's
-    // `get` expands a path like 'a[0].b.c'. Note this only works for custom-claim
-    // paths: attributes sourced from other launch claims (e.g. the `lis` claim,
-    // which NRPS flattens directly onto the member) won't resolve from a message.
-    const value = get(message, uin_attribute);
-    if (typeof value === 'string' && value.length > 0) {
-      return value;
-    }
-  }
-  return null;
+  if (!uin_attribute) return null;
+
+  // `message[]` is typed as an array (each entry tagged with a message_type) and is
+  // only present with `?rlid=`. Canvas only ever emits a single LtiResourceLinkRequest
+  // entry, but merge any entries so a custom claim resolves regardless of position.
+  // The lis sourcedid is the one claim NRPS flattens onto the member, so nest it back
+  // under its claim. es-toolkit's `get` expands a path like 'a[0].b.c'.
+  const claims = {
+    ...member,
+    ...Object.assign({}, ...(member.message ?? [])),
+    'https://purl.imsglobal.org/spec/lti/claim/lis':
+      member.lis_person_sourcedid != null
+        ? { person_sourcedid: member.lis_person_sourcedid }
+        : undefined,
+  };
+
+  const value = get(claims, uin_attribute);
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 /**

@@ -579,7 +579,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   });
 
   describe('LTI 1.3 NRPS roster inspector', () => {
-    test('inspectRoster appends rlid, dumps members, and annotates matches', async () => {
+    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis matches', async () => {
       // Ensure course instance 1 is linked to LTI instance 1.
       await execute(
         `DELETE FROM lti13_course_instances
@@ -648,7 +648,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         Lti13CombinedInstanceSchema,
       );
 
-      let capturedRlid: string | undefined;
+      const capturedRlids: (string | undefined)[] = [];
       const app = express();
       app.use(express.urlencoded({ extended: true }));
       app.post('/token', (_req, res) => {
@@ -660,7 +660,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         });
       });
       app.get('/memberships', (req, res) => {
-        capturedRlid = typeof req.query.rlid === 'string' ? req.query.rlid : undefined;
+        capturedRlids.push(typeof req.query.rlid === 'string' ? req.query.rlid : undefined);
         res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
         res.json({
           id: membershipsUrl,
@@ -697,35 +697,70 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
               user_id: 'nrps-unknown-sub-no-match',
               roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
               email: 'nrps-none@example.com',
+              // NRPS flattens the lis sourcedid onto the member (no `message`),
+              // which exercises lis-based uin_attribute resolution below.
+              lis_person_sourcedid: knownUin,
             },
           ],
         });
       });
 
-      const serverJob = await createServerJob({
+      // Instance 1 resolves UIN from a custom claim; clone it to also cover an
+      // instance configured to read UIN from the lis person_sourcedid claim.
+      const lisInstance = {
+        ...instance,
+        lti13_instance: {
+          ...instance.lti13_instance,
+          uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]',
+        },
+      };
+
+      const customJob = await createServerJob({
         type: 'lti13',
-        description: 'Inspect LTI 1.3 NRPS roster (test)',
+        description: 'Inspect LTI 1.3 NRPS roster (test, custom)',
+        userId: null,
+        authnUserId: null,
+      });
+      const lisJob = await createServerJob({
+        type: 'lti13',
+        description: 'Inspect LTI 1.3 NRPS roster (test, lis)',
         userId: null,
         authnUserId: null,
       });
 
       await withServer(app, oidcProviderPort, async () => {
-        await serverJob.executeUnsafe(async (job) => {
+        await customJob.executeUnsafe(async (job) => {
           await inspectRoster({ instance, rlid: 'rl-course-nav', job });
+        });
+        await lisJob.executeUnsafe(async (job) => {
+          await inspectRoster({ instance: lisInstance, rlid: null, job });
         });
       });
 
-      // The chosen resource link id was appended to the NRPS request.
-      assert.equal(capturedRlid, 'rl-course-nav');
+      // The custom run appended the chosen rlid; the lis run requested a plain roster.
+      assert.deepEqual(capturedRlids, ['rl-course-nav', undefined]);
 
-      const jobs = await selectJobsByJobSequenceId(serverJob.jobSequenceId);
-      assert.lengthOf(jobs, 1);
-      const output = jobs[0].output ?? '';
-      assert.include(output, 'Found 3 members.');
-      assert.include(output, 'roster-inspector@example.com');
-      assert.include(output, 'Matched by sub');
-      assert.include(output, 'Matched by UIN');
-      assert.include(output, 'No PrairieLearn user matched');
+      const customJobs = await selectJobsByJobSequenceId(customJob.jobSequenceId);
+      assert.lengthOf(customJobs, 1);
+      const customOutput = customJobs[0].output ?? '';
+      assert.include(customOutput, 'Found 3 members.');
+      assert.include(customOutput, 'roster-inspector@example.com');
+      assert.include(customOutput, 'Matched by sub');
+      assert.include(
+        customOutput,
+        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+      );
+      assert.include(customOutput, 'No PrairieLearn user matched');
+
+      // With no rlid (no custom claims), the lis-configured instance still resolves
+      // the UIN from the lis sourcedid that NRPS flattens onto the member.
+      const lisJobs = await selectJobsByJobSequenceId(lisJob.jobSequenceId);
+      assert.lengthOf(lisJobs, 1);
+      const lisOutput = lisJobs[0].output ?? '';
+      assert.include(
+        lisOutput,
+        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+      );
     });
   });
 });
