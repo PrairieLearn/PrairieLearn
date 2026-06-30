@@ -248,6 +248,8 @@ jobs:
         with:
           show-progress: false
       - uses: pnpm/action-setup@v6
+        with:
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
