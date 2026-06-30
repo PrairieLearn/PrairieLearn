@@ -395,9 +395,9 @@
     "brotli": 70005
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionsTable.ts": {
-    "raw": 1347790,
-    "gzip": 380834,
-    "brotli": 327790
+    "raw": 1348732,
+    "gzip": 381161,
+    "brotli": 328043
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
     "raw": 2724400,
