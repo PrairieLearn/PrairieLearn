@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "anchor-is-tail": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-length": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "color": {
+      "type": "string"
+    },
+    "disregard-sense": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "draw-error-box": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "label1": {
+      "type": "string"
+    },
+    "label2": {
+      "type": "string"
+    },
+    "offset-backward": {
+      "type": "string",
+      "format": "number"
+    },
+    "offset-forward": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsetx1": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsetx2": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety1": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety2": {
+      "type": "string",
+      "format": "number"
+    },
+    "optional-grading": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "spacing": {
+      "type": "string",
+      "format": "number"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "w1": {
+      "type": "string",
+      "format": "number"
+    },
+    "w2": {
+      "type": "string",
+      "format": "number"
+    },
+    "width": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

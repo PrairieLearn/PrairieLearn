@@ -1,0 +1,4 @@
+{
+  "tag": "pl-manual-grading-only",
+  "schema": "./schemas/pl-manual-grading-only.json"
+}

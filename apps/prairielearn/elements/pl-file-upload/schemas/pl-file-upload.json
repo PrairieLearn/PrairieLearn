@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "file-names": {
+      "type": "string"
+    },
+    "file-patterns": {
+      "type": "string"
+    },
+    "optional-file-names": {
+      "type": "string"
+    },
+    "optional-file-patterns": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

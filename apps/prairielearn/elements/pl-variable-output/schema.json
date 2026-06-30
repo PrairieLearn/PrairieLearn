@@ -1,0 +1,14 @@
+{
+  "tag": "pl-variable-output",
+  "schema": "./schemas/pl-variable-output.json",
+  "children": [
+    {
+      "tag": "pl-variable",
+      "schema": "./schemas/pl-variable.json"
+    },
+    {
+      "tag": "variable",
+      "schema": "./schemas/variable.json"
+    }
+  ]
+}

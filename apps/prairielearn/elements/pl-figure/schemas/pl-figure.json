@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "alt": {
+      "type": "string"
+    },
+    "directory": {
+      "type": "string",
+      "enum": ["clientFilesQuestion", "clientFilesCourse"]
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "inline": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use display=\"inline\" instead."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["static", "dynamic"]
+    },
+    "width": {
+      "type": "string"
+    }
+  },
+  "required": ["file-name"],
+  "additionalProperties": false
+}

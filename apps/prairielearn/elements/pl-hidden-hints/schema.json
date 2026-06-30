@@ -1,0 +1,10 @@
+{
+  "tag": "pl-hidden-hints",
+  "schema": "./schemas/pl-hidden-hints.json",
+  "children": [
+    {
+      "tag": "pl-hint",
+      "schema": "./schemas/pl-hint.json"
+    }
+  ]
+}

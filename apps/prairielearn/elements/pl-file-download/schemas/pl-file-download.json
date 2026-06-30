@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "directory": {
+      "type": "string",
+      "enum": ["clientFilesQuestion", "clientFilesCourse"]
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "force-download": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "label": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["static", "dynamic"]
+    }
+  },
+  "required": ["file-name"],
+  "additionalProperties": false
+}

@@ -1,0 +1,10 @@
+{
+  "tag": "pl-template",
+  "schema": "./schemas/pl-template.json",
+  "children": [
+    {
+      "tag": "pl-variable",
+      "schema": "./schemas/pl-variable.json"
+    }
+  ]
+}

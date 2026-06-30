@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "copy-code-button": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "directory": {
+      "type": "string"
+    },
+    "highlight-lines": {
+      "type": "string"
+    },
+    "highlight-lines-color": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "no-highlight": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Omit the \"language\" attribute instead."
+    },
+    "normalize-whitespace": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "prevent-select": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-line-numbers": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "source-file-name": {
+      "type": "string"
+    },
+    "style": {
+      "type": "string",
+      "deprecated": true,
+      "description": "Use the \"style-name\" attribute instead."
+    },
+    "style-name": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

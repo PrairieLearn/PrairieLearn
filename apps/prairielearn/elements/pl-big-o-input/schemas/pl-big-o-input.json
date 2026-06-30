@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "blank-value": {
+      "type": "string"
+    },
+    "correct-answer": {
+      "type": "string"
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "initial-value": {
+      "type": "string"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "show-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "show-score": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "size": {
+      "type": "string",
+      "format": "integer"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["big-o", "theta", "omega", "little-o", "little-omega"]
+    },
+    "variable": {
+      "type": "string",
+      "deprecated": true,
+      "description": "Use the \"variables\" attribute instead."
+    },
+    "variables": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

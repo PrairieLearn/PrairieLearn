@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "enforce-bounds": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "height": {
+      "type": "string",
+      "format": "integer"
+    },
+    "overlay-solution": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "read-only": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    },
+    "width": {
+      "type": "string",
+      "format": "integer"
+    },
+    "x-range": {
+      "type": "string"
+    },
+    "y-range": {
+      "type": "string"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

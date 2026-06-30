@@ -1,0 +1,4 @@
+{
+  "tag": "pl-external-grader-results",
+  "schema": "./schemas/pl-external-grader-results.json"
+}

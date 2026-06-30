@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "manual-upload-enabled": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "mobile-capture-enabled": {
+      "type": "string",
+      "format": "boolean"
+    }
+  },
+  "required": ["file-name"],
+  "additionalProperties": false
+}

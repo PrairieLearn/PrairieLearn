@@ -1,0 +1,14 @@
+{
+  "tag": "pl-overlay",
+  "schema": "./schemas/pl-overlay.json",
+  "children": [
+    {
+      "tag": "pl-background",
+      "schema": "./schemas/pl-background.json"
+    },
+    {
+      "tag": "pl-location",
+      "schema": "./schemas/pl-location.json"
+    }
+  ]
+}

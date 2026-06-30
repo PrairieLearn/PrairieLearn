@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "arrow-head-length": {
+      "type": "string",
+      "format": "number"
+    },
+    "arrow-head-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "draw-center": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "draw-end-arrow": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "draw-start-arrow": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "end-angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "end-support-line": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "label": {
+      "type": "string"
+    },
+    "offsetx": {
+      "type": "string",
+      "format": "number"
+    },
+    "offsety": {
+      "type": "string",
+      "format": "number"
+    },
+    "radius": {
+      "type": "string",
+      "format": "number"
+    },
+    "start-angle": {
+      "type": "string",
+      "format": "number"
+    },
+    "start-support-line": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "stroke-color": {
+      "type": "string"
+    },
+    "stroke-width": {
+      "type": "string",
+      "format": "number"
+    },
+    "x1": {
+      "type": "string",
+      "format": "number"
+    },
+    "y1": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

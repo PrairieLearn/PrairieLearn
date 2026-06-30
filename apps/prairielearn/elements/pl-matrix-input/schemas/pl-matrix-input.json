@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-complex": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "aria-label": {
+      "type": "string"
+    },
+    "atol": {
+      "type": "string",
+      "format": "number"
+    },
+    "comparison": {
+      "type": "string",
+      "enum": ["relabs", "sigfig", "decdig"]
+    },
+    "digits": {
+      "type": "string",
+      "format": "integer"
+    },
+    "initial-value": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "rtol": {
+      "type": "string",
+      "format": "number"
+    },
+    "show-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "counter-type": {
+      "type": "string",
+      "enum": ["decimal", "lower-alpha", "upper-alpha", "full-text"]
+    },
+    "fixed-options-order": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "fixed-order": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "hide-score-badge": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "none-of-the-above": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "number-options": {
+      "type": "string",
+      "format": "integer"
+    },
+    "number-statements": {
+      "type": "string",
+      "format": "integer"
+    },
+    "options-placement": {
+      "type": "string",
+      "enum": ["right", "bottom"]
+    },
+    "partial-credit": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

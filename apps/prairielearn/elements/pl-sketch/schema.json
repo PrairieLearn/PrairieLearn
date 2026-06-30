@@ -1,0 +1,22 @@
+{
+  "tag": "pl-sketch",
+  "schema": "./schemas/pl-sketch.json",
+  "children": [
+    {
+      "tag": "pl-sketch-grade",
+      "schema": "./schemas/pl-sketch-grade.json"
+    },
+    {
+      "tag": "pl-sketch-initial",
+      "schema": "./schemas/pl-sketch-initial.json"
+    },
+    {
+      "tag": "pl-sketch-solution",
+      "schema": "./schemas/pl-sketch-solution.json"
+    },
+    {
+      "tag": "pl-sketch-tool",
+      "schema": "./schemas/pl-sketch-tool.json"
+    }
+  ]
+}

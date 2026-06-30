@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "clip": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "height": {
+      "type": "string",
+      "format": "number"
+    },
+    "width": {
+      "type": "string",
+      "format": "number"
+    }
+  },
+  "additionalProperties": false
+}

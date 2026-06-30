@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "clipboard-enabled": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "counter": {
+      "type": "string",
+      "enum": ["none", "character", "word"]
+    },
+    "directory": {
+      "type": "string"
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["html", "markdown"]
+    },
+    "markdown-shortcuts": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "max-word-count": {
+      "type": "string",
+      "format": "integer"
+    },
+    "min-word-count": {
+      "type": "string",
+      "format": "integer"
+    },
+    "placeholder": {
+      "type": "string"
+    },
+    "quill-theme": {
+      "type": "string"
+    },
+    "source-file-name": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

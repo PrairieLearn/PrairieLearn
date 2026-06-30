@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "ace-mode": {
+      "type": "string"
+    },
+    "ace-theme": {
+      "type": "string"
+    },
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "auto-resize": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "directory": {
+      "type": "string"
+    },
+    "file-name": {
+      "type": "string"
+    },
+    "focus": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "font-size": {
+      "type": "string"
+    },
+    "max-lines": {
+      "type": "string",
+      "format": "integer"
+    },
+    "min-lines": {
+      "type": "string",
+      "format": "integer"
+    },
+    "normalize-to-ascii": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "preview": {
+      "type": "string"
+    },
+    "source-file-name": {
+      "type": "string"
+    }
+  },
+  "required": ["file-name"],
+  "additionalProperties": false
+}

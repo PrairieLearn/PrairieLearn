@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "question": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "submission": {
+      "type": "string",
+      "format": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

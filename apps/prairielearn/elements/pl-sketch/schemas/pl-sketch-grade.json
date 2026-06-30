@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-undefined": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "count": {
+      "type": "string",
+      "format": "integer"
+    },
+    "debug": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "endpoint": {
+      "type": "string",
+      "enum": ["start", "end", "either"]
+    },
+    "feedback": {
+      "type": "string"
+    },
+    "function": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["exact", "at-least", "at-most"]
+    },
+    "stage": {
+      "type": "string",
+      "format": "integer"
+    },
+    "tolerance": {
+      "type": "string",
+      "format": "integer"
+    },
+    "tool-id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "count",
+        "match",
+        "defined-in",
+        "undefined-in",
+        "monot-increasing",
+        "monot-decreasing",
+        "concave-up",
+        "concave-down",
+        "match-function",
+        "less-than",
+        "greater-than"
+      ]
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    },
+    "x": {
+      "type": "string",
+      "format": "number"
+    },
+    "x-range": {
+      "type": "string"
+    },
+    "xy-flip": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "y": {
+      "type": "string",
+      "format": "number"
+    },
+    "y-range": {
+      "type": "string"
+    }
+  },
+  "required": ["tool-id", "type"],
+  "additionalProperties": false
+}

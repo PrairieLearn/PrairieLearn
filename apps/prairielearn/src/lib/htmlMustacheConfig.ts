@@ -1,53 +1,6 @@
-import type { Config, CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
+import type { Config } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
 import { elementCustomTags } from './element-schemas/index.js';
-
-const drawingObjectTags: CustomTag[] = [
-  { name: 'pl-3pointrod' },
-  { name: 'pl-4pointrod' },
-  { name: 'pl-arc' },
-  { name: 'pl-arc-dimensions' },
-  { name: 'pl-arc-vector' },
-  { name: 'pl-axes' },
-  { name: 'pl-battery' },
-  { name: 'pl-capacitor' },
-  { name: 'pl-circle' },
-  { name: 'pl-clamped' },
-  { name: 'pl-coil' },
-  { name: 'pl-collar-rod' },
-  { name: 'pl-controlled-curved-line' },
-  { name: 'pl-controlled-line' },
-  { name: 'pl-coordinates' },
-  { name: 'pl-dimensions' },
-  { name: 'pl-distributed-load' },
-  { name: 'pl-double-headed-vector' },
-  { name: 'pl-fixed-pin' },
-  { name: 'pl-graph-line' },
-  { name: 'pl-inductor' },
-  { name: 'pl-line' },
-  { name: 'pl-paired-vector' },
-  { name: 'pl-point' },
-  { name: 'pl-polygon' },
-  { name: 'pl-pulley' },
-  { name: 'pl-rectangle' },
-  { name: 'pl-resistor' },
-  { name: 'pl-rod' },
-  { name: 'pl-roller' },
-  { name: 'pl-spring' },
-  { name: 'pl-switch' },
-  { name: 'pl-text' },
-  { name: 'pl-triangle' },
-  { name: 'pl-vector' },
-];
-
-const drawingObjectContainerTags: CustomTag[] = [
-  {
-    name: 'pl-drawing-group',
-    children: [{ name: 'pl-drawing-group' }, ...drawingObjectTags],
-    allowAdditionalChildren: true,
-  },
-  ...drawingObjectTags,
-];
 
 const bootstrapLegacyDataAttributes = [
   'data-animation',
@@ -312,54 +265,33 @@ export const htmlMustacheConfig: Config = {
     { name: 'pl-excalidraw' },
     { name: 'pl-file-upload' },
     { name: 'pl-image-capture' },
-    {
-      name: 'pl-matching',
-      children: [{ name: 'pl-statement' }, { name: 'pl-option' }],
-    },
+    { name: 'pl-matching' },
     { name: 'pl-matrix-component-input' },
     { name: 'pl-matrix-input' },
     { name: 'pl-units-input' },
     // Decorative
     { name: 'pl-card' },
     { name: 'pl-dataframe' },
-    {
-      name: 'pl-external-grader-variables',
-      children: [{ name: 'pl-variable' }],
-    },
+    { name: 'pl-external-grader-variables' },
     { name: 'pl-figure' },
     { name: 'pl-file-download' },
     { name: 'pl-file-preview' },
     { name: 'pl-matrix-latex' },
     { name: 'pl-python-variable' },
-    {
-      name: 'pl-template',
-      children: [{ name: 'pl-variable' }],
-    },
-    {
-      name: 'pl-variable-output',
-      children: [{ name: 'pl-variable' }, { name: 'variable' }],
-    },
+    { name: 'pl-template' },
+    { name: 'pl-variable-output' },
     { name: 'pl-xss-safe' },
-    {
-      name: 'pl-overlay',
-      children: [{ name: 'pl-background' }, { name: 'pl-location' }],
-    },
+    { name: 'pl-overlay' },
     // Conditional elements
     { name: 'pl-external-grader-results' },
-    {
-      name: 'pl-hidden-hints',
-      children: [{ name: 'pl-hint' }],
-    },
+    { name: 'pl-hidden-hints' },
     { name: 'pl-hide-in-manual-grading' },
     { name: 'pl-manual-grading-only' },
     { name: 'pl-hide-in-answer-panel' },
     { name: 'pl-workspace' },
     { name: 'pl-hide-in-panel' },
     // Deprecated elements
-    {
-      name: 'pl-dropdown',
-      children: [{ name: 'pl-answer' }],
-    },
+    { name: 'pl-dropdown' },
     { name: 'pl-prairiedraw-figure' },
     { name: 'pl-variable-score' },
     {
@@ -368,41 +300,5 @@ export const htmlMustacheConfig: Config = {
     },
     // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
     { name: 'pl-github-link' },
-    // pl-drawing
-    {
-      name: 'pl-drawing',
-      children: [
-        {
-          name: 'pl-drawing-answer',
-          children: drawingObjectContainerTags,
-          allowAdditionalChildren: true,
-        },
-        {
-          name: 'pl-drawing-initial',
-          children: drawingObjectContainerTags,
-          allowAdditionalChildren: true,
-        },
-        {
-          name: 'pl-controls',
-          children: [
-            { name: 'pl-drawing-button' },
-            {
-              name: 'pl-controls-group',
-              children: [{ name: 'pl-drawing-button' }],
-            },
-          ],
-        },
-      ],
-    },
-    // pl-sketch
-    {
-      name: 'pl-sketch',
-      children: [
-        { name: 'pl-sketch-grade' },
-        { name: 'pl-sketch-initial' },
-        { name: 'pl-sketch-solution' },
-        { name: 'pl-sketch-tool' },
-      ],
-    },
   ],
 };

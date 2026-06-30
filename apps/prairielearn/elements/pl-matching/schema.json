@@ -1,0 +1,14 @@
+{
+  "tag": "pl-matching",
+  "schema": "./schemas/pl-matching.json",
+  "children": [
+    {
+      "tag": "pl-option",
+      "schema": "./schemas/pl-option.json"
+    },
+    {
+      "tag": "pl-statement",
+      "schema": "./schemas/pl-statement.json"
+    }
+  ]
+}

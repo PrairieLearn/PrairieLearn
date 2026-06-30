@@ -1,0 +1,10 @@
+{
+  "tag": "pl-external-grader-variables",
+  "schema": "./schemas/pl-external-grader-variables.json",
+  "children": [
+    {
+      "tag": "pl-variable",
+      "schema": "./schemas/pl-variable.json"
+    }
+  ]
+}

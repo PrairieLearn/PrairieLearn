@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "answers-name": {
+      "type": "string"
+    },
+    "directory": {
+      "type": "string",
+      "enum": ["serverFilesCourse", "clientFilesCourse", "clientFilesQuestion", "."]
+    },
+    "gradable": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "height": {
+      "type": "string"
+    },
+    "source-file-name": {
+      "type": "string"
+    },
+    "width": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
