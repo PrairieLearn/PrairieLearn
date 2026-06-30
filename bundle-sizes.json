@@ -265,9 +265,9 @@
     "brotli": 312017
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminSharing.ts": {
-    "raw": 903299,
-    "gzip": 278413,
-    "brotli": 241023
+    "raw": 903247,
+    "gzip": 278393,
+    "brotli": 241006
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
     "raw": 1318345,
@@ -290,9 +290,9 @@
     "brotli": 352365
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1514862,
-    "gzip": 423938,
-    "brotli": 346246
+    "raw": 1516469,
+    "gzip": 424346,
+    "brotli": 346623
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
     "raw": 259014,
