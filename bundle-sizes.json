@@ -55,9 +55,9 @@
     "brotli": 535
   },
   "scripts/instructorAssessmentManualGradingInstanceQuestion.js": {
-    "raw": 11130,
-    "gzip": 3842,
-    "brotli": 3365
+    "raw": 11106,
+    "gzip": 3825,
+    "brotli": 3348
   },
   "scripts/instructorAssessmentQuestionsClient.ts": {
     "raw": 53471,
