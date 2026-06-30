@@ -260,9 +260,12 @@ router.post(
         Lti13CombinedInstanceSchema,
       );
 
-      // An empty selection means a plain roster with no custom claims.
-      const rlid = String(req.body.rlid ?? '').trim() || null;
-
+      // Intentionally not associated with a course or course instance. The roster
+      // dump contains every member's sub/email/UIN, so it must stay viewable only
+      // via the administrator job sequence page (gated by authzIsAdministrator).
+      // Setting courseId/courseInstanceId would both expose it to that course's
+      // student data viewers and hide its output from the admin view (which fetches
+      // jobs scoped to course_id IS NULL).
       const serverJob = await createServerJob({
         type: 'lti13',
         description: 'Inspect LTI 1.3 NRPS roster',
@@ -271,7 +274,12 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        await inspectRoster({ instance, rlid, job });
+        await inspectRoster({
+          instance,
+          // An empty selection means a plain roster with no custom claims.
+          rlid: String(req.body.rlid ?? '').trim() || null,
+          job,
+        });
       });
 
       return res.redirect(`/pl/administrator/jobSequence/${serverJob.jobSequenceId}`);
