@@ -145,7 +145,9 @@ export function AdministratorInstitutionGeneral({
           />
           <small id="uid_regexp_help" class="form-text text-muted">
             Should match the non-username part of user UIDs, e.g. <code>@example\\.com$</code>. This
-            should be set for institution-based access restrictions to work correctly.
+            must be a valid regular expression that starts with <code>@</code> and ends with
+            <code>$</code>. Periods must be escaped as <code>\\.</code>. This should be set for
+            institution-based access restrictions to work correctly.
           </small>
         </div>
         <h2 class="h4">Limits</h2>
