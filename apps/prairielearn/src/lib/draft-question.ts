@@ -1,5 +1,5 @@
-import type { Course, Question } from './db-types.ts';
-import { idsEqual } from './id.ts';
+import type { Course, Question } from './db-types.js';
+import { idsEqual } from './id.js';
 
 export const DRAFT_QID_PREFIX = '__drafts__/';
 

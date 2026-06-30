@@ -1,7 +1,7 @@
 import * as z from 'zod/v4';
 
-import { booleanFormat, integerFormat } from '../helpers.ts';
-import type { ElementSchemaModule } from '../types.ts';
+import { booleanFormat, integerFormat } from '../helpers.js';
+import type { ElementSchemaModule } from '../types.js';
 
 const plOrderBlocksAnswerAttributesSchema = z
   .object({

@@ -1,7 +1,7 @@
 import type { CustomTag } from '@prairielearn/tree-sitter-htmlmustache/linter';
 
-import { elementModules } from './registry.generated.ts';
-import type { ElementChildSchema, ElementSchemaModule } from './types.ts';
+import { elementModules } from './registry.generated.js';
+import type { ElementChildSchema, ElementSchemaModule } from './types.js';
 
 type ChildTag = NonNullable<CustomTag['children']>[number];
 

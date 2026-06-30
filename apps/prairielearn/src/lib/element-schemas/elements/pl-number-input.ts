@@ -1,7 +1,7 @@
 import * as z from 'zod/v4';
 
-import { booleanFormat, integerFormat, numberFormat } from '../helpers.ts';
-import type { ElementSchemaModule } from '../types.ts';
+import { booleanFormat, integerFormat, numberFormat } from '../helpers.js';
+import type { ElementSchemaModule } from '../types.js';
 
 const plNumberInputAttributesSchema = z
   .object({

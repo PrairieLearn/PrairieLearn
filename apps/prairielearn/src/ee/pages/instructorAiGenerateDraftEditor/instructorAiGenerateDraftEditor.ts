@@ -22,7 +22,7 @@ import {
   type Question,
   type User,
 } from '../../../lib/db-types.js';
-import { classifyDraftQuestion } from '../../../lib/draft-question.ts';
+import { classifyDraftQuestion } from '../../../lib/draft-question.js';
 import { features } from '../../../lib/features/index.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';

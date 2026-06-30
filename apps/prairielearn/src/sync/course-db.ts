@@ -15,7 +15,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
-import { isDraftQid } from '../lib/draft-question.ts';
+import { isDraftQid } from '../lib/draft-question.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
