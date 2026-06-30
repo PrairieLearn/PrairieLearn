@@ -82,7 +82,7 @@ There are multiple ways to allow students to submit files for external grading:
 - The [`pl-order-blocks` element](./elements/pl-order-blocks.md), using the `grading-method="external"` attribute, allows students to submit code by arranging pre-defined blocks of code in the correct order.
 - The [`pl-rich-text-editor` element](./elements/pl-rich-text-editor.md) allows students to create HTML documents.
 - The [`pl-image-capture` element](./elements/pl-image-capture.md) allows students to submit images taken with their device's camera.
-- For questions using [workspaces](./workspaces/index.md), [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
+- For questions using [workspaces](./workspaces/index.md), [the `gradedFiles` option](workspaces/index.md#infojson) identifies workspace files that will be made available to the external grader.
 
 For examples of questions that allow student submissions, you can look at [`PrairieLearn/exampleCourse/questions/demo/autograder/codeEditor`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor) and [`PrairieLearn/exampleCourse/questions/demo/autograder/codeUpload`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload).
 
