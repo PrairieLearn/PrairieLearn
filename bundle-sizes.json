@@ -86,7 +86,7 @@
   },
   "scripts/instructorFileEditorHtmlMustacheLinterClient.ts": {
     "raw": 384279,
-    "gzip": 109684,
+    "gzip": 109691,
     "brotli": 94858
   },
   "scripts/instructorGradingJobClient.ts": {
@@ -402,7 +402,7 @@
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
     "raw": 2724400,
     "gzip": 781970,
-    "brotli": 666489
+    "brotli": 666404
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
     "raw": 1580706,
