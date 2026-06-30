@@ -30,6 +30,8 @@ INSERT INTO
     context_label,
     context_title,
     course_instance_id,
+    lineitems_url,
+    context_memberships_url,
     resource_link_id
   )
 VALUES
@@ -40,6 +42,8 @@ VALUES
     $context_label,
     $context_title,
     $course_instance_id,
+    $lineitems_url,
+    $context_memberships_url,
     $resource_link_id
   );
 

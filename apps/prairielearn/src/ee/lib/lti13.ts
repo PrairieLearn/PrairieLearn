@@ -837,7 +837,7 @@ class Lti13ContextMembership {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
       },
     });
 
@@ -1111,7 +1111,7 @@ export async function inspectRoster({
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+      Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
     },
   });
 
@@ -1124,12 +1124,13 @@ export async function inspectRoster({
 
   job.info(`\nFound ${members.length} member${members.length === 1 ? '' : 's'}.\n`);
 
-  const counts = { by_sub: 0, by_uin: 0, unmatched: 0 };
+  const counts = { by_sub: 0, by_uin: 0, unmatched: 0, unparseable: 0 };
 
   for (const { raw, parsed } of members) {
     job.info(JSON.stringify(raw, null, 2));
 
     if (!parsed.success) {
+      counts.unparseable++;
       job.warn('  Could not parse member; skipping match annotation.');
       continue;
     }
@@ -1166,6 +1167,7 @@ export async function inspectRoster({
   job.info(`${counts.by_sub} matched by LTI sub.`);
   job.info(`${counts.by_uin} matched by UIN.`);
   job.info(`${counts.unmatched} unmatched.`);
+  job.info(`${counts.unparseable} could not be parsed.`);
 
   // Whether the platform returned any per-member custom data (`message`). If a
   // resource link was requested but none came back, the rlid is likely stale.

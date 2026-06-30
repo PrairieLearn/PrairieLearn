@@ -232,6 +232,8 @@ router.post(
         context_label: ltiClaim.context?.label,
         context_title: ltiClaim.context?.title,
         course_instance_id: course_instance.id,
+        lineitems_url: ltiClaim.lineitems,
+        context_memberships_url: ltiClaim.context_memberships_url,
         resource_link_id: ltiClaim.resource_link_id,
       });
 
