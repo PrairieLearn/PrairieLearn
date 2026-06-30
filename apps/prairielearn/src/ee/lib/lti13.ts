@@ -791,10 +791,10 @@ const ContextMembershipContainerSchema = z.object({
 
 /**
  * Appends a resource link id to a NRPS `context_memberships_url` so that the
- * platform resolves per-member `message[].custom` claims for that resource link.
- * Returns the URL unchanged when no rlid is provided.
+ * platform resolves per-member `message[]` claims (including custom claims) for
+ * that resource link. Returns the URL unchanged when no rlid is provided.
  *
- * https://www.imsglobal.org/spec/lti-nrps/v2p0/#access-to-extended-personal-data-via-message-property
+ * https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
  */
 function appendRlidToMembershipsUrl(context_memberships_url: string, rlid: string | null): string {
   if (!rlid) return context_memberships_url;
@@ -1044,9 +1044,12 @@ type RosterMember = z.infer<typeof RosterMemberSchema>;
 function resolveRosterMemberUin(member: RosterMember, uin_attribute: string | null): string | null {
   if (!uin_attribute || !member.message) return null;
   for (const message of member.message) {
-    // es-toolkit's `get` expands a path representation like 'a[0].b.c'. The same
-    // `uin_attribute` path used at launch applies here because the message mirrors
-    // the launch claim's custom block.
+    // Each `message[]` entry holds its own `…/claim/custom` block at the same
+    // top-level position the launch id_token holds it, so a `uin_attribute` that
+    // targets the custom claim resolves when applied to an entry. es-toolkit's
+    // `get` expands a path like 'a[0].b.c'. Note this only works for custom-claim
+    // paths: attributes sourced from other launch claims (e.g. the `lis` claim,
+    // which NRPS flattens directly onto the member) won't resolve from a message.
     const value = get(message, uin_attribute);
     if (typeof value === 'string' && value.length > 0) {
       return value;
@@ -1100,29 +1103,25 @@ export async function inspectRoster({
     },
   });
 
-  const rawMembers = fetchArray.flatMap((container) => {
-    const parsed = z.object({ members: z.array(z.unknown()).optional() }).safeParse(container);
-    return parsed.success ? (parsed.data.members ?? []) : [];
-  });
+  const members = fetchArray
+    .flatMap((container) => {
+      const parsed = z.object({ members: z.array(z.unknown()).optional() }).safeParse(container);
+      return parsed.success ? (parsed.data.members ?? []) : [];
+    })
+    .map((raw) => ({ raw, parsed: RosterMemberSchema.safeParse(raw) }));
 
-  job.info(`\nFound ${rawMembers.length} member${rawMembers.length === 1 ? '' : 's'}.\n`);
+  job.info(`\nFound ${members.length} member${members.length === 1 ? '' : 's'}.\n`);
 
   const counts = { by_sub: 0, by_uin: 0, unmatched: 0 };
-  let anyMessage = false;
 
-  for (const rawMember of rawMembers) {
-    job.info(JSON.stringify(rawMember, null, 2));
+  for (const { raw, parsed } of members) {
+    job.info(JSON.stringify(raw, null, 2));
 
-    const parsed = RosterMemberSchema.safeParse(rawMember);
     if (!parsed.success) {
       job.warn('  Could not parse member; skipping match annotation.');
       continue;
     }
     const member = parsed.data;
-
-    if (member.message && member.message.length > 0) {
-      anyMessage = true;
-    }
 
     const userBySub = await selectOptionalUserByLti13Sub({
       lti13_instance_id: lti13_instance.id,
@@ -1155,6 +1154,12 @@ export async function inspectRoster({
   job.info(`${counts.by_sub} matched by LTI sub.`);
   job.info(`${counts.by_uin} matched by UIN.`);
   job.info(`${counts.unmatched} unmatched.`);
+
+  // Whether the platform returned any per-member custom data (`message`). If a
+  // resource link was requested but none came back, the rlid is likely stale.
+  const anyMessage = members.some(
+    ({ parsed }) => parsed.success && (parsed.data.message?.length ?? 0) > 0,
+  );
 
   if (rlid && !anyMessage) {
     job.warn(
