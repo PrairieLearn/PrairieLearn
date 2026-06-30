@@ -29,6 +29,8 @@ import {
 } from '../../lib/db-types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
+import { selectOptionalUserByUin } from '../../models/user.js';
+import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -280,6 +282,22 @@ export class Lti13Claim {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
       ?.context_memberships_url;
+  }
+
+  /**
+   * The resource link id for the launch. Only present on resource link requests
+   * (e.g. the course-navigation launch), not deep linking requests. Returns null
+   * when absent.
+   */
+  get resource_link_id(): string | null {
+    this.assertValid();
+    if (
+      this.claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] !==
+      'LtiResourceLinkRequest'
+    ) {
+      return null;
+    }
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id;
   }
 
   // Functions
@@ -771,6 +789,20 @@ const ContextMembershipContainerSchema = z.object({
   members: ContextMembershipSchema.array(),
 });
 
+/**
+ * Appends a resource link id to a NRPS `context_memberships_url` so that the
+ * platform resolves per-member `message[]` claims (including custom claims) for
+ * that resource link. Returns the URL unchanged when no rlid is provided.
+ *
+ * https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
+ */
+function appendRlidToMembershipsUrl(context_memberships_url: string, rlid: string | null): string {
+  if (!rlid) return context_memberships_url;
+  const url = new URL(context_memberships_url);
+  url.searchParams.set('rlid', rlid);
+  return url.toString();
+}
+
 class Lti13ContextMembership {
   #membershipsByEmail: Record<string, ContextMembership[]> = {};
   #membershipsBySub: Record<string, ContextMembership> = {};
@@ -805,7 +837,7 @@ class Lti13ContextMembership {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
       },
     });
 
@@ -991,4 +1023,164 @@ export async function updateLti13Scores({
     );
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
+}
+
+// Loose schema for the inspector: we want to dump members verbatim, so we only
+// parse the few fields needed for match annotation and keep everything else.
+const RosterMemberSchema = z
+  .object({
+    user_id: z.string(),
+    // NRPS flattens the lis sourcedid onto the member rather than nesting it under
+    // the lis claim the way a launch id_token does.
+    lis_person_sourcedid: z.string().optional(),
+    // Present only when the roster is fetched with a resource link id (`?rlid=`).
+    message: z.array(z.record(z.string(), z.unknown())).optional(),
+  })
+  .loose();
+type RosterMember = z.infer<typeof RosterMemberSchema>;
+
+/**
+ * Resolves the UIN for a roster member using the instance's configured
+ * `uin_attribute` path. That path is written against the launch id_token, but NRPS
+ * represents a member differently: standard claims and the lis sourcedid are
+ * flattened onto the member, while per-resource-link claims (e.g. custom) live in
+ * `message[]`. We rebuild a launch-claim-shaped object so the same path resolves
+ * for the configurations seen in practice — both `…/claim/custom` and
+ * `…/claim/lis`. Returns null when the attribute isn't configured or nothing
+ * resolves to a non-empty value.
+ */
+function resolveRosterMemberUin(member: RosterMember, uin_attribute: string | null): string | null {
+  if (!uin_attribute) return null;
+
+  // `message[]` is typed as an array (each entry tagged with a message_type) and is
+  // only present with `?rlid=`. Canvas only ever emits a single LtiResourceLinkRequest
+  // entry, but merge any entries so a custom claim resolves regardless of position.
+  // The lis sourcedid is the one claim NRPS flattens onto the member, so nest it back
+  // under its claim. es-toolkit's `get` expands a path like 'a[0].b.c'.
+  const claims = {
+    ...member,
+    ...Object.assign({}, ...(member.message ?? [])),
+    'https://purl.imsglobal.org/spec/lti/claim/lis':
+      member.lis_person_sourcedid != null
+        ? { person_sourcedid: member.lis_person_sourcedid }
+        : undefined,
+  };
+
+  const value = get(claims, uin_attribute);
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Read-only NRPS roster inspector. Fetches the membership roster (optionally with
+ * a resource link id so the platform resolves per-member custom claims), dumps the
+ * raw per-member payloads, and annotates each member with how it could be matched
+ * to a PrairieLearn user. Does not create or modify any enrollments or users.
+ */
+export async function inspectRoster({
+  instance,
+  rlid,
+  job,
+}: {
+  instance: Lti13CombinedInstance;
+  rlid: string | null;
+  job: ServerJob;
+}) {
+  const { lti13_instance, lti13_course_instance } = instance;
+
+  if (lti13_course_instance.context_memberships_url === null) {
+    throw new HttpStatusError(
+      403,
+      'LTI 1.3 course instance context_memberships_url not configured',
+    );
+  }
+
+  const url = appendRlidToMembershipsUrl(lti13_course_instance.context_memberships_url, rlid);
+
+  job.info(
+    `Fetching roster for ${lti13_instance.name}: ${lti13_course_instance.context_label ?? '(no context label)'}`,
+  );
+  job.info(`NRPS URL: ${url}`);
+  if (rlid) {
+    job.info(`Requesting per-member custom data for resource link id: ${rlid}`);
+  } else {
+    job.info('No resource link id selected; fetching a plain roster (no custom claims).');
+  }
+
+  const token = await getAccessToken(lti13_instance.id);
+  const fetchArray = await fetchRetryPaginated(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+    },
+  });
+
+  const members = fetchArray
+    .flatMap((container) => {
+      const parsed = z.object({ members: z.array(z.unknown()).optional() }).safeParse(container);
+      return parsed.success ? (parsed.data.members ?? []) : [];
+    })
+    .map((raw) => ({ raw, parsed: RosterMemberSchema.safeParse(raw) }));
+
+  job.info(`\nFound ${members.length} member${members.length === 1 ? '' : 's'}.\n`);
+
+  const counts = { by_sub: 0, by_uin: 0, unmatched: 0, unparseable: 0 };
+
+  for (const { raw, parsed } of members) {
+    job.info(JSON.stringify(raw, null, 2));
+
+    if (!parsed.success) {
+      counts.unparseable++;
+      job.warn('  Could not parse member; skipping match annotation.');
+      continue;
+    }
+    const member = parsed.data;
+
+    const userBySub = await selectOptionalUserByLti13Sub({
+      lti13_instance_id: lti13_instance.id,
+      sub: member.user_id,
+    });
+
+    const uin = resolveRosterMemberUin(member, lti13_instance.uin_attribute);
+    const userByUin =
+      !userBySub && uin
+        ? await selectOptionalUserByUin({ uin, institution_id: lti13_instance.institution_id })
+        : null;
+
+    if (userBySub) {
+      counts.by_sub++;
+      job.info(
+        `  Matched by sub to PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}).`,
+      );
+    } else if (userByUin) {
+      counts.by_uin++;
+      job.info(`  Matched by UIN ${uin} to PrairieLearn user ${userByUin.uid}.`);
+    } else {
+      counts.unmatched++;
+      job.info(
+        `  No PrairieLearn user matched${uin ? ` (UIN ${uin} resolved but no user found)` : ''}.`,
+      );
+    }
+  }
+
+  job.info('\nDone.\n\nSummary:');
+  job.info(`${counts.by_sub} matched by LTI sub.`);
+  job.info(`${counts.by_uin} matched by UIN.`);
+  job.info(`${counts.unmatched} unmatched.`);
+  job.info(`${counts.unparseable} could not be parsed.`);
+
+  // Whether the platform returned any per-member custom data (`message`). If a
+  // resource link was requested but none came back, the rlid is likely stale.
+  const anyMessage = members.some(
+    ({ parsed }) => parsed.success && (parsed.data.message?.length ?? 0) > 0,
+  );
+
+  if (rlid && !anyMessage) {
+    job.warn(
+      '\nThe platform returned no per-member custom data (`message`). The selected resource link id may be stale.',
+    );
+    job.warn(
+      'Have an instructor re-launch from the course navigation link to refresh custom data.',
+    );
+  }
 }
