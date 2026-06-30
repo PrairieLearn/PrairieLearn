@@ -229,7 +229,6 @@ export function AddInstitutionModal({
               aria-describedby="uid_regexp_help"
               aria-invalid={errors.uid_regexp ? true : undefined}
               aria-errormessage={errors.uid_regexp ? 'uid_regexp-error' : undefined}
-              defaultValue=""
               {...register('uid_regexp', {
                 validate: (value) => {
                   const result = UidRegexpSchema.safeParse(value);
