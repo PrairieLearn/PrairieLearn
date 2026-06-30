@@ -146,6 +146,7 @@ router.get(
           context_title: ltiClaim.context?.title,
           lineitems_url: ltiClaim.lineitems,
           context_memberships_url: ltiClaim.context_memberships_url,
+          resource_link_id: ltiClaim.resource_link_id,
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?
@@ -224,13 +225,14 @@ router.post(
 
     const ltiClaim = new Lti13Claim(req);
     if (ltiClaim.isRoleInstructor()) {
-      await execute(sql.insert_lci, {
+      await execute(sql.insert_lti13_course_instance, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
         context_id: ltiClaim.context?.id,
         context_label: ltiClaim.context?.label,
         context_title: ltiClaim.context?.title,
         course_instance_id: course_instance.id,
+        resource_link_id: ltiClaim.resource_link_id,
       });
 
       res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);

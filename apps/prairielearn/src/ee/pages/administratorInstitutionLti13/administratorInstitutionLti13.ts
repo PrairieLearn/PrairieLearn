@@ -9,6 +9,7 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalScalar,
+  queryRow,
   queryRows,
   queryScalar,
 } from '@prairielearn/postgres';
@@ -16,10 +17,15 @@ import {
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
+import { Lti13CombinedInstanceSchema, inspectRoster } from '../../lib/lti13.js';
 
-import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
+import {
+  AdministratorInstitutionLti13,
+  LinkedCourseInstanceSchema,
+} from './administratorInstitutionLti13.html.js';
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -92,11 +98,20 @@ router.get(
       }
     }
 
+    const linkedCourseInstances = paramInstance
+      ? await queryRows(
+          sql.select_linked_course_instances,
+          { lti13_instance_id: paramInstance.id },
+          LinkedCourseInstanceSchema,
+        )
+      : [];
+
     res.send(
       AdministratorInstitutionLti13({
         institution,
         lti13Instances,
         instance: paramInstance ?? null,
+        linkedCourseInstances,
         resLocals: res.locals,
         platform_defaults,
         canonicalHost: getCanonicalHost(req),
@@ -234,6 +249,32 @@ router.post(
       });
       flash('success', 'Instance deleted.');
       return res.redirect(`/pl/administrator/institution/${req.params.institution_id}/lti13`);
+    } else if (req.body.__action === 'inspect_roster') {
+      const instance = await queryRow(
+        sql.select_combined_lti13_instance,
+        {
+          institution_id: req.params.institution_id,
+          lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          lti13_course_instance_id: req.body.lti13_course_instance_id,
+        },
+        Lti13CombinedInstanceSchema,
+      );
+
+      // An empty selection means a plain roster with no custom claims.
+      const rlid = String(req.body.rlid ?? '').trim() || null;
+
+      const serverJob = await createServerJob({
+        type: 'lti13',
+        description: 'Inspect LTI 1.3 NRPS roster',
+        userId: res.locals.authn_user.id,
+        authnUserId: res.locals.authn_user.id,
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        await inspectRoster({ instance, rlid, job });
+      });
+
+      return res.redirect(`/pl/administrator/jobSequence/${serverJob.jobSequenceId}`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

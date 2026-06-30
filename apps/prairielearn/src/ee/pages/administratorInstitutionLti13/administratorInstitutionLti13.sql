@@ -9,6 +9,58 @@ WHERE
 ORDER BY
   id;
 
+-- BLOCK select_linked_course_instances
+SELECT
+  to_jsonb(lci) AS lti13_course_instance,
+  ci.short_name AS course_instance_short_name,
+  ci.long_name AS course_instance_long_name,
+  c.short_name AS course_short_name,
+  COALESCE(
+    (
+      SELECT
+        jsonb_agg(
+          jsonb_build_object(
+            'resource_link_id',
+            la.lineitem ->> 'resourceLinkId',
+            'label',
+            la.lineitem ->> 'label',
+            'assessment_title',
+            a.title
+          )
+          ORDER BY
+            la.id
+        )
+      FROM
+        lti13_assessments AS la
+        JOIN assessments AS a ON a.id = la.assessment_id
+      WHERE
+        la.lti13_course_instance_id = lci.id
+        AND la.lineitem ->> 'resourceLinkId' IS NOT NULL
+    ),
+    '[]'::jsonb
+  ) AS lineitem_resource_links
+FROM
+  lti13_course_instances AS lci
+  JOIN course_instances AS ci ON ci.id = lci.course_instance_id
+  JOIN courses AS c ON c.id = ci.course_id
+WHERE
+  lci.lti13_instance_id = $lti13_instance_id
+ORDER BY
+  lci.id;
+
+-- BLOCK select_combined_lti13_instance
+SELECT
+  to_jsonb(lci) AS lti13_course_instance,
+  to_jsonb(li) AS lti13_instance
+FROM
+  lti13_course_instances AS lci
+  JOIN lti13_instances AS li ON li.id = lci.lti13_instance_id
+WHERE
+  lci.id = $lti13_course_instance_id
+  AND li.id = $lti13_instance_id
+  AND li.institution_id = $institution_id
+  AND li.deleted_at IS NULL;
+
 -- BLOCK select_keystore
 SELECT
   keystore
