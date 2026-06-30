@@ -91,26 +91,32 @@ export function AdministratorInstitutionLti13({
         </div>
 
         <div class="col-9">
-          ${LTI13Instance(
+          ${LTI13Instance({
             instance,
             linkedCourseInstances,
             resLocals,
             platform_defaults,
             canonicalHost,
-          )}
+          })}
         </div>
       </div>
     `,
   });
 }
 
-function LTI13Instance(
-  instance: Lti13Instance | null,
-  linkedCourseInstances: LinkedCourseInstance[],
-  resLocals: ResLocalsForPage<'plain'>,
-  platform_defaults: LTI13InstancePlatforms,
-  canonicalHost: string,
-) {
+function LTI13Instance({
+  instance,
+  linkedCourseInstances,
+  resLocals,
+  platform_defaults,
+  canonicalHost,
+}: {
+  instance: Lti13Instance | null;
+  linkedCourseInstances: LinkedCourseInstance[];
+  resLocals: ResLocalsForPage<'plain'>;
+  platform_defaults: LTI13InstancePlatforms;
+  canonicalHost: string;
+}) {
   if (instance) {
     return html`
       <h3>${instance.name} (ID #${instance.id})</h3>
@@ -417,7 +423,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
-      ${RosterInspector(linkedCourseInstances, resLocals)}
+      ${RosterInspector({ linkedCourseInstances, resLocals })}
 
       <hr />
       <p>
@@ -444,10 +450,13 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
   }
 }
 
-function RosterInspector(
-  linkedCourseInstances: LinkedCourseInstance[],
-  resLocals: ResLocalsForPage<'plain'>,
-) {
+function RosterInspector({
+  linkedCourseInstances,
+  resLocals,
+}: {
+  linkedCourseInstances: LinkedCourseInstance[];
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
   return html`
     <h5>NRPS roster inspector</h5>
     <p class="text-muted">
@@ -458,11 +467,17 @@ function RosterInspector(
     </p>
     ${linkedCourseInstances.length === 0
       ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
-      : linkedCourseInstances.map((linked) => RosterInspectorForm(linked, resLocals))}
+      : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))}
   `;
 }
 
-function RosterInspectorForm(linked: LinkedCourseInstance, resLocals: ResLocalsForPage<'plain'>) {
+function RosterInspectorForm({
+  linked,
+  resLocals,
+}: {
+  linked: LinkedCourseInstance;
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
   const lci = linked.lti13_course_instance;
   const courseLabel =
     `${linked.course_short_name ?? ''} ${linked.course_instance_short_name ?? ''}`.trim() ||
