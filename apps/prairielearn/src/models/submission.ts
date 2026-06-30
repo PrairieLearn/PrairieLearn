@@ -1,5 +1,7 @@
-import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
+
+import { SubmissionSchema } from '../lib/db-types.js';
 
 import { lockVariant } from './variant.js';
 
@@ -18,4 +20,8 @@ export async function lockSubmission({ submission_id }: { submission_id: string 
     IdSchema,
   );
   await lockVariant({ variant_id });
+}
+
+export async function selectSubmissionFromId({ submission_id }: { submission_id: string }) {
+  return await queryRow(sql.select_submission, { submission_id }, SubmissionSchema);
 }

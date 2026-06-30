@@ -1,4 +1,6 @@
-import { Router } from 'express';
+import assert from 'node:assert';
+
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -7,51 +9,72 @@ import { UserSchema } from '../../lib/db-types.js';
 import { getDynamicFile } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
+import { selectSubmissionFromId } from '../../models/submission.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
+
+async function generatedFilesHandler(
+  req: Request,
+  res: Response,
+  options: { publicEndpoint: boolean },
+) {
+  if (options.publicEndpoint) {
+    res.locals.course = await selectCourseById(req.params.course_id);
+    res.locals.question = await selectQuestionById(req.params.question_id);
+    res.locals.user = UserSchema.parse(res.locals.authn_user);
+
+    if (
+      !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
+      res.locals.course.id !== res.locals.question.course_id
+    ) {
+      throw new HttpStatusError(404, 'Not Found');
+    }
+  }
+
+  let unsafe_variant_id = req.params.unsafe_variant_id;
+  const submission = req.params.unsafe_submission_id
+    ? await selectSubmissionFromId({ submission_id: req.params.unsafe_submission_id })
+    : null;
+  if (!unsafe_variant_id) {
+    assert(submission, 'Either the variant or the submission must be provided.');
+    // If variant_id is not provided, we can try to get it from the submission_id. No explicit error handling is needed here, as selectVariantFromSubmissionId will throw if the submission_id is invalid.
+    unsafe_variant_id = submission.variant_id;
+  }
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance?.id,
+    instance_question_id: res.locals.instance_question?.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+    publicQuestionPreview: options.publicEndpoint,
+  });
+
+  const filename = req.params[0];
+  const fileData = await getDynamicFile({
+    filename,
+    variant,
+    submission,
+    question: res.locals.question,
+    variant_course: res.locals.course,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
+  });
+  res.attachment(filename);
+  res.send(fileData);
+}
 
 export default function (options = { publicEndpoint: false }) {
   const router = Router({ mergeParams: true });
   router.get(
     '/variant/:unsafe_variant_id(\\d+)/*',
-    asyncHandler(async function (req, res) {
-      if (options.publicEndpoint) {
-        res.locals.course = await selectCourseById(req.params.course_id);
-        res.locals.question = await selectQuestionById(req.params.question_id);
-        res.locals.user = UserSchema.parse(res.locals.authn_user);
-
-        if (
-          !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
-          res.locals.course.id !== res.locals.question.course_id
-        ) {
-          throw new HttpStatusError(404, 'Not Found');
-        }
-      }
-
-      const variant = await selectAndAuthzVariant({
-        unsafe_variant_id: req.params.unsafe_variant_id,
-        variant_course: res.locals.course,
-        question_id: res.locals.question.id,
-        course_instance_id: res.locals.course_instance?.id,
-        instance_question_id: res.locals.instance_question?.id,
-        authz_data: res.locals.authz_data,
-        authn_user: res.locals.authn_user,
-        user: res.locals.user,
-        is_administrator: res.locals.is_administrator,
-        publicQuestionPreview: options.publicEndpoint,
-      });
-
-      const filename = req.params[0];
-      const fileData = await getDynamicFile(
-        filename,
-        variant,
-        res.locals.question,
-        res.locals.course,
-        res.locals.user.id,
-        res.locals.authn_user.id,
-      );
-      res.attachment(filename);
-      res.send(fileData);
-    }),
+    asyncHandler((req, res) => generatedFilesHandler(req, res, options)),
+  );
+  router.get(
+    '/submission/:unsafe_submission_id(\\d+)/*',
+    asyncHandler((req, res) => generatedFilesHandler(req, res, options)),
   );
   return router;
 }
