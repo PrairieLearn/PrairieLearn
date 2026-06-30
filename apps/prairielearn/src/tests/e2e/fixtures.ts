@@ -13,7 +13,7 @@ import { selectCourseInstanceByShortName } from '../../models/course-instances.j
 import { selectCourseByShortName } from '../../models/course.js';
 import { syncCourse } from '../helperCourse.js';
 
-import { setupWorkerServer } from './utils/server.ts';
+import { setupWorkerServer } from './utils/server.js';
 
 export { expect } from '@playwright/test';
 

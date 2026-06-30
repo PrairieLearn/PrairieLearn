@@ -215,7 +215,7 @@ async function format(filePath: string, contents: string): Promise<string> {
 
 function buildRegistry(elements: DiscoveredElement[]): string {
   const imports = elements
-    .map((e) => `import { element as ${toCamelCase(e.tag)} } from './elements/${e.tag}.ts';`)
+    .map((e) => `import { element as ${toCamelCase(e.tag)} } from './elements/${e.tag}.js';`)
     .join('\n');
   const names = elements.map((e) => toCamelCase(e.tag)).join(', ');
   return [
@@ -223,7 +223,7 @@ function buildRegistry(elements: DiscoveredElement[]): string {
     '// Run `make update-element-schemas` to regenerate after adding or removing an',
     '// element schema module under `./elements`.',
     imports,
-    "import type { ElementSchemaModule } from './types.ts';",
+    "import type { ElementSchemaModule } from './types.js';",
     '',
     `export const elementModules: ElementSchemaModule[] = [${names}];`,
     '',

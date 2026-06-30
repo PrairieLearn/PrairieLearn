@@ -86,7 +86,7 @@ def is_integer_value(value: str) -> bool:
 
     This is the authoritative `integer` format check (it matches how
     `get_integer_attrib` parses values at runtime). The linter-side regex in
-    `element-schemas/htmlmustache-plugin-utils.ts` is intentionally stricter:
+    `element-schemas/htmlmustache-plugin.ts` is intentionally stricter:
     `int()` also accepts forms like ``1_000``, ``+5``, and surrounding
     whitespace that the linter flags. Keep the two notions aligned when changing
     either side.

@@ -22,7 +22,6 @@
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "skipLibCheck": true
   },

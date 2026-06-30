@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { isDraftQid } from '../../lib/draft-question.ts';
+import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';

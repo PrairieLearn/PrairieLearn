@@ -1,7 +1,7 @@
 import * as z from 'zod/v4';
 
-import { booleanFormat, integerFormat } from '../helpers.ts';
-import type { ElementSchemaModule } from '../types.ts';
+import { booleanFormat, integerFormat } from '../helpers.js';
+import type { ElementSchemaModule } from '../types.js';
 
 const additionalSimplificationsPattern =
   /^\s*(expand|powsimp|trigsimp|expand_log)(\s*,\s*(expand|powsimp|trigsimp|expand_log))*\s*$/;

@@ -4,7 +4,7 @@ import { JobSequenceResultsHtml } from '../../components/JobSequenceResults.html
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import type { EditOutcome } from '../../lib/editors.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.ts';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({

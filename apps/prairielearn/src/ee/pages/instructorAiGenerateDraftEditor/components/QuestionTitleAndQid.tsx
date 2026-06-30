@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
-import { DRAFT_QID_PREFIX, isDraftQid } from '../../../../lib/draft-question.ts';
+import { DRAFT_QID_PREFIX, isDraftQid } from '../../../../lib/draft-question.js';
 import { validateShortName } from '../../../../lib/short-name.js';
 
 async function renameDraftQuestion({
