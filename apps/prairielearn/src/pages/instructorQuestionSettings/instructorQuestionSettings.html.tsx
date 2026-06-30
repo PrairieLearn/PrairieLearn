@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useMemo, useRef } from 'react';
 import { Form } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { useController, useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
@@ -81,6 +81,98 @@ function validateJsonObject(value: string): string | true {
   }
 }
 
+interface QuestionSharingConstraints {
+  used_in_other_course: boolean;
+  used_in_same_course_public_assessment: boolean;
+  locked_sharing_set_names: string[];
+}
+
+type SharingMessage =
+  | 'used-in-other-course'
+  | 'public-assessment-share-publicly'
+  | 'public-assessment-share-source-publicly';
+
+function getSharingControlState({
+  canEdit,
+  constraints,
+  persistedSharePublicly,
+  sharePublicly,
+  shareSourcePublicly,
+}: {
+  canEdit: boolean;
+  constraints: QuestionSharingConstraints;
+  persistedSharePublicly: boolean;
+  sharePublicly: boolean;
+  shareSourcePublicly: boolean;
+}): {
+  sharePubliclyDisabled: boolean;
+  shareSourcePubliclyDisabled: boolean;
+  sharePubliclyMessage: SharingMessage | null;
+  shareSourcePubliclyMessage: SharingMessage | null;
+} {
+  const sharePubliclyLockedByOtherCourse =
+    persistedSharePublicly && constraints.used_in_other_course;
+  const canUncheckSharePublicly =
+    !sharePubliclyLockedByOtherCourse &&
+    (!constraints.used_in_same_course_public_assessment || shareSourcePublicly);
+  const canUncheckShareSourcePublicly =
+    !constraints.used_in_same_course_public_assessment || sharePublicly;
+
+  return {
+    sharePubliclyDisabled: !canEdit || (sharePublicly && !canUncheckSharePublicly),
+    shareSourcePubliclyDisabled:
+      !canEdit || (shareSourcePublicly && !canUncheckShareSourcePublicly),
+    sharePubliclyMessage:
+      sharePublicly && sharePubliclyLockedByOtherCourse
+        ? 'used-in-other-course'
+        : sharePublicly && constraints.used_in_same_course_public_assessment && !shareSourcePublicly
+          ? 'public-assessment-share-publicly'
+          : null,
+    shareSourcePubliclyMessage:
+      shareSourcePublicly && constraints.used_in_same_course_public_assessment && !sharePublicly
+        ? 'public-assessment-share-source-publicly'
+        : null,
+  };
+}
+
+function SharingMessageText({ message }: { message: SharingMessage }) {
+  if (message === 'used-in-other-course') {
+    return (
+      <> This question is publicly shared and used by another course, so it cannot be un-shared.</>
+    );
+  }
+
+  const isSharePubliclyMessage = message === 'public-assessment-share-publicly';
+  return (
+    <>
+      {' '}
+      This question is used in a publicly shared assessment. Copied assessments can link to publicly
+      shared questions or copy questions whose source is publicly shared.{' '}
+      {isSharePubliclyMessage ? (
+        <>
+          To un-share this question publicly, first check &quot;Share source publicly&quot; below.
+          You can also un-share the assessment or remove this question from the shared assessment.
+        </>
+      ) : (
+        <>
+          To stop sharing this question&apos;s source, first re-check &quot;Share publicly&quot;
+          above. You can also un-share the assessment or remove this question from the shared
+          assessment.
+        </>
+      )}{' '}
+      See the{' '}
+      <a
+        href="https://docs.prairielearn.com/contentSharing/#sharing-assessments"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        content sharing docs
+      </a>{' '}
+      for more details.
+    </>
+  );
+}
+
 export const InstructorQuestionSettingsForm = ({
   question,
   topic,
@@ -116,11 +208,7 @@ export const InstructorQuestionSettingsForm = ({
   sharing: {
     enabled: boolean;
     sets: QuestionSharingSetRow[];
-    constraints: {
-      used_in_other_course: boolean;
-      used_in_same_course_public_assessment: boolean;
-      locked_sharing_set_names: string[];
-    };
+    constraints: QuestionSharingConstraints;
   };
   questionTest: { path: string; csrfToken: string };
 }) => {
@@ -206,17 +294,29 @@ export const InstructorQuestionSettingsForm = ({
   const workspaceEnabled = watch('workspace_enabled');
   const externalGradingEnabled = watch('external_grading_enabled');
   const watchedSharingSets = watch('sharing_sets');
-  const watchedSharePublicly = watch('share_publicly');
-  const watchedShareSourcePublicly = watch('share_source_publicly');
+  const { field: sharePubliclyInput } = useController({
+    control,
+    name: 'share_publicly',
+  });
+  const { field: shareSourcePubliclyInput } = useController({
+    control,
+    name: 'share_source_publicly',
+  });
+  const sharePublicly = sharePubliclyInput.value;
+  const shareSourcePublicly = shareSourcePubliclyInput.value;
   const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
-  const canUnsharePublicly =
-    !sharing.constraints.used_in_other_course &&
-    (!sharing.constraints.used_in_same_course_public_assessment || watchedShareSourcePublicly);
-  const wouldUncheckPublic = question.share_publicly && !watchedSharePublicly;
-  const canUnshareSourcePublicly =
-    !question.share_source_publicly ||
-    !wouldUncheckPublic ||
-    !sharing.constraints.used_in_same_course_public_assessment;
+  const {
+    sharePubliclyDisabled,
+    shareSourcePubliclyDisabled,
+    sharePubliclyMessage,
+    shareSourcePubliclyMessage,
+  } = getSharingControlState({
+    canEdit,
+    constraints: sharing.constraints,
+    persistedSharePublicly: defaultValues.share_publicly,
+    sharePublicly,
+    shareSourcePublicly,
+  });
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -937,44 +1037,53 @@ export const InstructorQuestionSettingsForm = ({
               <h2 className="h5 card-title mb-3">Sharing</h2>
               {/* Hidden inputs preserve locked-on flags whose checkbox is disabled;
                   must mirror the disabled gate to avoid silently flipping the value. */}
-              {question.share_publicly && !canUnsharePublicly && (
+              {sharePublicly && sharePubliclyDisabled && (
                 <input type="hidden" name="share_publicly" value="on" />
               )}
               <Form.Check
+                ref={sharePubliclyInput.ref}
                 type="checkbox"
                 id="share_publicly"
+                name={sharePubliclyInput.name}
+                value="on"
                 label="Share publicly"
                 className="mb-1"
-                disabled={!canEdit || (question.share_publicly && !canUnsharePublicly)}
-                defaultChecked={defaultValues.share_publicly}
-                {...register('share_publicly')}
+                disabled={sharePubliclyDisabled}
+                checked={sharePublicly}
+                aria-describedby="share_publicly-description"
+                onChange={sharePubliclyInput.onChange}
+                onBlur={sharePubliclyInput.onBlur}
               />
-              <small className="form-text text-muted d-block mb-2">
+              <small id="share_publicly-description" className="form-text text-muted d-block mb-2">
                 Any course may import this question.
-                {question.share_publicly &&
-                  !canUnsharePublicly &&
-                  (sharing.constraints.used_in_other_course
-                    ? ' This question is publicly shared and used by another course, so it cannot be un-shared.'
-                    : ' Re-check "Share source publicly" first to allow un-sharing publicly.')}
+                {sharePubliclyMessage && <SharingMessageText message={sharePubliclyMessage} />}
               </small>
 
-              {question.share_source_publicly && !canUnshareSourcePublicly && (
+              {shareSourcePublicly && shareSourcePubliclyDisabled && (
                 <input type="hidden" name="share_source_publicly" value="on" />
               )}
               <Form.Check
+                ref={shareSourcePubliclyInput.ref}
                 type="checkbox"
                 id="share_source_publicly"
+                name={shareSourcePubliclyInput.name}
+                value="on"
                 label="Share source publicly"
                 className="mb-1"
-                disabled={!canEdit || !canUnshareSourcePublicly}
-                defaultChecked={defaultValues.share_source_publicly}
-                {...register('share_source_publicly')}
+                disabled={shareSourcePubliclyDisabled}
+                checked={shareSourcePublicly}
+                aria-describedby="share_source_publicly-description"
+                onChange={shareSourcePubliclyInput.onChange}
+                onBlur={shareSourcePubliclyInput.onBlur}
               />
-              <small className="form-text text-muted d-block mb-3">
+              <small
+                id="share_source_publicly-description"
+                className="form-text text-muted d-block mb-3"
+              >
                 The question's source is publicly shared.
-                {question.share_source_publicly &&
-                  !canUnshareSourcePublicly &&
-                  ' Re-check "Share publicly" first to allow un-sharing the source.'}
+                {shareSourcePubliclyMessage && (
+                  <SharingMessageText message={shareSourcePubliclyMessage} />
+                )}
               </small>
 
               <div>
