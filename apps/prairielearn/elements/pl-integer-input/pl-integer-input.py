@@ -11,6 +11,7 @@ import prairielearn as pl
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+    EMBED = "embed"
 
 
 WEIGHT_DEFAULT = 1
@@ -141,10 +142,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "info": info,
             "placeholder": placeholder,
             "size": size,
+            "embed_input_style": (
+                f"width: {size}px; flex: 0 0 {size}px;"
+                if display is DisplayType.EMBED
+                else None
+            ),
             "base": base,
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
             "parse_error": parse_error,
             "use_numeric": 1 <= base <= 10,
             "raw_submitted_answer": raw_submitted_answer,
@@ -153,6 +160,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         return chevron.render(template, html_params).strip()
 
@@ -165,6 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -207,6 +217,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
