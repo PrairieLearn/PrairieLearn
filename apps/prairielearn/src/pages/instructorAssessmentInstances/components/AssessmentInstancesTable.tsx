@@ -237,7 +237,11 @@ export function AssessmentInstancesTable({
       [roleColumnId]: {
         urlKey: 'role',
         parser: parseAsMultiSelectFilter(ROLE_VALUES),
-        defaultValue: STUDENTS_ONLY_FILTER,
+        // Default to all roles rather than students-only so deep links to a
+        // specific instance (e.g. prompts to close or delete a staff-owned or
+        // test instance) aren't hidden by the filter. The role column is shown
+        // by default to match (see defaultColumnVisibility).
+        defaultValue: ALL_ROLES_FILTER,
       },
     };
     for (const id of NUMERIC_COLUMN_IDS) {
@@ -525,21 +529,12 @@ export function AssessmentInstancesTable({
   const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
   const defaultColumnVisibility = useMemo(() => {
-    // The role column is hidden by default since the "Students only" filter is
-    // active by default, making the column redundant.
-    const hidden = new Set([
-      'uid',
-      'number',
-      'total_time',
-      'group_name',
-      'user_name_list',
-      roleColumnId,
-    ]);
+    const hidden = new Set(['uid', 'number', 'total_time', 'group_name', 'user_name_list']);
     if (assessment.team_work) hidden.add('client_fingerprint_id_change_count');
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) visibility[id] = !hidden.has(id);
     return visibility;
-  }, [allColumnIds, assessment.team_work, roleColumnId]);
+  }, [allColumnIds, assessment.team_work]);
 
   const columnVisibilityParser = useMemo(
     () =>

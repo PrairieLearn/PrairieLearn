@@ -109,6 +109,19 @@ GROUP BY
 ORDER BY
   q.qid;
 
+-- BLOCK select_course_has_questions
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      questions AS q
+    WHERE
+      q.course_id = $course_id
+      AND q.deleted_at IS NULL
+      AND q.draft IS FALSE
+  );
+
 -- BLOCK select_public_questions_for_course
 SELECT
   q.id,
