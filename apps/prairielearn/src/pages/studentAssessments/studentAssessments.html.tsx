@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -16,6 +17,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
@@ -39,7 +41,7 @@ export const StudentAssessmentsRowSchema = z.object({
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
   assessment_instance_date_limit: AssessmentInstanceSchema.shape.date_limit.nullable(),
   link: z.string(),
-  start_new_assessment_group: z.boolean(),
+  assessment_group_id: IdSchema,
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
   will_release_at: z.string().nullable().optional(),
@@ -79,8 +81,9 @@ export function StudentAssessments({
             </thead>
             <tbody>
               ${rows.map(
-                (row) => html`
-                  ${row.start_new_assessment_group
+                (row, index) => html`
+                  ${index === 0 ||
+                  !idsEqual(row.assessment_group_id, rows[index - 1].assessment_group_id)
                     ? html`
                         <tr>
                           <th colspan="4" scope="row" data-testid="assessment-group-heading">
