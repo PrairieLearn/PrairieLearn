@@ -244,8 +244,9 @@ export function AddInstitutionModal({
             )}
             <small id="uid_regexp_help" className="form-text text-muted">
               Should match the non-username part of user UIDs, e.g. <code>@example\.com$</code>.
-              This must be a valid regular expression and should be set for institution-based access
-              restrictions to work correctly.
+              This must be a valid regular expression that starts with <code>@</code> and ends with{' '}
+              <code>$</code>. Periods must be escaped as <code>\.</code>. This should be set for
+              institution-based access restrictions to work correctly.
             </small>
           </div>
           {supportedAuthenticationProviders.length > 0 ? (

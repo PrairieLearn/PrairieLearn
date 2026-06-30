@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const INVALID_UID_REGEXP_MESSAGE = 'UID regexp must be a valid regular expression.';
+const UNESCAPED_DOT_REGEXP = /(^|[^\\])(?:\\\\)*\./u;
 
 export const UidRegexpSchema = z
   .string()
@@ -17,5 +17,12 @@ export const UidRegexpSchema = z
 
       return true;
     },
-    { message: INVALID_UID_REGEXP_MESSAGE },
-  );
+    { message: 'UID regexp must be a valid regular expression.' },
+  )
+  .refine(
+    (uidRegexp) => uidRegexp.length === 0 || (uidRegexp.startsWith('@') && uidRegexp.endsWith('$')),
+    { message: 'UID regexp must start with @ and end with $.' },
+  )
+  .refine((uidRegexp) => !UNESCAPED_DOT_REGEXP.test(uidRegexp), {
+    message: 'Periods in UID regexp must be escaped as \\.',
+  });
