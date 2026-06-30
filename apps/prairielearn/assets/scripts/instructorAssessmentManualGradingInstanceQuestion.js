@@ -279,7 +279,8 @@ function ensureElementsExist(elements) {
 }
 
 function addInstanceQuestionGroupSelectionDropdownListeners() {
-  const { instanceQuestionId, instanceQuestionGroupsExist } = decodeData('instance-question-data');
+  const { instanceQuestionGroupsExist, manualInstanceQuestionGroupUrl } =
+    decodeData('instance-question-data');
 
   if (!instanceQuestionGroupsExist) {
     // Instance question grouping has not been run yet for the assessment question,
@@ -313,7 +314,7 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
       description: selectedGroupDescription,
     } = selectedGroupDropdownItem.dataset;
 
-    await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
+    await fetch(manualInstanceQuestionGroupUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

@@ -16,6 +16,7 @@ import type {
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
+import { getAssessmentManualGradingUrl } from '../../../lib/client/url.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
@@ -129,8 +130,11 @@ export function InstanceQuestion({
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       ${EncodedData(
         {
-          instanceQuestionId: resLocals.instance_question.id,
           instanceQuestionGroupsExist,
+          manualInstanceQuestionGroupUrl: `${getAssessmentManualGradingUrl({
+            courseInstanceId: resLocals.course_instance.id,
+            assessmentId: resLocals.assessment.id,
+          })}/instance_question/${resLocals.instance_question.id}/manual_instance_question_group`,
         },
         'instance-question-data',
       )}
