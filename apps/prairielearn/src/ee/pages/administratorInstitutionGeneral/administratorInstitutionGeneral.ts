@@ -79,7 +79,6 @@ router.post(
         res.redirect(req.originalUrl);
         return;
       }
-      const uidRegexp = uidRegexpResult.data || null;
 
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
@@ -90,7 +89,7 @@ router.post(
             short_name: req.body.short_name,
             long_name: req.body.long_name,
             display_timezone: req.body.display_timezone,
-            uid_regexp: uidRegexp,
+            uid_regexp: uidRegexpResult.data || null,
             yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
             course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
           },
