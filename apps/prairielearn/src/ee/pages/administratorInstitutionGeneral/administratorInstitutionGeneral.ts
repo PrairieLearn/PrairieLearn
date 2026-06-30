@@ -10,6 +10,7 @@ import { InstitutionSchema } from '../../../lib/db-types.js';
 import { validateGithubCourseOwner } from '../../../lib/github.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
+import { UidRegexpSchema } from '../../../lib/uid-regexp.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   COURSE_REQUEST_MESSAGE_MAX_LENGTH,
@@ -72,6 +73,14 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'update_enrollment_limits') {
+      const uidRegexpResult = UidRegexpSchema.safeParse(req.body.uid_regexp || '');
+      if (!uidRegexpResult.success) {
+        flash('error', uidRegexpResult.error.issues[0].message);
+        res.redirect(req.originalUrl);
+        return;
+      }
+      const uidRegexp = uidRegexpResult.data || null;
+
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
         const updatedInstitution = await queryRow(
@@ -81,7 +90,7 @@ router.post(
             short_name: req.body.short_name,
             long_name: req.body.long_name,
             display_timezone: req.body.display_timezone,
-            uid_regexp: req.body.uid_regexp,
+            uid_regexp: uidRegexp,
             yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
             course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
           },
