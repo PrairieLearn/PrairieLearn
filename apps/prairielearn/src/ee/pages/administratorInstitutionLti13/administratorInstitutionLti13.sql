@@ -13,7 +13,6 @@ ORDER BY
 SELECT
   to_jsonb(lci) AS lti13_course_instance,
   ci.short_name AS course_instance_short_name,
-  ci.long_name AS course_instance_long_name,
   c.short_name AS course_short_name,
   COALESCE(
     (

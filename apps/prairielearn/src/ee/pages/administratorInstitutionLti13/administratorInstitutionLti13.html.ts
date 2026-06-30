@@ -17,7 +17,6 @@ import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.typ
 export const LinkedCourseInstanceSchema = z.object({
   lti13_course_instance: Lti13CourseInstanceSchema,
   course_instance_short_name: z.string().nullable(),
-  course_instance_long_name: z.string().nullable(),
   course_short_name: z.string().nullable(),
   lineitem_resource_links: z
     .object({
@@ -487,7 +486,13 @@ function RosterInspectorForm({
     <div class="card mb-2">
       <div class="card-body">
         <h6 class="card-title mb-1">
-          ${courseLabel}
+          <a
+            href="/pl/course_instance/${lci.course_instance_id}/instructor/instance_admin/lti13_instance/${lci.id}"
+            target="_blank"
+            rel="noreferrer"
+          >
+            ${courseLabel}
+          </a>
           <span class="text-muted fw-normal">(${lci.context_label ?? 'no context label'})</span>
         </h6>
         ${lci.context_memberships_url === null
