@@ -1403,7 +1403,7 @@ function InstructorAssessmentSettingsInner({
                   Allow students to report issues for assessment questions.
                 </div>
               </div>
-              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
+              <div className="form-check mb-3">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -1420,7 +1420,7 @@ function InstructorAssessmentSettingsInner({
                   Allow students to upload personal notes for this assessment.
                 </div>
               </div>
-              <div className="mb-3 form-check">
+              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -1434,7 +1434,8 @@ function InstructorAssessmentSettingsInner({
                   Show question titles to students
                 </label>
                 <div id="show-question-titles-help" className="small text-muted">
-                  If enabled, students will see question titles during this assessment.
+                  Question titles can help students identify questions, but may contain topic names
+                  or other context intended only for staff.
                 </div>
               </div>
               {assessment.type === 'Exam' && (

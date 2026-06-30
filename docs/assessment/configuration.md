@@ -1067,7 +1067,7 @@ For example:
 
 ## Question titles
 
-By default, `Homework` assessments show question titles to students, while `Exam` assessments hide them.
+Question titles can help students identify and discuss questions, but may contain topic names or other context intended only for staff. For this reason, `Homework` assessments show question titles to students by default, while `Exam` assessments hide them by default.
 
 This behavior can be overridden by setting `showQuestionTitles` as a top-level option in the `infoAssessment.json` file.
 
