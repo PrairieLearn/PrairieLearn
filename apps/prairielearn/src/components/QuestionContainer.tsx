@@ -7,6 +7,7 @@ import type {
   CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
 } from '../ee/lib/ai-grading/types.js';
+import { formatStudentQuestionTitle } from '../lib/assessment.shared.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
@@ -449,22 +450,34 @@ export function QuestionTitle({
   questionContext,
   question,
   questionNumber,
+  showQuestionTitles,
 }: {
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
+  showQuestionTitles?: boolean;
 }): HtmlValue {
   const hasTitle = !!question.title?.trim();
 
   if (questionContext === 'student_homework') {
-    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
-  } else if (questionContext === 'student_exam') {
-    return hasTitle
-      ? `Question ${questionNumber}: ${question.title}`
-      : `Question ${questionNumber}`;
-  } else {
-    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
+    return formatStudentQuestionTitle({
+      assessmentType: 'Homework',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
   }
+
+  if (questionContext === 'student_exam') {
+    return formatStudentQuestionTitle({
+      assessmentType: 'Exam',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
+  }
+
+  return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
 }
 
 interface QuestionFooterResLocals {
@@ -876,6 +889,11 @@ function QuestionPanel({
             questionContext,
             question,
             questionNumber: instance_question_info?.question_number,
+            // Student contexts honor the assessment setting; other contexts always render titles.
+            showQuestionTitles:
+              questionContext === 'student_exam' || questionContext === 'student_homework'
+                ? !!resLocals.assessment?.show_question_titles
+                : false,
           })}
         </h1>
         <div class="ms-auto d-flex flex-row gap-1">

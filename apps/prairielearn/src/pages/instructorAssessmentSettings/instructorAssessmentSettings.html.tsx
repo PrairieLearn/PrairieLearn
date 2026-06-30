@@ -126,6 +126,7 @@ interface SettingsFormValues {
   text?: string;
   allow_issue_reporting: boolean;
   allow_personal_notes: boolean;
+  showQuestionTitles: boolean;
   multiple_instance: boolean;
   auto_close: boolean;
   require_honor_code: boolean;
@@ -711,6 +712,7 @@ function InstructorAssessmentSettingsInner({
     text: assessment.text ?? '',
     allow_issue_reporting: assessment.allow_issue_reporting ?? true,
     allow_personal_notes: assessment.allow_personal_notes,
+    showQuestionTitles: assessment.show_question_titles,
     multiple_instance: assessment.multiple_instance,
     auto_close: assessment.auto_close ?? true,
     require_honor_code: assessment.require_honor_code ?? true,
@@ -1401,7 +1403,7 @@ function InstructorAssessmentSettingsInner({
                   Allow students to report issues for assessment questions.
                 </div>
               </div>
-              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
+              <div className="form-check mb-3">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -1416,6 +1418,24 @@ function InstructorAssessmentSettingsInner({
                 </label>
                 <div id="allow-personal-notes-help" className="small text-muted">
                   Allow students to upload personal notes for this assessment.
+                </div>
+              </div>
+              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="show_question_titles"
+                  aria-describedby="show-question-titles-help"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.showQuestionTitles}
+                  {...register('showQuestionTitles')}
+                />
+                <label className="form-check-label" htmlFor="show_question_titles">
+                  Show question titles to students
+                </label>
+                <div id="show-question-titles-help" className="small text-muted">
+                  Question titles can help students identify questions, but may contain topic names
+                  or other context intended only for staff.
                 </div>
               </div>
               {assessment.type === 'Exam' && (

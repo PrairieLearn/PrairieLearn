@@ -5,6 +5,7 @@ import { ExamQuestionAvailablePoints } from '../../../components/ExamQuestionAva
 import { ExamQuestionStatus } from '../../../components/ExamQuestionStatus.js';
 import { InstanceQuestionPoints } from '../../../components/QuestionScore.js';
 import { QuestionVariantHistory } from '../../../components/QuestionVariantHistory.js';
+import { formatStudentQuestionTitle } from '../../../lib/assessment.shared.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 import type { InstanceQuestionRow } from '../studentAssessmentInstance.types.js';
@@ -17,6 +18,7 @@ export function QuestionTableBody({
   courseInstanceId,
   displayTimezone,
   assessmentType,
+  showQuestionTitles,
   someQuestionsAllowRealTimeGrading,
   someQuestionsForbidRealTimeGrading,
   hasAutoGradingQuestion,
@@ -32,6 +34,7 @@ export function QuestionTableBody({
   courseInstanceId: string;
   displayTimezone: string;
   assessmentType: EnumAssessmentType;
+  showQuestionTitles: boolean;
   someQuestionsAllowRealTimeGrading: boolean;
   someQuestionsForbidRealTimeGrading: boolean;
   hasAutoGradingQuestion: boolean;
@@ -114,12 +117,12 @@ export function QuestionTableBody({
               row,
               userGroupRoles,
               hasStatusColumn: assessmentType === 'Exam',
-              rowLabelText:
-                assessmentType === 'Exam'
-                  ? `Question ${row.question_number}`
-                  : row.question.title?.trim()
-                    ? `${row.question_number}. ${row.question.title}`
-                    : row.question_number,
+              rowLabelText: formatStudentQuestionTitle({
+                assessmentType,
+                questionNumber: row.question_number,
+                questionTitle: row.question.title,
+                showQuestionTitles,
+              }),
             })}
           </div>
         </td>

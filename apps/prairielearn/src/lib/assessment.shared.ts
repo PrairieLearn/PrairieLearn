@@ -1,4 +1,9 @@
-import type { Assessment, AssessmentInstance, AssessmentSet } from './db-types.js';
+import type {
+  Assessment,
+  AssessmentInstance,
+  AssessmentSet,
+  EnumAssessmentType,
+} from './db-types.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 
 export interface AssessmentInstanceTimeLimit {
@@ -64,6 +69,27 @@ export function assessmentInstanceLabel(
     label += '#' + assessmentInstance.number;
   }
   return label;
+}
+
+export function formatStudentQuestionTitle({
+  assessmentType,
+  questionNumber,
+  questionTitle,
+  showQuestionTitles,
+}: {
+  assessmentType: EnumAssessmentType;
+  questionNumber: string;
+  questionTitle: string | null | undefined;
+  showQuestionTitles: boolean | undefined;
+}): string {
+  const title = questionTitle?.trim() ? questionTitle : null;
+  if (assessmentType === 'Exam') {
+    return showQuestionTitles && title
+      ? `Question ${questionNumber}: ${title}`
+      : `Question ${questionNumber}`;
+  }
+
+  return showQuestionTitles && title ? `${questionNumber}. ${title}` : questionNumber;
 }
 
 /**

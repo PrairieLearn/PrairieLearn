@@ -9,7 +9,7 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
-import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import { type EnumAssessmentType, EnumAssessmentTypeSchema } from '../../lib/db-types.js';
 import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
@@ -56,6 +56,10 @@ export function settingsScope(json: AssessmentJsonInput) {
 
 const ChangeableAssessmentTypeSchema = EnumAssessmentTypeSchema.extract(['Exam', 'Homework']);
 type ChangeableAssessmentType = z.infer<typeof ChangeableAssessmentTypeSchema>;
+
+function defaultShowQuestionTitles(type: EnumAssessmentType) {
+  return type === 'Homework';
+}
 
 export type TypeChangeLocation =
   | { kind: 'assessment' }
@@ -311,6 +315,7 @@ const updateAssessment = t.procedure
       text: z.string().optional(),
       allow_issue_reporting: z.boolean(),
       allow_personal_notes: z.boolean(),
+      showQuestionTitles: z.boolean().optional(),
       multiple_instance: z.boolean(),
       auto_close: z.boolean(),
       require_honor_code: z.boolean(),
@@ -408,6 +413,11 @@ const updateAssessment = t.procedure
           assessmentInfo.allowPersonalNotes,
           input.allow_personal_notes,
           true,
+        );
+        assessmentInfo.showQuestionTitles = propertyValueWithDefault(
+          assessmentInfo.showQuestionTitles,
+          input.showQuestionTitles ?? assessmentInfo.showQuestionTitles,
+          defaultShowQuestionTitles(assessment.type),
         );
 
         assessmentInfo.tools = assessmentInfo.tools ?? {};
@@ -679,6 +689,11 @@ const changeAssessmentType = t.procedure
       conflictCheck: { origHash: input.origHash, scope: settingsScope },
       applyChanges: (info) => {
         info.type = input.newType;
+        info.showQuestionTitles = propertyValueWithDefault(
+          info.showQuestionTitles,
+          info.showQuestionTitles,
+          defaultShowQuestionTitles(input.newType),
+        );
 
         if (input.newType === 'Homework') {
           delete info.multipleInstance;

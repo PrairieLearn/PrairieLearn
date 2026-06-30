@@ -126,6 +126,7 @@ export function StudentInstanceQuestion({
                         questionContext,
                         question: resLocals.question,
                         questionNumber: resLocals.instance_question_info.question_number,
+                        showQuestionTitles: !!resLocals.assessment.show_question_titles,
                       })}
                     </h1>
                   </div>
