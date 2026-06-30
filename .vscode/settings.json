@@ -83,9 +83,7 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
-  "javascript.preferences.importModuleSpecifierEnding": "js",
-  "typescript.preferences.importModuleSpecifierEnding": "js",
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "js/ts.preferences.importModuleSpecifierEnding": "js",
   "vitest.maximumConfigs": 100,
   // https://squidfunk.github.io/mkdocs-material/creating-your-site/#minimal-configuration
   "yaml.schemas": {
