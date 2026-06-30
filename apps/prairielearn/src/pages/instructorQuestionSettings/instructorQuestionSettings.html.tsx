@@ -1,192 +1,1200 @@
-import { z } from 'zod';
+import clsx from 'clsx';
+import { useMemo, useRef } from 'react';
+import { Form } from 'react-bootstrap';
+import { useController, useForm } from 'react-hook-form';
 
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
-import { Hydrate } from '@prairielearn/react/server';
+import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
 
-import { GitHubButton } from '../../components/GitHubButton.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { compiledStylesheetTag } from '../../lib/assets.js';
-import {
-  StaffCourseInstanceSchema,
-  StaffQuestionSchema,
-  StaffTagSchema,
-  StaffTopicSchema,
+import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
+import { TagBadge } from '../../components/TagBadge.js';
+import { TagDescription } from '../../components/TagDescription.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
+import { TopicDescription } from '../../components/TopicDescription.js';
+import type {
+  StaffCourseInstance,
+  StaffQuestion,
+  StaffTag,
+  StaffTopic,
 } from '../../lib/client/safe-db-types.js';
-import { type Tag, type Topic } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { encodePath } from '../../lib/uri-util.js';
-import { type CourseWithPermissions } from '../../models/course.js';
+import { idsEqual } from '../../lib/id.js';
+import { validateShortName } from '../../lib/short-name.js';
+import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
+import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
 
+import { PreferencesTable } from './components/PreferencesTable.js';
 import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
-import { QuestionSettingsForm } from './components/QuestionSettingsForm.js';
-import { QuestionSharing } from './components/QuestionSharing.js';
 import { QuestionTestsForm } from './components/QuestionTestsForm.js';
-import {
-  EditableCourseSchema,
-  type SelectedAssessments,
-  SelectedAssessmentsSchema,
-  type SharingSetRow,
+import type {
+  EditableCourse,
+  PreferenceField,
+  QuestionSettingsFormValues,
+  SelectedAssessments,
 } from './instructorQuestionSettings.types.js';
 
-export function InstructorQuestionSettings({
-  resLocals,
-  questionTestPath,
-  questionTestCsrfToken,
-  questionGHLink,
-  questionTags,
-  qids,
+function AssessmentBadges({
   assessmentsWithQuestion,
-  sharingEnabled,
-  sharingSetsIn,
-  editableCourses,
-  infoPath,
-  origHash,
+  courseInstanceId,
+}: {
+  assessmentsWithQuestion: SelectedAssessments[];
+  courseInstanceId: string;
+}) {
+  const assessmentsInCourseInstance = assessmentsWithQuestion.find((a) =>
+    idsEqual(a.course_instance_id, courseInstanceId),
+  );
+
+  if (
+    !assessmentsInCourseInstance?.assessments ||
+    assessmentsInCourseInstance.assessments.length === 0
+  ) {
+    return (
+      <small className="text-muted text-center">
+        This question is not included in any assessments in this course instance.
+      </small>
+    );
+  }
+
+  return (
+    <div className="d-flex flex-wrap gap-1">
+      {assessmentsInCourseInstance.assessments.map((assessment) => (
+        <a
+          key={assessment.assessment_id}
+          href={`/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}`}
+          className={`btn btn-badge color-${assessment.color}`}
+        >
+          {assessment.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function validateJsonObject(value: string): string | true {
+  if (!value || value.trim() === '' || value.trim() === '{}') return true;
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return 'Must be a valid JSON object';
+    }
+    return true;
+  } catch {
+    return 'Invalid JSON format';
+  }
+}
+
+interface QuestionSharingConstraints {
+  used_in_other_course: boolean;
+  used_in_same_course_public_assessment: boolean;
+  locked_sharing_set_names: string[];
+}
+
+type SharingMessage =
+  | 'used-in-other-course'
+  | 'public-assessment-share-publicly'
+  | 'public-assessment-share-source-publicly';
+
+function getSharingControlState({
   canEdit,
+  constraints,
+  persistedSharePublicly,
+  sharePublicly,
+  shareSourcePublicly,
+}: {
+  canEdit: boolean;
+  constraints: QuestionSharingConstraints;
+  persistedSharePublicly: boolean;
+  sharePublicly: boolean;
+  shareSourcePublicly: boolean;
+}): {
+  sharePubliclyDisabled: boolean;
+  shareSourcePubliclyDisabled: boolean;
+  sharePubliclyMessage: SharingMessage | null;
+  shareSourcePubliclyMessage: SharingMessage | null;
+} {
+  const sharePubliclyLockedByOtherCourse =
+    persistedSharePublicly && constraints.used_in_other_course;
+  const canUncheckSharePublicly =
+    !sharePubliclyLockedByOtherCourse &&
+    (!constraints.used_in_same_course_public_assessment || shareSourcePublicly);
+  const canUncheckShareSourcePublicly =
+    !constraints.used_in_same_course_public_assessment || sharePublicly;
+
+  return {
+    sharePubliclyDisabled: !canEdit || (sharePublicly && !canUncheckSharePublicly),
+    shareSourcePubliclyDisabled:
+      !canEdit || (shareSourcePublicly && !canUncheckShareSourcePublicly),
+    sharePubliclyMessage:
+      sharePublicly && sharePubliclyLockedByOtherCourse
+        ? 'used-in-other-course'
+        : sharePublicly && constraints.used_in_same_course_public_assessment && !shareSourcePublicly
+          ? 'public-assessment-share-publicly'
+          : null,
+    shareSourcePubliclyMessage:
+      shareSourcePublicly && constraints.used_in_same_course_public_assessment && !sharePublicly
+        ? 'public-assessment-share-source-publicly'
+        : null,
+  };
+}
+
+function SharingMessageText({ message }: { message: SharingMessage }) {
+  if (message === 'used-in-other-course') {
+    return (
+      <> This question is publicly shared and used by another course, so it cannot be un-shared.</>
+    );
+  }
+
+  const isSharePubliclyMessage = message === 'public-assessment-share-publicly';
+  return (
+    <>
+      {' '}
+      This question is used in a publicly shared assessment. Copied assessments can link to publicly
+      shared questions or copy questions whose source is publicly shared.{' '}
+      {isSharePubliclyMessage ? (
+        <>
+          To un-share this question publicly, first check &quot;Share source publicly&quot; below.
+          You can also un-share the assessment or remove this question from the shared assessment.
+        </>
+      ) : (
+        <>
+          To stop sharing this question&apos;s source, first re-check &quot;Share publicly&quot;
+          above. You can also un-share the assessment or remove this question from the shared
+          assessment.
+        </>
+      )}{' '}
+      See the{' '}
+      <a
+        href="https://docs.prairielearn.com/contentSharing/#sharing-assessments"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        content sharing docs
+      </a>{' '}
+      for more details.
+    </>
+  );
+}
+
+export const InstructorQuestionSettingsForm = ({
+  question,
+  topic,
+  courseInstance,
+  assessmentsWithQuestion,
   courseTopics,
   courseTags,
+  questionTags,
+  qids,
+  origHash,
+  csrfToken,
+  canEdit,
+  hasCoursePermissionView,
+  editableCourses,
+  questionGHLink,
+  sharing,
+  questionTest,
 }: {
-  resLocals: ResLocalsForPage<'instructor-question'>;
-  questionTestPath: string;
-  questionTestCsrfToken: string;
-  questionGHLink: string | null;
-  questionTags: Tag[];
-  qids: string[];
+  question: StaffQuestion;
+  courseInstance?: StaffCourseInstance | null;
   assessmentsWithQuestion: SelectedAssessments[];
-  sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[] | undefined;
-  editableCourses: CourseWithPermissions[];
-  infoPath: string;
+  topic: StaffTopic;
+  courseTopics: StaffTopic[];
+  courseTags: StaffTag[];
+  questionTags: StaffTag[];
+  qids: string[];
   origHash: string;
+  csrfToken: string;
   canEdit: boolean;
-  courseTopics: Topic[];
-  courseTags: Tag[];
-}) {
-  const courseInstance = StaffCourseInstanceSchema.nullish().parse(resLocals.course_instance);
+  hasCoursePermissionView: boolean;
+  editableCourses: EditableCourse[];
+  questionGHLink: string | null;
+  sharing: {
+    enabled: boolean;
+    sets: QuestionSharingSetRow[];
+    constraints: QuestionSharingConstraints;
+  };
+  questionTest: { path: string; csrfToken: string };
+}) => {
+  const canCopy = editableCourses.length > 0 && hasCoursePermissionView;
+  const showTestsSection =
+    question.type === 'Freeform' &&
+    question.grading_method !== 'External' &&
+    hasCoursePermissionView;
+  // `handleSubmit` runs after react-hook-form processes the submit event, so use a
+  // stable ref rather than depending on `event.currentTarget` here.
+  // If we didn't wrap in `handleSubmit`, we could use `event.currentTarget`.
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const canCopy =
-    editableCourses.length > 0 &&
-    resLocals.authz_data.has_course_permission_view &&
-    resLocals.question.course_id === resLocals.course.id;
+  const preferences = Object.entries(question.preferences_schema ?? {}).map(
+    ([name, schema]): PreferenceField => ({
+      name,
+      type: schema.type,
+      default: String(schema.default),
+      enum: schema.enum?.map(String) ?? [],
+    }),
+  );
 
-  const showFooter = canCopy || canEdit;
+  const defaultValues: QuestionSettingsFormValues = {
+    qid: question.qid ?? '',
+    title: question.title ?? '',
+    topic: topic.name,
+    tags: questionTags.map((t) => t.name),
+    grading_method: question.grading_method,
+    single_variant: question.single_variant ?? false,
+    show_correct_answer: question.show_correct_answer ?? true,
+    partial_credit: question.partial_credit ?? question.type === 'Freeform',
+    workspace_enabled: !!question.workspace_image,
+    workspace_image: question.workspace_image ?? '',
+    workspace_port: question.workspace_port?.toString() ?? '',
+    workspace_home: question.workspace_home ?? '',
+    workspace_graded_files: question.workspace_graded_files?.join(', ') ?? '',
+    workspace_args: question.workspace_args ?? '',
+    workspace_environment:
+      Object.keys(question.workspace_environment ?? {}).length > 0
+        ? JSON.stringify(question.workspace_environment, null, 2)
+        : '{}',
+    workspace_enable_networking: question.workspace_enable_networking ?? false,
+    workspace_rewrite_url:
+      question.workspace_url_rewrite === null
+        ? 'null'
+        : question.workspace_url_rewrite
+          ? 'true'
+          : 'false',
+    preferences,
+    // The state of the checkbox, defaulting to the presence of an external grading image
+    external_grading_enabled: !!question.external_grading_image,
+    external_grading_image: question.external_grading_image ?? '',
+    external_grading_entrypoint: question.external_grading_entrypoint ?? '',
+    external_grading_files: question.external_grading_files?.join(', ') ?? '',
+    external_grading_timeout: question.external_grading_timeout ?? undefined,
+    external_grading_enable_networking: question.external_grading_enable_networking ?? false,
+    external_grading_environment:
+      Object.keys(question.external_grading_environment).length > 0
+        ? JSON.stringify(question.external_grading_environment, null, 2)
+        : '{}',
+    share_publicly: question.share_publicly,
+    share_source_publicly: question.share_source_publicly,
+    sharing_sets: sharing.sets.filter((s) => s.in_set).map((s) => s.name),
+  };
 
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Settings',
-    headContent: [compiledStylesheetTag('instructorQuestionSettings.css')],
-    navContext: {
-      type: 'instructor',
-      page: 'question',
-      subPage: 'settings',
-    },
-    options: {
-      pageNote: resLocals.question.qid!,
-    },
-    content: html`
-      <div class="card mb-4">
-        <div
-          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
-        >
-          <h1>Question Settings</h1>
-          ${renderHtml(<GitHubButton gitHubLink={questionGHLink} />)}
-        </div>
-        <div class="card-body">
-          ${renderHtml(
-            <Hydrate>
-              <QuestionSettingsForm
-                question={StaffQuestionSchema.parse(resLocals.question)}
-                topic={StaffTopicSchema.parse(resLocals.topic)}
-                courseTopics={z.array(StaffTopicSchema).parse(courseTopics)}
-                courseTags={z.array(StaffTagSchema).parse(courseTags)}
-                questionTags={z.array(StaffTagSchema).parse(questionTags)}
-                qids={qids}
-                origHash={origHash}
-                csrfToken={resLocals.__csrf_token}
-                canEdit={canEdit}
-                courseInstance={courseInstance}
-                assessmentsWithQuestion={assessmentsWithQuestion}
-              />
-            </Hydrate>,
-          )}
-          ${sharingEnabled
-            ? html`
-                <hr />
-                <div>
-                  <h2 class="h4">Sharing</h2>
-                  <div data-testid="shared-with">
-                    ${renderHtml(
-                      <QuestionSharing
-                        sharePublicly={resLocals.question.share_publicly}
-                        shareSourcePublicly={resLocals.question.share_source_publicly}
-                        sharingSetsIn={sharingSetsIn ?? []}
-                      />,
-                    )}
-                  </div>
-                </div>
-              `
-            : ''}
-          ${resLocals.question.type === 'Freeform' &&
-          resLocals.question.grading_method !== 'External' &&
-          resLocals.authz_data.has_course_permission_view
-            ? html`
-                <hr />
-                <div>
-                  <h2 class="h4">Tests</h2>
-                  <div>
-                    ${renderHtml(
-                      <QuestionTestsForm
-                        questionTestPath={questionTestPath}
-                        csrfToken={questionTestCsrfToken}
-                      />,
-                    )}
-                  </div>
-                </div>
-              `
-            : ''}
-          ${resLocals.authz_data.has_course_permission_view
-            ? canEdit
-              ? html`
-                  <hr />
-                  <a
-                    data-testid="edit-question-configuration-link"
-                    href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_edit/${encodePath(infoPath)}"
-                    >Edit question configuration</a
-                  >
-                  in <code>info.json</code>
-                `
-              : html`
-                  <hr />
-                  <a
-                    href="${resLocals.urlPrefix}/question/${resLocals.question
-                      .id}/file_view/${encodePath(infoPath)}"
-                  >
-                    View question configuration
-                  </a>
-                  in <code>info.json</code>
-                `
-            : ''}
-        </div>
-        ${showFooter
-          ? renderHtml(
-              // TODO: Pass full course/question objects when the whole page is hydrated.
-              <Hydrate>
-                <QuestionSettingsCardFooter
-                  canEdit={canEdit}
-                  canCopy={canCopy}
-                  editableCourses={z.array(EditableCourseSchema).parse(editableCourses)}
-                  courseId={resLocals.course.id}
-                  qid={resLocals.question.qid!}
-                  assessmentsWithQuestion={z
-                    .array(SelectedAssessmentsSchema)
-                    .parse(assessmentsWithQuestion)}
-                  csrfToken={resLocals.__csrf_token}
-                />
-              </Hydrate>,
-            )
-          : ''}
-      </div>
-    `,
+  const {
+    handleSubmit,
+    register,
+    watch,
+    setValue,
+    clearErrors,
+    control,
+    reset,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm<QuestionSettingsFormValues>({
+    mode: 'onChange',
+    defaultValues,
   });
-}
+
+  const selectedTopic = watch('topic');
+  const selectedTags = watch('tags');
+  const selectedGradingMethod = watch('grading_method');
+  const workspaceEnabled = watch('workspace_enabled');
+  const externalGradingEnabled = watch('external_grading_enabled');
+  const watchedSharingSets = watch('sharing_sets');
+  const { field: sharePubliclyInput } = useController({
+    control,
+    name: 'share_publicly',
+  });
+  const { field: shareSourcePubliclyInput } = useController({
+    control,
+    name: 'share_source_publicly',
+  });
+  const sharePublicly = sharePubliclyInput.value;
+  const shareSourcePublicly = shareSourcePubliclyInput.value;
+  const lockedSharingSetNamesSet = new Set(sharing.constraints.locked_sharing_set_names);
+  const {
+    sharePubliclyDisabled,
+    shareSourcePubliclyDisabled,
+    sharePubliclyMessage,
+    shareSourcePubliclyMessage,
+  } = getSharingControlState({
+    canEdit,
+    constraints: sharing.constraints,
+    persistedSharePublicly: defaultValues.share_publicly,
+    sharePublicly,
+    shareSourcePublicly,
+  });
+
+  const isExternalGrading = selectedGradingMethod === 'External';
+
+  const topicItems: ComboBoxItem<StaffTopic>[] = useMemo(
+    () =>
+      courseTopics.map((t) => ({
+        id: t.name,
+        data: t,
+        label: t.name,
+        searchableText: `${t.name} ${t.description}`,
+      })),
+    [courseTopics],
+  );
+
+  const tagItems: ComboBoxItem<StaffTag>[] = useMemo(
+    () =>
+      [...courseTags]
+        .sort((a, b) => {
+          // Sort explicit tags above implicit tags, then by name
+          if (a.implicit !== b.implicit) {
+            return a.implicit ? 1 : -1;
+          }
+          return a.name.localeCompare(b.name);
+        })
+        .map((t) => ({
+          id: t.name,
+          data: t,
+          label: t.name,
+          searchableText: `${t.name} ${t.description}`,
+        })),
+    [courseTags],
+  );
+
+  const currentTopicData = courseTopics.find((t) => t.name === selectedTopic);
+  const currentTagsData = courseTags.filter((t) => selectedTags.includes(t.name));
+
+  const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
+
+  const handleFormSubmit = handleSubmit(() => {
+    formRef.current?.submit();
+  });
+
+  return (
+    <div className="d-flex flex-column gap-3">
+      <form
+        ref={formRef}
+        name="edit-question-settings-form"
+        id="edit-question-settings-form"
+        method="POST"
+        className="d-flex flex-column gap-3"
+        onSubmit={handleFormSubmit}
+      >
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <input type="hidden" name="__action" value="update_question" />
+        <input type="hidden" name="orig_hash" value={origHash} />
+
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">General</h2>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="qid">
+                  QID
+                </label>
+                <input
+                  type="text"
+                  className={clsx('form-control font-monospace', errors.qid && 'is-invalid')}
+                  id="qid"
+                  disabled={!canEdit}
+                  aria-invalid={!!errors.qid || undefined}
+                  defaultValue={defaultValues.qid}
+                  aria-errormessage={errors.qid ? 'qid-error' : undefined}
+                  {...register('qid', {
+                    required: 'QID is required',
+                    validate: {
+                      shortName: (value) => {
+                        const result = validateShortName(value, defaultValues.qid);
+                        return result.valid || result.message;
+                      },
+                      duplicate: (value) => {
+                        if (otherQids.has(value)) {
+                          return 'This QID is already in use';
+                        }
+                        return true;
+                      },
+                    },
+                  })}
+                />
+                {errors.qid && (
+                  <div id="qid-error" className="invalid-feedback">
+                    {errors.qid.message}
+                  </div>
+                )}
+                <small className="form-text text-muted">
+                  <QuestionShortNameDescription />
+                </small>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label" htmlFor="title">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  disabled={!canEdit}
+                  defaultValue={defaultValues.title}
+                  {...register('title')}
+                />
+                <small className="form-text text-muted">
+                  The title of the question (e.g., "Add two numbers").
+                </small>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" id="topic-label" htmlFor="topic">
+                Topic
+              </label>
+              {canEdit ? (
+                <ComboBox
+                  id="topic"
+                  name="topic"
+                  items={topicItems}
+                  value={selectedTopic}
+                  placeholder="Select a topic"
+                  aria-labelledby="topic-label"
+                  renderItem={(item) => (
+                    <div className="preferences-combobox-item">
+                      <TopicBadge topic={item.data!} />
+                      {item.data!.description && (
+                        <div>
+                          <small className="text-muted">
+                            <TopicDescription topic={item.data!} />
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  onChange={(value) => setValue('topic', value ?? '', { shouldDirty: true })}
+                />
+              ) : currentTopicData ? (
+                <div>
+                  <TopicBadge topic={currentTopicData} />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" id="tags-label" htmlFor="tags">
+                Tags
+              </label>
+              {canEdit ? (
+                <TagPicker
+                  id="tags"
+                  name="tags"
+                  items={tagItems}
+                  value={selectedTags}
+                  placeholder="Select tags"
+                  aria-labelledby="tags-label"
+                  renderItem={(item) => (
+                    <div className="preferences-combobox-item">
+                      <TagBadge tag={item.data!} />
+                      {!item.data!.implicit && item.data!.description && (
+                        <div>
+                          <small className="text-muted">
+                            <TagDescription tag={item.data!} />
+                          </small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  renderTagContent={(data) => data.name}
+                  tagClassName={(data) => `badge color-${data.color}`}
+                  onChange={(value) => setValue('tags', value, { shouldDirty: true })}
+                />
+              ) : (
+                <div>
+                  {currentTagsData.map((tag) => (
+                    <span key={tag.name} className="me-1">
+                      <TagBadge tag={tag} />
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {courseInstance && (
+              <div className="mb-0">
+                <p className="form-label mb-1">Assessments</p>
+                <AssessmentBadges
+                  assessmentsWithQuestion={assessmentsWithQuestion}
+                  courseInstanceId={courseInstance.id}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Question behavior</h2>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="grading_method">
+                Grading method
+              </label>
+              <select
+                className="form-select"
+                id="grading_method"
+                disabled={!canEdit}
+                defaultValue={defaultValues.grading_method}
+                {...register('grading_method')}
+              >
+                <option value="Internal">Internal</option>
+                <option value="External">External</option>
+                <option value="Manual">Manual</option>
+              </select>
+              <small className="form-text text-muted">
+                The grading method used for this question.
+              </small>
+            </div>
+
+            <div className="form-check mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="single_variant"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.single_variant}
+                {...register('single_variant')}
+              />
+              <label className="form-check-label" htmlFor="single_variant">
+                Single variant
+              </label>
+              <div className="small text-muted">
+                If enabled, students will only be able to try a single variant of this question on
+                any given assessment.
+              </div>
+            </div>
+
+            <div className="form-check mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="show_correct_answer"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.show_correct_answer}
+                {...register('show_correct_answer')}
+              />
+              <label className="form-check-label" htmlFor="show_correct_answer">
+                Show correct answer
+              </label>
+              <div className="small text-muted">
+                If enabled, the correct answer panel will be shown after all submission attempts
+                have been exhausted.
+              </div>
+            </div>
+
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="partial_credit"
+                disabled={!canEdit}
+                defaultChecked={defaultValues.partial_credit}
+                {...register('partial_credit')}
+              />
+              <label className="form-check-label" htmlFor="partial_credit">
+                Partial credit
+              </label>
+              <div className="small text-muted">
+                If enabled, the question will award partial points for fractional scores. For
+                example, if only some elements on the page are correct, the student receives a
+                proportional score. When disabled, the question awards only 0% or 100%.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <PreferencesTable
+          control={control}
+          canEdit={canEdit}
+          register={register}
+          watch={watch}
+          setValue={setValue}
+          clearErrors={clearErrors}
+          errors={errors.preferences}
+        />
+
+        <div className="card">
+          <div className="card-body">
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="workspaceEnabled"
+                checked={workspaceEnabled}
+                disabled={!canEdit}
+                onChange={() => {
+                  if (workspaceEnabled) {
+                    clearErrors([
+                      'workspace_image',
+                      'workspace_port',
+                      'workspace_home',
+                      'workspace_environment',
+                    ]);
+                  }
+                  setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
+                }}
+              />
+              <label className="form-check-label h5 card-title mb-0" htmlFor="workspaceEnabled">
+                Workspace
+              </label>
+            </div>
+            <small className="text-muted ps-4 d-block mt-1">
+              Configure a{' '}
+              <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
+                remote development environment
+              </a>{' '}
+              for students.
+            </small>
+            {workspaceEnabled && (
+              <div className="mt-3 ps-4" id="workspace-options">
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_image">
+                    Image
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.workspace_image && 'is-invalid')}
+                    id="workspace_image"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_image || undefined}
+                    defaultValue={defaultValues.workspace_image}
+                    aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
+                    {...register('workspace_image', {
+                      required: 'Image is required for workspace',
+                    })}
+                  />
+                  {errors.workspace_image && (
+                    <div id="workspace_image-error" className="invalid-feedback">
+                      {errors.workspace_image.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The Docker image that will be used to serve this workspace. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_graded_files">
+                    Graded files
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="workspace_graded_files"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.workspace_graded_files}
+                    {...register('workspace_graded_files')}
+                  />
+                  <small className="form-text text-muted">
+                    The list of files or directories that will be copied out of the workspace
+                    container when saving a submission. You may enter multiple files or directories,
+                    separated by commas.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_args">
+                    Arguments
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="workspace_args"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.workspace_args}
+                    {...register('workspace_args')}
+                  />
+                  <small className="form-text text-muted">
+                    Command line arguments to pass to the Docker container. Multiple arguments
+                    should be separated by spaces and escaped as necessary using the same format as
+                    a typical shell.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_environment">
+                    Environment
+                  </label>
+                  <textarea
+                    className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
+                    id="workspace_environment"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_environment || undefined}
+                    defaultValue={defaultValues.workspace_environment}
+                    aria-errormessage={
+                      errors.workspace_environment ? 'workspace_environment-error' : undefined
+                    }
+                    {...register('workspace_environment', {
+                      validate: validateJsonObject,
+                    })}
+                  />
+                  {errors.workspace_environment && (
+                    <div id="workspace_environment-error" className="invalid-feedback">
+                      {errors.workspace_environment.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    Environment variables to set inside the workspace container. Variables must be
+                    specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+                  </small>
+                </div>
+
+                <div className="mb-3 form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="workspace_enable_networking"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.workspace_enable_networking}
+                    {...register('workspace_enable_networking')}
+                  />
+                  <label className="form-check-label" htmlFor="workspace_enable_networking">
+                    Enable networking
+                  </label>
+                  <div className="small text-muted">
+                    Whether the workspace should have network access. Access is disabled by default.
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_port">
+                    Port
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    className={clsx('form-control', errors.workspace_port && 'is-invalid')}
+                    id="workspace_port"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_port || undefined}
+                    defaultValue={defaultValues.workspace_port}
+                    aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
+                    {...register('workspace_port', {
+                      validate: (value) => {
+                        if (value === '') return true;
+                        const n = Number(value);
+                        if (!Number.isInteger(n)) return 'Port must be an integer';
+                        return true;
+                      },
+                    })}
+                  />
+                  {errors.workspace_port && (
+                    <div id="workspace_port-error" className="invalid-feedback">
+                      {errors.workspace_port.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The port number used in the Docker image. If not provided, the default port for
+                    the image will be used.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_home">
+                    Home
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.workspace_home && 'is-invalid')}
+                    id="workspace_home"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.workspace_home || undefined}
+                    defaultValue={defaultValues.workspace_home}
+                    aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
+                    {...register('workspace_home')}
+                  />
+                  {errors.workspace_home && (
+                    <div id="workspace_home-error" className="invalid-feedback">
+                      {errors.workspace_home.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The home directory of the workspace container. If not provided, the default home
+                    directory for the image will be used.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="workspace_rewrite_url">
+                    Workspace proxy URL handling
+                  </label>
+                  <Form.Select
+                    id="workspace_rewrite_url"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.workspace_rewrite_url}
+                    {...register('workspace_rewrite_url')}
+                  >
+                    <option value="null">Use default settings for image</option>
+                    <option value="true">Strip URL container prefix</option>
+                    <option value="false">Send URL without changes</option>
+                  </Form.Select>
+                  <small className="form-text text-muted">
+                    Workspace images can specify how URLs for container-specific resources should be
+                    handled by the workspace proxy. In particular, the container prefix (e.g.,{' '}
+                    <code>/pl/workspace/&lt;id&gt;/container/</code>) can be stripped from the URL
+                    before it is sent to the container. Unless you have a specific reason to change
+                    this setting, it is recommended to use the default settings.
+                  </small>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body">
+            {isExternalGrading ? (
+              <h2 className="h5 card-title mb-0">External grading</h2>
+            ) : (
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="externalGradingEnabled"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.external_grading_enabled}
+                  {...register('external_grading_enabled')}
+                />
+                <label
+                  className="form-check-label h5 card-title mb-0"
+                  htmlFor="externalGradingEnabled"
+                >
+                  External grading
+                </label>
+              </div>
+            )}
+            <small className={clsx('text-muted d-block mt-1', !isExternalGrading && 'ps-4')}>
+              Configure{' '}
+              <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
+                grading using a Docker container
+              </a>
+              .
+            </small>
+            {(isExternalGrading || externalGradingEnabled) && (
+              <div
+                className={clsx('mt-3', !isExternalGrading && 'ps-4')}
+                id="external-grading-options"
+              >
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_image">
+                    Image
+                  </label>
+                  <input
+                    type="text"
+                    className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
+                    id="external_grading_image"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_image || undefined}
+                    defaultValue={defaultValues.external_grading_image}
+                    aria-errormessage={
+                      errors.external_grading_image ? 'external_grading_image-error' : undefined
+                    }
+                    {...register('external_grading_image', {
+                      required: 'Image is required for external grading',
+                    })}
+                  />
+                  {errors.external_grading_image && (
+                    <div id="external_grading_image-error" className="invalid-feedback">
+                      {errors.external_grading_image.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The Docker image that will be used to grade this question. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_entrypoint">
+                    Entrypoint
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="external_grading_entrypoint"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.external_grading_entrypoint}
+                    {...register('external_grading_entrypoint')}
+                  />
+                  <small className="form-text text-muted">
+                    Program or command to run as the entrypoint to your grader. If not provided, the
+                    default entrypoint for the image will be used.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_files">
+                    Server files
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="external_grading_files"
+                    disabled={!canEdit}
+                    defaultValue={defaultValues.external_grading_files}
+                    {...register('external_grading_files')}
+                  />
+                  <small className="form-text text-muted">
+                    The list of files or directories that will be copied from{' '}
+                    <code>course/serverFilesCourse</code> into the grading job. You may enter
+                    multiple files or directories, separated by commas.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_timeout">
+                    Timeout
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    className={clsx(
+                      'form-control',
+                      errors.external_grading_timeout && 'is-invalid',
+                    )}
+                    id="external_grading_timeout"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_timeout || undefined}
+                    defaultValue={defaultValues.external_grading_timeout}
+                    aria-errormessage={
+                      errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
+                    }
+                    {...register('external_grading_timeout', {
+                      setValueAs: coerceToNumber,
+                      min: {
+                        value: 0,
+                        message: 'Timeout must be at least 0 seconds',
+                      },
+                      validate: (value) => {
+                        if (value == null) return true;
+                        if (!Number.isInteger(value)) return 'Timeout must be an integer';
+                        return true;
+                      },
+                    })}
+                  />
+                  {errors.external_grading_timeout && (
+                    <div id="external_grading_timeout-error" className="invalid-feedback">
+                      {errors.external_grading_timeout.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    The number of seconds after which the grading job will timeout.
+                  </small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="external_grading_environment">
+                    Environment
+                  </label>
+                  <textarea
+                    className={clsx(
+                      'form-control',
+                      errors.external_grading_environment && 'is-invalid',
+                    )}
+                    id="external_grading_environment"
+                    disabled={!canEdit}
+                    aria-invalid={!!errors.external_grading_environment || undefined}
+                    defaultValue={defaultValues.external_grading_environment}
+                    aria-errormessage={
+                      errors.external_grading_environment
+                        ? 'external_grading_environment-error'
+                        : undefined
+                    }
+                    {...register('external_grading_environment', {
+                      validate: validateJsonObject,
+                    })}
+                  />
+                  {errors.external_grading_environment && (
+                    <div id="external_grading_environment-error" className="invalid-feedback">
+                      {errors.external_grading_environment.message}
+                    </div>
+                  )}
+                  <small className="form-text text-muted">
+                    Environment variables to set inside the grading container. Variables must be
+                    specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+                  </small>
+                </div>
+
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enable_networking"
+                    disabled={!canEdit}
+                    defaultChecked={defaultValues.external_grading_enable_networking}
+                    {...register('external_grading_enable_networking')}
+                  />
+                  <label className="form-check-label" htmlFor="external_grading_enable_networking">
+                    Enable networking
+                  </label>
+                  <div className="small text-muted">
+                    Whether the grading containers should have network access. Access is disabled by
+                    default.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {sharing.enabled && (
+          <div className="card">
+            <div className="card-body">
+              <h2 className="h5 card-title mb-3">Sharing</h2>
+              {/* Hidden inputs preserve locked-on flags whose checkbox is disabled;
+                  must mirror the disabled gate to avoid silently flipping the value. */}
+              {sharePublicly && sharePubliclyDisabled && (
+                <input type="hidden" name="share_publicly" value="on" />
+              )}
+              <Form.Check
+                ref={sharePubliclyInput.ref}
+                type="checkbox"
+                id="share_publicly"
+                name={sharePubliclyInput.name}
+                value="on"
+                label="Share publicly"
+                className="mb-1"
+                disabled={sharePubliclyDisabled}
+                checked={sharePublicly}
+                aria-describedby="share_publicly-description"
+                onChange={sharePubliclyInput.onChange}
+                onBlur={sharePubliclyInput.onBlur}
+              />
+              <small id="share_publicly-description" className="form-text text-muted d-block mb-2">
+                Any course may import this question.
+                {sharePubliclyMessage && <SharingMessageText message={sharePubliclyMessage} />}
+              </small>
+
+              {shareSourcePublicly && shareSourcePubliclyDisabled && (
+                <input type="hidden" name="share_source_publicly" value="on" />
+              )}
+              <Form.Check
+                ref={shareSourcePubliclyInput.ref}
+                type="checkbox"
+                id="share_source_publicly"
+                name={shareSourcePubliclyInput.name}
+                value="on"
+                label="Share source publicly"
+                className="mb-1"
+                disabled={shareSourcePubliclyDisabled}
+                checked={shareSourcePublicly}
+                aria-describedby="share_source_publicly-description"
+                onChange={shareSourcePubliclyInput.onChange}
+                onBlur={shareSourcePubliclyInput.onBlur}
+              />
+              <small
+                id="share_source_publicly-description"
+                className="form-text text-muted d-block mb-3"
+              >
+                The question's source is publicly shared.
+                {shareSourcePubliclyMessage && (
+                  <SharingMessageText message={shareSourcePubliclyMessage} />
+                )}
+              </small>
+
+              <div>
+                <label id="sharing-sets-label" className="form-label" htmlFor="sharing_sets">
+                  Sharing sets
+                </label>
+                {sharing.sets.length === 0 ? (
+                  <div className="small text-muted">
+                    No sharing sets are defined in this course. Create them on the{' '}
+                    <a href="../../course_admin/sharing">Course sharing</a> page.
+                  </div>
+                ) : (
+                  <>
+                    {/* Hidden inputs are derived from the RHF state, which is the
+                        single source of truth for which sharing sets get submitted.
+                        TagPicker is intentionally rendered without a `name` prop so
+                        it doesn't emit its own hidden inputs in parallel. */}
+                    {watchedSharingSets.map((name) => (
+                      <input key={name} type="hidden" name="sharing_sets" value={name} />
+                    ))}
+                    {lockedSharingSetNamesSet.size > 0 && (
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {Array.from(lockedSharingSetNamesSet).map((name) => (
+                          <span
+                            key={name}
+                            className="badge color-gray1"
+                            title="Cannot remove: a consuming course with access via this set uses this question."
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <TagPicker
+                      id="sharing_sets"
+                      items={sharing.sets
+                        .filter((s) => !lockedSharingSetNamesSet.has(s.name))
+                        .map((s) => ({
+                          id: s.name,
+                          data: s,
+                          label: s.name,
+                          searchableText: s.name,
+                        }))}
+                      value={watchedSharingSets.filter((n) => !lockedSharingSetNamesSet.has(n))}
+                      placeholder="Select sharing sets"
+                      aria-labelledby="sharing-sets-label"
+                      disabled={!canEdit}
+                      renderTagContent={(data) => data.name}
+                      tagClassName={() => 'badge color-gray1'}
+                      onChange={(value) => {
+                        setValue(
+                          'sharing_sets',
+                          [...Array.from(lockedSharingSetNamesSet), ...value],
+                          {
+                            shouldDirty: true,
+                          },
+                        );
+                      }}
+                    />
+                    <small className="form-text text-muted">
+                      Memberships can be removed if no course granted access via the{' '}
+                      <a
+                        href="https://docs.prairielearn.com/contentSharing/#sharing-sets"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        sharing set
+                      </a>{' '}
+                      uses this question.
+                    </small>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </form>
+
+      {showTestsSection && (
+        <div className="card">
+          <div className="card-body">
+            <h2 className="h5 card-title mb-3">Tests</h2>
+            <QuestionTestsForm
+              questionTestPath={questionTest.path}
+              csrfToken={questionTest.csrfToken}
+            />
+          </div>
+        </div>
+      )}
+
+      <QuestionSettingsCardFooter
+        canEdit={canEdit}
+        canCopy={canCopy}
+        editableCourses={editableCourses}
+        courseId={question.course_id}
+        qid={defaultValues.qid}
+        assessmentsWithQuestion={assessmentsWithQuestion}
+        csrfToken={csrfToken}
+        questionGHLink={questionGHLink}
+      />
+
+      {canEdit && (
+        <StickySaveBar
+          visible={isDirty}
+          isSaving={isSubmitting}
+          formId="edit-question-settings-form"
+          onCancel={() => reset()}
+        />
+      )}
+    </div>
+  );
+};
+
+InstructorQuestionSettingsForm.displayName = 'InstructorQuestionSettingsForm';

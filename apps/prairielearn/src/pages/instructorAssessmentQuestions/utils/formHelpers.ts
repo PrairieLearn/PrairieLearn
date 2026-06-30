@@ -186,5 +186,5 @@ export function makeResetAndSave<T>(
   handleSave: (data: T) => void,
   getValues: () => T,
 ): (field: string) => void {
-  return (field: string) => handleSave({ ...getValues(), [field]: undefined } as T);
+  return (field: string) => handleSave({ ...getValues(), [field]: undefined });
 }

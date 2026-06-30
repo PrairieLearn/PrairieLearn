@@ -1,14 +1,17 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Alert, Modal } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AppErrorAlert, getAppError } from '../../../lib/client/errors.js';
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
+import { UidRegexpSchema } from '../../../lib/uid-regexp.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
+import type { AdministratorInstitutionsError } from '../../../trpc/administrator/institutions.js';
 
 interface AddInstitutionFormData {
   short_name: string;
@@ -33,6 +36,7 @@ export function AddInstitutionModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.institutions.addInstitution.mutationOptions());
+  const appError = getAppError<AdministratorInstitutionsError['AddInstitution']>(mutation.error);
 
   const defaultCheckedIds = supportedAuthenticationProviders
     .filter((p) => p.name === 'Google' || p.name === 'Azure')
@@ -220,14 +224,28 @@ export function AddInstitutionModal({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.uid_regexp && 'is-invalid')}
               id="uid_regexp"
               aria-describedby="uid_regexp_help"
-              {...register('uid_regexp')}
+              aria-invalid={errors.uid_regexp ? true : undefined}
+              aria-errormessage={errors.uid_regexp ? 'uid_regexp-error' : undefined}
+              {...register('uid_regexp', {
+                validate: (value) => {
+                  const result = UidRegexpSchema.safeParse(value);
+                  return result.success || result.error.issues[0].message;
+                },
+              })}
             />
+            {errors.uid_regexp && (
+              <div id="uid_regexp-error" className="invalid-feedback">
+                {errors.uid_regexp.message}
+              </div>
+            )}
             <small id="uid_regexp_help" className="form-text text-muted">
               Should match the non-username part of user UIDs, e.g. <code>@example\.com$</code>.
-              This should be set for institution-based access restrictions to work correctly.
+              This must be a valid regular expression that starts with <code>@</code> and ends with{' '}
+              <code>$</code>. Periods must be escaped as <code>\.</code>. This should be set for
+              institution-based access restrictions to work correctly.
             </small>
           </div>
           {supportedAuthenticationProviders.length > 0 ? (
@@ -261,11 +279,11 @@ export function AddInstitutionModal({
               installation. Additional SSO authentication providers can be configured later.
             </div>
           )}
-          {mutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-              {mutation.error.message}
-            </Alert>
-          )}
+          <AppErrorAlert
+            error={appError}
+            render={{ UNKNOWN: ({ message }) => message }}
+            onDismiss={() => mutation.reset()}
+          />
         </form>
       </Modal.Body>
       <Modal.Footer>

@@ -7,6 +7,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 import {
   type Assessment,
   AssessmentAccessControlPrairietestExamSchema,
+  type AssessmentAccessControlRule,
   AssessmentAccessControlRuleSchema,
   type CourseInstance,
 } from '../db-types.js';
@@ -22,6 +23,7 @@ import type { RuntimeDateControl } from './timeline.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
+type DeadlineJson = z.infer<typeof DeadlineJsonSchema>;
 
 const PrairieTestExamJsonSchema = z
   .array(
@@ -42,14 +44,17 @@ const AccessControlRuleRowSchema = z.object({
   early_deadlines: DeadlineJsonSchema,
   late_deadlines: DeadlineJsonSchema,
 });
-
 type AccessControlRuleRow = z.infer<typeof AccessControlRuleRowSchema>;
-type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
+
+const AssessmentAccessControlRulesRowSchema = z.object({
+  assessment_id: IdSchema,
+  access_control_rules: z.array(AccessControlRuleRowSchema),
+});
 
 function buildDateControl(
   rule: AssessmentAccessControlRule,
-  earlyDeadlines: z.infer<typeof DeadlineJsonSchema>,
-  lateDeadlines: z.infer<typeof DeadlineJsonSchema>,
+  earlyDeadlines: DeadlineJson,
+  lateDeadlines: DeadlineJson,
 ): RuntimeDateControl | undefined {
   // Only include fields that were explicitly configured (overridden flag is true).
   const dateControl: RuntimeDateControl = {};
@@ -89,11 +94,21 @@ function buildDateControl(
       })) ?? null;
   }
 
-  if (rule.date_control_after_last_deadline_allow_submissions != null) {
+  // Mirror `dbBaseRowToAccessControlJson`: emit submissions-allowed with an
+  // explicit credit for `true`, and an explicit disable only for non-default
+  // rules so an override still overrides the inherited value. The default
+  // rule's `false` is left implicit — it's the merge base, so omitting it is
+  // equivalent.
+  const allowSubmissions = rule.date_control_after_last_deadline_allow_submissions;
+  const isDefaultRule = rule.number === 0 && rule.target_type === 'none';
+  if (allowSubmissions === true) {
+    const credit = rule.date_control_after_last_deadline_credit;
     dateControl.afterLastDeadline = {
-      allowSubmissions: rule.date_control_after_last_deadline_allow_submissions,
-      credit: rule.date_control_after_last_deadline_credit,
+      allowSubmissions,
+      credit: credit ?? 0,
     };
+  } else if (allowSubmissions === false && !isDefaultRule) {
+    dateControl.afterLastDeadline = { allowSubmissions };
   }
 
   return Object.keys(dateControl).length > 0 ? dateControl : undefined;
@@ -168,12 +183,12 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 export async function selectAccessControlRulesForAssessment(
   assessment: Assessment,
 ): Promise<AccessControlRuleInput[]> {
-  const rows = await queryRows(
+  const row = await queryRow(
     sql.select_access_control_rules,
     { assessment_id: assessment.id, course_instance_id: null },
-    AccessControlRuleRowSchema,
+    AssessmentAccessControlRulesRowSchema,
   );
-  return rows.map(rowToAccessControlRuleInput);
+  return row.access_control_rules.map(rowToAccessControlRuleInput);
 }
 
 export async function selectAccessControlRulesForCourseInstance(
@@ -182,18 +197,15 @@ export async function selectAccessControlRulesForCourseInstance(
   const rows = await queryRows(
     sql.select_access_control_rules,
     { assessment_id: null, course_instance_id: courseInstance.id },
-    AccessControlRuleRowSchema,
+    AssessmentAccessControlRulesRowSchema,
   );
 
-  const result = new Map<string, AccessControlRuleInput[]>();
-  for (const row of rows) {
-    const assessmentId = row.access_control_rule.assessment_id;
-    if (!result.has(assessmentId)) {
-      result.set(assessmentId, []);
-    }
-    result.get(assessmentId)!.push(rowToAccessControlRuleInput(row));
-  }
-  return result;
+  return new Map(
+    rows.map((row) => [
+      row.assessment_id,
+      row.access_control_rules.map(rowToAccessControlRuleInput),
+    ]),
+  );
 }
 
 interface UserAccessContext {

@@ -12,6 +12,7 @@ import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
+import { MAX_STUDENT_LABEL_NAME_LENGTH } from '../../../schemas/infoCourseInstance.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
@@ -226,7 +227,16 @@ export function LabelModifyModal({
               className={clsx('form-control', errors.name && 'is-invalid')}
               aria-invalid={!!errors.name}
               aria-errormessage={errors.name ? 'label-name-error' : undefined}
-              {...register('name', { required: 'Label name is required' })}
+              {...register('name', {
+                validate: (value) => {
+                  const trimmed = value.trim();
+                  if (trimmed.length === 0) return 'Label name is required';
+                  if (trimmed.length > MAX_STUDENT_LABEL_NAME_LENGTH) {
+                    return `Label name must be at most ${MAX_STUDENT_LABEL_NAME_LENGTH} characters.`;
+                  }
+                  return true;
+                },
+              })}
             />
             {errors.name && (
               <div id="label-name-error" className="invalid-feedback d-block">

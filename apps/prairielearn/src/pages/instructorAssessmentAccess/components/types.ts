@@ -3,7 +3,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import type { AccessControlJsonWithId } from '../../../models/assessment-access-control-rules.js';
 
 /** Field names that belong to the date control section of an access control rule. */
-export const DATE_CONTROL_FIELD_NAMES = [
+const DATE_CONTROL_FIELD_NAMES = [
   'release',
   'due',
   'earlyDeadlines',
@@ -39,10 +39,9 @@ export interface DueValue {
   customCredit: boolean;
 }
 
-export interface AfterLastDeadlineValue {
-  allowSubmissions: boolean;
-  credit?: number;
-}
+export type AfterLastDeadlineValue =
+  | { allowSubmissions: false }
+  | { allowSubmissions: true; credit: number };
 
 export interface QuestionVisibilityValue {
   hidden: boolean;
@@ -76,7 +75,7 @@ export interface EnrollmentTarget {
   name: string | null;
 }
 
-export interface StudentLabelTarget {
+interface StudentLabelTarget {
   studentLabelId: string;
   name: string;
   color?: string;
@@ -84,7 +83,7 @@ export interface StudentLabelTarget {
 
 export type TargetType = 'enrollment' | 'student_label';
 
-export interface AppliesTo {
+interface AppliesTo {
   targetType: TargetType;
   enrollments: EnrollmentTarget[];
   studentLabels: StudentLabelTarget[];
@@ -99,12 +98,12 @@ export interface AppliesTo {
  * which would not otherwise be possible if `released` were derived from
  * `date <= now`. The flag is dropped on JSON serialization.
  */
-export interface ReleaseValue {
+interface ReleaseValue {
   date: string | null;
   released: boolean;
 }
 
-// Default rule: flat fields, null = feature off
+// Default rule: flat fields. Nullable field values use null as their "off" state.
 export interface DefaultRuleData {
   id?: string;
   trackingId: string;
@@ -114,7 +113,7 @@ export interface DefaultRuleData {
   due: DueValue;
   earlyDeadlines: DeadlineEntry[];
   lateDeadlines: DeadlineEntry[];
-  afterLastDeadline: AfterLastDeadlineValue | null;
+  afterLastDeadline: AfterLastDeadlineValue;
   durationMinutes: number | null;
   password: string | null;
   prairieTestExams: PrairieTestExam[];
@@ -128,6 +127,7 @@ export interface DefaultRuleData {
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
   id?: string;
+  uuid: string;
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
@@ -145,6 +145,15 @@ export interface OverrideData {
 export interface AccessControlFormData {
   defaultRule: DefaultRuleData;
   overrides: OverrideData[];
+}
+
+export function isOverrideEditable(
+  override: OverrideData | null | undefined,
+  permissions: { canEditAccessSettings: boolean; canEditEnrollmentRules: boolean },
+): boolean {
+  if (!permissions.canEditAccessSettings) return false;
+  if (override?.appliesTo.targetType === 'enrollment') return permissions.canEditEnrollmentRules;
+  return true;
 }
 
 /**
@@ -213,7 +222,7 @@ export function jsonToDefaultRuleFormData(
       ...d,
       date: toLocalDatetimeValue(d.date, displayTimezone),
     })),
-    afterLastDeadline: dc?.afterLastDeadline ?? null,
+    afterLastDeadline: dc?.afterLastDeadline ?? { allowSubmissions: false },
     durationMinutes: dc?.durationMinutes ?? null,
     password: dc?.password ?? null,
     prairieTestExams: (json.integrations?.prairieTest?.exams ?? []).map((e) => ({
@@ -241,14 +250,18 @@ export function jsonToOverrideFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
 ): OverrideData {
+  if (json.uuid == null) {
+    throw new Error('Non-default access control rules must have a UUID.');
+  }
+
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
   let appliesTo: AppliesTo;
-  if (json.ruleType === 'enrollment' && json.enrollments && json.enrollments.length > 0) {
+  if (json.ruleType === 'enrollment') {
     appliesTo = {
       targetType: 'enrollment',
-      enrollments: json.enrollments.map((i) => ({
+      enrollments: (json.enrollments ?? []).map((i) => ({
         enrollmentId: i.enrollmentId,
         uid: i.uid,
         name: i.name,
@@ -342,7 +355,8 @@ export function jsonToOverrideFormData(
 
   return {
     id: json.id,
-    trackingId: json.id ?? crypto.randomUUID(),
+    uuid: json.uuid,
+    trackingId: json.id ?? json.uuid,
     appliesTo,
     overriddenFields,
     release,
@@ -364,19 +378,25 @@ export function jsonToOverrideFormData(
  * distinct from default because cross-rule validation (e.g. forbidding early
  * deadlines) treats any set credit as customized.
  *
- * `customCredit: true` with `credit: null` is a transient editing state that
- * the form's per-field validator blocks at submit time; assert here so any
- * future caller that bypasses the form fails loudly instead of silently
- * coercing to "default credit".
+ * `customCredit: true` with `credit: null` is a transient editing state (the
+ * user has cleared the input). The field-level validator surfaces "Credit is
+ * required" and blocks submit; here we just omit `credit` so that live
+ * cross-field validation can keep running without throwing.
  */
 function buildDueJson(due: DueValue): { date: string | null; credit?: number } {
-  if (due.customCredit) {
-    if (due.credit === null) {
-      throw new Error('customCredit is true but credit is null');
-    }
+  if (due.customCredit && due.credit !== null) {
     return { date: due.date, credit: due.credit };
   }
   return { date: due.date };
+}
+
+function buildAfterLastDeadlineJson(
+  value: AfterLastDeadlineValue,
+): NonNullable<NonNullable<AccessControlJsonWithId['dateControl']>['afterLastDeadline']> {
+  if (!value.allowSubmissions) {
+    return { allowSubmissions: false };
+  }
+  return { allowSubmissions: true, credit: value.credit };
 }
 
 function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
@@ -403,8 +423,8 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
     if (rule.lateDeadlines.length > 0) {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
-    if (rule.afterLastDeadline) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+    if (rule.afterLastDeadline.allowSubmissions === true) {
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (rule.durationMinutes != null) output.dateControl.durationMinutes = rule.durationMinutes;
     if (rule.password) output.dateControl.password = rule.password;
@@ -432,7 +452,9 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false).
+  // (questions.hidden: true, score.hidden: false). These settings can apply
+  // even without a scheduled deadline when an instructor manually closes a
+  // student's assessment instance.
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
@@ -474,6 +496,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const output: AccessControlJsonWithId = {
     id: rule.id,
+    uuid: rule.uuid,
     labels,
   };
 
@@ -496,7 +519,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
     if (of.has('afterLastDeadline')) {
-      output.dateControl.afterLastDeadline = rule.afterLastDeadline;
+      output.dateControl.afterLastDeadline = buildAfterLastDeadlineJson(rule.afterLastDeadline);
     }
     if (of.has('durationMinutes')) output.dateControl.durationMinutes = rule.durationMinutes;
     if (of.has('password')) output.dateControl.password = rule.password;
@@ -542,6 +565,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
 
 export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
+    uuid: crypto.randomUUID(),
     trackingId: crypto.randomUUID(),
     appliesTo: {
       targetType: 'enrollment',
@@ -558,7 +582,7 @@ export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): Ov
       : { date: null, credit: null, customCredit: false },
     earlyDeadlines: (defaultRule?.earlyDeadlines ?? []).map((d) => ({ ...d })),
     lateDeadlines: (defaultRule?.lateDeadlines ?? []).map((d) => ({ ...d })),
-    afterLastDeadline: defaultRule?.afterLastDeadline
+    afterLastDeadline: defaultRule
       ? { ...defaultRule.afterLastDeadline }
       : { allowSubmissions: false },
     durationMinutes: defaultRule?.durationMinutes ?? null,

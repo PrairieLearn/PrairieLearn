@@ -1,5 +1,36 @@
 # @prairielearn/compiled-assets
 
+## 4.1.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.1.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 4.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.1.4
+
+### Patch Changes
+
+- 54a4c6d: Use OS-assigned ports for esbuild development asset servers.
+- 382dbd8: Bump dependencies
+
 ## 4.1.3
 
 ### Patch Changes

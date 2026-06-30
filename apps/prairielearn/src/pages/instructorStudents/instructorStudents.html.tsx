@@ -1,21 +1,18 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type Column,
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
   type RowSelectionState,
   type SortingState,
   type Table,
-  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
@@ -23,19 +20,23 @@ import z from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
-  CategoricalColumnFilter,
   IndeterminateCheckbox,
   MultiSelectColumnFilter,
+  type MultiSelectFilterValue,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
+  applyMultiSelectFilter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsSortingState,
+  useColumnFilters,
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
+import { CopyButton } from '../../components/CopyButton.js';
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
@@ -81,8 +82,17 @@ const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
 
-const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
-const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
+const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ROLE_FILTER: MultiSelectFilterValue<(typeof ROLE_VALUES)[number]> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_STUDENT_LABELS_FILTER: MultiSelectFilterValue = { values: [], mode: 'include' };
+
+const HIDDEN_BY_DEFAULT = new Set(['user_uin', 'user_email']);
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -202,17 +212,6 @@ interface StudentsCardProps {
   origHash: string | null;
 }
 
-type ColumnId =
-  | 'select'
-  | 'user_uid'
-  | 'user_uin'
-  | 'user_name'
-  | 'role'
-  | 'enrollment_status'
-  | 'user_email'
-  | 'enrollment_first_joined_at'
-  | 'student_labels';
-
 function StudentsCard({
   authzData,
   course,
@@ -235,20 +234,26 @@ function StudentsCard({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
-  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
-    'status',
-    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
-      DEFAULT_ENROLLMENT_STATUS_FILTER,
-    ),
+  const filterRegistry = useMemo(
+    () => ({
+      enrollment_status: {
+        urlKey: 'status',
+        parser: parseAsMultiSelectFilter(STATUS_VALUES),
+        defaultValue: DEFAULT_ENROLLMENT_STATUS_FILTER,
+      },
+      role: {
+        parser: parseAsMultiSelectFilter(ROLE_VALUES),
+        defaultValue: DEFAULT_ROLE_FILTER,
+      },
+      student_labels: {
+        parser: parseAsMultiSelectFilter(),
+        defaultValue: DEFAULT_STUDENT_LABELS_FILTER,
+      },
+    }),
+    [],
   );
-  const [roleFilter, setRoleFilter] = useQueryState(
-    'role',
-    parseAsArrayOf(parseAsStringLiteral(ROLE_VALUES)).withDefault(DEFAULT_ROLE_FILTER),
-  );
-  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
-    'student_labels',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
+  const { columnFilters, onColumnFiltersChange, onResetColumnFilters } =
+    useColumnFilters(filterRegistry);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
@@ -272,46 +277,9 @@ function StudentsCard({
     initialData: initialStudentLabels,
   });
 
-  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
-    return [
-      {
-        id: 'enrollment_status',
-        value: enrollmentStatusFilter,
-      },
-      {
-        id: 'role',
-        value: roleFilter,
-      },
-      {
-        id: 'student_labels',
-        value: studentLabelsFilter,
-      },
-    ];
-  }, [enrollmentStatusFilter, roleFilter, studentLabelsFilter]);
-
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
-    return {
-      select: undefined,
-      user_uid: undefined,
-      user_uin: undefined,
-      user_name: undefined,
-      role: setRoleFilter,
-      enrollment_status: setEnrollmentStatusFilter,
-      user_email: undefined,
-      enrollment_first_joined_at: undefined,
-      student_labels: setStudentLabelsFilter,
-    };
-  }, [setEnrollmentStatusFilter, setRoleFilter, setStudentLabelsFilter]);
-
-  const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
-      }
-    },
-    [columnFilters, columnFilterSetters],
+  const studentLabelsById = useMemo(
+    () => new Map(studentLabels.map((l) => [l.id, l])),
+    [studentLabels],
   );
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -336,13 +304,6 @@ function StudentsCard({
 
   const [showInvite, setShowInvite] = useState(false);
   const [showSync, setShowSync] = useState(false);
-  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
-
-  const handleCopyEnrollLink = async () => {
-    await copyToClipboard(selfEnrollLink);
-    setCopiedEnrollLink(true);
-    setTimeout(() => setCopiedEnrollLink(false), 2000);
-  };
 
   const syncStudents = async (
     toInvite: string[],
@@ -512,20 +473,18 @@ function StudentsCard({
         id: 'role',
         header: 'Role',
         cell: (info) => info.getValue(),
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<(typeof ROLE_VALUES)[number]>) => {
           const current = row.getValue<StudentRow['role']>(columnId);
-          return filterValues.includes(current);
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
         },
       }),
       columnHelper.accessor((row) => row.enrollment.status, {
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<EnumEnrollmentStatus>) => {
           const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
-          return filterValues.includes(current);
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
         },
       }),
       columnHelper.accessor((row) => row.user?.uin, {
@@ -588,10 +547,11 @@ function StudentsCard({
             </div>
           );
         },
-        filterFn: (row, columnId, filterValues: string[]) => {
-          if (filterValues.length === 0) return true;
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
           const labelIdSet = new Set(row.getValue<StudentRow['student_label_ids']>(columnId));
-          return filterValues.some((filterId) => labelIdSet.has(filterId));
+          return applyMultiSelectFilter(filter, (values) =>
+            values.some((id) => labelIdSet.has(id)),
+          );
         },
       }),
       columnHelper.accessor((row) => row.enrollment.first_joined_at, {
@@ -609,18 +569,24 @@ function StudentsCard({
     [timezone, courseInstance.id, createCheckboxProps, studentLabels],
   );
 
-  const allColumnIds = columns
-    .map((col) => col.id)
-    .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const hasNonNoneRole = students.some((student) => student.role !== 'None');
-  const hiddenByDefault = new Set(['user_uin', 'user_email']);
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => {
-      if (id === 'role') {
-        return [id, hasNonNoneRole];
-      }
-      return [id, !hiddenByDefault.has(id)];
-    }),
+  const allColumnIds = useMemo(
+    () =>
+      columns
+        .map((col) => col.id)
+        .filter((id): id is string => typeof id === 'string' && id !== 'select'),
+    [columns],
+  );
+  const defaultColumnVisibility = useMemo(
+    () =>
+      Object.fromEntries(
+        allColumnIds.map((id) => {
+          if (id === 'role') {
+            return [id, students.some((student) => student.role !== 'None')];
+          }
+          return [id, !HIDDEN_BY_DEFAULT.has(id)];
+        }),
+      ),
+    [allColumnIds, students],
   );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -647,7 +613,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    onColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -758,6 +724,17 @@ function StudentsCard({
               },
             ];
           },
+          mapRowToJsonData: (row) => ({
+            uid: row.user?.uid ?? row.enrollment.pending_uid,
+            name: row.user?.name ?? null,
+            email: row.user?.email ?? null,
+            role: row.role,
+            enrollment_status: row.enrollment.status,
+            first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
+            labels: row.student_label_ids
+              .map((id) => studentLabelsById.get(id)?.name)
+              .filter((name): name is string => name != null),
+          }),
           hasSelection: false,
         }}
         headerButtons={
@@ -856,7 +833,7 @@ function StudentsCard({
         tableOptions={{
           filters: {
             role: ({ header }: { header: Header<StudentRow, StudentRow['role']> }) => (
-              <CategoricalColumnFilter
+              <MultiSelectColumnFilter
                 column={header.column}
                 allColumnValues={ROLE_VALUES}
                 renderValueLabel={({ value }) => <span>{value}</span>}
@@ -867,7 +844,7 @@ function StudentsCard({
             }: {
               header: Header<StudentRow, StudentRow['enrollment']['status']>;
             }) => (
-              <CategoricalColumnFilter
+              <MultiSelectColumnFilter
                 column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
@@ -883,7 +860,7 @@ function StudentsCard({
               const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
-                  column={header.column as Column<StudentRow, unknown>}
+                  column={header.column}
                   allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
                     const label = studentLabels.find((l) => l.id === String(value));
@@ -906,19 +883,11 @@ function StudentsCard({
                 {(courseInstance.modern_publishing || courseInstance.self_enrollment_enabled) && (
                   <div className="d-flex gap-2">
                     {courseInstance.self_enrollment_enabled && (
-                      <OverlayTrigger
-                        placement="top"
-                        tooltip={{
-                          body: 'Copied!',
-                          props: { id: 'empty-state-copy-link-tooltip' },
-                        }}
-                        show={copiedEnrollLink}
-                      >
-                        <Button variant="primary" onClick={handleCopyEnrollLink}>
-                          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
-                          Copy enrollment link
-                        </Button>
-                      </OverlayTrigger>
+                      <CopyButton
+                        text={selfEnrollLink}
+                        label="Copy enrollment link"
+                        className="btn-primary"
+                      />
                     )}
                     {courseInstance.modern_publishing && (
                       <Button
@@ -945,6 +914,7 @@ function StudentsCard({
             </TanstackTableEmptyState>
           ),
         }}
+        onResetColumnFilters={onResetColumnFilters}
       />
       <InviteStudentsModal
         show={showInvite}

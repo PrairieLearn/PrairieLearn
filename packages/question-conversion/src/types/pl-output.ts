@@ -19,6 +19,8 @@ export interface PLQuestionOutput {
   questionHtml: string;
   serverPy?: string;
   clientFiles: Map<string, Buffer | string>;
+  /** Source paths excluded from clientFiles by extension filtering (e.g. video files). */
+  skippedFiles: string[];
 }
 
 /** A question reference inside an assessment zone. */

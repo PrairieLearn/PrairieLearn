@@ -1,6 +1,6 @@
-import ace from 'ace-builds';
-import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
 
+import { AceFileEditor } from '../../../../components/AceFileEditor.js';
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
 
 export interface QuestionCodeEditorsHandle {
@@ -8,16 +8,7 @@ export interface QuestionCodeEditorsHandle {
   discardChanges: () => void;
 }
 
-export function QuestionCodeEditors({
-  htmlContents,
-  pythonContents,
-  csrfToken,
-  isGenerating,
-  onHasChangesChange,
-  filesError,
-  onRetryFiles,
-  editorRef,
-}: {
+interface QuestionCodeEditorsProps {
   htmlContents: string | null;
   pythonContents: string | null;
   csrfToken: string;
@@ -26,21 +17,25 @@ export function QuestionCodeEditors({
   filesError?: Error | null;
   onRetryFiles?: () => void;
   editorRef?: Ref<QuestionCodeEditorsHandle>;
+}
+
+function QuestionCodeEditorsInner({
+  savedHtml,
+  savedPython,
+  csrfToken,
+  isGenerating,
+  onHasChangesChange,
+  filesError,
+  onRetryFiles,
+  editorRef,
+}: Omit<QuestionCodeEditorsProps, 'htmlContents' | 'pythonContents'> & {
+  savedHtml: string;
+  savedPython: string;
 }) {
-  const htmlEditorContainerRef = useRef<HTMLDivElement>(null);
-  const pythonEditorContainerRef = useRef<HTMLDivElement>(null);
-  const htmlEditorInstanceRef = useRef<ace.Ace.Editor | null>(null);
-  const pythonEditorInstanceRef = useRef<ace.Ace.Editor | null>(null);
+  const [htmlValue, setHtmlValue] = useState(savedHtml);
+  const [pythonValue, setPythonValue] = useState(savedPython);
 
-  // Track what we last synced to detect when props change externally.
-  const syncedHtmlRef = useRef(htmlContents ?? '');
-  const syncedPythonRef = useRef(pythonContents ?? '');
-
-  const [htmlValue, setHtmlValue] = useState(htmlContents ?? '');
-  const [pythonValue, setPythonValue] = useState(pythonContents ?? '');
-
-  // Derive hasChanges by comparing current editor state to props.
-  const hasChanges = htmlValue !== (htmlContents ?? '') || pythonValue !== (pythonContents ?? '');
+  const hasChanges = htmlValue !== savedHtml || pythonValue !== savedPython;
 
   // Notify parent when hasChanges changes.
   useEffect(() => {
@@ -48,93 +43,12 @@ export function QuestionCodeEditors({
     onHasChangesChange?.(hasChanges);
   }, [hasChanges, onHasChangesChange]);
 
-  // Initialize ACE editors once on mount.
-  useEffect(() => {
-    if (!htmlEditorContainerRef.current || !pythonEditorContainerRef.current) return;
-
-    const aceBasePath = document.querySelector<HTMLMetaElement>(
-      'meta[name="ace-base-path"]',
-    )?.content;
-    if (aceBasePath) {
-      ace.config.set('basePath', aceBasePath);
-    }
-
-    const htmlEditor = ace.edit(htmlEditorContainerRef.current, {
-      mode: 'ace/mode/html',
-      enableKeyboardAccessibility: true,
-      theme: 'ace/theme/chrome',
-    });
-    htmlEditor.getSession().setValue(syncedHtmlRef.current);
-    htmlEditor.getSession().setTabSize(2);
-    htmlEditor.gotoLine(1, 0, false);
-    htmlEditorInstanceRef.current = htmlEditor;
-
-    const pythonEditor = ace.edit(pythonEditorContainerRef.current, {
-      mode: 'ace/mode/python',
-      enableKeyboardAccessibility: true,
-      theme: 'ace/theme/chrome',
-    });
-    pythonEditor.getSession().setValue(syncedPythonRef.current);
-    pythonEditor.gotoLine(1, 0, false);
-    pythonEditorInstanceRef.current = pythonEditor;
-
-    // Update state when editor content changes (user edits or programmatic setValue).
-    htmlEditor.getSession().on('change', () => setHtmlValue(htmlEditor.getValue()));
-    pythonEditor.getSession().on('change', () => setPythonValue(pythonEditor.getValue()));
-
-    return () => {
-      htmlEditor.destroy();
-      pythonEditor.destroy();
-    };
-  }, []);
-
-  // Sync editor content when props change (e.g., after AI updates or saves).
-  useEffect(() => {
-    const htmlEditor = htmlEditorInstanceRef.current;
-    const pythonEditor = pythonEditorInstanceRef.current;
-    if (!htmlEditor || !pythonEditor) return;
-
-    const newHtml = htmlContents ?? '';
-    const newPython = pythonContents ?? '';
-
-    if (newHtml !== syncedHtmlRef.current || newPython !== syncedPythonRef.current) {
-      syncedHtmlRef.current = newHtml;
-      syncedPythonRef.current = newPython;
-
-      htmlEditor.getSession().setValue(newHtml);
-      pythonEditor.getSession().setValue(newPython);
-
-      // Clear undo history so users can't undo past this point.
-      htmlEditor.getSession().getUndoManager().reset();
-      pythonEditor.getSession().getUndoManager().reset();
-
-      htmlEditor.gotoLine(1, 0, false);
-      pythonEditor.gotoLine(1, 0, false);
-    }
-  }, [htmlContents, pythonContents]);
-
   useImperativeHandle(editorRef, () => ({
     discardChanges: () => {
-      const htmlEditor = htmlEditorInstanceRef.current;
-      const pythonEditor = pythonEditorInstanceRef.current;
-      if (!htmlEditor || !pythonEditor) return;
-
-      htmlEditor.getSession().setValue(syncedHtmlRef.current);
-      pythonEditor.getSession().setValue(syncedPythonRef.current);
-
-      htmlEditor.getSession().getUndoManager().reset();
-      pythonEditor.getSession().getUndoManager().reset();
-
-      htmlEditor.gotoLine(1, 0, false);
-      pythonEditor.gotoLine(1, 0, false);
+      setHtmlValue(savedHtml);
+      setPythonValue(savedPython);
     },
   }));
-
-  // Forbid manual edits while the agent is working.
-  useEffect(() => {
-    htmlEditorInstanceRef.current?.setReadOnly(isGenerating);
-    pythonEditorInstanceRef.current?.setReadOnly(isGenerating);
-  }, [isGenerating]);
 
   return (
     <div className="editor-panes p-2 gap-2">
@@ -185,15 +99,45 @@ export function QuestionCodeEditors({
         style={{ overflow: 'hidden' }}
       >
         <div className="py-2 px-3 font-monospace bg-light">question.html</div>
-        <div ref={htmlEditorContainerRef} className="flex-grow-1" />
+        <AceFileEditor
+          value={htmlValue}
+          mode="ace/mode/html"
+          readOnly={isGenerating}
+          className="flex-grow-1"
+          onChange={setHtmlValue}
+          onReady={(editor) => editor.getSession().setTabSize(2)}
+        />
       </div>
       <div
         className="editor-pane-python d-flex flex-column border rounded"
         style={{ overflow: 'hidden' }}
       >
         <div className="py-2 px-3 font-monospace bg-light">server.py</div>
-        <div ref={pythonEditorContainerRef} className="flex-grow-1" />
+        <AceFileEditor
+          value={pythonValue}
+          mode="ace/mode/python"
+          readOnly={isGenerating}
+          className="flex-grow-1"
+          onChange={setPythonValue}
+        />
       </div>
     </div>
+  );
+}
+
+export function QuestionCodeEditors(props: QuestionCodeEditorsProps) {
+  const { htmlContents, pythonContents, ...editorProps } = props;
+  const savedHtml = htmlContents ?? '';
+  const savedPython = pythonContents ?? '';
+
+  return (
+    // Remount the state-owning editor component when the saved file contents change so
+    // local edits, dirty state, cursor position, and undo history reset to the new baseline.
+    <QuestionCodeEditorsInner
+      key={`${savedHtml}\0${savedPython}`}
+      {...editorProps}
+      savedHtml={savedHtml}
+      savedPython={savedPython}
+    />
   );
 }

@@ -655,6 +655,7 @@ def sympy_check(
     *,
     allow_complex: bool,
     allow_sets: bool,
+    allow_extra_symbols: bool = False,
 ) -> None:
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
@@ -667,7 +668,11 @@ def sympy_check(
         item = work_stack.pop()
         str_item = str(item)
 
-        if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
+        if (
+            not allow_extra_symbols
+            and isinstance(item, sympy.Symbol)
+            and str_item not in valid_symbols
+        ):
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
@@ -778,6 +783,7 @@ def evaluate_with_source(
     allow_complex: bool = False,
     allow_sets: bool = False,
     simplify_expression: bool = True,
+    allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
@@ -942,6 +948,7 @@ def evaluate_with_source(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_extra_symbols=allow_extra_symbols,
     )
 
     return res, code
@@ -958,6 +965,7 @@ def convert_string_to_sympy(
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
 ) -> sympy.Expr:
     """
     Convert a string to a SymPy expression, with optional restrictions on
@@ -973,6 +981,8 @@ def convert_string_to_sympy(
         simplify_expression: Whether to simplify the expression during conversion by evaluating it.
         custom_functions: A list of custom function names that are allowed in the expression.
         assumptions: A dictionary of assumptions for variables in the expression.
+        allow_extra_symbols: Whether to allow symbols not listed in `variables`. Useful for
+            inferring the variables of an expression from its free symbols.
 
     Examples:
         >>> convert_string_to_sympy("n * sin(7*m) + m**2 * cos(6*n)", variables=["m", "n"])
@@ -994,6 +1004,7 @@ def convert_string_to_sympy(
         simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
+        allow_extra_symbols=allow_extra_symbols,
     )[0]
 
 
@@ -1008,6 +1019,7 @@ def convert_string_to_sympy_with_source(
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
+    allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1088,6 +1100,7 @@ def convert_string_to_sympy_with_source(
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
     )
 
 

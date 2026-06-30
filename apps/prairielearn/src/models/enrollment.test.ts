@@ -724,7 +724,7 @@ describe('staff permissions enrollment updates', () => {
     // Re-create a 'joined' enrollment to simulate legacy/manual data, then
     // verify that an unrelated role update still keeps it consistent.
     await queryRow(
-      'UPDATE enrollments SET status = \'joined\' WHERE user_id = $user_id AND course_instance_id = $course_instance_id RETURNING *',
+      "UPDATE enrollments SET status = 'joined' WHERE user_id = $user_id AND course_instance_id = $course_instance_id RETURNING *",
       { user_id: user.id, course_instance_id: courseInstance.id },
       EnrollmentSchema,
     );

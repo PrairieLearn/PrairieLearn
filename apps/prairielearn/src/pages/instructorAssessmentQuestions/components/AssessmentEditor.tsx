@@ -19,13 +19,16 @@ import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import type {
   StaffAssessment,
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import { getQuestionCreateUrl } from '../../../lib/client/url.js';
 import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -86,8 +89,10 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // MDN recommends setting returnValue for legacy browser support:
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -135,12 +140,17 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
-  switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   search: string;
@@ -153,12 +163,17 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   assessmentToolDefaults,
+  groupsConfigured,
+  groupRoles,
+  assessmentCanView,
+  assessmentCanSubmit,
+  groupsPageUrl,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  courseHasQuestions,
   csrfToken,
   origHash,
-  switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
   search,
@@ -169,6 +184,9 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) =>
       queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
+  const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    questionByQidMutation.error,
+  );
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
 
@@ -269,7 +287,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -503,7 +521,7 @@ function AssessmentEditorInner({
       dispatch({
         type: 'UPDATE_QUESTION',
         questionTrackingId,
-        question: normalized as Partial<QuestionAlternativeForm>,
+        question: normalized,
         alternativeTrackingId,
       });
     } else {
@@ -532,15 +550,26 @@ function AssessmentEditorInner({
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
-  const handleAddZone = () => {
+  const createAndAddZone = () => {
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
-      canSubmit: [],
-      canView: [],
-    } as Omit<ZoneAssessmentForm, 'trackingId'>);
+    });
     dispatch({ type: 'ADD_ZONE', zone });
+    return zone;
+  };
+
+  const handleAddZone = () => {
+    const zone = createAndAddZone();
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
+  };
+
+  // Empty-state call-to-action: enter edit mode, create the first zone, and
+  // open the question picker so the user lands directly on adding a question.
+  const handleAddFirstQuestions = () => {
+    setEditMode(true);
+    const zone = createAndAddZone();
+    setSelectedItem({ type: 'picker', zoneTrackingId: zone.trackingId });
   };
 
   const handleUpdateZone = (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => {
@@ -895,6 +924,11 @@ function AssessmentEditorInner({
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -907,6 +941,11 @@ function AssessmentEditorInner({
       assessment.constant_question_value,
       assessmentDefaults,
       assessmentToolDefaults,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -1071,7 +1110,6 @@ function AssessmentEditorInner({
                   state={treeState}
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
-                  switchViewUrl={switchViewUrl}
                   editControls={
                     <EditModeToolbar
                       csrfToken={csrfToken}
@@ -1089,9 +1127,14 @@ function AssessmentEditorInner({
                       }}
                     />
                   }
+                  canEdit={canEdit}
+                  canAddQuestions={canEdit && !!origHash}
+                  courseHasQuestions={courseHasQuestions}
+                  questionCreateUrl={getQuestionCreateUrl(courseInstance.id)}
                   onAddZone={handleAddZone}
                   onViewTypeChange={setViewType}
                   onToggleExpandCollapse={toggleExpandCollapse}
+                  onAddFirstQuestions={handleAddFirstQuestions}
                 />
               ),
             }}
@@ -1110,7 +1153,7 @@ function AssessmentEditorInner({
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}
-                  pickerError={questionByQidMutation.error}
+                  pickerError={pickerError}
                   questionSharingEnabled={questionSharingEnabled}
                   consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
                 />

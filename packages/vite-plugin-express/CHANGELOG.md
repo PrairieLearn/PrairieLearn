@@ -1,5 +1,17 @@
 # @prairielearn/vite-plugin-express
 
+## 2.0.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 2.0.3
 
 ### Patch Changes

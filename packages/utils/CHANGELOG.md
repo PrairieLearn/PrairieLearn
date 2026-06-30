@@ -1,5 +1,35 @@
 # @prairielearn/utils
 
+## 3.2.1
+
+### Patch Changes
+
+- 1053fc5: Update the archiver test dependency to v8.
+
+## 3.2.0
+
+### Minor Changes
+
+- fdfca12: Add a Node-only `@prairielearn/utils/zip` subpath for zip extraction with entry-count, expanded-size, and symlink validation.
+
+## 3.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.1.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
 ## 3.1.3
 
 ### Patch Changes

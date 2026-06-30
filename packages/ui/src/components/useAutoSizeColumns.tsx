@@ -1,4 +1,10 @@
-import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
+import {
+  type Column,
+  type ColumnSizingState,
+  type Header,
+  type Table,
+  flexRender,
+} from '@tanstack/react-table';
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
@@ -46,6 +52,59 @@ function HiddenMeasurementHeader<TData>({
             })}
           </tr>
         </thead>
+      </table>
+    </div>
+  );
+}
+
+function HiddenMeasurementCells<TData>({
+  table,
+  columnsToMeasure,
+}: {
+  table: Table<TData>;
+  columnsToMeasure: Column<TData, unknown>[];
+}) {
+  const rows = table.getRowModel().rows;
+  const data = rows.map((row) => row.original);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        visibility: 'hidden',
+        pointerEvents: 'none',
+        top: '-9999px',
+      }}
+    >
+      <table className="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
+        <tbody style={{ display: 'grid' }}>
+          {columnsToMeasure.map((col) => {
+            const sampleFn = col.columnDef.meta?.autoSizeSample;
+            if (!sampleFn) return null;
+
+            const sampleIndices = sampleFn(data);
+
+            return sampleIndices.map((idx) => {
+              const row = rows[idx];
+              if (!row) return null;
+              const cell = row.getAllCells().find((c) => c.column.id === col.id);
+              if (!cell) return null;
+
+              return (
+                <tr key={`${col.id}-${idx}`} style={{ display: 'flex' }}>
+                  <td
+                    data-measure-cell={col.id}
+                    style={{ display: 'flex', minWidth: 0, flexShrink: 0 }}
+                  >
+                    <div style={{ display: 'block', minWidth: 0, whiteSpace: 'nowrap' }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  </td>
+                </tr>
+              );
+            });
+          })}
+        </tbody>
       </table>
     </div>
   );
@@ -99,16 +158,25 @@ export function useAutoSizeColumns<TData>(
         measurementRootRef.current = createRoot(container);
       }
 
-      // Render headers into hidden container. We need to use `flushSync` to ensure
-      // that it's rendered synchronously before we measure.
+      const columnsWithSamples = columnsToMeasure.filter(
+        (col) => col.columnDef.meta?.autoSizeSample,
+      );
+
+      // Render headers and sample cells into hidden container. We need to use
+      // `flushSync` to ensure it's rendered synchronously before we measure.
       // eslint-disable-next-line @eslint-react/dom-no-flush-sync
       flushSync(() => {
         measurementRootRef.current?.render(
-          <HiddenMeasurementHeader
-            table={table}
-            columnsToMeasure={columnsToMeasure}
-            filters={filters ?? {}}
-          />,
+          <>
+            <HiddenMeasurementHeader
+              table={table}
+              columnsToMeasure={columnsToMeasure}
+              filters={filters ?? {}}
+            />
+            {columnsWithSamples.length > 0 && (
+              <HiddenMeasurementCells table={table} columnsToMeasure={columnsWithSamples} />
+            )}
+          </>,
         );
       });
 
@@ -119,21 +187,30 @@ export function useAutoSizeColumns<TData>(
       const newSizing: ColumnSizingState = {};
 
       for (const col of columnsToMeasure) {
+        const resizeHandlePadding = col.getCanResize() ? 4 : 0;
+        const minSize = col.columnDef.minSize ?? 0;
+        const maxSize = col.columnDef.maxSize ?? Infinity;
+
+        let measuredWidth = 0;
+
         const headerElement = container.querySelector(
           `th[data-column-id="${col.id}"]`,
         ) as HTMLElement;
-
         if (headerElement) {
-          const measuredWidth = headerElement.scrollWidth;
-          const resizeHandlePadding = col.getCanResize() ? 4 : 0;
-          const minSize = col.columnDef.minSize ?? 0;
-          const maxSize = col.columnDef.maxSize ?? Infinity;
+          measuredWidth = headerElement.scrollWidth;
+        }
 
+        // Also measure sample cells if present
+        const cellElements = container.querySelectorAll(`td[data-measure-cell="${col.id}"]`);
+        for (const cellEl of cellElements) {
+          measuredWidth = Math.max(measuredWidth, (cellEl as HTMLElement).scrollWidth);
+        }
+
+        if (measuredWidth > 0) {
           const finalWidth = Math.max(
             minSize,
             Math.min(maxSize, measuredWidth + resizeHandlePadding),
           );
-
           newSizing[col.id] = finalWidth;
         }
       }

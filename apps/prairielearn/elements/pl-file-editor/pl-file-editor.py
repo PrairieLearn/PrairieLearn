@@ -7,7 +7,6 @@ import lxml.html
 import prairielearn as pl
 from text_unidecode import unidecode
 
-EDITOR_CONFIG_FUNCTION_DEFAULT = None
 ACE_MODE_DEFAULT = None
 ACE_THEME_DEFAULT = None
 FONT_SIZE_DEFAULT = None
@@ -33,7 +32,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "ace-mode",
         "ace-theme",
         "font-size",
-        "editor-config-function",
         "source-file-name",
         "min-lines",
         "max-lines",
@@ -73,9 +71,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
-    editor_config_function = pl.get_string_attrib(
-        element, "editor-config-function", EDITOR_CONFIG_FUNCTION_DEFAULT
-    )
     ace_mode = pl.get_string_attrib(element, "ace-mode", ACE_MODE_DEFAULT)
     ace_theme = pl.get_string_attrib(element, "ace-theme", ACE_THEME_DEFAULT)
     font_size = pl.get_string_attrib(element, "font-size", FONT_SIZE_DEFAULT)
@@ -126,12 +121,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "ace_mode_path": ace_mode_path,
         "ace_theme": ace_theme,
         "font_size": font_size,
-        "editor_config_function": editor_config_function,
         "min_lines": min_lines,
         "max_lines": max_lines,
         "auto_resize": auto_resize,
         "preview": preview,
-        "read_only": "false" if data["editable"] else "true",
+        "editable": data["editable"],
         "uuid": uuid,
         "focus": focus,
         "question": True,
@@ -200,3 +194,28 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
     pl.add_submitted_file(data, file_name, file_contents)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name", "")
+    answer_name = get_answer_name(file_name)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        text_content = f"// Test {result}"
+        data["raw_submitted_answers"][answer_name] = base64.b64encode(
+            text_content.encode("utf-8")
+        ).decode("utf-8")
+    elif result == "invalid":
+        if allow_blank:
+            # When blank is allowed, there is no truly invalid submission, so
+            # we provide valid content. The grading pipeline will treat this
+            # the same as a correct submission.
+            data["raw_submitted_answers"][answer_name] = base64.b64encode(
+                b"// Test content (blank allowed, no invalid state)"
+            ).decode("utf-8")
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            pl.add_files_format_error(data, f"No submitted answer for {file_name}")

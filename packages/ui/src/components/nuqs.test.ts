@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsMultiSelectFilter,
   parseAsNumericFilter,
   parseAsSortingState,
 } from './nuqs.js';
@@ -270,6 +271,134 @@ describe('parseAsNumericFilter', () => {
           { filterValue: '', emptyOnly: true },
           { filterValue: '', emptyOnly: false },
         ),
+      ).toBe(false);
+    });
+  });
+});
+
+describe('parseAsMultiSelectFilter', () => {
+  const parser = parseAsMultiSelectFilter();
+  const restricted = parseAsMultiSelectFilter(['a', 'b', 'c'] as const);
+
+  describe('parse', () => {
+    it('parses unprefixed values as include', () => {
+      expect(parser.parse('a,b')).toEqual({ values: ['a', 'b'], mode: 'include' });
+    });
+    it('parses leading "!" as exclude', () => {
+      expect(parser.parse('!a,b')).toEqual({ values: ['a', 'b'], mode: 'exclude' });
+    });
+    it('returns empty include for empty string', () => {
+      expect(parser.parse('')).toEqual({ values: [], mode: 'include' });
+    });
+    it('returns empty exclude for "!" alone', () => {
+      expect(parser.parse('!')).toEqual({ values: [], mode: 'exclude' });
+    });
+    it('drops empty tokens from leading, trailing, and double commas', () => {
+      expect(parser.parse(',a,,b,')).toEqual({ values: ['a', 'b'], mode: 'include' });
+    });
+    it('drops disallowed values when allowedValues is provided', () => {
+      expect(restricted.parse('a,x,b,y')).toEqual({ values: ['a', 'b'], mode: 'include' });
+    });
+    it('drops disallowed values in exclude mode', () => {
+      expect(restricted.parse('!a,x,c')).toEqual({ values: ['a', 'c'], mode: 'exclude' });
+    });
+    it('preserves mode when all values are filtered out', () => {
+      expect(restricted.parse('!x,y')).toEqual({ values: [], mode: 'exclude' });
+    });
+    it('preserves order of allowed values as they appeared in the URL', () => {
+      expect(restricted.parse('c,a,b')).toEqual({ values: ['c', 'a', 'b'], mode: 'include' });
+    });
+    it('decodes commas inside values', () => {
+      expect(parser.parse('a%2Cb,c')).toEqual({ values: ['a,b', 'c'], mode: 'include' });
+    });
+    it('decodes commas inside values in exclude mode', () => {
+      expect(parser.parse('!a%2Cb,c')).toEqual({ values: ['a,b', 'c'], mode: 'exclude' });
+    });
+    it('unescapes a leading "\\!" in include mode as a literal "!"', () => {
+      expect(parser.parse('\\!a,b')).toEqual({ values: ['!a', 'b'], mode: 'include' });
+    });
+    it('unescapes a leading "\\\\" in include mode as a literal "\\"', () => {
+      expect(parser.parse('\\\\a,b')).toEqual({ values: ['\\a', 'b'], mode: 'include' });
+    });
+  });
+
+  describe('serialize', () => {
+    it('serializes include without prefix', () => {
+      expect(parser.serialize({ values: ['a', 'b'], mode: 'include' })).toBe('a,b');
+    });
+    it('serializes exclude with leading "!"', () => {
+      expect(parser.serialize({ values: ['a', 'b'], mode: 'exclude' })).toBe('!a,b');
+    });
+    it('serializes empty include as empty string so the param is preserved in the URL', () => {
+      expect(parser.serialize({ values: [], mode: 'include' })).toBe('');
+    });
+    it('serializes empty exclude as "!"', () => {
+      expect(parser.serialize({ values: [], mode: 'exclude' })).toBe('!');
+    });
+    it('escapes commas inside values', () => {
+      expect(parser.serialize({ values: ['a,b', 'c'], mode: 'include' })).toBe('a%2Cb,c');
+    });
+    it('escapes a leading "!" in include mode so it is not parsed as exclude', () => {
+      expect(parser.serialize({ values: ['!a', 'b'], mode: 'include' })).toBe('\\!a,b');
+    });
+    it('escapes a leading "\\" in include mode so it is not parsed as an escape', () => {
+      expect(parser.serialize({ values: ['\\a', 'b'], mode: 'include' })).toBe('\\\\a,b');
+    });
+    it('does not escape an inner "!"', () => {
+      expect(parser.serialize({ values: ['a', '!b'], mode: 'include' })).toBe('a,!b');
+    });
+  });
+
+  describe('round-trip', () => {
+    it.each([
+      ['a'],
+      ['a,b'],
+      ['!a'],
+      ['!a,b,c'],
+      [''],
+      ['!'],
+      ['a%2Cb,c'],
+      ['\\!a,b'],
+      ['\\\\a,b'],
+      ['!!a'],
+    ])('parse(serialize(parse(%s))) is stable', (raw) => {
+      const parsed = parser.parse(raw)!;
+      const serialized = parser.serialize(parsed)!;
+      expect(serialized).toBe(raw);
+      expect(parser.parse(serialized)).toEqual(parsed);
+    });
+  });
+
+  describe('eq', () => {
+    it('returns true for matching values and mode', () => {
+      expect(
+        parser.eq({ values: ['a', 'b'], mode: 'include' }, { values: ['a', 'b'], mode: 'include' }),
+      ).toBe(true);
+    });
+    it('returns true for two empty includes', () => {
+      expect(parser.eq({ values: [], mode: 'include' }, { values: [], mode: 'include' })).toBe(
+        true,
+      );
+    });
+    it('returns false for different mode', () => {
+      expect(
+        parser.eq({ values: ['a'], mode: 'include' }, { values: ['a'], mode: 'exclude' }),
+      ).toBe(false);
+    });
+    it('returns false for different values', () => {
+      expect(
+        parser.eq({ values: ['a'], mode: 'include' }, { values: ['b'], mode: 'include' }),
+      ).toBe(false);
+    });
+    it('returns false for different lengths', () => {
+      expect(
+        parser.eq({ values: ['a'], mode: 'include' }, { values: ['a', 'b'], mode: 'include' }),
+      ).toBe(false);
+    });
+    // Order matters because UI selection order is preserved through the URL.
+    it('returns false for same values in different order', () => {
+      expect(
+        parser.eq({ values: ['a', 'b'], mode: 'include' }, { values: ['b', 'a'], mode: 'include' }),
       ).toBe(false);
     });
   });

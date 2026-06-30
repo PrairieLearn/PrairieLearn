@@ -25,13 +25,6 @@ export const SelectedAssessmentsSchema = z.object({
 });
 export type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
 
-export const SharingSetRowSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  in_set: z.boolean(),
-});
-export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
-
 export const EditableCourseSchema = z.object({
   id: RawStaffCourseSchema.shape.id,
   short_name: RawStaffCourseSchema.shape.short_name,
@@ -62,7 +55,7 @@ export interface QuestionSettingsFormValues {
   workspace_args: string;
   workspace_environment: string;
   workspace_enable_networking: boolean;
-  workspace_rewrite_url: boolean;
+  workspace_rewrite_url: 'true' | 'false' | 'null';
   preferences: PreferenceField[];
   external_grading_enabled: boolean;
   external_grading_image: string;
@@ -71,4 +64,7 @@ export interface QuestionSettingsFormValues {
   external_grading_timeout: number | undefined;
   external_grading_enable_networking: boolean;
   external_grading_environment: string;
+  share_publicly: boolean;
+  share_source_publicly: boolean;
+  sharing_sets: string[];
 }

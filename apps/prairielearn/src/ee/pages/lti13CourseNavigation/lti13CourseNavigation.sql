@@ -21,7 +21,7 @@ WHERE
   AND lti13_instances.id = $lti13_instance_id
   AND lti13_instances.id = $authn_lti13_instance_id;
 
--- BLOCK insert_lci
+-- BLOCK insert_lti13_course_instance
 INSERT INTO
   lti13_course_instances (
     lti13_instance_id,
@@ -29,7 +29,10 @@ INSERT INTO
     context_id,
     context_label,
     context_title,
-    course_instance_id
+    course_instance_id,
+    lineitems_url,
+    context_memberships_url,
+    resource_link_id
   )
 VALUES
   (
@@ -38,7 +41,10 @@ VALUES
     $context_id,
     $context_label,
     $context_title,
-    $course_instance_id
+    $course_instance_id,
+    $lineitems_url,
+    $context_memberships_url,
+    $resource_link_id
   );
 
 -- BLOCK update_lti13_course_instance
@@ -47,7 +53,8 @@ SET
   context_label = $context_label,
   context_title = $context_title,
   lineitems_url = $lineitems_url,
-  context_memberships_url = $context_memberships_url
+  context_memberships_url = $context_memberships_url,
+  resource_link_id = $resource_link_id
 WHERE
   lti13_instance_id = $lti13_instance_id
   AND course_instance_id = $course_instance_id

@@ -1,6 +1,33 @@
+import { Output, generateText } from 'ai';
+import { MockLanguageModelV3 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
-import { correctGeminiMalformedRubricGradingJson, parseSubmission } from './ai-grading-util.js';
+import { sanitizeObject } from '@prairielearn/sanitize';
+
+import { type RubricItem } from '../../../lib/db-types.js';
+
+import {
+  extractAiGradingExplanationFromCompletion,
+  generatePrompt,
+  parseAiRubricItems,
+  parseSubmission,
+} from './ai-grading-util.js';
+
+function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
+  return {
+    rubric_id: '1',
+    number: 1,
+    points: 1,
+    description: 'desc',
+    explanation: null,
+    grader_note: null,
+    always_show_to_students: true,
+    deleted_at: null,
+    key_binding: null,
+    ...overrides,
+  };
+}
 
 describe('parseSubmission', () => {
   it('should return empty array for empty HTML', () => {
@@ -163,72 +190,182 @@ describe('parseSubmission', () => {
   });
 });
 
-describe('correctGeminiMalformedRubricGradingJson', function () {
-  it('should escape single backslash preceding unescapable character', () => {
-    // Example with unescaped backslash before 'm' in \mathbb{x}. m is not a valid escape character.
-    // Note that in JavaScript strings, \\ represents a single backslash.
-    const input = '{"explanation": "test", "rubric_items": {"\\mathbb{x}": true}}';
-    const result = correctGeminiMalformedRubricGradingJson(input);
+describe('parseAiRubricItems', () => {
+  const rubric_items: RubricItem[] = [
+    makeRubricItem({ id: 'a', description: 'first' }),
+    makeRubricItem({ id: 'b', description: 'second' }),
+    makeRubricItem({ id: 'c', description: 'third' }),
+  ];
 
-    expect(result).toBeTruthy();
-    expect(result).toBe('{"explanation": "test", "rubric_items": {"\\\\mathbb{x}": true}}');
-
-    expect(() => JSON.parse(result!)).not.toThrow();
-
-    const parsed = JSON.parse(result!);
-
-    // JSON parses \\ into \
-    expect(parsed.rubric_items).toHaveProperty('\\mathbb{x}');
-  });
-
-  it('should escape single backslash preceding valid escape character', () => {
-    // Example with unescaped backslash before 't' in \test. t is a valid escape character.
-    const input = '{"explanation": "test", "rubric_items": {"\\test": true}}';
-    const result = correctGeminiMalformedRubricGradingJson(input);
-
-    expect(result).toBeTruthy();
-    expect(result).toBe('{"explanation": "test", "rubric_items": {"\\\\test": true}}');
-
-    expect(() => JSON.parse(result!)).not.toThrow();
-
-    const parsed = JSON.parse(result!);
-    expect(parsed.rubric_items).toHaveProperty('\\test');
-  });
-
-  it('should escape double backslash', () => {
-    // Valid JSON with properly escaped backslashes
-    const input = '{"explanation": "test", "rubric_items": {"\\\\mathbb{x}": true}}';
-    const result = correctGeminiMalformedRubricGradingJson(input);
-
-    // Should remain valid JSON
-    expect(result).toBeTruthy();
-    expect(result).toBe('{"explanation": "test", "rubric_items": {"\\\\\\\\mathbb{x}": true}}');
-
-    expect(() => JSON.parse(result!)).not.toThrow();
-
-    // The key should remain escaped
-    const parsed = JSON.parse(result!);
-    expect(Object.keys(parsed.rubric_items)[0]).toBe('\\\\mathbb{x}');
-  });
-
-  it('should keep keys without backslashes the same', () => {
-    // Valid JSON without backslashes in the keys
-    const input =
-      '{"explanation": "test", "rubric_items": {"Simple description": true, "Another item": false}}';
-    const result = correctGeminiMalformedRubricGradingJson(input);
-
-    // Should remain valid JSON
-    expect(result).toBeTruthy();
-    expect(result).toBe(
-      '{"explanation": "test", "rubric_items": {"Simple description": true, "Another item": false}}',
-    );
-
-    expect(() => JSON.parse(result!)).not.toThrow();
-
-    const parsed = JSON.parse(result!);
-    expect(parsed.rubric_items).toEqual({
-      'Simple description': true,
-      'Another item': false,
+  it('maps numbered keys to selected rubric item ids', () => {
+    const result = parseAiRubricItems({
+      ai_rubric_items: { '1': true, '2': false, '3': true },
+      rubric_items,
     });
+    expect(result.appliedRubricItems).toEqual([{ rubric_item_id: 'a' }, { rubric_item_id: 'c' }]);
+    expect(Array.from(result.appliedRubricDescription)).toEqual(['first', 'third']);
+    expect(result.unrecognizedKeys).toEqual([]);
+  });
+
+  it('returns empty applied items when nothing is selected', () => {
+    const result = parseAiRubricItems({
+      ai_rubric_items: { '1': false, '2': false, '3': false },
+      rubric_items,
+    });
+    expect(result.appliedRubricItems).toEqual([]);
+    expect(result.appliedRubricDescription.size).toBe(0);
+    expect(result.unrecognizedKeys).toEqual([]);
+  });
+
+  it('surfaces out-of-range and non-integer keys without throwing', () => {
+    const result = parseAiRubricItems({
+      ai_rubric_items: { '1': true, '99': true, abc: true, '0': true, '2.5': true },
+      rubric_items,
+    });
+    expect(result.appliedRubricItems).toEqual([{ rubric_item_id: 'a' }]);
+    expect(new Set(result.unrecognizedKeys)).toEqual(new Set(['99', 'abc', '0', '2.5']));
+  });
+
+  it('handles rubric descriptions with quotes, backslashes, and newlines', () => {
+    const trickyItems: RubricItem[] = [
+      makeRubricItem({ id: 'x', description: String.raw`Final answer is \mathbb{Z}` }),
+      makeRubricItem({ id: 'y', description: 'Wrote "QED"\nat end' }),
+    ];
+    const result = parseAiRubricItems({
+      ai_rubric_items: { '1': true, '2': true },
+      rubric_items: trickyItems,
+    });
+    expect(result.appliedRubricItems).toEqual([{ rubric_item_id: 'x' }, { rubric_item_id: 'y' }]);
+    expect(Array.from(result.appliedRubricDescription)).toEqual([
+      String.raw`Final answer is \mathbb{Z}`,
+      'Wrote "QED"\nat end',
+    ]);
+    expect(result.unrecognizedKeys).toEqual([]);
+  });
+});
+
+describe('extractAiGradingExplanationFromCompletion', () => {
+  it('reads the explanation from each persisted completion format', () => {
+    // OpenAI chat completions.
+    expect(
+      extractAiGradingExplanationFromCompletion({
+        choices: [{ message: { parsed: { explanation: ' from choices ' } } }],
+      }),
+    ).toBe('from choices');
+
+    // OpenAI responses API.
+    expect(
+      extractAiGradingExplanationFromCompletion({
+        output_parsed: { explanation: ' from output_parsed ' },
+      }),
+    ).toBe('from output_parsed');
+
+    // `ai` package `generateObject`.
+    expect(
+      extractAiGradingExplanationFromCompletion({ object: { explanation: ' from object ' } }),
+    ).toBe('from object');
+
+    // `ai` package `generateText` with structured output.
+    expect(
+      extractAiGradingExplanationFromCompletion({ _output: { explanation: ' from _output ' } }),
+    ).toBe('from _output');
+  });
+
+  it('returns null for missing or blank explanations', () => {
+    expect(
+      extractAiGradingExplanationFromCompletion({ _output: { explanation: '   ' } }),
+    ).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion({ _output: {} })).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion({})).toBeNull();
+    expect(extractAiGradingExplanationFromCompletion(null)).toBeNull();
+  });
+
+  // Regression test: a `generateText` result exposes its structured output via a
+  // non-enumerable `output` getter backed by an `_output` field. Persisting the
+  // result with `sanitizeObject` (which copies only own enumerable properties)
+  // drops the getter, so the explanation must be recovered from `_output`. A
+  // previous version read `output` and silently lost the explanation.
+  it('extracts the explanation from a serialized generateText result', async () => {
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [
+          { type: 'text', text: JSON.stringify({ explanation: 'graded via generateText' }) },
+        ],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+
+    const result = await generateText({
+      model,
+      output: Output.object({ schema: z.object({ explanation: z.string() }) }),
+      prompt: 'grade this',
+    });
+
+    const completion = sanitizeObject(result);
+
+    // The structured output is reachable at runtime via the `output` getter, but
+    // only `_output` survives serialization.
+    expect(result.output).toEqual({ explanation: 'graded via generateText' });
+    expect(completion).not.toHaveProperty('output');
+    expect(completion).toHaveProperty('_output');
+
+    expect(extractAiGradingExplanationFromCompletion(completion)).toBe('graded via generateText');
+  });
+});
+
+describe('generatePrompt', () => {
+  const baseArgs = {
+    questionPrompt: 'What is 2+2?',
+    questionAnswer: '4',
+    submission_text: '4',
+    submitted_answer: null,
+    rubric_items: [],
+    params: {},
+    true_answer: {},
+    model_id: 'gpt-5.4-mini-2026-03-17' as const,
+  };
+
+  it('renders valid grader_guidelines mustache with substituted variables', async () => {
+    const messages = await generatePrompt({
+      ...baseArgs,
+      grader_guidelines: 'Correct answer is {{correct_answers.x}}.',
+      true_answer: { x: 42 },
+    });
+    const guidelinesMessage = messages.find(
+      (m) => typeof m.content === 'string' && m.content.includes('Correct answer is'),
+    );
+    expect(guidelinesMessage).toBeDefined();
+    expect(guidelinesMessage?.content).toBe('Correct answer is 42.');
+  });
+
+  it('throws when grader_guidelines has malformed mustache', async () => {
+    const brokenTemplate = 'Correct.   "HELLO". \\mathbb{{X+Y}/2}';
+    await expect(
+      generatePrompt({
+        ...baseArgs,
+        grader_guidelines: brokenTemplate,
+      }),
+    ).rejects.toThrow(/Could not parse grader guidelines/);
+  });
+
+  it('omits grader_guidelines messages when grader_guidelines is null', async () => {
+    const messages = await generatePrompt({
+      ...baseArgs,
+      grader_guidelines: null,
+    });
+    const guidelinesPreamble = messages.find(
+      (m) => typeof m.content === 'string' && m.content.includes('grader guidelines'),
+    );
+    expect(guidelinesPreamble).toBeUndefined();
   });
 });

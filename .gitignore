@@ -49,6 +49,7 @@ docker-compose.override.yml
 ## Config
 /config.json
 /apps/*/config.json
+/ssl/
 
 ## Generated HTML
 
@@ -61,16 +62,9 @@ docker-compose.override.yml
 /server.log
 /apps/prairielearn/server.log
 
-## Yarn
+## pnpm
 node_modules
-yarn-error.log
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+.pnpm-store
 
 ## Programming languages
 

@@ -372,6 +372,7 @@ export function StudentAssessmentInstance({
                 courseInstanceId: resLocals.course_instance.id,
                 displayTimezone: resLocals.course_instance.display_timezone,
                 assessmentType: resLocals.assessment.type,
+                showQuestionTitles: !!resLocals.assessment.show_question_titles,
                 someQuestionsAllowRealTimeGrading,
                 someQuestionsForbidRealTimeGrading,
                 hasAutoGradingQuestion: resLocals.has_auto_grading_question,
@@ -423,6 +424,7 @@ export function StudentAssessmentInstance({
             assessment_instance: resLocals.assessment_instance,
             csrfToken: resLocals.__csrf_token,
             authz_result: resLocals.authz_result,
+            lockdownBrowser: resLocals.lockdown_browser,
           })
         : ''}
       ${InstructorInfoPanel({

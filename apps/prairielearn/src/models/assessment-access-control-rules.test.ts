@@ -7,6 +7,7 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     id: '1',
     assessment_id: '100',
     number: 0,
+    uuid: null,
     target_type: 'none' as const,
     before_release_listed: null,
     date_control_release_date: null,
@@ -113,7 +114,7 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for default rule afterLastDeadline when not set', () => {
+  it('omits default rule afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -122,12 +123,10 @@ describe('dbRowToAccessControlJson', () => {
       }),
     );
 
-    expect(result.dateControl?.afterLastDeadline).toEqual({
-      allowSubmissions: false,
-    });
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
   });
 
-  it('omits credit for override afterLastDeadline when submissions disabled', () => {
+  it('omits credit for override afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -140,6 +139,34 @@ describe('dbRowToAccessControlJson', () => {
 
     expect(result.dateControl?.afterLastDeadline).toEqual({
       allowSubmissions: false,
+    });
+  });
+
+  it('omits afterLastDeadline when allow_submissions is null', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: null,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
+  });
+
+  it('emits afterLastDeadline when allow_submissions is set', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: true,
+          date_control_after_last_deadline_credit: 50,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+      credit: 50,
     });
   });
 

@@ -167,8 +167,9 @@ export function TreeQuestionBlockNode({
         role="button"
         tabIndex={0}
         className={clsx(
-          'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
+          'tree-row d-flex align-items-center py-1 border-bottom user-select-none position-relative',
           isAltPoolSelected ? 'tree-row-selected' : 'list-group-item-action',
+          (chooseExceeds || pointsMismatch) && 'tree-row-warning-indicator',
         )}
         style={{
           paddingLeft: '2.5rem',
@@ -177,7 +178,6 @@ export function TreeQuestionBlockNode({
           // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
           paddingRight: '1.5rem',
           cursor: 'pointer',
-          ...(chooseExceeds || pointsMismatch ? { borderLeft: '6px solid var(--bs-warning)' } : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();

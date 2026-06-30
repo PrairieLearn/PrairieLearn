@@ -15,8 +15,24 @@ import lxml.html
 from prairielearn.colors import PLColor
 from prairielearn.misc_utils import escape_unicode_string
 
+__all__ = [
+    "check_attribs",
+    "escape_invalid_string",
+    "get_boolean_attrib",
+    "get_color_attrib",
+    "get_enum_attrib",
+    "get_float_attrib",
+    "get_integer_attrib",
+    "get_string_attrib",
+    "has_attrib",
+    "inner_html",
+    "is_boolean_value",
+    "is_float_value",
+    "is_integer_value",
+]
+
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
-LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
+_LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "checked",
     "compact",
     "declare",
@@ -31,6 +47,70 @@ LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "readonly",
     "selected",
 })
+
+_PL_BOOLEAN_TRUE = frozenset({
+    "true",
+    "t",
+    "1",
+    "True",
+    "T",
+    "TRUE",
+    "yes",
+    "y",
+    "Yes",
+    "Y",
+    "YES",
+})
+_PL_BOOLEAN_FALSE = frozenset({
+    "false",
+    "f",
+    "0",
+    "False",
+    "F",
+    "FALSE",
+    "no",
+    "n",
+    "No",
+    "N",
+    "NO",
+})
+
+
+def is_boolean_value(value: str) -> bool:
+    """Return whether a string is a PrairieLearn boolean value."""
+    return value in _PL_BOOLEAN_TRUE or value in _PL_BOOLEAN_FALSE
+
+
+def is_integer_value(value: str) -> bool:
+    """Return whether a string is a PrairieLearn integer value.
+
+    This is the authoritative `integer` format check (it matches how
+    `get_integer_attrib` parses values at runtime). The linter-side regex in
+    `element-schemas/htmlmustache-plugin.ts` is intentionally stricter:
+    `int()` also accepts forms like ``1_000``, ``+5``, and surrounding
+    whitespace that the linter flags. Keep the two notions aligned when changing
+    either side.
+    """
+    try:
+        int(value)
+    except ValueError:
+        return False
+    return True
+
+
+def is_float_value(value: str) -> bool:
+    """Return whether a string is a PrairieLearn floating-point value.
+
+    Authoritative `number` format check, mirroring `get_float_attrib`. The
+    linter-side regex is stricter: ``float()`` also accepts ``inf``/``nan``,
+    ``1_000.0``, ``+5``, and surrounding whitespace. See the note in
+    `is_integer_value`.
+    """
+    try:
+        float(value)
+    except ValueError:
+        return False
+    return True
 
 
 def get_enum_attrib[EnumT: Enum](
@@ -137,7 +217,7 @@ def _get_attrib(
     # boolean function has a test before this point with an early return, so
     # this point should only be reached if this is being handled with a
     # non-boolean value.
-    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+    if name.lower() in _LIBXML_BOOLEAN_ATTRIBUTES:
         raise ValueError(
             f"The attribute '{name}' is an HTML boolean attribute, and should not be used."
         )
@@ -230,7 +310,7 @@ def get_boolean_attrib(
         ValueError: If the attribute is not a valid boolean value.
     """
     # If the attribute is a boolean attribute, then its value is determined by its presence
-    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+    if name.lower() in _LIBXML_BOOLEAN_ATTRIBUTES:
         default_value = None if len(args) == 0 else args[0]
         if default_value:
             raise ValueError(
@@ -242,27 +322,11 @@ def get_boolean_attrib(
     if is_default:
         return val
 
-    true_values = ["true", "t", "1", "True", "T", "TRUE", "yes", "y", "Yes", "Y", "YES"]
-    false_values = [
-        "false",
-        "f",
-        "0",
-        "False",
-        "F",
-        "FALSE",
-        "no",
-        "n",
-        "No",
-        "N",
-        "NO",
-    ]
-
-    if val in true_values:
+    if val in _PL_BOOLEAN_TRUE:
         return True
-    elif val in false_values:
+    if val in _PL_BOOLEAN_FALSE:
         return False
-    else:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
+    raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -301,14 +365,9 @@ def get_integer_attrib(
     if is_default:
         return val
     try:
-        int_val = int(val)
+        return int(val)
     except ValueError:
-        int_val = None
-    if int_val is None:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
-    return int_val
+        raise ValueError(f'Attribute "{name}" must be an integer: {val}') from None
 
 
 @overload
@@ -350,14 +409,9 @@ def get_float_attrib(
     if is_default:
         return val
     try:
-        float_val = float(val)
+        return float(val)
     except ValueError:
-        float_val = None
-    if float_val is None:
-        # can't raise this exception directly in the above except
-        # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be a number: {val}')
-    return float_val
+        raise ValueError(f'Attribute "{name}" must be a number: {val}') from None
 
 
 @overload

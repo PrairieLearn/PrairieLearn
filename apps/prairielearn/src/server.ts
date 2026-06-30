@@ -213,15 +213,12 @@ export async function initExpress(): Promise<Express> {
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
+      files: config.fileUploadMaxFiles,
       fieldSize: config.fileUploadMaxBytes,
       fileSize: config.fileUploadMaxBytes,
       parts: config.fileUploadMaxParts,
     },
   });
-  app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
-    upload.single('file'),
-  );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     upload.single('file'),
@@ -237,18 +234,16 @@ export async function initExpress(): Promise<Express> {
   app.post('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', upload.single('file'));
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
-
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
-
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -262,39 +257,39 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post('/pl/course/:course_id(\\d+)/course_admin/settings', upload.single('file'));
-  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view', upload.single('file'));
-  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view/*', upload.single('file'));
+  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view', upload.array('files'));
+  app.post('/pl/course/:course_id(\\d+)/course_admin/file_view/*', upload.array('files'));
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view/*',
-    upload.single('file'),
+    upload.array('files'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
@@ -372,15 +367,30 @@ export async function initExpress(): Promise<Express> {
     publicQuestionEndpoint: true,
   });
 
+  /**
+   * `multipart/form-data` bodies are consumed by multer (file-upload routes) or
+   * read as a raw stream by tRPC (`FormData` inputs). The JSON/urlencoded body
+   * parsers don't parse multipart, but they still set `req.body = {}`, which
+   * makes tRPC's Express adapter stringify that empty object instead of reading
+   * the multipart stream. We skip them so the raw body reaches its real consumer.
+   */
+  function isMultipartRequest(req: Request) {
+    return (req.headers['content-type'] ?? '').startsWith('multipart/form-data');
+  }
+
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
     if (req.path === '/pl/webhooks/stripe') return next();
+    if (isMultipartRequest(req)) return next();
 
     // Limit to 5MB of JSON
     bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
   });
-  app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
+  app.use((req, res, next) => {
+    if (isMultipartRequest(req)) return next();
+    bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
+  });
   app.use(cookieParser());
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
@@ -465,6 +475,14 @@ export async function initExpress(): Promise<Express> {
       '/pl/auth/institution/:institution_id(\\d+)/saml',
       (await import('./ee/auth/saml/router.js')).default,
     );
+
+    // Receives a JWT minted by PrairieTest and starts a PrairieLearn session.
+    // Must come before the authn middleware since the user isn't authenticated yet,
+    // and before the CSRF middleware since the JWT signature is the auth proof.
+    app.use(
+      '/pl/auth/prairietest/callback',
+      (await import('./ee/auth/prairietestCallback.js')).default,
+    );
   }
 
   app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
@@ -481,6 +499,11 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
+
+  // Deny all access to a user with an active LockDown-Browser-required
+  // reservation whose session was not established inside LockDown Browser. Must
+  // come after authentication so it can read `res.locals.authn_user`.
+  app.use((await import('./middlewares/enforceLockdownBrowser.js')).default);
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -533,6 +556,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
+  app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -906,26 +930,14 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/statistics',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'assessment_statistics';
+        res.locals.navSubPage = 'statistics';
         next();
       },
       (await import('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics.js'))
         .default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/question_statistics',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'question_statistics';
-        next();
-      },
-      (
-        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
-      ).default,
     ],
   );
   app.use(
@@ -940,24 +952,13 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/logs',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'uploads';
+        res.locals.navSubPage = 'settings';
         next();
       },
-      (await import('./pages/instructorAssessmentUploads/instructorAssessmentUploads.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'regrading';
-        next();
-      },
-      (await import('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading.js'))
-        .default,
+      (await import('./pages/instructorAssessmentLogs/instructorAssessmentLogs.js')).default,
     ],
   );
   app.use(
@@ -1295,6 +1296,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/qti_import',
+    (await import('./pages/instructorQtiImport/instructorQtiImport.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
@@ -1816,7 +1821,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourse,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1897,7 +1902,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.navbarType = 'public';
       next();
     },
-    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+    (await import('./middlewares/resolvePublicCourseOrInstance.js')).resolvePublicCourseInstance,
   ]);
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
@@ -2343,8 +2348,6 @@ if (shouldStartServer) {
 
     if (isEnterprise() && config.hasAzure) {
       const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
-      // https://github.com/Rel1cx/eslint-react/issues/1690
-      // eslint-disable-next-line @eslint-react/error-boundaries -- Not React; this is passport.use()
       passport.use(getAzureStrategy());
     }
 

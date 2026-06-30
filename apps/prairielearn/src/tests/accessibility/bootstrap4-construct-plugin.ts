@@ -18,6 +18,7 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-keyboard',
   'data-html',
   'data-offset',
+  'data-parent',
   'data-pause',
   'data-placement',
   'data-popper-config',
@@ -25,6 +26,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-ride',
   'data-selector',
   'data-show',
+  'data-slide',
+  'data-slide-to',
   'data-spy',
   'data-target',
   'data-template',
@@ -118,29 +121,13 @@ class Bootstrap4ConstructRule extends Rule {
 
           this.report({
             node,
-            message: `Bootstrap 4 attribute "${attr}" should not be used. Use "${attr.replace('data-', 'data-bs-')}" instead.`,
+            message: `Bootstrap 4 attribute "${attr}" should not be used. Migrate to the Bootstrap 5 equivalent.`,
           });
         });
       });
 
       BOOTSTRAP_LEGACY_CLASSES.forEach((className) => {
         document.querySelectorAll(`.${className}`).forEach((node) => {
-          // The version of `bootstrap-table` we're locked to uses the old classname for dropdown-menu-* classes.
-          // It was fixed in this PR:
-          // https://github.com/wenzhixin/bootstrap-table/pull/6796
-          // However, we can't upgrade to that version because of this breaking change:
-          // https://github.com/wenzhixin/bootstrap-table/issues/6745
-          // For now, we'll just ignore this, since we don't control this markup.
-          // For float-* classes, bootstrap-table uses its own implementation.
-          if (
-            ['dropdown-menu-left', 'dropdown-menu-right', 'float-left', 'float-right'].includes(
-              className,
-            ) &&
-            node.closest('.bootstrap-table')
-          ) {
-            return;
-          }
-
           this.report({
             node,
             message: `Bootstrap 4 ${className.includes('.') ? 'combination of classes' : 'class'} ".${className}" should not be used.`,

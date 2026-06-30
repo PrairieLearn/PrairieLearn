@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  AdminInstitutionSchema,
+  AdminInstitutionWithSettingsSchema,
   RawStaffEnrollmentSchema,
   RawStudentEnrollmentSchema,
   StaffAlternativePoolSchema,
@@ -16,6 +18,8 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
+  StaffJobSchema,
+  StaffJobSequenceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -179,6 +183,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   score_stat_number: 10,
   score_stat_std: 5,
   share_source_publicly: false,
+  show_question_titles: false,
   shuffle_questions: null,
   statistics_last_updated_at: new Date(),
   stats_last_updated: null,
@@ -458,6 +463,51 @@ const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
   short_name: 'TI',
 };
 
+const minimalAdminInstitution: z.input<typeof AdminInstitutionSchema> = {
+  course_instance_enrollment_limit: 100,
+  default_authn_provider_id: null,
+  display_timezone: 'UTC',
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+  uid_regexp: null,
+  yearly_enrollment_limit: 1000,
+};
+
+const minimalAdminInstitutionWithSettings: z.input<typeof AdminInstitutionWithSettingsSchema> = {
+  institution: minimalAdminInstitution,
+  institution_settings: {
+    course_request_message: null,
+    github_course_owner: 'PrairieLearn',
+    institution_id: '1',
+  },
+};
+
+const minimalStaffJob: z.input<typeof StaffJobSchema> = {
+  arguments: ['--force'],
+  command: 'sync',
+  description: 'Sync course',
+  error_message: null,
+  exit_code: null,
+  exit_signal: null,
+  finish_date: null,
+  id: '13',
+  number_in_sequence: 1,
+  output: 'Done',
+  start_date: new Date(),
+  status: 'Success',
+  working_directory: null,
+};
+
+const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
+  description: 'Regrade assessment',
+  id: '12',
+  legacy: false,
+  number: 1,
+  start_date: new Date(),
+  status: 'Success',
+};
+
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   client_files: null,
   course_id: '1',
@@ -731,6 +781,41 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffInstitution);
+  });
+
+  it('parses valid AdminInstitution without institution settings fields', () => {
+    const parsed = AdminInstitutionSchema.parse(minimalAdminInstitution);
+    expect(parsed).toMatchObject(minimalAdminInstitution);
+  });
+
+  it('parses valid AdminInstitutionWithSettings with GitHub course owner', () => {
+    const parsed = AdminInstitutionWithSettingsSchema.parse(minimalAdminInstitutionWithSettings);
+    expect(parsed).toMatchObject(minimalAdminInstitutionWithSettings);
+  });
+
+  it('parses valid StaffJob and drops extra fields', () => {
+    const parsed = StaffJobSchema.parse({ ...minimalStaffJob, data: {}, env: {}, extra: 123 });
+    expect(parsed).not.toHaveProperty('data');
+    expect(parsed).not.toHaveProperty('env');
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffJob);
+  });
+
+  it('parses valid StaffJobSequence and drops extra fields', () => {
+    const parsed = StaffJobSequenceSchema.parse({
+      ...minimalStaffJobSequence,
+      assessment_id: '2',
+      authn_user_id: '4',
+      course_id: '1',
+      extra: 123,
+      user_id: '4',
+    });
+    expect(parsed).not.toHaveProperty('assessment_id');
+    expect(parsed).not.toHaveProperty('authn_user_id');
+    expect(parsed).not.toHaveProperty('course_id');
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('user_id');
+    expect(parsed).toMatchObject(minimalStaffJobSequence);
   });
 
   it('parses valid StaffQuestion and drops extra fields', () => {

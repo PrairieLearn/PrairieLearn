@@ -7,8 +7,6 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-xtermjs",
-    "port": 8080,
-    "home": "/home/student",
     "gradedFiles": ["dynamic.txt"]
   }
 }

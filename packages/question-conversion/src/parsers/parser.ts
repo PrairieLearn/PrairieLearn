@@ -1,4 +1,4 @@
-import type { IRAssessment } from '../types/ir.js';
+import type { IRItemContainer } from '../types/ir.js';
 
 /** Options for parsing input content. */
 export interface ParseOptions {
@@ -24,10 +24,16 @@ export interface ParseOptions {
   /**
    * Raw XML content of the Canvas course_settings/rubrics.xml file (from a full course export).
    * When provided, the parser resolves any rubric_identifierref from assessment_meta.xml into
-   * a structured IRRubric on the returned IRAssessment.
+   * a structured IRRubric on the returned assessment item container.
    * Without this, a rubric reference in the metadata emits a parse warning instead.
    */
   rubricsXml?: string;
+  /**
+   * File extensions (e.g. ".mp4") to exclude from imported assets. Tags in the prompt HTML
+   * that reference excluded files are commented out, and the files are not added to the
+   * question's asset list. Excluded source paths are reported on `IRQuestion.skippedFiles`.
+   */
+  excludeFileExtensions?: Set<string>;
 }
 
 /** Interface for format-specific input parsers. */
@@ -37,5 +43,5 @@ export interface InputParser {
   /** Returns true if this parser can handle the given input. */
   canParse(xmlContent: string): boolean;
   /** Parse input into the format-agnostic IR. */
-  parse(xmlContent: string, options?: ParseOptions): Promise<IRAssessment>;
+  parse(xmlContent: string, options?: ParseOptions): Promise<IRItemContainer>;
 }

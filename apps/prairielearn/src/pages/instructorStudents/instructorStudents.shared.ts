@@ -8,7 +8,7 @@ import {
   SprocUsersGetDisplayedRoleSchema,
 } from '../../lib/db-types.js';
 
-export const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
+export const STATUS_VALUES = [...EnumEnrollmentStatusSchema.options];
 export const ROLE_VALUES = SprocUsersGetDisplayedRoleSchema.options;
 
 export const StudentRowSchema = z.object({

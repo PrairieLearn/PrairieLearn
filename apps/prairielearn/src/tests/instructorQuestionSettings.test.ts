@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -25,7 +24,7 @@ let courseRepo: CourseRepoFixture;
 let questionLiveInfoPath: string;
 let questionDevInfoPath: string;
 
-describe('Editing question settings', () => {
+describe('Editing question settings', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     questionLiveInfoPath = path.join(
@@ -48,12 +47,12 @@ describe('Editing question settings', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential('access the test question info file', async () => {
+  test('access the test question info file', async () => {
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.title, 'Test question');
   });
 
-  test.sequential('change question info', async () => {
+  test('change question info', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -77,7 +76,7 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  test.sequential('verify question info change', async () => {
+  test('verify question info change', async () => {
     questionLiveInfoPath = path.join(
       courseRepo.courseLiveDir,
       'questions',
@@ -88,7 +87,7 @@ describe('Editing question settings', () => {
     assert.equal(questionLiveInfo.title, 'New title');
   });
 
-  test.sequential('verify nesting a question id', async () => {
+  test('verify nesting a question id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -115,12 +114,12 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  test.sequential('verify changing qid did not leave any empty directories', async () => {
+  test('verify changing qid did not leave any empty directories', async () => {
     const questionDir = path.join(courseRepo.courseLiveDir, 'question');
     assert.notOk(await fs.pathExists(questionDir));
   });
 
-  test.sequential('pull and verify changes', async () => {
+  test('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
     questionDevInfoPath = path.join(
       courseRepo.courseDevDir,
@@ -133,12 +132,12 @@ describe('Editing question settings', () => {
     assert.equal(questionDevInfo.title, 'New title');
   });
 
-  test.sequential('verify question info change in db', async () => {
+  test('verify question info change in db', async () => {
     const question = await selectQuestionById('1');
     assert.equal(question.title, 'New title');
   });
 
-  test.sequential('should not be able to submit without being an authorized user', async () => {
+  test('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -175,7 +174,7 @@ describe('Editing question settings', () => {
     });
   });
 
-  test.sequential('should not be able to submit without question info file', async () => {
+  test('should not be able to submit without question info file', async () => {
     questionLiveInfoPath = path.join(
       courseRepo.courseLiveDir,
       'questions',
@@ -210,47 +209,41 @@ describe('Editing question settings', () => {
     }
   });
 
-  test.sequential(
-    'should not be able to submit if repo question info file has been changed',
-    async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
+  test('should not be able to submit if repo question info file has been changed', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
 
-      const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-      const newQuestionInfo = { ...questionInfo, title: 'New title - changed' };
-      await fs.writeFile(questionLiveInfoPath, JSON.stringify(newQuestionInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseRepo.courseLiveDir, env: process.env });
-      await execa('git', ['commit', '-m', 'Change question info'], {
-        cwd: courseRepo.courseLiveDir,
-        env: process.env,
-      });
-      await execa('git', ['push', 'origin', 'master'], {
-        cwd: courseRepo.courseLiveDir,
-        env: process.env,
-      });
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    const newQuestionInfo = { ...questionInfo, title: 'New title - changed' };
+    await fs.writeFile(questionLiveInfoPath, JSON.stringify(newQuestionInfo, null, 2));
+    await execa('git', ['add', '-A'], { cwd: courseRepo.courseLiveDir, env: process.env });
+    await execa('git', ['commit', '-m', 'Change question info'], {
+      cwd: courseRepo.courseLiveDir,
+      env: process.env,
+    });
+    await execa('git', ['push', 'origin', 'master'], {
+      cwd: courseRepo.courseLiveDir,
+      env: process.env,
+    });
 
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-            title: 'Test title - changed',
-            qid: 'test/question',
-            grading_method: 'Internal',
-          }),
-        },
-      );
-      assert.equal(response.status, 200);
-      assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
-    },
-  );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+        title: 'Test title - changed',
+        qid: 'test/question',
+        grading_method: 'Internal',
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
+  });
 
-  test.sequential('change question id', async () => {
+  test('change question id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -274,7 +267,7 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  test.sequential('verify question id changed', async () => {
+  test('verify question id changed', async () => {
     questionLiveInfoPath = path.join(
       courseRepo.courseLiveDir,
       'questions',
@@ -286,36 +279,30 @@ describe('Editing question settings', () => {
     assert.ok(await fs.pathExists(questionLiveInfoPath));
   });
 
-  test.sequential(
-    'should not be able to submit if changed question id is not in the root directory',
-    async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
+  test('should not be able to submit if changed question id is not in the root directory', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
 
-      // Change the question id to one that is not contained within the root directory. Leave the title, qid, and topic unchanged.
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test title - changed',
-            qid: '../question3',
-            topic: 'Test',
-            grading_method: 'Internal',
-          }),
-        },
-      );
+    // Change the question id to one that is not contained within the root directory. Leave the title, qid, and topic unchanged.
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: '../question3',
+        topic: 'Test',
+        grading_method: 'Internal',
+      }),
+    });
 
-      assert.equal(response.status, 400);
-    },
-  );
+    assert.equal(response.status, 400);
+  });
 
-  test.sequential('verify workspace settings changes with minimal configuration', async () => {
+  test('verify workspace settings changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -332,8 +319,8 @@ describe('Editing question settings', () => {
         topic: 'Test',
         grading_method: 'Internal',
         workspace_image: 'test_image',
-        workspace_port: '1234',
-        workspace_home: '/home/test',
+        workspace_port: '',
+        workspace_home: '',
         workspace_graded_files: 'test_file.txt',
         workspace_args: '',
         workspace_environment: '',
@@ -345,14 +332,14 @@ describe('Editing question settings', () => {
 
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.workspaceOptions.image, 'test_image');
-    assert.equal(questionInfo.workspaceOptions.port, 1234);
-    assert.equal(questionInfo.workspaceOptions.home, '/home/test');
+    assert.notExists(questionInfo.workspaceOptions.port);
+    assert.notExists(questionInfo.workspaceOptions.home);
     assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');
     assert.notExists(questionInfo.workspaceOptions.args);
     assert.notExists(questionInfo.workspaceOptions.environment);
   });
 
-  test.sequential('verify workspace settings changes with full configuration', async () => {
+  test('verify workspace settings changes with full configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -389,7 +376,7 @@ describe('Editing question settings', () => {
     assert.deepEqual(questionInfo.workspaceOptions.environment, { test: 'value' });
   });
 
-  test.sequential('verify external grading changes with minimal configuration', async () => {
+  test('verify external grading changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -426,7 +413,7 @@ describe('Editing question settings', () => {
     assert.notExists(questionInfo.externalGradingOptions.environment);
   });
 
-  test.sequential('verify external grading changes with full configuration', async () => {
+  test('verify external grading changes with full configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -463,7 +450,7 @@ describe('Editing question settings', () => {
     assert.deepEqual(questionInfo.externalGradingOptions.environment, { test: 'value' });
   });
 
-  test.sequential('create a second question for nesting tests', async () => {
+  test('create a second question for nesting tests', async () => {
     const createPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
@@ -486,38 +473,32 @@ describe('Editing question settings', () => {
     assert.equal(response.status, 200);
   });
 
-  test.sequential(
-    'should not be able to rename a question to a subdirectory of an existing question',
-    async () => {
-      // Question 1 has QID "question2", question 2 has QID "secondQuestion".
-      // Try to rename question 1 to "secondQuestion/nested" — this would nest
-      // it inside question 2's directory, making it invisible during sync.
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
+  test('should not be able to rename a question to a subdirectory of an existing question', async () => {
+    // Question 1 has QID "question2", question 2 has QID "secondQuestion".
+    // Try to rename question 1 to "secondQuestion/nested" — this would nest
+    // it inside question 2's directory, making it invisible during sync.
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test title - changed',
-            qid: 'secondQuestion/nested',
-            topic: 'Test',
-            grading_method: 'Internal',
-          }),
-        },
-      );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'secondQuestion/nested',
+        topic: 'Test',
+        grading_method: 'Internal',
+      }),
+    });
 
-      await assertEditError(response, 'is a subdirectory of the existing question');
-    },
-  );
+    await assertEditError(response, 'is a subdirectory of the existing question');
+  });
 
-  test.sequential('rename question 1 to a nested QID for parent directory test', async () => {
+  test('rename question 1 to a nested QID for parent directory test', async () => {
     // Rename question 1 from "question2" to "parent/child" so we can test
     // that renaming question 2 to "parent" is blocked.
     const settingsPageResponse = await fetchCheerio(
@@ -542,34 +523,28 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  test.sequential(
-    'should not be able to rename a question to a parent directory of an existing question',
-    async () => {
-      // Question 1 now has QID "parent/child". Try to rename question 2
-      // ("secondQuestion") to "parent" — this would make question 1 invisible
-      // during sync because "parent/info.json" would stop recursion.
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/question/2/settings`,
-      );
-      assert.equal(settingsPageResponse.status, 200);
+  test('should not be able to rename a question to a parent directory of an existing question', async () => {
+    // Question 1 now has QID "parent/child". Try to rename question 2
+    // ("secondQuestion") to "parent" — this would make question 1 invisible
+    // during sync because "parent/info.json" would stop recursion.
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/2/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetch(
-        `${siteUrl}/pl/course_instance/1/instructor/question/2/settings`,
-        {
-          method: 'POST',
-          body: new URLSearchParams({
-            __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Second question',
-            qid: 'parent',
-            topic: 'Default',
-            grading_method: 'Internal',
-          }),
-        },
-      );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/2/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Second question',
+        qid: 'parent',
+        topic: 'Default',
+        grading_method: 'Internal',
+      }),
+    });
 
-      await assertEditError(response, 'would be a parent directory of the existing question');
-    },
-  );
+    await assertEditError(response, 'would be a parent directory of the existing question');
+  });
 });

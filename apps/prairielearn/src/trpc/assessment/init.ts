@@ -2,7 +2,6 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
-import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { appErrorFormatter } from '../app-errors.js';
 
@@ -69,17 +68,17 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
   return opts.next();
 });
 
-export const requireEnhancedAccessControl = t.middleware(async (opts) => {
-  const enabled = await features.enabled('enhanced-access-control', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-  });
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Enhanced access control is not enabled for this course.',
-    });
-  }
-  return opts.next();
-});
+export const requireCoursePermissionEditOrCourseInstancePermissionView = t.middleware(
+  async (opts) => {
+    if (
+      !opts.ctx.authz_data.has_course_permission_edit &&
+      !opts.ctx.authz_data.has_course_instance_permission_view
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a course editor or student data viewer)',
+      });
+    }
+    return opts.next();
+  },
+);

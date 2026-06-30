@@ -175,7 +175,7 @@ const CourseRow = memo(({ row }: { row: CourseWithInstitution }) => {
       <CourseUpdateColumn row={row} columnName="title" label="title" />
       <CourseUpdateColumn row={row} columnName="display_timezone" label="timezone" />
       <CourseUpdateColumn row={row} columnName="path" label="path" />
-      <CourseUpdateColumn row={row} columnName="repository" label="repository" />
+      <CourseUpdateColumn row={row} columnName="repository" label="repository" required={false} />
       <CourseUpdateColumn row={row} columnName="branch" label="branch" />
       <td className="align-middle">
         <OverlayTrigger
@@ -227,7 +227,7 @@ function CourseDeleteForm({
     },
   });
 
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Delete']>(mutation.error);
 
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
@@ -248,7 +248,11 @@ function CourseDeleteForm({
           id={`inputConfirm${id}`}
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? `inputConfirm${id}-error` : undefined}
-          {...register('short_name')}
+          {...register('short_name', {
+            validate: (value) =>
+              value === row.course.short_name ||
+              `Type "${row.course.short_name}" exactly to confirm deletion.`,
+          })}
         />
         {errors.short_name && (
           <div id={`inputConfirm${id}-error`} className="invalid-feedback">
@@ -292,7 +296,7 @@ function CourseInsertModal({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['Insert']>(mutation.error);
 
   const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -324,7 +328,9 @@ function CourseInsertModal({
         shortName: data.short_name,
         institutionId: data.institution_id,
         displayTimezone: data.display_timezone,
-        repository: `git@github.com:PrairieLearn/${data.repository_short_name}.git`,
+        repository: data.repository_short_name
+          ? `git@github.com:PrairieLearn/${data.repository_short_name}.git`
+          : null,
       },
       { onSuccess: () => window.location.reload() },
     );
@@ -350,6 +356,7 @@ function CourseInsertModal({
               coursesRoot={coursesRoot}
               prefixState={prefixState}
               aiSecretsConfigured={aiSecretsConfigured}
+              repositoryRequired={false}
             />
             <div className="mb-3">
               <label className="form-label" htmlFor="courseAddInputBranch">
@@ -398,11 +405,13 @@ function CourseUpdateColumn({
   columnName,
   label,
   href,
+  required = true,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
   href?: string;
+  required?: boolean;
 }) {
   const [showPopover, setShowPopover] = useState(false);
 
@@ -419,6 +428,7 @@ function CourseUpdateColumn({
               row={row}
               columnName={columnName}
               label={label}
+              required={required}
               onCancel={() => setShowPopover(false)}
             />
           ),
@@ -443,16 +453,18 @@ function CourseUpdateColumnForm({
   row,
   columnName,
   label,
+  required,
   onCancel,
 }: {
   row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
+  required: boolean;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
-  const appError = getAppError<AdminCourseError>(mutation.error);
+  const appError = getAppError<AdminCourseError['UpdateColumn']>(mutation.error);
 
   const {
     register,
@@ -485,15 +497,7 @@ function CourseUpdateColumnForm({
           className={clsx('form-control', errors.value && 'is-invalid')}
           aria-label={label}
           {...register('value', {
-            required: `Enter a ${label}`,
-            pattern:
-              columnName === 'short_name'
-                ? {
-                    value: /^[A-Z]+ [A-Z0-9]+$/,
-                    message:
-                      'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
-                  }
-                : undefined,
+            required: required && `Enter a ${label}`,
           })}
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}

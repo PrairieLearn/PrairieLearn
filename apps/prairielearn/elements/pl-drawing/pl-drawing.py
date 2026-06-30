@@ -301,7 +301,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
-    tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+    tol = pl.get_float_attrib(
+        element,
+        "tol",
+        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
+    )
     angle_tol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -317,20 +321,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
         "base_url": data["options"]["base_url"],
         "element_client_files": data["options"]["client_files_extensions_url"],
-        "render_scale": pl.get_float_attrib(
-            element, "render-scale", defaults.element_defaults["render-scale"]
-        ),
-        "width": pl.get_string_attrib(
+        "render_scale": defaults.element_defaults["render-scale"],
+        "width": pl.get_float_attrib(
             element, "width", defaults.element_defaults["width"]
         ),
-        "height": pl.get_string_attrib(
+        "height": pl.get_float_attrib(
             element, "height", defaults.element_defaults["height"]
         ),
     }
 
     show_btn = data["panel"] == "question" and not preview_mode
 
-    if math.isclose(tol, grid_size / 2):
+    if grid_size == 0:
+        message_default = (
+            "The expected tolerance is "
+            + str(tol)
+            + " pixels for position and "
+            + str(angle_tol)
+            + " degrees for angle."
+        )
+    elif math.isclose(tol, grid_size / 2):
         message_default = (
             "The expected tolerance is 1/2 square grid for position and "
             + str(angle_tol)
@@ -347,10 +357,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "uuid": pl.get_uuid(),
-        "width": pl.get_string_attrib(
+        "width": pl.get_float_attrib(
             element, "width", defaults.element_defaults["width"]
         ),
-        "height": pl.get_string_attrib(
+        "height": pl.get_float_attrib(
             element, "height", defaults.element_defaults["height"]
         ),
         "options_json": json.dumps(js_options),
@@ -385,7 +395,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
-    if data["panel"] == "submission":
+    if data["panel"] == "question" or data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
         show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
@@ -415,8 +425,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_submitted_answer = data["submitted_answers"].get(name)
 
-    # A blank submission could be `None`
-    if allow_blank and raw_submitted_answer is None:
+    # A blank submission could be `None` or an empty string
+    # Empty strings must be filtered here because json.loads('') raises an error
+    if allow_blank and (raw_submitted_answer is None or len(raw_submitted_answer) == 0):
         data["submitted_answers"][name] = None
         return
 
@@ -454,7 +465,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
-    tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+    tol = pl.get_float_attrib(
+        element,
+        "tol",
+        grid_size / 2 if grid_size != 0 else defaults.element_defaults["grid-size"] / 2,
+    )
     angtol = pl.get_float_attrib(
         element, "angle-tol", defaults.element_defaults["angle-tol"]
     )
@@ -618,7 +633,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         grid_size = pl.get_integer_attrib(
             element, "grid-size", defaults.element_defaults["grid-size"]
         )
-        tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+        tol = pl.get_float_attrib(
+            element,
+            "tol",
+            grid_size / 2
+            if grid_size != 0
+            else defaults.element_defaults["grid-size"] / 2,
+        )
         angtol = pl.get_float_attrib(
             element, "angle-tol", defaults.element_defaults["angle-tol"]
         )

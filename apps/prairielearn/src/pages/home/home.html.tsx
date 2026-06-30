@@ -1,46 +1,12 @@
-import { z } from 'zod';
-
 import { Hydrate } from '@prairielearn/react/server';
-import { DateFromISOString } from '@prairielearn/zod';
 
-import {
-  RawStudentCourseInstanceSchema,
-  RawStudentCourseSchema,
-  type StaffInstitution,
-  StudentEnrollmentSchema,
-} from '../../lib/client/safe-db-types.js';
-import { CourseInstancePublishingExtensionSchema, type NewsItem } from '../../lib/db-types.js';
+import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
+import { type NewsItem } from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
 import { NewsAlert } from './components/NewsAlert.js';
-
-export const InstructorHomePageCourseSchema = z.object({
-  id: RawStudentCourseSchema.shape.id,
-  short_name: RawStudentCourseSchema.shape.short_name,
-  title: RawStudentCourseSchema.shape.title,
-  can_open_course: z.boolean(),
-  course_instances: z.array(
-    z.object({
-      id: RawStudentCourseSchema.shape.id,
-      long_name: RawStudentCourseInstanceSchema.shape.long_name,
-      expired: z.boolean(),
-    }),
-  ),
-});
-type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
-
-export const StudentHomePageCourseSchema = z.object({
-  course_id: RawStudentCourseSchema.shape.id,
-  course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
-  start_date: DateFromISOString.nullable(),
-  end_date: DateFromISOString.nullable(),
-  latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
-});
-type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+import type { InstructorHomePageCourse, StudentHomePageCourse } from './home.types.js';
 
 export function Home({
   canAddCourses,
@@ -115,9 +81,8 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
       </div>
       <div className="card-body">
         <p>
-          PrairieLearn is running in Development Mode. Click the
-          <strong>"Load from disk"</strong> button above to load question and assessment definitions
-          from JSON files on disk.
+          PrairieLearn is running in Development Mode. Click the <strong>"Load from disk"</strong>{' '}
+          button above to load question and assessment definitions from JSON files on disk.
         </p>
         <p>
           You need to click "Load from disk" every time that a JSON file is changed on disk. Changes

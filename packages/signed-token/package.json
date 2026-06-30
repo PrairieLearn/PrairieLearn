@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/signed-token",
-  "version": "3.1.4",
+  "version": "3.1.6",
   "type": "module",
   "repository": {
     "type": "git",
@@ -19,15 +19,14 @@
   "dependencies": {
     "base64url": "^3.0.1",
     "debug": "^4.4.3",
-    "es-toolkit": "^1.45.1"
+    "es-toolkit": "^1.47.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.13",
-    "@types/node": "^24.12.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.2"
+    "@types/node": "^24.12.4",
+    "@typescript/native-preview": "beta",
+    "@vitest/coverage-v8": "^4.1.7",
+    "vitest": "^4.1.7"
   }
 }

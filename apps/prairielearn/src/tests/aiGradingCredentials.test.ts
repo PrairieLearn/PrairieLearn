@@ -37,7 +37,7 @@ async function createTrpcClient(user?: AuthUser) {
   });
 }
 
-describe('AI grading credentials', () => {
+describe('AI grading credentials', { concurrent: false }, () => {
   beforeAll(async () => {
     config.isEnterprise = true;
     await helperServer.before()();
@@ -55,7 +55,7 @@ describe('AI grading credentials', () => {
       client = await createTrpcClient();
     });
 
-    test.sequential('toggle custom API keys on', async () => {
+    test('toggle custom API keys on', async () => {
       const result = await client.updateUseCustomApiKeys.mutate({ enabled: true });
       assert.isTrue(result.useCustomApiKeys);
 
@@ -63,7 +63,7 @@ describe('AI grading credentials', () => {
       assert.isTrue(ci.ai_grading_use_custom_api_keys);
     });
 
-    test.sequential('add an OpenAI credential', async () => {
+    test('add an OpenAI credential', async () => {
       const result = await client.addCredential.mutate({
         provider: 'openai',
         secret_key: 'sk-test-openai-key-1234567890',
@@ -73,7 +73,7 @@ describe('AI grading credentials', () => {
       assert.notInclude(result.credential.apiKeyMasked, 'sk-test-openai-key-1234567890');
     });
 
-    test.sequential('verify credential is encrypted in the database', async () => {
+    test('verify credential is encrypted in the database', async () => {
       const credentials = await selectCredentials('1');
       assert.lengthOf(credentials, 1);
       assert.equal(credentials[0].provider, 'openai');
@@ -82,7 +82,7 @@ describe('AI grading credentials', () => {
       assert.equal(decrypted, 'sk-test-openai-key-1234567890');
     });
 
-    test.sequential('upsert replaces existing credential for same provider', async () => {
+    test('upsert replaces existing credential for same provider', async () => {
       await client.addCredential.mutate({
         provider: 'openai',
         secret_key: 'sk-test-openai-key-UPDATED',
@@ -94,7 +94,7 @@ describe('AI grading credentials', () => {
       assert.equal(decrypted, 'sk-test-openai-key-UPDATED');
     });
 
-    test.sequential('add credentials for multiple providers', async () => {
+    test('add credentials for multiple providers', async () => {
       await client.addCredential.mutate({
         provider: 'anthropic',
         secret_key: 'sk-ant-test-key',
@@ -105,7 +105,7 @@ describe('AI grading credentials', () => {
       assert.deepEqual(providers, ['anthropic', 'openai']);
     });
 
-    test.sequential('delete a credential', async () => {
+    test('delete a credential', async () => {
       const credentials = await selectCredentials('1');
       const anthropicCred = credentials.find((c) => c.provider === 'anthropic');
       assert.isDefined(anthropicCred);
@@ -117,7 +117,7 @@ describe('AI grading credentials', () => {
       assert.equal(remaining[0].provider, 'openai');
     });
 
-    test.sequential('deleting a credential from another course instance is a no-op', async () => {
+    test('deleting a credential from another course instance is a no-op', async () => {
       const credentials = await selectCredentials('1');
       const openaiCred = credentials.find((c) => c.provider === 'openai');
       assert.isDefined(openaiCred);
@@ -128,7 +128,7 @@ describe('AI grading credentials', () => {
       assert.lengthOf(remaining, 1);
     });
 
-    test.sequential('toggle custom API keys off', async () => {
+    test('toggle custom API keys off', async () => {
       const result = await client.updateUseCustomApiKeys.mutate({ enabled: false });
       assert.isFalse(result.useCustomApiKeys);
 
@@ -136,7 +136,7 @@ describe('AI grading credentials', () => {
       assert.isFalse(ci.ai_grading_use_custom_api_keys);
     });
 
-    test.sequential('API key input is trimmed server-side', async () => {
+    test('API key input is trimmed server-side', async () => {
       await client.updateUseCustomApiKeys.mutate({ enabled: true });
       await client.addCredential.mutate({
         provider: 'google',
@@ -151,7 +151,7 @@ describe('AI grading credentials', () => {
   });
 
   describe('authorization', () => {
-    test.sequential('non-owner user cannot call mutations', async () => {
+    test('non-owner user cannot call mutations', async () => {
       const client = await withUser(viewerUser, () => createTrpcClient(viewerUser));
       await withUser(viewerUser, async () => {
         try {

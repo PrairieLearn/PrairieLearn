@@ -10,6 +10,7 @@ export function StudentLabelDropdown({
   disabled,
   footer,
   buttonLabel = 'Edit labels',
+  maxSelected,
 }: {
   labels: StaffStudentLabel[];
   selectedIds: Set<string>;
@@ -17,7 +18,14 @@ export function StudentLabelDropdown({
   disabled?: boolean;
   footer?: ReactNode;
   buttonLabel?: string;
+  maxSelected?: number;
 }) {
+  const maxSelectedReason =
+    maxSelected === undefined
+      ? undefined
+      : `At most ${maxSelected} student labels can be selected.`;
+  const maxSelectedReached = maxSelected !== undefined && selectedIds.size >= maxSelected;
+
   return (
     <Dropdown autoClose="outside">
       <Dropdown.Toggle variant="outline-primary" size="sm" disabled={disabled}>
@@ -30,20 +38,24 @@ export function StudentLabelDropdown({
         ) : (
           labels.map((label) => {
             const isSelected = selectedIds.has(label.id);
+            const disabledReason =
+              !isSelected && maxSelectedReached ? maxSelectedReason : undefined;
+            const optionDisabled = disabled || disabledReason !== undefined;
             return (
               <Dropdown.Item
                 key={label.id}
                 as="label"
                 htmlFor={`student-label-${label.id}`}
                 className="d-flex align-items-center gap-2"
-                disabled={disabled}
+                disabled={optionDisabled}
+                title={disabledReason}
               >
                 <input
                   type="checkbox"
                   id={`student-label-${label.id}`}
                   className="form-check-input mt-0 flex-shrink-0"
                   checked={isSelected}
-                  disabled={disabled}
+                  disabled={optionDisabled}
                   onChange={() => onToggle(label)}
                 />
                 {label.color && (

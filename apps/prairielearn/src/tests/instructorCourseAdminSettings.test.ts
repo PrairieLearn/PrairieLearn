@@ -2,12 +2,11 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { selectCourseById } from '../models/course.js';
+import { selectCourseById, updateCourseQuestionsReceiveUserData } from '../models/course.js';
 
 import { fetchCheerio } from './helperClient.js';
 import {
@@ -23,7 +22,7 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 
 let courseRepo: CourseRepoFixture;
 
-describe('Editing course settings', () => {
+describe('Editing course settings', { concurrent: false }, () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
@@ -31,14 +30,14 @@ describe('Editing course settings', () => {
   });
   afterAll(helperServer.after);
 
-  test.sequential('access the test course info file', async () => {
+  test('access the test course info file', async () => {
     const courseInfo = JSON.parse(
       await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
     );
     assert.equal(courseInfo.name, 'TEST 101');
   });
 
-  test.sequential('change course info', async () => {
+  test('change course info', async () => {
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
     assert.equal(settingsPageResponse.status, 200);
 
@@ -57,7 +56,7 @@ describe('Editing course settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course/1/course_admin/settings`);
   });
 
-  test.sequential('verify course info change', async () => {
+  test('verify course info change', async () => {
     const courseLiveInfo = JSON.parse(
       await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
     );
@@ -66,7 +65,7 @@ describe('Editing course settings', () => {
     assert.equal(courseLiveInfo.timezone, 'America/Los_Angeles');
   });
 
-  test.sequential('pull and verify changes', async () => {
+  test('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
     const courseDevInfo = JSON.parse(
       await fs.readFile(path.join(courseRepo.courseDevDir, 'infoCourse.json'), 'utf8'),
@@ -76,15 +75,84 @@ describe('Editing course settings', () => {
     assert.equal(courseDevInfo.timezone, 'America/Los_Angeles');
   });
 
-  test.sequential('verify course info change in db', async () => {
+  test('verify course info change in db', async () => {
     const course = await selectCourseById('1');
     assert.equal(course.short_name, 'TEST 102');
     assert.equal(course.title, 'Test Course 102');
     assert.equal(course.display_timezone, 'America/Los_Angeles');
   });
 
+  test('editor can save when questions receive user data is locked on', async () => {
+    const originalCourse = await selectCourseById('1');
+    await updateCourseQuestionsReceiveUserData({
+      course_id: '1',
+      questions_receive_user_data: true,
+      authn_user_id: '1',
+      user_id: '1',
+      old_questions_receive_user_data: originalCourse.questions_receive_user_data,
+    });
+
+    try {
+      const user = await getOrCreateUser({
+        uid: 'editor@example.com',
+        name: 'Editor User',
+        uin: 'editor',
+        email: 'editor@example.com',
+      });
+      await insertCoursePermissionsByUserUid({
+        course_id: '1',
+        uid: 'editor@example.com',
+        course_role: 'Editor',
+        authn_user_id: '1',
+      });
+
+      await withUser(user, async () => {
+        const settingsPageResponse = await fetchCheerio(
+          `${siteUrl}/pl/course/1/course_admin/settings`,
+        );
+        assert.equal(settingsPageResponse.status, 200);
+        assert.equal(
+          settingsPageResponse.$('input[type="hidden"][name="questions_receive_user_data"]').val(),
+          'on',
+        );
+        assert.isDefined(
+          settingsPageResponse
+            .$('input[type="checkbox"][name="questions_receive_user_data"]')
+            .attr('disabled'),
+        );
+
+        const courseInfo = JSON.parse(
+          await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
+        );
+
+        const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_configuration',
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+            short_name: courseInfo.name,
+            title: courseInfo.title,
+            display_timezone: courseInfo.timezone,
+            questions_receive_user_data: 'on',
+          }),
+        });
+        assert.equal(response.status, 200);
+        assert.match(response.url, /\/pl\/course\/1\/course_admin\/settings$/);
+      });
+    } finally {
+      await updateCourseQuestionsReceiveUserData({
+        course_id: '1',
+        questions_receive_user_data: originalCourse.questions_receive_user_data,
+        authn_user_id: '1',
+        user_id: '1',
+        old_questions_receive_user_data: true,
+      });
+    }
+  });
+
   // try submitting without being an authorized user
-  test.sequential('should not be able to submit without being an authorized user', async () => {
+  test('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -118,7 +186,7 @@ describe('Editing course settings', () => {
     });
   });
 
-  test.sequential('should not be able to submit without course info file', async () => {
+  test('should not be able to submit without course info file', async () => {
     const courseLiveInfoPath = path.join(courseRepo.courseLiveDir, 'infoCourse.json');
     await fs.move(courseLiveInfoPath, `${courseLiveInfoPath}.bak`);
     try {
@@ -144,7 +212,7 @@ describe('Editing course settings', () => {
     }
   });
 
-  test.sequential('should be able to submit without any changes', async () => {
+  test('should be able to submit without any changes', async () => {
     const courseInfo = JSON.parse(
       await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
     );
@@ -164,40 +232,40 @@ describe('Editing course settings', () => {
     assert.match(response.url, /\/pl\/course\/1\/course_admin\/settings$/);
   });
 
-  test.sequential(
-    'should not be able to submit if repo course info file has been changed',
-    async () => {
-      const settingsPageResponse = await fetchCheerio(
-        `${siteUrl}/pl/course/1/course_admin/settings`,
-      );
+  test('should not be able to submit if repo course info file has been changed', async () => {
+    const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
 
-      const courseInfoPath = path.join(courseRepo.courseDevDir, 'infoCourse.json');
-      const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
-      const newCourseInfo = { ...courseInfo, name: 'TEST 107' };
-      await fs.writeFile(courseInfoPath, JSON.stringify(newCourseInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
-      await execa('git', ['commit', '-m', 'Change course info'], {
-        cwd: courseRepo.courseDevDir,
-        env: process.env,
-      });
-      await execa('git', ['push', 'origin', 'master'], {
-        cwd: courseRepo.courseDevDir,
-        env: process.env,
-      });
+    // Earlier tests save settings through the server, which commits to the
+    // live course and pushes to origin. Pull those commits into the dev repo
+    // so the push below fast-forwards instead of being rejected.
+    await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
 
-      const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_configuration',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          short_name: 'TEST 108',
-          title: 'Test Course 108',
-          display_timezone: 'America/Los_Angeles',
-        }),
-      });
-      assert.equal(response.status, 200);
-      assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
-    },
-  );
+    const courseInfoPath = path.join(courseRepo.courseDevDir, 'infoCourse.json');
+    const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
+    const newCourseInfo = { ...courseInfo, name: 'TEST 107' };
+    await fs.writeFile(courseInfoPath, JSON.stringify(newCourseInfo, null, 2));
+    await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
+    await execa('git', ['commit', '-m', 'Change course info'], {
+      cwd: courseRepo.courseDevDir,
+      env: process.env,
+    });
+    await execa('git', ['push', 'origin', 'master'], {
+      cwd: courseRepo.courseDevDir,
+      env: process.env,
+    });
+
+    const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_configuration',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+        short_name: 'TEST 108',
+        title: 'Test Course 108',
+        display_timezone: 'America/Los_Angeles',
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+  });
 });

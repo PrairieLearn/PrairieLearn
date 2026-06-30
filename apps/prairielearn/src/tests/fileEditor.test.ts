@@ -7,13 +7,12 @@ import * as cheerio from 'cheerio';
 import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch, { FormData } from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -114,13 +113,11 @@ const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/se
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl =
@@ -143,18 +140,6 @@ const findEditUrlData = [
     selector: '[data-testid="edit-course-configuration-link"]',
     url: courseAdminSettingsUrl,
     expectedEditUrl: courseAdminEditUrl,
-  },
-  {
-    name: 'instance admin',
-    selector: '[data-testid="edit-course-instance-configuration-link"]',
-    url: courseInstanceInstanceAdminSettingsUrl,
-    expectedEditUrl: courseInstanceInstanceAdminEditUrl,
-  },
-  {
-    name: 'question',
-    selector: '[data-testid="edit-question-configuration-link"]',
-    url: courseInstanceQuestionSettingsUrl,
-    expectedEditUrl: courseInstanceQuestionJsonEditUrl,
   },
 ];
 
@@ -280,6 +265,35 @@ describe('test file editor', { timeout: 20_000 }, function () {
       });
     });
 
+    describe('hadJsonErrors warning when another file has errors', function () {
+      // Break the question JSON by committing garbage directly in the live repo
+      // and pushing it to origin. The push is necessary because in git mode, the
+      // editor resets to origin before syncing, which would discard a local-only
+      // commit. Then save a valid edit to question.html. The sync will complete
+      // with hadJsonErrors (because of the broken question JSON), but
+      // question.html is not a JSON entity file, so fileMetadata.syncErrors will
+      // be null. The alert should be a warning, not an error.
+      writeAndCommitFileInLive(questionJsonPath, 'garbage');
+      pushFromLive();
+
+      editGet(courseInstanceQuestionHtmlEditUrl, false, false);
+      editPost('save_and_sync', questionHtmlC, courseInstanceQuestionHtmlEditUrl, true, false);
+      waitForJobSequence(locals, 'Error');
+
+      verifyAlert('alert-warning', 'Other files in this course have sync errors');
+
+      // Cleanup: fix the broken question JSON through the editor.
+      editGet(courseInstanceQuestionJsonEditUrl, false, false);
+      editPost(
+        'save_and_sync',
+        jsonToContents(questionJsonA),
+        courseInstanceQuestionJsonEditUrl,
+        true,
+        false,
+      );
+      waitForJobSequence(locals, 'Success');
+    });
+
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
     });
@@ -317,6 +331,7 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
           (resolve, reject) => {
             // We deliberately use the deprecated `node:url#parse()` instead of
             // `new URL()` to avoid path normalization.
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             const parsedUrl = nodeUrl.parse(url);
             const req = http.request(
               {
@@ -371,7 +386,6 @@ function editPost(
   url: string,
   expectedToFindResults: boolean,
   expectedToFindChoice: boolean,
-  expectedDiskContents: string | null,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', async () => {
@@ -391,12 +405,7 @@ function editPost(
       locals.$ = cheerio.load(page);
     });
     if (action === 'save_and_sync') {
-      verifyEdit(
-        expectedToFindResults,
-        expectedToFindChoice,
-        fileEditContents,
-        expectedDiskContents,
-      );
+      verifyEdit(expectedToFindResults, expectedToFindChoice);
     }
   });
 }
@@ -425,12 +434,13 @@ function findEditUrl(name: string, selector: string, url: string, expectedEditUr
   });
 }
 
-function verifyEdit(
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
-) {
+/**
+ * Verifies the structure of the editor page. The editor renders its file
+ * contents client-side with Ace, which a Cheerio test cannot see; on-disk
+ * contents are asserted separately with `verifyFileOnLiveDisk`, and the
+ * client-side editor behavior is covered by `tests/e2e/fileEditor.spec.ts`.
+ */
+function verifyEdit(expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
     assert.lengthOf(elemList, 1);
@@ -445,39 +455,16 @@ function verifyEdit(
     locals.file_edit_orig_hash = elemList[0].attribs.value;
     assert.isString(locals.file_edit_orig_hash);
   });
-  it('editor element should match expected draft file contents', function () {
-    const editor = locals.$('#file-editor-draft');
-    assert.lengthOf(editor, 1);
-    const fileContents = b64DecodeUnicode(editor.data('contents'));
-    assert.strictEqual(fileContents, expectedDraftContents);
-  });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
     elemList = locals.$('form[name="editor-form"] #job-sequence-results');
-    if (expectedToFindResults) {
-      assert.lengthOf(elemList, 1);
-    } else {
-      assert.lengthOf(elemList, 0);
-    }
+    assert.lengthOf(elemList, expectedToFindResults ? 1 : 0);
   });
-  it(`should ${expectedToFindChoice ? '' : 'not '}have an editor with disk file contents`, function () {
-    const editor = locals.$('#file-editor-disk');
-    if (expectedToFindChoice) {
-      assert.lengthOf(editor, 1);
-      const fileContents = b64DecodeUnicode(editor.data('contents'));
-      assert.strictEqual(fileContents, expectedDiskContents);
-    } else {
-      assert.lengthOf(editor, 0);
-    }
+  it(`should ${expectedToFindChoice ? '' : 'not '}show the version conflict chooser`, function () {
+    assert.lengthOf(locals.$('h4:contains("Their version")'), expectedToFindChoice ? 1 : 0);
   });
 }
 
-function editGet(
-  url: string,
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
-) {
+function editGet(url: string, expectedToFindResults: boolean, expectedToFindChoice: boolean) {
   describe('GET to edit url', function () {
     it('should load successfully', async () => {
       const res = await fetch(url);
@@ -487,12 +474,7 @@ function editGet(
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    verifyEdit(
-      expectedToFindResults,
-      expectedToFindChoice,
-      expectedDraftContents,
-      expectedDiskContents,
-    );
+    verifyEdit(expectedToFindResults, expectedToFindChoice);
   });
 }
 
@@ -529,40 +511,52 @@ function doEdits(data: {
     // is used to detect concurrent modifications. `editGet` and `editPost`
     // store this hash in `locals` and include it in subsequent `POST` requests.
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, A, A)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, A, B)
+
+    verifyAlert('alert-success', 'File was saved and synced successfully.');
 
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editGet(data.url, false, false, data.contentsB, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsA);
     // (B, A, B, B)
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, B, B)
 
     writeAndCommitFileInLive(data.path, data.contentsB);
     // (A, B, B, B)
 
-    editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
+    editPost('save_and_sync', data.contentsC, data.url, true, true);
     waitForJobSequence(locals, 'Error');
+    // The conflicting save is rejected: contents C live only in the editor's
+    // draft, so the live disk still holds their version (B). The draft contents
+    // are verified by `tests/e2e/fileEditor.spec.ts`.
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editGet(data.url, false, false, data.contentsB, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, B, B)
 
-    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsA, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, B, A)
 
     pullAndVerifyFileInDev(data.path, data.contentsA);
@@ -571,11 +565,13 @@ function doEdits(data: {
     writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
     // (A, A, A*, A*)
 
-    editGet(data.url, false, false, data.contentsA, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, A*, A*)
 
-    editPost('save_and_sync', data.contentsC, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsC, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsC);
     // (C, C, A*, C)
 
     pullAndVerifyFileInDev(data.path, data.contentsC);
@@ -584,31 +580,42 @@ function doEdits(data: {
     writeAndPushFileInDev('README.md', `Another new readme to test edit of ${data.path}`);
     // (C, C, C*, C*)
 
-    editGet(data.url, false, false, data.contentsC, null);
+    editGet(data.url, false, false);
+    verifyFileOnLiveDisk(data.path, data.contentsC);
     // (C, C, C*, C*)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, C*, B)
 
-    editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsA, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsA);
     // (A, A, C*, A)
 
-    editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+    editPost('save_and_sync', data.contentsB, data.url, true, false);
     waitForJobSequence(locals, 'Success');
+    verifyFileOnLiveDisk(data.path, data.contentsB);
     // (B, B, C*, B)
 
     if (data.isJson) {
-      editPost('save_and_sync', data.contentsX, data.url, true, false, null);
+      editPost('save_and_sync', data.contentsX, data.url, true, false);
       waitForJobSequence(locals, 'Error');
-      // (X, X, C*, X) <- successful push but failed sync because of bad json
+      verifyFileOnLiveDisk(data.path, data.contentsX);
+      // (X, X, C*, X) <- successful push, sync completed with per-entity errors
+
+      verifyAlert(
+        'alert-danger',
+        'File was saved, but it contains errors that prevented it from syncing.',
+      );
 
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
 
-      editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+      editPost('save_and_sync', data.contentsA, data.url, true, false);
       waitForJobSequence(locals, 'Success');
+      verifyFileOnLiveDisk(data.path, data.contentsA);
       // (A, A, X, A)
 
       pullAndVerifyFileInDev(data.path, data.contentsA);
@@ -630,6 +637,28 @@ function writeAndCommitFileInLive(fileName: string, fileContents: string) {
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function verifyFileOnLiveDisk(fileName: string, fileContents: string) {
+  describe(`verify contents of ${fileName} on the live disk`, function () {
+    it('should match contents', function () {
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseLiveDir, fileName), 'utf-8'),
+        fileContents,
+      );
+    });
+  });
+}
+
+function pushFromLive() {
+  describe('push live repo to origin', function () {
+    it('should push', async () => {
+      await execa('git', ['push'], {
         cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
@@ -694,6 +723,17 @@ function writeAndPushFileInDev(fileName: string, fileContents: string) {
   });
 }
 
+function verifyAlert(expectedClass: string, expectedMessage: string) {
+  describe('verify alert banner', function () {
+    it(`should show ${expectedClass}`, function () {
+      const alert = locals.$('[data-testid="save-sync-alert"]');
+      assert.lengthOf(alert, 1);
+      assert.isTrue(alert.hasClass(expectedClass));
+      assert.include(alert.text(), expectedMessage);
+    });
+  });
+}
+
 function waitForJobSequence(
   locals: { job_sequence_id?: string },
   expectedResult: 'Success' | 'Error',
@@ -746,6 +786,23 @@ function doFiles(data: {
       testDeleteFile({
         url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
         path: path.join(data.path, 'subdir', 'testfile.txt'),
+      });
+
+      testUploadMultipleFiles({
+        fileViewBaseUrl: data.url,
+        url: data.url,
+        workingDirPath: data.path,
+        newButtonId: 'New',
+        files: [
+          {
+            filename: 'multi-file-1.txt',
+            contents: 'First file uploaded in a single request.',
+          },
+          {
+            filename: 'multi-file-2.txt',
+            contents: 'Second file uploaded in a single request.',
+          },
+        ],
       });
     });
     describe('Client Files', function () {
@@ -932,7 +989,7 @@ function testUploadFile(params: {
       const formData = new FormData();
       formData.append('__action', 'upload_file');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file', new Blob([Buffer.from(params.contents)]), params.filename);
+      formData.append('files', new Blob([Buffer.from(params.contents)]), params.filename);
 
       if (locals.file_path) {
         formData.append('file_path', locals.file_path);
@@ -967,6 +1024,91 @@ function testUploadFile(params: {
   });
 
   pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testUploadMultipleFiles(params: {
+  fileViewBaseUrl: string;
+  url: string;
+  workingDirPath: string;
+  newButtonId: string;
+  files: { filename: string; contents: string }[];
+}) {
+  describe(`GET to ${params.url} for multi-file upload`, () => {
+    it('should load successfully', async () => {
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should have a CSRF token and a working_path', () => {
+      elemList = locals.$(`button[id="instructorFileUploadForm-${params.newButtonId}"]`);
+      assert.lengthOf(elemList, 1);
+      const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+
+      elemList = $('input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+
+      elemList = $('input[name="working_path"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.working_path = elemList[0].attribs.value;
+    });
+  });
+
+  describe(`POST to ${params.url} with action upload_file and multiple files`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+  });
+
+  describe('Uploaded files are available', function () {
+    params.files.forEach((file) => {
+      const uploadedPath = path.join(params.workingDirPath, file.filename);
+
+      it(`file view for ${file.filename} should match contents`, async () => {
+        const res = await fetch(`${params.fileViewBaseUrl}/${encodePath(uploadedPath)}`);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
+        const pre = locals.$('.card-body pre');
+        assert.lengthOf(pre, 1);
+        assert.strictEqual(pre.text(), file.contents);
+      });
+
+      pullAndVerifyFileInDev(uploadedPath, file.contents);
+    });
+  });
+
+  describe(`POST to ${params.url} with duplicate file names`, function () {
+    it('should load successfully', async () => {
+      const formData = new FormData();
+      formData.append('__action', 'upload_file');
+      formData.append('__csrf_token', locals.__csrf_token);
+      formData.append('working_path', locals.working_path);
+
+      for (const file of params.files) {
+        formData.append('files', new Blob([Buffer.from(file.contents)]), file.filename);
+        formData.append('files', new Blob([Buffer.from(file.contents + ' (copy)')]), file.filename);
+      }
+
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isNotOk(res.ok);
+      const text = await res.text();
+      assert.include(text, 'Duplicate destination paths in upload');
+    });
+  });
 }
 
 function testRenameFile(params: {

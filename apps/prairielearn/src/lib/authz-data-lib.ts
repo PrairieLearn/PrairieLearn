@@ -59,7 +59,7 @@ const RawCourseInstancePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend
   has_student_access_with_enrollment: z.boolean(),
 });
 
-export type RawPageAuthzData =
+type RawPageAuthzData =
   | z.infer<typeof RawCoursePageAuthzDataSchema>
   | z.infer<typeof RawCourseInstancePageAuthzDataSchema>;
 
@@ -67,7 +67,7 @@ export const CoursePageAuthzDataSchema = RawCoursePageAuthzDataSchema.extend({
   user: StaffUserSchema,
   authn_user: StaffUserSchema,
 }).brand<'CoursePageAuthzData'>();
-export type CoursePageAuthzData = z.infer<typeof CoursePageAuthzDataSchema>;
+type CoursePageAuthzData = z.infer<typeof CoursePageAuthzDataSchema>;
 
 export const CourseInstancePageAuthzDataSchema = RawCourseInstancePageAuthzDataSchema.extend({
   user: StaffUserSchema,
@@ -141,13 +141,13 @@ export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUs
 
 // More information about these roles can be found in the "Permission checking" section of the developer guide.
 
-export type SystemRole = 'System';
+type SystemRole = 'System';
 
-export type StudentCourseInstanceRole = 'Student';
+type StudentCourseInstanceRole = 'Student';
 
-export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
 
-export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
+type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
 export type Role =
   | SystemRole

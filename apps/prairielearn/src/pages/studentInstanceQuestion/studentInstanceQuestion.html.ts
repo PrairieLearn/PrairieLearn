@@ -126,6 +126,7 @@ export function StudentInstanceQuestion({
                         questionContext,
                         question: resLocals.question,
                         questionNumber: resLocals.instance_question_info.question_number,
+                        showQuestionTitles: !!resLocals.assessment.show_question_titles,
                       })}
                     </h1>
                   </div>
@@ -222,6 +223,7 @@ export function StudentInstanceQuestion({
                 authz_result: resLocals.authz_result,
                 variantId: renderState?.variant.id,
                 csrfToken: resLocals.__csrf_token,
+                lockdownBrowser: resLocals.lockdown_browser,
               })
             : ''}
           ${hasCalculator ? CalculatorDrawerToggle() : ''}

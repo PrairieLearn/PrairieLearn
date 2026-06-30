@@ -28,7 +28,15 @@ import {
 
 import { type createContext, requireCoursePermissionOwn, t } from './init.js';
 
-export interface CourseStaffError {}
+export interface CourseStaffError {
+  List: never;
+  UpdateCourseRole: never;
+  DeleteUser: never;
+  UpdateInstanceRole: never;
+  InsertByUserUids: never;
+  BulkDelete: never;
+  BulkEditAccess: never;
+}
 
 const MAX_UIDS = 100;
 
@@ -68,7 +76,6 @@ async function getAccessibleInstances(ctx: Awaited<ReturnType<typeof createConte
   return selectCourseInstancesWithStaffAccess({
     course: ctx.course,
     authzData: ctx.authz_data,
-    requiredRole: ['Owner'],
   });
 }
 

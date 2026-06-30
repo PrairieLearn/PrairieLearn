@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import { type ZodSchema, z } from 'zod';
+import { type ZodType, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -15,9 +15,12 @@ import * as Sentry from '@prairielearn/sentry';
 import { validateAccessControlRules } from '../lib/assessment-access-control/validation.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { isDraftQid } from '../lib/draft-question.js';
 import { features } from '../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
-import { findCoursesBySharingNames } from '../models/course.js';
+import { UUID_REGEXP_INLINE } from '../lib/string-util.js';
+import { findCoursesBySharingNames, selectOptionalCourseById } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -25,7 +28,6 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
-  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -34,10 +36,9 @@ import * as schemas from '../schemas/index.js';
 
 import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
-import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true, formats: { uuid: true } });
 
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
@@ -183,11 +184,8 @@ const DEFAULT_TAGS: TagJson[] = [
   { name: 'Fa21', color: 'gray1' },
 ];
 
-// For testing if a string is a v4 UUID
-const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
-// For finding all v4 UUIDs in a string/file
-const FILE_UUID_REGEX =
-  /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
+// For finding all UUIDs in a string/file
+const FILE_UUID_REGEX = new RegExp(`"uuid":\\s*"(${UUID_REGEXP_INLINE.source})"`, 'gi');
 
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
@@ -401,7 +399,7 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
  */
-export async function loadInfoFile<T extends { uuid: string }>({
+export async function loadInfoFile<T = { uuid: string }>({
   coursePath,
   filePath,
   schema,
@@ -462,8 +460,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
       if (!json.uuid) {
         return infofile.makeError('UUID is missing');
       }
-      if (!UUID_REGEX.test(json.uuid)) {
-        return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+      if (!z.guid().safeParse(json.uuid).success) {
+        return infofile.makeError(`UUID "${json.uuid}" is not a valid UUID`);
       }
     }
 
@@ -521,7 +519,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 
       // Extract and store UUID. Checking for a falsy value isn't technically
       // required, but it keeps TypeScript happy.
-      const uuid = match[0].match(UUID_REGEX);
+      const uuid = match[0].match(UUID_REGEXP_INLINE);
       if (!uuid) {
         infofile.addError(result, 'UUID not found in file');
         return result;
@@ -579,10 +577,7 @@ async function loadCourseInfo({
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const result = deduplicateByName<Entry>(
-      (info![fieldName] ?? []) as Entry[],
-      defaults as Entry[] | undefined,
-    );
+    const result = deduplicateByName<Entry>(info![fieldName] ?? [], defaults);
 
     if (result.duplicates.size > 0) {
       const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
@@ -668,6 +663,25 @@ async function loadCourseInfo({
     }
   }
 
+  const questionsReceiveUserData = info.options.questionsReceiveUserData ?? false;
+  const questionsReceiveUserDataSpecified = info.options.questionsReceiveUserData !== undefined;
+
+  // In production, the database is the source of truth for this setting (managed
+  // via course settings UI). The infoCourse.json value is informational and emits
+  // a warning if it diverges from the DB.
+  if (questionsReceiveUserDataSpecified && courseId != null && !config.devMode) {
+    const existingCourse = await selectOptionalCourseById(courseId);
+    if (
+      existingCourse != null &&
+      existingCourse.questions_receive_user_data !== questionsReceiveUserData
+    ) {
+      infofile.addWarning(
+        loadedData,
+        `"options.questionsReceiveUserData" in infoCourse.json (${questionsReceiveUserData}) differs from the database value (${existingCourse.questions_receive_user_data}). In production, this setting is managed via course settings; sync will not change it.`,
+      );
+    }
+  }
+
   const course = {
     path: coursePath,
     name: info.name,
@@ -680,6 +694,7 @@ async function loadCourseInfo({
     sharingSets,
     options: {
       devModeFeatures,
+      questionsReceiveUserData,
     },
     comment: info.comment,
   };
@@ -688,7 +703,7 @@ async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends ZodSchema>({
+async function loadAndValidateJson<T extends ZodType>({
   coursePath,
   filePath,
   schema,
@@ -735,7 +750,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = validate(result.data, loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data as z.input<T>);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
 
@@ -747,7 +762,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 /**
  * Loads and schema-validates all info files in a directory.
  */
-async function loadInfoForDirectory<T extends ZodSchema>({
+async function loadInfoForDirectory<T extends ZodType>({
   coursePath,
   directory,
   infoFilename,
@@ -773,7 +788,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir: string) => {
-    const infoFiles: Record<string, InfoFile<T>> = {};
+    const infoFiles: Record<string, InfoFile<z.infer<T>>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory
@@ -1056,11 +1071,15 @@ function validateQuestion({
   }
 
   if (question.options) {
-    try {
-      const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
-      schema.parse(question.options);
-    } catch (err: any) {
-      errors.push(`Error validating question options: ${err.message}`);
+    if (question.type === 'v3') {
+      errors.push('"options" is not supported for v3 questions.');
+    } else {
+      try {
+        const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
+        schema.parse(question.options);
+      } catch (err: any) {
+        errors.push(`Error validating question options: ${err.message}`);
+      }
     }
   }
 
@@ -1098,7 +1117,7 @@ function validateQuestion({
       if (author.email) {
         // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
         // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
-        const parsedEmail = z.string().email().safeParse(author.email);
+        const parsedEmail = z.email().safeParse(author.email);
 
         if (!parsedEmail.success) {
           errors.push(`The author email address "${author.email}" is invalid`);
@@ -1119,37 +1138,6 @@ function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
-}
-
-/**
- * Converts legacy group properties to the new groups format for unified handling.
- */
-export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
-  const canAssignRoles = assessment.groupRoles
-    .filter((role) => role.canAssignRoles)
-    .map((role) => role.name);
-
-  return {
-    enabled: assessment.groupWork,
-    minMembers: assessment.groupMinSize,
-    maxMembers: assessment.groupMaxSize,
-    roles: assessment.groupRoles.map((role) => ({
-      name: role.name,
-      minMembers: role.minimum,
-      maxMembers: role.maximum,
-    })),
-    studentPermissions: {
-      canCreateGroup: assessment.studentGroupCreate,
-      canJoinGroup: assessment.studentGroupJoin,
-      canLeaveGroup: assessment.studentGroupLeave,
-      canNameGroup: assessment.studentGroupChooseName,
-    },
-    rolePermissions: {
-      canAssignRoles,
-      canView: assessment.canView,
-      canSubmit: assessment.canSubmit,
-    },
-  };
 }
 
 function validateAssessment({
@@ -1294,14 +1282,18 @@ function validateAssessment({
       draftQids.add(qid);
     }
   };
-  assessment.zones.forEach((zone) => {
-    zone.questions.map((zoneQuestion) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
+    const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+    zone.questions.forEach((zoneQuestion, questionIndex) => {
       const effectiveAlternativePoolAllowRealTimeGrading =
         zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
 
       // We'll normalize either single questions or alternative pools
       // to make validation easier
-      let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
+      let alternatives: (QuestionPointsJson & {
+        allowRealTimeGrading: boolean;
+        id?: string;
+      })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       }
@@ -1321,6 +1313,7 @@ function validateAssessment({
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
             allowRealTimeGrading:
               alternative.allowRealTimeGrading ?? effectiveAlternativePoolAllowRealTimeGrading,
+            id: alternative.id,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1333,20 +1326,24 @@ function validateAssessment({
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
             allowRealTimeGrading: effectiveAlternativePoolAllowRealTimeGrading,
+            id: zoneQuestion.id,
           },
         ];
       } else {
         errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
-      alternatives.forEach((alternative) => {
+      alternatives.forEach((alternative, alternativeIndex) => {
+        const alternativeLabel = alternative.id
+          ? `Question "${alternative.id}"`
+          : `Zone "${zoneLabel}", question ${questionIndex + 1}, alternative ${alternativeIndex + 1}`;
         if (
           !alternative.allowRealTimeGrading &&
           ((Array.isArray(alternative.autoPoints) && alternative.autoPoints.length > 1) ||
             (Array.isArray(alternative.points) && alternative.points.length > 1))
         ) {
           errors.push(
-            'Cannot specify an array of multiple point values if real-time grading is disabled',
+            `${alternativeLabel}: Cannot specify an array of multiple point values if real-time grading is disabled`,
           );
         }
 
@@ -1355,7 +1352,9 @@ function validateAssessment({
           alternative.autoPoints == null &&
           alternative.manualPoints == null
         ) {
-          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+          errors.push(
+            `${alternativeLabel}: Must specify "points", "autoPoints" or "manualPoints" for a question`,
+          );
         }
         if (
           alternative.points != null &&
@@ -1364,13 +1363,13 @@ function validateAssessment({
             alternative.maxAutoPoints != null)
         ) {
           errors.push(
-            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+            `${alternativeLabel}: Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
           );
         }
         if (assessment.type === 'Exam') {
           if (alternative.maxPoints != null || alternative.maxAutoPoints != null) {
             errors.push(
-              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment',
+              `${alternativeLabel}: Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment`,
             );
           }
 
@@ -1384,7 +1383,7 @@ function validateAssessment({
             (points, index) => index === 0 || points <= pointsList[index - 1],
           );
           if (!isNonIncreasing) {
-            errors.push('Points for a question must be non-increasing');
+            errors.push(`${alternativeLabel}: Points for a question must be non-increasing`);
           }
         }
         if (assessment.type === 'Homework') {
@@ -1395,13 +1394,13 @@ function validateAssessment({
               alternative.maxAutoPoints != null)
           ) {
             errors.push(
-              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+              `${alternativeLabel}: Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified`,
             );
           }
 
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
-              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
+              `${alternativeLabel}: Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment`,
             );
           }
 
@@ -1411,7 +1410,7 @@ function validateAssessment({
               alternative.maxPoints != null &&
               alternative.maxPoints > 0
             ) {
-              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+              errors.push(`${alternativeLabel}: Cannot specify "points": 0 when "maxPoints" > 0`);
             }
 
             if (
@@ -1419,11 +1418,46 @@ function validateAssessment({
               alternative.maxAutoPoints != null &&
               alternative.maxAutoPoints > 0
             ) {
-              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+              errors.push(
+                `${alternativeLabel}: Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0`,
+              );
+            }
+
+            if (
+              alternative.autoPoints != null &&
+              alternative.maxAutoPoints != null &&
+              !Array.isArray(alternative.autoPoints) &&
+              alternative.autoPoints > alternative.maxAutoPoints
+            ) {
+              warnings.push(
+                `${alternativeLabel}: "autoPoints" (${alternative.autoPoints}) should not exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
+              );
+            }
+
+            if (
+              alternative.points != null &&
+              alternative.maxPoints != null &&
+              !Array.isArray(alternative.points) &&
+              alternative.points > alternative.maxPoints
+            ) {
+              warnings.push(
+                `${alternativeLabel}: "points" (${alternative.points}) should not exceed "maxPoints" (${alternative.maxPoints})`,
+              );
             }
           }
         }
       });
+
+      if (
+        !courseInstanceExpired &&
+        zoneQuestion.numberChoose != null &&
+        zoneQuestion.alternatives &&
+        zoneQuestion.numberChoose > zoneQuestion.alternatives.length
+      ) {
+        warnings.push(
+          `Zone "${zoneLabel}", alternative group ${questionIndex + 1}: "numberChoose" (${zoneQuestion.numberChoose}) exceeds the number of alternatives (${zoneQuestion.alternatives.length})`,
+        );
+      }
     });
   });
 
@@ -1443,12 +1477,14 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to groups format for unified validation
+  // Convert legacy group properties to groups format for unified validation.
   const isLegacyGroups = assessment.groups == null;
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
 
   // Validate groups if we have roles defined
-  if (groups.roles.length > 0) {
+  if (groups != null && groups.roles.length > 0) {
     const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
@@ -1565,12 +1601,60 @@ function validateAssessment({
     errors.push('The first zone cannot have lockpoint: true');
   }
 
-  assessment.zones.forEach((zone) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
     // A lockpoint zone with no questions would create a pointless barrier -
     // the student would have to cross a lockpoint with nothing to work on
     // in the zone, which is almost certainly a configuration mistake.
     if (zone.lockpoint && zone.numberChoose === 0) {
       errors.push('A lockpoint zone must include at least one selectable question');
+    }
+
+    if (!courseInstanceExpired) {
+      const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+
+      // Calculate the effective number of questions in the zone, accounting
+      // for alternative groups that contribute multiple questions.
+      const effectiveZoneSize = zone.questions.reduce((sum, q) => {
+        if (q.alternatives) {
+          const altCount = q.alternatives.length;
+          return sum + Math.min(q.numberChoose ?? altCount, altCount);
+        }
+        return sum + 1;
+      }, 0);
+
+      if (
+        zone.bestQuestions != null &&
+        zone.numberChoose != null &&
+        zone.bestQuestions > zone.numberChoose
+      ) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) should not exceed "numberChoose" (${zone.numberChoose})`,
+        );
+      }
+
+      if (zone.numberChoose != null && zone.numberChoose > effectiveZoneSize) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" (${zone.numberChoose}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
+        );
+      }
+
+      if (zone.bestQuestions != null && zone.bestQuestions > effectiveZoneSize) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
+        );
+      }
+
+      if (zone.numberChoose === 0 && !zone.lockpoint) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" is 0, so no questions will be presented from this zone`,
+        );
+      }
+
+      if (zone.bestQuestions === 0) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" is 0, so no questions from this zone will count toward the total points`,
+        );
+      }
     }
   });
 

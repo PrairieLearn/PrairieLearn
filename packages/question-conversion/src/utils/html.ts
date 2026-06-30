@@ -2,7 +2,10 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 
 import type { ModelOperations as ModelOperationsType } from '@vscode/vscode-languagedetection';
-import he from 'he';
+import * as cheerio from 'cheerio';
+import { type AnyNode, type Element, isTag, isText } from 'domhandler';
+
+import { normalizeImsFilePath } from './ims-file-path.js';
 
 // The package ships as a UMD CJS bundle; named ESM imports don't work.
 const _require = createRequire(import.meta.url);
@@ -10,11 +13,31 @@ const { ModelOperations } = _require('@vscode/vscode-languagedetection') as {
   ModelOperations: typeof ModelOperationsType;
 };
 
-const DATA_URI_RE = /src=(["'])data:(?<mime>image\/[a-zA-Z0-9.+-]+);base64,(?<data>[^"']+)\1/g;
+/**
+ * Mustache URL prefix recommended by PrairieLearn for referencing files in `clientFilesQuestion/`.
+ * See https://docs.prairielearn.com/clientServerFiles/.
+ */
+const CLIENT_FILES_QUESTION_URL = '{{ options.client_files_question_url }}';
+
+const DATA_URI_SRC_RE = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([^"']+)$/;
+
+export function loadHtmlFragment(html: string): cheerio.CheerioAPI {
+  // QTI prompt snippets are fragments, not full documents. The `false` keeps Cheerio from
+  // inventing `<html><body>` wrappers that would leak into generated question.html files.
+  return cheerio.load(html, null, false);
+}
+
+function isElementNamed(node: AnyNode, name: string): node is Element {
+  return isTag(node) && node.name.toLowerCase() === name;
+}
+
+export function isWhitespaceText(node: AnyNode): boolean {
+  return isText(node) && node.data.trim() === '';
+}
 
 /**
- * Extract inline base64 data URI images from HTML, replacing them with
- * local file references in clientFilesQuestion/.
+ * Extract inline base64 data URI images from HTML, replacing them with references to the
+ * question's clientFilesQuestion URL via the Mustache prefix.
  *
  * Returns the rewritten HTML and a map of filename → Buffer.
  */
@@ -22,98 +45,211 @@ export function extractInlineImages(html: string): {
   html: string;
   files: Map<string, Buffer>;
 } {
+  const $ = loadHtmlFragment(html);
   const files = new Map<string, Buffer>();
+  let changed = false;
 
-  const rewritten = html.replaceAll(DATA_URI_RE, (_match, quote, mime, data) => {
+  $('[src]').each((_, el) => {
+    const src = $(el).attr('src');
+    if (!src) return;
+
+    // At this point Cheerio has already found the attribute for us; the regex is only checking
+    // whether the attribute value is a data URI and pulling out the MIME/data pieces.
+    const match = DATA_URI_SRC_RE.exec(src);
+    if (!match) return;
+
+    const [, mime, data] = match;
     const ext = mime.split('/')[1].replace('+xml', '');
     const imgBytes = Buffer.from(data, 'base64');
     const digest = crypto.createHash('sha256').update(imgBytes).digest('hex').slice(0, 16);
     const filename = `inline-${digest}.${ext}`;
     files.set(filename, imgBytes);
-    return `src=${quote}clientFilesQuestion/${filename}${quote}`;
+    $(el).attr('src', `${CLIENT_FILES_QUESTION_URL}/${filename}`);
+    changed = true;
   });
 
-  return { html: rewritten, files };
+  return { html: changed ? $.html() : html, files };
 }
 
-const IMG_TAG_RE = /<img\b[^>]*>/gi;
-const ATTR_RE = /(\w[\w-]*)=(["'])(.*?)\2/gi;
-const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|:\/\/)/i;
 
 /**
  * Rewrite local <img> tags in HTML to <pl-figure> elements.
  *
- * For images already pointing into clientFilesQuestion/ the directory attribute
- * is set explicitly and the prefix is stripped from file-name. Other relative
- * paths are passed through as file-name without a directory attribute. Images
- * with absolute URLs (http://, https://, protocol-relative, data:, etc.) are
- * left as <img> since pl-figure resolves file-name against a local course
- * directory and cannot host remote resources. The alt and width attributes are
- * preserved; all others (style, class, etc.) are dropped since pl-figure
- * handles its own layout.
+ * For images pointing into the question's clientFilesQuestion directory via the
+ * Mustache prefix, the directory attribute is set explicitly and the prefix is
+ * stripped from file-name. Other relative paths are passed through as file-name
+ * without a directory attribute. Images with absolute URLs (http://, https://,
+ * protocol-relative, data:, etc.) are left as <img> since pl-figure resolves
+ * file-name against a local course directory and cannot host remote resources.
+ * The alt and width attributes are preserved; all others (style, class, etc.)
+ * are dropped since pl-figure handles its own layout.
  */
 export function rewriteImagesAsPlFigure(html: string): string {
-  return html.replaceAll(IMG_TAG_RE, (tag) => {
-    const attrs: Record<string, string> = {};
-    for (const m of tag.matchAll(ATTR_RE)) {
-      attrs[m[1].toLowerCase()] = he.decode(m[3]);
-    }
+  const $ = loadHtmlFragment(html);
+  const mustachePrefix = `${CLIENT_FILES_QUESTION_URL}/`;
+  let changed = false;
 
-    const src = attrs['src'] ?? '';
-    if (ABSOLUTE_URL_RE.test(src)) return tag;
+  $('img').each((_, img) => {
+    const $img = $(img);
+    const src = $img.attr('src') ?? '';
+    // Remote images stay as `<img>` because `<pl-figure>` resolves `file-name` locally inside
+    // the course, which would turn an external URL into a broken course-file lookup.
+    if (ABSOLUTE_URL_RE.test(src)) return;
 
-    const parts: string[] = [];
+    const $figure = $('<pl-figure></pl-figure>');
 
-    if (src.startsWith('clientFilesQuestion/')) {
-      parts.push(
-        `file-name="${he.escape(src.slice('clientFilesQuestion/'.length))}"`,
-        'directory="clientFilesQuestion"',
-      );
+    if (src.startsWith(mustachePrefix)) {
+      $figure.attr('file-name', src.slice(mustachePrefix.length));
+      $figure.attr('directory', 'clientFilesQuestion');
     } else {
-      parts.push(`file-name="${he.escape(src)}"`);
+      $figure.attr('file-name', src);
     }
 
-    if (attrs['alt']) parts.push(`alt="${he.escape(attrs['alt'])}"`);
-    if (attrs['width']) parts.push(`width="${he.escape(attrs['width'])}"`);
+    const alt = $img.attr('alt');
+    const width = $img.attr('width');
+    if (alt) $figure.attr('alt', alt);
+    if (width) $figure.attr('width', width);
 
-    return `<pl-figure ${parts.join(' ')}></pl-figure>`;
+    $img.replaceWith($figure);
+    changed = true;
   });
+
+  return changed ? $.html() : html;
 }
 
 const IMS_CC_FILEBASE_RE = /\$IMS-CC-FILEBASE\$\/([^"'\s]+)/g;
 
+interface ResolveImsFileRefsResult {
+  /** Rewritten HTML with IMS file references changed to PrairieLearn clientFilesQuestion URLs. */
+  html: string;
+  /**
+   * Files to copy into clientFilesQuestion, keyed by generated filename.
+   * Values are decoded source paths from the QTI export, relative to the export's web_resources
+   * directory.
+   */
+  fileRefs: Map<string, string>;
+  /**
+   * Decoded source paths that matched an excluded extension and were intentionally omitted from
+   * `fileRefs`.
+   */
+  skippedFiles: string[];
+}
+
 /**
  * Resolve $IMS-CC-FILEBASE$ references in HTML for PrairieLearn output.
  *
- * Rewrites src="$IMS-CC-FILEBASE$/path/img.png" to:
- * src="clientFilesQuestion/img.png"
+ * Rewrites `src="$IMS-CC-FILEBASE$/path/img.png"` to
+ * `src="{{ options.client_files_question_url }}/img.png"` — the PrairieLearn-recommended
+ * Mustache URL pattern for files in the question's clientFilesQuestion directory.
  *
- * Returns the rewritten HTML and a map of { filename → original decoded relative path }
- * so the caller can locate and copy the source files.
+ * When `excludeExtensions` is provided, a tag that references a file with an excluded
+ * extension is emitted inside a TODO comment in the same pass (URLs still rewritten so
+ * the path is readable), and the file is omitted from `fileRefs`.
  */
-export function resolveImsFileRefs(html: string): {
-  html: string;
-  fileRefs: Map<string, string>;
-} {
-  const fileRefs = new Map<string, string>();
+export function resolveImsFileRefs(
+  html: string,
+  excludeExtensions?: Set<string>,
+): ResolveImsFileRefsResult {
+  const $ = loadHtmlFragment(html);
+  // Dedup index over all references (including excluded ones) so two files with the same basename
+  // resolve to the same generated filename whether or not they're skipped.
+  const pathByFilename = new Map<string, string>();
+  const skippedSourcePaths = new Set<string>();
+  const excludedElements = new Set<Element>();
+  let changed = false;
 
-  const rewritten = html.replaceAll(IMS_CC_FILEBASE_RE, (_match, rawPath: string) => {
-    const decodedPath = decodeURIComponent(rawPath);
+  function rewriteUrl(rawPath: string): { filename: string; excluded: boolean } {
+    const decodedPath = normalizeImsFilePath(rawPath);
     const base = decodedPath.split('/').pop() ?? decodedPath;
     const dot = base.lastIndexOf('.');
     const stem = dot !== -1 ? base.slice(0, dot) : base;
     const ext = dot !== -1 ? base.slice(dot) : '';
     let filename = base;
     let suffix = 1;
-    while (fileRefs.has(filename) && fileRefs.get(filename) !== decodedPath) {
+    while (pathByFilename.has(filename) && pathByFilename.get(filename) !== decodedPath) {
       filename = `${stem}-${suffix}${ext}`;
       suffix += 1;
     }
-    fileRefs.set(filename, decodedPath);
-    return `clientFilesQuestion/${filename}`;
+    pathByFilename.set(filename, decodedPath);
+    const excluded = excludeExtensions?.has(ext.toLowerCase()) ?? false;
+    if (excluded) skippedSourcePaths.add(decodedPath);
+    return { filename, excluded };
+  }
+
+  function rewriteImsRefs(value: string): { value: string; excluded: boolean } {
+    let excluded = false;
+    // The HTML has already been parsed; this regex is intentionally limited to the IMS token
+    // inside an attribute/text value, where we still need to preserve surrounding text.
+    const rewritten = value.replaceAll(IMS_CC_FILEBASE_RE, (_match, rawPath: string) => {
+      changed = true;
+      const result = rewriteUrl(rawPath);
+      if (result.excluded) excluded = true;
+      return `${CLIENT_FILES_QUESTION_URL}/${result.filename}`;
+    });
+    return { value: rewritten, excluded };
+  }
+
+  $('*').each((_, el) => {
+    if (!isTag(el)) return;
+
+    for (const [name, value] of Object.entries(el.attribs)) {
+      if (!value.includes('$IMS-CC-FILEBASE$/')) continue;
+
+      const { value: rewritten, excluded } = rewriteImsRefs(value);
+      el.attribs[name] = rewritten;
+      if (excluded) excludedElements.add(el);
+    }
   });
 
-  return { html: rewritten, fileRefs };
+  function rewriteTextNodes(nodes: AnyNode[]): void {
+    for (const node of nodes) {
+      if (isText(node) && node.data.includes('$IMS-CC-FILEBASE$/')) {
+        const { value } = rewriteImsRefs(node.data);
+        node.data = value;
+      }
+      if ('children' in node) {
+        rewriteTextNodes(node.children);
+      }
+    }
+  }
+
+  rewriteTextNodes($.root().contents().toArray());
+
+  // If both a container and a child reference excluded files, wrap only the container. Nested
+  // HTML comments are invalid and would make the "uncomment to restore" instruction misleading.
+  const excludedElementsToWrap = [...excludedElements].filter(
+    (el) => !hasExcludedParent($, el, excludedElements),
+  );
+
+  for (const el of excludedElementsToWrap) {
+    const rewritten = $.html(el);
+    $(el).replaceWith(
+      `<!-- TODO: Re-host this file and update the URL below, then uncomment to restore.\n${rewritten}\n-->`,
+    );
+  }
+
+  const fileRefs = new Map<string, string>();
+  for (const [filename, path] of pathByFilename) {
+    if (!skippedSourcePaths.has(path)) fileRefs.set(filename, path);
+  }
+
+  return {
+    html: changed ? $.html() : html,
+    fileRefs,
+    skippedFiles: [...skippedSourcePaths],
+  };
+}
+
+function hasExcludedParent(
+  $: cheerio.CheerioAPI,
+  el: Element,
+  excludedElements: Set<Element>,
+): boolean {
+  for (const parent of $(el).parents()) {
+    if (excludedElements.has(parent)) return true;
+  }
+  return false;
 }
 
 const ITEMIZE_BLOCK_RE = /\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g;
@@ -127,6 +263,8 @@ const ITEM_TOKEN_RE = /\\item(?:\[[^\]]*\])?/g;
  * prompt HTML. PrairieLearn renders <markdown> blocks via its markdown element.
  */
 export function convertLatexItemizeToMarkdown(html: string): string {
+  // This is deliberately still regex-based: Canvas leaves these as literal LaTeX text inside
+  // the HTML fragment, so there are no HTML nodes for Cheerio to walk here.
   return html.replaceAll(ITEMIZE_BLOCK_RE, (_match, body: string) => {
     // Find all \item tokens and extract text between them
     const itemTokens: RegExpExecArray[] = [];
@@ -158,9 +296,6 @@ export function convertLatexItemizeToMarkdown(html: string): string {
   });
 }
 
-const PRE_TAG_RE = /<pre\b([^>]*)>([\s\S]*?)<\/pre>/gi;
-const CODE_WRAP_RE = /^<code\b([^>]*)>([\s\S]*)<\/code>$/i;
-const CLASS_ATTR_RE = /\bclass=(["'])(.*?)\1/i;
 const LANGUAGE_CLASS_RE = /(?:language|lang)-(\w+)|brush:\s*(\w+)/i;
 
 /** Minimum confidence score (0–1) required to accept a language prediction. */
@@ -228,68 +363,113 @@ function extractLanguageFromClass(classStr: string): string | undefined {
  * handles its own semantics.
  */
 export async function rewritePreAsPlCode(html: string): Promise<string> {
-  const regex = new RegExp(PRE_TAG_RE.source, PRE_TAG_RE.flags);
-  const replacements: { start: number; end: number; replacement: string }[] = [];
+  const $ = loadHtmlFragment(html);
+  const preElements = $('pre').toArray();
+  if (preElements.length === 0) return html;
 
-  const pending: Promise<{ start: number; end: number; replacement: string }>[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(html)) !== null) {
-    const start = match.index;
-    const end = match.index + match[0].length;
-    const preAttrs = match[1];
-    const innerHtml = match[2];
+  const replacements = await Promise.all(
+    preElements.map(async (pre) => {
+      const codeElement = getOnlyElementChild($, pre, 'code');
 
-    pending.push(
-      (async () => {
-        const codeMatch = CODE_WRAP_RE.exec(innerHtml.trim());
-        const codeAttrs = codeMatch ? codeMatch[1] : '';
-        const codeContent = codeMatch ? codeMatch[2] : innerHtml;
+      let language = extractLanguageFromClass($(pre).attr('class') ?? '');
+      if (!language && codeElement) {
+        language = extractLanguageFromClass($(codeElement).attr('class') ?? '');
+      }
 
-        let language: string | undefined;
-        for (const attrsStr of [preAttrs, codeAttrs]) {
-          const classMatch = CLASS_ATTR_RE.exec(attrsStr);
-          if (classMatch) {
-            language = extractLanguageFromClass(classMatch[2]);
-            if (language) break;
-          }
-        }
+      const plainCode = getPlainCodeText($, codeElement ?? pre);
+      if (!language) {
+        language = await detectCodeLanguage(plainCode);
+      }
 
-        if (!language) {
-          language = await detectCodeLanguage(he.decode(codeContent));
-        }
-        const langAttr = language ? ` language="${language}"` : '';
-        return {
-          start,
-          end,
-          replacement: `<pl-code${langAttr}>\n${he.decode(codeContent)}</pl-code>`,
-        };
-      })(),
-    );
+      const langAttr = language ? ` language="${language}"` : '';
+      // Use Cheerio's .text() so the serializer entity-encodes characters like < and &,
+      // keeping code such as `#include <stdio.h>` valid inside HTML as `#include &lt;stdio.h&gt;`.
+      const $plCode = $(`<pl-code${langAttr}></pl-code>`);
+      $plCode.text('\n' + plainCode);
+      return { pre, $plCode };
+    }),
+  );
+
+  for (const { pre, $plCode } of replacements) {
+    $(pre).replaceWith($plCode);
   }
 
-  replacements.push(...(await Promise.all(pending)));
-  replacements.sort((a, b) => b.start - a.start);
+  removeEmptyParagraphs($);
+  unwrapParagraphsContainingOnlyPlCode($);
 
-  let result = html;
-  for (const { start, end, replacement } of replacements) {
-    result = result.slice(0, start) + replacement + result.slice(end);
-  }
-  return result.replaceAll(P_WRAPPING_PL_CODE_RE, '$1');
+  return $.html();
 }
 
-const P_WRAPPING_PL_CODE_RE = /<p>\s*(<pl-code\b[^>]*>[\s\S]*?<\/pl-code>)\s*<\/p>/gi;
+function getOnlyElementChild(
+  $: cheerio.CheerioAPI,
+  element: Element,
+  tagName: string,
+): Element | undefined {
+  const meaningfulChildren = $(element)
+    .contents()
+    .toArray()
+    .filter((node) => !isWhitespaceText(node));
+  if (meaningfulChildren.length !== 1) return undefined;
+
+  const [child] = meaningfulChildren;
+  return isElementNamed(child, tagName) ? child : undefined;
+}
+
+function getPlainCodeText($: cheerio.CheerioAPI, element: Element): string {
+  const $code = $(element).clone();
+  $code.find('br').replaceWith('\n');
+  return $code.text();
+}
+
+function removeEmptyParagraphs($: cheerio.CheerioAPI): void {
+  $('p').each((_, p) => {
+    if (Object.keys(p.attribs).length > 0) return;
+    if ($(p).text().trim() !== '') return;
+    if ($(p).children().length > 0) return;
+    // Browsers do not allow `<pre>` inside `<p>`, so parsing `<p><pre>...</pre></p>` leaves
+    // behind empty paragraph nodes. Drop only those parser artifacts.
+    $(p).remove();
+  });
+}
+
+function unwrapParagraphsContainingOnlyPlCode($: cheerio.CheerioAPI): void {
+  $('p').each((_, p) => {
+    const meaningfulChildren = $(p)
+      .contents()
+      .toArray()
+      .filter((node) => !isWhitespaceText(node));
+    if (meaningfulChildren.length !== 1) return;
+
+    const [child] = meaningfulChildren;
+    if (!isElementNamed(child, 'pl-code')) return;
+
+    $(p).replaceWith(child);
+  });
+}
 
 /**
  * Clean up question HTML for PrairieLearn output.
- * Strips wrapping <div> tags that Canvas often adds.
+ * Strips a single wrapping <div> tag that Canvas often adds, and removes
+ * answer blocks that Canvas can embed in the prompt HTML.
  */
 export function cleanQuestionHtml(html: string): string {
-  let cleaned = html.trim();
-  // Remove single wrapping <div>...</div>
-  const divWrapRe = /^<div>\s*([\s\S]*?)\s*<\/div>$/i;
-  const divMatch = divWrapRe.exec(cleaned);
-  if (divMatch) {
-    cleaned = divMatch[1].trim();
+  const $ = loadHtmlFragment(html.trim());
+
+  $('div.answers').each((_, el) => {
+    if ($(el).find('div.answers_wrapper').length > 0) {
+      $(el).remove();
+    }
+  });
+
+  const topLevelNodes = $.root()
+    .contents()
+    .toArray()
+    .filter((node) => !isWhitespaceText(node));
+  if (topLevelNodes.length === 1 && isElementNamed(topLevelNodes[0], 'div')) {
+    // Canvas often wraps the whole prompt in one styling div. Only unwrap when that div is the
+    // entire fragment so sibling divs stay semantically intact.
+    return ($(topLevelNodes[0]).html() ?? '').trim();
   }
-  return cleaned;
+
+  return $.html().trim();
 }

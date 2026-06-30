@@ -1,4 +1,4 @@
-/* eslint-disable no-alert, unicorn/no-immediate-mutation */
+/* eslint-disable no-alert */
 /* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 const $V = Sylvester.Vector.create;
@@ -20,6 +20,11 @@ const vec2pt = function (v) {
 };
 
 const mechanicsObjects = {};
+
+const isTrueBooleanOption = function (value) {
+  // Existing saved submissions may contain string booleans; new generated options use booleans.
+  return value === true || value === 'true';
+};
 
 /**
  * New object types.
@@ -812,6 +817,12 @@ mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
     });
   },
   _render(ctx) {
+    // Fabric.js includes strokeWidth in the bounding box dimensions, so
+    // with originX="left" the render origin is offset by strokeWidth/2
+    // from the anchor point. Shift rendering to compensate, ensuring the
+    // arrow tail aligns exactly with the specified position.
+    ctx.translate(-this.strokeWidth / 2, 0);
+
     const lengthPx = this.width;
     const w = this.strokeWidth;
     const l = 7 * w * this.arrowheadOffsetRatio;
@@ -893,6 +904,9 @@ mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
     });
   },
   _render(ctx) {
+    // Same strokeWidth bounding box compensation as Arrow (see comment there).
+    ctx.translate(-this.strokeWidth / 2, 0);
+
     const lengthPx = this.width;
     const w = this.strokeWidth;
     const l = 6 * w * this.arrowheadOffsetRatio;
@@ -1033,7 +1047,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.image = null;
     this.label = text;
 
-    if (text) {
+    if (text && text.trim()) {
       this.gen_text(this.label, options);
     }
 
@@ -1065,7 +1079,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
   initialize(options) {
     this.callSuper('initialize', options);
     this.spacing = options.spacing;
-    this.anchor_is_tail = options.anchor_is_tail === 'true';
+    this.anchor_is_tail = isTrueBooleanOption(options.anchor_is_tail);
     this.w1 = options.w1;
     this.w2 = options.w2;
     this.width = options.range;
@@ -1504,7 +1518,7 @@ mechanicsObjects.makeControlStraightLine = function (x1, y1, x2, y2, options) {
 };
 
 mechanicsObjects.makeControlCurvedLine = function ({ x1, y1, x2, y2, x3, y3, options }) {
-  const line = new fabric.Path('M 0 0 Q 1, 1, 3, 0', {
+  const line = new fabric.Path(`M ${x1} ${y1} Q ${x2} ${y2} ${x3} ${y3}`, {
     fill: '',
     stroke: options.stroke,
     strokeWidth: options.strokeWidth,
@@ -1513,12 +1527,6 @@ mechanicsObjects.makeControlCurvedLine = function ({ x1, y1, x2, y2, x3, y3, opt
     originX: 'center',
     originY: 'center',
   });
-  line.path[0][1] = x1;
-  line.path[0][2] = y1;
-  line.path[1][1] = x2;
-  line.path[1][2] = y2;
-  line.path[1][3] = x3;
-  line.path[1][4] = y3;
   return line;
 };
 
@@ -2800,6 +2808,32 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
     obj.evented = false;
     canvas.add(obj);
 
+    let textObj = null;
+    const updateLabel = function () {
+      if (textObj) {
+        textObj.left = obj.left + obj.offsetx;
+        textObj.top = obj.top + obj.offsety;
+        textObj.setCoords();
+      }
+    };
+    const removeLabel = function () {
+      if (textObj) {
+        canvas.remove(textObj);
+      }
+    };
+    if (obj.label) {
+      textObj = new mechanicsObjects.LatexText(obj.label, {
+        left: obj.left + obj.offsetx,
+        top: obj.top + obj.offsety,
+        fontSize: 16,
+        textAlign: 'left',
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+
     if (options.selectable) {
       const cc = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
       const c1 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
@@ -2821,11 +2855,13 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       cc.on('moving', function () {
         obj.set({ x1: cc.left, y1: cc.top });
         obj.fire('update_visuals');
+        updateLabel();
       });
 
       // c1
@@ -2842,6 +2878,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       c1.on('moving', function () {
@@ -2863,6 +2900,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c1);
+          removeLabel();
         },
       );
       c2.on('moving', function () {
@@ -3297,20 +3335,20 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
   }
 
   static get_button_icon(options) {
-    const wdef = { w1: 60, w2: 60, anchor_is_tail: false };
+    const wdef = { w1: 60, w2: 60 };
     const opts = { ...wdef, ...options };
     const w1 = opts['w1'];
     const w2 = opts['w2'];
-    const anchor = opts['anchor_is_tail'];
+    const anchor = isTrueBooleanOption(opts['anchor_is_tail']);
 
     let file_name;
     if (w1 === w2) {
       file_name = 'DUD';
-    } else if (w1 < w2 && anchor === 'true') {
+    } else if (w1 < w2 && anchor) {
       file_name = 'DTDA';
     } else if (w1 < w2) {
       file_name = 'DTUD';
-    } else if (w1 > w2 && anchor === 'true') {
+    } else if (w1 > w2 && anchor) {
       file_name = 'DTUA';
     } else {
       file_name = 'DTDD';
@@ -3533,7 +3571,13 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
       canvas.add(new fabric.Rect(opt));
     }
 
-    if (!submittedAnswer) return [line, c1, c2];
+    if (!submittedAnswer || !options.selectable) {
+      c1.selectable = false;
+      c1.evented = false;
+      c2.selectable = false;
+      c2.evented = false;
+      return [line, c1, c2];
+    }
 
     const subObj = mechanicsObjects.cloneMechanicsObject('pl-controlled-line', options);
 
@@ -3654,7 +3698,15 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
       canvas.add(new fabric.Rect(opt));
     }
 
-    if (!submittedAnswer) return [line, c1, c2, c3];
+    if (!submittedAnswer || !options.selectable) {
+      c1.selectable = false;
+      c1.evented = false;
+      c2.selectable = false;
+      c2.evented = false;
+      c3.selectable = false;
+      c3.evented = false;
+      return [line, c1, c2, c3];
+    }
 
     const subObj = mechanicsObjects.cloneMechanicsObject('pl-controlled-curved-line', options);
 
@@ -4164,8 +4216,16 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (options.label) {
       const offsetlabel = 10;
       const textObj = new mechanicsObjects.LatexText(options.label, {
-        left: xm1 + (l / 2) * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2 + theta),
-        top: ym1 + (l / 2) * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2 + theta),
+        left:
+          xm1 +
+          (l / 2) * Math.cos(theta2 + theta) -
+          offsetlabel * Math.sin(theta2 + theta) +
+          options.offsetx,
+        top:
+          ym1 +
+          (l / 2) * Math.sin(theta2 + theta) +
+          offsetlabel * Math.cos(theta2 + theta) +
+          options.offsety,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,

@@ -1,90 +1,122 @@
 -- BLOCK select_access_control_rules
 SELECT
-  to_jsonb(aacr.*) AS access_control_rule,
-  COALESCE(
-    array_agg(DISTINCT ace.enrollment_id) FILTER (
-      WHERE
-        ace.enrollment_id IS NOT NULL
-    ),
-    '{}'
-  ) AS enrollment_ids,
-  COALESCE(
-    array_agg(DISTINCT acsl.student_label_id) FILTER (
-      WHERE
-        acsl.student_label_id IS NOT NULL
-    ),
-    '{}'
-  ) AS student_label_ids,
-  (
+  a.id AS assessment_id,
+  COALESCE(rules.access_control_rules, '[]'::jsonb) AS access_control_rules
+FROM
+  assessments a
+  LEFT JOIN LATERAL (
     SELECT
       jsonb_agg(
         jsonb_build_object(
-          'uuid',
-          acpe.uuid,
-          'read_only',
-          acpe.read_only,
-          'after_complete_questions_hidden',
-          acpe.after_complete_questions_hidden,
-          'after_complete_score_hidden',
-          acpe.after_complete_score_hidden
+          'access_control_rule',
+          to_jsonb(aacr.*),
+          'enrollment_ids',
+          COALESCE(
+            (
+              SELECT
+                array_agg(
+                  ace.enrollment_id
+                  ORDER BY
+                    ace.enrollment_id
+                )
+              FROM
+                assessment_access_control_enrollments ace
+              WHERE
+                ace.assessment_access_control_rule_id = aacr.id
+            ),
+            ARRAY[]::bigint[]
+          ),
+          'student_label_ids',
+          COALESCE(
+            (
+              SELECT
+                array_agg(
+                  acsl.student_label_id
+                  ORDER BY
+                    acsl.student_label_id
+                )
+              FROM
+                assessment_access_control_student_labels acsl
+              WHERE
+                acsl.assessment_access_control_rule_id = aacr.id
+            ),
+            ARRAY[]::bigint[]
+          ),
+          'prairietest_exams',
+          (
+            SELECT
+              jsonb_agg(
+                jsonb_build_object(
+                  'uuid',
+                  acpe.uuid,
+                  'read_only',
+                  acpe.read_only,
+                  'after_complete_questions_hidden',
+                  acpe.after_complete_questions_hidden,
+                  'after_complete_score_hidden',
+                  acpe.after_complete_score_hidden
+                )
+                ORDER BY
+                  acpe.uuid
+              )
+            FROM
+              assessment_access_control_prairietest_exams acpe
+            WHERE
+              acpe.assessment_access_control_rule_id = aacr.id
+          ),
+          'early_deadlines',
+          (
+            SELECT
+              jsonb_agg(
+                jsonb_build_object('date', ed.date, 'credit', ed.credit)
+                ORDER BY
+                  ed.date
+              )
+            FROM
+              assessment_access_control_early_deadlines ed
+            WHERE
+              ed.assessment_access_control_rule_id = aacr.id
+          ),
+          'late_deadlines',
+          (
+            SELECT
+              jsonb_agg(
+                jsonb_build_object('date', ld.date, 'credit', ld.credit)
+                ORDER BY
+                  ld.date
+              )
+            FROM
+              assessment_access_control_late_deadlines ld
+            WHERE
+              ld.assessment_access_control_rule_id = aacr.id
+          )
         )
         ORDER BY
-          acpe.uuid
-      )
+          CASE aacr.target_type
+            WHEN 'none' THEN 0
+            WHEN 'student_label' THEN 1
+            WHEN 'enrollment' THEN 2
+          END,
+          aacr.number
+      ) AS access_control_rules
     FROM
-      assessment_access_control_prairietest_exams acpe
+      assessment_access_control_rules aacr
     WHERE
-      acpe.assessment_access_control_rule_id = aacr.id
-  ) AS prairietest_exams,
-  (
-    SELECT
-      jsonb_agg(
-        jsonb_build_object('date', ed.date, 'credit', ed.credit)
-        ORDER BY
-          ed.date
-      )
-    FROM
-      assessment_access_control_early_deadlines ed
-    WHERE
-      ed.assessment_access_control_rule_id = aacr.id
-  ) AS early_deadlines,
-  (
-    SELECT
-      jsonb_agg(
-        jsonb_build_object('date', ld.date, 'credit', ld.credit)
-        ORDER BY
-          ld.date
-      )
-    FROM
-      assessment_access_control_late_deadlines ld
-    WHERE
-      ld.assessment_access_control_rule_id = aacr.id
-  ) AS late_deadlines
-FROM
-  assessment_access_control_rules aacr
-  JOIN assessments a ON a.id = aacr.assessment_id
-  LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
-  LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
+      aacr.assessment_id = a.id
+  ) AS rules ON TRUE
 WHERE
   (
     $assessment_id::bigint IS NOT NULL
-    AND aacr.assessment_id = $assessment_id
+    AND a.id = $assessment_id
   )
   OR (
     $course_instance_id::bigint IS NOT NULL
     AND a.course_instance_id = $course_instance_id
+    AND a.modern_access_control
     AND a.deleted_at IS NULL
   )
-GROUP BY
-  aacr.id
 ORDER BY
-  aacr.assessment_id,
-  CASE aacr.target_type
-    WHEN 'none' THEN 0
-    WHEN 'enrollment' THEN 1
-    WHEN 'student_label' THEN 2
-  END,
-  aacr.number;
+  a.id;
 
 -- BLOCK select_user_access_context
 WITH

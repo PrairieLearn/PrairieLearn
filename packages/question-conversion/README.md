@@ -4,10 +4,12 @@ Internal package that converts questions from interchange formats into PrairieLe
 
 ## CLI
 
-The `question-convert` binary is exposed via `package.json#bin`. Build the package once (`yarn workspace @prairielearn/question-conversion build`), then run:
+The package provides a command-line interface for converting content.
 
-```text
-question-convert <input> --course <dir> --course-instance <name> [flags]
+```sh
+# From the root of the PrairieLearn repository:
+make build
+node packages/question-conversion/dist/bin/convert.js <input> --course <dir> --course-instance <name>
 ```
 
 | Flag                       | Required | Description                                                                                                                                                                 |
@@ -25,7 +27,7 @@ question-convert <input> --course <dir> --course-instance <name> [flags]
 For programmatic use, `@prairielearn/question-conversion` exports a small surface from `src/index.ts`:
 
 - `convert`, `convertWith`, `parseAssessment` — high-level pipeline entry points.
-- `QTI12AssessmentParser`, `InputParser`, `ParseOptions` — parser layer.
+- `QTI12ItemContainerParser`, `InputParser`, `ParseOptions` — parser layer.
 - `PLEmitter`, `BodyEmitRegistry`, `BodyEmitHandler`, `createPLBodyRegistry` — emitter layer.
 - `TransformRegistry`, `TransformHandler`, `TransformResult`, `createQTI12Registry` — IR transform layer.
 - IR and PL output types: `IRAssessment`, `IRQuestion`, `IRQuestionBody`, `PLQuestionInfoJson`, `PLAssessmentInfoJson`, etc.
@@ -41,7 +43,7 @@ The pipeline is `parse` (XML → IR) → `transform` (per-question normalization
 | `multiple_answers_question`                       | `pl-checkbox`                                                                       |
 | `matching_question`                               | `pl-matching`                                                                       |
 | `fill_in_multiple_blanks_question`                | inline `pl-string-input` blanks                                                     |
-| `multiple_dropdowns_question`                     | inline `pl-dropdown` blanks                                                         |
+| `multiple_dropdowns_question`                     | inline `pl-multiple-choice` with `display="dropdown"`                               |
 | `short_answer_question`                           | `pl-string-input` / `pl-integer-input` / `pl-number-input` (chosen by answer shape) |
 | `numerical_question`                              | `pl-number-input`                                                                   |
 | `calculated_question`                             | `pl-number-input` with a generated `server.py`                                      |

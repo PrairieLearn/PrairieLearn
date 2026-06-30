@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as async from 'async';
 import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
@@ -19,7 +19,6 @@ import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
-import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
@@ -66,12 +65,13 @@ const PortOccupiedSchema = z.boolean();
 
 const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
-  workspace_port: z.number(),
-  workspace_home: z.string(),
+  workspace_port: z.number().nullable(),
+  workspace_home: z.string().nullable(),
   workspace_graded_files: z.array(z.string()),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
   workspace_environment: z.record(z.string(), z.any()).nullable(),
+  workspace_url_rewrite: z.boolean().nullable(),
 });
 
 // _getWorkspaceSettings transforms WorkspaceSettingsRowSchema into this shape.
@@ -91,6 +91,13 @@ interface Workspace {
   course_id: string;
   institution_id: string;
   settings: WorkspaceSettings;
+}
+
+class SafeForStudentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SafeForStudentError';
+  }
 }
 
 let server: http.Server | undefined;
@@ -639,17 +646,14 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   }
 
   const settings = {
-    workspace_image: row.workspace_image,
-    workspace_port: row.workspace_port,
-    workspace_home: row.workspace_home,
-    workspace_graded_files: row.workspace_graded_files,
+    ...row,
     workspace_args: row.workspace_args || '',
     workspace_enable_networking: !!row.workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
       v === null ? k : `${k}=${v}`,
     ),
-  };
+  } satisfies WorkspaceSettings;
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
@@ -663,6 +667,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 }
 
 const ProgressDetailsSchema = z.record(
+  z.string(),
   z.object({
     current: z.number(),
     total: z.number(),
@@ -828,7 +833,54 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
-  const containerPath = settings.workspace_home;
+  const [containerPath, workspacePort] = await run(async () => {
+    // If all three of these are known, inspect is not necessary.
+    if (
+      settings.workspace_home != null &&
+      settings.workspace_port != null &&
+      settings.workspace_url_rewrite != null
+    ) {
+      return [settings.workspace_home, settings.workspace_port];
+    }
+
+    const inspectResults = await docker.getImage(settings.workspace_image).inspect();
+    const labels = inspectResults.Config.Labels;
+    const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
+    const portStr = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
+    if (home == null) {
+      throw new SafeForStudentError(
+        'Workspace home directory not specified in question settings or image labels',
+      );
+    }
+    if (portStr == null) {
+      throw new SafeForStudentError(
+        'Workspace port not specified in question settings or image labels',
+      );
+    }
+    const port = Number(portStr);
+    if (Number.isNaN(port) || port <= 0 || port > 65535) {
+      throw new SafeForStudentError('Workspace port is not a valid port number');
+    }
+
+    if (settings.workspace_url_rewrite == null) {
+      // If the url_rewrite setting was not previously set, we'll use the label
+      // value and default to true if not specified. This value is not used
+      // here, but in the proxy middleware logic, so we save it to the database
+      // for later reference.
+      const urlRewrite =
+        labels?.['com.prairielearn.workspace.rewrite-url']?.toLowerCase() ?? 'true';
+
+      if (!['true', 'false'].includes(urlRewrite)) {
+        throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
+      }
+      await sqldb.execute(sql.update_workspace_url_rewrite, {
+        workspace_id: workspace.id,
+        url_rewrite: urlRewrite === 'true',
+      });
+    }
+
+    return [home, port];
+  });
   const args = settings.workspace_args.trim();
 
   let networkMode = 'bridge';
@@ -841,14 +893,14 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   }
 
   debug(`Creating docker container for image=${settings.workspace_image}`);
-  debug(`Exposed port: ${settings.workspace_port}`);
+  debug(`Exposed port: ${workspacePort}`);
   debug(`Networking enabled: ${settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${settings.workspace_environment}`);
   debug(
     `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
   );
-  debug(`Port binding: ${settings.workspace_port}:${launch_port}`);
+  debug(`Port binding: ${workspacePort}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${local_name}`);
 
@@ -866,13 +918,13 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
-      [`${settings.workspace_port}/tcp`]: {},
+      [`${workspacePort}/tcp`]: {},
     },
     Env: settings.workspace_environment,
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {
-        [`${settings.workspace_port}/tcp`]: [{ HostPort: `${launch_port}` }],
+        [`${workspacePort}/tcp`]: [{ HostPort: `${launch_port}` }],
       },
       Binds: [`${workspacePath}:${containerPath}`],
       Memory: config.workspaceDockerMemory,
@@ -1000,12 +1052,12 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       container = await _createContainer(workspace);
-    } catch (err) {
+    } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace.id,
         'stopped',
-        'Error creating container. Click "Reboot" to try again.',
+        `Error creating container${err instanceof SafeForStudentError ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
@@ -1093,7 +1145,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
-  const workspaceSettings = await _getWorkspaceSettings(workspace_id);
+  const { workspace_graded_files } = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
@@ -1102,7 +1154,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
   try {
     gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
       workspaceDir,
-      workspaceSettings.workspace_graded_files,
+      workspace_graded_files,
       {
         maxFiles: config.workspaceMaxGradedFilesCount,
         maxSize: config.workspaceMaxGradedFilesSize,
@@ -1115,7 +1167,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   archive.pipe(res);
 
   archive.on('error', (err) => {

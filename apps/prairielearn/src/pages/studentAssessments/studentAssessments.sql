@@ -24,6 +24,7 @@ WITH
       NULL::integer AS assessment_instance_number,
       NULL::integer AS assessment_instance_score_perc,
       NULL::boolean AS assessment_instance_open,
+      NULL::timestamptz AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -63,6 +64,7 @@ WITH
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
       ai.open AS assessment_instance_open,
+      ai.date_limit AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -99,6 +101,7 @@ WITH
       ai.number AS assessment_instance_number,
       ai.score_perc AS assessment_instance_score_perc,
       ai.open AS assessment_instance_open,
+      ai.date_limit AS assessment_instance_date_limit,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -171,29 +174,11 @@ SELECT
     ELSE '/assessment_instance/' || assessment_instance_id || '/'
   END AS link,
   (
-    LAG(
-      CASE
-        WHEN $assessments_group_by = 'Set' THEN assessment_set_id
-        ELSE assessment_module_id
-      END
-    ) OVER (
-      PARTITION BY
-        (
-          CASE
-            WHEN $assessments_group_by = 'Set' THEN assessment_set_id
-            ELSE assessment_module_id
-          END
-        )
-        -- Note that we set `NULLS FIRST` to ensure that the rows from
-        -- `multiple_instance_assessments` are always first, as they have a
-        -- null `assessment_instance_number`.
-      ORDER BY
-        assessment_set_number,
-        assessment_order_by,
-        assessment_id,
-        assessment_instance_number NULLS FIRST
-    ) IS NULL
-  ) AS start_new_assessment_group,
+    CASE
+      WHEN $assessments_group_by = 'Set' THEN assessment_set_id
+      ELSE assessment_module_id
+    END
+  ) AS assessment_group_id,
   (
     CASE
       WHEN $assessments_group_by = 'Set' THEN assessment_set_heading

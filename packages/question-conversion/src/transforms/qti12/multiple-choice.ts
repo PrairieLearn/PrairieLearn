@@ -21,11 +21,16 @@ export const multipleChoiceHandler: TransformHandler<QTI12ParsedItem> = {
     }));
 
     if (correctIdents.size === 0) {
+      // Mark the first choice as correct so the element passes validation;
+      // the question is Manual-graded so the marking is not used for scoring.
+      if (choices.length > 0) {
+        choices[0].correct = true;
+      }
       return {
         body: { type: 'multiple-choice', choices },
         gradingMethod: 'Manual',
         warnings: [
-          `multiple_choice_question "${item.ident}" has no correct answer marked; emitting as a manually-graded question. Review the source QTI or grade by hand.`,
+          'No correct answer found. Set the correct answer in question.html, or leave as manually graded.',
         ],
       };
     }

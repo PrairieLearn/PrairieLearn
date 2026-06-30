@@ -7,6 +7,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
+import { CourseRequestMessageSection } from '../../components/courseRequestMessage/CourseRequestMessageSection.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export const InstitutionStatisticsSchema = z.object({
@@ -21,12 +22,20 @@ export function AdministratorInstitutionGeneral({
   availableTimezones,
   statistics,
   planGrants,
+  courseRequestMessage,
+  courseRequestMessageHtml,
+  githubCourseOwner,
+  defaultGithubCourseOwner,
   resLocals,
 }: {
   institution: Institution;
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
+  courseRequestMessage: string | null;
+  courseRequestMessageHtml: string;
+  githubCourseOwner: string | null;
+  defaultGithubCourseOwner: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
@@ -136,7 +145,9 @@ export function AdministratorInstitutionGeneral({
           />
           <small id="uid_regexp_help" class="form-text text-muted">
             Should match the non-username part of user UIDs, e.g. <code>@example\\.com$</code>. This
-            should be set for institution-based access restrictions to work correctly.
+            must be a valid regular expression that starts with <code>@</code> and ends with
+            <code>$</code>. Periods must be escaped as <code>\\.</code>. This should be set for
+            institution-based access restrictions to work correctly.
           </small>
         </div>
         <h2 class="h4">Limits</h2>
@@ -180,6 +191,48 @@ export function AdministratorInstitutionGeneral({
           type="submit"
           name="__action"
           value="update_enrollment_limits"
+          class="btn btn-primary"
+        >
+          Save
+        </button>
+      </form>
+
+      ${CourseRequestMessageSection({
+        csrfToken: resLocals.__csrf_token,
+        description: html`
+          This message is shown to users from this institution on the
+          <a href="/pl/request_course">course request page</a>. Markdown formatting is supported;
+          HTML tags are not rendered.
+        `,
+        courseRequestMessage,
+        courseRequestMessageHtml,
+      })}
+
+      <h2 class="h4">GitHub</h2>
+      <form method="POST" class="mb-3">
+        <div class="mb-3">
+          <label class="form-label" for="github_course_owner">Default GitHub organization</label>
+          <input
+            type="text"
+            class="form-control"
+            id="github_course_owner"
+            name="github_course_owner"
+            value="${githubCourseOwner ?? ''}"
+            placeholder="${defaultGithubCourseOwner}"
+            aria-describedby="github_course_owner_help"
+          />
+          <small id="github_course_owner_help" class="form-text text-muted">
+            When approved course requests for this institution are turned into courses, repositories
+            are created in this GitHub organization. Leave blank to use the platform default
+            (<code>${defaultGithubCourseOwner}</code>). Saving validates that the PrairieLearn
+            machine account is an active member of the organization.
+          </small>
+        </div>
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button
+          type="submit"
+          name="__action"
+          value="update_github_course_owner"
           class="btn btn-primary"
         >
           Save

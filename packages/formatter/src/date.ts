@@ -63,8 +63,45 @@ export function formatDate(
 export function formatDateISO(
   date: Date | Temporal.PlainDateTime,
   timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): string;
+/**
+ * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
+ *
+ * @param date The date to format.
+ * @param timeZone The time zone to use for formatting.
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @returns ISO-formatted string representing the date. If date is null, returns null.
+ */
+export function formatDateISO(
+  date: null,
+  timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): null;
+/**
+ * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
+ *
+ * @param date The date to format.
+ * @param timeZone The time zone to use for formatting.
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @returns ISO-formatted string representing the date. If date is null, returns null.
+ */
+export function formatDateISO(
+  date: Date | Temporal.PlainDateTime | null,
+  timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): string | null;
+export function formatDateISO(
+  date: Date | Temporal.PlainDateTime | null,
+  timeZone: string,
   { includeTz = true, includeMs = false }: { includeTz?: boolean; includeMs?: boolean } = {},
-): string {
+): string | null {
+  if (date == null) return null;
+
   if (date instanceof Temporal.PlainDateTime) {
     date = new Date(date.toZonedDateTime(timeZone).epochMilliseconds);
   }
@@ -242,6 +279,7 @@ export function formatDateWithinRange(
   if (dateY === startY && dateY === endY) {
     const options: Intl.DateTimeFormatOptions = {
       timeZone,
+      hourCycle: 'h23',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

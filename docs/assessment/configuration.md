@@ -18,12 +18,13 @@ Each assessment must set the following properties in their `infoAssessment.json`
 
 ## Optional properties
 
-In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
+In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`accessControl`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
 | Property                                                       | Type    | Description                                                                                                                 |
 | -------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
 | [`module`](#grouping-assessments-by-modules)                   | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
-| [`allowAccess`](../assessment/accessControl.md)                | array   | List of access rules. (default: no student access)                                                                          |
+| [`accessControl`](../assessment/accessControl.md)              | array   | Modern access control rules. (default: no student access)                                                                   |
+| [`allowAccess`](../assessment/accessControlLegacy.md)          | array   | Legacy access rules. Prefer `accessControl` for new assessments. (default: no student access)                               |
 | [`zones`](#question-specification)                             | array   | Specification of zones and questions. (default: none)                                                                       |
 | `text`                                                         | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
 | `multipleInstance`                                             | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
@@ -41,6 +42,7 @@ In addition to those properties, the following properties can be used to further
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
 | [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
+| `showQuestionTitles`                                           | boolean | Whether to show question titles to students. (default: `false` for Exam, `true` for Homework)                               |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -443,12 +445,13 @@ The `groups` object supports the following properties:
 
 | Attribute            | Type    | Default | Description                                                                                                                      |
 | -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`            | boolean | `true`  | Whether groups are enabled for this assessment.                                                                                  |
 | `minMembers`         | integer | -       | The minimum number of students in a group.                                                                                       |
 | `maxMembers`         | integer | -       | The maximum number of students in a group.                                                                                       |
 | `roles`              | array   | `[]`    | Array of custom user roles in a group. See [Enabling custom group roles](#enabling-custom-group-roles).                          |
 | `studentPermissions` | object  | `{}`    | Student permissions for group management. See below.                                                                             |
 | `rolePermissions`    | object  | `{}`    | Role-based permissions for group assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
+
+The presence of the `groups` object indicates that group work is enabled for the assessment; remove the property to disable group work.
 
 ### Student permissions
 
@@ -456,10 +459,14 @@ The `studentPermissions` object controls what students can do to manage their gr
 
 | Attribute        | Type    | Default | Description                                                                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
+| `canCreateGroup` | boolean | `true`  | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `true`  | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `true`  | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+
+??? note "Legacy defaults"
+
+    The previous legacy defaults were `canCreateGroup: false`, `canJoinGroup: false`, `canLeaveGroup: false`, `canNameGroup: true`.
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
 
@@ -503,9 +510,9 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group memberships. This can be used to copy group memberships from one assessment to another. The same file can also be exported from the "Groups" tab by using "Actions" > "Export CSV".
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Assign randomly" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
@@ -896,7 +903,7 @@ In this example, the calculator is disabled in "Part 1: No calculator" (zone-lev
 
 See the [Assessment access control page](../assessment/accessControl.md) for details.
 
-By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
+By default, an assessment is only accessible to course staff. To allow students to access the assessment, configure `accessControl` on the assessment **Access** page or in the assessment's `infoAssessment.json` file.
 
 Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see [Assessment access control page](../assessment/accessControl.md) for details and examples.
 
@@ -980,7 +987,7 @@ Disabling real-time grading changes a number of things about the student experie
 - The "Grade saved answers" button on the assessment overview will only be shown if at least some questions have real-time grading enabled, and when clicked, it will only grade those questions.
 - Score information won't be shown for questions that have real-time grading disabled.
 
-If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../assessment/accessControl.md#showinghiding-closed-assessments).
+If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will auto-grade any saved answers. Student visibility after closure is controlled by the [After completion](../assessment/accessControl.md#after-completion) settings.
 
 ??? note
 
@@ -1055,6 +1062,20 @@ For example:
 ```json title="infoAssessment.json"
 {
   "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
+
+## Question titles
+
+Question titles can help students identify and discuss questions, but may contain topic names or other context intended only for staff. For this reason, `Homework` assessments show question titles to students by default, while `Exam` assessments hide them by default.
+
+This behavior can be overridden by setting `showQuestionTitles` as a top-level option in the `infoAssessment.json` file.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "showQuestionTitles": true
 }
 ```
 

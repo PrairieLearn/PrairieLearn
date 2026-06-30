@@ -57,20 +57,14 @@ jobs:
         run: |-
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
+      - uses: pnpm/action-setup@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'yarn'
-      - name: Cache node-gyp headers
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/node-gyp
-          key: node-gyp-${{ runner.os }}
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
+          cache: 'pnpm'
       - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
+        run: pnpm install
 
       - name: Set up Turborepo cache
         uses: actions/cache@v5
@@ -106,7 +100,8 @@ jobs:
             node_modules/.cache/prettier
           key: >-
             lint-${{ runner.os }}-${{ hashFiles(
-              'yarn.lock',
+              'pnpm-lock.yaml',
+              'Makefile',
               'eslint.config.mjs',
               'packages/eslint-config/**',
               'packages/eslint-plugin-prairielearn/**',
@@ -115,6 +110,10 @@ jobs:
             ) }}
 
       - name: Run the JavaScript linter
+        env:
+          # Type-aware ESLint loads the full apps/prairielearn TS program (~4 GB
+          # peak), which exceeds Node's default heap limit.
+          NODE_OPTIONS: --max-old-space-size=8192
         run: make lint-js-cached
       - name: Run the Mustache linter
         run: make lint-mustache
@@ -122,9 +121,11 @@ jobs:
         run: make lint-links
 
       - name: Check dependency structure
-        run: make check-dependencies
+        run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that element schemas are up-to-date
+        run: make check-element-schemas
       - name: Check that all packages exist on npm
         run: make check-npm-packages
       - name: Check badge color contrast
@@ -138,12 +139,12 @@ jobs:
       # We must migrate our database before we can typecheck the SQL.
       - name: Run the SQL typechecker
         run: |
-          yarn migrate
+          pnpm migrate
           make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
-      # Requires Git history and yarn install. Not using the make version
+      # Requires Git history and pnpm install. Not using the make version
       # because the base ref is potentially different. Does not run in
       # changeset-release or dependabot PRs, since they are expected to change
       # packages without creating a changeset. Also does not run in merge_group
@@ -153,12 +154,12 @@ jobs:
         if: ${{github.event_name == 'pull_request'
           && !contains(github.event.pull_request.head.ref, 'changeset-release')
           && github.event.pull_request.user.login != 'dependabot[bot]' }}
-        run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
+        run: pnpm changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
       - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
+        run: pnpm dedupe --check
 
   check-python:
     name: Python
@@ -195,18 +196,21 @@ jobs:
           UV_LOCKED: 1
         run: make python-deps
 
+      - uses: pnpm/action-setup@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Set up Yarn
-        # We only install the dependencies in the root workspace to avoid
-        # installing dependencies that won't be used.
-        run: yarn workspaces focus prairielearn
+      - name: Install Node dependencies
+        # We only install root dependencies to avoid installing workspaces that
+        # are not used by these checks.
+        run: pnpm --filter . install
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
         run: make lint-python
+      - name: Check Python helper package dependencies
+        run: make check-python-helper-dependencies
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
@@ -221,7 +225,7 @@ jobs:
         run: make lint-html
       - name: Upload Python coverage report to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v6.0.0
+        uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python

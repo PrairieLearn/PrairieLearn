@@ -486,11 +486,11 @@ There are 4 non-overlapping types of roles: "System roles", "Student course inst
 
     This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
 
-For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we institute two checks:
+For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. Route-specific role checks should normally live in middleware or the handler; model functions should focus on ownership and record-belonging checks. To help with this, we institute two checks:
 
 1. Model functions should accept full, typed row objects as parameters. Possession of this object implies the caller is authorized to read the record. For example, updates to the enrollment status should require the caller to pass in the full enrollment row object. We want to make it hard to update an enrollment status using just an enrollment ID (e.g. by sending a POST request to `/api/enrollments/<enrollment_id>/status`, and performing an unvalidated update with `req.params.enrollment_id`).
 
-2. Model functions should require the caller to pass in context about their authorization. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
+2. Ownership-sensitive model functions should require the caller to pass in the context needed to prove ownership or record belonging. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
 
 ```typescript
 const enrollment = await selectEnrollment({

@@ -625,7 +625,7 @@ async function _selectAndLockEnrollment(id: string) {
 
 /**
  * Low-level function to update an enrollment's status.
- * Caller must hold a lock on the enrollment and user.
+ * Caller must hold a lock on the enrollment and on its user row when it has one.
  */
 async function _updateEnrollmentStatus({
   lockedEnrollment,
@@ -689,10 +689,10 @@ export async function setEnrollmentStatus({
   requiredRole: Role[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     interface EnrollmentStatusTransitionInformation {
       equivalentStatuses?: EnumEnrollmentStatus[];
@@ -790,10 +790,10 @@ export async function removeEnrollmentFromSync({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     // Already removed - nothing to do.
     if (lockedEnrollment.status === 'removed') {
@@ -852,10 +852,10 @@ export async function reenrollEnrollmentFromSync({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     // Already joined - nothing to do.
     if (lockedEnrollment.status === 'joined') {
@@ -961,10 +961,10 @@ export async function inviteEnrollment({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     return await _inviteExistingEnrollment({
       lockedEnrollment,

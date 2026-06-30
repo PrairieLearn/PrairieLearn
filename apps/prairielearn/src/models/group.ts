@@ -13,7 +13,7 @@ import { type GroupConfig, GroupConfigSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const GroupUsersRowSchema = z.object({
+const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
@@ -28,6 +28,14 @@ export async function selectGroupConfigForAssessment(
     sql.select_group_config_for_assessment,
     { assessment_id },
     GroupConfigSchema,
+  );
+}
+
+export async function selectGroupRoleNamesForAssessment(assessment_id: string): Promise<string[]> {
+  return await queryScalars(
+    sql.select_group_role_names_for_assessment,
+    { assessment_id },
+    z.string(),
   );
 }
 

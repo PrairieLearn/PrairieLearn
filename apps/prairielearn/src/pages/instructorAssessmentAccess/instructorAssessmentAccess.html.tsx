@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -11,32 +12,26 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
-import { JsonCommentSchema } from '../../lib/db-types.js';
+import { AssessmentAccessRuleSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import type {
   AccessControlJsonWithId,
   PrairieTestExamMetadata,
 } from '../../models/assessment-access-control-rules.js';
 
-import { AssessmentAccessControl } from './components/AssessmentAccessControl.js';
+import {
+  AssessmentAccessControl,
+  type AssessmentAccessControlPermissions,
+} from './components/AssessmentAccessControl.js';
 
-export const AssessmentAccessRulesSchema = z.object({
-  mode: z.string(),
-  uids: z.string(),
-  start_date: z.string(),
-  end_date: z.string(),
-  credit: z.string(),
-  time_limit: z.string(),
-  password: z.string(),
-  exam_uuid: z.string().nullable(),
+export const AssessmentAccessRuleRowSchema = z.object({
+  rule: AssessmentAccessRuleSchema,
   pt_course_id: z.string().nullable(),
   pt_course_name: z.string().nullable(),
   pt_exam_id: z.string().nullable(),
   pt_exam_name: z.string().nullable(),
-  active: z.string(),
-  comment: JsonCommentSchema.nullable(),
 });
-type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
+type AssessmentAccessRuleRow = z.infer<typeof AssessmentAccessRuleRowSchema>;
 
 interface MigrationPreview {
   beforeJson: string;
@@ -55,17 +50,17 @@ export function InstructorAssessmentAccess({
   migrationPreview,
   origHash,
   canEdit,
-  enhancedAccessControlEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  accessRules: AssessmentAccessRules[];
+  accessRules: AssessmentAccessRuleRow[];
   migrationAnalysis: AssessmentMigrationAnalysis | null;
   migrationPreview: MigrationPreview | null;
   origHash: string;
   canEdit: boolean;
-  enhancedAccessControlEnabled: boolean;
 }) {
-  const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
+  const showComments = accessRules.some((access_rule) =>
+    isRenderableComment(access_rule.rule.json_comment),
+  );
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
@@ -97,19 +92,13 @@ export function InstructorAssessmentAccess({
             : ''}
         </div>
 
-        ${enhancedAccessControlEnabled
-          ? html`
-              <div
-                class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0"
-              >
-                ${migrationAnalysis && migrationAnalysis.errors.length > 0
-                  ? html`This assessment uses the legacy access control system. Automatic migration
-                    is not available for this assessment's access rules.`
-                  : html`This assessment uses the legacy access control system. Consider migrating
-                    to the modern format for a better editing experience.`}
-              </div>
-            `
-          : ''}
+        <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0">
+          ${migrationAnalysis && migrationAnalysis.errors.length > 0
+            ? html`This assessment uses the legacy access control system. Automatic migration is not
+              available for this assessment's access rules.`
+            : html`This assessment uses the legacy access control system. Consider migrating to the
+              modern format for a better editing experience.`}
+        </div>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Access rules">
@@ -140,12 +129,14 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    ${showComments ? html`<td>${CommentPopoverHtml(access_rule.comment)}</td>` : ''}
-                    <td>${access_rule.mode}</td>
+                    ${showComments
+                      ? html`<td>${CommentPopoverHtml(access_rule.rule.json_comment)}</td>`
+                      : ''}
+                    <td>${access_rule.rule.mode ?? '—'}</td>
                     <td>
-                      ${access_rule.uids === '—' ||
+                      ${access_rule.rule.uids == null ||
                       resLocals.authz_data.has_course_instance_permission_view
-                        ? access_rule.uids
+                        ? (access_rule.rule.uids?.join(', ') ?? '—')
                         : html`
                             <button
                               type="button"
@@ -154,18 +145,38 @@ export function InstructorAssessmentAccess({
                               data-bs-container="body"
                               data-bs-placement="auto"
                               data-bs-title="Hidden UIDs"
-                              data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
+                              data-bs-content="This access rule is specific to individual students. You need student data viewer permissions to see which ones."
                             >
                               Hidden
                             </button>
                           `}
                     </td>
-                    <td>${access_rule.start_date}</td>
-                    <td>${access_rule.end_date}</td>
-                    <td>${access_rule.active}</td>
-                    <td>${access_rule.credit}</td>
-                    <td>${access_rule.time_limit}</td>
-                    <td>${access_rule.password}</td>
+                    <td>
+                      ${access_rule.rule.start_date == null
+                        ? '—'
+                        : formatDate(
+                            access_rule.rule.start_date,
+                            resLocals.course_instance.display_timezone,
+                          )}
+                    </td>
+                    <td>
+                      ${access_rule.rule.end_date == null
+                        ? '—'
+                        : formatDate(
+                            access_rule.rule.end_date,
+                            resLocals.course_instance.display_timezone,
+                          )}
+                    </td>
+                    <td>${access_rule.rule.active ? 'True' : 'False'}</td>
+                    <td>
+                      ${access_rule.rule.credit == null ? '—' : `${access_rule.rule.credit}%`}
+                    </td>
+                    <td>
+                      ${access_rule.rule.time_limit_min == null
+                        ? '—'
+                        : `${access_rule.rule.time_limit_min} min`}
+                    </td>
+                    <td>${access_rule.rule.password ?? '—'}</td>
                     <td>
                       ${access_rule.pt_exam_name
                         ? html`
@@ -175,12 +186,12 @@ export function InstructorAssessmentAccess({
                               ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
                             </a>
                           `
-                        : access_rule.exam_uuid
+                        : access_rule.rule.exam_uuid
                           ? config.devMode
-                            ? access_rule.exam_uuid
+                            ? access_rule.rule.exam_uuid
                             : html`
                                 <span class="text-danger">
-                                  Exam not found: ${access_rule.exam_uuid}
+                                  Exam not found: ${access_rule.rule.exam_uuid}
                                 </span>
                               `
                           : html`&mdash;`}
@@ -195,7 +206,7 @@ export function InstructorAssessmentAccess({
           <small>
             Instructions on how to change the access rules can be found in the
             <a
-              href="https://docs.prairielearn.com/assessment/accessControl/"
+              href="https://docs.prairielearn.com/assessment/accessControlLegacy/"
               target="_blank"
               rel="noreferrer"
               >PrairieLearn documentation</a
@@ -365,6 +376,8 @@ export function InstructorAssessmentAccessNew({
   initialData,
   prairieTestExamMetadata,
   ptHost,
+  permissions,
+  hiddenEnrollmentRuleCount,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   origHash: string | null;
@@ -372,6 +385,8 @@ export function InstructorAssessmentAccessNew({
   initialData: AccessControlJsonWithId[];
   prairieTestExamMetadata: PrairieTestExamMetadata[];
   ptHost: string;
+  permissions: AssessmentAccessControlPermissions;
+  hiddenEnrollmentRuleCount: number;
 }) {
   const pageContext = extractPageContext(resLocals, {
     pageType: 'courseInstance',
@@ -401,9 +416,15 @@ export function InstructorAssessmentAccessNew({
           csrfToken={trpcCsrfToken}
           origHash={origHash}
           assessmentId={resLocals.assessment.id}
+          isExam={resLocals.assessment.type === 'Exam'}
+          hasExamAutoClose={
+            resLocals.assessment.type === 'Exam' && (resLocals.assessment.auto_close ?? true)
+          }
           initialData={initialData}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
+          permissions={permissions}
+          hiddenEnrollmentRuleCount={hiddenEnrollmentRuleCount}
         />
       </Hydrate>
     ),

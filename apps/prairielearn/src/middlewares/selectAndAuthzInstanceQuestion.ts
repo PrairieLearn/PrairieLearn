@@ -7,7 +7,11 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { resolveModernAssessmentInstanceAccess } from '../lib/assessment-access-control/authz.js';
-import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
+import {
+  type AssessmentInstanceTimeLimit,
+  assessmentInstanceLabel,
+  getAssessmentInstanceTimeLimit,
+} from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
@@ -51,12 +55,7 @@ const InstanceQuestionInfoSchema = z.object({
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
-  assessment_instance: AssessmentInstanceSchema.extend({
-    formatted_date: z.string(),
-  }),
-  assessment_instance_remaining_ms: z.number().nullable(),
-  assessment_instance_time_limit_ms: z.number().nullable(),
-  assessment_instance_time_limit_expired: z.boolean(),
+  assessment_instance: AssessmentInstanceSchema,
   instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
@@ -71,20 +70,21 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   file_list: z.array(FileSchema),
 });
 
-export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> & {
-  assessment_instance_label: string;
+export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> &
+  AssessmentInstanceTimeLimit & {
+    assessment_instance_label: string;
 
-  instance_question_info: InstanceQuestionInfo & {
-    previous_variants?: SimpleVariantWithScore[];
+    instance_question_info: InstanceQuestionInfo & {
+      previous_variants?: SimpleVariantWithScore[];
+    };
+
+    /** These are only set if the assessment has group work. */
+    prev_instance_question_role_permissions?: QuestionGroupPermissions;
+    next_instance_question_role_permissions?: QuestionGroupPermissions;
+    group_config?: GroupConfig;
+    group_info?: GroupInfo;
+    group_role_permissions?: QuestionGroupPermissions;
   };
-
-  /** These are only set if the assessment has group work. */
-  prev_instance_question_role_permissions?: QuestionGroupPermissions;
-  next_instance_question_role_permissions?: QuestionGroupPermissions;
-  group_config?: GroupConfig;
-  group_info?: GroupInfo;
-  group_role_permissions?: QuestionGroupPermissions;
-};
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
@@ -127,6 +127,12 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row, {
+    ...getAssessmentInstanceTimeLimit({
+      examAccessEnd: row.authz_result.exam_access_end,
+      date: row.assessment_instance.date,
+      dateLimit: row.assessment_instance.date_limit,
+      reqDate: res.locals.req_date,
+    }),
     assessment_instance_label: assessmentInstanceLabel(
       row.assessment_instance,
       row.assessment,

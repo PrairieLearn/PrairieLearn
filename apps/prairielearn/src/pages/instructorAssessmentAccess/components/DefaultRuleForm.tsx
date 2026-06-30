@@ -3,10 +3,11 @@ import { useFormContext } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
 import { DefaultAfterCompleteForm } from './AfterCompleteForm.js';
 import { DefaultDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
-import type { AccessControlFormData } from './types.js';
+import { type AccessControlFormData } from './types.js';
 
 const beforeReleasePopoverConfig = {
   header: 'What does "before release" mean?',
@@ -22,22 +23,19 @@ const beforeReleasePopoverConfig = {
 
 export function DefaultRuleForm({
   displayTimezone,
-  assessmentId,
-  courseInstanceId,
+  isExam,
+  hasExamAutoClose,
 }: {
   displayTimezone: string;
-  assessmentId: string;
-  courseInstanceId: string;
+  isExam: boolean;
+  hasExamAutoClose: boolean;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const { register } = useFormContext<AccessControlFormData>();
 
   return (
     <div className="d-flex flex-column gap-3">
-      <DefaultDateControlForm
-        displayTimezone={displayTimezone}
-        assessmentId={assessmentId}
-        courseInstanceId={courseInstanceId}
-      />
+      <DefaultDateControlForm displayTimezone={displayTimezone} isExam={isExam} />
       <IntegrationsSection />
       <div>
         <div className="d-flex align-items-center section-header mb-3">
@@ -57,6 +55,7 @@ export function DefaultRuleForm({
           type="checkbox"
           id="defaultRule-before-release-listed"
           label={<strong>List before release</strong>}
+          disabled={!ruleEditable}
           {...register('defaultRule.beforeReleaseListed')}
           aria-describedby="defaultRule-before-release-listed-help"
         />
@@ -64,7 +63,11 @@ export function DefaultRuleForm({
           Students can see the assessment title before release
         </Form.Text>
       </div>
-      <DefaultAfterCompleteForm displayTimezone={displayTimezone} />
+      <DefaultAfterCompleteForm
+        displayTimezone={displayTimezone}
+        isExam={isExam}
+        hasExamAutoClose={hasExamAutoClose}
+      />
     </div>
   );
 }

@@ -2,15 +2,18 @@
  * Tests for LTI 1.3 course instance linking and admin page.
  */
 import * as cheerio from 'cheerio';
+import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { execute, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
+import { Lti13CombinedInstanceSchema, inspectRoster } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13CourseInstanceSchema } from '../lib/db-types.js';
+import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -23,17 +26,17 @@ import {
   grantCoursePermissions,
   linkLtiContext,
   makeLoginExecutor,
+  withServer,
 } from './lti13TestHelpers.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
-describe('LTI 1.3 course instance linking', () => {
+describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
   beforeAll(async () => {
     config.isEnterprise = true;
-    config.features.lti13 = true;
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
@@ -82,10 +85,9 @@ describe('LTI 1.3 course instance linking', () => {
   afterAll(async () => {
     await helperServer.after();
     config.isEnterprise = false;
-    config.features = {};
   });
 
-  test.sequential('linkLtiContext helper creates link record', async () => {
+  test('linkLtiContext helper creates link record', async () => {
     await execute(
       `DELETE FROM lti13_course_instances
        WHERE lti13_instance_id = '1'
@@ -122,7 +124,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor sees linking UI for unlinked context', async () => {
+  test('instructor sees linking UI for unlinked context', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -165,7 +167,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('student sees "not ready" page for unlinked context', async () => {
+  test('student sees "not ready" page for unlinked context', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -196,7 +198,7 @@ describe('LTI 1.3 course instance linking', () => {
     );
   });
 
-  test.sequential('instructor can link course instance via POST', async () => {
+  test('instructor can link course instance via POST', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -263,9 +265,11 @@ describe('LTI 1.3 course instance linking', () => {
     );
     assert.ok(linkRecord);
     assert.equal(linkRecord.course_instance_id, '1');
+    // The course-navigation resource link from the launch claim is persisted.
+    assert.equal(linkRecord.resource_link_id, LTI_CONTEXT_ID);
   });
 
-  test.sequential('already linked context redirects instructor to course instance', async () => {
+  test('already linked context redirects instructor to course instance', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -301,7 +305,7 @@ describe('LTI 1.3 course instance linking', () => {
     assert.include(res.url, '/pl/course_instance/1/instructor/');
   });
 
-  test.sequential('already linked context redirects student to course instance', async () => {
+  test('already linked context redirects student to course instance', async () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -328,7 +332,7 @@ describe('LTI 1.3 course instance linking', () => {
   });
 
   describe('LTI 1.3 linking authorization', () => {
-    test.sequential('instructor without course permissions does not see linking form', async () => {
+    test('instructor without course permissions does not see linking form', async () => {
       // First, clean up any existing link to test the unauthorized view
       await execute(
         `DELETE FROM lti13_course_instances
@@ -390,7 +394,7 @@ describe('LTI 1.3 course instance linking', () => {
       assert.isNull(linkRecord);
     });
 
-    test.sequential('cannot link course instance from different institution', async () => {
+    test('cannot link course instance from different institution', async () => {
       // Create a second institution with its own course and course instance
       const { courseId, courseInstanceId } = await createCrossInstitutionFixture();
 
@@ -472,7 +476,7 @@ describe('LTI 1.3 course instance linking', () => {
   });
 
   describe('LTI 1.3 instructor admin page', () => {
-    test.sequential('GET admin page shows linked instance', async () => {
+    test('GET admin page shows linked instance', async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -528,7 +532,7 @@ describe('LTI 1.3 course instance linking', () => {
       );
     });
 
-    test.sequential('GET admin page redirects when no ID provided', async () => {
+    test('GET admin page redirects when no ID provided', async () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
@@ -571,6 +575,192 @@ describe('LTI 1.3 course instance linking', () => {
       const location = adminPageRes.headers.get('location');
       assert.ok(location);
       assert.include(location, 'lti13_instance/');
+    });
+  });
+
+  describe('LTI 1.3 NRPS roster inspector', () => {
+    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis matches', async () => {
+      // Ensure course instance 1 is linked to LTI instance 1.
+      await execute(
+        `DELETE FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      );
+      await linkLtiContext({
+        lti13InstanceId: '1',
+        deploymentId: LTI_DEPLOYMENT_ID,
+        contextId: LTI_CONTEXT_ID,
+        courseInstanceId: '1',
+      });
+
+      // Create a user with a known sub and UIN to exercise both match paths.
+      const knownSub = 'roster-inspector-sub-1';
+      const knownUin = '555000555';
+      await grantCoursePermissions({
+        uid: 'roster-inspector@example.com',
+        courseId: '1',
+        courseRole: 'Editor',
+        courseInstanceId: '1',
+        courseInstanceRole: 'Student Data Editor',
+        authnUserId: '1',
+      });
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Roster Inspector User',
+          email: 'roster-inspector@example.com',
+          uin: knownUin,
+          sub: knownSub,
+        },
+        fetchWithCookies: fetchCookie(fetch),
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
+        isInstructor: true,
+      });
+      const loginRes = await executor.login();
+      assert.equal(loginRes.status, 200);
+
+      // Point the linked course instance's NRPS endpoint at our mock platform.
+      // This must happen after login, since the instructor launch overwrites
+      // context_memberships_url from the (membership-less) launch claim.
+      const membershipsUrl = `http://localhost:${oidcProviderPort}/memberships`;
+      await execute(
+        `UPDATE lti13_course_instances
+         SET context_memberships_url = $url, resource_link_id = 'rl-course-nav'
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+        { url: membershipsUrl, deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      );
+
+      const instance = await queryRow(
+        `SELECT to_jsonb(lci) AS lti13_course_instance, to_jsonb(li) AS lti13_instance
+         FROM lti13_course_instances AS lci
+         JOIN lti13_instances AS li ON li.id = lci.lti13_instance_id
+         WHERE lci.lti13_instance_id = '1'
+         AND lci.deployment_id = $deployment_id
+         AND lci.context_id = $context_id`,
+        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+        Lti13CombinedInstanceSchema,
+      );
+
+      const capturedRlids: (string | undefined)[] = [];
+      const app = express();
+      app.use(express.urlencoded({ extended: true }));
+      app.post('/token', (_req, res) => {
+        res.json({
+          access_token: 'roster-inspector-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
+        });
+      });
+      app.get('/memberships', (req, res) => {
+        capturedRlids.push(typeof req.query.rlid === 'string' ? req.query.rlid : undefined);
+        res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
+        res.json({
+          id: membershipsUrl,
+          context: { id: LTI_CONTEXT_ID },
+          members: [
+            {
+              status: 'Active',
+              user_id: knownSub,
+              roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'],
+              email: 'roster-inspector@example.com',
+              message: [
+                {
+                  'https://purl.imsglobal.org/spec/lti/claim/message_type':
+                    'LtiResourceLinkRequest',
+                  'https://purl.imsglobal.org/spec/lti/claim/custom': { uin: knownUin },
+                },
+              ],
+            },
+            {
+              status: 'Active',
+              user_id: 'nrps-unknown-sub-with-uin',
+              roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
+              email: 'nrps-uin@example.com',
+              message: [
+                {
+                  'https://purl.imsglobal.org/spec/lti/claim/message_type':
+                    'LtiResourceLinkRequest',
+                  'https://purl.imsglobal.org/spec/lti/claim/custom': { uin: knownUin },
+                },
+              ],
+            },
+            {
+              status: 'Active',
+              user_id: 'nrps-unknown-sub-no-match',
+              roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
+              email: 'nrps-none@example.com',
+              // NRPS flattens the lis sourcedid onto the member (no `message`),
+              // which exercises lis-based uin_attribute resolution below.
+              lis_person_sourcedid: knownUin,
+            },
+          ],
+        });
+      });
+
+      // Instance 1 resolves UIN from a custom claim; clone it to also cover an
+      // instance configured to read UIN from the lis person_sourcedid claim.
+      const lisInstance = {
+        ...instance,
+        lti13_instance: {
+          ...instance.lti13_instance,
+          uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]',
+        },
+      };
+
+      const customJob = await createServerJob({
+        type: 'lti13',
+        description: 'Inspect LTI 1.3 NRPS roster (test, custom)',
+        userId: null,
+        authnUserId: null,
+      });
+      const lisJob = await createServerJob({
+        type: 'lti13',
+        description: 'Inspect LTI 1.3 NRPS roster (test, lis)',
+        userId: null,
+        authnUserId: null,
+      });
+
+      await withServer(app, oidcProviderPort, async () => {
+        await customJob.executeUnsafe(async (job) => {
+          await inspectRoster({ instance, rlid: 'rl-course-nav', job });
+        });
+        await lisJob.executeUnsafe(async (job) => {
+          await inspectRoster({ instance: lisInstance, rlid: null, job });
+        });
+      });
+
+      // The custom run appended the chosen rlid; the lis run requested a plain roster.
+      assert.deepEqual(capturedRlids, ['rl-course-nav', undefined]);
+
+      const customJobs = await selectJobsByJobSequenceId(customJob.jobSequenceId);
+      assert.lengthOf(customJobs, 1);
+      const customOutput = customJobs[0].output ?? '';
+      assert.include(customOutput, 'Found 3 members.');
+      assert.include(customOutput, 'roster-inspector@example.com');
+      assert.include(customOutput, 'Matched by sub');
+      assert.include(
+        customOutput,
+        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+      );
+      assert.include(customOutput, 'No PrairieLearn user matched');
+
+      // With no rlid (no custom claims), the lis-configured instance still resolves
+      // the UIN from the lis sourcedid that NRPS flattens onto the member.
+      const lisJobs = await selectJobsByJobSequenceId(lisJob.jobSequenceId);
+      assert.lengthOf(lisJobs, 1);
+      const lisOutput = lisJobs[0].output ?? '';
+      assert.include(
+        lisOutput,
+        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+      );
     });
   });
 });

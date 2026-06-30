@@ -10,7 +10,7 @@ export interface RuntimeDateControl {
   due?: { date: Date | null; credit?: number };
   earlyDeadlines?: { date: string; credit: number }[] | null;
   lateDeadlines?: { date: string; credit: number }[] | null;
-  afterLastDeadline?: { allowSubmissions?: boolean; credit?: number | null };
+  afterLastDeadline?: { allowSubmissions: false } | { allowSubmissions: true; credit: number };
   durationMinutes?: number | null;
   password?: string | null;
 }
@@ -19,7 +19,7 @@ export interface RuntimeDateControl {
  * Discriminator for which structural slot a segment fills:
  * - `beforeRelease`: pre-release segment (always entries[0])
  * - `deadline`: a credit window ending at a deadline; credit applies to submissions strictly before `endDate`
- * - `afterLastDeadline`: trailing segment when at least one deadline exists; credit/submittable come from `afterLastDeadline`
+ * - `afterLastDeadline`: trailing segment after the final deadline, with submission permission controlled by the date-control setting
  * - `noDeadline`: trailing segment when no deadline bounds it — either `due: { date: null }` or no deadlines at all. Submissions remain open at `dueCredit` (defaulting to 100%).
  */
 const AccessTimelineEntryKindSchema = z.enum([
@@ -52,9 +52,11 @@ interface Deadline {
  * with `dueCredit`. Deadlines sharing a timestamp are collapsed to one
  * (insertion order early → due → late wins).
  *
- * Early-deadline credits are floored at `dueCredit` and late-deadline credits
- * are capped at `dueCredit`, so the timeline never crosses the base credit on
- * the wrong side of the due date.
+ * Validation normally rejects deadline credits that would cross the due-date
+ * credit on the wrong side of the due date. The floor/cap below keeps each
+ * deadline's credit on the correct side of `dueCredit` when stacked overrides
+ * still produce a crossed shape; `buildAccessTimeline` then enforces a
+ * non-increasing credit timeline across all segments as a final backstop.
  */
 function buildDeadlines(
   dateControl: RuntimeDateControl,
@@ -171,14 +173,32 @@ export function buildAccessTimeline(
       submittable: true,
     });
   } else {
+    // After the final deadline, `afterLastDeadline` controls whether
+    // submissions continue and at what credit.
+    const ald = dateControl.afterLastDeadline;
+    const allowsSubmissions = ald?.allowSubmissions === true;
     entries.push({
       kind: 'afterLastDeadline',
       startDate: segStart,
       endDate: null,
-      credit: dateControl.afterLastDeadline?.credit ?? 0,
+      credit: allowsSubmissions ? ald.credit : 0,
       current: isCurrent(segStart, null),
-      submittable: dateControl.afterLastDeadline?.allowSubmissions === true,
+      submittable: allowsSubmissions,
     });
+  }
+
+  // Floor each post-release segment's credit to its predecessor so a stacked
+  // override that leaves credit climbing — non-decreasing early deadlines,
+  // non-decreasing late deadlines, an afterLastDeadline above the last late
+  // — still produces a non-increasing timeline. Validation prevents these
+  // shapes per-rule and against defaults; this is a defensive backstop for
+  // multi-override merges that the validator deliberately doesn't model.
+  // beforeRelease (index 0, credit 0) is excluded so the first real segment
+  // isn't clamped to 0.
+  for (let i = 2; i < entries.length; i++) {
+    if (entries[i].credit > entries[i - 1].credit) {
+      entries[i] = { ...entries[i], credit: entries[i - 1].credit };
+    }
   }
 
   return entries;
