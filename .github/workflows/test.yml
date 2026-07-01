@@ -275,7 +275,7 @@ jobs:
       - name: Merge Playwright reports
         run: pnpm playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
