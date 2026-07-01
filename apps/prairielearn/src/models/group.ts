@@ -66,28 +66,3 @@ export async function selectUidsNotInGroup({
     z.string(),
   );
 }
-
-/**
- * Returns the UIDs of enrolled (non-instructor) students who are not currently
- * in any group for the given assessment.
- *
- * Every `assessmentGroups` mutation returns this alongside its primary payload
- * so the client can replace its local `notAssigned` state directly. The
- * inclusion rules (enrollment + instructor exclusion) live in the SQL and
- * aren't visible to the client, so deriving this client-side would risk
- * drifting out of sync with the query as it evolves.
- */
-export async function selectNotAssignedForAssessment({
-  assessment_id,
-  course_instance_id,
-}: {
-  assessment_id: string;
-  course_instance_id: string;
-}): Promise<string[]> {
-  const groupConfig = await selectGroupConfigForAssessment(assessment_id);
-  if (!groupConfig) return [];
-  return await selectUidsNotInGroup({
-    group_config_id: groupConfig.id,
-    course_instance_id,
-  });
-}
