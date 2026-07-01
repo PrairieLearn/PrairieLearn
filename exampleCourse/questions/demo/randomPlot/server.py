@@ -6,7 +6,7 @@ import numpy as np
 
 
 def file(data):
-    if data["filename"] == "figure.png":
+    if data["filename"] == "figure.png" or data["filename"] == "submission.png":
         # Create the figure
         x = np.linspace(-5, 5)
         f = data["params"]["m"] * x + data["params"]["b"]
@@ -27,6 +27,20 @@ def file(data):
         plt.ylabel("$f(x)$", fontsize=18)
         plt.autoscale(enable=True, tight=True)
         fig.set_layout_engine("tight")
+
+        if data["filename"] == "submission.png":
+            plt.plot(
+                data["params"]["x"],
+                data["submitted_answers"]["f"],
+                "ks" if data["partial_scores"]["f"]["score"] == 1 else "ro",
+            )
+            plt.annotate(
+                f"({data['params']['x']}, {data['submitted_answers']['f']})",
+                (data["params"]["x"], data["submitted_answers"]["f"]),
+                textcoords="offset points",
+                xytext=(0, 10),
+                ha="center",
+            )
 
         # Save the figure and return it as a buffer
         buf = io.BytesIO()

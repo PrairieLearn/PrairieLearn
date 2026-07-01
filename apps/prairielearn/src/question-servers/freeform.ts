@@ -461,29 +461,29 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   // so we prevent Prettier from reformatting the code to span multiple lines.
   // prettier-ignore
   /**************************************************************************************************************************************/
-  //                       property                 type      presentPhases                         changePhases
+  //                       property                 type      presentPhases                                 changePhases
   /**************************************************************************************************************************************/
-  const err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('variant_seed',          'integer', allPhases,                            [])
-             || checkProp('options',               'object',  allPhases,                            [])
-             || checkProp('preferences',           'object',  allPhases,                            [])
-             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
-             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
-             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
-             || checkProp('editable',              'boolean', ['render'],                           [])
-             || checkProp('manual_grading',        'boolean', ['render'],                           [])
-             || checkProp('ai_grading',            'boolean', ['render'],                           [])
-             || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('correct_answer_shown',  'boolean', ['render'],                           [])
-             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
-             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
-             || checkProp('filename',              'string',  ['file'],                             [])
-             || checkProp('test_type',             'string',  ['test'],                             [])
-             || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+  const err =   checkProp('params',                'object',  allPhases,                                    ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('correct_answers',       'object',  allPhases,                                    ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('variant_seed',          'integer', allPhases,                                    [])
+             || checkProp('options',               'object',  allPhases,                                    [])
+             || checkProp('preferences',           'object',  allPhases,                                    [])
+             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade', 'file'],         ['parse', 'grade'])
+             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test', 'file'], ['parse', 'grade', 'test'])
+             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test', 'file'], ['test'])
+             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test', 'file'],          ['grade', 'test'])
+             || checkProp('score',                 'number',  ['render', 'grade', 'test', 'file'],          ['grade', 'test'])
+             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test', 'file'], ['grade', 'parse', 'test'])
+             || checkProp('editable',              'boolean', ['render'],                                   [])
+             || checkProp('manual_grading',        'boolean', ['render'],                                   [])
+             || checkProp('ai_grading',            'boolean', ['render'],                                   [])
+             || checkProp('panel',                 'string',  ['render'],                                   [])
+             || checkProp('correct_answer_shown',  'boolean', ['render'],                                   [])
+             || checkProp('num_valid_submissions', 'integer', ['render', 'file'],                           [])
+             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],                   [])
+             || checkProp('filename',              'string',  ['file'],                                     [])
+             || checkProp('test_type',             'string',  ['test'],                                     [])
+             || checkProp('answers_names',         'object',  ['prepare'],                                  ['prepare']);
   if (err) return err;
 
   const extraProps = difference(Object.keys(data), checked);
@@ -981,11 +981,17 @@ async function renderPanel({
     ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
+  // This URL may be submission-specific, so it is overridden here if there is a submission.
+  const generatedFilesUrl =
+    panel === 'submission' && submission
+      ? `${locals.questionUrl}generatedFilesQuestion/submission/${submission.id}`
+      : locals.clientFilesQuestionGeneratedFileUrl;
+
   const options = {
     ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
-    client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
+    client_files_question_dynamic_url: generatedFilesUrl,
     course_element_files_url: assets.courseElementAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
@@ -1007,21 +1013,8 @@ async function renderPanel({
   };
 
   const data = {
-    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
-    // so we'll use the submission's values if they exist.
-    //
-    // These should never be null, but that can't be encoded in the schema.
-    params: submission?.params ?? variant.params ?? {},
-    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
-    submitted_answers: submission?.submitted_answer ?? {},
-    format_errors: submission?.format_errors ?? {},
-    partial_scores: submission?.partial_scores ?? {},
-    score: submission?.score ?? 0,
-    feedback: submission?.feedback ?? {},
-    variant_seed: Number.parseInt(variant.variant_seed, 36),
+    ...extractVariantSubmissionData(submission, variant),
     options,
-    preferences: variant.preferences,
-    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: locals.allowAnswerEditing && locals.questionRenderContext == null,
     manual_grading: run(() => {
       if (locals.questionRenderContext === 'manual_grading') return true;
@@ -1038,7 +1031,6 @@ async function renderPanel({
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
     correct_answer_shown: locals.showCorrectAnswer,
-    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
@@ -1077,6 +1069,22 @@ async function renderPanel({
     ...cachedData,
     html,
     cacheHit,
+  };
+}
+
+function extractVariantSubmissionData(submission: Submission | null, variant: Variant) {
+  return {
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
+    format_errors: submission?.format_errors ?? {},
+    partial_scores: submission?.partial_scores ?? {},
+    score: submission?.score ?? 0,
+    feedback: submission?.feedback ?? {},
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
+    preferences: variant.preferences,
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
+    num_valid_submissions: variant.num_tries,
   };
 }
 
@@ -1555,6 +1563,7 @@ export async function render({
 export async function file(
   filename: string,
   variant: Variant,
+  submission: Submission | null,
   question: Question,
   course: Course,
   caller: QuestionCaller,
@@ -1571,17 +1580,13 @@ export async function file(
     });
 
     const data = {
-      // These should never be null, but that can't be encoded in the schema.
-      params: variant.params ?? {},
-      correct_answers: variant.true_answer ?? {},
-      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      ...extractVariantSubmissionData(submission, variant),
       options: {
         ...variant.options,
         ...getContextOptions(context),
         user: userContext.user,
         group: userContext.group,
       },
-      preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
 
@@ -1589,7 +1594,7 @@ export async function file(
       {
         course,
         variant,
-        submission: null, // Files aren't associated with any particular submission.
+        submission,
         data,
         context,
       },

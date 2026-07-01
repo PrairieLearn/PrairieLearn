@@ -92,6 +92,7 @@ async function testDynamicFiles({
     const { courseIssues } = await questionModule.file(
       decodedFilename,
       variant,
+      null, // TODO Handle submission dynamic files
       question,
       question_course,
       {
