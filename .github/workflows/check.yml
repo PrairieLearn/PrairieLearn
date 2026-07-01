@@ -46,7 +46,7 @@ jobs:
       PGHOST: localhost
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
@@ -67,7 +67,7 @@ jobs:
         run: pnpm install
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -93,7 +93,7 @@ jobs:
           retention-days: 1
 
       - name: Restore lint caches
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             .eslintcache
@@ -165,7 +165,7 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           show-progress: false
 
@@ -237,7 +237,7 @@ jobs:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           show-progress: false
       - name: Install additional dependencies

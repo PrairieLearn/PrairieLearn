@@ -59,7 +59,7 @@ jobs:
     if: ${{ !cancelled() }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Create directory for metadata
         run: mkdir -p ${{ runner.temp }}/image-metadata
