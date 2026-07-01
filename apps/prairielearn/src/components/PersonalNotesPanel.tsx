@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import type { AssessmentInstance, File } from '../lib/db-types.js';
+import { getAvailableFilename } from '../lib/personal-notes.js';
 
 export function PersonalNotesPanel({
   fileList,
@@ -81,7 +82,14 @@ export function PersonalNotesPanel({
                     `
                   : html`
                       ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
-                      ${UploadTextForm({ variantId, csrfToken })}
+                      ${UploadTextForm({
+                        variantId,
+                        csrfToken,
+                        defaultFilename: getAvailableFilename(
+                          'notes.txt',
+                          fileList.map((file) => file.display_filename),
+                        ),
+                      })}
                     `}
             </div>
           `
@@ -146,7 +154,15 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
   `;
 }
 
-function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToken: string }) {
+function UploadTextForm({
+  variantId,
+  csrfToken,
+  defaultFilename,
+}: {
+  variantId?: string;
+  csrfToken: string;
+  defaultFilename: string;
+}) {
   return html`
     <div>
       <button
@@ -170,7 +186,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             class="form-control"
             aria-label="Text filename"
             name="filename"
-            value="notes.txt"
+            value="${defaultFilename}"
           />
           <div class="mb-3">
             <textarea
