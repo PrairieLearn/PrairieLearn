@@ -40,6 +40,7 @@ nvm install 24
 nvm alias default 24
 
 corepack enable pnpm
+corepack prepare pnpm@latest-11 --activate
 
 # uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
 # Self-update w/o using pip fails: https://github.com/astral-sh/uv/issues/14016#issuecomment-2969548188

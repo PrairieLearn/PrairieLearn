@@ -58,6 +58,8 @@ jobs:
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
       - uses: pnpm/action-setup@v6
+        with:
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -197,6 +199,8 @@ jobs:
         run: make python-deps
 
       - uses: pnpm/action-setup@v6
+        with:
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
