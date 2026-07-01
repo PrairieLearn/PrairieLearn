@@ -1,12 +1,11 @@
 # PrairieLearn
 
-PrairieLearn is an educational learning platform with a focus on automated assessments.
-This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
+PrairieLearn is an educational learning platform with a focus on automated assessments. This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
 
 ## Tech stack
 
-Frontend: TypeScript / React / Bootstrap / Tanstack
-Backend: TypeScript / Express / Python / PostgreSQL
+- Frontend: TypeScript / React / Bootstrap / TanStack
+- Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Applications
 
@@ -87,8 +86,7 @@ Formatting:
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
-SQL, shell, markdown, and JSON files should also be formatted with `pnpm prettier --write path/to/file.{sql,sh,md,json}`.
-Reference the Makefile for commands to format/lint/typecheck other tools / languages.
+SQL, shell, markdown, and JSON files should also be formatted with `pnpm prettier --write path/to/file.{sql,sh,md,json}`. Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
 
@@ -102,22 +100,15 @@ If you make a change to the database, make sure to update the database schema de
 
 Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
-**Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
-
-When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
-
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
-
-### SQL query conventions
-
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
 ### SQL query conventions
 
+- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and existing lib functions before writing any database queries. Only write raw queries when no suitable abstraction exists.
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 - Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
@@ -134,10 +125,9 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### Common mistakes & gotchas
 
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
-- NEVER use `as any` casts in TypeScript code to avoid type errors.
+- NEVER use `as any` casts in TypeScript code to avoid type errors.For Playwright end-to-end test authoring conventions, follow the [`playwright-testing` skill](./.agents/skills/playwright-testing/SKILL.md).
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
-- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_ — if a comment just restates the code, remove it.
-- Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_. If a comment just restates the code, remove it.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 - When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
@@ -171,11 +161,11 @@ To test UI code looks correct, you should try to connect to the development serv
 When writing tests:
 
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
-- Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
-- In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
+- Don't use defensive checks in tests. Tests should fail fast if unexpected data exists.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
 - To enable a feature flag for a test you can use `withConfig({ features: { 'feature-name': true } }, async () => { ... })`.
+- For Playwright end-to-end test authoring conventions, follow the [`playwright-testing` skill](./.agents/skills/playwright-testing/SKILL.md).
 
 ### Rendering HTML
 
