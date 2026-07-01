@@ -1,6 +1,6 @@
 ---
 name: trpc
-description: Conventions for writing tRPC routers and procedures in PrairieLearn.
+description: Conventions for writing tRPC routers and procedures.
 ---
 
 ## Quick reference
