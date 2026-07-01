@@ -9,7 +9,7 @@ import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
-function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
+export function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
