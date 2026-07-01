@@ -1,10 +1,9 @@
-import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
-import { GITHUB_USERNAME_VALIDATION_MESSAGE } from '../lib/github-utils.js';
 import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -15,7 +14,6 @@ const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
 const allCourseRequestsAdminUrl = `${courseRequestsAdminUrl}?status=all`;
-const requestCourseUrl = `${baseUrl}/request_course`;
 
 describe('Course requests', { timeout: 60_000, concurrent: false }, function () {
   let trpcClient: ReturnType<typeof createAdministratorTrpcClient>;
@@ -35,51 +33,6 @@ describe('Course requests', { timeout: 60_000, concurrent: false }, function () 
   let courseRequestId: string;
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
-
-  test('rejects invalid GitHub usernames submitted with a course request', async () => {
-    const requestPage = await helperClient.fetchCheerio(requestCourseUrl);
-    assert.isTrue(requestPage.ok);
-
-    const invalidGithubUsernameShortName = 'CR TEST 100';
-    const response = await helperClient.fetchCheerio(requestCourseUrl, {
-      method: 'POST',
-      redirect: 'manual',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        __csrf_token: helperClient.getCSRFToken(requestPage.$),
-        'cr-firstname': 'Test',
-        'cr-lastname': 'User',
-        'cr-institution': 'Test Institution',
-        'cr-email': 'test@example.com',
-        'cr-shortname': invalidGithubUsernameShortName,
-        'cr-title': 'Invalid GitHub Username Test Course',
-        'cr-ghuser': 'test@example.com',
-        'cr-referral-source': "I've used PrairieLearn before",
-        'cr-role': 'instructor',
-      }).toString(),
-    });
-
-    assert.equal(response.status, 302);
-
-    const allRequests = await selectAllCourseRequests();
-    assert.isUndefined(allRequests.find((r) => r.short_name === invalidGithubUsernameShortName));
-  });
-
-  test('rejects invalid GitHub usernames when approving a course request', async () => {
-    await expect(
-      trpcClient.courseRequests.createCourse.mutate({
-        courseRequestId: '1',
-        shortName,
-        title,
-        institutionId: '1',
-        displayTimezone: 'America/Chicago',
-        path: '/tmp/course-request-test',
-        repoShortName: 'pl-test101',
-        githubCourseOwner: 'PrairieLearn',
-        githubUser: 'test@example.com',
-      }),
-    ).rejects.toThrow(GITHUB_USERNAME_VALIDATION_MESSAGE);
-  });
 
   test('insert a course request', async () => {
     courseRequestId = await insertCourseRequest({

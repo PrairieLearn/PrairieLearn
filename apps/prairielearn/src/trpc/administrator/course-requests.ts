@@ -81,7 +81,8 @@ const createCourse = t.procedure
         .trim()
         .refine((value) => value.length === 0 || isValidGithubUsername(value), {
           message: GITHUB_USERNAME_VALIDATION_MESSAGE,
-        }),
+        })
+        .transform((value) => (value.length > 0 ? value : null)),
     }),
   )
   .output(z.object({ jobSequenceId: z.string() }))
@@ -126,7 +127,7 @@ const createCourse = t.procedure
       path: normalizedPath,
       repoShortName: input.repoShortName,
       githubCourseOwner: input.githubCourseOwner,
-      githubUser: input.githubUser.length > 0 ? input.githubUser : null,
+      githubUser: input.githubUser,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };
