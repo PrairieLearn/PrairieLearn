@@ -46,8 +46,8 @@ git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 24
-# Pinned to the packageManager version in package.json.
-npm install -g pnpm@11.5.0
+# Install the latest pnpm 11; package.json enforces the minimum supported version.
+npm install -g pnpm@latest-11
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
