@@ -15,6 +15,10 @@ import {
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
+import {
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+  isValidGithubUsername,
+} from '../../lib/github-utils.js';
 import { checkGithubRepositoryExists, validateGithubCourseOwner } from '../../lib/github.js';
 import {
   selectOptionalCourseByGithubRepository,
@@ -72,7 +76,12 @@ const createCourse = t.procedure
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
       githubCourseOwner: z.string().min(1, 'GitHub organization is required'),
-      githubUser: z.string(),
+      githubUser: z
+        .string()
+        .trim()
+        .refine((value) => value.length === 0 || isValidGithubUsername(value), {
+          message: GITHUB_USERNAME_VALIDATION_MESSAGE,
+        }),
     }),
   )
   .output(z.object({ jobSequenceId: z.string() }))
@@ -117,7 +126,7 @@ const createCourse = t.procedure
       path: normalizedPath,
       repoShortName: input.repoShortName,
       githubCourseOwner: input.githubCourseOwner,
-      githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
+      githubUser: input.githubUser.length > 0 ? input.githubUser : null,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };
