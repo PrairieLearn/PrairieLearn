@@ -15,7 +15,8 @@ BEGIN
         FROM enrollments AS e
         WHERE
             e.user_id = users_get_displayed_role.user_id
-            AND e.course_instance_id = users_get_displayed_role.course_instance_id;
+            AND e.course_instance_id = users_get_displayed_role.course_instance_id
+            AND e.status IN ('joined', 'blocked');
 
         IF FOUND THEN displayed_role := 'Student';
         ELSE displayed_role := 'None';

@@ -58,7 +58,12 @@ import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLa
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  ROLE_VALUES,
+  STATUS_VALUES,
+  type StudentRow,
+  StudentRowSchema,
+} from './instructorStudents.shared.js';
 
 function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
   return (
@@ -78,6 +83,10 @@ const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
 
 const DEFAULT_ENROLLMENT_STATUS_FILTER: MultiSelectFilterValue<EnumEnrollmentStatus> = {
+  values: [],
+  mode: 'include',
+};
+const DEFAULT_ROLE_FILTER: MultiSelectFilterValue<(typeof ROLE_VALUES)[number]> = {
   values: [],
   mode: 'include',
 };
@@ -231,6 +240,10 @@ function StudentsCard({
         urlKey: 'status',
         parser: parseAsMultiSelectFilter(STATUS_VALUES),
         defaultValue: DEFAULT_ENROLLMENT_STATUS_FILTER,
+      },
+      role: {
+        parser: parseAsMultiSelectFilter(ROLE_VALUES),
+        defaultValue: DEFAULT_ROLE_FILTER,
       },
       student_labels: {
         parser: parseAsMultiSelectFilter(),
@@ -456,6 +469,15 @@ function StudentsCard({
           );
         },
       }),
+      columnHelper.accessor('role', {
+        id: 'role',
+        header: 'Role',
+        cell: (info) => info.getValue(),
+        filterFn: (row, columnId, filter: MultiSelectFilterValue<(typeof ROLE_VALUES)[number]>) => {
+          const current = row.getValue<StudentRow['role']>(columnId);
+          return applyMultiSelectFilter(filter, (values) => values.includes(current));
+        },
+      }),
       columnHelper.accessor((row) => row.enrollment.status, {
         id: 'enrollment_status',
         header: 'Status',
@@ -555,8 +577,16 @@ function StudentsCard({
     [columns],
   );
   const defaultColumnVisibility = useMemo(
-    () => Object.fromEntries(allColumnIds.map((id) => [id, !HIDDEN_BY_DEFAULT.has(id)])),
-    [allColumnIds],
+    () =>
+      Object.fromEntries(
+        allColumnIds.map((id) => {
+          if (id === 'role') {
+            return [id, students.some((student) => student.role !== 'None')];
+          }
+          return [id, !HIDDEN_BY_DEFAULT.has(id)];
+        }),
+      ),
+    [allColumnIds, students],
   );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -682,6 +712,7 @@ function StudentsCard({
               { value: row.user?.uid ?? row.enrollment.pending_uid, name: 'uid' },
               { value: row.user?.name ?? null, name: 'name' },
               { value: row.user?.email ?? null, name: 'email' },
+              { value: row.role, name: 'role' },
               { value: row.enrollment.status, name: 'status' },
               {
                 value: row.enrollment.first_joined_at
@@ -697,6 +728,7 @@ function StudentsCard({
             uid: row.user?.uid ?? row.enrollment.pending_uid,
             name: row.user?.name ?? null,
             email: row.user?.email ?? null,
+            role: row.role,
             enrollment_status: row.enrollment.status,
             first_joined_at: row.enrollment.first_joined_at?.toISOString() ?? null,
             labels: row.student_label_ids
@@ -800,6 +832,13 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
+            role: ({ header }: { header: Header<StudentRow, StudentRow['role']> }) => (
+              <MultiSelectColumnFilter
+                column={header.column}
+                allColumnValues={ROLE_VALUES}
+                renderValueLabel={({ value }) => <span>{value}</span>}
+              />
+            ),
             enrollment_status: ({
               header,
             }: {

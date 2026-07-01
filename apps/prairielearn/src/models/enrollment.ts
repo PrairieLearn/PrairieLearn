@@ -1,7 +1,8 @@
-import z from 'zod';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
+  assertIsInTransaction,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -37,6 +38,7 @@ import {
   EnrollmentSchema,
   type EnumEnrollmentStatus,
   type Institution,
+  SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
@@ -622,6 +624,43 @@ async function _selectAndLockEnrollment(id: string) {
 }
 
 /**
+ * Low-level function to update an enrollment's status.
+ * Caller must hold a lock on the enrollment and on its user row when it has one.
+ */
+async function _updateEnrollmentStatus({
+  lockedEnrollment,
+  status,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  lockedEnrollment: Enrollment;
+  status: EnumEnrollmentStatus;
+  actionDetail: SupportedActionsForTable<'enrollments'>;
+  agentUserId: string | null;
+  agentAuthnUserId: string | null;
+}): Promise<Enrollment> {
+  const newEnrollment = await queryRow(
+    sql.set_enrollment_status,
+    { enrollment_id: lockedEnrollment.id, status },
+    EnrollmentSchema,
+  );
+
+  await insertAuditEvent({
+    tableName: 'enrollments',
+    action: 'update',
+    actionDetail,
+    rowId: newEnrollment.id,
+    oldRow: lockedEnrollment,
+    newRow: newEnrollment,
+    agentUserId,
+    agentAuthnUserId,
+  });
+
+  return newEnrollment;
+}
+
+/**
  * Updates the status of an existing enrollment record.
  *
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
@@ -650,10 +689,10 @@ export async function setEnrollmentStatus({
   requiredRole: Role[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     interface EnrollmentStatusTransitionInformation {
       equivalentStatuses?: EnumEnrollmentStatus[];
@@ -722,24 +761,13 @@ export async function setEnrollmentStatus({
     // Assert that the caller is authorized to perform the action.
     assertHasRole(authzData, requiredRole);
 
-    const newEnrollment = await queryRow(
-      sql.set_enrollment_status,
-      { enrollment_id: lockedEnrollment.id, status },
-      EnrollmentSchema,
-    );
-
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
+    return await _updateEnrollmentStatus({
+      lockedEnrollment,
+      status,
       actionDetail: transitionInformation.actionDetail,
-      rowId: newEnrollment.id,
-      oldRow: lockedEnrollment,
-      newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
     });
-
-    return newEnrollment;
   });
 }
 
@@ -762,10 +790,10 @@ export async function removeEnrollmentFromSync({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     // Already removed - nothing to do.
     if (lockedEnrollment.status === 'removed') {
@@ -824,10 +852,10 @@ export async function reenrollEnrollmentFromSync({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     // Already joined - nothing to do.
     if (lockedEnrollment.status === 'joined') {
@@ -933,10 +961,10 @@ export async function inviteEnrollment({
   requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
     return await _inviteExistingEnrollment({
       lockedEnrollment,
@@ -945,6 +973,85 @@ export async function inviteEnrollment({
       requiredRole,
     });
   });
+}
+
+const RecomputedEnrollmentRowSchema = z.object({
+  old_enrollment: EnrollmentSchema,
+  new_enrollment: EnrollmentSchema.nullable(),
+});
+
+/**
+ * Reconciles a user's enrollments with their current staff status.
+ *
+ * For every course instance in the scope where the user is currently staff
+ * (either via an admin row, a non-`None` course role, or a non-`None` course
+ * instance role), the user's enrollment in that course instance is forced
+ * out of any active student state:
+ * - `joined` / `blocked` enrollments are transitioned to `removed`.
+ * - `invited` / `rejected` enrollments are hard-deleted.
+ * - `left` / `removed` / `lti13_pending` enrollments are left alone.
+ *
+ * The function is a no-op for course instances where the user is not staff,
+ * which is intentional: per design, losing staff permissions does not
+ * automatically re-enroll a user as a student.
+ *
+ * Pass `courseInstanceId` to scope to one course instance (the typical case
+ * for course-instance-level permission changes). Omit it to consider every
+ * course instance in the course (course-level permission changes).
+ *
+ * The caller must be inside a transaction and must have already applied the
+ * permission change before calling this function.
+ */
+export async function recomputeEnrollmentForStaffStatus({
+  courseId,
+  userId,
+  courseInstanceId = null,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  courseId: string;
+  userId: string;
+  courseInstanceId?: string | null;
+  agentUserId: string;
+  agentAuthnUserId: string;
+}): Promise<void> {
+  assertIsInTransaction();
+
+  await selectAndLockUser(userId);
+
+  const rows = await queryRows(
+    sql.recompute_enrollment_for_staff_status,
+    { course_id: courseId, course_instance_id: courseInstanceId, user_id: userId },
+    RecomputedEnrollmentRowSchema,
+  );
+
+  for (const row of rows) {
+    if (row.new_enrollment != null) {
+      await insertAuditEvent({
+        tableName: 'enrollments',
+        action: 'update',
+        actionDetail: 'staff_permissions_granted',
+        rowId: row.new_enrollment.id,
+        oldRow: row.old_enrollment,
+        newRow: row.new_enrollment,
+        agentUserId,
+        agentAuthnUserId,
+      });
+    } else {
+      await insertAuditEvent({
+        tableName: 'enrollments',
+        action: 'delete',
+        actionDetail: 'staff_permissions_granted',
+        rowId: row.old_enrollment.id,
+        oldRow: row.old_enrollment,
+        newRow: null,
+        courseInstanceId: row.old_enrollment.course_instance_id,
+        subjectUserId: userId,
+        agentUserId,
+        agentAuthnUserId,
+      });
+    }
+  }
 }
 
 export async function selectUsersAndEnrollmentsForCourseInstance(
@@ -957,6 +1064,7 @@ export async function selectUsersAndEnrollmentsForCourseInstance(
       enrollment: EnrollmentSchema,
       user: UserSchema.nullable(),
       student_label_ids: z.array(IdSchema),
+      role: SprocUsersGetDisplayedRoleSchema,
     }),
   );
 }
