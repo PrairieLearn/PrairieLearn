@@ -24,7 +24,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, alt):  # noqa: ANN001, ANN202 # pyright:ignore[reportUnknownParameterType,reportMissingParameterType]
+    def new_render(source, opts, alt):  # noqa: ANN001, ANN202
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.

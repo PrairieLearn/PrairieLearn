@@ -116,7 +116,7 @@ if __name__ == "__main__":
             os.remove(join(base_dir, "output.txt"))
 
         # Assemble final grading results
-        grading_result = {}
+        grading_result: dict[str, Any] = {}
         grading_result["tests"] = results
         grading_result["score"] = score
         grading_result["succeeded"] = True
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             json.dump(grading_result, out)
     except BaseException as exc:
         # Last-ditch effort to capture meaningful error information
-        grading_result = {}
+        grading_result: dict[str, Any] = {}
         grading_result["score"] = 0.0
         grading_result["succeeded"] = False
         grading_result["output"] = traceback.format_exc()

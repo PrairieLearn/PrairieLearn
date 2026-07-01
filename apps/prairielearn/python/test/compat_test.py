@@ -1,5 +1,4 @@
 # ruff: noqa: F401
-# pyright: reportUnusedImport=false
 import pytest
 
 
@@ -110,11 +109,6 @@ def test_external_exports():
             try_parse_string_as_sympy,
             validate_string_as_sympy,
         )
-        from to_precision import (
-            eng_notation,
-            sci_notation,
-            std_notation,
-            to_precision,
-        )
+        from to_precision import eng_notation, sci_notation, std_notation, to_precision
     except ImportError:
         pytest.fail("One or more exports have been moved.")

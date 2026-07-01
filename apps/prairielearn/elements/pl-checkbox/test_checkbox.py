@@ -784,7 +784,7 @@ def test_grade_with_duplicate_correct_answers() -> None:
 
     # Even with duplicate 'b' in correct_answers, set() should handle it
     # Submitted: {a, b}, Correct: {a, b} (after set conversion)
-    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)  # type: ignore[reportCallIssue, reportArgumentType]
+    assert data["partial_scores"]["test"]["score"] == pytest.approx(1.0)
 
 
 def test_grade_coverage_with_duplicates() -> None:
