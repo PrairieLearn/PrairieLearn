@@ -5,55 +5,74 @@
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
         {{#formula_editor}}
+        {{! hidden input for formula editor structured answer data }}
+        <input
+            name="{{name}}-json"
+            id="symbolic-input-json-{{name}}"
+            type="hidden"
+            value=""
+        />
         <script>
             $(function() {
                 window.PLSymbolicInput("{{name}}");
             });
         </script>
-            <input
-                name="{{name}}"
-                id="symbolic-input-sub-{{name}}"
-                type="hidden"
-                value=""
-            />
-            <input
-                name="{{name}}-latex"
-                id="symbolic-input-latex-{{name}}"
-                type="hidden"
-                value=""
-            />
-            <math-field
-                id="symbolic-input-{{name}}"
-                class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
-                {{#parse_error}}aria-invalid="true"{{/parse_error}}
-                {{^editable}}contentEditable="false"{{/editable}}
-                data-placeholder-text = "{{placeholder}}"
-                custom-functions="{{custom_functions}}"
-                {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
-                {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
-                {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
-                {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
-                {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-                >
-                {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
-            </math-field>
+        <input
+            name="{{name}}"
+            id="symbolic-input-sub-{{name}}"
+            type="hidden"
+            value=""
+        />
+        <input
+            name="{{name}}-latex"
+            id="symbolic-input-latex-{{name}}"
+            type="hidden"
+            value=""
+        />
+        <input
+            id="symbolic-input-validation-{{name}}"
+            type="text"
+            class="visually-hidden"
+            tabindex="-1"
+            aria-hidden="true"
+            autocomplete="off"
+        />
+        <math-field
+            id="symbolic-input-{{name}}"
+            class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
+            {{#parse_error}}aria-invalid="true"{{/parse_error}}
+            {{^editable}}contentEditable="false"{{/editable}}
+            data-placeholder-text = "{{placeholder}}"
+            custom-functions="{{custom_functions}}"
+            {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
+            {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
+            {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+            {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
+            {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+            >
+            {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
+        </math-field>
         {{/formula_editor}}
         {{^formula_editor}}
-            <input
-                name="{{name}}"
-                type="text"
-                autocomplete="off"
-                autocorrect="off"
-                class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-                {{#parse_error}}aria-invalid="true"{{/parse_error}}
-                size="{{size}}"
-                {{^editable}}disabled{{/editable}}
-                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-                placeholder="{{placeholder}}"
-                {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-                {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
-            />
+        <input
+            id="raw-input-{{name}}"
+            name="{{name}}"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+            {{#parse_error}}aria-invalid="true"{{/parse_error}}
+            size="{{size}}"
+            {{^editable}}disabled{{/editable}}
+            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            placeholder="{{placeholder}}"
+            custom-functions="{{custom_functions}}"
+            {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+            {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
+            {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+        />
         {{/formula_editor}}
         {{#suffix}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
@@ -79,6 +98,15 @@
             </span>
         {{/incorrect}}
     </span>
+    {{#formula_editor}}
+    {{^parse_error}}
+        <span
+            id="pl-symbolic-input-client-error-{{name}}"
+            class="invalid-feedback d-block invisible"
+            aria-live="polite"
+        >&nbsp;</span>
+    {{/parse_error}}
+    {{/formula_editor}}
     {{#parse_error}}
         <span class="invalid-feedback d-block">
             <span class="badge text-bg-danger">

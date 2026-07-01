@@ -472,12 +472,40 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     assert_never(data["panel"])
 
 
+def _apply_parse_constraints_to_sympy_expr(
+    expr: sympy.Basic,
+    *,
+    variables: list[str],
+    custom_functions: list[str],
+    assumptions: psu.AssumptionsDictT | None,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_trig: bool,
+    simplify_expression: bool,
+) -> sympy.Basic:
+    expr_json = psu.sympy_to_json(
+        expr,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig,
+    )
+    expr_json["_variables"] = variables
+    expr_json["_custom_functions"] = custom_functions
+    if assumptions is not None:
+        expr_json["_assumptions"] = assumptions
+
+    return psu.json_to_sympy(
+        expr_json,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
+    )
+
+
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
-    )
 
     variables = _get_variables_with_fallback(element, data, name)
 
@@ -499,36 +527,26 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-
-    # Get submitted answer or return parse_error if it does not exist
-    submitted_answer = data["submitted_answers"].get(name, None)
-
-    if formula_editor:
-        submitted_answer = format_formula_editor_submission_for_sympy(
-            submitted_answer,
-            allow_trig,
-            variables,
-            custom_functions,
-        )
-
-    # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(
-        submitted_answer, allow_sets=allow_sets
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
 
-    if a_sub is None:
+    submitted_answer = data["submitted_answers"].get(name, None)
+    raw_mathjson = data["submitted_answers"].get(f"{name}-json")
+    use_mathjson = (
+        formula_editor and isinstance(raw_mathjson, str) and raw_mathjson.strip() != ""
+    )
+
+    if submitted_answer is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
 
-    if isinstance(a_sub, str) and a_sub.strip() == "":
+    if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
         if allow_blank:
-            a_sub = blank_value
-            if a_sub.strip() == "":  # Handle blank case
+            submitted_answer = blank_value
+            use_mathjson = False
+            if submitted_answer.strip() == "":
                 data["submitted_answers"][name] = ""
                 return
         else:
@@ -536,31 +554,78 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["submitted_answers"][name] = None
             return
 
-    # Retrieve variable assumptions encoded in correct answer
-    assumptions_dict = None
+    assumptions_dict: psu.AssumptionsDictT | None = None
     a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
-        assumptions_dict = a_tru.get("_assumptions")
+        assumptions_dict = a_tru.get("_assumptions", {})
 
-    result = psu.try_parse_string_as_sympy(
-        a_sub,
-        variables,
-        allow_hidden=True,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
-        allow_trig_functions=allow_trig,
-        imaginary_unit=imaginary_unit,
-        custom_functions=custom_functions,
-        simplify_expression=simplify_expression,
-        assumptions=assumptions_dict,
-    )
+    a_sub_parsed = None
 
-    if isinstance(result, psu.SympyParseFailure):
-        data["format_errors"][name] = result.error
-        data["submitted_answers"][name] = None
-        return
+    if use_mathjson:
+        from mathjson_utils import MathJsonStudentError, raw_mathjson_to_sympy_expr
 
-    a_sub_parsed = result.expr
+        try:
+            if not isinstance(raw_mathjson, str):
+                raise TypeError("MathJSON submission must be a string.")
+            sympy_expr = raw_mathjson_to_sympy_expr(
+                raw_mathjson, allow_sets=allow_sets, allow_trig=allow_trig
+            )
+            result = _apply_parse_constraints_to_sympy_expr(
+                sympy_expr,
+                variables=variables,
+                custom_functions=custom_functions,
+                assumptions=assumptions_dict,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig=allow_trig,
+                simplify_expression=simplify_expression,
+            )
+        except MathJsonStudentError as e:
+            data["format_errors"][name] = f"Parse error: {e}"
+            data["submitted_answers"][name] = None
+            return
+        except Exception:
+            data["format_errors"][name] = (
+                "Parse error: Could not parse submitted answer."
+            )
+            data["submitted_answers"][name] = None
+            return
+        a_sub_parsed = result
+    else:
+        # Pre-processing to make submission parseable by SymPy
+        a_sub, error_msg = format_submission_for_sympy(
+            submitted_answer, allow_sets=allow_sets
+        )
+        if error_msg is not None:
+            data["format_errors"][name] = error_msg
+            data["submitted_answers"][name] = None
+            return
+
+        if a_sub is None:
+            # this branch should not be taken
+            data["format_errors"][name] = "No submitted answer."
+            data["submitted_answers"][name] = None
+            return
+
+        result = psu.try_parse_string_as_sympy(
+            a_sub,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions_dict,
+        )
+
+        if isinstance(result, psu.SympyParseFailure):
+            data["format_errors"][name] = result.error
+            data["submitted_answers"][name] = None
+            return
+
+        a_sub_parsed = result.expr
 
     # Make sure we can parse the json again
     try:
@@ -568,6 +633,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub_parsed,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
         )
 
         # Convert safely to sympy
@@ -575,6 +641,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub_json,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_trig_functions=allow_trig,
             simplify_expression=simplify_expression,
         )
 
@@ -644,184 +711,6 @@ def format_submission_for_sympy(
         )
 
     return sub, None
-
-
-def format_formula_editor_submission_for_sympy(
-    sub: str | None,
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-) -> str | None:
-    """
-    Format raw formula editor input to be compatible with SymPy.
-
-    The formula editor outputs text with several quirks that need correction:
-    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
-    2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
-
-    Args:
-        sub: Raw text from the formula editor
-        allow_trig: Whether trig functions (sin, cos, etc.) are available
-        variables: List of allowed variable names
-        custom_functions: List of custom function names
-
-    Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
-    """
-    if sub is None:
-        return None
-
-    # Remove invisible LaTeX formatting operators
-    text = sub.replace("{:", "").replace(":}", "")
-
-    # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
-
-    # Replace Greek unicode letters with spaced ASCII for consistent handling further on
-    text = "".join(_greek_transform(char) for char in text)
-
-    # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
-    text = _merge_spaced_tokens(text, known_tokens)
-
-    # Add spaces between letters and numbers for implicit multiplication,
-    # but preserve tokens like "f2" that are custom function names
-    text = _add_multiplication_spaces(text, known_tokens)
-
-    return text
-
-
-def _build_known_tokens(
-    allow_trig: bool,
-    variables: list[str],
-    custom_functions: list[str],
-) -> list[str]:
-    """
-    Build a list of all multi-character tokens that should be recognized as single units.
-
-    Returns:
-        List of all multi-character tokens that should be recognized as single units.
-    """
-    constants_class = psu._Constants
-
-    # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
-    tokens = (
-        list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
-        + custom_functions
-        + variables
-    )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
-
-    # Add transformed versions of Greek letters
-    tokens += [
-        psu.greek_unicode_transform(token)
-        for token in tokens
-        if psu.greek_unicode_transform(token) != token
-    ]
-
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
-
-    return tokens
-
-
-def _greek_transform(text: str) -> str:
-    """
-    Replace Greek unicode letters with their English spelling and insert spaces around,
-    every letter so that they are handled equivalently to letters already spelled in English.
-
-    Example: "Α0x" becomes " A l p h a 0 x ", the same as if it was spelled out in the
-    submission (and the consecutive processing steps will correct the spacing)
-
-    Returns:
-        The string with Greek unicode letters replaced by spaced-out English spelling
-    """  # noqa: RUF002
-    transformed = psu.greek_unicode_transform(text)
-    return (" " + " ".join(transformed) + " ") if transformed != text else text
-
-
-def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
-    """
-    Replace space-separated versions of tokens with their unspaced form.
-
-    Example: "s i n ( x )" becomes "sin ( x )"
-
-    Returns:
-        The text with spaced tokens merged
-    """
-    result = []
-    i = 0
-    n = len(text)
-
-    # Precompute spaced forms and lengths
-    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
-
-    # Sort by spaced_token length so longer tokens match first
-    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
-    spaced.sort(key=lambda x: -x[2])
-
-    while i < n:
-        matched = False
-
-        # Try each spaced token
-        for token, spaced_token, length in spaced:
-            if text.startswith(spaced_token, i):
-                result.append(token)
-                i += length
-                matched = True
-                break
-
-        if not matched:
-            result.append(text[i])
-            i += 1
-
-    return "".join(result)
-
-
-def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
-    """
-    Insert spaces between letter-digit pairs to indicate multiplication.
-
-    Example: "x2" becomes "x 2"
-
-    However, we preserve tokens that naturally contain digits (like "f2" for
-    a custom function) by marking their character positions as protected.
-
-    Returns:
-        The text with multiplication spaces added
-    """
-    # Find all positions that are part of tokens containing digits
-    protected_positions = set()
-    for token in protected_tokens:
-        if not re.search(r"\d", token):
-            continue
-        for match in re.finditer(re.escape(token), text):
-            protected_positions.update(range(match.start(), match.end()))
-
-    # Build result, inserting spaces where appropriate
-    result = []
-    for i, char in enumerate(text):
-        result.append(char)
-
-        # Check if we need a space after this character
-        has_next = i + 1 < len(text)
-        if not has_next:
-            continue
-
-        next_char = text[i + 1]
-        next_position = i + 1
-
-        # Insert space if: letter followed by digit, and next position is not protected
-        if (
-            char.isalpha()
-            and next_char.isdigit()
-            and next_position not in protected_positions
-        ):
-            result.append(" ")
-
-    return "".join(result)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -970,8 +859,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
     result = data["test_type"]
     a_tru_str = ""
+    a_tru_sympy: sympy.Basic | None = None
 
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
@@ -1002,11 +895,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             )
 
         if a_tru != "":
+            assert isinstance(a_tru, sympy.Basic)
+            a_tru_sympy = a_tru
             # Substitute in imaginary unit symbol
             a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
 
     if result == "correct":
-        if a_tru_str == "":
+        if formula_editor and a_tru_sympy is not None:
+            from mathjson_utils import sympy_expr_to_raw_mathjson
+
+            data["raw_submitted_answers"][name] = a_tru_str
+            data["raw_submitted_answers"][f"{name}-json"] = sympy_expr_to_raw_mathjson(
+                a_tru_sympy
+            )
+        elif a_tru_str == "":
             data["raw_submitted_answers"][name] = ""
         else:
             correct_answers = [a_tru_str]
@@ -1022,12 +924,26 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
+        incorrect_offset = random.randint(1, 100)
         if a_tru_str == "" or allow_sets:
-            data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
+            incorrect_answer = sympy.Integer(incorrect_offset)
         else:
-            data["raw_submitted_answers"][name] = (
-                f"{a_tru_str} + {random.randint(1, 100):d}"
+            assert a_tru_sympy is not None
+            incorrect_answer = sympy.Add(a_tru_sympy, incorrect_offset)
+
+        if formula_editor:
+            from mathjson_utils import sympy_expr_to_raw_mathjson
+
+            data["raw_submitted_answers"][name] = str(
+                _replace_imaginary_for_display(incorrect_answer, imaginary_unit)
             )
+            data["raw_submitted_answers"][f"{name}-json"] = sympy_expr_to_raw_mathjson(
+                incorrect_answer
+            )
+        elif a_tru_str == "" or allow_sets:
+            data["raw_submitted_answers"][name] = str(incorrect_answer)
+        else:
+            data["raw_submitted_answers"][name] = f"{a_tru_str} + {incorrect_offset:d}"
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
