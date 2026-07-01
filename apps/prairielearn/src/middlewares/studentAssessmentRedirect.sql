@@ -3,6 +3,7 @@ SELECT
   ai.id
 FROM
   assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN teams AS g ON (
     g.id = ai.team_id
     AND g.deleted_at IS NULL
@@ -11,7 +12,4 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = 1
-  AND (
-    (gu.user_id = $user_id)
-    OR (ai.user_id = $user_id)
-  );
+  AND (CASE WHEN a.team_work THEN gu.user_id ELSE ai.user_id END) = $user_id;
