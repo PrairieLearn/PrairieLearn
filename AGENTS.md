@@ -125,7 +125,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### Common mistakes & gotchas
 
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
-- NEVER use `as any` casts in TypeScript code to avoid type errors.For Playwright end-to-end test authoring conventions, follow the [`playwright-testing` skill](./.agents/skills/playwright-testing/SKILL.md).
+- NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_. If a comment just restates the code, remove it.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
