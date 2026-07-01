@@ -6,6 +6,11 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
+import {
+  GITHUB_USERNAME_MAX_LENGTH,
+  GITHUB_USERNAME_PATTERN,
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+} from '../../lib/github-utils.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { DEFAULT_INSTITUTION_SHORT_NAME } from '../../models/institution.js';
 
@@ -338,9 +343,18 @@ function CourseNewRequestForm({
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
-        <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
-        <small class="form-text text-muted">
+        <label class="form-label" for="cr-ghuser">GitHub username (optional)</label>
+        <input
+          type="text"
+          class="form-control"
+          name="cr-ghuser"
+          id="cr-ghuser"
+          maxlength="${GITHUB_USERNAME_MAX_LENGTH}"
+          pattern="${GITHUB_USERNAME_PATTERN}"
+          title="${GITHUB_USERNAME_VALIDATION_MESSAGE}"
+          aria-describedby="cr-ghuser-help"
+        />
+        <small class="form-text text-muted" id="cr-ghuser-help">
           Providing your GitHub username will grant you access to your course's GitHub repository.
           This access allows you to edit your code in a
           <a
