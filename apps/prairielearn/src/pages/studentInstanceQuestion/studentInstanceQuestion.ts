@@ -15,6 +15,7 @@ import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
+import { getAvailableFilename } from '../../lib/personal-notes.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -118,7 +119,10 @@ async function processTextUpload(req: Request, res: Response) {
   });
 
   await uploadFile({
-    display_filename: req.body.filename,
+    display_filename: getAvailableFilename(
+      req.body.filename,
+      (res.locals.file_list ?? []).map((file: File) => file.display_filename),
+    ),
     contents: Buffer.from(req.body.contents),
     type: 'student_upload',
     assessment_id: res.locals.assessment.id,
