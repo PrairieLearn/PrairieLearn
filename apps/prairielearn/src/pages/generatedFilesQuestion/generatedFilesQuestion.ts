@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -30,17 +28,14 @@ async function generatedFilesHandler(
     }
   }
 
-  let unsafe_variant_id = req.params.unsafe_variant_id;
+  // For the submission endpoint we select the submission unsafely, but we later
+  // rely on the variant authorization to ensure that the user has access to the
+  // variant and, by consequence, the submission.
   const submission = req.params.unsafe_submission_id
     ? await selectSubmissionById({ submission_id: req.params.unsafe_submission_id })
     : null;
-  if (!unsafe_variant_id) {
-    assert(submission, 'Either the variant or the submission must be provided.');
-    // If variant_id is not provided, we can try to get it from the submission_id. No explicit error handling is needed here, as selectVariantFromSubmissionId will throw if the submission_id is invalid.
-    unsafe_variant_id = submission.variant_id;
-  }
   const variant = await selectAndAuthzVariant({
-    unsafe_variant_id,
+    unsafe_variant_id: submission ? submission.variant_id : req.params.unsafe_variant_id,
     variant_course: res.locals.course,
     question_id: res.locals.question.id,
     course_instance_id: res.locals.course_instance?.id,
