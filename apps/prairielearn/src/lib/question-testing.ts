@@ -55,7 +55,7 @@ function extractDynamicFileUrls(html: string, variantId: string) {
         )
       ) {
         submissionFilenames.push({
-          filename: decodeURIComponent(submissionMatch[2].trim()),
+          filename: submissionMatch[2].trim(),
           submission_id: submissionMatch[1],
         });
       }
