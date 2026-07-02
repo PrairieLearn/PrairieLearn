@@ -5,7 +5,6 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { config } from '../lib/config.js';
 import type { AssessmentInstance, File } from '../lib/db-types.js';
 
-/** Extensions whose contents can safely be opened and edited as plain text. */
 const TEXT_NOTE_EXTENSIONS = new Set([
   'txt',
   'text',
@@ -35,7 +34,6 @@ const TEXT_NOTE_EXTENSIONS = new Set([
   'sh',
 ]);
 
-/** A note is editable in-browser if it is a student-authored upload with a text-like extension. */
 function isEditableTextNote(file: File): boolean {
   if (file.type !== 'student_upload') return false;
   const parts = file.display_filename.split('.');
@@ -219,8 +217,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
         <form method="POST" class="attach-text-form">
           <p class="small mt-3">
             Attached personal notes will be saved here for your reference. These notes can be used
-            for your own review purposes. They are not used for grading. Click a saved text note
-            above to open and edit it here.
+            for your own review purposes. They are not used for grading.
           </p>
           <input
             type="text"
@@ -257,7 +254,6 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
     </div>
 
     <script type="module">
-      // This script is type="module" so that it is deferred and runs after the DOM is ready.
       const collapseEl = document.getElementById('attachTextCollapse');
       const toggleLabel = document.getElementById('attachTextToggleLabel');
       const filenameInput = document.getElementById('attachTextFilename');

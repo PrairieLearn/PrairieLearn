@@ -194,7 +194,6 @@ async function processTextEdit(req: Request, res: Response) {
     is_administrator: res.locals.is_administrator,
   });
 
-  // Check the requested file belongs to the current instance question
   const validFiles =
     res.locals.file_list?.filter((file: File) => idsEqual(file.id, req.body.file_id)) ?? [];
   if (validFiles.length === 0) {
@@ -206,8 +205,7 @@ async function processTextEdit(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot edit file type ${file.type} for file_id=${file.id}`);
   }
 
-  // The file store treats files as immutable, so replace the note by uploading a
-  // new file and deleting the old one within a single transaction.
+  // upload the new file and delete the old one
   await runInTransactionAsync(async () => {
     await uploadFile({
       display_filename: req.body.filename,
