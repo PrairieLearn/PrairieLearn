@@ -490,28 +490,38 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
 
-!!! warning "Dynamic files that rely on submission data"
+### Dynamic files that rely on submission data
 
-    If your dynamic file uses submission data (e.g., `data["submitted_answers"]`), you should ensure that the file is only generated after the student has submitted their answers. This can be done by including the `pl-figure` or `pl-file-download` element in the submission panel, which is only rendered after the student submits their answers.
+If your dynamic file uses submission data (e.g., `data["submitted_answers"]`), you should ensure that the `pl-figure` or `pl-file-download` element is only visible in the submission panel. This can be done by wrapping the element in a `<pl-submission-panel>` tag, as shown below. This ensures that the file is only generated after the student has submitted an answer.
 
-    ```html title="question.html"
-    <pl-submission-panel>
-      <p>Here is a dynamically-rendered figure showing your submitted answer $y = {{submitted_answers.y}}$:</p>
-      <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
-    </pl-submission-panel>
-    ```
+```html title="question.html"
+<pl-submission-panel>
+  <p>
+    Here is a dynamically-rendered figure showing your submitted answer $y =
+    {{submitted_answers.y}}$:
+  </p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+</pl-submission-panel>
+```
 
-    Note that the submitted answer may not be valid, so you should check if the submitted answer is valid before generating the file. You can do this by checking if `data["format_errors"]` is empty in the `file()` function, or by implementing defensive checks. For example:
+Note that the file may be generated for:
 
-    ```python title="server.py"
-    def file(data):
-        if data["filename"] == "submitted.png":
-            if data["submitted_answers"].get("x") is None or data["submitted_answers"].get("y") is None:
-                return "Invalid submission"
-            # generate the file using data["submitted_answers"]["x"] and data["submitted_answers"]["y"]
-    ```
+- Valid (correct or incorrect) submissions.
+- Invalid submissions (e.g., submissions with format errors).
+- "Save only" submissions (e.g., when the student clicks "Save only" or in an assessment without real-time grading).
 
-    In particular, note that for "Save only" submissions, scores will not be populated, so you should ensure that, if your file relies on scores, you check that `data["score"]` or `data["partial_scores"]` are not `None` before using them.
+You should ensure that your file generation code can handle all of these cases. For example, if the file relies on a submitted answer, you should check that the answer is present and valid in `data["submitted_answers"]` before using it. If the answer is not present, you could generate a default file or a blank image.
+
+```python title="server.py"
+def file(data):
+    if data["filename"] == "submitted.png":
+        if data["submitted_answers"].get("y") is None:
+            # generate a default image
+        else:
+            # generate the file using data["submitted_answers"]["y"]
+```
+
+In particular, note that for "Save only" submissions, scores will not be populated, so you should ensure that, if your file relies on scores, you check that `data["score"]` or the values in `data["partial_scores"]` are not `None` before using them.
 
 ## Testing questions with `test()`
 
