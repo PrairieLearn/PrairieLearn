@@ -3,6 +3,7 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sympy as sp
 
 
 def file(data):
@@ -32,11 +33,14 @@ def file(data):
             data["filename"] == "submission.png"
             and data["submitted_answers"].get("f") is not None
         ):
-            plt.plot(
-                data["params"]["x"],
-                data["submitted_answers"]["f"],
-                "ks" if data["partial_scores"].get("f", {}).get("score") == 1 else "ro",
+            marker_style = (
+                "ko"  # Not scored (save-only submission): black circle
+                if data["partial_scores"].get("f") is None
+                else "gs"  # Correct: green square
+                if data["partial_scores"]["f"].get("score") == 1
+                else "rx"  # Incorrect: red X
             )
+            plt.plot(data["params"]["x"], data["submitted_answers"]["f"], marker_style)
             plt.annotate(
                 f"({data['params']['x']}, {data['submitted_answers']['f']})",
                 (data["params"]["x"], data["submitted_answers"]["f"]),
@@ -67,7 +71,11 @@ def generate(data):
     # Find f(x)
     f = m * x + b
 
+    # Extract formula for representation
+    formula = m * sp.symbols("x") + b
+
     data["params"]["m"] = m
     data["params"]["b"] = b
     data["params"]["x"] = x
+    data["params"]["formula_latex"] = sp.latex(formula)
     data["correct_answers"]["f"] = f

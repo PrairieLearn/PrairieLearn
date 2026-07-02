@@ -511,6 +511,8 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
             # generate the file using data["submitted_answers"]["x"] and data["submitted_answers"]["y"]
     ```
 
+    In particular, note that for "Save only" submissions, scores will not be populated, so you should ensure that, if your file relies on scores, you check that `data["score"]` or `data["partial_scores"]` are not `None` before using them.
+
 ## Testing questions with `test()`
 
 The question testing functionality is available under the "Settings" tab for a question.
