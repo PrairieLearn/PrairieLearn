@@ -102,6 +102,8 @@ Dropping a sproc (stored procedure) only requires removing the file from `apps/p
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
+Use `queryOptional...()` functions from `@prairielearn/postgres` when a row may not exist. The equivalent for model or library functions is to name them `selectOptional...()`.
+
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
@@ -109,7 +111,8 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### SQL query conventions
 
 - Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and existing lib functions before writing any database queries. Only write raw queries when no suitable abstraction exists.
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls or returning columns explicitly in a SELECT statement because it automatically includes all columns and stays in sync with schema changes and Zod types.
+- When a query spans multiple tables, model it as a composite object with named canonical `db-types` entities plus any true computed fields, rather than flattening columns or embedding one entity inside another.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 - Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
