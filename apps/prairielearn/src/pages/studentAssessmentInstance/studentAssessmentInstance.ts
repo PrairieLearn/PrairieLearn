@@ -2,7 +2,7 @@ import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -99,6 +99,47 @@ async function processTextUpload(req: Request, res: Response) {
   });
 }
 
+async function processTextEdit(req: Request, res: Response) {
+  if (!res.locals.assessment_instance.open) {
+    throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
+  if (!res.locals.authz_result.active) {
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
+  }
+
+  // Check the requested file belongs to the current assessment instance
+  const validFiles = (res.locals.file_list ?? []).filter((file: File) =>
+    idsEqual(file.id, req.body.file_id),
+  );
+  if (validFiles.length === 0) {
+    throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
+  const file = validFiles[0];
+
+  if (file.type !== 'student_upload') {
+    throw new HttpStatusError(403, `Cannot edit file type ${file.type} for file_id=${file.id}`);
+  }
+
+  // The file store treats files as immutable, so replace the note by uploading a
+  // new file and deleting the old one within a single transaction.
+  await runInTransactionAsync(async () => {
+    await uploadFile({
+      display_filename: req.body.filename,
+      contents: Buffer.from(req.body.contents),
+      type: 'student_upload',
+      assessment_id: res.locals.assessment.id,
+      assessment_instance_id: res.locals.assessment_instance.id,
+      instance_question_id: null,
+      user_id: res.locals.user.id,
+      authn_user_id: res.locals.authn_user.id,
+    });
+    await deleteFile(file.id, res.locals.authn_user.id);
+  });
+}
+
 async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(403, 'Assessment is not open');
@@ -137,9 +178,14 @@ router.post(
     }
     if (
       !res.locals.authz_result.authorized_edit &&
-      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_group'].includes(
-        req.body.__action,
-      )
+      [
+        'attach_file',
+        'attach_text',
+        'edit_text',
+        'delete_file',
+        'timeLimitFinish',
+        'leave_group',
+      ].includes(req.body.__action)
     ) {
       throw new HttpStatusError(403, 'Action is only permitted to students, not staff');
     }
@@ -149,6 +195,9 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'attach_text') {
       await processTextUpload(req, res);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'edit_text') {
+      await processTextEdit(req, res);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_file') {
       await processDeleteFile(req, res);

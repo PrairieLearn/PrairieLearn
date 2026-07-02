@@ -39,7 +39,7 @@ export function attachFile(locals: AttachFileLocals, textFile: boolean) {
     });
     it('should have an action', () => {
       if (textFile) {
-        elemList = locals.$('.attach-text-form button[name="__action"]');
+        elemList = locals.$('.attach-text-form input[name="__action"]');
       } else {
         elemList = locals.$('.attach-file-form input[name="__action"]');
       }
@@ -95,6 +95,64 @@ export function attachFile(locals: AttachFileLocals, textFile: boolean) {
   });
 }
 
+export function editAttachedFile(locals: AttachFileLocals & { file_id?: string; siteUrl: string }) {
+  describe('editAttachedFile-1. GET to assessment_instance URL', () => {
+    it('should load successfully', async () => {
+      const res = await fetch(locals.attachFilesUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should render the text note as an editable button', () => {
+      elemList = locals.$('.edit-text-note');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.data-file-id');
+      locals.file_id = elemList[0].attribs['data-file-id'];
+    });
+    it('should have a CSRF token', () => {
+      elemList = locals.$('.attach-text-form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      locals.__csrf_token = elemList[0].attribs.value;
+    });
+    it('might have a variant', () => {
+      elemList = locals.$('.attach-text-form input[name="__variant_id"]');
+      delete locals.__variant_id;
+      if (elemList.length === 0) return; // assessment_instance page does not have variant_id
+      locals.__variant_id = elemList[0].attribs.value;
+    });
+  });
+
+  describe('editAttachedFile-2. POST to edit the text note', () => {
+    it('should load successfully', async () => {
+      const body = new URLSearchParams({
+        __action: 'edit_text',
+        __csrf_token: locals.__csrf_token,
+        filename: 'testfile.txt',
+        contents: 'This is the edited text',
+        file_id: locals.file_id!,
+      });
+      if (locals.__variant_id) {
+        body.append('__variant_id', locals.__variant_id);
+      }
+      const res = await fetch(locals.attachFilesUrl, { method: 'POST', body });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    });
+    it('should result in exactly one attached file', async () => {
+      locals.file = await sqldb.queryRow(sql.select_files, FileSchema);
+      assert.equal(locals.file.display_filename, 'testfile.txt');
+    });
+    it('should serve the edited contents', async () => {
+      elemList = locals.$('#attach-file-panel [data-testid="attached-file"]');
+      assert.lengthOf(elemList, 1);
+      const { attribs } = elemList[0];
+      const href = 'href' in attribs ? attribs.href : attribs['data-file-url'];
+      const res = await fetch(locals.siteUrl + href);
+      assert.isOk(res.ok);
+      assert.equal(await res.text(), 'This is the edited text');
+    });
+  });
+}
+
 export interface DownloadAttachedFileLocals {
   $?: cheerio.CheerioAPI;
   attachFilesUrl: string;
@@ -109,10 +167,12 @@ export function downloadAttachedFile(locals: DownloadAttachedFileLocals) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a file URL', () => {
-      elemList = locals.$!('#attach-file-panel a[data-testid="attached-file"]');
+      // Editable text notes render as a button carrying the URL in data-file-url;
+      // other files render as a plain download anchor.
+      elemList = locals.$!('#attach-file-panel [data-testid="attached-file"]');
       assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.href');
-      locals.fileHref = elemList[0].attribs.href;
+      const { attribs } = elemList[0];
+      locals.fileHref = 'href' in attribs ? attribs.href : attribs['data-file-url'];
       assert.isString(locals.fileHref);
     });
   });
@@ -214,7 +274,7 @@ export function checkNoAttachedFiles(locals: { $: cheerio.CheerioAPI; attachFile
       locals.$ = cheerio.load(await res.text());
     });
     it('should not have a file URL', () => {
-      elemList = locals.$('#attach-file-panel a[data-testid="attached-file"]');
+      elemList = locals.$('#attach-file-panel [data-testid="attached-file"]');
       assert.lengthOf(elemList, 0);
     });
   });
