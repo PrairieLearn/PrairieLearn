@@ -85,7 +85,7 @@ You can extend the end date of the course instance to particular students by cre
 
 !!! warning "`allowAccess` is deprecated"
 
-    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (2) set the end date to a date _before_ the overall end date. The new system does not support these features.
+    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (3) set the end date to a date _before_ the overall end date. The new system does not support these features.
 
 ### Controlling access by institution
 

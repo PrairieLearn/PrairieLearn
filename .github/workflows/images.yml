@@ -59,7 +59,7 @@ jobs:
     if: ${{ !cancelled() }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Create directory for metadata
         run: mkdir -p ${{ runner.temp }}/image-metadata
@@ -79,6 +79,8 @@ jobs:
           OUTPUT_PATH: ${{ runner.temp }}/image-sizes.json
 
       - uses: pnpm/action-setup@v6
+        with:
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
