@@ -2,12 +2,13 @@ import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { run } from '@prairielearn/run';
 
 import { UserSchema } from '../../lib/db-types.js';
 import { getDynamicFile } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
-import { selectSubmissionById } from '../../models/submission.js';
+import { selectOptionalSubmissionById } from '../../models/submission.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 async function generatedFilesHandler(
@@ -31,9 +32,14 @@ async function generatedFilesHandler(
   // For the submission endpoint we select the submission unsafely, but we later
   // rely on the variant authorization to ensure that the user has access to the
   // variant and, by consequence, the submission.
-  const submission = req.params.unsafe_submission_id
-    ? await selectSubmissionById({ submission_id: req.params.unsafe_submission_id })
-    : null;
+  const submission = await run(async () => {
+    if (!req.params.unsafe_submission_id) return null;
+    const submission = await selectOptionalSubmissionById({
+      submission_id: req.params.unsafe_submission_id,
+    });
+    if (!submission) throw new HttpStatusError(404, 'Not Found');
+    return submission;
+  });
   const variant = await selectAndAuthzVariant({
     unsafe_variant_id: submission ? submission.variant_id : req.params.unsafe_variant_id,
     variant_course: res.locals.course,
