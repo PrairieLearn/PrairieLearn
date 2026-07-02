@@ -9,7 +9,7 @@ import { UserSchema } from '../../lib/db-types.js';
 import { getDynamicFile } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
-import { selectSubmissionFromId } from '../../models/submission.js';
+import { selectSubmissionById } from '../../models/submission.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 async function generatedFilesHandler(
@@ -32,7 +32,7 @@ async function generatedFilesHandler(
 
   let unsafe_variant_id = req.params.unsafe_variant_id;
   const submission = req.params.unsafe_submission_id
-    ? await selectSubmissionFromId({ submission_id: req.params.unsafe_submission_id })
+    ? await selectSubmissionById({ submission_id: req.params.unsafe_submission_id })
     : null;
   if (!unsafe_variant_id) {
     assert(submission, 'Either the variant or the submission must be provided.');

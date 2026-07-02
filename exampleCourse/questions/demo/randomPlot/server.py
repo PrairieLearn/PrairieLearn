@@ -28,11 +28,14 @@ def file(data):
         plt.autoscale(enable=True, tight=True)
         fig.set_layout_engine("tight")
 
-        if data["filename"] == "submission.png":
+        if (
+            data["filename"] == "submission.png"
+            and data["submitted_answers"].get("f") is not None
+        ):
             plt.plot(
                 data["params"]["x"],
                 data["submitted_answers"]["f"],
-                "ks" if data["partial_scores"]["f"]["score"] == 1 else "ro",
+                "ks" if data["partial_scores"].get("f", {}).get("score") == 1 else "ro",
             )
             plt.annotate(
                 f"({data['params']['x']}, {data['submitted_answers']['f']})",

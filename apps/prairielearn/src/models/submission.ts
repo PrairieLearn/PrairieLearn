@@ -22,6 +22,6 @@ export async function lockSubmission({ submission_id }: { submission_id: string 
   await lockVariant({ variant_id });
 }
 
-export async function selectSubmissionFromId({ submission_id }: { submission_id: string }) {
+export async function selectSubmissionById({ submission_id }: { submission_id: string }) {
   return await queryRow(sql.select_submission, { submission_id }, SubmissionSchema);
 }
