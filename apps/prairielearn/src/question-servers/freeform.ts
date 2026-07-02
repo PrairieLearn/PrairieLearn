@@ -1074,6 +1074,10 @@ async function renderPanel({
 
 function extractVariantSubmissionData(submission: Submission | null, variant: Variant) {
   return {
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    //
+    // These should never be null, but that can't be encoded in the schema.
     params: submission?.params ?? variant.params ?? {},
     correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
     submitted_answers: submission?.submitted_answer ?? {},
@@ -1594,7 +1598,7 @@ export async function file(
       {
         course,
         variant,
-        submission,
+        submission, // May be null for question/answer panel files.
         data,
         context,
       },
