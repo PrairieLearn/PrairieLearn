@@ -450,7 +450,7 @@ When user data is not provided to `server.py`, `data["options"]["user"]` and `da
 
 ## Generating dynamic files with `file()`
 
-You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
+You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. When a dynamic file is included in a submission panel, it will also get access to the submission information, including `data["submitted_answers"]`, `data["score"]` and `data["partial_scores"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
 ```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
@@ -488,6 +488,27 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
     ```html title="question.html"
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
+    ```
+
+!!! warning "Dynamic files that rely on submission data"
+
+    If your dynamic file uses submission data (e.g., `data["submitted_answers"]`), you should ensure that the file is only generated after the student has submitted their answers. This can be done by including the `pl-figure` or `pl-file-download` element in the submission panel, which is only rendered after the student submits their answers.
+
+    ```html title="question.html"
+    <pl-submission-panel>
+      <p>Here is a dynamically-rendered figure showing your submitted answer $y = {{submitted_answers.y}}$:</p>
+      <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+    </pl-submission-panel>
+    ```
+
+    Note that the submitted answer may not be valid, so you should check if the submitted answer is valid before generating the file. You can do this by checking if `data["format_errors"]` is empty in the `file()` function, or by implementing defensive checks. For example:
+
+    ```python title="server.py"
+    def file(data):
+        if data["filename"] == "submitted.png":
+            if data["submitted_answers"].get("x") is None or data["submitted_answers"].get("y") is None:
+                return "Invalid submission"
+            # generate the file using data["submitted_answers"]["x"] and data["submitted_answers"]["y"]
     ```
 
 ## Testing questions with `test()`
