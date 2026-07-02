@@ -25,17 +25,17 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/utils": "workspace:^",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta"
   }
 }

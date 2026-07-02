@@ -31,18 +31,18 @@
     "cheerio": "^1.2.0",
     "commander": "^15.0.0",
     "domhandler": "^5.0.3",
-    "fast-xml-parser": "^5.8.0",
+    "fast-xml-parser": "^5.9.3",
     "he": "^1.2.0",
     "mime": "^4.1.0",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/he": "^1.2.3",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.7",
-    "vitest": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.9",
+    "vitest": "^4.1.9",
     "zod": "^4.4.3"
   }
 }

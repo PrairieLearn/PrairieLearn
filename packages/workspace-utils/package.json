@@ -22,13 +22,13 @@
     "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
-    "filesize": "^11.0.17",
+    "filesize": "^11.0.19",
     "socket.io": "^4.8.3",
-    "zod": "^4.3.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
     "typescript-cp": "^0.1.9"
   }

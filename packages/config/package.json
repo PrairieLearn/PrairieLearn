@@ -17,21 +17,21 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.1057.0",
-    "@aws-sdk/client-kms": "^3.1057.0",
-    "@aws-sdk/client-secrets-manager": "^3.1057.0",
+    "@aws-sdk/client-ec2": "^3.1076.0",
+    "@aws-sdk/client-kms": "^3.1076.0",
+    "@aws-sdk/client-secrets-manager": "^3.1076.0",
     "@prairielearn/aws-imds": "workspace:^",
-    "es-toolkit": "^1.47.0",
-    "fs-extra": "^11.3.5",
-    "zod": "^4.3.0"
+    "es-toolkit": "^1.49.0",
+    "fs-extra": "^11.3.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.9",
     "tmp-promise": "^3.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }
