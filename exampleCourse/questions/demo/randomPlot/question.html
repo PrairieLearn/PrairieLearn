@@ -9,5 +9,5 @@
 <pl-number-input answers-name="f" comparison="decdig" digits="0" label="$f({{params.x}})=$" display="block"></pl-number-input>
 
 <pl-submission-panel>
-  <pl-figure file-name="submission.png" type="dynamic" width="500" alt="Plot of the same function f(x)={{params.formula_latex}} with the submitted point ({{params.x}}, {{submitted_answers.f}})"></pl-figure>
+  <pl-figure file-name="submission.png" type="dynamic" width="500" alt="Plot of the same function f(x)={{params.formula_latex}}{{#submitted_answers.f}} with the submitted point ({{params.x}}, {{submitted_answers.f}}){{/submitted_answers.f}}"></pl-figure>
 </pl-submission-panel>
