@@ -277,7 +277,10 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
         cancelButton.classList.add('d-none');
       }
 
-      cancelButton.addEventListener('click', setAddMode);
+      cancelButton.addEventListener('click', () => {
+        setAddMode();
+        window.bootstrap.Collapse.getOrCreateInstance(collapseEl).hide();
+      });
 
       for (const button of document.querySelectorAll('.edit-text-note')) {
         button.addEventListener('click', async () => {
