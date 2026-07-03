@@ -431,7 +431,7 @@ function IssueDataCollapse({
   // A `position: sticky` header inside the scrollable box keeps the show/hide
   // button reachable even when scrolled midway through a large payload.
   return html`
-    <div class="border rounded mb-2" style="max-height: 400px; overflow-y: auto;">
+    <div class="border rounded mb-2" style="max-height: 60vh; overflow-y: auto;">
       <p
         class="mb-0 p-2 border-bottom"
         style="position: sticky; top: 0; z-index: 1; background-color: var(--bs-card-bg);"
