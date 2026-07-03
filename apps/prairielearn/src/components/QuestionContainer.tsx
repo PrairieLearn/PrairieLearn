@@ -399,49 +399,58 @@ ${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     >
                   `
                 : ''}
-              <p>
-                <strong>Associated data:</strong>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-bs-toggle="collapse"
-                  href="#issue-course-data-${issue.id}"
-                  aria-expanded="false"
-                  aria-controls="#issue-course-data-${issue.id}"
-                >
-                  Show/hide
-                </button>
-              </p>
-              <div class="collapse" id="issue-course-data-${issue.id}">
-                <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.course_data, null, '    ')}</pre
-                >
-              </div>
+              ${IssueDataCollapse({
+                label: 'Associated data',
+                collapseId: `issue-course-data-${issue.id}`,
+                data: issue.course_data,
+              })}
               ${is_administrator
-                ? html`
-                    <p>
-                      <strong>System data:</strong>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="collapse"
-                        href="#issue-system-data-${issue.id}"
-                        aria-expanded="false"
-                        aria-controls="#issue-system-data-${issue.id}"
-                      >
-                        Show/hide
-                      </button>
-                    </p>
-                    <div class="collapse" id="issue-system-data-${issue.id}">
-                      <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.system_data, null, '    ')}</pre
-                      >
-                    </div>
-                  `
+                ? IssueDataCollapse({
+                    label: 'System data',
+                    collapseId: `issue-system-data-${issue.id}`,
+                    data: issue.system_data,
+                  })
                 : ''}
             </div>
           `
         : ''}
+    </div>
+  `;
+}
+
+function IssueDataCollapse({
+  label,
+  collapseId,
+  data,
+}: {
+  label: string;
+  collapseId: string;
+  data: unknown;
+}) {
+  // The header stays visible while the collapsible JSON body scrolls beneath it.
+  // A `position: sticky` header inside the scrollable box keeps the show/hide
+  // button reachable even when scrolled midway through a large payload.
+  return html`
+    <div class="border rounded mb-2" style="max-height: 400px; overflow-y: auto;">
+      <p
+        class="mb-0 p-2 border-bottom"
+        style="position: sticky; top: 0; z-index: 1; background-color: var(--bs-card-bg);"
+      >
+        <strong>${label}:</strong>
+        <button
+          type="button"
+          class="btn btn-xs btn-secondary"
+          data-bs-toggle="collapse"
+          href="#${collapseId}"
+          aria-expanded="false"
+          aria-controls="${collapseId}"
+        >
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="${collapseId}">
+        <pre class="bg-dark text-white p-3 mb-0">${JSON.stringify(data, null, '    ')}</pre>
+      </div>
     </div>
   `;
 }
