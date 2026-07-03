@@ -1198,7 +1198,7 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       body-parser:
-        specifier: ^1.20.4 <2
+        specifier: ^1.20.5 <2
         version: 1.20.5
       debug:
         specifier: ^4.4.3
