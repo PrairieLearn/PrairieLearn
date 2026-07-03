@@ -18,7 +18,7 @@ Pillow==12.2.0
 PuLP==3.3.2
 Pygments==2.20.0
 pyarrow==24.0.0
-pygraphviz==2.0
+pygraphviz==1.14
 requests==2.34.2
 scikit-image==0.26.0
 scikit-learn==1.9.0

@@ -28,7 +28,7 @@ dependencies = [
   "pycryptodome==3.23.0",
   "pygments==2.20.0",
   "pygments-ansi-color==0.3.0",
-  "pygraphviz==2.0",
+  "pygraphviz==1.14",
   "pyquaternion==0.9.9",
   "regex==2026.6.28",
   "requests==2.34.2",
