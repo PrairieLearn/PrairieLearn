@@ -17,7 +17,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "postgres-interval": "^4.0.2",
+    "postgres-interval": "^4.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

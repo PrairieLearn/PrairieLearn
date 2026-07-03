@@ -29,7 +29,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
-    "nuqs": "^2.8.9",
+    "nuqs": "^2.9.0",
     "react": "^19.2.7",
     "react-aria": "^3.50.0",
     "react-aria-components": "^1.19.0",
