@@ -23,7 +23,6 @@ import {
 } from '../../lib/groups.js';
 import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
 import { idsEqual } from '../../lib/id.js';
-import { getAvailableFilename } from '../../lib/personal-notes.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -89,10 +88,7 @@ async function processTextUpload(req: Request, res: Response) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
-    display_filename: getAvailableFilename(
-      req.body.filename,
-      (res.locals.file_list ?? []).map((file: File) => file.display_filename),
-    ),
+    display_filename: req.body.filename,
     contents: Buffer.from(req.body.contents),
     type: 'student_upload',
     assessment_id: res.locals.assessment.id,
