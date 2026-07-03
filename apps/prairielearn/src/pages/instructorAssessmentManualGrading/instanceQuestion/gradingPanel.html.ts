@@ -313,7 +313,7 @@ export function GradingPanel({
               style="min-height: 1em;"
               ${disable ? 'readonly' : ''}
               aria-describedby="submission-feedback-help-${context}"
-              ${enableEditKeyboardShortcuts ? 'data-key-binding="f"' : ''}
+              ${enableEditKeyboardShortcuts ? html`data-key-binding="f"` : ''}
             >
 ${submission.feedback?.manual}</textarea
             >
@@ -467,7 +467,7 @@ ${submission.feedback?.manual}</textarea
                       : 'd-inline-flex'} align-items-center"
                     name="__action"
                     value="add_manual_grade"
-                    ${enableEditKeyboardShortcuts ? 'data-key-binding="g"' : ''}
+                    ${enableEditKeyboardShortcuts ? html`data-key-binding="g"` : ''}
                   >
                     Grade
                     ${enableEditKeyboardShortcuts
@@ -498,7 +498,7 @@ ${submission.feedback?.manual}</textarea
                   : ''}"
                 name="__action"
                 value="next_instance_question"
-                ${showNextShortcut ? 'data-key-binding="n"' : ''}
+                ${showNextShortcut ? html`data-key-binding="n"` : ''}
               >
                 ${skip_text}
                 ${showNextShortcut

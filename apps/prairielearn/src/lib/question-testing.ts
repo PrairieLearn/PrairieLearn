@@ -152,6 +152,10 @@ interface TestQuestionResults {
 export const TEST_TYPES = ['correct', 'incorrect', 'invalid'] as const;
 export type TestType = (typeof TEST_TYPES)[number];
 
+export function questionSupportsTesting(question: Question): boolean {
+  return questionServers.getModule(question.type).test != null;
+}
+
 /**
  * Creates the data for a test submission.
  *
@@ -172,7 +176,7 @@ export async function createTestSubmissionData(
   authn_user_id: string,
 ): Promise<{ data: questionServers.TestResultData; hasFatalIssue: boolean }> {
   const questionModule = questionServers.getModule(question.type);
-  if (!questionModule.test) {
+  if (questionModule.test == null) {
     throw new Error('Question type does not support testing, must be Freeform');
   }
 
