@@ -62,7 +62,7 @@
     "prettier-plugin-toml": "^2.0.6",
     "pyright": "^1.1.411",
     "s3rver": "^3.7.1",
-    "turbo": "^2.9.18",
+    "turbo": "~2.9.18 <2.10",
     "vitest": "^4.1.9",
     "zod": "^4.4.3"
   }

@@ -113,7 +113,7 @@ importers:
         specifier: ^3.7.1
         version: 3.7.1
       turbo:
-        specifier: ^2.9.18
+        specifier: ~2.9.18 <2.10
         version: 2.9.18
       vitest:
         specifier: ^4.1.9
