@@ -74,62 +74,48 @@ export function ErrorPage({
             </a>
           </div>
 
-          ${
-            outputStderr
-              ? html`
-                  <p><strong>Standard error:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${outputStderr}</pre>
-                `
-              : ''
-          }
-          ${
-            outputStdout
-              ? html`
-                  <p><strong>Standard output:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${outputStdout}</pre>
-                `
-              : ''
-          }
-          ${
-            error.stack
-              ? html`
-                  <p><strong>Stack trace:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${formatErrorStack(error)}</pre>
-                `
-              : ''
-          }
-          ${
-            formattedSqlQuery
-              ? html`
-                  <p><strong>SQL query:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${formattedSqlQuery}</pre>
-                `
-              : ''
-          }
-          ${
-            !isEmpty(sqlParams)
-              ? html`
-                  <p><strong>SQL params:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${formatJson(sqlParams)}</pre>
-                `
-              : ''
-          }
-          ${
-            !isEmpty(sqlError)
-              ? html`
-                  <p><strong>SQL error data:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${formatJson(sqlError)}</pre>
-                `
-              : ''
-          }
-          ${
-            !isEmpty(restData)
-              ? html`
-                  <p><strong>Additional data:</strong></p>
-                  <pre class="bg-dark text-white rounded p-2">${formatJson(restData)}</pre>
-                `
-              : ''
-          }
+          ${outputStderr
+            ? html`
+                <p><strong>Standard error:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${outputStderr}</pre>
+              `
+            : ''}
+          ${outputStdout
+            ? html`
+                <p><strong>Standard output:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${outputStdout}</pre>
+              `
+            : ''}
+          ${error.stack
+            ? html`
+                <p><strong>Stack trace:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${formatErrorStack(error)}</pre>
+              `
+            : ''}
+          ${formattedSqlQuery
+            ? html`
+                <p><strong>SQL query:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${formattedSqlQuery}</pre>
+              `
+            : ''}
+          ${!isEmpty(sqlParams)
+            ? html`
+                <p><strong>SQL params:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${formatJson(sqlParams)}</pre>
+              `
+            : ''}
+          ${!isEmpty(sqlError)
+            ? html`
+                <p><strong>SQL error data:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${formatJson(sqlError)}</pre>
+              `
+            : ''}
+          ${!isEmpty(restData)
+            ? html`
+                <p><strong>Additional data:</strong></p>
+                <pre class="bg-dark text-white rounded p-2">${formatJson(restData)}</pre>
+              `
+            : ''}
         </div>
       </div>
     `,

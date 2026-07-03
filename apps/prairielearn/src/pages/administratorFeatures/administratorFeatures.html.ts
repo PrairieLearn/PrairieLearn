@@ -48,11 +48,10 @@ export function AdministratorFeatures({
         <div class="card-header bg-primary text-white">
           <h1>Features</h1>
         </div>
-        ${
-          features.length > 0
-            ? html`
-                <div class="list-group list-group-flush">
-                  ${features.map((feature) => {
+        ${features.length > 0
+          ? html`
+              <div class="list-group list-group-flush">
+                ${features.map((feature) => {
                   return html`
                     <div class="list-group-item d-flex align-items-center">
                       <a
@@ -64,10 +63,9 @@ export function AdministratorFeatures({
                     </div>
                   `;
                 })}
-                </div>
-              `
-            : html`<div class="card-body text-center text-secondary">No features</div>`
-        }
+              </div>
+            `
+          : html`<div class="card-body text-center text-secondary">No features</div>`}
       </div>
     `,
   });
@@ -118,39 +116,35 @@ export function AdministratorFeature({
             Grant feature
           </button>
         </div>
-        ${
-          featureGrants.length > 0 || featureInConfig != null
-            ? html`
-                <div class="list-group list-group-flush">
-                  ${
-                  featureInConfig != null
-                    ? html`
-                        <div class="list-group-item">
-                          <i
-                            class="fa-solid me-1 ${
-                            featureInConfig ? 'fa-check text-success' : 'fa-times text-danger'
-                          }"
-                          ></i>
-                          Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
-                        </div>
-                      `
-                    : ''
-                }
-                  ${featureGrants.map((featureGrant) =>
+        ${featureGrants.length > 0 || featureInConfig != null
+          ? html`
+              <div class="list-group list-group-flush">
+                ${featureInConfig != null
+                  ? html`
+                      <div class="list-group-item">
+                        <i
+                          class="fa-solid me-1 ${featureInConfig
+                            ? 'fa-check text-success'
+                            : 'fa-times text-danger'}"
+                        ></i>
+                        Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
+                      </div>
+                    `
+                  : ''}
+                ${featureGrants.map((featureGrant) =>
                   FeatureGrant({
                     featureGrant,
                     overridden: featureInConfig != null,
                     csrfToken: resLocals.__csrf_token,
                   }),
                 )}
-                </div>
-              `
-            : html`
-                <div class="card-body text-center text-secondary">
-                  There are no grants for this feature
-                </div>
-              `
-        }
+              </div>
+            `
+          : html`
+              <div class="card-body text-center text-secondary">
+                There are no grants for this feature
+              </div>
+            `}
       </div>
     `,
     postContent: html`
@@ -227,9 +221,9 @@ function FeatureGrant({
 }) {
   return html`
     <div
-      class="list-group-item d-flex flex-column flex-md-row flex-nowrap align-items-md-center ${
-        overridden ? 'text-muted' : ''
-      }"
+      class="list-group-item d-flex flex-column flex-md-row flex-nowrap align-items-md-center ${overridden
+        ? 'text-muted'
+        : ''}"
     >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
       <div class="ms-auto d-flex flex-row flex-nowrap flex-shrink-0">

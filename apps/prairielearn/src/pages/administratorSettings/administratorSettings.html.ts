@@ -95,40 +95,37 @@ export function AdministratorSettings({
               </button>
             </div>
           </form>
-          ${
-            config.newsFeedUrl
-              ? html`
-                  <hr />
-                  <form method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="sync_news_feed" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button type="submit" class="btn btn-primary">Sync news feed</button>
-                  </form>
-                `
-              : ''
-          }
+          ${config.newsFeedUrl
+            ? html`
+                <hr />
+                <form method="POST" class="d-inline">
+                  <input type="hidden" name="__action" value="sync_news_feed" />
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button type="submit" class="btn btn-primary">Sync news feed</button>
+                </form>
+              `
+            : ''}
         </div>
       </div>
 
-      ${
-        newsItems.length > 0
-          ? html`
-              <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                  <h2>News items</h2>
-                </div>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover table-striped" aria-label="News items">
-                    <thead>
-                      <tr>
-                        <th>Title</th>
-                        <th>Published</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${newsItems.map(
+      ${newsItems.length > 0
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white d-flex align-items-center">
+                <h2>News items</h2>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped" aria-label="News items">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Published</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${newsItems.map(
                       (item) => html`
                         <tr>
                           <td class="align-middle">
@@ -138,101 +135,85 @@ export function AdministratorSettings({
                           </td>
                           <td class="align-middle">${formatDate(item.pub_date, 'UTC')}</td>
                           <td class="align-middle">
-                            ${
-                              item.managed_by === 'admin' && item.hidden_at != null
-                                ? html`<span class="badge bg-secondary">Hidden by admin</span>`
-                                : item.managed_by === 'sync' && item.hidden_at != null
-                                  ? html`<span class="badge bg-secondary">Hidden by sync</span>`
-                                  : html`<span class="badge bg-success">Visible</span>`
-                            }
+                            ${item.managed_by === 'admin' && item.hidden_at != null
+                              ? html`<span class="badge bg-secondary">Hidden by admin</span>`
+                              : item.managed_by === 'sync' && item.hidden_at != null
+                                ? html`<span class="badge bg-secondary">Hidden by sync</span>`
+                                : html`<span class="badge bg-success">Visible</span>`}
                           </td>
                           <td class="align-middle">
-                            ${
-                              item.hidden_at == null
-                                ? html`
-                                    <form method="POST" class="d-inline">
-                                      <input type="hidden" name="__action" value="hide_news_item" />
-                                      <input
-                                        type="hidden"
-                                        name="__csrf_token"
-                                        value="${resLocals.__csrf_token}"
-                                      />
-                                      <input type="hidden" name="news_item_id" value="${item.id}" />
-                                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        Hide
-                                      </button>
-                                    </form>
-                                  `
-                                : html`
-                                    <form method="POST" class="d-inline">
-                                      <input
-                                        type="hidden"
-                                        name="__action"
-                                        value="unhide_news_item"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="__csrf_token"
-                                        value="${resLocals.__csrf_token}"
-                                      />
-                                      <input type="hidden" name="news_item_id" value="${item.id}" />
-                                      <button
-                                        type="submit"
-                                        class="btn btn-sm btn-outline-secondary"
-                                      >
-                                        Unhide
-                                      </button>
-                                    </form>
-                                  `
-                            }
+                            ${item.hidden_at == null
+                              ? html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="hide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                      Hide
+                                    </button>
+                                  </form>
+                                `
+                              : html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="unhide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                      Unhide
+                                    </button>
+                                  </form>
+                                `}
                           </td>
                         </tr>
                       `,
                     )}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
               </div>
-            `
-          : ''
-      }
-      ${
-        showAiSettings
-          ? html`
-              <div class="card mb-4">
-                <div class="card-header bg-primary text-white">LLM</div>
-                <div class="card-body">
-                  <form method="POST">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button class="btn btn-primary" name="__action" value="sync_context_documents">
-                      Resync context documents
-                    </button>
+            </div>
+          `
+        : ''}
+      ${showAiSettings
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">LLM</div>
+              <div class="card-body">
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button class="btn btn-primary" name="__action" value="sync_context_documents">
+                    Resync context documents
+                  </button>
 
-                    ${
-                    config.devMode
-                      ? html`
-                          <hr />
-                          <p>
-                            Benchmarking the AI will generate questions from a set of sample prompts
-                            and ask an LLM to evaluate their quality, including comparing them to
-                            gold standard implementations.
-                          </p>
-                          <button
-                            class="btn btn-primary"
-                            name="__action"
-                            value="benchmark_question_generation"
-                          >
-                            Benchmark question generation
-                          </button>
-                        `
-                      : ''
-                  }
-                  </form>
-                </div>
+                  ${config.devMode
+                    ? html`
+                        <hr />
+                        <p>
+                          Benchmarking the AI will generate questions from a set of sample prompts
+                          and ask an LLM to evaluate their quality, including comparing them to gold
+                          standard implementations.
+                        </p>
+                        <button
+                          class="btn btn-primary"
+                          name="__action"
+                          value="benchmark_question_generation"
+                        >
+                          Benchmark question generation
+                        </button>
+                      `
+                    : ''}
+                </form>
               </div>
-            `
-          : ''
-      }
+            </div>
+          `
+        : ''}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

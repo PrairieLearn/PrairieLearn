@@ -669,7 +669,8 @@ router.get(
 
     let sharingSets: QuestionSharingSetRow[] | undefined;
     let sharingConstraints:
-      Awaited<ReturnType<typeof selectQuestionSharingConstraints>> | undefined;
+      | Awaited<ReturnType<typeof selectQuestionSharingConstraints>>
+      | undefined;
     if (sharingEnabled) {
       sharingSets = await selectSharingSetsForQuestion({
         question_id: question.id,

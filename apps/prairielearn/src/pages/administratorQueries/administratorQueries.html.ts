@@ -39,29 +39,25 @@ export function AdministratorQueries({
                 (query) => html`
                   <tr>
                     <td>
-                      ${
-                        query.error || query.enabled === false
-                          ? html`<code>${query.filePrefix}</code>`
-                          : html`
-                              <a
-                                href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}"
-                              >
-                                <code>${query.filePrefix}</code>
-                              </a>
-                            `
-                      }
+                      ${query.error || query.enabled === false
+                        ? html`<code>${query.filePrefix}</code>`
+                        : html`
+                            <a
+                              href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}"
+                            >
+                              <code>${query.filePrefix}</code>
+                            </a>
+                          `}
                     </td>
                     <td>
-                      ${
-                        query.error
-                          ? html`<span class="text-danger">${query.error}</span>`
-                          : query.enabled === false
-                            ? html`
-                                <span class="text-muted">${query.description}</span>
-                                <span class="badge text-bg-info">Disabled</span>
-                              `
-                            : query.description
-                      }
+                      ${query.error
+                        ? html`<span class="text-danger">${query.error}</span>`
+                        : query.enabled === false
+                          ? html`
+                              <span class="text-muted">${query.description}</span>
+                              <span class="badge text-bg-info">Disabled</span>
+                            `
+                          : query.description}
                     </td>
                   </tr>
                 `,

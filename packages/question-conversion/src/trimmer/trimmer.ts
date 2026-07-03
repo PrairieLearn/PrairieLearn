@@ -65,7 +65,8 @@ interface ManifestObject {
   };
   organizations?: {
     organization?:
-      { item?: ManifestItem | ManifestItem[] }[] | { item?: ManifestItem | ManifestItem[] };
+      | { item?: ManifestItem | ManifestItem[] }[]
+      | { item?: ManifestItem | ManifestItem[] };
   };
 }
 
@@ -100,7 +101,10 @@ interface LocalAssets {
 }
 
 type QtiContainerKind =
-  'assessment' | 'objectbank-title-attr' | 'objectbank-bank-title' | 'unknown';
+  | 'assessment'
+  | 'objectbank-title-attr'
+  | 'objectbank-bank-title'
+  | 'unknown';
 
 interface QtiContainer extends QtiArchiveEntry {
   kind: QtiContainerKind;

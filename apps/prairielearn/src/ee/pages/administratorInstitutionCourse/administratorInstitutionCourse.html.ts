@@ -145,20 +145,16 @@ export function AdministratorInstitutionCourse({
                         href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >${course_instance.short_name}: ${course_instance.long_name ?? '—'}</a
                       >
-                      ${
-                        isDeleted
-                          ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
-                          : ''
-                      }
+                      ${isDeleted
+                        ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
+                        : ''}
                     </div>
                   </td>
                   <td>${enrollment_count}</td>
                   <td>
-                    ${
-                      course_instance.enrollment_limit ??
-                      course.course_instance_enrollment_limit ??
-                      institution.course_instance_enrollment_limit
-                    }
+                    ${course_instance.enrollment_limit ??
+                    course.course_instance_enrollment_limit ??
+                    institution.course_instance_enrollment_limit}
                   </td>
                 </tr>
               `;

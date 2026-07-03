@@ -30,19 +30,18 @@ export function AdministratorBatchedMigrations({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Batched migrations</h1>
         </div>
-        ${
-          hasBatchedMigrations
-            ? html`
-                <div class="table-responsive">
-                  <table class="table">
-                    <thead>
-                      <tr>
-                        <th>Filename</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${batchedMigrations.map((migration) => {
+        ${hasBatchedMigrations
+          ? html`
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Filename</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${batchedMigrations.map((migration) => {
                       return html`
                         <tr>
                           <td>
@@ -57,12 +56,11 @@ export function AdministratorBatchedMigrations({
                         </tr>
                       `;
                     })}
-                    </tbody>
-                  </table>
-                </div>
-              `
-            : html`<div class="card-body text-center text-secondary">No batched migrations</div>`
-        }
+                  </tbody>
+                </table>
+              </div>
+            `
+          : html`<div class="card-body text-center text-secondary">No batched migrations</div>`}
       </div>
     `,
   });
@@ -191,10 +189,9 @@ function MigrationJobsCard({
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <span class="me-auto">${title}</span>
       </div>
-      ${
-        jobs.length > 0
-          ? html`<div class="list-group list-group-flush">
-              ${jobs.map((job) => {
+      ${jobs.length > 0
+        ? html`<div class="list-group list-group-flush">
+            ${jobs.map((job) => {
               let duration: number | null = null;
               if (job.started_at && job.finished_at) {
                 duration = job.finished_at.getTime() - job.started_at.getTime();
@@ -205,40 +202,35 @@ function MigrationJobsCard({
               const hasData = job.data != null;
               return html`
                 <div class="list-group-item d-flex flex-column">
-                  ${
-                    hasData
-                      ? html`
-                          <details>
-                            <summary>${summary}</summary>
+                  ${hasData
+                    ? html`
+                        <details>
+                          <summary>${summary}</summary>
 
-                            <pre class="mt-3 p-3 rounded bg-dark text-white"><code>${JSON.stringify(
+                          <pre class="mt-3 p-3 rounded bg-dark text-white"><code>${JSON.stringify(
                             job.data,
                             null,
                             2,
                           )}</code></pre>
-                          </details>
-                        `
-                      : html`<div>${summary}</div>`
-                  }
-                  ${
-                    job.started_at
-                      ? html`
-                          <span
-                            class="text-muted text-small"
-                            style="font-variant-numeric: tabular-nums;"
-                          >
-                            #${job.id} ran at ${job.started_at.toUTCString()} for ${duration}ms
-                            &mdash; ${attempts}
-                          </span>
-                        `
-                      : null
-                  }
+                        </details>
+                      `
+                    : html`<div>${summary}</div>`}
+                  ${job.started_at
+                    ? html`
+                        <span
+                          class="text-muted text-small"
+                          style="font-variant-numeric: tabular-nums;"
+                        >
+                          #${job.id} ran at ${job.started_at.toUTCString()} for ${duration}ms
+                          &mdash; ${attempts}
+                        </span>
+                      `
+                    : null}
                 </div>
               `;
             })}
-            </div>`
-          : html`<div class="card-body text-center text-secondary">${emptyText}</div>`
-      }
+          </div>`
+        : html`<div class="card-body text-center text-secondary">${emptyText}</div>`}
     </div>
   `;
 }

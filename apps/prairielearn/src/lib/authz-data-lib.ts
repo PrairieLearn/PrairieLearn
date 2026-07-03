@@ -133,7 +133,9 @@ export type ConstructedCourseOrInstanceContext =
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
 export type AuthzDataWithEffectiveUser =
-  RawPageAuthzData | PageAuthzData | DangerousSystemAuthzData;
+  | RawPageAuthzData
+  | PageAuthzData
+  | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
@@ -148,7 +150,10 @@ type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor
 type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
 export type Role =
-  SystemRole | StudentCourseInstanceRole | InstructorCourseInstanceRole | CourseRole;
+  | SystemRole
+  | StudentCourseInstanceRole
+  | InstructorCourseInstanceRole
+  | CourseRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {

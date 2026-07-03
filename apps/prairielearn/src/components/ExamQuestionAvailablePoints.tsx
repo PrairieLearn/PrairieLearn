@@ -25,38 +25,34 @@ export function ExamQuestionAvailablePoints({
       If you score 100% on your next submission, then you will be awarded an additional
       ${formatPoints(pointsList[0])} points.
     </p>
-    ${
-      bestScore > 0
-        ? html`
-            <p>
-              If you score less than ${bestScore}% on your next submission, then you will be awarded
-              no additional points, but you will keep any awarded points that you already have.
-            </p>
-            <p class="mb-0">
-              If you score between ${bestScore}% and 100% on your next submission, then you will be
-              awarded an additional
-              <code>(${formatPoints(currentWeight)} * (score - ${bestScore})/100)</code>
-              points.
-            </p>
-          `
-        : html`
-            <p class="mb-0">
-              If you score less than 100% on your next submission, then you will be awarded an
-              additional
-              <code>(${formatPoints(currentWeight)} * score / 100)</code>
-              points.
-            </p>
-          `
-    }
+    ${bestScore > 0
+      ? html`
+          <p>
+            If you score less than ${bestScore}% on your next submission, then you will be awarded
+            no additional points, but you will keep any awarded points that you already have.
+          </p>
+          <p class="mb-0">
+            If you score between ${bestScore}% and 100% on your next submission, then you will be
+            awarded an additional
+            <code>(${formatPoints(currentWeight)} * (score - ${bestScore})/100)</code>
+            points.
+          </p>
+        `
+      : html`
+          <p class="mb-0">
+            If you score less than 100% on your next submission, then you will be awarded an
+            additional
+            <code>(${formatPoints(currentWeight)} * score / 100)</code>
+            points.
+          </p>
+        `}
   `;
 
   return html`
-    ${
-      pointsList.length === 1
-        ? formatPoints(pointsList[0])
-        : html`${formatPoints(pointsList[0])},
-            <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`
-    }
+    ${pointsList.length === 1
+      ? formatPoints(pointsList[0])
+      : html`${formatPoints(pointsList[0])},
+          <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"

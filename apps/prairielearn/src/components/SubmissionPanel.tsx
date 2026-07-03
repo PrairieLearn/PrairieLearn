@@ -110,45 +110,41 @@ export function SubmissionPanel({
       data-grading-job-id="${submission.grading_job?.id}"
       id="submission-${submission.id}"
     >
-      ${
-        submission.feedback?.manual || submission.rubric_grading
-          ? html`
-              <div class="card mb-4 grading-block border-info">
-                <div
-                  class="card-header bg-info d-flex align-items-center collapsible-card-header ${
-                  !expanded ? ' collapsed' : ''
-                }"
-                >
-                  <div class="me-auto">
-                    Feedback from the Course Staff
-                    ${
-                    submissionCount > 1
-                      ? `(for submitted answer ${submission.submission_number})`
-                      : ''
-                  }
-                  </div>
-                  <button
-                    type="button"
-                    class="expand-icon-container btn btn-outline-dark btn-sm ${
-                    !expanded ? 'collapsed' : ''
-                  }"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#submission-feedback-${submission.id}-body"
-                    aria-expanded="${expanded ? 'true' : 'false'}"
-                    aria-controls="submission-feedback-${submission.id}-body"
-                  >
-                    <i class="fa fa-angle-up ms-1 expand-icon"></i>
-                  </button>
+      ${submission.feedback?.manual || submission.rubric_grading
+        ? html`
+            <div class="card mb-4 grading-block border-info">
+              <div
+                class="card-header bg-info d-flex align-items-center collapsible-card-header ${!expanded
+                  ? ' collapsed'
+                  : ''}"
+              >
+                <div class="me-auto">
+                  Feedback from the Course Staff
+                  ${submissionCount > 1
+                    ? `(for submitted answer ${submission.submission_number})`
+                    : ''}
                 </div>
-                <div
-                  class="collapse ${expanded ? 'show' : ''}"
-                  id="submission-feedback-${submission.id}-body"
+                <button
+                  type="button"
+                  class="expand-icon-container btn btn-outline-dark btn-sm ${!expanded
+                    ? 'collapsed'
+                    : ''}"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#submission-feedback-${submission.id}-body"
+                  aria-expanded="${expanded ? 'true' : 'false'}"
+                  aria-controls="submission-feedback-${submission.id}-body"
                 >
-                  <div class="card-body">
-                    ${
-                    submission.rubric_grading
-                      ? html`
-                          ${(rubric_data?.rubric_items || [])
+                  <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                </button>
+              </div>
+              <div
+                class="collapse ${expanded ? 'show' : ''}"
+                id="submission-feedback-${submission.id}-body"
+              >
+                <div class="card-body">
+                  ${submission.rubric_grading
+                    ? html`
+                        ${(rubric_data?.rubric_items || [])
                           .filter(
                             (item) =>
                               item.rubric_item.always_show_to_students ||
@@ -162,47 +158,37 @@ export function SubmissionPanel({
                                 null,
                             }),
                           )}
-                          ${
-                          submission.rubric_grading.adjust_points
-                            ? html`
-                                <div class="mb-2">
-                                  <span class="text-muted"> Manual grading adjustment: </span>
-                                  <span
-                                    class="text-${
-                                    submission.rubric_grading.adjust_points >= 0
-                                      ? 'success'
-                                      : 'danger'
-                                  }"
-                                  >
-                                    <strong data-testid="rubric-adjust-points">
-                                      [${
-                                      (submission.rubric_grading.adjust_points >= 0 ? '+' : '') +
-                                      submission.rubric_grading.adjust_points
-                                    }]
-                                    </strong>
-                                  </span>
-                                </div>
-                              `
-                            : ''
-                        }
-                        `
-                      : ''
-                  }
-                    ${
-                    submission.feedback?.manual
-                      ? html`
-                          <div data-testid="feedback-body">
-                            ${unsafeHtml(submission.feedback_manual_html ?? '')}
-                          </div>
-                        `
-                      : ''
-                  }
-                  </div>
+                        ${submission.rubric_grading.adjust_points
+                          ? html`
+                              <div class="mb-2">
+                                <span class="text-muted"> Manual grading adjustment: </span>
+                                <span
+                                  class="text-${submission.rubric_grading.adjust_points >= 0
+                                    ? 'success'
+                                    : 'danger'}"
+                                >
+                                  <strong data-testid="rubric-adjust-points">
+                                    [${(submission.rubric_grading.adjust_points >= 0 ? '+' : '') +
+                                    submission.rubric_grading.adjust_points}]
+                                  </strong>
+                                </span>
+                              </div>
+                            `
+                          : ''}
+                      `
+                    : ''}
+                  ${submission.feedback?.manual
+                    ? html`
+                        <div data-testid="feedback-body">
+                          ${unsafeHtml(submission.feedback_manual_html ?? '')}
+                        </div>
+                      `
+                    : ''}
                 </div>
               </div>
-            `
-          : ''
-      }
+            </div>
+          `
+        : ''}
 
       <div class="card mb-4" data-testid="submission-block">
         <div
@@ -217,11 +203,9 @@ export function SubmissionPanel({
               </span>
             </div>
             <span class="small">
-              ${
-                !submission.user_uid || questionContext === 'manual_grading'
-                  ? `Submitted at ${formattedDate} `
-                  : `${submission.user_uid} submitted at ${formattedDate}`
-              }
+              ${!submission.user_uid || questionContext === 'manual_grading'
+                ? `Submitted at ${formattedDate} `
+                : `${submission.user_uid} submitted at ${formattedDate}`}
             </span>
           </div>
           <div class="me-auto align-self-end" data-testid="submission-status">
@@ -246,9 +230,9 @@ export function SubmissionPanel({
             </button>
             <button
               type="button"
-              class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${
-                !expanded ? 'collapsed' : ''
-              }"
+              class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
+                ? 'collapsed'
+                : ''}"
               data-bs-toggle="collapse"
               data-bs-target="#submission-${submission.id}-body"
               aria-expanded="${expanded ? 'true' : 'false'}"
@@ -260,25 +244,23 @@ export function SubmissionPanel({
         </div>
 
         <div
-          class="collapse js-submission-body js-collapsible-card-body ${
-            expanded ? 'show' : ''
-          } ${submissionHtml == null && question.type === 'Freeform' ? 'render-pending' : ''}"
+          class="collapse js-submission-body js-collapsible-card-body ${expanded
+            ? 'show'
+            : ''} ${submissionHtml == null && question.type === 'Freeform' ? 'render-pending' : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
           <div class="card-body overflow-x-auto submission-body">
-            ${
-              submissionHtml == null
-                ? html`
-                    <div class="spinner-border" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                  `
-                : questionRenderContext === 'ai_grading'
-                  ? AiGradingHtmlPreview(submissionHtml)
-                  : unsafeHtml(submissionHtml)
-            }
+            ${submissionHtml == null
+              ? html`
+                  <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                `
+              : questionRenderContext === 'ai_grading'
+                ? AiGradingHtmlPreview(submissionHtml)
+                : unsafeHtml(submissionHtml)}
           </div>
         </div>
 
@@ -455,80 +437,74 @@ function SubmissionInfoModal({
             <th>Submission time</th>
             <td>${formattedDate}</td>
           </tr>
-          ${
-            submission.user_uid
-              ? html`
-                  <tr>
-                    <th>Submitted by</th>
-                    <td>${submission.user_uid}</td>
-                  </tr>
-                `
-              : ''
-          }
-          ${
-            gradingJobStats?.grading_method === 'External'
-              ? html`
-                  <tr>
-                    <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
-                    <td>${gradingJobStats.submitDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
-                    <td>${gradingJobStats.queueDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
-                    <td>${gradingJobStats.prepareDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-success me-2">&bull;</span>Run duration</th>
-                    <td>${gradingJobStats.runDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-danger me-2">&bull;</span>Report duration</th>
-                    <td>${gradingJobStats.reportDuration}</td>
-                  </tr>
-                  <tr>
-                    <th>Total duration</th>
-                    <td>${gradingJobStats.totalDuration}</td>
-                  </tr>
-                `
-              : ''
-          }
+          ${submission.user_uid
+            ? html`
+                <tr>
+                  <th>Submitted by</th>
+                  <td>${submission.user_uid}</td>
+                </tr>
+              `
+            : ''}
+          ${gradingJobStats?.grading_method === 'External'
+            ? html`
+                <tr>
+                  <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
+                  <td>${gradingJobStats.submitDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
+                  <td>${gradingJobStats.queueDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
+                  <td>${gradingJobStats.prepareDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-success me-2">&bull;</span>Run duration</th>
+                  <td>${gradingJobStats.runDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-danger me-2">&bull;</span>Report duration</th>
+                  <td>${gradingJobStats.reportDuration}</td>
+                </tr>
+                <tr>
+                  <th>Total duration</th>
+                  <td>${gradingJobStats.totalDuration}</td>
+                </tr>
+              `
+            : ''}
         </tbody>
       </table>
       ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
-      ${
-        gradingJobStats?.grading_method === 'External'
-          ? html`
-              <div class="d-flex mt-2 mb-2">
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[0]}%; height: 10px;"
-                  class="bg-dark m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[1]}%; height: 10px;"
-                  class="bg-warning m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[2]}%; height: 10px;"
-                  class="bg-primary m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[3]}%; height: 10px;"
-                  class="bg-success m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[4]}%; height: 10px;"
-                  class="bg-danger m-0"
-                ></span>
-              </div>
-              <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
-                View grading job ${submission.grading_job?.id}
-              </a>
-            `
-          : ''
-      }
+      ${gradingJobStats?.grading_method === 'External'
+        ? html`
+            <div class="d-flex mt-2 mb-2">
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[0]}%; height: 10px;"
+                class="bg-dark m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[1]}%; height: 10px;"
+                class="bg-warning m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[2]}%; height: 10px;"
+                class="bg-primary m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[3]}%; height: 10px;"
+                class="bg-success m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[4]}%; height: 10px;"
+                class="bg-danger m-0"
+              ></span>
+            </div>
+            <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
+              View grading job ${submission.grading_job?.id}
+            </a>
+          `
+        : ''}
     `,
     footer: html`
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -555,23 +531,21 @@ function RubricItem({
         <span class="d-inline-block" data-testid="rubric-item-description">
           ${unsafeHtml(item.description_rendered ?? '')}
         </span>
-        ${
-          item.explanation_rendered
-            ? html`
-                <button
-                  type="button"
-                  class="btn btn-xs btn-ghost"
-                  data-bs-toggle="popover"
-                  data-bs-content="${item.explanation_rendered}"
-                  data-bs-html="true"
-                  data-testid="rubric-item-explanation"
-                  aria-label="Details"
-                >
-                  <i class="fas fa-circle-info"></i>
-                </button>
-              `
-            : ''
-        }
+        ${item.explanation_rendered
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost"
+                data-bs-toggle="popover"
+                data-bs-content="${item.explanation_rendered}"
+                data-bs-html="true"
+                data-testid="rubric-item-explanation"
+                aria-label="Details"
+              >
+                <i class="fas fa-circle-info"></i>
+              </button>
+            `
+          : ''}
       </label>
     </div>
   `;

@@ -130,48 +130,42 @@ export function InstructorAIGenerateDrafts({
           />,
         )}
       </div>
-      ${
-        hasDrafts
-          ? html`
-              <div class="d-flex flex-row align-items-center justify-content-between mb-2">
-                <h1 class="h5 mb-0">Continue working on a draft question</h1>
-                <button
-                  class="btn btn-sm btn-outline-danger ms-2"
-                  data-bs-toggle="modal"
-                  data-bs-target="#deleteModal"
-                >
-                  <i class="fa fa-trash" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Delete all drafts</span>
-                </button>
-              </div>
-              <div class="card">
-                <div class="table-responsive">
-                  <table
-                    class="table table-sm table-hover"
-                    aria-label="AI question generation jobs"
-                  >
-                    <thead>
-                      <tr>
-                        <th>QID</th>
-                        <th>Created At</th>
-                        <th>Created By</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${drafts.map(
+      ${hasDrafts
+        ? html`
+            <div class="d-flex flex-row align-items-center justify-content-between mb-2">
+              <h1 class="h5 mb-0">Continue working on a draft question</h1>
+              <button
+                class="btn btn-sm btn-outline-danger ms-2"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteModal"
+              >
+                <i class="fa fa-trash" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Delete all drafts</span>
+              </button>
+            </div>
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover" aria-label="AI question generation jobs">
+                  <thead>
+                    <tr>
+                      <th>QID</th>
+                      <th>Created At</th>
+                      <th>Created By</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${drafts.map(
                       (row) => html`
                         <tr>
                           <td>${row.qid}</td>
                           <td>
-                            ${
-                              row.draft_question_metadata?.created_at == null
-                                ? html`&mdash;`
-                                : formatDate(
-                                    row.draft_question_metadata.created_at,
-                                    resLocals.course.display_timezone,
-                                  )
-                            }
+                            ${row.draft_question_metadata?.created_at == null
+                              ? html`&mdash;`
+                              : formatDate(
+                                  row.draft_question_metadata.created_at,
+                                  resLocals.course.display_timezone,
+                                )}
                           </td>
                           <td>${row.uid ?? '(System)'}</td>
                           <td>
@@ -185,13 +179,12 @@ export function InstructorAIGenerateDrafts({
                         </tr>
                       `,
                     )}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
               </div>
-            `
-          : ''
-      }
+            </div>
+          `
+        : ''}
       ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
     `,
   });

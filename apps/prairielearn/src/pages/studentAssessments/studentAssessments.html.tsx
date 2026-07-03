@@ -82,18 +82,16 @@ export function StudentAssessments({
             <tbody>
               ${rows.map(
                 (row, index) => html`
-                  ${
-                    index === 0 ||
-                    !idsEqual(row.assessment_group_id, rows[index - 1].assessment_group_id)
-                      ? html`
-                          <tr>
-                            <th colspan="4" scope="row" data-testid="assessment-group-heading">
-                              ${row.assessment_group_heading}
-                            </th>
-                          </tr>
-                        `
-                      : ''
-                  }
+                  ${index === 0 ||
+                  !idsEqual(row.assessment_group_id, rows[index - 1].assessment_group_id)
+                    ? html`
+                        <tr>
+                          <th colspan="4" scope="row" data-testid="assessment-group-heading">
+                            ${row.assessment_group_heading}
+                          </th>
+                        </tr>
+                      `
+                    : ''}
                   <tr>
                     <td class="align-middle" style="width: 1%">
                       <span
@@ -104,23 +102,19 @@ export function StudentAssessments({
                       </span>
                     </td>
                     <td class="align-middle">
-                      ${
-                        row.show_before_release
-                          ? html`<span class="text-muted">${row.title}</span>`
-                          : row.multiple_instance_header ||
-                              (!row.active && row.assessment_instance_id == null)
-                            ? row.title
-                            : html`
-                                <a href="${urlPrefix}${row.link}">
-                                  ${row.title}
-                                  ${
-                                  row.team_work
-                                    ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                    : ''
-                                }
-                                </a>
-                              `
-                      }
+                      ${row.show_before_release
+                        ? html`<span class="text-muted">${row.title}</span>`
+                        : row.multiple_instance_header ||
+                            (!row.active && row.assessment_instance_id == null)
+                          ? row.title
+                          : html`
+                              <a href="${urlPrefix}${row.link}">
+                                ${row.title}
+                                ${row.team_work
+                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                  : ''}
+                              </a>
+                            `}
                     </td>
                     <td class="text-center align-middle">
                       ${AvailableCredit({
@@ -129,11 +123,9 @@ export function StudentAssessments({
                       })}
                     </td>
                     <td class="text-center align-middle">
-                      ${
-                        row.multiple_instance_header
-                          ? NewInstanceButton({ urlPrefix, row })
-                          : AssessmentScore(row)
-                      }
+                      ${row.multiple_instance_header
+                        ? NewInstanceButton({ urlPrefix, row })
+                        : AssessmentScore(row)}
                     </td>
                   </tr>
                 `,
@@ -142,17 +134,15 @@ export function StudentAssessments({
           </table>
         </div>
       </div>
-      ${
-        authz_data.mode === 'Exam'
-          ? html`
-              <p>
-                Don't see your exam? Exams for this course are only made available to students with
-                checked-in exam reservations who have clicked the "Start exam" button in
-                PrairieTest. See a proctor for assistance.
-              </p>
-            `
-          : ''
-      }
+      ${authz_data.mode === 'Exam'
+        ? html`
+            <p>
+              Don't see your exam? Exams for this course are only made available to students with
+              checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
+              See a proctor for assistance.
+            </p>
+          `
+        : ''}
     `,
   });
 }
@@ -190,14 +180,12 @@ function AvailableCredit({
   if (row.assessment_instance_open !== false) {
     return html`
       ${row.credit_date_string}
-      ${
-        row.modern_access_control
-          ? StudentAccessTimelinePopover({
-              accessTimeline: row.access_timeline,
-              displayTimezone,
-            })
-          : StudentAccessRulesPopover({ accessRules: row.access_rules })
-      }
+      ${row.modern_access_control
+        ? StudentAccessTimelinePopover({
+            accessTimeline: row.access_timeline,
+            displayTimezone,
+          })
+        : StudentAccessRulesPopover({ accessRules: row.access_rules })}
     `;
   }
   return html`Assessment closed.`;

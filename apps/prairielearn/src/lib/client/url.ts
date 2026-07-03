@@ -310,7 +310,8 @@ type QuestionUrlParts =
   | { courseInstanceId?: undefined; courseId: string };
 
 type CourseAdminUrlParts =
-  { courseId: string; courseInstanceId?: string } | { courseId?: string; courseInstanceId: string };
+  | { courseId: string; courseInstanceId?: string }
+  | { courseId?: string; courseInstanceId: string };
 
 export const QUESTION_TABLE_FILTER_URL_KEYS = {
   topic: 'topic',

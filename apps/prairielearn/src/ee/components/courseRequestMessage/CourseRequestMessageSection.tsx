@@ -42,16 +42,14 @@ export function CourseRequestMessageSection({
         Save
       </button>
     </form>
-    ${
-      courseRequestMessageHtml
-        ? html`
-            <h3 class="h5">Preview</h3>
-            <div class="card mb-3">
-              <div class="card-body">${unsafeHtml(courseRequestMessageHtml)}</div>
-            </div>
-          `
-        : ''
-    }
+    ${courseRequestMessageHtml
+      ? html`
+          <h3 class="h5">Preview</h3>
+          <div class="card mb-3">
+            <div class="card-body">${unsafeHtml(courseRequestMessageHtml)}</div>
+          </div>
+        `
+      : ''}
   `;
 }
 

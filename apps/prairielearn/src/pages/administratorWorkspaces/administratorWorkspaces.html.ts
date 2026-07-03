@@ -95,9 +95,9 @@ export function AdministratorWorkspaces({
                       aria-controls="workspaces-${workspaceHost.id}"
                       >${workspaceHost.hostname}</a
                     >
-                    ${
-                      instanceId ? html`<span class="text-muted me-2">(${instanceId})</span>` : null
-                    }
+                    ${instanceId
+                      ? html`<span class="text-muted me-2">(${instanceId})</span>`
+                      : null}
                     ${WorkspaceHostStateBadge({ state: workspaceHost.state })}
                     <span class="badge text-bg-secondary">
                       ${formatInterval(workspaceHostRow.workspace_host_time_in_state)}
@@ -109,16 +109,15 @@ export function AdministratorWorkspaces({
                   })}
                 </div>
                 <div id="workspaces-${workspaceHost.id}" class="collapse">
-                  ${
-                    workspaces.length === 0
-                      ? html`
-                          <div class="text-muted my-2">
-                            There are no workspaces running on this host.
-                          </div>
-                        `
-                      : html`
-                          <div class="list-group my-2">
-                            ${workspaces.map((workspace) => {
+                  ${workspaces.length === 0
+                    ? html`
+                        <div class="text-muted my-2">
+                          There are no workspaces running on this host.
+                        </div>
+                      `
+                    : html`
+                        <div class="list-group my-2">
+                          ${workspaces.map((workspace) => {
                             const maybeCourseInstanceName = workspace.course_instance_name
                               ? html`(<span title="Course instance"
                                     >${workspace.course_instance_name}</span
@@ -147,9 +146,8 @@ export function AdministratorWorkspaces({
                               </div>
                             `;
                           })}
-                          </div>
-                        `
-                  }
+                        </div>
+                      `}
                 </div>
               </div>
             `;

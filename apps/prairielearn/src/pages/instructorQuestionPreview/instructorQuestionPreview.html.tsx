@@ -57,16 +57,14 @@ export function InstructorQuestionPreview({
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
-      ${
-        resLocals.question.type !== 'Freeform'
-          ? html`
-              <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-              <script src="${assetPath('javascripts/require.js')}"></script>
-              <script src="${assetPath('localscripts/question.js')}"></script>
-              <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
-            `
-          : ''
-      }
+      ${resLocals.question.type !== 'Freeform'
+        ? html`
+            <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+            <script src="${assetPath('javascripts/require.js')}"></script>
+            <script src="${assetPath('localscripts/question.js')}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+          `
+        : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       <style>
         .markdown-body :last-child {
@@ -92,66 +90,60 @@ export function InstructorQuestionPreview({
       storageKey: `calculator-preview-${resLocals.question.id}`,
     }),
     content: html`
-      ${
-        questionRenderContext === 'manual_grading'
-          ? html`
-              <div class="alert alert-primary">
-                You are viewing this question as it will appear in the manual grading interface.
-                <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
-                you are done.
-              </div>
-            `
-          : ''
-      }
-      ${
-        questionRenderContext === 'ai_grading'
-          ? html`
-              <div class="alert alert-primary">
-                You are viewing this question as it will appear to the AI grader.
-                <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
-                you are done.
-              </div>
-            `
-          : ''
-      }
+      ${questionRenderContext === 'manual_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear in the manual grading interface.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
+      ${questionRenderContext === 'ai_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${
-            readmeHtml
-              ? html`
-                  <div class="card mb-3 js-readme-card overflow-hidden">
-                    <div class="card-header d-flex align-items-center collapsible-card-header">
-                      <h2 class="me-auto">
-                        README <span class="small text-muted">(not visible to students)</span>
-                      </h2>
-                      <button
-                        type="button"
-                        class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#readme-card-body"
-                        aria-expanded="true"
-                        aria-controls="#readme-card-body"
-                      >
-                        <i class="fa fa-angle-up ms-1 expand-icon"></i>
-                      </button>
+          ${readmeHtml
+            ? html`
+                <div class="card mb-3 js-readme-card overflow-hidden">
+                  <div class="card-header d-flex align-items-center collapsible-card-header">
+                    <h2 class="me-auto">
+                      README <span class="small text-muted">(not visible to students)</span>
+                    </h2>
+                    <button
+                      type="button"
+                      class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#readme-card-body"
+                      aria-expanded="true"
+                      aria-controls="#readme-card-body"
+                    >
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                    </button>
+                  </div>
+                  <div class="show js-collapsible-card-body" id="readme-card-body">
+                    <div
+                      class="card-body position-relative markdown-body overflow-hidden max-height"
+                    >
+                      ${unsafeHtml(readmeHtml)}
                     </div>
-                    <div class="show js-collapsible-card-body" id="readme-card-body">
-                      <div
-                        class="card-body position-relative markdown-body overflow-hidden max-height"
-                      >
-                        ${unsafeHtml(readmeHtml)}
-                      </div>
-                      <div class="reveal-fade d-none"></div>
-                      <div
-                        class="py-1 z-1 position-relative d-none justify-content-center bg-light js-expand-button-container"
-                      >
-                        <button type="button" class="btn btn-sm btn-link">Expand</button>
-                      </div>
+                    <div class="reveal-fade d-none"></div>
+                    <div
+                      class="py-1 z-1 position-relative d-none justify-content-center bg-light js-expand-button-container"
+                    >
+                      <button type="button" class="btn btn-sm btn-link">Expand</button>
                     </div>
                   </div>
-                `
-              : ''
-          }
+                </div>
+              `
+            : ''}
           ${QuestionContainer({
             resLocals,
             showFooter: questionRenderContext != null ? false : undefined,

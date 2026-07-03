@@ -29,9 +29,11 @@ export interface SharingError {
   RegenerateSharingToken: never;
   AddCourseToSharingSet: never;
   CreateSharingSet:
-    { code: 'DUPLICATE_NAME'; name: string } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    | { code: 'DUPLICATE_NAME'; name: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   UpdateSharingSetDescription:
-    { code: 'NOT_FOUND'; name: string } | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+    | { code: 'NOT_FOUND'; name: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   DeleteSharingSet:
     | { code: 'IN_USE'; name: string }
     | { code: 'NOT_FOUND'; name: string }

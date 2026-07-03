@@ -17,7 +17,9 @@ import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
-  'show_questions_and_score' | 'show_score_only' | 'hide_questions_and_score';
+  | 'show_questions_and_score'
+  | 'show_score_only'
+  | 'hide_questions_and_score';
 
 const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMode>[] = [
   {

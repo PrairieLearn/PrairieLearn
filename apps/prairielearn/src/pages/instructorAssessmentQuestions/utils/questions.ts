@@ -511,15 +511,17 @@ export function buildQuestionMetadata(opts: {
     if (!courseQuestion?.assessments?.length) return null;
     const filtered = courseQuestion.assessments
       .filter((a) => a.assessment_id !== assessment.id)
-      .map((a): OtherAssessment => ({
-        assessment_id: a.assessment_id,
-        assessment_set_abbreviation: a.assessment_set_abbreviation ?? '',
-        assessment_set_name: a.assessment_set_name ?? '',
-        assessment_number: a.assessment_number ?? '',
-        assessment_set_color: a.assessment_set_color ?? '',
-        assessment_course_instance_id: courseInstance.id,
-        assessment_share_source_publicly: false,
-      }));
+      .map(
+        (a): OtherAssessment => ({
+          assessment_id: a.assessment_id,
+          assessment_set_abbreviation: a.assessment_set_abbreviation ?? '',
+          assessment_set_name: a.assessment_set_name ?? '',
+          assessment_number: a.assessment_number ?? '',
+          assessment_set_color: a.assessment_set_color ?? '',
+          assessment_course_instance_id: courseInstance.id,
+          assessment_share_source_publicly: false,
+        }),
+      );
     return filtered.length > 0 ? filtered : null;
   })();
 

@@ -54,20 +54,16 @@ function GettingStartedTask(task: GettingStartedTaskInfo) {
     <div class="list-group-item">
       <div class="d-flex align-items-center gap-3">
         <i
-          class="${
-            task.isComplete
-              ? 'fa-solid fa-check-circle text-success'
-              : 'fa-regular fa-circle text-muted'
-          } "
+          class="${task.isComplete
+            ? 'fa-solid fa-check-circle text-success'
+            : 'fa-regular fa-circle text-muted'} "
         ></i>
         <div>
-          ${
-            !task.isComplete && task.link
-              ? html` <a href="${task.link}">
-                  <p class="my-0">${task.header}</p>
-                </a>`
-              : html`<p class="my-0">${task.header}</p>`
-          }
+          ${!task.isComplete && task.link
+            ? html` <a href="${task.link}">
+                <p class="my-0">${task.header}</p>
+              </a>`
+            : html`<p class="my-0">${task.header}</p>`}
           <p class="text-muted my-0">${task.description}</p>
         </div>
       </div>

@@ -80,11 +80,9 @@ export function LockpointRow({
           <div>
             <span class="fw-bold text-muted">Lockpoint</span>
             <small class="text-muted d-block">
-              ${
-                blockedByAdvanceScorePerc
-                  ? 'A previous question requires a higher score before you can proceed past this lockpoint.'
-                  : 'Complete previous questions to unlock.'
-              }
+              ${blockedByAdvanceScorePerc
+                ? 'A previous question requires a higher score before you can proceed past this lockpoint.'
+                : 'Complete previous questions to unlock.'}
             </small>
           </div>
         </div>

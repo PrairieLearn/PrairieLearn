@@ -57,7 +57,8 @@ interface SerializedQuestionBankConversionResult extends SerializedConversionRes
 
 /** Conversion result sent to the browser for review. */
 export type SerializedConversionResult =
-  SerializedAssessmentConversionResult | SerializedQuestionBankConversionResult;
+  | SerializedAssessmentConversionResult
+  | SerializedQuestionBankConversionResult;
 
 type StoredSerializedConversionResultCommon = Omit<
   SerializedConversionResultCommon,

@@ -708,7 +708,8 @@ export class QTI12ItemContainerParser implements InputParser {
 
     const resprocessing = itemEl['resprocessing'] as Record<string, unknown> | undefined;
     const calcBlock = getNestedValue(itemEl, 'itemproc_extension', 'calculated') as
-      Record<string, unknown> | undefined;
+      | Record<string, unknown>
+      | undefined;
 
     return {
       ident,

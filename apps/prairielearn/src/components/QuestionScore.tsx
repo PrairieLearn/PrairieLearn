@@ -44,24 +44,20 @@ export function QuestionScorePanel(
         <h2>Question ${instance_question_info.question_number}</h2>
       </div>
       ${QuestionScorePanelContent(props)}
-      ${
-        variant != null && assessment.allow_issue_reporting
-          ? html`
-              <div class="card-footer">
-                ${
-                authz_result?.authorized_edit === false
-                  ? html`
-                      <div class="alert alert-warning mb-0" role="alert">
-                        You are viewing the question instance of a different user and so are not
-                        authorized to report an error.
-                      </div>
-                    `
-                  : IssueReportingPanel({ variant, csrfToken })
-              }
-              </div>
-            `
-          : ''
-      }
+      ${variant != null && assessment.allow_issue_reporting
+        ? html`
+            <div class="card-footer">
+              ${authz_result?.authorized_edit === false
+                ? html`
+                    <div class="alert alert-warning mb-0" role="alert">
+                      You are viewing the question instance of a different user and so are not
+                      authorized to report an error.
+                    </div>
+                  `
+                : IssueReportingPanel({ variant, csrfToken })}
+            </div>
+          `
+        : ''}
     </div>
   `;
 }
@@ -89,26 +85,23 @@ export function QuestionScorePanelContent({
       id="question-score-panel-content"
     >
       <tbody>
-        ${
-          assessment.type === 'Exam'
-            ? html`
-                <tr>
-                  <td>Status:</td>
-                  <td>
-                    ${ExamQuestionStatus({
+        ${assessment.type === 'Exam'
+          ? html`
+              <tr>
+                <td>Status:</td>
+                <td>
+                  ${ExamQuestionStatus({
                     instance_question,
                     assessment_question,
                     allowGradeLeftMs,
                   })}
-                  </td>
-                </tr>
-              `
-            : ''
-        }
-        ${
-          assessment.type === 'Homework'
-            ? html`
-                ${
+                </td>
+              </tr>
+            `
+          : ''}
+        ${assessment.type === 'Homework'
+          ? html`
+              ${
                 // This condition covers two cases:
                 // - A purely manually-graded question
                 // - A question with no points at all
@@ -124,7 +117,7 @@ export function QuestionScorePanelContent({
                     `
                   : ''
               }
-                ${
+              ${
                 // Only show previous variants if the question allows multiple variants,
                 // or there are multiple variants (i.e., they were allowed at some point)
                 !question.single_variant ||
@@ -144,13 +137,13 @@ export function QuestionScorePanelContent({
                     `
                   : ''
               }
-              `
-            : assessment_question.max_auto_points
-              ? html`
-                  <tr>
-                    <td>Available points:</td>
-                    <td>
-                      ${ExamQuestionAvailablePoints({
+            `
+          : assessment_question.max_auto_points
+            ? html`
+                <tr>
+                  <td>Available points:</td>
+                  <td>
+                    ${ExamQuestionAvailablePoints({
                       open: !!assessment_instance.open && instance_question.open,
                       currentWeight:
                         (instance_question.points_list_original?.[
@@ -161,37 +154,34 @@ export function QuestionScorePanelContent({
                       ),
                       highestSubmissionScore: instance_question.highest_submission_score,
                     })}
-                    </td>
-                  </tr>
-                `
-              : ''
-        }
-        ${
-          hasAutoAndManualPoints
-            ? html`
-                <tr>
-                  <td>Auto-grading:</td>
-                  <td>
-                    ${InstanceQuestionPoints({
+                  </td>
+                </tr>
+              `
+            : ''}
+        ${hasAutoAndManualPoints
+          ? html`
+              <tr>
+                <td>Auto-grading:</td>
+                <td>
+                  ${InstanceQuestionPoints({
                     instance_question,
                     assessment_question,
                     component: 'auto',
                   })}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Manual grading:</td>
-                  <td>
-                    ${InstanceQuestionPoints({
+                </td>
+              </tr>
+              <tr>
+                <td>Manual grading:</td>
+                <td>
+                  ${InstanceQuestionPoints({
                     instance_question,
                     assessment_question,
                     component: 'manual',
                   })}
-                  </td>
-                </tr>
-              `
-            : ''
-        }
+                </td>
+              </tr>
+            `
+          : ''}
         <tr>
           <td>Total points:</td>
           <td>
@@ -202,23 +192,19 @@ export function QuestionScorePanelContent({
             })}
           </td>
         </tr>
-        ${
-          !hasAutoAndManualPoints && assessment_question.max_points
-            ? html`
-                <tr>
-                  <td colspan="2" class="text-end">
-                    <small>
-                      ${
-                      !assessment_question.max_auto_points
-                        ? 'Manually-graded question'
-                        : 'Auto-graded question'
-                    }
-                    </small>
-                  </td>
-                </tr>
-              `
-            : ''
-        }
+        ${!hasAutoAndManualPoints && assessment_question.max_points
+          ? html`
+              <tr>
+                <td colspan="2" class="text-end">
+                  <small>
+                    ${!assessment_question.max_auto_points
+                      ? 'Manually-graded question'
+                      : 'Auto-graded question'}
+                  </small>
+                </td>
+              </tr>
+            `
+          : ''}
       </tbody>
     </table>
   `;
@@ -328,21 +314,19 @@ export function InstanceQuestionPoints({
               : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
       }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
-      ${
-        instance_question.used_for_grade === false && component === 'total' && (points ?? 0) !== 0
-          ? html`
-              <button
-                type="button"
-                class="btn btn-xs"
-                data-bs-toggle="tooltip"
-                aria-label="Not included in grade"
-                title="This zone uses only the best questions for score, and this question is not included."
-              >
-                <i class="far fa-question-circle" aria-hidden="true"></i>
-              </button>
-            `
-          : ''
-      }
+      ${instance_question.used_for_grade === false && component === 'total' && (points ?? 0) !== 0
+        ? html`
+            <button
+              type="button"
+              class="btn btn-xs"
+              data-bs-toggle="tooltip"
+              aria-label="Not included in grade"
+              title="This zone uses only the best questions for score, and this question is not included."
+            >
+              <i class="far fa-question-circle" aria-hidden="true"></i>
+            </button>
+          `
+        : ''}
     </span>
   `;
 }

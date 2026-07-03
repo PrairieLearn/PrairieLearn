@@ -3,10 +3,14 @@ import { assertNever } from '@prairielearn/utils';
 import type { Course, CourseInstance, Enrollment, User } from './db-types.js';
 
 type EnrollmentIneligibilityReason =
-  'blocked' | 'self-enrollment-disabled' | 'self-enrollment-expired' | 'institution-restriction';
+  | 'blocked'
+  | 'self-enrollment-disabled'
+  | 'self-enrollment-expired'
+  | 'institution-restriction';
 
 type EnrollmentEligibilityResult =
-  { eligible: true } | { eligible: false; reason: EnrollmentIneligibilityReason };
+  | { eligible: true }
+  | { eligible: false; reason: EnrollmentIneligibilityReason };
 
 export function getEligibilityErrorMessage(reason: EnrollmentIneligibilityReason) {
   switch (reason) {

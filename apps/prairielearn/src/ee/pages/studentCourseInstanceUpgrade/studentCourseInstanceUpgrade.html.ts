@@ -42,45 +42,43 @@ export function StudentCourseInstanceUpgrade({
         requires an upgrade to support certain features selected by your instructor.
       </p>
 
-      ${
-        planPrices == null
-          ? html`<p>Please contact your instructor for more information.</p>`
-          : html`
-              ${PriceTable({ planNames: missingPlans, planPrices })}
+      ${planPrices == null
+        ? html`<p>Please contact your instructor for more information.</p>`
+        : html`
+            ${PriceTable({ planNames: missingPlans, planPrices })}
 
-              <form method="POST">
-                <div class="form-check mb-3">
-                  <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="js-terms-agreement"
-                    name="terms_agreement"
-                    value="1"
-                  />
-                  <label class="form-check-label" for="js-terms-agreement">
-                    I agree to the PrairieLearn
-                    <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
-                    <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
-                  </label>
-                </div>
+            <form method="POST">
+              <div class="form-check mb-3">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="js-terms-agreement"
+                  name="terms_agreement"
+                  value="1"
+                />
+                <label class="form-check-label" for="js-terms-agreement">
+                  I agree to the PrairieLearn
+                  <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
+                  <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
+                </label>
+              </div>
 
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                ${missingPlans.map(
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              ${missingPlans.map(
                 (plan) => html` <input type="hidden" name="unsafe_plan_names" value="${plan}" /> `,
               )}
-                <button
-                  id="js-upgrade"
-                  type="submit"
-                  name="__action"
-                  value="upgrade"
-                  class="btn btn-primary d-block w-100"
-                  disabled
-                >
-                  Upgrade
-                </button>
-              </form>
-            `
-      }
+              <button
+                id="js-upgrade"
+                type="submit"
+                name="__action"
+                value="upgrade"
+                class="btn btn-primary d-block w-100"
+                disabled
+              >
+                Upgrade
+              </button>
+            </form>
+          `}
     `,
   });
 }
@@ -106,21 +104,17 @@ export function CourseInstanceStudentUpdateSuccess({
     content: html`
       <h1>Thanks!</h1>
 
-      ${
-        paid
-          ? html`
-              <p>Your payment was successfully processed. You may now access the course.</p>
+      ${paid
+        ? html`
+            <p>Your payment was successfully processed. You may now access the course.</p>
 
-              <a href="/pl/course_instance/${courseInstance.id}" class="btn btn-primary">
-                Continue to ${course.short_name}
-              </a>
-            `
-          : html`
-              <p>
-                Once your payment has been fully processed, check back for access to the course.
-              </p>
-            `
-      }
+            <a href="/pl/course_instance/${courseInstance.id}" class="btn btn-primary">
+              Continue to ${course.short_name}
+            </a>
+          `
+        : html`
+            <p>Once your payment has been fully processed, check back for access to the course.</p>
+          `}
     `,
   });
 }

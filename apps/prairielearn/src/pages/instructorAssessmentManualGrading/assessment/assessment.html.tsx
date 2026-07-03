@@ -59,11 +59,9 @@ export function ManualGradingAssessment({
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
     `,
     preContent: html`
-      ${
-        resLocals.authz_data.has_course_instance_permission_edit
-          ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
-          : ''
-      }
+      ${resLocals.authz_data.has_course_instance_permission_edit
+        ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
+        : ''}
     `,
     content: (
       <>

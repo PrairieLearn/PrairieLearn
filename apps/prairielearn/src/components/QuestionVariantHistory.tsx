@@ -23,35 +23,31 @@ export function QuestionVariantHistory({
   const collapseButtonId = `variants-points-collapse-button-${instanceQuestionId}`;
 
   return html`
-    ${
-      hasOverflow
-        ? html`
-            <button
-              id="${collapseButtonId}"
-              class="bg-white text-body p-0 m-0 border-0 rounded-0"
-              aria-label="Show older variants"
-              onclick="
+    ${hasOverflow
+      ? html`
+          <button
+            id="${collapseButtonId}"
+            class="bg-white text-body p-0 m-0 border-0 rounded-0"
+            aria-label="Show older variants"
+            onclick="
                 // show all the hidden variant score buttons
                 document.querySelectorAll('.${collapseClass}').forEach(e => e.style.display = '');
                 // hide the ... button that triggered the expansion
                 document.querySelectorAll('#${collapseButtonId}').forEach(e => e.style.display = 'none');
             "
-            >
-              &ctdot;
-            </button>
-          `
-        : ''
-    }
+          >
+            &ctdot;
+          </button>
+        `
+      : ''}
     ${previousVariants.map((variant, index) => {
       const hidden = hasOverflow && index < previousVariants.length - MAX_DISPLAYED_VARIANTS;
 
       return html`
         <a
-          class="badge ${
-            currentVariantId != null && idsEqual(variant.id, currentVariantId)
-              ? 'text-bg-info'
-              : 'text-bg-secondary'
-          } ${collapseClass}"
+          class="badge ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
+            ? 'text-bg-info'
+            : 'text-bg-secondary'} ${collapseClass}"
           ${hidden ? 'style="display: none"' : ''}
           href="${getInstanceQuestionUrl({
             courseInstanceId,
@@ -60,11 +56,9 @@ export function QuestionVariantHistory({
           })}"
         >
           ${variant.open ? 'Open' : `${Math.floor(variant.max_submission_score * 100)}%`}
-          ${
-            currentVariantId != null && idsEqual(variant.id, currentVariantId)
-              ? html`<span class="visually-hidden">(current)</span>`
-              : ''
-          }
+          ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
+            ? html`<span class="visually-hidden">(current)</span>`
+            : ''}
         </a>
       `;
     })}

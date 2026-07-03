@@ -60,11 +60,10 @@ export function StudentInstanceQuestion({
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
       ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
-      ${
-        resLocals.assessment.type === 'Exam'
-          ? html`
-              ${compiledScriptTag('examTimeLimitCountdown.ts')}
-              ${EncodedData(
+      ${resLocals.assessment.type === 'Exam'
+        ? html`
+            ${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
               {
                 serverRemainingMS: resLocals.assessment_instance_remaining_ms,
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
@@ -76,37 +75,30 @@ export function StudentInstanceQuestion({
               },
               'time-limit-data',
             )}
-            `
-          : ''
-      }
+          `
+        : ''}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
-      ${
-        renderState?.variant == null
-          ? ''
-          : html`
-              ${
-              resLocals.question.type !== 'Freeform'
-                ? html`
-                    <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
-                    <script src="${assetPath('javascripts/require.js')}"></script>
-                    <script src="${assetPath('localscripts/question.js')}"></script>
-                    <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
-                  `
-                : ''
-            }
-              ${unsafeHtml(renderState.extraHeadersHtml)}
-            `
-      }
+      ${renderState?.variant == null
+        ? ''
+        : html`
+            ${resLocals.question.type !== 'Freeform'
+              ? html`
+                  <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
+                  <script src="${assetPath('javascripts/require.js')}"></script>
+                  <script src="${assetPath('localscripts/question.js')}"></script>
+                  <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+                `
+              : ''}
+            ${unsafeHtml(renderState.extraHeadersHtml)}
+          `}
     `,
     preContent: html`
-      ${
-        userCanDeleteAssessmentInstance
-          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-          : ''
-      }
+      ${userCanDeleteAssessmentInstance
+        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+        : ''}
     `,
     postContent: hasCalculator
       ? CalculatorDrawer({
@@ -117,98 +109,86 @@ export function StudentInstanceQuestion({
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${
-            resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
-              ? html`
-                  <div class="alert alert-warning">
-                    This question is read-only because you advanced past a lockpoint. You can review
-                    your previous submissions but cannot make new ones.
-                  </div>
-                `
-              : ''
-          }
-          ${
-            renderState?.variant == null
-              ? html`
-                  <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                      <h1>
-                        ${QuestionTitle({
+          ${resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
+            ? html`
+                <div class="alert alert-warning">
+                  This question is read-only because you advanced past a lockpoint. You can review
+                  your previous submissions but cannot make new ones.
+                </div>
+              `
+            : ''}
+          ${renderState?.variant == null
+            ? html`
+                <div class="card mb-4">
+                  <div class="card-header bg-primary text-white">
+                    <h1>
+                      ${QuestionTitle({
                         questionContext,
                         question: resLocals.question,
                         questionNumber: resLocals.instance_question_info.question_number,
                         showQuestionTitles: !!resLocals.assessment.show_question_titles,
                       })}
-                      </h1>
-                    </div>
-                    <div class="card-body">
-                      This question was not viewed while the assessment was open, so no variant was
-                      created.
-                    </div>
+                    </h1>
                   </div>
-                `
-              : QuestionContainer({
-                  resLocals,
-                  questionContext,
-                  questionCopyTargets,
-                  showFooter: resLocals.assessment_instance.open ?? false,
-                })
-          }
+                  <div class="card-body">
+                    This question was not viewed while the assessment was open, so no variant was
+                    created.
+                  </div>
+                </div>
+              `
+            : QuestionContainer({
+                resLocals,
+                questionContext,
+                questionCopyTargets,
+                showFooter: resLocals.assessment_instance.open ?? false,
+              })}
         </div>
 
         <div class="col-lg-3 col-sm-12">
-          ${
-            resLocals.assessment.type === 'Exam'
-              ? html`
-                  <div class="card mb-4">
-                    <div class="card-header bg-secondary">
-                      <h2>
-                        <a
-                          class="text-white"
-                          href="${resLocals.urlPrefix}/assessment_instance/${
-                          resLocals.assessment_instance.id
-                        }/"
-                        >
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </a>
-                      </h2>
-                    </div>
-
-                    <div class="card-body">
-                      <div class="d-flex justify-content-center">
-                        <a
-                          class="btn btn-info"
-                          href="${resLocals.urlPrefix}/assessment_instance/${
-                          resLocals.assessment_instance.id
-                        }/"
-                        >
-                          Assessment overview
-                        </a>
-                      </div>
-
-                      ${
-                      resLocals.assessment_instance.open &&
-                      resLocals.assessment_instance_remaining_ms != null
-                        ? html`
-                            <div class="mt-3">
-                              <div id="countdownProgress"></div>
-                              <p class="mb-0">
-                                Time remaining: <span id="countdownDisplay"></span>
-                              </p>
-                            </div>
-                          `
-                        : ''
-                    }
-                    </div>
+          ${resLocals.assessment.type === 'Exam'
+            ? html`
+                <div class="card mb-4">
+                  <div class="card-header bg-secondary">
+                    <h2>
+                      <a
+                        class="text-white"
+                        href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                          .assessment_instance.id}/"
+                      >
+                        ${resLocals.assessment_set.name} ${resLocals.assessment.number}
+                      </a>
+                    </h2>
                   </div>
-                `
-              : AssessmentScorePanel({
-                  urlPrefix: resLocals.urlPrefix,
-                  assessment: resLocals.assessment,
-                  assessment_set: resLocals.assessment_set,
-                  assessment_instance: resLocals.assessment_instance,
-                })
-          }
+
+                  <div class="card-body">
+                    <div class="d-flex justify-content-center">
+                      <a
+                        class="btn btn-info"
+                        href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                          .assessment_instance.id}/"
+                      >
+                        Assessment overview
+                      </a>
+                    </div>
+
+                    ${resLocals.assessment_instance.open &&
+                    resLocals.assessment_instance_remaining_ms != null
+                      ? html`
+                          <div class="mt-3">
+                            <div id="countdownProgress"></div>
+                            <p class="mb-0">Time remaining: <span id="countdownDisplay"></span></p>
+                          </div>
+                        `
+                      : ''}
+                  </div>
+                </div>
+              `
+            : AssessmentScorePanel({
+                urlPrefix: resLocals.urlPrefix,
+                assessment: resLocals.assessment,
+                assessment_set: resLocals.assessment_set,
+                assessment_instance: resLocals.assessment_instance,
+              })}
           ${QuestionScorePanel({
             instance_question: resLocals.instance_question,
             assessment: resLocals.assessment,
@@ -234,20 +214,18 @@ export function StudentInstanceQuestion({
               ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
               : null,
           })}
-          ${
-            resLocals.assessment.allow_personal_notes
-              ? PersonalNotesPanel({
-                  fileList: resLocals.file_list,
-                  context: 'question',
-                  courseInstanceId: resLocals.course_instance.id,
-                  assessment_instance: resLocals.assessment_instance,
-                  authz_result: resLocals.authz_result,
-                  variantId: renderState?.variant.id,
-                  csrfToken: resLocals.__csrf_token,
-                  lockdownBrowser: resLocals.lockdown_browser,
-                })
-              : ''
-          }
+          ${resLocals.assessment.allow_personal_notes
+            ? PersonalNotesPanel({
+                fileList: resLocals.file_list,
+                context: 'question',
+                courseInstanceId: resLocals.course_instance.id,
+                assessment_instance: resLocals.assessment_instance,
+                authz_result: resLocals.authz_result,
+                variantId: renderState?.variant.id,
+                csrfToken: resLocals.__csrf_token,
+                lockdownBrowser: resLocals.lockdown_browser,
+              })
+            : ''}
           ${hasCalculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,

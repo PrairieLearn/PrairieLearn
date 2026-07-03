@@ -237,7 +237,9 @@ By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for s
   "constantQuestionValue": true,
   "zones": [
     {
-      "questions": [/* ... */]
+      "questions": [
+        /* ... */
+      ]
     }
   ]
 }

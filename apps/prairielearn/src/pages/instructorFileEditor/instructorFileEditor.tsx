@@ -200,65 +200,59 @@ router.get(
               name="ace-base-path"
               content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
             />
-            ${
-              editorData.lintHtmlMustache
-                ? html`
-                    <meta
-                      name="htmlmustache-runtime-wasm"
-                      content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
-                    />
-                    <meta
-                      name="htmlmustache-grammar-wasm"
-                      content="${nodeModulesAssetPath(
+            ${editorData.lintHtmlMustache
+              ? html`
+                  <meta
+                    name="htmlmustache-runtime-wasm"
+                    content="${nodeModulesAssetPath('web-tree-sitter/web-tree-sitter.wasm')}"
+                  />
+                  <meta
+                    name="htmlmustache-grammar-wasm"
+                    content="${nodeModulesAssetPath(
                       '@prairielearn/tree-sitter-htmlmustache/tree-sitter-htmlmustache.wasm',
                     )}"
-                    />
-                    ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
-                  `
-                : ''
-            }
+                  />
+                  ${compiledScriptTag('instructorFileEditorHtmlMustacheLinterClient.ts')}
+                `
+              : ''}
           `,
           content: html`
-            ${
-              editorData.fileMetadata?.syncErrors
-                ? html`
-                    <div class="alert alert-danger" role="alert">
-                      <h2 class="h5 alert-heading">Sync error</h2>
-                      <p>
-                        There were one or more errors in this file the last time you tried to sync.
-                        This file will not be able to be synced until the errors are corrected. The
-                        errors are listed below.
-                      </p>
-                      <pre
-                        class="text-white rounded p-3 mb-0"
-                        style="background-color: black;"
-                      ><code>${unsafeHtml(
+            ${editorData.fileMetadata?.syncErrors
+              ? html`
+                  <div class="alert alert-danger" role="alert">
+                    <h2 class="h5 alert-heading">Sync error</h2>
+                    <p>
+                      There were one or more errors in this file the last time you tried to sync.
+                      This file will not be able to be synced until the errors are corrected. The
+                      errors are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
                       ansiToHtml(editorData.fileMetadata.syncErrors),
                     )}</code></pre>
-                    </div>
-                  `
-                : ''
-            }
-            ${
-              editorData.fileMetadata?.syncWarnings
-                ? html`
-                    <div class="alert alert-warning" role="alert">
-                      <h2 class="h5 alert-heading">Sync warning</h2>
-                      <p>
-                        There were one or more warnings in this file the last time you tried to
-                        sync. These warnings do not prevent this file from being synced, but they
-                        should still be fixed. The warnings are listed below.
-                      </p>
-                      <pre
-                        class="text-white rounded p-3 mb-0"
-                        style="background-color: black;"
-                      ><code>${unsafeHtml(
+                  </div>
+                `
+              : ''}
+            ${editorData.fileMetadata?.syncWarnings
+              ? html`
+                  <div class="alert alert-warning" role="alert">
+                    <h2 class="h5 alert-heading">Sync warning</h2>
+                    <p>
+                      There were one or more warnings in this file the last time you tried to sync.
+                      These warnings do not prevent this file from being synced, but they should
+                      still be fixed. The warnings are listed below.
+                    </p>
+                    <pre
+                      class="text-white rounded p-3 mb-0"
+                      style="background-color: black;"
+                    ><code>${unsafeHtml(
                       ansiToHtml(editorData.fileMetadata.syncWarnings),
                     )}</code></pre>
-                    </div>
-                  `
-                : ''
-            }
+                  </div>
+                `
+              : ''}
             <h1 class="visually-hidden">File editor</h1>
 
             ${hydrateHtml(

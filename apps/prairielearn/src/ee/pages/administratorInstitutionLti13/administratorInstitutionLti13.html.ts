@@ -162,12 +162,10 @@ function LTI13Instance({
 
       <hr />
       <h5>Name:</h5>
-      ${
-        instance.tool_platform_name
-          ? html` The LMS has referred to itself as:
-              <strong>${instance.tool_platform_name}</strong>`
-          : ''
-      }
+      ${instance.tool_platform_name
+        ? html` The LMS has referred to itself as:
+            <strong>${instance.tool_platform_name}</strong>`
+        : ''}
       <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
@@ -234,7 +232,8 @@ function LTI13Instance({
             rows="8"
             spellcheck="false"
           >
-${JSON.stringify(instance.issuer_params, null, 3)}</textarea>
+${JSON.stringify(instance.issuer_params, null, 3)}</textarea
+          >
         </div>
 
         <div class="mb-3 mt-2">
@@ -262,7 +261,8 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea>
             rows="4"
             spellcheck="false"
           >
-${JSON.stringify(instance.custom_fields, null, 3)}</textarea>
+${JSON.stringify(instance.custom_fields, null, 3)}</textarea
+          >
           <small id="custom_fieldsHelp" class="form-text text-muted">
             Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom
             fields.
@@ -464,11 +464,9 @@ function RosterInspector({
       link. This exposes every member's <code>sub</code>, email, and UIN. No enrollments or users
       are created or modified.
     </p>
-    ${
-      linkedCourseInstances.length === 0
-        ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
-        : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))
-    }
+    ${linkedCourseInstances.length === 0
+      ? html`<p>No course instances are linked to this LTI 1.3 instance yet.</p>`
+      : linkedCourseInstances.map((linked) => RosterInspectorForm({ linked, resLocals }))}
   `;
 }
 
@@ -497,33 +495,30 @@ function RosterInspectorForm({
           </a>
           <span class="text-muted fw-normal">(${lci.context_label ?? 'no context label'})</span>
         </h6>
-        ${
-          lci.context_memberships_url === null
-            ? html`
-                <p class="text-muted mb-0">
-                  No <code>context_memberships_url</code> stored yet. Have an instructor launch
-                  PrairieLearn from this course in the LMS to populate it.
-                </p>
-              `
-            : html`
-                <form method="POST" class="row g-2 align-items-end">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <input type="hidden" name="__action" value="inspect_roster" />
-                  <input type="hidden" name="lti13_course_instance_id" value="${lci.id}" />
-                  <div class="col-md-9">
-                    <label class="form-label" for="rlid-${lci.id}">Resource link</label>
-                    <select class="form-select" id="rlid-${lci.id}" name="rlid">
-                      <option value="">None (plain roster, no custom claims)</option>
-                      ${
-                      lci.resource_link_id
-                        ? html`
-                            <option value="${lci.resource_link_id}">
-                              Course navigation (${lci.resource_link_id})
-                            </option>
-                          `
-                        : ''
-                    }
-                      ${linked.lineitem_resource_links.map(
+        ${lci.context_memberships_url === null
+          ? html`
+              <p class="text-muted mb-0">
+                No <code>context_memberships_url</code> stored yet. Have an instructor launch
+                PrairieLearn from this course in the LMS to populate it.
+              </p>
+            `
+          : html`
+              <form method="POST" class="row g-2 align-items-end">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="__action" value="inspect_roster" />
+                <input type="hidden" name="lti13_course_instance_id" value="${lci.id}" />
+                <div class="col-md-9">
+                  <label class="form-label" for="rlid-${lci.id}">Resource link</label>
+                  <select class="form-select" id="rlid-${lci.id}" name="rlid">
+                    <option value="">None (plain roster, no custom claims)</option>
+                    ${lci.resource_link_id
+                      ? html`
+                          <option value="${lci.resource_link_id}">
+                            Course navigation (${lci.resource_link_id})
+                          </option>
+                        `
+                      : ''}
+                    ${linked.lineitem_resource_links.map(
                       (li) => html`
                         <option value="${li.resource_link_id}">
                           Assessment: ${li.assessment_title ?? li.label ?? li.resource_link_id}
@@ -531,14 +526,13 @@ function RosterInspectorForm({
                         </option>
                       `,
                     )}
-                    </select>
-                  </div>
-                  <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100">Dump roster</button>
-                  </div>
-                </form>
-              `
-        }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100">Dump roster</button>
+                </div>
+              </form>
+            `}
       </div>
     </div>
   `;

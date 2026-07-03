@@ -42,24 +42,22 @@ export function CalculatorDrawerToggle({
     <div class="card mb-4">
       <div class="card-header bg-secondary text-white d-flex align-items-center">
         <span>Tools</span>
-        ${
-          showInfoPopover
-            ? html`
-                <button
-                  type="button"
-                  class="btn btn-link btn-sm ms-auto text-white border-0 p-0"
-                  data-bs-toggle="popover"
-                  data-bs-container="body"
-                  data-bs-html="true"
-                  data-bs-title="${escapeHtml(toolsTitleContent)}"
-                  data-bs-content="${escapeHtml(toolsPopoverContent)}"
-                  data-bs-placement="auto"
-                >
-                  <i class="bi bi-question-circle" aria-hidden="true"></i>
-                </button>
-              `
-            : ''
-        }
+        ${showInfoPopover
+          ? html`
+              <button
+                type="button"
+                class="btn btn-link btn-sm ms-auto text-white border-0 p-0"
+                data-bs-toggle="popover"
+                data-bs-container="body"
+                data-bs-html="true"
+                data-bs-title="${escapeHtml(toolsTitleContent)}"
+                data-bs-content="${escapeHtml(toolsPopoverContent)}"
+                data-bs-placement="auto"
+              >
+                <i class="bi bi-question-circle" aria-hidden="true"></i>
+              </button>
+            `
+          : ''}
       </div>
       <div class="card-body">
         <button type="button" class="btn btn-outline-secondary w-100" id="calculatorDrawerToggle">
