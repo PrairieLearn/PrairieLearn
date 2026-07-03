@@ -390,13 +390,18 @@ function IssuePanel({
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`
-            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
+            <ul
+              class="list-group list-group-flush border-top"
+              style="--bs-list-group-item-padding-x: 1.25rem; --bs-list-group-item-padding-y: 0.25rem;"
+            >
               ${issue.system_data?.courseErrData
                 ? html`
-                    <p><strong>Console log:</strong></p>
-                    <pre class="bg-dark text-white rounded p-3">
+                    <li class="list-group-item">
+                      <p class="mb-2"><strong>Console log:</strong></p>
+                      <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 60vh;">
 ${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
-                    >
+                      >
+                    </li>
                   `
                 : ''}
               ${IssueDataCollapse({
@@ -411,7 +416,7 @@ ${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     data: issue.system_data,
                   })
                 : ''}
-            </div>
+            </ul>
           `
         : ''}
     </div>
@@ -428,11 +433,8 @@ function IssueDataCollapse({
   data: unknown;
 }) {
   return html`
-    <div class="border rounded mb-2" style="max-height: 60vh; overflow-y: auto;">
-      <p
-        class="mb-0 p-2 border-bottom"
-        style="position: sticky; top: 0; z-index: 1; background-color: var(--bs-card-bg);"
-      >
+    <li class="list-group-item">
+      <p class="mb-0">
         <strong>${label}:</strong>
         <button
           type="button"
@@ -446,9 +448,11 @@ function IssueDataCollapse({
         </button>
       </p>
       <div class="collapse" id="${collapseId}">
-        <pre class="bg-dark text-white p-3 mb-0">${JSON.stringify(data, null, '    ')}</pre>
+        <pre class="bg-dark text-white rounded p-3 mt-2 mb-0" style="max-height: 60vh;">
+${JSON.stringify(data, null, '    ')}</pre
+        >
       </div>
-    </div>
+    </li>
   `;
 }
 
