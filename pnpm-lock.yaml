@@ -567,7 +567,7 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0
       body-parser:
-        specifier: ^1.20.5
+        specifier: ^1.20.5 <2
         version: 1.20.5
       bootstrap:
         specifier: ^5.3.8
@@ -591,10 +591,10 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       cookie:
-        specifier: ^0.7.2
+        specifier: ^0.7.2 <1
         version: 0.7.2
       cookie-parser:
-        specifier: ^1.4.7
+        specifier: ^1.4.7 <2
         version: 1.4.7
       cropperjs:
         specifier: ^2.1.1
@@ -624,7 +624,7 @@ importers:
         specifier: ^3.4.11
         version: 3.4.11
       dropzone:
-        specifier: ^5.9.3
+        specifier: ^5.9.3 <6
         version: 5.9.3
       echarts:
         specifier: ^6.1.0
@@ -639,7 +639,7 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1
       express:
-        specifier: ^4.22.2
+        specifier: ^4.22.2 <5
         version: 4.22.2
       express-async-handler:
         specifier: ^1.2.0
@@ -714,7 +714,7 @@ importers:
         specifier: ^6.2.3
         version: 6.2.3
       jquery:
-        specifier: ^3.7.1
+        specifier: ^3.7.1 <4
         version: 3.7.1
       jquery-ui-dist:
         specifier: ^1.13.3
@@ -927,7 +927,7 @@ importers:
         specifier: ^2.6.1
         version: 2.6.1
       ua-parser-js:
-        specifier: ^1.0.41
+        specifier: ^1.0.41 <2.0.0
         version: 1.0.41
       unified:
         specifier: ^11.0.5
@@ -1720,7 +1720,7 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/express':
-        specifier: ^4.17.25
+        specifier: ^4.17.25 <5
         version: 4.17.25
       '@types/node':
         specifier: ^24.13.2
@@ -1732,7 +1732,7 @@ importers:
         specifier: ^4.1.9
         version: 4.1.9(vitest@4.1.9)
       express:
-        specifier: ^4.22.2
+        specifier: ^4.22.2 <5
         version: 4.22.2
       vitest:
         specifier: ^4.1.9
@@ -1741,7 +1741,7 @@ importers:
   packages/express-test-utils:
     dependencies:
       '@types/express':
-        specifier: ^4.17.25
+        specifier: ^4.17.25 <5
         version: 4.17.25
     devDependencies:
       '@prairielearn/tsconfig':
@@ -1760,7 +1760,7 @@ importers:
         specifier: workspace:^
         version: link:../html
       '@types/express':
-        specifier: ^4.17.25
+        specifier: ^4.17.25 <5
         version: 4.17.25
     devDependencies:
       '@prairielearn/tsconfig':
@@ -2355,10 +2355,10 @@ importers:
   packages/session:
     dependencies:
       '@types/express':
-        specifier: ^4.17.25
+        specifier: ^4.17.25 <5
         version: 4.17.25
       cookie:
-        specifier: ^0.7.2
+        specifier: ^0.7.2 <1
         version: 0.7.2
       cookie-signature:
         specifier: ^1.2.2
@@ -2380,7 +2380,7 @@ importers:
         specifier: workspace:^
         version: link:../tsconfig
       '@types/cookie':
-        specifier: ^0.6.0
+        specifier: ^0.6.0 <1
         version: 0.6.0
       '@types/cookie-signature':
         specifier: ^1.1.2
@@ -2401,7 +2401,7 @@ importers:
         specifier: ^4.1.9
         version: 4.1.9(vitest@4.1.9)
       express:
-        specifier: ^4.22.2
+        specifier: ^4.22.2 <5
         version: 4.22.2
       fetch-cookie:
         specifier: ^3.2.0
