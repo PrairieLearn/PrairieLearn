@@ -212,7 +212,7 @@
     "pem": "^1.14.8",
     "pg": "^8.22.0",
     "popper.js": "^1.16.1",
-    "prettier": "^3.9.4",
+    "prettier": "~3.8.5 <3.9",
     "prosemirror-model": "^1.25.9",
     "prosemirror-state": "^1.4.4",
     "prosemirror-view": "^1.41.9",

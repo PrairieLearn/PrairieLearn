@@ -55,7 +55,7 @@
     "knip": "^6.23.0",
     "linkinator": "^7.6.1",
     "markdownlint-cli2": "^0.22.1",
-    "prettier": "^3.8.5",
+    "prettier": "~3.8.5 <3.9",
     "prettier-plugin-pkg": "^0.22.1",
     "prettier-plugin-sh": "^0.18.1",
     "prettier-plugin-sql": "^0.20.0",

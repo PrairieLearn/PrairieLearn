@@ -92,7 +92,7 @@ importers:
         specifier: ^0.22.1
         version: 0.22.1
       prettier:
-        specifier: ^3.8.5
+        specifier: ~3.8.5 <3.9
         version: 3.8.5
       prettier-plugin-pkg:
         specifier: ^0.22.1
@@ -406,7 +406,7 @@ importers:
         version: 0.1.4(stylelint@16.26.1(typescript@6.0.3))
       '@prairielearn/tree-sitter-htmlmustache':
         specifier: ^1.4.3
-        version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.9.4)
+        version: 1.4.3(node-gyp-build@4.8.4)(prettier@3.8.5)
       '@prairielearn/tsconfig':
         specifier: workspace:^
         version: link:../../packages/tsconfig
@@ -813,8 +813,8 @@ importers:
         specifier: ^1.16.1
         version: 1.16.1
       prettier:
-        specifier: ^3.9.4
-        version: 3.9.4
+        specifier: ~3.8.5 <3.9
+        version: 3.8.5
       prosemirror-model:
         specifier: ^1.25.9
         version: 1.25.9
@@ -9122,11 +9122,6 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  prettier@3.9.4:
-    resolution: {integrity: sha512-yWG/o/4oJfo036EKAfK6ACAoDOfHeRHx4tuxkfBZiauURiaSmYwlpOr5LQqKtIkRD2z1PLteme2WoxEnj4tHTg==}
-    engines: {node: '>=14'}
-    hasBin: true
-
   pretty-bytes@7.1.0:
     resolution: {integrity: sha512-nODzvTiYVRGRqAOvE84Vk5JDPyyxsVk0/fbA/bq7RqlnhksGpset09XTxbpvLTIjoaF7K8Z8DG8yHtKGTPSYRw==}
     engines: {node: '>=20'}
@@ -12754,20 +12749,6 @@ snapshots:
     optionalDependencies:
       node-gyp-build: 4.8.4
       prettier: 3.8.5
-
-  '@prairielearn/tree-sitter-htmlmustache@1.4.3(node-gyp-build@4.8.4)(prettier@3.9.4)':
-    dependencies:
-      ajv: 8.20.0
-      ajv-errors: 3.0.0(ajv@8.20.0)
-      ajv-i18n: 4.2.0(ajv@8.20.0)
-      chalk: 5.6.2
-      editorconfig: 3.0.2
-      vscode-languageserver-textdocument: 1.0.12
-      web-tree-sitter: 0.26.10
-      zod: 4.4.3
-    optionalDependencies:
-      node-gyp-build: 4.8.4
-      prettier: 3.9.4
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -17768,8 +17749,6 @@ snapshots:
   prettier@2.8.8: {}
 
   prettier@3.8.5: {}
-
-  prettier@3.9.4: {}
 
   pretty-bytes@7.1.0: {}
 
