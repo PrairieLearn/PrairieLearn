@@ -827,6 +827,12 @@ export function RubricSettings({
                 {rubricItems.length > 0 ? (
                   rubricItems.map((it, idx) => (
                     <RubricRow
+                      // TODO Using the key is not ideal, as it can cause issues
+                      // when reordering/deleting rows. This should be changed
+                      // to some sort of stable identifier (e.g., a temporary
+                      // ID) that is unique to the row, but not dependent on the
+                      // index.
+                      // eslint-disable-next-line @eslint-react/no-array-index-key
                       key={it.rubric_item.id ?? `row-${idx}`}
                       item={it}
                       showAiGradingStats={showAiGradingStats}
