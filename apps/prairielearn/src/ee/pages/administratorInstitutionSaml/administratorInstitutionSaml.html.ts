@@ -48,77 +48,87 @@ export function AdministratorInstitutionSaml({
     },
     preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
-      ${hasSamlProvider && !hasEnabledSaml
-        ? html`
-            <div class="alert alert-warning">
-              <h2 class="h5">SAML single sign-on is not enabled</h2>
-              <p class="mb-0">
-                After <a href="${testSamlUrl}">testing your SAML configuration</a>, you must visit
-                the <a href="${resLocals.urlPrefix}/sso">single sign-on configuration</a> page and
-                enable SAML authentication.
-              </p>
-            </div>
-          `
-        : ''}
-      ${hasSamlProvider && missingAttributeMappings
-        ? html`
-            <div class="alert alert-warning">
-              <h2 class="h5">Missing attribute mappings</h2>
-              <p class="mb-0">
-                One or more attribute mappings are missing. These are necessary for authentication
-                to work correctly.
-              </p>
-            </div>
-          `
-        : ''}
-      ${hasSamlProvider && hasPartialSplitNameMapping
-        ? html`
-            <div class="alert alert-warning">
-              <h2 class="h5">Incomplete split name configuration</h2>
-              <p class="mb-0">
-                Only one of the given name and family name attributes is configured. Both must be
-                configured together for split name mapping to take effect.
-              </p>
-            </div>
-          `
-        : ''}
-      ${hasSamlProvider && hasEnabledSaml && !missingAttributeMappings
-        ? html`
-            <div class="alert alert-success">
-              <h2 class="h5">SAML single sign-on is configured and enabled!</h2>
-              <p class="mb-0">
-                Users can sign into your institution using your configured SAML provider.
-              </p>
-            </div>
-          `
-        : ''}
-      ${hasSamlProvider
-        ? html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex align-items-center">
-                Information required by your Identity Provider
-              </div>
-              <div class="card-body">
-                <p>
-                  If your Identity Provider supports obtaining Service Provider configuration from a
-                  metadata URL, use the following:
+      ${
+        hasSamlProvider && !hasEnabledSaml
+          ? html`
+              <div class="alert alert-warning">
+                <h2 class="h5">SAML single sign-on is not enabled</h2>
+                <p class="mb-0">
+                  After <a href="${testSamlUrl}">testing your SAML configuration</a>, you must visit
+                  the <a href="${resLocals.urlPrefix}/sso">single sign-on configuration</a> page and
+                  enable SAML authentication.
                 </p>
-                <small class="text-muted">Metadata URL</small>
-                <div class="form-control mb-3">${metadataUrl}</div>
-                <p>Otherwise, use the following values to configure your Identity Provider:</p>
-                <small class="text-muted">Issuer / Entity ID</small>
-                <div class="form-control mb-3">${issuer}</div>
-                <small class="text-muted">Assertion Consumer Service URL</small>
-                <div class="form-control mb-3">${assertionConsumerServiceUrl}</div>
-                <small class="text-muted">Public Key</small>
-                <pre
-                  class="form-control mb-0"
-                  style="height: auto;"
-                ><code>${samlProvider.public_key}</code></pre>
               </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
+      ${
+        hasSamlProvider && missingAttributeMappings
+          ? html`
+              <div class="alert alert-warning">
+                <h2 class="h5">Missing attribute mappings</h2>
+                <p class="mb-0">
+                  One or more attribute mappings are missing. These are necessary for authentication
+                  to work correctly.
+                </p>
+              </div>
+            `
+          : ''
+      }
+      ${
+        hasSamlProvider && hasPartialSplitNameMapping
+          ? html`
+              <div class="alert alert-warning">
+                <h2 class="h5">Incomplete split name configuration</h2>
+                <p class="mb-0">
+                  Only one of the given name and family name attributes is configured. Both must be
+                  configured together for split name mapping to take effect.
+                </p>
+              </div>
+            `
+          : ''
+      }
+      ${
+        hasSamlProvider && hasEnabledSaml && !missingAttributeMappings
+          ? html`
+              <div class="alert alert-success">
+                <h2 class="h5">SAML single sign-on is configured and enabled!</h2>
+                <p class="mb-0">
+                  Users can sign into your institution using your configured SAML provider.
+                </p>
+              </div>
+            `
+          : ''
+      }
+      ${
+        hasSamlProvider
+          ? html`
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                  Information required by your Identity Provider
+                </div>
+                <div class="card-body">
+                  <p>
+                    If your Identity Provider supports obtaining Service Provider configuration from
+                    a metadata URL, use the following:
+                  </p>
+                  <small class="text-muted">Metadata URL</small>
+                  <div class="form-control mb-3">${metadataUrl}</div>
+                  <p>Otherwise, use the following values to configure your Identity Provider:</p>
+                  <small class="text-muted">Issuer / Entity ID</small>
+                  <div class="form-control mb-3">${issuer}</div>
+                  <small class="text-muted">Assertion Consumer Service URL</small>
+                  <div class="form-control mb-3">${assertionConsumerServiceUrl}</div>
+                  <small class="text-muted">Public Key</small>
+                  <pre
+                    class="form-control mb-0"
+                    style="height: auto;"
+                  ><code>${samlProvider.public_key}</code></pre>
+                </div>
+              </div>
+            `
+          : ''
+      }
 
       <h2 class="h4">Identity Provider configuration</h2>
       <form method="POST" class="mb-3 js-configure-form" ${!hasSamlProvider ? 'hidden' : ''}>
@@ -163,8 +173,7 @@ export function AdministratorInstitutionSaml({
             rows="20"
             aria-describedby="certificateHelp"
           >
-${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----'}</textarea
-          >
+${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----'}</textarea>
           <small id="certificateHelp" class="form-text text-muted">
             The public certificate of the Identity Provider. This is used to verify the signature of
             the SAML response. This <strong>must</strong> be a valid X.509 certificate in PEM
@@ -235,12 +244,14 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           <code>urn:oid:...</code>.
         </p>
 
-        ${!hasSamlProvider
-          ? html`<div class="alert alert-info">
-              If you're not sure which attributes are available, you can leave these blank for now
-              and use the "Test SAML login" link after setting up your Identity Provider.
-            </div>`
-          : ''}
+        ${
+          !hasSamlProvider
+            ? html`<div class="alert alert-info">
+                If you're not sure which attributes are available, you can leave these blank for now
+                and use the "Test SAML login" link after setting up your Identity Provider.
+              </div>`
+            : ''
+        }
 
         <div class="mb-3">
           <label class="form-label" for="name_attribute">Name attribute</label>
@@ -358,85 +369,87 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           Configure SAML identity provider
         </button>
       </div>
-      ${hasSamlProvider
-        ? html`
-            <p>
-              <a href="${testSamlUrl}" target="_blank">Test SAML login</a>: Shows all attributes
-              from the SAML IdP without establishing a session.
-            </p>
+      ${
+        hasSamlProvider
+          ? html`
+              <p>
+                <a href="${testSamlUrl}" target="_blank">Test SAML login</a>: Shows all attributes
+                from the SAML IdP without establishing a session.
+              </p>
 
-            <p>
-              <a href="${testSamlStrictUrl}" target="_blank">Test SAML login (strict mode)</a>:
-              Forces "validate audience", "require signed assertions", and "require signed response"
-              to be enabled.
-            </p>
+              <p>
+                <a href="${testSamlStrictUrl}" target="_blank">Test SAML login (strict mode)</a>:
+                Forces "validate audience", "require signed assertions", and "require signed
+                response" to be enabled.
+              </p>
 
-            <p>
-              <a href="${metadataUrl}" target="_blank">View SAML metadata</a>: Metadata can be
-              provided to institutions to help them configure their SAML IdP.
-            </p>
+              <p>
+                <a href="${metadataUrl}" target="_blank">View SAML metadata</a>: Metadata can be
+                provided to institutions to help them configure their SAML IdP.
+              </p>
 
-            <p>
-              <button
-                class="btn btn-danger"
-                type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#deleteModal"
-              >
-                Delete SAML configuration
-              </button>
-            </p>
+              <p>
+                <button
+                  class="btn btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteModal"
+                >
+                  Delete SAML configuration
+                </button>
+              </p>
 
-            <h2 class="h4">Decode SAML assertion</h2>
+              <h2 class="h4">Decode SAML assertion</h2>
 
-            <form method="POST">
-              <div class="mb-3">
-                <label class="form-label" for="encodedAssertion">Encoded assertion</label>
-                <textarea
-                  class="form-control"
-                  id="encodedAssertion"
-                  rows="10"
-                  name="encoded_assertion"
-                  aria-describedby="encodedAssertionHelp"
-                ></textarea>
-                <small class="form-text text-muted">
-                  This should be raw base64-encoded data from the
-                  <code>SAMLResponse</code> parameter in the POST request from the IdP.
-                </small>
-              </div>
+              <form method="POST">
+                <div class="mb-3">
+                  <label class="form-label" for="encodedAssertion">Encoded assertion</label>
+                  <textarea
+                    class="form-control"
+                    id="encodedAssertion"
+                    rows="10"
+                    name="encoded_assertion"
+                    aria-describedby="encodedAssertionHelp"
+                  ></textarea>
+                  <small class="form-text text-muted">
+                    This should be raw base64-encoded data from the
+                    <code>SAMLResponse</code> parameter in the POST request from the IdP.
+                  </small>
+                </div>
 
-              <div class="mb-3 form-check">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  id="strictMode"
-                  name="strict_mode"
-                  value="1"
-                  aria-describedby="strictModeHelp"
-                />
-                <label class="form-check-label" for="strictMode">Strict mode</label>
-                <small id="strictModeHelp" class="form-text text-muted mt-0">
-                  Forces "validate audience", "require signed assertions", and "require signed
-                  response" to be enabled.
-                </small>
-              </div>
+                <div class="mb-3 form-check">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="strictMode"
+                    name="strict_mode"
+                    value="1"
+                    aria-describedby="strictModeHelp"
+                  />
+                  <label class="form-check-label" for="strictMode">Strict mode</label>
+                  <small id="strictModeHelp" class="form-text text-muted mt-0">
+                    Forces "validate audience", "require signed assertions", and "require signed
+                    response" to be enabled.
+                  </small>
+                </div>
 
-              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button
-                class="btn btn-primary"
-                type="button"
-                name="__action"
-                value="decode_assertion"
-                hx-post="${resLocals.urlPrefix}/saml"
-                hx-target="#decodedAssertion"
-                hx-swap="innerHTML show:top"
-              >
-                Decode
-              </button>
-              <div id="decodedAssertion"></div>
-            </form>
-          `
-        : ''}
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  name="__action"
+                  value="decode_assertion"
+                  hx-post="${resLocals.urlPrefix}/saml"
+                  hx-target="#decodedAssertion"
+                  hx-swap="innerHTML show:top"
+                >
+                  Decode
+                </button>
+                <div id="decodedAssertion"></div>
+              </form>
+            `
+          : ''
+      }
     `,
     postContent: html`
       <script>

@@ -52,21 +52,22 @@ export function RubricInputSection({
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
-        class="js-adjust-points-enable btn btn-sm btn-link ${rubric_grading?.adjust_points ||
-        disable
-          ? 'd-none'
-          : ''}"
+        class="js-adjust-points-enable btn btn-sm btn-link ${
+          rubric_grading?.adjust_points || disable ? 'd-none' : ''
+        }"
         ${enableKeyboardShortcuts ? 'data-key-binding="a"' : ''}
       >
         Apply adjustment
-        ${enableKeyboardShortcuts
-          ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">A</kbd>`
-          : ''}
+        ${
+          enableKeyboardShortcuts
+            ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">A</kbd>`
+            : ''
+        }
       </button>
       <div
-        class="js-adjust-points-input-container w-25 ${rubric_grading?.adjust_points
-          ? ''
-          : 'd-none'}"
+        class="js-adjust-points-input-container w-25 ${
+          rubric_grading?.adjust_points ? '' : 'd-none'
+        }"
       >
         <label>
           <span class="small">Adjustment:</span>
@@ -77,36 +78,44 @@ export function RubricInputSection({
                 step="any"
                 class="form-control js-adjust-points-points"
                 name="score_manual_adjust_points"
-                data-max-points="${resLocals.assessment_question.max_manual_points ||
-                resLocals.assessment_question.max_points}"
+                data-max-points="${
+                  resLocals.assessment_question.max_manual_points ||
+                  resLocals.assessment_question.max_points
+                }"
                 value="${Math.round((rubric_grading?.adjust_points ?? 0) * 100) / 100 || ''}"
                 ${disable ? 'disabled' : ''}
               />
             </div>
           </div>
-          ${resLocals.assessment_question.max_points
-            ? html`
-                <div class="js-manual-grading-percentage">
-                  <div class="input-group input-group-sm">
-                    <input
-                      type="number"
-                      step="any"
-                      class="form-control js-adjust-points-percentage"
-                      name="score_manual_adjust_percent"
-                      data-max-points="${resLocals.assessment_question.max_manual_points ||
-                      resLocals.assessment_question.max_points}"
-                      value="${Math.round(
-                        ((rubric_grading?.adjust_points || 0) * 10000) /
-                          (resLocals.assessment_question.max_manual_points ||
-                            resLocals.assessment_question.max_points),
-                      ) / 100 || ''}"
-                      ${disable ? 'disabled' : ''}
-                    />
-                    <span class="input-group-text">%</span>
+          ${
+            resLocals.assessment_question.max_points
+              ? html`
+                  <div class="js-manual-grading-percentage">
+                    <div class="input-group input-group-sm">
+                      <input
+                        type="number"
+                        step="any"
+                        class="form-control js-adjust-points-percentage"
+                        name="score_manual_adjust_percent"
+                        data-max-points="${
+                        resLocals.assessment_question.max_manual_points ||
+                        resLocals.assessment_question.max_points
+                      }"
+                        value="${
+                        Math.round(
+                          ((rubric_grading?.adjust_points || 0) * 10000) /
+                            (resLocals.assessment_question.max_manual_points ||
+                              resLocals.assessment_question.max_points),
+                        ) / 100 || ''
+                      }"
+                        ${disable ? 'disabled' : ''}
+                      />
+                      <span class="input-group-text">%</span>
+                    </div>
                   </div>
-                </div>
-              `
-            : ''}
+                `
+              : ''
+          }
         </label>
       </div>
     </div>
@@ -137,42 +146,48 @@ function RubricItems({
   return html`
     <div class="d-flex align-items-center justify-content-between mb-1">
       <div class="d-flex align-items-center gap-2 text-secondary" style="padding-left: 3px;">
-        ${aiGradingInfo?.submissionManuallyGraded
-          ? html`
-              <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-                <i class="bi bi-stars"></i>
-              </div>
-              <div data-bs-toggle="tooltip" data-bs-title="Human grading">
-                <i class="bi bi-person-fill"></i>
-              </div>
-            `
-          : ''}
+        ${
+          aiGradingInfo?.submissionManuallyGraded
+            ? html`
+                <div data-bs-toggle="tooltip" data-bs-title="AI grading">
+                  <i class="bi bi-stars"></i>
+                </div>
+                <div data-bs-toggle="tooltip" data-bs-title="Human grading">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+              `
+            : ''
+        }
       </div>
-      ${!disable && showEditRubricButton
-        ? html`
-            <button
-              type="button"
-              class="btn btn-sm btn-link p-0 text-decoration-none js-show-rubric-settings-button"
-            >
-              <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit rubric
-            </button>
-          `
-        : ''}
+      ${
+        !disable && showEditRubricButton
+          ? html`
+              <button
+                type="button"
+                class="btn btn-sm btn-link p-0 text-decoration-none js-show-rubric-settings-button"
+              >
+                <i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit rubric
+              </button>
+            `
+          : ''
+      }
     </div>
-    ${rubric_items
-      ? rubric_items.map((item) =>
-          RubricItem({
-            item,
-            item_grading: rubric_grading_items?.[item.rubric_item.id],
-            assessment_question,
-            disable,
-            enableKeyboardShortcuts,
-            ai_checked: ai_selected_rubric_item_ids_set
-              ? ai_selected_rubric_item_ids_set.has(item.rubric_item.id)
-              : undefined,
-          }),
-        )
-      : ''}
+    ${
+      rubric_items
+        ? rubric_items.map((item) =>
+            RubricItem({
+              item,
+              item_grading: rubric_grading_items?.[item.rubric_item.id],
+              assessment_question,
+              disable,
+              enableKeyboardShortcuts,
+              ai_checked: ai_selected_rubric_item_ids_set
+                ? ai_selected_rubric_item_ids_set.has(item.rubric_item.id)
+                : undefined,
+            }),
+          )
+        : ''
+    }
   `;
 }
 
@@ -194,21 +209,23 @@ function RubricItem({
   return html`
     <div>
       <label class="js-selectable-rubric-item-label w-100">
-        ${ai_checked !== undefined
-          ? html`
-              <input
-                type="checkbox"
-                style="margin-left: 3px; margin-right: 8px;"
-                name="rubric_item_selected_ai"
-                value="${item.rubric_item.id}"
-                ${ai_checked ? 'checked' : ''}
-                disabled
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title="${ai_checked ? 'Selected by AI' : 'Not selected by AI'}"
-              />
-            `
-          : ''}
+        ${
+          ai_checked !== undefined
+            ? html`
+                <input
+                  type="checkbox"
+                  style="margin-left: 3px; margin-right: 8px;"
+                  name="rubric_item_selected_ai"
+                  value="${item.rubric_item.id}"
+                  ${ai_checked ? 'checked' : ''}
+                  disabled
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="${ai_checked ? 'Selected by AI' : 'Not selected by AI'}"
+                />
+              `
+            : ''
+        }
         <input
           type="checkbox"
           name="rubric_item_selected_manual"
@@ -217,33 +234,43 @@ function RubricItem({
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
           data-rubric-item-points="${item.rubric_item.points}"
-          ${enableKeyboardShortcuts && item.rubric_item.key_binding
-            ? html`data-key-binding="${item.rubric_item.key_binding}"`
-            : ''}
+          ${
+            enableKeyboardShortcuts && item.rubric_item.key_binding
+              ? html`data-key-binding="${item.rubric_item.key_binding}"`
+              : ''
+          }
         />
-        ${enableKeyboardShortcuts && item.rubric_item.key_binding
-          ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent"
-              >${item.rubric_item.key_binding}</kbd
-            >`
-          : ''}
+        ${
+          enableKeyboardShortcuts && item.rubric_item.key_binding
+            ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent"
+                >${item.rubric_item.key_binding}</kbd
+              >`
+            : ''
+        }
         <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
             <span class="js-manual-grading-points" data-testid="rubric-item-points">
-              [${(item.rubric_item.points >= 0 ? '+' : '') +
-              Math.round(item.rubric_item.points * 100) / 100}]
+              [${
+                (item.rubric_item.points >= 0 ? '+' : '') +
+                Math.round(item.rubric_item.points * 100) / 100
+              }]
             </span>
-            ${assessment_question.max_points
-              ? html`
-                  <span class="js-manual-grading-percentage">
-                    [${(item.rubric_item.points >= 0 ? '+' : '') +
-                    Math.round(
-                      (item.rubric_item.points * 10000) /
-                        (assessment_question.max_manual_points || assessment_question.max_points),
-                    ) /
-                      100}%]
-                  </span>
-                `
-              : ''}
+            ${
+              assessment_question.max_points
+                ? html`
+                    <span class="js-manual-grading-percentage">
+                      [${
+                      (item.rubric_item.points >= 0 ? '+' : '') +
+                      Math.round(
+                        (item.rubric_item.points * 10000) /
+                          (assessment_question.max_manual_points || assessment_question.max_points),
+                      ) /
+                        100
+                    }%]
+                    </span>
+                  `
+                : ''
+            }
           </strong>
         </span>
         <span>

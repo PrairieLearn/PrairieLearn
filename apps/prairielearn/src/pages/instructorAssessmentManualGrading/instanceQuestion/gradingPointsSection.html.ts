@@ -65,14 +65,16 @@ export function TotalPointsSection({
         / ${resLocals.assessment_question.max_points}
       </span>
     </div>
-    ${resLocals.assessment_question.max_points
-      ? html`
-          <div class="mb-3 js-manual-grading-percentage w-100">
-            Total Score:
-            <span class="float-end"> <span class="js-value-total-percentage"></span>% </span>
-          </div>
-        `
-      : ''}
+    ${
+      resLocals.assessment_question.max_points
+        ? html`
+            <div class="mb-3 js-manual-grading-percentage w-100">
+              Total Score:
+              <span class="float-end"> <span class="js-value-total-percentage"></span>% </span>
+            </div>
+          `
+        : ''
+    }
   `;
 }
 
@@ -106,47 +108,55 @@ function GradingPointsSection({
         >
           ${type_label} Points:
         </label>
-        ${show_percentage
-          ? html`
-              <label
-                for="js-${type}-score-value-input-percentage-${context}"
-                class="js-manual-grading-percentage"
-              >
-                ${type_label} Score:
-              </label>
-            `
-          : ''}
-        <span class="float-end">
-          ${!show_input
+        ${
+          show_percentage
             ? html`
-                <span class="js-manual-grading-points">
-                  <span class="js-${type}-score-value-info">
-                    <span class="js-value-${type}-points">${Math.round(points * 100) / 100}</span>
-                    / ${max_points}
-                  </span>
-                </span>
-                ${show_percentage
-                  ? html`
-                      <span class="js-manual-grading-percentage">
-                        <span class="js-${type}-score-value-info">
-                          <span class="js-value-${type}-percentage"></span>%
-                        </span>
-                      </span>
-                    `
-                  : ''}
+                <label
+                  for="js-${type}-score-value-input-percentage-${context}"
+                  class="js-manual-grading-percentage"
+                >
+                  ${type_label} Score:
+                </label>
               `
-            : ''}
-          <div class="btn-group btn-group-sm" role="group">
-            ${show_input_edit
+            : ''
+        }
+        <span class="float-end">
+          ${
+            !show_input
               ? html`
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary js-enable-${type}-score-edit js-${type}-score-value-info"
-                  >
-                    <i class="fas fa-pencil"></i>
-                  </button>
+                  <span class="js-manual-grading-points">
+                    <span class="js-${type}-score-value-info">
+                      <span class="js-value-${type}-points">${Math.round(points * 100) / 100}</span>
+                      / ${max_points}
+                    </span>
+                  </span>
+                  ${
+                  show_percentage
+                    ? html`
+                        <span class="js-manual-grading-percentage">
+                          <span class="js-${type}-score-value-info">
+                            <span class="js-value-${type}-percentage"></span>%
+                          </span>
+                        </span>
+                      `
+                    : ''
+                }
                 `
-              : ''}
+              : ''
+          }
+          <div class="btn-group btn-group-sm" role="group">
+            ${
+              show_input_edit
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary js-enable-${type}-score-edit js-${type}-score-value-info"
+                    >
+                      <i class="fas fa-pencil"></i>
+                    </button>
+                  `
+                : ''
+            }
           </div>
         </span>
       </span>
@@ -166,24 +176,28 @@ function GradingPointsSection({
           <span class="input-group-text">/ ${max_points}</span>
         </div>
       </div>
-      ${show_percentage
-        ? html`
-            <div class="js-manual-grading-percentage">
-              <div class="input-group js-${type}-score-value-input ${!show_input ? 'd-none' : ''}">
-                <input
-                  type="number"
-                  step="any"
-                  required
-                  id="js-${type}-score-value-input-percentage-${context}"
-                  class="form-control js-grading-score-input js-${type}-score-value-input-percentage"
-                  name="score_${type}_percent"
-                  ${disable ? 'disabled' : ''}
-                />
-                <span class="input-group-text">%</span>
+      ${
+        show_percentage
+          ? html`
+              <div class="js-manual-grading-percentage">
+                <div
+                  class="input-group js-${type}-score-value-input ${!show_input ? 'd-none' : ''}"
+                >
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    id="js-${type}-score-value-input-percentage-${context}"
+                    class="form-control js-grading-score-input js-${type}-score-value-input-percentage"
+                    name="score_${type}_percent"
+                    ${disable ? 'disabled' : ''}
+                  />
+                  <span class="input-group-text">%</span>
+                </div>
               </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
     </div>
   `;
 }

@@ -30,42 +30,49 @@ export function AssessmentSwitcher({
         const isActive = idsEqual(currentAssessmentId, row.id);
 
         return html`
-          ${row.start_new_assessment_group
-            ? html`
-                <div class="fw-bold ${index === 0 ? 'mt-0' : 'mt-3'}">
-                  ${assessmentsGroupBy === 'Set'
-                    ? AssessmentSetHeadingHtml({ assessment_set: row.assessment_set })
-                    : AssessmentModuleHeadingHtml({
-                        assessment_module: row.assessment_module,
-                      })}
-                </div>
-              `
-            : ''}
+          ${
+            row.start_new_assessment_group
+              ? html`
+                  <div class="fw-bold ${index === 0 ? 'mt-0' : 'mt-3'}">
+                    ${
+                    assessmentsGroupBy === 'Set'
+                      ? AssessmentSetHeadingHtml({ assessment_set: row.assessment_set })
+                      : AssessmentModuleHeadingHtml({
+                          assessment_module: row.assessment_module,
+                        })
+                  }
+                  </div>
+                `
+              : ''
+          }
           <div
-            class="assessment-row column-gap-2 p-2 mt-1 gap-md-1 p-md-1 w-100 rounded ${isActive
-              ? 'bg-primary text-white'
-              : ''}"
+            class="assessment-row column-gap-2 p-2 mt-1 gap-md-1 p-md-1 w-100 rounded ${
+              isActive ? 'bg-primary text-white' : ''
+            }"
           >
             <div class="d-flex align-items-center">
               <span
-                class="badge overflow-hidden text-truncate text-nowrap color-${row.assessment_set
-                  .color}"
+                class="badge overflow-hidden text-truncate text-nowrap color-${
+                  row.assessment_set.color
+                }"
               >
                 ${row.label}
               </span>
             </div>
             <div class="title">
-              ${row.sync_errors
-                ? SyncProblemButtonHtml({
-                    type: 'error',
-                    output: row.sync_errors,
-                  })
-                : row.sync_warnings
+              ${
+                row.sync_errors
                   ? SyncProblemButtonHtml({
-                      type: 'warning',
-                      output: row.sync_warnings,
+                      type: 'error',
+                      output: row.sync_errors,
                     })
-                  : ''}
+                  : row.sync_warnings
+                    ? SyncProblemButtonHtml({
+                        type: 'warning',
+                        output: row.sync_warnings,
+                      })
+                    : ''
+              }
               <a href="${assessmentUrl}" class="${isActive ? 'text-white' : ''}">
                 ${row.title}
                 ${row.team_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}

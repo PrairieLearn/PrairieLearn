@@ -29,49 +29,51 @@ export function Lti13CourseNavigationInstructor({
         <strong>${courseName}</strong> with a PrairieLearn course instance.
       </p>
 
-      ${courses.length === 0
-        ? html`<p>
-            <strong>
-              You don't have course owner or editor permissions in any PrairieLearn courses.
-            </strong>
-          </p>`
-        : html`
-            <div class="mb-3">
-              <form method="POST" id="link_form">
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      ${
+        courses.length === 0
+          ? html`<p>
+              <strong>
+                You don't have course owner or editor permissions in any PrairieLearn courses.
+              </strong>
+            </p>`
+          : html`
+              <div class="mb-3">
+                <form method="POST" id="link_form">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
 
-                <label class="form-label" for="connect_course">
-                  Select a PrairieLearn course:
-                </label>
-                <select
-                  id="connect_course"
-                  class="form-select mb-3"
-                  name="unsafe_course_id"
-                  hx-get="/pl/lti13_instance/${lti13_instance_id}/course_navigation/course_instances"
-                  hx-include="#link_form"
-                  hx-target="#course_instances"
-                  required
-                >
-                  <option selected disabled value="">Select a course to continue</option>
-                  ${courses.map((c) => {
+                  <label class="form-label" for="connect_course">
+                    Select a PrairieLearn course:
+                  </label>
+                  <select
+                    id="connect_course"
+                    class="form-select mb-3"
+                    name="unsafe_course_id"
+                    hx-get="/pl/lti13_instance/${lti13_instance_id}/course_navigation/course_instances"
+                    hx-include="#link_form"
+                    hx-target="#course_instances"
+                    required
+                  >
+                    <option selected disabled value="">Select a course to continue</option>
+                    ${courses.map((c) => {
                     return html`<option value="${c.id}">${c.short_name}: ${c.title}</option>`;
                   })}
-                </select>
-                <label class="form-label" for="course_instances">
-                  Select a course instance to connect:
-                </label>
-                <select
-                  id="course_instances"
-                  name="unsafe_course_instance_id"
-                  class="form-select mb-3"
-                  required
-                >
-                  <option selected disabled value="">See above</option>
-                </select>
-                <button type="submit" class="btn btn-primary">Connect course instance</button>
-              </form>
-            </div>
-          `}
+                  </select>
+                  <label class="form-label" for="course_instances">
+                    Select a course instance to connect:
+                  </label>
+                  <select
+                    id="course_instances"
+                    name="unsafe_course_instance_id"
+                    class="form-select mb-3"
+                    required
+                  >
+                    <option selected disabled value="">See above</option>
+                  </select>
+                  <button type="submit" class="btn btn-primary">Connect course instance</button>
+                </form>
+              </div>
+            `
+      }
 
       <p>
         <details>
@@ -128,23 +130,26 @@ export function Lti13CourseNavigationNotReady({
           PrairieLearn home
         </a>
       </p>
-      ${ltiRoles.includes(STUDENT_ROLE)
-        ? ''
-        : html`
-            <div class="card">
-              <div class="card-header bg-info">Debugging information</div>
-              <div class="card-body">
-                <p>
-                  You do not have the permissions to integrate PrairieLearn course instances. An
-                  instructor or designer (and not Teaching Assistant) LMS role is needed to do this.
-                </p>
-                <p>Here are your roles that we received from your LMS:</p>
-                <ul class="mb-0">
-                  ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
-                </ul>
+      ${
+        ltiRoles.includes(STUDENT_ROLE)
+          ? ''
+          : html`
+              <div class="card">
+                <div class="card-header bg-info">Debugging information</div>
+                <div class="card-body">
+                  <p>
+                    You do not have the permissions to integrate PrairieLearn course instances. An
+                    instructor or designer (and not Teaching Assistant) LMS role is needed to do
+                    this.
+                  </p>
+                  <p>Here are your roles that we received from your LMS:</p>
+                  <ul class="mb-0">
+                    ${ltiRoles.map((role) => html`<li><code>${role}</code></li>`)}
+                  </ul>
+                </div>
               </div>
-            </div>
-          `}
+            `
+      }
     `,
   });
 }

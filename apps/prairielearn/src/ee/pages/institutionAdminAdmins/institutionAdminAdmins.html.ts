@@ -64,15 +64,16 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
         </button>
       </div>
 
-      ${rows.length === 0
-        ? html`
-            <div class="card-body">
-              <div class="text-center text-muted">No institution administrators</div>
-            </div>
-          `
-        : html`
-            <ul class="list-group list-group-flush">
-              ${rows.map(
+      ${
+        rows.length === 0
+          ? html`
+              <div class="card-body">
+                <div class="text-center text-muted">No institution administrators</div>
+              </div>
+            `
+          : html`
+              <ul class="list-group list-group-flush">
+                ${rows.map(
                 (row) => html`
                   <li class="list-group-item d-flex flex-row align-items-center">
                     <div class="d-flex flex-column">
@@ -93,8 +94,9 @@ function AdminsCard({ rows }: { rows: InstitutionAdminAdminsRow[] }) {
                   </li>
                 `,
               )}
-            </ul>
-          `}
+              </ul>
+            `
+      }
     </div>
   `;
 }

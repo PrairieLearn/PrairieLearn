@@ -5,10 +5,7 @@ import { PageLayout } from './PageLayout.js';
 interface EnrollmentPageProps {
   resLocals: UntypedResLocals;
   type:
-    | 'blocked'
-    | 'self-enrollment-disabled'
-    | 'self-enrollment-expired'
-    | 'institution-restriction';
+    'blocked' | 'self-enrollment-disabled' | 'self-enrollment-expired' | 'institution-restriction';
 }
 
 function BlockedEnrollment() {

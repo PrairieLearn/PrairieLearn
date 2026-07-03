@@ -84,104 +84,146 @@ export const SamlTest = ({
       </head>
       <body>
         <main id="content" class="container mb-4">
-          ${usedNameFallback
-            ? html`
-                <div class="alert alert-warning">
-                  <h2 class="h4">Using fallback name attribute</h2>
-                  <p class="mb-0">
-                    Given name and family name mappings are configured, but one or more values were
-                    missing in this SAML response. PrairieLearn used the configured name attribute
-                    (<code>${nameAttribute}</code>) as a fallback.
-                  </p>
-                </div>
-              `
-            : ''}
-          ${hasError
-            ? html`
-                <div class="alert alert-danger">
-                  <h2 class="h4">
-                    One or more errors were encountered while validating the SAML response.
-                  </h2>
-                  <ul class="mb-0">
-                    ${!hasUidAttribute
-                      ? html`<li>No UID attribute mapping is configured for this institution</li>`
-                      : ''}
-                    ${!hasUinAttribute
-                      ? html`<li>No UIN attribute mapping is configured for this institution</li>`
-                      : ''}
-                    ${!hasNameMapping
-                      ? html`<li>No name attribute mapping is configured for this institution</li>`
-                      : ''}
-                    ${!hasEmailAttribute
-                      ? html`<li>No email attribute mapping is configured for this institution</li>`
-                      : ''}
-                    ${hasUidAttribute && !hasUid
+          ${
+            usedNameFallback
+              ? html`
+                  <div class="alert alert-warning">
+                    <h2 class="h4">Using fallback name attribute</h2>
+                    <p class="mb-0">
+                      Given name and family name mappings are configured, but one or more values
+                      were missing in this SAML response. PrairieLearn used the configured name
+                      attribute (<code>${nameAttribute}</code>) as a fallback.
+                    </p>
+                  </div>
+                `
+              : ''
+          }
+          ${
+            hasError
+              ? html`
+                  <div class="alert alert-danger">
+                    <h2 class="h4">
+                      One or more errors were encountered while validating the SAML response.
+                    </h2>
+                    <ul class="mb-0">
+                      ${
+                      !hasUidAttribute
+                        ? html`<li>No UID attribute mapping is configured for this institution</li>`
+                        : ''
+                    }
+                      ${
+                      !hasUinAttribute
+                        ? html`<li>No UIN attribute mapping is configured for this institution</li>`
+                        : ''
+                    }
+                      ${
+                      !hasNameMapping
+                        ? html`<li>
+                            No name attribute mapping is configured for this institution
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      !hasEmailAttribute
+                        ? html`<li>
+                            No email attribute mapping is configured for this institution
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasUidAttribute && !hasUid
+                        ? html`<li>
+                            No value found for configured UID attribute
+                            (<code>${uidAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasUinAttribute && !hasUin
+                        ? html`<li>
+                            No value found for configured UIN attribute
+                            (<code>${uinAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasNameAttribute && !hasName
+                        ? html`<li>
+                            No value found for configured name attribute
+                            (<code>${nameAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasGivenNameAttribute && !hasGivenName
+                        ? html`<li>
+                            No value found for configured given name attribute
+                            (<code>${givenNameAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasFamilyNameAttribute && !hasFamilyName
+                        ? html`<li>
+                            No value found for configured family name attribute
+                            (<code>${familyNameAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                      ${
+                      hasEmailAttribute && !hasEmail
+                        ? html`<li>
+                            No value found for configured email attribute
+                            (<code>${emailAttribute}</code>)
+                          </li>`
+                        : ''
+                    }
+                    </ul>
+                  </div>
+                `
+              : ''
+          }
+          ${
+            hasUid || hasUin || hasName
+              ? html`
+                  <h2 class="h4">Mapped SAML attributes</h2>
+                  <ul>
+                    ${
+                    hasUid
+                      ? html`<li><strong>UID:</strong> ${uid} (<code>${uidAttribute}</code>)</li>`
+                      : ''
+                  }
+                    ${
+                    hasUin
+                      ? html`<li><strong>UIN:</strong> ${uin} (<code>${uinAttribute}</code>)</li>`
+                      : ''
+                  }
+                    ${
+                    hasName
                       ? html`<li>
-                          No value found for configured UID attribute (<code>${uidAttribute}</code>)
+                          <strong>Name:</strong> ${name}
+                          ${
+                          hasSplitNameValues
+                            ? html`(<code>${givenNameAttribute}</code> +
+                                <code>${familyNameAttribute}</code>)`
+                            : usedNameFallback
+                              ? html`(<code>${nameAttribute}</code>, fallback)`
+                              : html`(<code>${nameAttribute}</code>)`
+                        }
                         </li>`
-                      : ''}
-                    ${hasUinAttribute && !hasUin
+                      : ''
+                  }
+                    ${
+                    hasEmail
                       ? html`<li>
-                          No value found for configured UIN attribute (<code>${uinAttribute}</code>)
+                          <strong>Email:</strong> ${email} (<code>${emailAttribute}</code>)
                         </li>`
-                      : ''}
-                    ${hasNameAttribute && !hasName
-                      ? html`<li>
-                          No value found for configured name attribute
-                          (<code>${nameAttribute}</code>)
-                        </li>`
-                      : ''}
-                    ${hasGivenNameAttribute && !hasGivenName
-                      ? html`<li>
-                          No value found for configured given name attribute
-                          (<code>${givenNameAttribute}</code>)
-                        </li>`
-                      : ''}
-                    ${hasFamilyNameAttribute && !hasFamilyName
-                      ? html`<li>
-                          No value found for configured family name attribute
-                          (<code>${familyNameAttribute}</code>)
-                        </li>`
-                      : ''}
-                    ${hasEmailAttribute && !hasEmail
-                      ? html`<li>
-                          No value found for configured email attribute
-                          (<code>${emailAttribute}</code>)
-                        </li>`
-                      : ''}
+                      : ''
+                  }
                   </ul>
-                </div>
-              `
-            : ''}
-          ${hasUid || hasUin || hasName
-            ? html`
-                <h2 class="h4">Mapped SAML attributes</h2>
-                <ul>
-                  ${hasUid
-                    ? html`<li><strong>UID:</strong> ${uid} (<code>${uidAttribute}</code>)</li>`
-                    : ''}
-                  ${hasUin
-                    ? html`<li><strong>UIN:</strong> ${uin} (<code>${uinAttribute}</code>)</li>`
-                    : ''}
-                  ${hasName
-                    ? html`<li>
-                        <strong>Name:</strong> ${name}
-                        ${hasSplitNameValues
-                          ? html`(<code>${givenNameAttribute}</code> +
-                              <code>${familyNameAttribute}</code>)`
-                          : usedNameFallback
-                            ? html`(<code>${nameAttribute}</code>, fallback)`
-                            : html`(<code>${nameAttribute}</code>)`}
-                      </li>`
-                    : ''}
-                  ${hasEmail
-                    ? html`<li>
-                        <strong>Email:</strong> ${email} (<code>${emailAttribute}</code>)
-                      </li>`
-                    : ''}
-                </ul>
-              `
-            : ''}
+                `
+              : ''
+          }
 
           <h2 class="h4">All SAML attributes</h2>
           <pre><code>${JSON.stringify(attributes, null, 2)}</code></pre>

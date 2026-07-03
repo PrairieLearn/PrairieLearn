@@ -20,17 +20,7 @@ The general format of `allowAccess` is:
 
 ```json
 {
-  "allowAccess": [
-    {
-      /* <accessRule1> */
-    },
-    {
-      /* <accessRule2> */
-    },
-    {
-      /* <accessRule3> */
-    }
-  ]
+  "allowAccess": [{/* <accessRule1> */}, {/* <accessRule2> */}, {/* <accessRule3> */}]
 }
 ```
 

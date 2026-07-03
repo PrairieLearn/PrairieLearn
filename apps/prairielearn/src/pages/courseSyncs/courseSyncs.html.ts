@@ -89,30 +89,32 @@ export function CourseSyncs({
                 <th class="align-middle">Remote repository</th>
                 <td class="align-middle">${course.repository ?? html`&mdash;`}</td>
                 <td>
-                  ${config.devMode
-                    ? html`
-                        <span
-                          class="d-inline-block"
-                          tabindex="0"
-                          data-bs-toggle="tooltip"
-                          data-bs-title="Pulling from a remote repository is not supported in development mode."
-                        >
-                          <button type="button" class="btn btn-sm btn-primary" disabled>
-                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                            Pull from remote git repository
-                          </button>
-                        </span>
-                      `
-                    : html`
-                        <form name="confirm-form" method="POST">
-                          <input type="hidden" name="__action" value="pull" />
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                            Pull from remote git repository
-                          </button>
-                        </form>
-                      `}
+                  ${
+                    config.devMode
+                      ? html`
+                          <span
+                            class="d-inline-block"
+                            tabindex="0"
+                            data-bs-toggle="tooltip"
+                            data-bs-title="Pulling from a remote repository is not supported in development mode."
+                          >
+                            <button type="button" class="btn btn-sm btn-primary" disabled>
+                              <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                              Pull from remote git repository
+                            </button>
+                          </span>
+                        `
+                      : html`
+                          <form name="confirm-form" method="POST">
+                            <input type="hidden" name="__action" value="pull" />
+                            <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                            <button type="submit" class="btn btn-sm btn-primary">
+                              <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                              Pull from remote git repository
+                            </button>
+                          </form>
+                        `
+                  }
                 </td>
               </tr>
               <tr>
@@ -153,9 +155,11 @@ export function CourseSyncs({
                   <tr>
                     <td>${jobSequence.number}</td>
                     <td>
-                      ${jobSequence.start_date == null
-                        ? html`&mdash;`
-                        : formatDate(jobSequence.start_date, course.display_timezone)}
+                      ${
+                        jobSequence.start_date == null
+                          ? html`&mdash;`
+                          : formatDate(jobSequence.start_date, course.display_timezone)
+                      }
                     </td>
                     <td>${jobSequence.description}</td>
                     <td>${jobSequence.user_uid ?? '(System)'}</td>
@@ -174,14 +178,16 @@ export function CourseSyncs({
             </tbody>
           </table>
         </div>
-        ${!showAllJobSequences && jobSequenceCount > jobSequences.length
-          ? html`
-              <div class="card-footer">
-                Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
-                <a href="?all" aria-label="View all sync jobs">View all</a>
-              </div>
-            `
-          : ''}
+        ${
+          !showAllJobSequences && jobSequenceCount > jobSequences.length
+            ? html`
+                <div class="card-footer">
+                  Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
+                  <a href="?all" aria-label="View all sync jobs">View all</a>
+                </div>
+              `
+            : ''
+        }
       </div>
     `,
   });
@@ -225,49 +231,60 @@ function ImageTable({
                 <td>
                   <div class="d-flex flex-row align-items-center">
                     <span class="me-2">${image.image}</span>
-                    ${image.invalid
-                      ? html`<span class="badge text-bg-danger">Invalid image name</span>`
-                      : ''}
+                    ${
+                      image.invalid
+                        ? html`<span class="badge text-bg-danger">Invalid image name</span>`
+                        : ''
+                    }
                   </div>
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  ${image.digest
-                    ? html`
-                        <code class="mb-0" title="${image.digest}">
-                          ${image.digest.length <= 24
-                            ? image.digest
-                            : `${image.digest.slice(0, 24)}...`}
-                        </code>
-                      `
-                    : html`&mdash;`}
+                  ${
+                    image.digest
+                      ? html`
+                          <code class="mb-0" title="${image.digest}">
+                            ${
+                            image.digest.length <= 24
+                              ? image.digest
+                              : `${image.digest.slice(0, 24)}...`
+                          }
+                          </code>
+                        `
+                      : html`&mdash;`
+                  }
                 </td>
                 <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>
-                  ${image.imageSyncNeeded
-                    ? html`<span class="text-warning">Not found in PL registry</span>`
-                    : image.pushed_at
-                      ? formatDate(image.pushed_at, course.display_timezone)
-                      : html`&mdash;`}
+                  ${
+                    image.imageSyncNeeded
+                      ? html`<span class="text-warning">Not found in PL registry</span>`
+                      : image.pushed_at
+                        ? formatDate(image.pushed_at, course.display_timezone)
+                        : html`&mdash;`
+                  }
                 </td>
                 <td>
-                  ${config.cacheImageRegistry
-                    ? html`
-                        <form method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <input type="hidden" name="__action" value="syncImage" />
-                          <input type="hidden" name="single_image" value="${image.image}" />
-                          <button type="submit" class="btn btn-xs btn-primary">
-                            <i class="fa fa-sync" aria-hidden="true"></i> Sync
-                          </button>
-                        </form>
-                      `
-                    : ''}
+                  ${
+                    config.cacheImageRegistry
+                      ? html`
+                          <form method="POST">
+                            <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                            <input type="hidden" name="__action" value="syncImage" />
+                            <input type="hidden" name="single_image" value="${image.image}" />
+                            <button type="submit" class="btn btn-xs btn-primary">
+                              <i class="fa fa-sync" aria-hidden="true"></i> Sync
+                            </button>
+                          </form>
+                        `
+                      : ''
+                  }
                 </td>
                 <td>
-                  ${image.questions.length > 0
-                    ? html`
-                        ${QuestionUsageLink({
+                  ${
+                    image.questions.length > 0
+                      ? html`
+                          ${QuestionUsageLink({
                           courseId: course.id,
                           courseInstanceId,
                           image: image.image,
@@ -275,7 +292,7 @@ function ImageTable({
                           filterType: 'external_grading_image',
                           label: 'External grader',
                         })}
-                        ${QuestionUsageLink({
+                          ${QuestionUsageLink({
                           courseId: course.id,
                           courseInstanceId,
                           image: image.image,
@@ -284,21 +301,22 @@ function ImageTable({
                           label: 'Workspace',
                         })}
 
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-secondary"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-title="Questions using ${image.image}"
-                          data-bs-content="${escapeHtml(
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-title="Questions using ${image.image}"
+                            data-bs-content="${escapeHtml(
                             ListQuestionsPopover({ image, urlPrefix }),
                           )}"
-                        >
-                          Show
-                        </button>
-                      `
-                    : 'No questions'}
+                          >
+                            Show
+                          </button>
+                        `
+                      : 'No questions'
+                  }
                 </td>
               </tr>
             `,
@@ -306,20 +324,22 @@ function ImageTable({
         </tbody>
       </table>
     </div>
-    ${config.cacheImageRegistry
-      ? html`
-          <div class="card-footer">
-            <form name="confirm-form" method="POST">
-              <input type="hidden" name="__action" value="syncImages" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <button type="submit" class="btn btn-sm btn-primary">
-                <i class="fa fa-sync" aria-hidden="true"></i>
-                Sync all images from Docker Hub to PrairieLearn
-              </button>
-            </form>
-          </div>
-        `
-      : ''}
+    ${
+      config.cacheImageRegistry
+        ? html`
+            <div class="card-footer">
+              <form name="confirm-form" method="POST">
+                <input type="hidden" name="__action" value="syncImages" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="fa fa-sync" aria-hidden="true"></i>
+                  Sync all images from Docker Hub to PrairieLearn
+                </button>
+              </form>
+            </div>
+          `
+        : ''
+    }
   `;
 }
 

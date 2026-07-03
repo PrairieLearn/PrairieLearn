@@ -192,87 +192,89 @@ function CourseNewRequestForm({
           />
         </div>
       </div>
-      ${isDefaultInstitution
-        ? html`
-            <div class="row">
-              <div class="mb-3 col-md-6">
-                <label class="form-label" for="cr-institution">Institution</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  name="cr-institution"
-                  id="cr-institution"
-                  minlength="1"
-                  required
-                />
-                <small class="form-text text-muted">
-                  This is your academic institution (e.g., "University of Illinois").
-                </small>
-              </div>
-              <div class="mb-3 col-md-6">
-                <label class="form-label" for="cr-email">Email</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  name="cr-email"
-                  id="cr-email"
-                  aria-invalid="false"
-                  aria-errormessage="cr-email-warning"
-                  placeholder="login@yourinstitution.edu"
-                  minlength="1"
-                  required
-                />
-                <small class="form-text text-muted">
-                  You are not signed in with an institutional account, please sign into PrairieLearn
-                  with your institutional account when requesting a course. Alternatively, you can
-                  enter your institutional email address here (your request may be processed more
-                  slowly).
-                </small>
-                <div
-                  class="d-none alert alert-warning mt-2 mb-0"
-                  id="cr-email-warning"
-                  role="alert"
-                >
-                  This doesn't look like an institutional email address. Course requests from
-                  non-institutional email addresses may be rejected. Please use your official
-                  institution email if you have one.
+      ${
+        isDefaultInstitution
+          ? html`
+              <div class="row">
+                <div class="mb-3 col-md-6">
+                  <label class="form-label" for="cr-institution">Institution</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="cr-institution"
+                    id="cr-institution"
+                    minlength="1"
+                    required
+                  />
+                  <small class="form-text text-muted">
+                    This is your academic institution (e.g., "University of Illinois").
+                  </small>
+                </div>
+                <div class="mb-3 col-md-6">
+                  <label class="form-label" for="cr-email">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    name="cr-email"
+                    id="cr-email"
+                    aria-invalid="false"
+                    aria-errormessage="cr-email-warning"
+                    placeholder="login@yourinstitution.edu"
+                    minlength="1"
+                    required
+                  />
+                  <small class="form-text text-muted">
+                    You are not signed in with an institutional account, please sign into
+                    PrairieLearn with your institutional account when requesting a course.
+                    Alternatively, you can enter your institutional email address here (your request
+                    may be processed more slowly).
+                  </small>
+                  <div
+                    class="d-none alert alert-warning mt-2 mb-0"
+                    id="cr-email-warning"
+                    role="alert"
+                  >
+                    This doesn't look like an institutional email address. Course requests from
+                    non-institutional email addresses may be rejected. Please use your official
+                    institution email if you have one.
+                  </div>
                 </div>
               </div>
-            </div>
-          `
-        : html`
-            <div class="row">
-              <div class="mb-3 col-md-6">
-                <label class="form-label" for="cr-institution">Institution</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  name="cr-institution"
-                  id="cr-institution"
-                  disabled
-                  value="${institutionName}"
-                />
-                <small class="form-text text-muted">
-                  This is determined by your sign-in account. If you want to request a course for a
-                  different institution, please sign in with the appropriate account.
-                </small>
+            `
+          : html`
+              <div class="row">
+                <div class="mb-3 col-md-6">
+                  <label class="form-label" for="cr-institution">Institution</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="cr-institution"
+                    id="cr-institution"
+                    disabled
+                    value="${institutionName}"
+                  />
+                  <small class="form-text text-muted">
+                    This is determined by your sign-in account. If you want to request a course for
+                    a different institution, please sign in with the appropriate account.
+                  </small>
+                </div>
+                <div class="mb-3 col-md-6">
+                  <label class="form-label" for="cr-email">Email</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="cr-email"
+                    id="cr-email"
+                    disabled
+                    value="${userEmail}"
+                  />
+                  <small class="form-text text-muted">
+                    This is determined by your sign-in account.
+                  </small>
+                </div>
               </div>
-              <div class="mb-3 col-md-6">
-                <label class="form-label" for="cr-email">Email</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  name="cr-email"
-                  id="cr-email"
-                  disabled
-                  value="${userEmail}"
-                />
-                <small class="form-text text-muted">
-                  This is determined by your sign-in account.
-                </small>
-              </div>
-            </div>
-          `}
+            `
+      }
       <hr class="my-3" />
       <h2 class="h5 mb-3">About your course</h2>
       <div class="mb-3">

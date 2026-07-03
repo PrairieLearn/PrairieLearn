@@ -34,12 +34,7 @@ interface DeleteCourseFormData {
 }
 
 type CourseColumnName =
-  | 'short_name'
-  | 'title'
-  | 'display_timezone'
-  | 'path'
-  | 'repository'
-  | 'branch';
+  'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch';
 
 export function AdministratorCourses({
   institutions,

@@ -91,27 +91,31 @@ export function WorkspaceVersionLogs({
       <h1 class="mb-4">Workspace version logs</h1>
 
       <h2>Container logs</h2>
-      ${containerLogs !== null && containerLogsEnabled && !containerLogsExpired
-        ? html`
-            <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
-          `
-        : html`
-            <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
-              <div class="mb-2">
-                <i
-                  class="fa ${containerLogsEnabled && containerLogsExpired
-                    ? 'fa-calendar'
-                    : 'fa-ban'} fa-2xl"
-                  aria-hidden="true"
-                ></i>
+      ${
+        containerLogs !== null && containerLogsEnabled && !containerLogsExpired
+          ? html`
+              <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
+            `
+          : html`
+              <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
+                <div class="mb-2">
+                  <i
+                    class="fa ${
+                    containerLogsEnabled && containerLogsExpired ? 'fa-calendar' : 'fa-ban'
+                  } fa-2xl"
+                    aria-hidden="true"
+                  ></i>
+                </div>
+                <div>
+                  ${
+                  containerLogsEnabled
+                    ? 'The container logs for this workspace have expired and are no longer available.'
+                    : 'Container logs are not available for this workspace.'
+                }
+                </div>
               </div>
-              <div>
-                ${containerLogsEnabled
-                  ? 'The container logs for this workspace have expired and are no longer available.'
-                  : 'Container logs are not available for this workspace.'}
-              </div>
-            </div>
-          `}
+            `
+      }
 
       <h2>History</h2>
       ${WorkspaceLogsTable({

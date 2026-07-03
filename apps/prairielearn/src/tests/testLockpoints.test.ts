@@ -18,10 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface QuestionState {
   id: number;
   question_access_mode:
-    | 'default'
-    | 'blocked_sequence'
-    | 'blocked_lockpoint'
-    | 'read_only_lockpoint';
+    'default' | 'blocked_sequence' | 'blocked_lockpoint' | 'read_only_lockpoint';
   url: string;
 }
 

@@ -52,9 +52,10 @@ export function Workspace({
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
       ${compiledScriptTag('workspaceClient.ts')}
-      ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
-        ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
-          ${EncodedData(
+      ${
+        resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
+          ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
             {
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
@@ -66,7 +67,8 @@ export function Workspace({
             },
             'time-limit-data',
           )}`
-        : ''}
+          : ''
+      }
     `,
     preContent: html`
       ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
@@ -101,14 +103,16 @@ export function Workspace({
           </button>
           <div class="collapse navbar-collapse" id="workspace-nav">
             <ul class="navbar-nav ms-auto">
-              ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
-                ? html` <li class="nav-item ms-2 my-1">
-                    <div id="countdownProgress"></div>
-                    <div class="text-white small">
-                      Time remaining: <span id="countdownDisplay"></span>
-                    </div>
-                  </li>`
-                : ''}
+              ${
+                resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
+                  ? html` <li class="nav-item ms-2 my-1">
+                      <div id="countdownProgress"></div>
+                      <div class="text-white small">
+                        Time remaining: <span id="countdownDisplay"></span>
+                      </div>
+                    </li>`
+                  : ''
+              }
               <li class="nav-item ms-2 my-1">
                 <button
                   id="reboot"
@@ -131,20 +135,22 @@ export function Workspace({
                   Reset
                 </button>
               </li>
-              ${showLogs
-                ? html`
-                    <li class="nav-item ms-2 my-1">
-                      <a
-                        class="nav-item btn btn-light"
-                        href="${urlPrefix}/workspace/${workspace_id}/logs"
-                        target="_blank"
-                      >
-                        <i class="fas fa-bars-staggered" aria-hidden="true"></i>
-                        Logs
-                      </a>
-                    </li>
-                  `
-                : null}
+              ${
+                showLogs
+                  ? html`
+                      <li class="nav-item ms-2 my-1">
+                        <a
+                          class="nav-item btn btn-light"
+                          href="${urlPrefix}/workspace/${workspace_id}/logs"
+                          target="_blank"
+                        >
+                          <i class="fas fa-bars-staggered" aria-hidden="true"></i>
+                          Logs
+                        </a>
+                      </li>
+                    `
+                  : null
+              }
               <li class="nav-item ms-2 ms-md-3 my-1">
                 <button
                   type="button"

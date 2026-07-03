@@ -48,11 +48,11 @@ export function AdministratorQuery({
         rel="stylesheet"
       />
       <script src="${nodeModulesAssetPath(
-          'tablesorter/dist/js/jquery.tablesorter.min.js',
-        )}"></script>
+        'tablesorter/dist/js/jquery.tablesorter.min.js',
+      )}"></script>
       <script src="${nodeModulesAssetPath(
-          'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
-        )}"></script>
+        'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
+      )}"></script>
     `,
     content: html`
       <div class="card mb-4">
@@ -64,30 +64,34 @@ export function AdministratorQuery({
 
         <div class="card-body">
           <form method="POST">
-            ${info.params
-              ? info.params.map(
-                  (param) => html`
-                    <div class="mb-3">
-                      <label class="form-label" for="param-${param.name}">${param.name}</label>
-                      <input
-                        class="form-control"
-                        type="text"
-                        id="param-${param.name}"
-                        aria-describedby="param-${param.name}-help"
-                        name="${param.name}"
-                        autocomplete="off"
-                        ${query_run?.params?.[param.name]
-                          ? html`value="${query_run.params[param.name]}"`
-                          : html`value="${param.default ?? ''}"`}
-                      />
+            ${
+              info.params
+                ? info.params.map(
+                    (param) => html`
+                      <div class="mb-3">
+                        <label class="form-label" for="param-${param.name}">${param.name}</label>
+                        <input
+                          class="form-control"
+                          type="text"
+                          id="param-${param.name}"
+                          aria-describedby="param-${param.name}-help"
+                          name="${param.name}"
+                          autocomplete="off"
+                          ${
+                          query_run?.params?.[param.name]
+                            ? html`value="${query_run.params[param.name]}"`
+                            : html`value="${param.default ?? ''}"`
+                        }
+                        />
 
-                      <small id="param-${param.name}-help" class="form-text text-muted">
-                        ${param.description}
-                      </small>
-                    </div>
-                  `,
-                )
-              : null}
+                        <small id="param-${param.name}-help" class="form-text text-muted">
+                          ${param.description}
+                        </small>
+                      </div>
+                    `,
+                  )
+                : null
+            }
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-play"></i>
@@ -96,56 +100,63 @@ export function AdministratorQuery({
           </form>
         </div>
 
-        ${query_run
-          ? html`
-              <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
-                Query ran at: ${formatDate(query_run.date, 'UTC')}
-                ${query_run.result != null
-                  ? html`
-                      <div class="ms-auto">
-                        <span class="me-2" data-testid="row-count">
-                          ${query_run.result.rows?.length ?? 0}
-                          ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
-                        </span>
-                        <a
-                          href="${`?query_run_id=${query_run_id}&format=json`}"
-                          class="btn btn-sm btn-light"
-                        >
-                          <i class="fas fa-download" aria-hidden="true"></i> JSON
-                        </a>
-                        <a
-                          href="${`?query_run_id=${query_run_id}&format=csv`}"
-                          class="btn btn-sm btn-light"
-                        >
-                          <i class="fas fa-download" aria-hidden="true"></i> CSV
-                        </a>
-                      </div>
-                    `
-                  : ''}
-              </div>
-            `
-          : null}
-        ${query_run?.error != null
-          ? html` <p class="text-danger m-2">${query_run.error}</p> `
-          : null}
-        ${query_run?.result != null
-          ? html`
-              <div class="table-responsive">
-                <table
-                  class="table table-sm table-hover table-striped tablesorter"
-                  aria-label="Query results"
-                  data-testid="results-table"
-                >
-                  <thead>
-                    <tr>
-                      ${query_run.result.columns?.map((col: string) =>
+        ${
+          query_run
+            ? html`
+                <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
+                  Query ran at: ${formatDate(query_run.date, 'UTC')}
+                  ${
+                  query_run.result != null
+                    ? html`
+                        <div class="ms-auto">
+                          <span class="me-2" data-testid="row-count">
+                            ${query_run.result.rows?.length ?? 0}
+                            ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
+                          </span>
+                          <a
+                            href="${`?query_run_id=${query_run_id}&format=json`}"
+                            class="btn btn-sm btn-light"
+                          >
+                            <i class="fas fa-download" aria-hidden="true"></i> JSON
+                          </a>
+                          <a
+                            href="${`?query_run_id=${query_run_id}&format=csv`}"
+                            class="btn btn-sm btn-light"
+                          >
+                            <i class="fas fa-download" aria-hidden="true"></i> CSV
+                          </a>
+                        </div>
+                      `
+                    : ''
+                }
+                </div>
+              `
+            : null
+        }
+        ${
+          query_run?.error != null
+            ? html` <p class="text-danger m-2">${query_run.error}</p> `
+            : null
+        }
+        ${
+          query_run?.result != null
+            ? html`
+                <div class="table-responsive">
+                  <table
+                    class="table table-sm table-hover table-striped tablesorter"
+                    aria-label="Query results"
+                    data-testid="results-table"
+                  >
+                    <thead>
+                      <tr>
+                        ${query_run.result.columns?.map((col: string) =>
                         renderHeader(query_run.result?.columns, col),
                       )}
-                    </tr>
-                  </thead>
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    ${query_run.result.rows?.map(
+                    <tbody>
+                      ${query_run.result.rows?.map(
                       (row: any) => html`
                         <tr>
                           ${query_run.result?.columns?.map((col: string) =>
@@ -154,11 +165,12 @@ export function AdministratorQuery({
                         </tr>
                       `,
                     )}
-                  </tbody>
-                </table>
-              </div>
-            `
-          : null}
+                    </tbody>
+                  </table>
+                </div>
+              `
+            : null
+        }
       </div>
 
       <div class="card mb-4">
@@ -166,19 +178,20 @@ export function AdministratorQuery({
           Recent query runs
         </div>
         <div class="table-responsive">
-          ${recent_query_runs.length > 0
-            ? html`
-                <table class="table table-sm" aria-label="Recent query runs">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Params</th>
-                      <th>User name</th>
-                      <th>User UID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${recent_query_runs.map(
+          ${
+            recent_query_runs.length > 0
+              ? html`
+                  <table class="table table-sm" aria-label="Recent query runs">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Params</th>
+                        <th>User name</th>
+                        <th>User UID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${recent_query_runs.map(
                       (run) => html`
                         <tr>
                           <td>
@@ -194,14 +207,15 @@ export function AdministratorQuery({
                         </tr>
                       `,
                     )}
-                  </tbody>
-                </table>
-              `
-            : html`
-                <div class="card-body">
-                  <div class="text-center text-muted">No recent runs found</div>
-                </div>
-              `}
+                    </tbody>
+                  </table>
+                `
+              : html`
+                  <div class="card-body">
+                    <div class="text-center text-muted">No recent runs found</div>
+                  </div>
+                `
+          }
         </div>
       </div>
     `,
