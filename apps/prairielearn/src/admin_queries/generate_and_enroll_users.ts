@@ -1,5 +1,6 @@
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
 import type { Course, CourseInstance } from '../lib/db-types.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -10,6 +11,7 @@ import type { AdministratorQueryResult, AdministratorQuerySpecs } from './lib/ut
 
 export const specs: AdministratorQuerySpecs = {
   description: 'Generate random users and enroll them in a course instance',
+  enabled: config.devMode,
   params: [
     {
       name: 'count',
