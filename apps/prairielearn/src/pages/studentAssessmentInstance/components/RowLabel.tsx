@@ -36,17 +36,19 @@ export function RowLabel({
   }
 
   return html`
-    ${showLink
-      ? html`
-          <a
-            href="${getInstanceQuestionUrl({
+    ${
+      showLink
+        ? html`
+            <a
+              href="${getInstanceQuestionUrl({
               courseInstanceId,
               instanceQuestionId: row.instance_question.id,
             })}"
-            >${rowLabelText}</a
-          >
-        `
-      : html`<span class="text-muted">${rowLabelText}</span>`}
+              >${rowLabelText}</a
+            >
+          `
+        : html`<span class="text-muted">${rowLabelText}</span>`
+    }
     ${
       // On exams, blocked_lockpoint questions show "Locked" in the Status column,
       // so we skip the inline badge to avoid duplication. On homeworks (no Status
@@ -74,20 +76,22 @@ export function RowLabel({
             `
           : ''
     }
-    ${row.file_count > 0
-      ? html`
-          <button
-            type="button"
-            class="btn btn-xs border text-secondary ms-1"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-content="Personal notes: ${row.file_count}"
-            aria-label="Has personal note attachments"
-          >
-            <i class="fas fa-paperclip"></i>
-          </button>
-        `
-      : ''}
+    ${
+      row.file_count > 0
+        ? html`
+            <button
+              type="button"
+              class="btn btn-xs border text-secondary ms-1"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-content="Personal notes: ${row.file_count}"
+              aria-label="Has personal note attachments"
+            >
+              <i class="fas fa-paperclip"></i>
+            </button>
+          `
+        : ''
+    }
   `;
 }

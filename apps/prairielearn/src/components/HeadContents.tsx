@@ -34,9 +34,11 @@ export function HeadContents(titleOptions: TitleOptions) {
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    ${config.cookieDomain
-      ? html`<meta name="cookie-domain" content="${config.cookieDomain}" />`
-      : ''}
+    ${
+      config.cookieDomain
+        ? html`<meta name="cookie-domain" content="${config.cookieDomain}" />`
+        : ''
+    }
     <title>${getTitle(titleOptions)}</title>
     <link href="${nodeModulesAssetPath('bootstrap/dist/css/bootstrap.min.css')}" rel="stylesheet" />
     <link

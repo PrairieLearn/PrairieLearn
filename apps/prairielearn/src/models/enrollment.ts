@@ -50,8 +50,7 @@ import { generateUsers, selectAndLockUser } from './user.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 type CourseInstanceContext =
-  | CourseInstance
-  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+  CourseInstance | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,

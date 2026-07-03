@@ -21,8 +21,7 @@ type ResolveAppError<T> = T extends { code: string }
  * already-extracted error rather than a raw mutation error.
  */
 export type AppError<T> =
-  | (ResolveAppError<T> & { message: string })
-  | { code: 'UNKNOWN'; message: string };
+  (ResolveAppError<T> & { message: string }) | { code: 'UNKNOWN'; message: string };
 
 /**
  * Extracts a typed app-level error from a tRPC error, narrowed to the

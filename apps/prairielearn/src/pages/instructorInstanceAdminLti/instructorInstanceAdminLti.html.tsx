@@ -95,33 +95,39 @@ export function InstructorInstanceAdminLti({
           <p>
             <strong>
               This version of LTI is deprecated.
-              ${isEnterprise()
-                ? html`See the "LMS connections" tab for more information about newer integration
-                  methods.`
-                : html`Check with your PrairieLearn admins about newer integration methods.`}
+              ${
+                isEnterprise()
+                  ? html`See the "LMS connections" tab for more information about newer integration
+                    methods.`
+                  : html`Check with your PrairieLearn admins about newer integration methods.`
+              }
             </strong>
           </p>
-          ${!resLocals.lti11_enabled
-            ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
-            : ''}
+          ${
+            !resLocals.lti11_enabled
+              ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
+              : ''
+          }
         </div>
       </div>
 
-      ${resLocals.lti11_enabled
-        ? html`
-            ${LtiCredentialCard({
+      ${
+        resLocals.lti11_enabled
+          ? html`
+              ${LtiCredentialCard({
               lti_credentials,
               csrfToken: resLocals.__csrf_token,
               timezone: resLocals.course_instance.display_timezone,
             })}
-            ${LtiLinkTargetsCard({
+              ${LtiLinkTargetsCard({
               lti_links,
               assessments,
               csrfToken: resLocals.__csrf_token,
               timezone: resLocals.course_instance.display_timezone,
             })}
-          `
-        : ''}
+            `
+          : ''
+      }
     `,
   });
 }
@@ -157,57 +163,59 @@ function LtiCredentialCard({
             </tr>
           </thead>
           <tbody>
-            ${lti_credentials
-              ? lti_credentials.map(
-                  (tc) => html`
-                    <tr>
-                      <td>
-                        <code>${config.ltiRedirectUrl}</code>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-ghost js-copy-button"
-                          data-clipboard-text="${config.ltiRedirectUrl}"
-                          aria-label="Copy redirect URL to clipboard"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </td>
-                      <td>
-                        <code>${tc.consumer_key}</code>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-ghost js-copy-button"
-                          data-clipboard-text="${tc.consumer_key}"
-                          aria-label="Copy consumer key to clipboard"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </td>
-                      <td>
-                        <code>${tc.secret}</code>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-ghost js-copy-button"
-                          data-clipboard-text="${tc.secret}"
-                          aria-label="Copy shared secret to clipboard"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </td>
-                      <td>${formatDate(tc.created_at!, timezone)}</td>
-                      <td>
-                        ${tc.deleted_at != null
-                          ? formatDate(tc.deleted_at, timezone)
-                          : html`
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-danger"
-                                data-bs-toggle="popover"
-                                data-bs-container="body"
-                                data-bs-html="true"
-                                data-bs-placement="auto"
-                                data-bs-title="Confirm delete"
-                                data-bs-content="${escapeHtml(html`
+            ${
+              lti_credentials
+                ? lti_credentials.map(
+                    (tc) => html`
+                      <tr>
+                        <td>
+                          <code>${config.ltiRedirectUrl}</code>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-ghost js-copy-button"
+                            data-clipboard-text="${config.ltiRedirectUrl}"
+                            aria-label="Copy redirect URL to clipboard"
+                          >
+                            <i class="bi bi-clipboard"></i>
+                          </button>
+                        </td>
+                        <td>
+                          <code>${tc.consumer_key}</code>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-ghost js-copy-button"
+                            data-clipboard-text="${tc.consumer_key}"
+                            aria-label="Copy consumer key to clipboard"
+                          >
+                            <i class="bi bi-clipboard"></i>
+                          </button>
+                        </td>
+                        <td>
+                          <code>${tc.secret}</code>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-ghost js-copy-button"
+                            data-clipboard-text="${tc.secret}"
+                            aria-label="Copy shared secret to clipboard"
+                          >
+                            <i class="bi bi-clipboard"></i>
+                          </button>
+                        </td>
+                        <td>${formatDate(tc.created_at!, timezone)}</td>
+                        <td>
+                          ${
+                          tc.deleted_at != null
+                            ? formatDate(tc.deleted_at, timezone)
+                            : html`
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-danger"
+                                  data-bs-toggle="popover"
+                                  data-bs-container="body"
+                                  data-bs-html="true"
+                                  data-bs-placement="auto"
+                                  data-bs-title="Confirm delete"
+                                  data-bs-content="${escapeHtml(html`
                                   <form method="post">
                                     <input type="hidden" name="__action" value="lti_del_cred" />
                                     <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -215,21 +223,23 @@ function LtiCredentialCard({
                                     <input type="submit" class="btn btn-danger" value="Delete" />
                                   </form>
                                 `)}"
-                              >
-                                Delete
-                              </button>
-                            `}
+                                >
+                                  Delete
+                                </button>
+                              `
+                        }
+                        </td>
+                      </tr>
+                    `,
+                  )
+                : html`
+                    <tr>
+                      <td colspan="5">
+                        <em>No LTI credentials have been created.</em>
                       </td>
                     </tr>
-                  `,
-                )
-              : html`
-                  <tr>
-                    <td colspan="5">
-                      <em>No LTI credentials have been created.</em>
-                    </td>
-                  </tr>
-                `}
+                  `
+            }
           </tbody>
         </table>
       </div>
@@ -279,51 +289,57 @@ function LtiLinkTargetsCard({
             </tr>
           </thead>
           <tbody>
-            ${lti_links
-              ? lti_links.map(
-                  (link) => html`
-                    <tr>
-                      <td title="${link.resource_link_description}">${link.resource_link_title}</td>
-                      <td>
-                        <form method="post">
-                          <input type="hidden" name="__action" value="lti_link_target" />
-                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="lti_link_id" value="${link.id}" />
-                          <select
-                            class="form-select"
-                            onchange="this.form.submit();"
-                            name="newAssessment"
-                          >
-                            <option value="" ${!link.assessment_id ? 'selected' : ''}>
-                              -- None
-                            </option>
-                            ${assessments?.map(
+            ${
+              lti_links
+                ? lti_links.map(
+                    (link) => html`
+                      <tr>
+                        <td title="${link.resource_link_description}">
+                          ${link.resource_link_title}
+                        </td>
+                        <td>
+                          <form method="post">
+                            <input type="hidden" name="__action" value="lti_link_target" />
+                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                            <input type="hidden" name="lti_link_id" value="${link.id}" />
+                            <select
+                              class="form-select"
+                              onchange="this.form.submit();"
+                              name="newAssessment"
+                            >
+                              <option value="" ${!link.assessment_id ? 'selected' : ''}>
+                                -- None
+                              </option>
+                              ${assessments?.map(
                               (a) => html`
                                 <option
                                   value="${a.assessment_id}"
-                                  ${link.assessment_id &&
-                                  idsEqual(link.assessment_id, a.assessment_id)
-                                    ? 'selected'
-                                    : ''}
+                                  ${
+                                    link.assessment_id &&
+                                    idsEqual(link.assessment_id, a.assessment_id)
+                                      ? 'selected'
+                                      : ''
+                                  }
                                 >
                                   ${a.label}: ${a.title} (${a.tid})
                                 </option>
                               `,
                             )}
-                          </select>
-                        </form>
+                            </select>
+                          </form>
+                        </td>
+                        <td>${formatDate(link.created_at, timezone)}</td>
+                      </tr>
+                    `,
+                  )
+                : html`
+                    <tr>
+                      <td colspan="3">
+                        <em>No LTI links have been created.</em>
                       </td>
-                      <td>${formatDate(link.created_at, timezone)}</td>
                     </tr>
-                  `,
-                )
-              : html`
-                  <tr>
-                    <td colspan="3">
-                      <em>No LTI links have been created.</em>
-                    </td>
-                  </tr>
-                `}
+                  `
+            }
           </tbody>
         </table>
       </div>

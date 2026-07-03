@@ -55,21 +55,23 @@ function InsufficientCoursePermissionsCard({
         You don't have permission to view this page. It requires at least
         &quot;${requiredPermissions}&quot; permissions for this course.
       </p>
-      ${hasCoursePermissionOwn
-        ? html`<p>
-            You can grant yourself the necessary permissions on the course's
-            <a href="${urlPrefix}/course_admin/staff">Staff page</a>.
-          </p>`
-        : courseOwners.length > 0
-          ? html`
-              <p>Contact one of the below course owners to request access.</p>
-              <ul>
-                ${courseOwners.map(
+      ${
+        hasCoursePermissionOwn
+          ? html`<p>
+              You can grant yourself the necessary permissions on the course's
+              <a href="${urlPrefix}/course_admin/staff">Staff page</a>.
+            </p>`
+          : courseOwners.length > 0
+            ? html`
+                <p>Contact one of the below course owners to request access.</p>
+                <ul>
+                  ${courseOwners.map(
                   (owner) => html` <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li> `,
                 )}
-              </ul>
-            `
-          : ''}
+                </ul>
+              `
+            : ''
+      }
     </div>
   </div>`;
 }

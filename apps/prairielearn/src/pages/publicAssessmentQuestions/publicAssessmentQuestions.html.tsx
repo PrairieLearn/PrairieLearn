@@ -102,19 +102,21 @@ function AssessmentQuestionsTable({
                 <td>${TopicBadgeHtml(question.topic)}</td>
                 <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
                 <td>
-                  ${question.other_assessments
-                    ? question.other_assessments.map((assessment) => {
-                        return AssessmentBadgeHtml({
-                          assessment: {
-                            assessment_id: assessment.assessment_id,
-                            color: assessment.assessment_set_color,
-                            label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
-                          },
-                          courseInstanceId: course_instance_id,
-                          publicURL: true,
-                        });
-                      })
-                    : ''}
+                  ${
+                    question.other_assessments
+                      ? question.other_assessments.map((assessment) => {
+                          return AssessmentBadgeHtml({
+                            assessment: {
+                              assessment_id: assessment.assessment_id,
+                              color: assessment.assessment_set_color,
+                              label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                            },
+                            courseInstanceId: course_instance_id,
+                            publicURL: true,
+                          });
+                        })
+                      : ''
+                  }
                 </td>
               </tr>
             `;

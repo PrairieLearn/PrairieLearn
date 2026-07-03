@@ -146,69 +146,74 @@ export function GradingPanel({
       />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
-        ${resLocals.assessment_question.max_points
-          ? // Percentage-based grading is only suitable if the question has points
-            html`
-              <li class="list-group-item d-flex justify-content-center">
-                <span>Points</span>
-                <div class="form-check form-switch mx-2">
-                  <input
-                    class="form-check-input js-manual-grading-pts-perc-select"
-                    name="use_score_perc"
-                    id="use-score-perc"
-                    type="checkbox"
-                  />
-                  <label class="form-check-label" for="use-score-perc">Percentage</label>
-                </div>
-              </li>
-            `
-          : ''}
-        ${showInstanceQuestionGroup && context === 'main'
-          ? html`
-              <li class="list-group-item align-items-center">
-                <label
-                  for="instance-question-group-toggle"
-                  class="form-label d-flex align-items-center gap-2"
-                >
-                  Submission Group:
-                  ${instanceQuestionGroups && instanceQuestionGroups.length > 0
-                    ? html`
-                        <div
-                          id="instance-question-group-description-tooltip"
-                          data-bs-toggle="tooltip"
-                          data-bs-html="true"
-                          data-bs-title="${displayedSelectedGroup.instance_question_group_description}"
-                        >
-                          <i class="fas fa-circle-info text-secondary"></i>
-                        </div>
-                      `
-                    : ''}
-                </label>
-                <div class="dropdown w-100 mb-2" role="combobox">
-                  <button
-                    id="instance-question-group-toggle"
-                    type="button"
-                    class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
-                    aria-label="Change selected submission group"
-                    aria-haspopup="listbox"
-                    aria-expanded="false"
-                    data-bs-toggle="dropdown"
-                    data-bs-boundary="window"
+        ${
+          resLocals.assessment_question.max_points
+            ? // Percentage-based grading is only suitable if the question has points
+              html`
+                <li class="list-group-item d-flex justify-content-center">
+                  <span>Points</span>
+                  <div class="form-check form-switch mx-2">
+                    <input
+                      class="form-check-input js-manual-grading-pts-perc-select"
+                      name="use_score_perc"
+                      id="use-score-perc"
+                      type="checkbox"
+                    />
+                    <label class="form-check-label" for="use-score-perc">Percentage</label>
+                  </div>
+                </li>
+              `
+            : ''
+        }
+        ${
+          showInstanceQuestionGroup && context === 'main'
+            ? html`
+                <li class="list-group-item align-items-center">
+                  <label
+                    for="instance-question-group-toggle"
+                    class="form-label d-flex align-items-center gap-2"
                   >
-                    <span id="instance-question-group-selection-dropdown-span">
-                      ${displayedSelectedGroup.instance_question_group_name}
-                    </span>
-                  </button>
-
-                  <div class="dropdown-menu py-0 overflow-hidden">
-                    <div
-                      id="instance-question-group-selection-dropdown"
-                      style="max-height: 50vh"
-                      class="overflow-auto py-2"
-                      role="listbox"
-                      aria-labelledby="instance-question-group-toggle"
+                    Submission Group:
+                    ${
+                    instanceQuestionGroups && instanceQuestionGroups.length > 0
+                      ? html`
+                          <div
+                            id="instance-question-group-description-tooltip"
+                            data-bs-toggle="tooltip"
+                            data-bs-html="true"
+                            data-bs-title="${displayedSelectedGroup.instance_question_group_description}"
+                          >
+                            <i class="fas fa-circle-info text-secondary"></i>
+                          </div>
+                        `
+                      : ''
+                  }
+                  </label>
+                  <div class="dropdown w-100 mb-2" role="combobox">
+                    <button
+                      id="instance-question-group-toggle"
+                      type="button"
+                      class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
+                      aria-label="Change selected submission group"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      data-bs-toggle="dropdown"
+                      data-bs-boundary="window"
                     >
-                      ${instanceQuestionGroupsWithEmpty.map((group) => {
+                      <span id="instance-question-group-selection-dropdown-span">
+                        ${displayedSelectedGroup.instance_question_group_name}
+                      </span>
+                    </button>
+
+                    <div class="dropdown-menu py-0 overflow-hidden">
+                      <div
+                        id="instance-question-group-selection-dropdown"
+                        style="max-height: 50vh"
+                        class="overflow-auto py-2"
+                        role="listbox"
+                        aria-labelledby="instance-question-group-toggle"
+                      >
+                        ${instanceQuestionGroupsWithEmpty.map((group) => {
                         const isSelected = run(() => {
                           if (!group.id) {
                             return displayedSelectedGroup.id === null;
@@ -233,26 +238,30 @@ export function GradingPanel({
                           </a>
                         `;
                       })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            `
-          : ''}
-        ${graderGuidelinesRendered
-          ? html`
-              <li class="list-group-item">
-                <div class="mb-1">Guidelines:</div>
-                <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
-              </li>
-            `
-          : ''}
-        ${gradedByAi || gradedByHuman
-          ? html`
-              <li class="list-group-item">
-                <div class="d-flex align-items-center flex-wrap gap-1">
-                  <span>Graded by:</span>
-                  ${run(() => {
+                </li>
+              `
+            : ''
+        }
+        ${
+          graderGuidelinesRendered
+            ? html`
+                <li class="list-group-item">
+                  <div class="mb-1">Guidelines:</div>
+                  <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
+                </li>
+              `
+            : ''
+        }
+        ${
+          gradedByAi || gradedByHuman
+            ? html`
+                <li class="list-group-item">
+                  <div class="d-flex align-items-center flex-wrap gap-1">
+                    <span>Graded by:</span>
+                    ${run(() => {
                     const aiBadge = html`<span class="badge text-bg-light border fw-medium"
                       >AI</span
                     >`;
@@ -272,41 +281,54 @@ export function GradingPanel({
                     }
                     return html`<span>${gradedByHumanName}</span>`;
                   })}
-                </div>
-                ${gradedByAi && gradedByHuman
-                  ? html`<div class="text-muted small mt-1">
-                      Human grading always takes priority
-                    </div>`
-                  : ''}
-              </li>
-            `
-          : ''}
+                  </div>
+                  ${
+                  gradedByAi && gradedByHuman
+                    ? html`<div class="text-muted small mt-1">
+                        Human grading always takes priority
+                      </div>`
+                    : ''
+                }
+                </li>
+              `
+            : ''
+        }
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
-          ${!resLocals.rubric_data?.rubric.replace_auto_points ||
-          (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
-            : ''}
+          ${
+            !resLocals.rubric_data?.rubric.replace_auto_points ||
+            (!resLocals.assessment_question.max_auto_points && !auto_points)
+              ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
+              : ''
+          }
         </li>
-        ${resLocals.assessment_question.max_auto_points || auto_points
-          ? html`
-              <li class="list-group-item">
-                ${AutoPointsSection({ context, disable, auto_points, resLocals })}
-              </li>
-              <li class="list-group-item">
-                ${TotalPointsSection({ points, resLocals })}
-                ${resLocals.rubric_data?.rubric.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
-                  : ''}
-              </li>
-            `
-          : ''}
+        ${
+          resLocals.assessment_question.max_auto_points || auto_points
+            ? html`
+                <li class="list-group-item">
+                  ${AutoPointsSection({ context, disable, auto_points, resLocals })}
+                </li>
+                <li class="list-group-item">
+                  ${TotalPointsSection({ points, resLocals })}
+                  ${
+                  resLocals.rubric_data?.rubric.replace_auto_points
+                    ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
+                    : ''
+                }
+                </li>
+              `
+            : ''
+        }
         <li class="list-group-item">
           <label>
             Feedback:
-            ${enableEditKeyboardShortcuts
-              ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent mb-1 ms-2">F</kbd>`
-              : ''}
+            ${
+              enableEditKeyboardShortcuts
+                ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent mb-1 ms-2"
+                    >F</kbd
+                  >`
+                : ''
+            }
             <textarea
               name="submission_note"
               class="form-control js-submission-feedback"
@@ -315,18 +337,18 @@ export function GradingPanel({
               aria-describedby="submission-feedback-help-${context}"
               ${enableEditKeyboardShortcuts ? html`data-key-binding="f"` : ''}
             >
-${submission.feedback?.manual}</textarea
-            >
+${submission.feedback?.manual}</textarea>
             <small id="submission-feedback-help-${context}" class="form-text text-muted">
               Markdown formatting, such as *<em>emphasis</em>* or &#96;<code>code</code>&#96;, is
               permitted and will be used to format the feedback when presented to the student.
             </small>
           </label>
         </li>
-        ${open_issues.length > 0 && context !== 'existing'
-          ? html`
-              <li class="list-group-item">
-                ${open_issues.map(
+        ${
+          open_issues.length > 0 && context !== 'existing'
+            ? html`
+                <li class="list-group-item">
+                  ${open_issues.map(
                   (issue) => html`
                     <div class="form-check">
                       <input
@@ -342,181 +364,197 @@ ${submission.feedback?.manual}</textarea
                     </div>
                   `,
                 )}
-              </li>
-            `
-          : ''}
+                </li>
+              `
+            : ''
+        }
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
           <div>
             <div class="form-check">
-              ${showSkipGradedSubmissionsButton
-                ? html`
-                    <input
-                      id="skip_graded_submissions"
-                      type="checkbox"
-                      class="form-check-input"
-                      name="skip_graded_submissions"
-                      value="true"
-                      ${skip_graded_submissions ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="skip_graded_submissions">
-                      Skip graded submissions
-                    </label>
-                  `
-                : html`
-                    <input
-                      id="skip_graded_submissions"
-                      type="hidden"
-                      name="skip_graded_submissions"
-                      value="${skip_graded_submissions ? 'true' : 'false'}"
-                    />
-                  `}
+              ${
+                showSkipGradedSubmissionsButton
+                  ? html`
+                      <input
+                        id="skip_graded_submissions"
+                        type="checkbox"
+                        class="form-check-input"
+                        name="skip_graded_submissions"
+                        value="true"
+                        ${skip_graded_submissions ? 'checked' : ''}
+                      />
+                      <label class="form-check-label" for="skip_graded_submissions">
+                        Skip graded submissions
+                      </label>
+                    `
+                  : html`
+                      <input
+                        id="skip_graded_submissions"
+                        type="hidden"
+                        name="skip_graded_submissions"
+                        value="${skip_graded_submissions ? 'true' : 'false'}"
+                      />
+                    `
+              }
             </div>
 
             <div class="form-check">
-              ${showAssignedToMeButton
-                ? html`
-                    <input
-                      id="show_submissions_assigned_to_me_only"
-                      type="checkbox"
-                      class="form-check-input"
-                      name="show_submissions_assigned_to_me_only"
-                      value="true"
-                      ${show_submissions_assigned_to_me_only ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="show_submissions_assigned_to_me_only">
-                      Skip submissions not assigned to me
-                    </label>
-                  `
-                : html`
-                    <input
-                      id="show_submissions_assigned_to_me_only"
-                      type="hidden"
-                      name="show_submissions_assigned_to_me_only"
-                      value="${show_submissions_assigned_to_me_only ? 'true' : 'false'}"
-                    />
-                  `}
+              ${
+                showAssignedToMeButton
+                  ? html`
+                      <input
+                        id="show_submissions_assigned_to_me_only"
+                        type="checkbox"
+                        class="form-check-input"
+                        name="show_submissions_assigned_to_me_only"
+                        value="true"
+                        ${show_submissions_assigned_to_me_only ? 'checked' : ''}
+                      />
+                      <label class="form-check-label" for="show_submissions_assigned_to_me_only">
+                        Skip submissions not assigned to me
+                      </label>
+                    `
+                  : html`
+                      <input
+                        id="show_submissions_assigned_to_me_only"
+                        type="hidden"
+                        name="show_submissions_assigned_to_me_only"
+                        value="${show_submissions_assigned_to_me_only ? 'true' : 'false'}"
+                      />
+                    `
+              }
             </div>
           </div>
 
           <span class="ms-auto">
-            ${!disable
-              ? html`
-                  ${context === 'main'
-                    ? html`
-                        <div
-                          id="grade-button-with-options"
-                          class="btn-group ${selectedInstanceQuestionGroup ? '' : 'd-none'}"
-                        >
-                          <button
-                            type="submit"
-                            class="btn btn-primary"
-                            name="__action"
-                            value="add_manual_grade"
+            ${
+              !disable
+                ? html`
+                    ${
+                    context === 'main'
+                      ? html`
+                          <div
+                            id="grade-button-with-options"
+                            class="btn-group ${selectedInstanceQuestionGroup ? '' : 'd-none'}"
                           >
-                            Grade
-                          </button>
-                          <button
-                            id="grade-options-dropdown"
-                            type="button"
-                            class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                          ></button>
-                          <div class="dropdown-menu dropdown-menu-end">
                             <button
                               type="submit"
-                              class="dropdown-item"
+                              class="btn btn-primary"
                               name="__action"
                               value="add_manual_grade"
                             >
-                              This instance question
-                            </button>
-
-                            <div class="dropdown-divider"></div>
-
-                            <button
-                              type="submit"
-                              class="dropdown-item"
-                              name="__action"
-                              value="add_manual_grade_for_instance_question_group_ungraded"
-                            >
-                              All ungraded instance questions in submission group
+                              Grade
                             </button>
                             <button
-                              type="submit"
-                              class="dropdown-item"
-                              name="__action"
-                              value="add_manual_grade_for_instance_question_group"
-                            >
-                              All instance questions in submission group
-                            </button>
+                              id="grade-options-dropdown"
+                              type="button"
+                              class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                              data-bs-toggle="dropdown"
+                              aria-haspopup="true"
+                              aria-expanded="false"
+                            ></button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                              <button
+                                type="submit"
+                                class="dropdown-item"
+                                name="__action"
+                                value="add_manual_grade"
+                              >
+                                This instance question
+                              </button>
 
-                            <div class="dropdown-item-text text-muted small">
-                              AI can make mistakes. Review submission groups before grading.
+                              <div class="dropdown-divider"></div>
+
+                              <button
+                                type="submit"
+                                class="dropdown-item"
+                                name="__action"
+                                value="add_manual_grade_for_instance_question_group_ungraded"
+                              >
+                                All ungraded instance questions in submission group
+                              </button>
+                              <button
+                                type="submit"
+                                class="dropdown-item"
+                                name="__action"
+                                value="add_manual_grade_for_instance_question_group"
+                              >
+                                All instance questions in submission group
+                              </button>
+
+                              <div class="dropdown-item-text text-muted small">
+                                AI can make mistakes. Review submission groups before grading.
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      `
-                    : ''}
-                  <button
-                    id="grade-button"
-                    type="submit"
-                    class="btn btn-primary ${selectedInstanceQuestionGroup
-                      ? 'd-none'
-                      : 'd-inline-flex'} align-items-center"
-                    name="__action"
-                    value="add_manual_grade"
-                    ${enableEditKeyboardShortcuts ? html`data-key-binding="g"` : ''}
-                  >
-                    Grade
-                    ${enableEditKeyboardShortcuts
-                      ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2"
-                          >G</kbd
-                        >`
-                      : ''}
-                  </button>
-                  ${context === 'main' && aiGradingMode
-                    ? html`
-                        <button
-                          id="ai-grade-button"
-                          type="button"
-                          class="btn btn-primary ms-1"
-                          onclick="document.dispatchEvent(new CustomEvent('${AI_GRADING_MODAL_OPEN_EVENT}'))"
-                        >
-                          <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
-                        </button>
-                      `
-                    : ''}
-                `
-              : ''}
+                        `
+                      : ''
+                  }
+                    <button
+                      id="grade-button"
+                      type="submit"
+                      class="btn btn-primary ${
+                      selectedInstanceQuestionGroup ? 'd-none' : 'd-inline-flex'
+                    } align-items-center"
+                      name="__action"
+                      value="add_manual_grade"
+                      ${enableEditKeyboardShortcuts ? html`data-key-binding="g"` : ''}
+                    >
+                      Grade
+                      ${
+                      enableEditKeyboardShortcuts
+                        ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2"
+                            >G</kbd
+                          >`
+                        : ''
+                    }
+                    </button>
+                    ${
+                    context === 'main' && aiGradingMode
+                      ? html`
+                          <button
+                            id="ai-grade-button"
+                            type="button"
+                            class="btn btn-primary ms-1"
+                            onclick="document.dispatchEvent(new CustomEvent('${AI_GRADING_MODAL_OPEN_EVENT}'))"
+                          >
+                            <i class="bi bi-stars me-1" aria-hidden="true"></i>AI grade
+                          </button>
+                        `
+                      : ''
+                  }
+                  `
+                : ''
+            }
             <div class="btn-group">
               <button
                 type="submit"
-                class="btn btn-secondary ${showNextShortcut
-                  ? 'd-inline-flex align-items-center'
-                  : ''}"
+                class="btn btn-secondary ${
+                  showNextShortcut ? 'd-inline-flex align-items-center' : ''
+                }"
                 name="__action"
                 value="next_instance_question"
                 ${showNextShortcut ? html`data-key-binding="n"` : ''}
               >
                 ${skip_text}
-                ${showNextShortcut
-                  ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">N</kbd>`
-                  : ''}
+                ${
+                  showNextShortcut
+                    ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">N</kbd>`
+                    : ''
+                }
               </button>
-              ${!disable
-                ? html`
-                    <button
-                      type="button"
-                      class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                      data-bs-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                      aria-label="Change assigned grader"
-                    ></button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                      ${(graders || []).map(
+              ${
+                !disable
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Change assigned grader"
+                      ></button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        ${(graders || []).map(
                         (grader) => html`
                           <button
                             type="submit"
@@ -528,25 +566,26 @@ ${submission.feedback?.manual}</textarea
                           </button>
                         `,
                       )}
-                      <button
-                        type="submit"
-                        class="dropdown-item"
-                        name="__action"
-                        value="reassign_nobody"
-                      >
-                        Tag for grading without assigned grader
-                      </button>
-                      <button
-                        type="submit"
-                        class="dropdown-item"
-                        name="__action"
-                        value="reassign_graded"
-                      >
-                        Tag as graded (keep current grade)
-                      </button>
-                    </div>
-                  `
-                : ''}
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="reassign_nobody"
+                        >
+                          Tag for grading without assigned grader
+                        </button>
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="reassign_graded"
+                        >
+                          Tag as graded (keep current grade)
+                        </button>
+                      </div>
+                    `
+                  : ''
+              }
             </div>
           </span>
         </li>

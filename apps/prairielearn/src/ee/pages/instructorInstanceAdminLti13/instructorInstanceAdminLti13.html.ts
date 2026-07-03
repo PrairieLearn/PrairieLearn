@@ -48,38 +48,40 @@ export function InstructorInstanceAdminLti13NoInstances({
           <h1>LMS connections</h1>
         </div>
         <div class="card-body">
-          ${lti13_instances.length === 0
-            ? html`
-                <p>
-                  No learning management systems (LMSes) at your institution are available for
-                  integration with PrairieLearn. Please contact your IT administrators to set up an
-                  integration. You can refer them to the
-                  <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
-                    >documentation</a
-                  >.
-                </p>
-              `
-            : html`
-                <p>
-                  The following learning management systems (LMSes) at your institution are
-                  available for integration with PrairieLearn:
-                </p>
+          ${
+            lti13_instances.length === 0
+              ? html`
+                  <p>
+                    No learning management systems (LMSes) at your institution are available for
+                    integration with PrairieLearn. Please contact your IT administrators to set up
+                    an integration. You can refer them to the
+                    <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
+                      >documentation</a
+                    >.
+                  </p>
+                `
+              : html`
+                  <p>
+                    The following learning management systems (LMSes) at your institution are
+                    available for integration with PrairieLearn:
+                  </p>
 
-                <ul>
-                  ${lti13_instances.map((i) => {
+                  <ul>
+                    ${lti13_instances.map((i) => {
                     return html`<li>${i.name}</li>`;
                   })}
-                </ul>
-                <p>
-                  <a
-                    target="_blank"
-                    href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
-                    rel="noreferrer"
-                  >
-                    How can I integrate my course with an LMS?
-                  </a>
-                </p>
-              `}
+                  </ul>
+                  <p>
+                    <a
+                      target="_blank"
+                      href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
+                      rel="noreferrer"
+                    >
+                      How can I integrate my course with an LMS?
+                    </a>
+                  </p>
+                `
+          }
           <p class="mb-0">
             Integrating will allow you to push assessment scores from PrairieLearn to the LMS.
           </p>
@@ -140,17 +142,19 @@ export function InstructorInstanceAdminLti13({
                   ${instances.map((i) => {
                     return html`
                       <a
-                        class="dropdown-item ${instance.lti13_course_instance.id ===
-                        i.lti13_course_instance.id
-                          ? 'active'
-                          : ''}"
-                        href="/pl/course_instance/${resLocals.course_instance
-                          .id}/instructor/instance_admin/lti13_instance/${i.lti13_course_instance
-                          .id}"
-                        aria-current="${instance.lti13_course_instance.id ===
-                        i.lti13_course_instance.id
-                          ? 'true'
-                          : ''}"
+                        class="dropdown-item ${
+                          instance.lti13_course_instance.id === i.lti13_course_instance.id
+                            ? 'active'
+                            : ''
+                        }"
+                        href="/pl/course_instance/${
+                          resLocals.course_instance.id
+                        }/instructor/instance_admin/lti13_instance/${i.lti13_course_instance.id}"
+                        aria-current="${
+                          instance.lti13_course_instance.id === i.lti13_course_instance.id
+                            ? 'true'
+                            : ''
+                        }"
                       >
                         ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
                       </a>
@@ -171,24 +175,26 @@ export function InstructorInstanceAdminLti13({
             </div>
             <div class="col-10">
               <h3 id="assessments">Linked Assessments</h3>
-              ${instance.lti13_course_instance.context_memberships_url &&
-              instance.lti13_course_instance.lineitems_url
-                ? LinkedAssessments({
-                    resLocals,
-                    lms_name,
-                    assessments,
-                    lineitems,
-                  })
-                : html`
-                    <p>
-                      PrairieLearn does not have enough LTI metadata to link assignments and do
-                      grade passback.
-                    </p>
-                    <p>
-                      To update our metadata, go back to the LMS and initiate a PrairieLearn
-                      connection via LTI as an instructor, then return here.
-                    </p>
-                  `}
+              ${
+                instance.lti13_course_instance.context_memberships_url &&
+                instance.lti13_course_instance.lineitems_url
+                  ? LinkedAssessments({
+                      resLocals,
+                      lms_name,
+                      assessments,
+                      lineitems,
+                    })
+                  : html`
+                      <p>
+                        PrairieLearn does not have enough LTI metadata to link assignments and do
+                        grade passback.
+                      </p>
+                      <p>
+                        To update our metadata, go back to the LMS and initiate a PrairieLearn
+                        connection via LTI as an instructor, then return here.
+                      </p>
+                    `
+              }
 
               <h3 id="connection">Connection to LMS</h3>
               <form method="POST">
@@ -247,11 +253,12 @@ function LinkedAssessments({
               return item.assessment_id === row.id;
             });
             return html`
-              ${row.start_new_assessment_group
-                ? html`
-                    <tr>
-                      <th colspan="5">
-                        ${Modal({
+              ${
+                row.start_new_assessment_group
+                  ? html`
+                      <tr>
+                        <th colspan="5">
+                          ${Modal({
                           id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
                           title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
                           body: html`<p>
@@ -305,19 +312,20 @@ function LinkedAssessments({
                             Close
                           </button>`,
                         })}
-                        ${row.assessment_group_heading}
-                        <button
-                          class="btn btn-sm btn-secondary ms-2"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
-                        >
-                          Bulk actions
-                        </button>
-                      </th>
-                    </tr>
-                  `
-                : ''}
+                          ${row.assessment_group_heading}
+                          <button
+                            class="btn btn-sm btn-secondary ms-2"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                          >
+                            Bulk actions
+                          </button>
+                        </th>
+                      </tr>
+                    `
+                  : ''
+              }
               <tr id="row-${row.id}">
                 <td class="align-middle" style="width: 1%">
                   <span class="badge color-${row.color}">${row.label}</span>
@@ -325,9 +333,9 @@ function LinkedAssessments({
                 <td class="align-middle">
                   <a href="${urlPrefix}/assessment/${row.id}/"
                     >${row.title}
-                    ${row.team_work
-                      ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                      : ''}</a
+                    ${
+                      row.team_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''
+                    }</a
                   >
                 </td>
                 <td>
@@ -382,42 +390,44 @@ function LinkedAssessments({
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
-                    ${lineitems_linked.length === 0
-                      ? html`
-                          <button
-                            class="btn btn-med-light"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#assignment-${row.id}"
-                          >
-                            Link assignment
-                          </button>
-                        `
-                      : html`
-                          <div class="btn-group">
-                            <button class="btn btn-info" name="__action" value="send_grades">
-                              Send grades
-                            </button>
+                    ${
+                      lineitems_linked.length === 0
+                        ? html`
                             <button
+                              class="btn btn-med-light"
                               type="button"
-                              class="btn btn-info dropdown-toggle dropdown-toggle-split"
-                              data-bs-toggle="dropdown"
-                              aria-expanded="false"
-                              aria-label="Toggle dropdown"
-                            ></button>
-                            <ul class="dropdown-menu">
-                              <li>
-                                <button
-                                  class="dropdown-item"
-                                  name="__action"
-                                  value="unlink_assessment"
-                                >
-                                  Unlink assignment
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        `}
+                              data-bs-toggle="modal"
+                              data-bs-target="#assignment-${row.id}"
+                            >
+                              Link assignment
+                            </button>
+                          `
+                        : html`
+                            <div class="btn-group">
+                              <button class="btn btn-info" name="__action" value="send_grades">
+                                Send grades
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-info dropdown-toggle dropdown-toggle-split"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                aria-label="Toggle dropdown"
+                              ></button>
+                              <ul class="dropdown-menu">
+                                <li>
+                                  <button
+                                    class="dropdown-item"
+                                    name="__action"
+                                    value="unlink_assessment"
+                                  >
+                                    Unlink assignment
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          `
+                    }
                   </form>
                 </td>
                 <td class="align-middle">
