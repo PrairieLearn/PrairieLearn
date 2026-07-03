@@ -24,7 +24,7 @@
     "@prairielearn/run": "workspace:^",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.14.4",
+    "@tanstack/react-virtual": "^3.14.5",
     "@tanstack/table-core": "^8.21.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
