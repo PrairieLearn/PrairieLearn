@@ -427,9 +427,6 @@ function IssueDataCollapse({
   collapseId: string;
   data: unknown;
 }) {
-  // The header stays visible while the collapsible JSON body scrolls beneath it.
-  // A `position: sticky` header inside the scrollable box keeps the show/hide
-  // button reachable even when scrolled midway through a large payload.
   return html`
     <div class="border rounded mb-2" style="max-height: 60vh; overflow-y: auto;">
       <p
