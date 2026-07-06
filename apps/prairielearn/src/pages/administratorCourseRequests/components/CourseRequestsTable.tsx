@@ -24,6 +24,10 @@ import {
   getAdministratorJobSequenceUrl,
 } from '../../../lib/client/url.js';
 import type { CourseRequestRow } from '../../../lib/course-request.js';
+import {
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+  isValidGithubUsername,
+} from '../../../lib/github-utils.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 import { useTRPC } from '../../../trpc/administrator/context.js';
 import type { AdminCourseRequestError } from '../../../trpc/administrator/course-requests.js';
@@ -398,7 +402,7 @@ function CourseRequestApproveModalContent({
         path: data.path,
         repoShortName: data.repository_short_name,
         githubCourseOwner: data.github_course_owner.trim(),
-        githubUser: data.github_user,
+        githubUser: data.github_user.trim(),
       },
       {
         onSuccess: ({ jobSequenceId }) => {
@@ -611,10 +615,25 @@ function CourseRequestApproveModalContent({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.github_user && 'is-invalid')}
               id="courseRequestAddInputGithubUser"
-              {...register('github_user')}
+              defaultValue={request.github_user ?? ''}
+              aria-invalid={errors.github_user ? true : undefined}
+              aria-errormessage={
+                errors.github_user ? 'courseRequestAddInputGithubUser-error' : undefined
+              }
+              {...register('github_user', {
+                validate: (value) =>
+                  value.trim().length === 0 ||
+                  isValidGithubUsername(value.trim()) ||
+                  GITHUB_USERNAME_VALIDATION_MESSAGE,
+              })}
             />
+            {errors.github_user && (
+              <div id="courseRequestAddInputGithubUser-error" className="invalid-feedback">
+                {errors.github_user.message}
+              </div>
+            )}
           </div>
           <MutationError appError={appError} onDismiss={() => mutation.reset()} />
         </Modal.Body>

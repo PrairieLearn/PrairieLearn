@@ -70,7 +70,6 @@ const EXTERNAL_ELEMENT_DEPS = [
   'lodash',
   'mersenne',
   'numeric',
-  'popper.js',
   'showdown',
 ];
 
