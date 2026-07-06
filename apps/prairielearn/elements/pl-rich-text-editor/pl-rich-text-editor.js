@@ -159,6 +159,41 @@
 
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
+
+    // WCAG 4.1.2: Quill 2 gives its picker dropdowns (size, header, color,
+    // background) an ARIA role but no accessible name, and labels the format
+    // buttons with terse internal names. Add explicit `aria-label`s. This is a
+    // known upstream gap (quilljs/quill#4744) with no config/version fix. No-ops
+    // in read-only mode, where `options.modules.toolbar` is false.
+    const toolbarContainer = quill.getModule('toolbar')?.container;
+    if (toolbarContainer) {
+      const toolbarLabels = {
+        '.ql-bold': 'Bold',
+        '.ql-italic': 'Italic',
+        '.ql-underline': 'Underline',
+        '.ql-strike': 'Strikethrough',
+        '.ql-blockquote': 'Blockquote',
+        '.ql-code-block': 'Code block',
+        '.ql-script[value="sub"]': 'Subscript',
+        '.ql-script[value="super"]': 'Superscript',
+        '.ql-formula': 'Insert formula',
+        '.ql-list[value="ordered"]': 'Ordered list',
+        '.ql-list[value="bullet"]': 'Bulleted list',
+        '.ql-indent[value="-1"]': 'Decrease indent',
+        '.ql-indent[value="+1"]': 'Increase indent',
+        '.ql-clean': 'Remove formatting',
+        '.ql-size .ql-picker-label': 'Font size',
+        '.ql-header .ql-picker-label': 'Heading level',
+        '.ql-color .ql-picker-label': 'Text color',
+        '.ql-background .ql-picker-label': 'Background color',
+      };
+      for (const [selector, label] of Object.entries(toolbarLabels)) {
+        toolbarContainer
+          .querySelectorAll(selector)
+          .forEach((el) => el.setAttribute('aria-label', label));
+      }
+    }
+
     initializeFormulaPopover(quill, uuid);
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});

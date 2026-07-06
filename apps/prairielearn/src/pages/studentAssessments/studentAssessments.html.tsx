@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -79,58 +80,72 @@ export function StudentAssessments({
                 <th class="text-center">Score</th>
               </tr>
             </thead>
-            <tbody>
-              ${rows.map(
-                (row, index) => html`
-                  ${index === 0 ||
+            ${run(() => {
+              // WCAG 1.3.1: render each assessment group as its own <tbody> with
+              // a `scope="rowgroup"` heading, so the heading correctly heads the
+              // rows it spans instead of being a row header with no data cells.
+              const groups: (typeof rows)[] = [];
+              rows.forEach((row, index) => {
+                if (
+                  index === 0 ||
                   !idsEqual(row.assessment_group_id, rows[index - 1].assessment_group_id)
-                    ? html`
+                ) {
+                  groups.push([]);
+                }
+                groups[groups.length - 1].push(row);
+              });
+              return groups.map(
+                (groupRows) => html`
+                  <tbody>
+                    <tr>
+                      <th colspan="4" scope="rowgroup" data-testid="assessment-group-heading">
+                        ${groupRows[0].assessment_group_heading}
+                      </th>
+                    </tr>
+                    ${groupRows.map(
+                      (row) => html`
                         <tr>
-                          <th colspan="4" scope="row" data-testid="assessment-group-heading">
-                            ${row.assessment_group_heading}
-                          </th>
+                          <td class="align-middle" style="width: 1%">
+                            <span
+                              class="badge color-${row.assessment_set_color}"
+                              data-testid="assessment-set-badge"
+                            >
+                              ${row.label}
+                            </span>
+                          </td>
+                          <td class="align-middle">
+                            ${row.show_before_release
+                              ? html`<span class="text-muted">${row.title}</span>`
+                              : row.multiple_instance_header ||
+                                  (!row.active && row.assessment_instance_id == null)
+                                ? row.title
+                                : html`
+                                    <a href="${urlPrefix}${row.link}">
+                                      ${row.title}
+                                      ${row.team_work
+                                        ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                        : ''}
+                                    </a>
+                                  `}
+                          </td>
+                          <td class="text-center align-middle">
+                            ${AvailableCredit({
+                              row,
+                              displayTimezone: resLocals.course_instance.display_timezone,
+                            })}
+                          </td>
+                          <td class="text-center align-middle">
+                            ${row.multiple_instance_header
+                              ? NewInstanceButton({ urlPrefix, row })
+                              : AssessmentScore(row)}
+                          </td>
                         </tr>
-                      `
-                    : ''}
-                  <tr>
-                    <td class="align-middle" style="width: 1%">
-                      <span
-                        class="badge color-${row.assessment_set_color}"
-                        data-testid="assessment-set-badge"
-                      >
-                        ${row.label}
-                      </span>
-                    </td>
-                    <td class="align-middle">
-                      ${row.show_before_release
-                        ? html`<span class="text-muted">${row.title}</span>`
-                        : row.multiple_instance_header ||
-                            (!row.active && row.assessment_instance_id == null)
-                          ? row.title
-                          : html`
-                              <a href="${urlPrefix}${row.link}">
-                                ${row.title}
-                                ${row.team_work
-                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                  : ''}
-                              </a>
-                            `}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${AvailableCredit({
-                        row,
-                        displayTimezone: resLocals.course_instance.display_timezone,
-                      })}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${row.multiple_instance_header
-                        ? NewInstanceButton({ urlPrefix, row })
-                        : AssessmentScore(row)}
-                    </td>
-                  </tr>
+                      `,
+                    )}
+                  </tbody>
                 `,
-              )}
-            </tbody>
+              );
+            })}
           </table>
         </div>
       </div>

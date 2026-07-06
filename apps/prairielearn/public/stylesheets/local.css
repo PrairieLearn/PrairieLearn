@@ -2,6 +2,19 @@
  * General styles
  *****************/
 
+/* WCAG 1.4.3: Bootstrap's default link blue (#0d6efd) drops below 4.5:1 on the
+   tinted surfaces we use it on (bg-light 4.3:1, inline-code bg 3.8:1, and the
+   `.nav-link` pills used by pl-variable-output). Darken the link token to
+   $blue-700 (#0a58ca), which clears 4.5:1 on all of them. `<a>` reads the `-rgb`
+   variant while `.nav-link` reads the literal, so both are overridden.
+   (Links inside alerts use `.alert-link`, which is colored per alert variant.) */
+:root {
+  --bs-link-color: #0a58ca;
+  --bs-link-color-rgb: 10, 88, 202;
+  --bs-link-hover-color: #084298;
+  --bs-link-hover-color-rgb: 8, 66, 152;
+}
+
 body {
   overflow-y: scroll;
 }
@@ -311,6 +324,15 @@ a.badge {
   border-top-color: var(--bs-primary);
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
+}
+
+/* WCAG 1.4.3: inactive tabs use Bootstrap's `.text-secondary`, whose color
+   resolves via `var(--bs-secondary-rgb)` (#6c757d ≈ 4.4:1 on the `bg-light`
+   tab bar — fails). Scope the variable to the tab links so they render at
+   Bootstrap's $gray-700 (#495057 ≈ 7.8:1) without overriding the `!important`
+   color declaration or hard-coding a color. */
+.nav-tabs.pl-nav-tabs-bar .nav-link {
+  --bs-secondary-rgb: 73, 80, 87;
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */

@@ -26,7 +26,8 @@
 .pl-file-upload-container .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
-  color: #999;
+  /* WCAG 1.4.3: #999 is only 2.84:1 on white; #6c757d meets 4.5:1. */
+  color: #6c757d;
 }
 
 .pl-file-upload-container .file-preview-button::before {
