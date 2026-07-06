@@ -1063,7 +1063,7 @@ function buildDefaultRuleCurrentIndicator(
     return {
       variant: 'primary',
       icon: 'bi-eye-slash',
-      text: opensAt ? <>Hidden · opens {friendlyDate(opensAt)}</> : 'Hidden',
+      text: <>Hidden · opens {friendlyDate(opensAt!)}</>,
     };
   }
 
