@@ -40,5 +40,3 @@ supportedArchitectures:
 
 minimumReleaseAgeExclude:
   - '@prairielearn/tree-sitter-htmlmustache@1.4.3'
-  - 'turbo@2.10.3'
-  - '@turbo/*'
