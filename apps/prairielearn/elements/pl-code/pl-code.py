@@ -340,11 +340,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     background_color = pygments_style.background_color or "transparent"
     foreground_color = (
-        pygments_style.style_for_token(Token.Text).get("color") or "#000000"
+        pygments_style.style_for_token(Token.Text).get("color")
     )
-    # Pygments may not include the leading "#" in the color, but we need it for our CSS variable.
-    if not foreground_color.startswith("#"):
-        foreground_color = "#" + foreground_color
     line_number_color = pygments_style.line_number_color
 
     formatter = get_formatter(pygments_style, highlight_lines_color)
