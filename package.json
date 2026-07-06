@@ -5,9 +5,15 @@
     "apps/*",
     "packages/*"
   ],
-  "engines": {
-    "node": ">=24.0.0",
-    "pnpm": "^11.5.0"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.5.0"
+    },
+    "runtime": {
+      "name": "node",
+      "version": ">=24.0.0"
+    }
   },
   "scripts": {
     "capture-access-control-screenshots": "CAPTURE_SCREENSHOTS=1 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/captureAccessControlScreenshots.spec.ts",
@@ -62,7 +68,7 @@
     "prettier-plugin-toml": "^2.0.6",
     "pyright": "^1.1.411",
     "s3rver": "^3.7.1",
-    "turbo": "~2.9.18 <2.10",
+    "turbo": "^2.10.3",
     "vitest": "^4.1.9",
     "zod": "^4.4.3"
   }
