@@ -61,7 +61,7 @@ Before you can use AI grading, you'll need:
 
 ## Reviewing AI grading
 
-For each submission, AI grading produces:
+Instructors should review AI output before relying on it for grades. For each submission, AI grading produces:
 
 - **Graded rubric** — The rubric items the model selected, along with their point values.
 
@@ -136,7 +136,7 @@ For transparency and debugging, the exact prompt sent to the model is available 
 
 **Concurrency:** AI grading keeps up to 20 submissions in progress at any time. When one finishes, the next begins automatically.
 
-**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Student submissions are not used for model training when using PrairieLearn AI grading credits.
+**Privacy:** Student identifying information (name, email, UIN) is not sent to LLM providers, as long as it is not in the submission, question, or correct answer. Avoid including unnecessary personal data in questions, rubrics, grader guidelines, or submissions. Student submissions are not used for model training when using PrairieLearn AI grading credits.
 
 ## Billing
 
@@ -178,6 +178,8 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
     2. Check **Use custom API keys**.
 
     3. Click **Add key** and provide one.
+
+    When using custom API keys, instructors remain responsible for the provider terms and account configuration.
 
     ![Custom API key billing configuration.](ai-grading-byok.png)
 
