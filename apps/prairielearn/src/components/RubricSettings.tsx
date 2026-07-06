@@ -16,6 +16,7 @@ type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'
     id?: string;
     points: number | null;
   };
+  unique_key: string;
   disagreement_count: number | null;
   num_submissions: number | null;
 };
@@ -90,6 +91,7 @@ export function RubricSettings({
   const rubricItemDataMerged =
     rubricData?.rubric_items.map((item) => ({
       ...item,
+      unique_key: `rubric-item-${item.rubric_item.id}`,
       disagreement_count:
         item.rubric_item.id in rubricItemsWithDisagreementCount
           ? rubricItemsWithDisagreementCount[item.rubric_item.id]
@@ -213,6 +215,10 @@ export function RubricSettings({
           key_binding: null,
           points: 1,
         },
+        // Use a stable ID for the new row so that it can be used as a key in
+        // the list. This is important for React to correctly identify and
+        // manage the list items, especially when reordering or deleting rows.
+        unique_key: `new-row-${crypto.randomUUID()}`,
         num_submissions: null,
         disagreement_count: null,
       },
@@ -394,6 +400,7 @@ export function RubricSettings({
             key_binding: null,
             points: roundPoints(rubricItem.points * scaleFactor),
           },
+          unique_key: `imported-row-${crypto.randomUUID()}`,
           num_submissions: null,
           disagreement_count: null,
         });
@@ -553,6 +560,7 @@ export function RubricSettings({
         const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
         const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
           ...item,
+          unique_key: `rubric-item-${item.rubric_item.id}`,
           disagreement_count:
             item.rubric_item.id in rubricItemsWithDisagreementCount
               ? rubricItemsWithDisagreementCount[item.rubric_item.id]
@@ -827,7 +835,7 @@ export function RubricSettings({
                 {rubricItems.length > 0 ? (
                   rubricItems.map((it, idx) => (
                     <RubricRow
-                      key={it.rubric_item.id ?? `row-${idx}`}
+                      key={it.unique_key}
                       item={it}
                       showAiGradingStats={showAiGradingStats}
                       submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
