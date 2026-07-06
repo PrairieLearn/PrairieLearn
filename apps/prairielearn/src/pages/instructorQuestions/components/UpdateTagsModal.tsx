@@ -161,8 +161,8 @@ export function UpdateTagsModal({
             <div className="text-muted">None of the selected questions have tags to remove.</div>
           ) : (
             <div className="d-flex flex-column gap-1">
-              {availableTags.map((tag) => {
-                const checkboxId = `${config.idPrefix}-${tag.name}`;
+              {availableTags.map((tag, index) => {
+                const checkboxId = `${config.idPrefix}-tag-${index}`;
                 return (
                   <div key={tag.name} className="form-check">
                     <input
