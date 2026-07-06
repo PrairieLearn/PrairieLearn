@@ -112,12 +112,6 @@ updates:
       - dependency-name: 'prettier'
         versions: ['>=3.9']
 
-      # turbo 2.10 requires package.json to include packageManager with a pinned
-      # version. We won't update to this version until 2.10.3, which allows a
-      # range for the packageManager version. See
-      # https://github.com/vercel/turborepo/issues/13163
-      - dependency-name: 'turbo'
-        versions: ['>=2.10 <2.10.3']
     cooldown:
       # Dependabot does not understand the minimumReleaseAge setting in
       # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
