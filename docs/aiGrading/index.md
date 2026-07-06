@@ -61,7 +61,7 @@ Before you can use AI grading, you'll need:
 
 ## Reviewing AI grading
 
-Instructors should review AI output before relying on it for grades. For each submission, AI grading produces:
+Instructors should review AI output before relying on it for grades. For each submission, AI grading produces a graded rubric and explanation.
 
 - **Graded rubric** — The rubric items the model selected, along with their point values.
 
@@ -90,6 +90,8 @@ Instructors should review AI output before relying on it for grades. For each su
       **Transcription** (image submissions only)**:**
 
       ![AI transcription of a student's image submission, shown beneath the explanation.](ai-grading-transcription.png)
+
+After both AI and human grades are present, PrairieLearn can also show comparison information:
 
 - **AI agreement indicator** — A per-item view of where the AI and human grader agreed or disagreed.
 
