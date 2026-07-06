@@ -17,9 +17,9 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "csv-stringify": "^6.8.0",
+    "csv-stringify": "^6.8.1",
     "multipipe": "^4.0.0",
-    "stream-transform": "^3.5.0"
+    "stream-transform": "^3.5.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

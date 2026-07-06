@@ -14,12 +14,12 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.1076.0",
-    "@aws-sdk/client-ecr": "^3.1076.0",
-    "@aws-sdk/client-s3": "^3.1076.0",
-    "@aws-sdk/client-sqs": "^3.1076.0",
-    "@aws-sdk/credential-providers": "^3.1076.0",
-    "@aws-sdk/lib-storage": "^3.1076.0",
+    "@aws-sdk/client-auto-scaling": "^3.1079.0",
+    "@aws-sdk/client-ecr": "^3.1079.0",
+    "@aws-sdk/client-s3": "^3.1079.0",
+    "@aws-sdk/client-sqs": "^3.1079.0",
+    "@aws-sdk/credential-providers": "^3.1079.0",
+    "@aws-sdk/lib-storage": "^3.1079.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -50,7 +50,7 @@
     "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta",
     "@vitest/coverage-v8": "^4.1.9",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.0",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.1.9"
   }

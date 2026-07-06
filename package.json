@@ -58,7 +58,7 @@
     "globby": "^16.2.0",
     "htmlhint": "^1.9.2",
     "ignore": "^7.0.5",
-    "knip": "^6.23.0",
+    "knip": "^6.24.0",
     "linkinator": "^7.6.1",
     "markdownlint-cli2": "^0.22.1",
     "prettier": "~3.8.5 <3.9",

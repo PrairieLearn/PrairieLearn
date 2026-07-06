@@ -16,8 +16,8 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@smithy/property-provider": "^4.4.4",
-    "@smithy/types": "^4.15.0"
+    "@smithy/property-provider": "^4.4.6",
+    "@smithy/types": "^4.15.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
