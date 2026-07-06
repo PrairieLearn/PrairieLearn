@@ -1040,7 +1040,11 @@ function buildDefaultRuleCurrentIndicator(
         text: 'Listed but not accessible',
       };
     }
-    return null;
+    return {
+      variant: 'primary',
+      icon: 'bi-eye-slash',
+      text: 'Hidden',
+    };
   }
 
   const friendlyDate = (date: Date) => (
