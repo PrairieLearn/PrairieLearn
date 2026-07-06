@@ -179,7 +179,7 @@ API keys are encrypted at rest — PrairieLearn never stores them in plaintext.
 
     3. Click **Add key** and provide one.
 
-    When using custom API keys, instructors remain responsible for the provider terms and account configuration.
+    When using custom API keys, instructors are responsible for the provider terms and account configuration.
 
     ![Custom API key billing configuration.](ai-grading-byok.png)
 
