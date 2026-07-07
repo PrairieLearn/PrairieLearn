@@ -330,13 +330,11 @@ a.badge {
   padding-top: 0.4rem;
 }
 
-/* WCAG 1.4.3: inactive tabs use Bootstrap's `.text-secondary`, whose color
-   resolves via `var(--bs-secondary-rgb)` (#6c757d ≈ 4.4:1 on the `bg-light`
-   tab bar — fails). Scope the variable to the tab links so they render at
-   Bootstrap's $gray-700 (#495057 ≈ 7.8:1) without overriding the `!important`
-   color declaration or hard-coding a color. */
-.nav-tabs.pl-nav-tabs-bar .nav-link {
-  --bs-secondary-rgb: 73, 80, 87;
+/* WCAG 1.4.3: inactive tabs should use gray text, but Bootstrap's secondary
+   text color (#6c757d) is below 4.5:1 on the `bg-light` tab bar. Use $gray-700
+   (#495057 ≈ 7.8:1). */
+.nav-tabs.pl-nav-tabs-bar .nav-link:not(.active) {
+  color: var(--bs-gray-700);
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */
