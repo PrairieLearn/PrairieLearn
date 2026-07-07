@@ -87,8 +87,8 @@ On Linux environments (including WSL on Windows), Docker Desktop allows any user
    {
      "workspaceJobsDirectoryOwnerGid": 1000,
      "workspaceJobsDirectoryOwnerUid": 1000,
-     "workspaceMappedGid": 1001,
-     "workspaceMappedUid": 1001
+     "workspaceMappedGid": 0,
+     "workspaceMappedUid": 0
    }
    ```
 
