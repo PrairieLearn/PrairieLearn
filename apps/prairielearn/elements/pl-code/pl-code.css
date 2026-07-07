@@ -9,7 +9,11 @@
 .pl-code > div {
   background: var(--pl-code-background-color, transparent);
   border: 1px solid #ccc;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+}
+
+.pl-code > .js-copy-button {
+  margin-top: 0.5rem;
 }
 
 .pl-code table {
