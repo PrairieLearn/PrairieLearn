@@ -915,13 +915,14 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     config.workspaceJobsDirectoryOwnerUid,
     config.workspaceJobsDirectoryOwnerGid,
   );
+
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
       [`${workspacePort}/tcp`]: {},
     },
     Env: settings.workspace_environment,
-    User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+    User: `${config.workspaceMappedUid}:${config.workspaceMappedGid}`,
     HostConfig: {
       PortBindings: {
         [`${workspacePort}/tcp`]: [{ HostPort: `${launch_port}` }],

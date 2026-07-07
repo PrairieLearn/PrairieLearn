@@ -144,6 +144,12 @@
       "default": 0,
       "type": "number"
     },
+    "workspaceMappedUid": {
+      "type": "number"
+    },
+    "workspaceMappedGid": {
+      "type": "number"
+    },
     "workspaceDockerMemory": {
       "default": 1073741824,
       "type": "number"

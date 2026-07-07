@@ -196,149 +196,6 @@
       "default": 30,
       "type": "number"
     },
-    "cacheType": {
-      "default": "none",
-      "type": "string",
-      "enum": ["none", "redis", "memory"]
-    },
-    "cacheKeyPrefix": {
-      "default": "prairielearn-cache:",
-      "type": "string"
-    },
-    "redisUrl": {
-      "default": "redis://localhost:6379/",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "runningInEc2": {
-      "default": false,
-      "type": "boolean"
-    },
-    "hostname": {
-      "default": "localhost",
-      "type": "string"
-    },
-    "workspaceDevHostInstanceId": {
-      "default": "devWSHost1",
-      "type": "string"
-    },
-    "workspaceDevHostHostname": {
-      "default": "localhost",
-      "type": "string"
-    },
-    "workspaceDevContainerHostname": {
-      "default": "host.docker.internal",
-      "type": "string"
-    },
-    "workspaceHostPort": {
-      "default": 8081,
-      "type": "number"
-    },
-    "workspaceHostPruneContainersSec": {
-      "default": 60,
-      "type": "number"
-    },
-    "workspaceHostMinPortRange": {
-      "default": 1024,
-      "type": "number"
-    },
-    "workspaceHostMaxPortRange": {
-      "default": 45000,
-      "type": "number"
-    },
-    "workspaceHostMaxPortAllocationAttempts": {
-      "default": 0,
-      "type": "number"
-    },
-    "workspacePullImagesFromDockerHub": {
-      "default": true,
-      "type": "boolean"
-    },
-    "workspacePercentMessageRateLimitSec": {
-      "default": 1,
-      "type": "number"
-    },
-    "workspaceSupportNoInternet": {
-      "default": false,
-      "type": "boolean"
-    },
-    "workspaceHostHomeDirRoot": {
-      "default": "/jobs/workspaces",
-      "type": "string"
-    },
-    "workspaceJobsDirectoryOwnerUid": {
-      "default": 0,
-      "type": "number"
-    },
-    "workspaceJobsDirectoryOwnerGid": {
-      "default": 0,
-      "type": "number"
-    },
-    "workspaceDockerMemory": {
-      "default": 1073741824,
-      "type": "number"
-    },
-    "workspaceDockerMemorySwap": {
-      "default": 1073741824,
-      "type": "number"
-    },
-    "workspaceDockerKernelMemory": {
-      "default": 536870912,
-      "type": "number"
-    },
-    "workspaceDockerDiskQuota": {
-      "default": 1073741824,
-      "type": "number"
-    },
-    "workspaceDockerCpuPeriod": {
-      "default": 100000,
-      "type": "number"
-    },
-    "workspaceDockerCpuQuota": {
-      "default": 90000,
-      "type": "number"
-    },
-    "workspaceDockerPidsLimit": {
-      "default": 1024,
-      "type": "number"
-    },
-    "workspaceMaxGradedFilesCount": {
-      "default": 100,
-      "type": "number"
-    },
-    "workspaceMaxGradedFilesSize": {
-      "default": 104857600,
-      "type": "number"
-    },
-    "workspaceLogsS3Bucket": {
-      "default": "workspace-logs",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "workspaceStartTimeoutSec": {
-      "default": 30,
-      "type": "number"
-    },
-    "workspaceHealthCheckIntervalSec": {
-      "default": 1,
-      "type": "number"
-    },
-    "workspaceHealthCheckTimeoutSec": {
-      "default": 10,
-      "type": "number"
-    },
     "startServer": {
       "default": true,
       "type": "boolean"
@@ -422,6 +279,17 @@
     "coursesRoot": {
       "default": "/data1/courses",
       "type": "string"
+    },
+    "redisUrl": {
+      "default": "redis://localhost:6379/",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "nonVolatileRedisUrl": {
       "default": "redis://localhost:6379",
@@ -895,6 +763,10 @@
       "default": true,
       "type": "boolean"
     },
+    "runningInEc2": {
+      "default": false,
+      "type": "boolean"
+    },
     "fileEditorUseGit": {
       "default": false,
       "type": "boolean"
@@ -959,6 +831,10 @@
     },
     "groupName": {
       "default": "local",
+      "type": "string"
+    },
+    "hostname": {
+      "default": "localhost",
       "type": "string"
     },
     "maxResponseTimeSec": {
@@ -1159,10 +1035,19 @@
         }
       ]
     },
+    "cacheType": {
+      "default": "none",
+      "type": "string",
+      "enum": ["none", "redis", "memory"]
+    },
     "nonVolatileCacheType": {
       "default": "redis",
       "type": "string",
       "enum": ["none", "redis", "memory"]
+    },
+    "cacheKeyPrefix": {
+      "default": "prairielearn-cache:",
+      "type": "string"
     },
     "questionRenderCacheTtlSec": {
       "default": 3600,
@@ -1217,6 +1102,17 @@
         }
       ]
     },
+    "workspaceLogsS3Bucket": {
+      "default": "workspace-logs",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "workspaceLogsFlushIntervalSec": {
       "default": 60,
       "type": "number"
@@ -1234,6 +1130,14 @@
     },
     "workspaceAuthzCookieMaxAgeMilliseconds": {
       "default": 60000,
+      "type": "number"
+    },
+    "workspaceJobsDirectoryOwnerUid": {
+      "default": 0,
+      "type": "number"
+    },
+    "workspaceJobsDirectoryOwnerGid": {
+      "default": 0,
       "type": "number"
     },
     "workspaceHeartbeatIntervalSec": {
@@ -1314,6 +1218,14 @@
     "workspaceHomeDirRoot": {
       "default": "/jobs/workspaces",
       "type": "string"
+    },
+    "workspaceMaxGradedFilesCount": {
+      "default": 100,
+      "type": "number"
+    },
+    "workspaceMaxGradedFilesSize": {
+      "default": 104857600,
+      "type": "number"
     },
     "workspaceAutoscalingEnabled": {
       "default": true,
