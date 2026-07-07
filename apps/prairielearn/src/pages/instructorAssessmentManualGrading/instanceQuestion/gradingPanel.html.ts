@@ -41,6 +41,7 @@ export function GradingPanel({
   skip_graded_submissions,
   show_submissions_assigned_to_me_only,
   gradedByHumanName = null,
+  enable_keyboard_shortcut = true,
 }: {
   resLocals: ResLocalsForPage<'instance-question'> & ResLocalsInstanceQuestionRender;
   context: 'main' | 'existing' | 'conflicting';
@@ -65,6 +66,7 @@ export function GradingPanel({
   skip_graded_submissions?: boolean;
   show_submissions_assigned_to_me_only?: boolean;
   gradedByHumanName?: string | null;
+  enable_keyboard_shortcut?: boolean;
 }) {
   const gradedByAi = aiGradingInfo != null;
   const gradedByHuman = gradedByHumanName != null;
@@ -81,7 +83,7 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
   // The conflict modal renders additional grading panels; shortcuts are reserved for the main panel.
-  const enableKeyboardShortcuts = context === 'main';
+  const enableKeyboardShortcuts = context === 'main' && enable_keyboard_shortcut;
   const enableEditKeyboardShortcuts = enableKeyboardShortcuts && !disable;
   const showNextShortcut = enableKeyboardShortcuts && skip_text === 'Next';
 
@@ -285,7 +287,13 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
+            ? RubricInputSection({
+                resLocals,
+                disable,
+                aiGradingInfo,
+                context,
+                enable_keyboard_shortcut,
+              })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -296,7 +304,13 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ points, resLocals })}
                 ${resLocals.rubric_data?.rubric.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable, aiGradingInfo, context })
+                  ? RubricInputSection({
+                      resLocals,
+                      disable,
+                      aiGradingInfo,
+                      context,
+                      enable_keyboard_shortcut,
+                    })
                   : ''}
               </li>
             `

@@ -284,6 +284,7 @@ function UserSettingsCard({ userSettings }: { userSettings: PublicUserSetting })
   );
 
   const submitSettings = () => {
+    // TODO
     return;
   };
 
