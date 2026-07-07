@@ -183,7 +183,7 @@ export function InstructorGradingJob({
                   data-output-url="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
                     .id}/file/output.log"
                 ></pre>
-                <div id="job-output-loading" class="w-100 text-center" role="status">
+                <div id="job-output-loading" class="w-100 text-center">
                   <i class="fa fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
                   <span class="visually-hidden">Loading grading job output…</span>
                 </div>
