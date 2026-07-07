@@ -73,3 +73,19 @@ SELECT
   to_jsonb(old_row) - 'token'
 FROM
   old_row;
+
+-- BLOCK select_user_settings
+WITH
+  inserted AS (
+    INSERT INTO
+      user_settings (user_id)
+    VALUES
+      ($user_id)
+    ON CONFLICT (user_id) DO NOTHING
+  )
+SELECT
+  *
+FROM
+  user_settings
+WHERE
+  user_id = $user_id;

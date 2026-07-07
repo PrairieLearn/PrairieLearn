@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import type { UserAccessToken } from '../../../lib/client/safe-db-types.js';
+import type { PublicUserSetting, UserAccessToken } from '../../../lib/client/safe-db-types.js';
 
 import { DeleteTokenModal } from './DeleteTokenModal.js';
 import { GenerateTokenModal } from './GenerateTokenModal.js';
@@ -23,6 +23,7 @@ interface UserSettingsPageProps {
   newAccessTokens: string[];
   isExamMode: boolean;
   csrfToken: string;
+  userSettings: PublicUserSetting;
 }
 
 export function UserSettingsPage({
@@ -33,6 +34,7 @@ export function UserSettingsPage({
   newAccessTokens,
   isExamMode,
   csrfToken,
+  userSettings,
 }: UserSettingsPageProps) {
   return (
     <>
@@ -43,6 +45,8 @@ export function UserSettingsPage({
         institution={institution}
         authnProviderName={authnProviderName}
       />
+
+      <UserSettingsCard userSettings={userSettings} />
 
       <PersonalAccessTokensCard
         accessTokens={accessTokens}
@@ -270,6 +274,48 @@ function BrowserConfigurationCard() {
           Reset MathJax menu settings
         </button>
       </div>
+    </div>
+  );
+}
+
+function UserSettingsCard({ userSettings }: { userSettings: PublicUserSetting }) {
+  const [enableKeyboardShortcut, setEnableKeyboardShortcut] = useState<boolean>(
+    userSettings.enable_keyboard_shortcut,
+  );
+
+  const submitSettings = () => {
+    return;
+  };
+
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>User settings</h2>
+      </div>
+      <div className="form-check">
+        <label className="form-check-label">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={enableKeyboardShortcut}
+            onChange={() => setEnableKeyboardShortcut(!enableKeyboardShortcut)}
+          />
+          Character keys
+        </label>
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost"
+          data-bs-toggle="tooltip"
+          data-bs-placement="bottom"
+          data-bs-title="Enable keyboard shortcuts."
+          aria-label="More information about enabling keyboard shortcuts."
+        >
+          <i className="fas fa-circle-info" aria-hidden="true" />
+        </button>
+      </div>
+      <button type="button" className="btn btn-primary" onClick={() => submitSettings()}>
+        Save
+      </button>
     </div>
   );
 }

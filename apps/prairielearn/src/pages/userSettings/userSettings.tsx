@@ -10,8 +10,13 @@ import { Hydrate } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
-import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
+import { PublicUserSettingSchema, UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import {
+  AccessTokenSchema,
+  InstitutionSchema,
+  UserSchema,
+  UserSettingSchema,
+} from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
 
@@ -30,6 +35,11 @@ router.get(
       sql.select_access_tokens,
       { user_id: authn_user.id },
       AccessTokenSchema,
+    );
+    const userSettings = await sqldb.queryRow(
+      sql.select_user_settings,
+      { user_id: authn_user.id },
+      UserSettingSchema,
     );
 
     // If the raw tokens are present for any of these hashes, include them
@@ -82,6 +92,7 @@ router.get(
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
+                userSettings={PublicUserSettingSchema.parse(userSettings)}
               />
             </Hydrate>
             {
