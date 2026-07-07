@@ -330,9 +330,7 @@ a.badge {
   padding-top: 0.4rem;
 }
 
-/* WCAG 1.4.3: inactive tabs should use gray text, but Bootstrap's secondary
-   text color (#6c757d) is below 4.5:1 on the `bg-light` tab bar. Use $gray-700
-   (#495057 ≈ 7.8:1). */
+/* Ensure inactive tabs have sufficient contrast on light tab bars. */
 .nav-tabs.pl-nav-tabs-bar .nav-link:not(.active) {
   color: var(--bs-gray-700);
 }

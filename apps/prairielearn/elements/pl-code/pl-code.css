@@ -10,7 +10,6 @@
   background: var(--pl-code-background-color, transparent);
   color: var(--pl-code-foreground-color, #000000);
   border: 1px solid #ccc;
-  margin-bottom: 0;
 }
 
 .pl-code > .js-copy-button {
