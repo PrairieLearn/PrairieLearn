@@ -380,6 +380,10 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     helperAttachFiles.downloadAttachedFile(locals);
   });
 
+  describe('assessment_instance: edit attached text file', function () {
+    helperAttachFiles.editAttachedFile(locals);
+  });
+
   describe('assessment_instance: delete attached text file', function () {
     helperAttachFiles.deleteAttachedFile(locals);
     helperAttachFiles.checkNoAttachedFiles(locals);
@@ -415,6 +419,10 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     const textFile = true;
     helperAttachFiles.attachFile(locals, textFile);
     helperAttachFiles.downloadAttachedFile(locals);
+  });
+
+  describe('instance_question: edit attached text file', function () {
+    helperAttachFiles.editAttachedFile(locals);
   });
 
   describe('instance_question: delete attached text file', function () {

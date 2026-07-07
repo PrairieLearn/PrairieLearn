@@ -5,6 +5,42 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { config } from '../lib/config.js';
 import type { AssessmentInstance, File } from '../lib/db-types.js';
 
+const TEXT_NOTE_EXTENSIONS = new Set([
+  'txt',
+  'text',
+  'md',
+  'markdown',
+  'csv',
+  'tsv',
+  'json',
+  'log',
+  'yml',
+  'yaml',
+  'xml',
+  'html',
+  'htm',
+  'css',
+  'js',
+  'ts',
+  'py',
+  'c',
+  'cpp',
+  'h',
+  'java',
+  'r',
+  'sql',
+  'ini',
+  'conf',
+  'sh',
+]);
+
+function isEditableTextNote(file: File): boolean {
+  if (file.type !== 'student_upload') return false;
+  const parts = file.display_filename.split('.');
+  if (parts.length < 2) return false;
+  return TEXT_NOTE_EXTENSIONS.has(parts[parts.length - 1].toLowerCase());
+}
+
 export function PersonalNotesPanel({
   fileList,
   courseInstanceId,
@@ -27,6 +63,11 @@ export function PersonalNotesPanel({
   csrfToken: string;
   context: 'question' | 'assessment';
 }) {
+  const canEditNotes =
+    allowNewUploads &&
+    assessment_instance.open &&
+    authz_result.active &&
+    authz_result.authorized_edit;
   return html`
     <div class="card mb-4" id="attach-file-panel">
       <div class="card-header bg-secondary text-white d-flex align-items-center">
@@ -37,16 +78,28 @@ export function PersonalNotesPanel({
         ? html`<div class="card-body"><i>No attached notes</i></div>`
         : html`
             <ul class="list-group list-group-flush">
-              ${fileList.map(
-                (file) => html`
+              ${fileList.map((file) => {
+                const fileUrl = `/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}`;
+                return html`
                   <li class="list-group-item d-flex align-items-center">
-                    <a
-                      class="text-break me-2"
-                      href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
-                      data-testid="attached-file"
-                    >
-                      ${file.display_filename}
-                    </a>
+                    ${canEditNotes && isEditableTextNote(file)
+                      ? html`
+                          <button
+                            type="button"
+                            class="btn btn-link p-0 text-break text-start me-2 edit-text-note"
+                            data-file-id="${file.id}"
+                            data-file-name="${file.display_filename}"
+                            data-file-url="${fileUrl}"
+                            data-testid="attached-file"
+                          >
+                            ${file.display_filename}
+                          </button>
+                        `
+                      : html`
+                          <a class="text-break me-2" href="${fileUrl}" data-testid="attached-file">
+                            ${file.display_filename}
+                          </a>
+                        `}
                     ${assessment_instance.open &&
                     authz_result.active &&
                     authz_result.authorized_edit &&
@@ -59,8 +112,8 @@ export function PersonalNotesPanel({
                         `
                       : ''}
                   </li>
-                `,
-              )}
+                `;
+              })}
             </ul>
           `}
       ${allowNewUploads
@@ -157,7 +210,8 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
         aria-expanded="false"
         aria-controls="attachTextCollapse"
       >
-        Add text note <i class="far fa-caret-square-down"></i>
+        <span id="attachTextToggleLabel">Add text note</span>
+        <i class="far fa-caret-square-down"></i>
       </button>
       <div class="collapse" id="attachTextCollapse">
         <form method="POST" class="attach-text-form">
@@ -170,6 +224,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             class="form-control"
             aria-label="Text filename"
             name="filename"
+            id="attachTextFilename"
             value="notes.txt"
           />
           <div class="mt-1 mb-3">
@@ -178,6 +233,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
               rows="5"
               aria-label="Text contents"
               name="contents"
+              id="attachTextContents"
               placeholder="Type or paste text here"
             ></textarea>
           </div>
@@ -185,12 +241,66 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
             : ''}
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="submit" class="btn btn-sm btn-primary" name="__action" value="attach_text">
+          <input type="hidden" name="__action" id="attachTextAction" value="attach_text" />
+          <input type="hidden" name="file_id" id="attachTextFileId" value="" />
+          <button type="submit" class="btn btn-sm btn-primary" id="attachTextSubmit">
             Add note
+          </button>
+          <button type="button" class="btn btn-sm btn-link d-none" id="attachTextCancel">
+            Cancel edit
           </button>
         </form>
       </div>
     </div>
+
+    <script type="module">
+      const collapseEl = document.getElementById('attachTextCollapse');
+      const toggleLabel = document.getElementById('attachTextToggleLabel');
+      const filenameInput = document.getElementById('attachTextFilename');
+      const contentsInput = document.getElementById('attachTextContents');
+      const actionInput = document.getElementById('attachTextAction');
+      const fileIdInput = document.getElementById('attachTextFileId');
+      const submitButton = document.getElementById('attachTextSubmit');
+      const cancelButton = document.getElementById('attachTextCancel');
+
+      function setAddMode() {
+        actionInput.value = 'attach_text';
+        fileIdInput.value = '';
+        filenameInput.value = 'notes.txt';
+        contentsInput.value = '';
+        toggleLabel.textContent = 'Add text note';
+        submitButton.textContent = 'Add note';
+        cancelButton.classList.add('d-none');
+      }
+
+      cancelButton.addEventListener('click', () => {
+        setAddMode();
+        window.bootstrap.Collapse.getOrCreateInstance(collapseEl).hide();
+      });
+
+      for (const button of document.querySelectorAll('.edit-text-note')) {
+        button.addEventListener('click', async () => {
+          const { fileId, fileName, fileUrl } = button.dataset;
+          const response = await fetch(fileUrl);
+          if (!response.ok) {
+            window.location.href = fileUrl;
+            return;
+          }
+          const contents = await response.text();
+
+          actionInput.value = 'edit_text';
+          fileIdInput.value = fileId;
+          filenameInput.value = fileName;
+          contentsInput.value = contents;
+          toggleLabel.textContent = 'Edit text note';
+          submitButton.textContent = 'Save note';
+          cancelButton.classList.remove('d-none');
+
+          window.bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+          contentsInput.focus();
+        });
+      }
+    </script>
   `;
 }
 

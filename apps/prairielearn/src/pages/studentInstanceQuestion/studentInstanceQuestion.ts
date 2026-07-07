@@ -3,7 +3,7 @@ import assert from 'assert';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
@@ -171,6 +171,58 @@ async function processDeleteFile(req: Request, res: Response) {
   return variant.id;
 }
 
+async function processTextEdit(req: Request, res: Response) {
+  if (!res.locals.assessment_instance.open) {
+    throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
+  if (!res.locals.authz_result.active) {
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
+  }
+
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
+
+  const validFiles =
+    res.locals.file_list?.filter((file: File) => idsEqual(file.id, req.body.file_id)) ?? [];
+  if (validFiles.length === 0) {
+    throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
+  const file = validFiles[0];
+
+  if (file.type !== 'student_upload') {
+    throw new HttpStatusError(403, `Cannot edit file type ${file.type} for file_id=${file.id}`);
+  }
+
+  // upload the new file and delete the old one
+  await runInTransactionAsync(async () => {
+    await uploadFile({
+      display_filename: req.body.filename,
+      contents: Buffer.from(req.body.contents),
+      type: 'student_upload',
+      assessment_id: res.locals.assessment.id,
+      assessment_instance_id: res.locals.assessment_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+      user_id: res.locals.user.id,
+      authn_user_id: res.locals.authn_user.id,
+    });
+    await deleteFile(file.id, res.locals.authn_user.id);
+  });
+
+  return variant.id;
+}
+
 async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
     throw new HttpStatusError(400, 'assessment_instance is closed');
@@ -253,6 +305,11 @@ router.post(
       );
     } else if (req.body.__action === 'attach_text') {
       const variant_id = await processTextUpload(req, res);
+      res.redirect(
+        `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
+      );
+    } else if (req.body.__action === 'edit_text') {
+      const variant_id = await processTextEdit(req, res);
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
