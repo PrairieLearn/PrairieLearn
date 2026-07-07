@@ -55,6 +55,33 @@ def test_prepare_with_source_file_name_and_content_error() -> None:
         graph.prepare(element_html, data)
 
 
+def test_render_aria_attributes_expose_labeled_image() -> None:
+    """When a text alternative is given, the graph is exposed as an image with
+    HTML-escaped ARIA attributes."""
+    data = {"options": {}, "extensions": []}
+
+    element_html = (
+        "<pl-graph aria-label='Graph &lt;a&gt; \"b\"' aria-description='A to B'>"
+        "digraph G { A -> B }</pl-graph>"
+    )
+
+    result = graph.render(element_html, data)
+
+    assert 'role="img"' in result
+    assert 'aria-label="Graph &lt;a&gt; &quot;b&quot;"' in result
+    assert 'aria-description="A to B"' in result
+
+
+def test_prepare_aria_description_without_label_error() -> None:
+    """aria-description requires aria-label to supply the accessible name."""
+    data = {"options": {}, "extensions": []}
+
+    element_html = '<pl-graph aria-description="A to B">digraph G { A -> B }</pl-graph>'
+
+    with pytest.raises(ValueError, match='"aria-description" attribute requires'):
+        graph.prepare(element_html, data)
+
+
 def test_render_missing_file_error() -> None:
     """Test that render raises an error when source file doesn't exist"""
     data = {

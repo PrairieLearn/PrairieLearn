@@ -175,3 +175,10 @@ data['params']['random-graph'] = pl.to_json(random_graph)
     </pl-question-panel>
     <pl-graph source-file-name="record-graph.dot"></pl-graph>
 </pl-card>
+
+<pl-card>
+    <pl-question-panel>
+        <p>Here's the same networkx graph made accessible to screen readers with <code>aria-label</code>. Because a static label can't describe a randomly-generated graph, its description is generated in <code>server.py</code> from the same data.</p>
+    </pl-question-panel>
+    <pl-graph params-type="networkx" params-name="random-graph" aria-label="{{ params.random_graph_alt }}"></pl-graph>
+</pl-card>

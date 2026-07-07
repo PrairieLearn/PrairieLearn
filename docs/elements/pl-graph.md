@@ -55,6 +55,8 @@ def generate(data):
 
 | Attribute                   | Type    | Default              | Description                                                                                                                                                                                                                                                                           |
 | --------------------------- | ------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aria-label`                | string  | —                    | A short text alternative describing the graph, read by screen readers. See the [accessibility section](#accessibility).                                                                                                                                                               |
+| `aria-description`          | string  | —                    | A longer, more detailed text description of the graph, read by screen readers. Requires `aria-label`. See the [accessibility section](#accessibility).                                                                                                                                |
 | `directed`                  | boolean | true                 | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                                          |
 | `directory`                 | string  | `"."`                | Directory where the source file is located. Can be `"."` (question directory), `"clientFilesCourse"`, or `"serverFilesCourse"`.                                                                                                                                                       |
 | `engine`                    | string  | dot                  | The rendering engine to use; supports `"circo"`, `"dot"`, `"fdp"`, `"neato"`, `"osage"`, and `"twopi"`.                                                                                                                                                                               |
@@ -81,6 +83,79 @@ The following deprecated attribute is still supported for backward compatibility
 Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported. The currently used Graphviz version is 2.44.0.
 
 The `source-file-name` attribute is particularly useful when working with static graphs that contain special characters like angle brackets (`<>`), which are used in [record-based nodes](https://graphviz.org/doc/info/shapes.html#record) but can interfere with HTML parsing. By placing the graph content in an external file, you can avoid the need to escape these characters.
+
+## Accessibility
+
+A `pl-graph` renders as an SVG. Graphviz adds a `<title>` to every node and edge, but those are hover tooltips, not a description of the graph as a whole, so a screen reader user gets no meaningful information by default. How you provide an accessible equivalent depends on how the graph is used.
+
+### Informational graphs
+
+If the graph conveys information (rather than being the thing a student must interpret to answer), give it a text alternative with `aria-label`. When `aria-label` is set, the graph is exposed to assistive technologies as a single labeled image, which also hides Graphviz's per-node titles. Use `aria-description` for additional detail if needed, though the `aria-description` attribute has inconsistent screen reader support and requires `aria-label` to also be set.
+
+For a **static** graph, describe it directly:
+
+```html title="question.html"
+<pl-graph aria-label="Directed graph with an edge from A to B and from B to C">
+  digraph G { A -> B -> C }
+</pl-graph>
+```
+
+For a **randomly generated** graph, a fixed string like "a random graph" tells a screen reader user nothing about what was actually drawn. Generate the description from the same data so it always matches the graph:
+
+```python title="server.py"
+import prairielearn as pl
+import networkx as nx
+
+def generate(data):
+    graph = nx.gnm_random_graph(5, 6)
+    data["params"]["graph"] = pl.to_json(graph)
+
+    edges = ", ".join(f"{u} to {v}" for u, v in graph.edges())
+    data["params"]["graph_alt"] = (
+        f"Undirected graph with {graph.number_of_nodes()} nodes "
+        f"and {graph.number_of_edges()} edges: {edges}."
+    )
+```
+
+```html title="question.html"
+<pl-graph params-type="networkx" params-name="graph" aria-label="{{ params.graph_alt }}"></pl-graph>
+```
+
+### Presenting the same information in an accessible format
+
+Packing a large graph into a single `aria-label` string produces a long, unstructured announcement that is hard to navigate. Often the better option is to also present the data in a natively accessible format that every student benefits from — for example an adjacency matrix rendered with [`pl-matrix-latex`](pl-matrix-latex.md), or an edge table:
+
+```html title="question.html"
+<pl-graph
+  params-type="networkx"
+  params-name="graph"
+  aria-label="Undirected graph; its edges are listed in the table below"
+></pl-graph>
+
+<table>
+  <caption>
+    Edges of the graph above
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">From</th>
+      <th scope="col">To</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#params.edge_rows}}
+    <tr>
+      <td>{{from}}</td>
+      <td>{{to}}</td>
+    </tr>
+    {{/params.edge_rows}}
+  </tbody>
+</table>
+```
+
+### Graphs that are the question
+
+If a student must read the graph to answer (for example, "give the adjacency matrix of the graph below"), a descriptive `aria-label` is **not** appropriate. It appears in the page source, so it would reveal the answer, and no text alternative can convey the graph in a form the student is expected to reason about. Such a question is not accessible to screen reader users as-is; provide an [alternative version of the question](../question/accessibility.md) instead.
 
 ## Example implementations
 

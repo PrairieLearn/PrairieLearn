@@ -1,3 +1,4 @@
+import html
 import os
 import re
 import warnings
@@ -22,6 +23,8 @@ DIRECTED_DEFAULT = True
 LOG_WARNINGS_DEFAULT = True
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
+ARIA_LABEL_DEFAULT = None
+ARIA_DESCRIPTION_DEFAULT = None
 XML_DECLARATION = r"<\?xml[^>\?]*\?>"
 DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
@@ -142,6 +145,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "log-warnings",
         "source-file-name",
         "directory",
+        "aria-label",
+        "aria-description",
     ]
 
     # Load attributes from extensions if they have any
@@ -163,6 +168,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ):
         raise ValueError(
             'Existing graph content cannot be added inside html element when "source-file-name" attribute is used.'
+        )
+
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+    aria_description = pl.get_string_attrib(
+        element, "aria-description", ARIA_DESCRIPTION_DEFAULT
+    )
+    if aria_description is not None and aria_label is None:
+        raise ValueError(
+            'The "aria-description" attribute requires an "aria-label" attribute, which provides the graph\'s accessible name.'
         )
 
 
@@ -194,6 +208,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
+
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+    aria_description = pl.get_string_attrib(
+        element, "aria-description", ARIA_DESCRIPTION_DEFAULT
+    )
 
     if (
         len(str(element.text)) == 0
@@ -245,4 +264,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         svg = re.sub(XML_DECLARATION, "", svg)
         svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
-    return f'<div class="pl-graph">{svg}</div>'
+    # When an author provides a text alternative, expose the whole graph as a
+    # single labeled image. The `role="img"` makes the SVG's descendants
+    # (including Graphviz's per-node/edge <title> elements) presentational, so
+    # screen readers announce the provided text instead of crawling the graph's
+    # internal structure. `role="img"` requires an accessible name, so the image
+    # treatment is gated on `aria-label`; `aria-description` only supplements it.
+    wrapper_attribs = 'class="pl-graph"'
+    if aria_label is not None:
+        wrapper_attribs += f' role="img" aria-label="{html.escape(aria_label)}"'
+        if aria_description is not None:
+            wrapper_attribs += f' aria-description="{html.escape(aria_description)}"'
+
+    return f"<div {wrapper_attribs}>{svg}</div>"
