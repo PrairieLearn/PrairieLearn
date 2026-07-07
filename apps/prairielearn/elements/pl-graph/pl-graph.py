@@ -174,7 +174,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     aria_description = pl.get_string_attrib(
         element, "aria-description", ARIA_DESCRIPTION_DEFAULT
     )
-    if aria_description is not None and aria_label is None:
+    if aria_description and not aria_label:
         raise ValueError(
             'The "aria-description" attribute requires an "aria-label" attribute, which provides the graph\'s accessible name.'
         )
@@ -271,9 +271,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # internal structure. `role="img"` requires an accessible name, so the image
     # treatment is gated on `aria-label`; `aria-description` only supplements it.
     wrapper_attribs = 'class="pl-graph"'
-    if aria_label is not None:
+    if aria_label:
         wrapper_attribs += f' role="img" aria-label="{html.escape(aria_label)}"'
-        if aria_description is not None:
+        if aria_description:
             wrapper_attribs += f' aria-description="{html.escape(aria_description)}"'
 
     return f"<div {wrapper_attribs}>{svg}</div>"
