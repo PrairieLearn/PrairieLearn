@@ -77,6 +77,36 @@ You should set the workspace host home directory root and home directory root in
 }
 ```
 
+### Running workspaces / external graders natively on Linux or WSL
+
+On Linux environments (including WSL on Windows), Docker Desktop allows any user with the `docker` group to run containers, even as root. However, the default configuration of PrairieLearn will attempt to change the owner of the workspace files to the root user before running the workspace container, which will fail if the user is not root. To avoid a problem in these scenarios, you have two options:
+
+1. Change the configuration of the workspace host to not chown the workspace files. You can do this by including the following in your `config.json` (assuming the user you are running the workspace host as has UID 1000 and GID 1000):
+
+   ```json title="config.json"
+   {
+     "workspaceJobsDirectoryOwnerGid": 1000,
+     "workspaceJobsDirectoryOwnerUid": 1000,
+     "workspaceMappedGid": 1001,
+     "workspaceMappedUid": 1001
+   }
+   ```
+
+2. Run PrairieLearn and the workspace host as root, which will allow the workspace host to chown the workspace files to root before running the workspace container. You can do this by running:
+
+   ```sh
+   sudo make dev-workspace-host
+   sudo make dev
+   ```
+
+For WSL in particular, since Docker Desktop runs outside of the specific WSL instance you are using, you may in some cases need to specify the `"workspaceDevContainerHostname"` in your `config.json` to be the IP address of your Windows host. You can find this by running `ip route` in the WSL instance. For example, if the output of `ip route` starts with `default via 172.30.112.1 dev ...`, you would set the following in your `config.json`:
+
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "172.30.112.1"
+}
+```
+
 ### Running workspaces / external graders natively on macOS
 
 If you are running workspaces natively on macOS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
