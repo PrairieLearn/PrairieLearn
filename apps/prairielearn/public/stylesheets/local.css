@@ -275,6 +275,10 @@ mjx-container {
   margin-bottom: 0;
 }
 
+.card-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
 .btn.btn-xs {
   padding: 1px 5px;
   font-size: 0.7rem;
