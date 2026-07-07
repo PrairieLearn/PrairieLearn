@@ -82,9 +82,9 @@ export function Workspace({
             </span>
           </div>
 
-          <!-- WCAG 4.1.3: announce workspace state/message changes (updated over
-               the socket) as a single polite status region. -->
-          <div class="d-flex flex-row me-auto align-items-center" role="status" aria-live="polite">
+          <!-- Announce workspace state/message changes (updated over the socket)
+               as a single polite status region. -->
+          <div class="d-flex flex-row me-auto align-items-center" role="status">
             <span id="state" class="badge text-bg-dark badge-workspace text-uppercase">
               <i class="fas fa-spinner fa-pulse"></i>
             </span>
@@ -184,8 +184,8 @@ export function Workspace({
       >
         <i class="d-block fa fa-10x fa-xmark text-danger" aria-hidden="true"></i>
         <h2>Workspace failed to load</h2>
-        <!-- WCAG 4.1.3: the client reveals this frame, then writes the failure
-             detail here, so role="alert" announces it. -->
+        <!-- The client reveals this frame, then writes the failure detail here,
+             so role="alert" announces it. -->
         <p id="failed-message" role="alert"></p>
       </div>
       <iframe

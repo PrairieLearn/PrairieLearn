@@ -1,5 +1,3 @@
-import { Fragment } from 'react';
-
 import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -26,6 +24,15 @@ export function StudentGradebook({
   rows: StudentGradebookTableRow[];
   csvFilename: string;
 }) {
+  const assessmentGroups: StudentGradebookTableRow[][] = [];
+  rows.forEach((row) => {
+    if (row.start_new_set || assessmentGroups.length === 0) {
+      assessmentGroups.push([row]);
+    } else {
+      assessmentGroups[assessmentGroups.length - 1].push(row);
+    }
+  });
+
   return PageLayout({
     resLocals,
     pageTitle: 'Gradebook',
@@ -65,15 +72,15 @@ export function StudentGradebook({
                   <th className="text-center">Score</th>
                 </tr>
               </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <Fragment key={`${row.assessment_id}-${row.assessment_instance_id}`}>
-                    {row.start_new_set && (
-                      <tr>
-                        <th colSpan={3}>{row.assessment_set_heading}</th>
-                      </tr>
-                    )}
-                    <tr>
+              {assessmentGroups.map((groupRows) => (
+                <tbody key={groupRows[0].assessment_id}>
+                  <tr>
+                    <th colSpan={3} scope="rowgroup">
+                      {groupRows[0].assessment_set_heading}
+                    </th>
+                  </tr>
+                  {groupRows.map((row) => (
+                    <tr key={`${row.assessment_id}-${row.assessment_instance_id}`}>
                       <td className="align-middle" style={{ width: '1%' }}>
                         <span className={`badge color-${row.assessment_set_color}`}>
                           {row.label}
@@ -96,9 +103,9 @@ export function StudentGradebook({
                         )}
                       </td>
                     </tr>
-                  </Fragment>
-                ))}
-              </tbody>
+                  ))}
+                </tbody>
+              ))}
             </table>
           </div>
         )}

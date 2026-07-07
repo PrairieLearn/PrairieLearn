@@ -38,18 +38,14 @@ function ProgressStatus({
   showSpinner?: boolean;
 }) {
   return (
-    // Purely visual status row. Screen-reader announcements are handled centrally
-    // by the persistent live region in AiQuestionGenerationChat (WCAG 4.1.3):
-    // these per-instance elements mount/unmount per tool call, so a fresh live
-    // region here would not announce reliably. The spinner is decorative.
+    // Screen-reader announcements are handled centrally by the persistent live
+    // region in AiQuestionGenerationChat. These per-instance elements
+    // mount/unmount per tool call, so a fresh live region here would not
+    // announce reliably.
     <div className="d-flex flex-row align-items-center gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
-          return (
-            <div className="spinner-border spinner-border-text" aria-hidden="true">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          );
+          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
         } else if (state === 'success') {
           return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
         } else {
@@ -570,7 +566,6 @@ export function AiQuestionGenerationChat({
     useState(true);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
-  // Text spoken by the single persistent live region (WCAG 4.1.3).
   const [announcement, setAnnouncement] = useState('');
   const prevIsGeneratingRef = useRef<boolean | null>(null);
   const prevAnnouncedGeneratingRef = useRef<boolean | null>(null);
@@ -665,9 +660,9 @@ export function AiQuestionGenerationChat({
     }
   }, [isGenerating, onGeneratingChange, onGenerationComplete]);
 
-  // WCAG 4.1.3: announce generation start/finish to screen readers via the
-  // persistent live region. Kept separate from the parent-notification effect
-  // above so it depends only on internal chat state, not on the callback props.
+  // Announce generation start/finish to screen readers via the persistent live
+  // region. Kept separate from the parent-notification effect above so it
+  // depends only on internal chat state, not on the callback props.
   useEffect(() => {
     if (prevAnnouncedGeneratingRef.current === isGenerating) return;
     const isInitialRender = prevAnnouncedGeneratingRef.current === null;
@@ -709,10 +704,7 @@ export function AiQuestionGenerationChat({
 
   return (
     <div className="app-chat-container" style={{ width: chatWidth }}>
-      {/* WCAG 4.1.3: one persistent polite live region announces generation
-          start/finish. It holds only coarse status — never the streamed message
-          tokens, which would flood the screen reader. */}
-      <div className="visually-hidden" role="status" aria-live="polite">
+      <div className="visually-hidden" role="status">
         {announcement}
       </div>
       <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">

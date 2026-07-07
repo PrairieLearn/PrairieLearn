@@ -160,11 +160,11 @@
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
 
-    // WCAG 4.1.2: Quill 2 gives its picker dropdowns (size, header, color,
-    // background) an ARIA role but no accessible name, and labels the format
-    // buttons with terse internal names. Add explicit `aria-label`s. This is a
-    // known upstream gap (quilljs/quill#4744) with no config/version fix. No-ops
-    // in read-only mode, where `options.modules.toolbar` is false.
+    // Quill 2 gives its picker dropdowns (size, header, color, background) an
+    // ARIA role but no accessible name, and labels the format buttons with terse
+    // internal names. Add explicit `aria-label`s. This is a known upstream gap
+    // (quilljs/quill#4744) with no config/version fix. No-ops in read-only mode,
+    // where `options.modules.toolbar` is false.
     const toolbarContainer = quill.getModule('toolbar')?.container;
     if (toolbarContainer) {
       const toolbarLabels = {

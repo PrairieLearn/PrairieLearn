@@ -355,10 +355,10 @@ function SubmissionStatusBadge({
         }
       } else if (question.grading_method === 'External') {
         if (submission.gradable) {
-          // WCAG 4.1.3: the external grading status ("Grading requested", "in
-          // progress", "Graded!") is updated live over the socket; announce it.
+          // The external grading status ("Grading requested", "in progress",
+          // "Graded!") is updated live over the socket; announce it.
           autoGradingBadge = html`
-            <span class="badge text-bg-secondary" role="status" aria-live="polite">
+            <span class="badge text-bg-secondary" role="status">
               ${autoStatusPrefix}
               <span id="grading-status-${submission.id}"></span>
             </span>

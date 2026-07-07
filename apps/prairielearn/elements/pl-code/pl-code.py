@@ -20,8 +20,7 @@ from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
 # `xcode` is used as the default because it is the light Pygments style whose
-# every token color meets WCAG 1.4.3 (4.5:1) against its background. The
-# previous default (`friendly`) had several tokens below that threshold.
+# every token color meets AA contrast (4.5:1) against its background.
 STYLE_NAME_DEFAULT = "xcode"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None

@@ -57,19 +57,17 @@ export function StudentAssessments({
 }) {
   const { urlPrefix, authz_data } = resLocals;
 
-  // WCAG 1.3.1: render each assessment group as its own <tbody> with
-  // a `scope="rowgroup"` heading, so the heading correctly heads the
-  // rows it spans instead of being a row header with no data cells.
   const assessmentGroups: StudentAssessmentsRow[][] = [];
   rows.forEach((row) => {
-    const currentGroup = assessmentGroups[assessmentGroups.length - 1];
-    if (
-      currentGroup == null ||
-      !idsEqual(row.assessment_group_id, currentGroup[0].assessment_group_id)
-    ) {
+    if (assessmentGroups.length === 0) {
       assessmentGroups.push([row]);
     } else {
-      currentGroup.push(row);
+      const currentGroup = assessmentGroups[assessmentGroups.length - 1];
+      if (!idsEqual(row.assessment_group_id, currentGroup[0].assessment_group_id)) {
+        assessmentGroups.push([row]);
+      } else {
+        currentGroup.push(row);
+      }
     }
   });
 

@@ -39,6 +39,14 @@ export function InstructorAssessments({
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
   const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
+  const assessmentGroups: AssessmentRow[][] = [];
+  rows.forEach((row) => {
+    if (row.start_new_assessment_group || assessmentGroups.length === 0) {
+      assessmentGroups.push([row]);
+    } else {
+      assessmentGroups[assessmentGroups.length - 1].push(row);
+    }
+  });
 
   return PageLayout({
     resLocals,
@@ -106,70 +114,70 @@ export function InstructorAssessments({
                       <th class="text-center">Mean Duration</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    ${rows.map(
-                      (row) => html`
-                        ${row.start_new_assessment_group
-                          ? html`
-                              <tr>
-                                <th colspan="7" scope="row">
-                                  ${assessmentsGroupBy === 'Set'
-                                    ? AssessmentSetHeadingHtml({
-                                        assessment_set: row.assessment_set,
-                                      })
-                                    : AssessmentModuleHeadingHtml({
-                                        assessment_module: row.assessment_module,
-                                      })}
-                                </th>
-                              </tr>
-                            `
-                          : ''}
-                        <tr id="row-${row.id}">
-                          <td class="align-middle" style="width: 1%">
-                            <span class="badge color-${row.assessment_set.color}">
-                              ${row.label}
-                            </span>
-                          </td>
-                          <td class="align-middle">
-                            ${row.sync_errors
-                              ? SyncProblemButtonHtml({
-                                  type: 'error',
-                                  output: row.sync_errors,
+                  ${assessmentGroups.map(
+                    (groupRows) => html`
+                      <tbody>
+                        <tr>
+                          <th colspan="7" scope="rowgroup">
+                            ${assessmentsGroupBy === 'Set'
+                              ? AssessmentSetHeadingHtml({
+                                  assessment_set: groupRows[0].assessment_set,
                                 })
-                              : row.sync_warnings
-                                ? SyncProblemButtonHtml({
-                                    type: 'warning',
-                                    output: row.sync_warnings,
-                                  })
-                                : ''}
-                            <a href="${urlPrefix}/assessment/${row.id}/">
-                              ${row.title}
-                              ${row.team_work
-                                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                : ''}
-                            </a>
-                            ${IssueBadgeHtml({
-                              count: row.open_issue_count,
-                              courseInstanceId: course_instance.id,
-                              issueAid: row.tid,
-                            })}
-                            ${resLocals.authz_data.has_course_instance_permission_view
-                              ? ManualGradingBadgeHtml({
-                                  ungradedSubmissionCount:
-                                    row.ungraded_manual_grading_submission_count,
-                                  courseInstanceId: course_instance.id,
-                                  assessmentId: row.id,
-                                })
-                              : ''}
-                          </td>
-
-                          <td class="align-middle">${row.tid}</td>
-
-                          ${AssessmentStats({ row })}
+                              : AssessmentModuleHeadingHtml({
+                                  assessment_module: groupRows[0].assessment_module,
+                                })}
+                          </th>
                         </tr>
-                      `,
-                    )}
-                  </tbody>
+                        ${groupRows.map(
+                          (row) => html`
+                            <tr id="row-${row.id}">
+                              <td class="align-middle" style="width: 1%">
+                                <span class="badge color-${row.assessment_set.color}">
+                                  ${row.label}
+                                </span>
+                              </td>
+                              <td class="align-middle">
+                                ${row.sync_errors
+                                  ? SyncProblemButtonHtml({
+                                      type: 'error',
+                                      output: row.sync_errors,
+                                    })
+                                  : row.sync_warnings
+                                    ? SyncProblemButtonHtml({
+                                        type: 'warning',
+                                        output: row.sync_warnings,
+                                      })
+                                    : ''}
+                                <a href="${urlPrefix}/assessment/${row.id}/">
+                                  ${row.title}
+                                  ${row.team_work
+                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                    : ''}
+                                </a>
+                                ${IssueBadgeHtml({
+                                  count: row.open_issue_count,
+                                  courseInstanceId: course_instance.id,
+                                  issueAid: row.tid,
+                                })}
+                                ${resLocals.authz_data.has_course_instance_permission_view
+                                  ? ManualGradingBadgeHtml({
+                                      ungradedSubmissionCount:
+                                        row.ungraded_manual_grading_submission_count,
+                                      courseInstanceId: course_instance.id,
+                                      assessmentId: row.id,
+                                    })
+                                  : ''}
+                              </td>
+
+                              <td class="align-middle">${row.tid}</td>
+
+                              ${AssessmentStats({ row })}
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    `,
+                  )}
                 </table>
               </div>
               <div class="card-footer">
