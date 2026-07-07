@@ -677,12 +677,15 @@ export function AiQuestionGenerationChat({
     if (isGenerating) {
       // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement('Generating response…');
+    } else if (status === 'error') {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      setAnnouncement('Generation failed.');
     } else {
       const wasCanceled = messages.at(-1)?.metadata?.status === 'canceled';
       // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement(wasCanceled ? 'Generation stopped.' : 'Response ready.');
     }
-  }, [isGenerating, messages]);
+  }, [isGenerating, messages, status]);
 
   const showSpinner = useShowSpinner({ status, messages });
 

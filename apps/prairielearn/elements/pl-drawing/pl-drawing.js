@@ -181,9 +181,7 @@ window.PLDrawingApi = {
         const image_tooltip = elem.get_button_tooltip(opts);
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
-          // The icon image is the button's only content, so give it a text
-          // alternative (WCAG 1.1.1) that also serves as the button's name.
-          img.setAttribute('alt', image_tooltip);
+          btn.setAttribute('aria-label', image_tooltip);
         }
         if (!elem_options.editable) {
           btn.disabled = true;

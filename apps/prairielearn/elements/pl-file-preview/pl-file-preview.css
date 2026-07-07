@@ -1,8 +1,7 @@
 [id^='file-preview'] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
-  /* WCAG 1.4.3: #999 is only 2.84:1 on white; #6c757d meets 4.5:1. */
-  color: #6c757d;
+  color: var(--bs-secondary-color);
 }
 
 [id^='file-preview'] .file-preview-icon {
