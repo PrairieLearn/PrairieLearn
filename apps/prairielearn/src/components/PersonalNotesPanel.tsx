@@ -172,7 +172,7 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             name="filename"
             value="notes.txt"
           />
-          <div class="mb-3">
+          <div class="mt-1 mb-3">
             <textarea
               class="form-control"
               rows="5"

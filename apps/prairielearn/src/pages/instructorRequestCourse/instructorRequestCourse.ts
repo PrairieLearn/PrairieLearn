@@ -9,6 +9,10 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { insertCourseRequest } from '../../lib/course-request.js';
+import {
+  GITHUB_USERNAME_VALIDATION_MESSAGE,
+  isValidGithubUsername,
+} from '../../lib/github-utils.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -98,7 +102,7 @@ router.post(
   typedAsyncHandler<'plain'>(async (req, res) => {
     const short_name = req.body['cr-shortname'].toUpperCase() || '';
     const title = req.body['cr-title'] || '';
-    const github_user = req.body['cr-ghuser'] || null;
+    const github_user = req.body['cr-ghuser']?.trim() || null;
     const first_name = req.body['cr-firstname'] || '';
     const last_name = req.body['cr-lastname'] || '';
     const referral_source_option = req.body['cr-referral-source'] || '';
@@ -138,6 +142,10 @@ router.post(
     }
     if (last_name.length === 0) {
       flash('error', 'The last name should not be empty.');
+      error = true;
+    }
+    if (github_user !== null && !isValidGithubUsername(github_user)) {
+      flash('error', GITHUB_USERNAME_VALIDATION_MESSAGE);
       error = true;
     }
 

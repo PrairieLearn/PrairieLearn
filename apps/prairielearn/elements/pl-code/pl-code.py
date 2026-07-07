@@ -339,6 +339,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     pygments_style = get_style_by_name(style_name)
 
     background_color = pygments_style.background_color or "transparent"
+    foreground_color = pygments_style.style_for_token(Token.Text).get("color")
     line_number_color = pygments_style.line_number_color
 
     formatter = get_formatter(pygments_style, highlight_lines_color)
@@ -353,6 +354,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "code": code,
         "prevent_select": prevent_select,
         "background_color": background_color,
+        "foreground_color": foreground_color,
         "line_number_color": line_number_color,
         "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(

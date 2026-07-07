@@ -12,7 +12,7 @@
 !pnpm-workspace.yaml
 !pyproject.toml
 !tsconfig.json
-!turbo.json
+!turbo.jsonc
 !vitest.config.ts
 !vitest.shared.ts
 !pyproject.toml

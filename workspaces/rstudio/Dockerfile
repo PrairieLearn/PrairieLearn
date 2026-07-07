@@ -38,7 +38,7 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.6.0
+FROM rocker/rstudio:4.6.1
 ARG CACHEBUST=2026-06-15-15-59-28
 LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
 LABEL com.prairielearn.workspace.port="3939"

@@ -29,7 +29,6 @@ import {
   selectGroupById,
   selectGroupConfigForAssessment,
   selectGroupsForConfig,
-  selectNotAssignedForAssessment,
   selectUidsNotInGroup,
 } from '../../models/group.js';
 import type { AssessmentJsonInput } from '../../schemas/infoAssessment.js';
@@ -57,7 +56,6 @@ export interface AssessmentGroupsError {
   UpdateGroupConfig: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
   RandomizeGroups: never;
   Membership: never;
-  RefreshGroups: never;
 }
 
 const addGroup = t.procedure
@@ -71,9 +69,8 @@ const addGroup = t.procedure
   .mutation(async ({ input, ctx }) => {
     const { course_instance, assessment, authn_user, authz_data } = ctx;
 
-    let createdGroupId: string;
     try {
-      const group = await createGroup({
+      await createGroup({
         course_instance,
         assessment,
         group_name: input.groupName || null,
@@ -81,24 +78,12 @@ const addGroup = t.procedure
         authn_user_id: authn_user.id,
         authzData: authz_data,
       });
-      createdGroupId = group.id;
     } catch (err) {
       if (err instanceof GroupOperationError) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
       }
       throw err;
     }
-
-    // TODO: Drop this compatibility payload once old Groups UI bundles no
-    // longer consume it; new clients refetch `membership` after this mutation.
-    const [group, notAssigned] = await Promise.all([
-      selectGroupById({ group_id: createdGroupId, assessment_id: assessment.id }),
-      selectNotAssignedForAssessment({
-        assessment_id: assessment.id,
-        course_instance_id: course_instance.id,
-      }),
-    ]);
-    return { group, notAssigned };
   });
 
 const editGroup = t.procedure
@@ -159,16 +144,7 @@ const editGroup = t.procedure
       }
     });
 
-    // TODO: Return only `failures` once old Groups UI bundles no longer consume
-    // `group` and `notAssigned`.
-    const [group, notAssigned] = await Promise.all([
-      selectGroupById({ group_id: input.groupId, assessment_id: assessment.id }),
-      selectNotAssignedForAssessment({
-        assessment_id: assessment.id,
-        course_instance_id: course_instance.id,
-      }),
-    ]);
-    return { group, notAssigned, failures };
+    return { failures };
   });
 
 const deleteGroupProcedure = t.procedure
@@ -179,7 +155,7 @@ const deleteGroupProcedure = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const { assessment, authn_user, course_instance } = ctx;
+    const { assessment, authn_user } = ctx;
 
     try {
       await deleteGroup(assessment.id, input.groupId, authn_user.id);
@@ -189,28 +165,12 @@ const deleteGroupProcedure = t.procedure
       }
       throw err;
     }
-
-    // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
-    // consume it; new clients refetch `membership` after this mutation.
-    const notAssigned = await selectNotAssignedForAssessment({
-      assessment_id: assessment.id,
-      course_instance_id: course_instance.id,
-    });
-    return { notAssigned };
   });
 
 const deleteAll = t.procedure.use(requireCourseInstancePermissionEdit).mutation(async ({ ctx }) => {
-  const { assessment, authn_user, course_instance } = ctx;
+  const { assessment, authn_user } = ctx;
 
   await deleteAllGroups(assessment.id, authn_user.id);
-
-  // TODO: Stop returning `notAssigned` once old Groups UI bundles no longer
-  // consume it; new clients refetch `membership` after this mutation.
-  const notAssigned = await selectNotAssignedForAssessment({
-    assessment_id: assessment.id,
-    course_instance_id: course_instance.id,
-  });
-  return { notAssigned };
 });
 
 interface SyncJobFailedError {
@@ -309,24 +269,10 @@ const enableGroupWork = t.procedure
       });
     }
 
-    // TODO: Drop this compatibility payload once old Groups UI bundles no
-    // longer consume it; new clients fetch `membership` after enabling.
-    const [groups, notAssigned] = ctx.authz_data.has_course_instance_permission_view
-      ? await Promise.all([
-          selectGroupsForConfig(groupConfig.id),
-          selectUidsNotInGroup({
-            group_config_id: groupConfig.id,
-            course_instance_id: groupConfig.course_instance_id,
-          }),
-        ])
-      : [undefined, undefined];
-
     return {
       origHash: newHash,
       groupConfig: StaffGroupConfigSchema.parse(groupConfig),
       groupSettingsDefaults: normalizeGroupSettings(jsonData),
-      groups,
-      notAssigned,
     };
   });
 
@@ -479,12 +425,6 @@ const membership = t.procedure
   .use(requireCourseInstancePermissionView)
   .query(async ({ ctx }) => await selectGroupMembership(ctx));
 
-// TODO: Delete `refreshGroups` after one release cycle; it only supports
-// in-flight browser tabs loaded against the previous bundle.
-const refreshGroups = t.procedure
-  .use(requireCourseInstancePermissionView)
-  .mutation(async ({ ctx }) => await selectGroupMembership(ctx));
-
 const randomizeGroups = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
@@ -523,5 +463,4 @@ export const assessmentGroupsRouter = t.router({
   updateGroupConfig,
   membership,
   randomizeGroups,
-  refreshGroups,
 });
