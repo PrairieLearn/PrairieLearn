@@ -61,7 +61,7 @@ jobs:
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
           publish: pnpm run release
-          # Avoid creating GitHub releaseses, as we don't need them.
+          # Avoid creating GitHub releases, as we don't need them.
           # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false
         env:
