@@ -124,6 +124,7 @@ data['params']['matrix'] = pl.to_json(mat)
         <p>Here's a graph created from a randomly-generated networkx graph.
             To specify the use of a networkx graph, set <code>params-type="networkx"</code>.
             The graph can be specified with <code>params-name</code>.
+            To make it accessible to screen readers, set <code>aria-label</code> to a description of the graph; since a static label can't describe a randomly-generated graph, that description is generated in <code>server.py</code> from the graph data.
         </p>
 
 <pl-code language="python">
@@ -133,12 +134,21 @@ for in_node, out_node, edge_data in random_graph.edges(data=True):
     edge_data['label'] = random.choice(string.ascii_lowercase)
 
 data['params']['random-graph'] = pl.to_json(random_graph)
+
+edges = ", ".join(
+    f"{in_node} to {out_node} (labeled {edge_data['label']})"
+    for in_node, out_node, edge_data in random_graph.edges(data=True)
+)
+data['params']['random_graph_alt'] = (
+    f"Undirected graph with {random_graph.number_of_nodes()} nodes "
+    f"and {random_graph.number_of_edges()} edges: {edges}."
+)
 </pl-code>
 <pl-code language="html">
-&lt;pl-graph params-type="networkx" params-name="random-graph"&gt;&lt;/pl-graph&gt;
+&lt;pl-graph params-type="networkx" params-name="random-graph" aria-label="&#123;{ params.random_graph_alt }}"&gt;&lt;/pl-graph&gt;
 </pl-code>
     </pl-question-panel>
-    <pl-graph params-type="networkx" params-name="random-graph"></pl-graph>
+    <pl-graph params-type="networkx" params-name="random-graph" aria-label="{{ params.random_graph_alt }}"></pl-graph>
 </pl-card>
 
 <pl-card>
@@ -174,11 +184,4 @@ data['params']['random-graph'] = pl.to_json(random_graph)
 
     </pl-question-panel>
     <pl-graph source-file-name="record-graph.dot"></pl-graph>
-</pl-card>
-
-<pl-card>
-    <pl-question-panel>
-        <p>Here's the same networkx graph made accessible to screen readers with <code>aria-label</code>. Because a static label can't describe a randomly-generated graph, its description is generated in <code>server.py</code> from the same data.</p>
-    </pl-question-panel>
-    <pl-graph params-type="networkx" params-name="random-graph" aria-label="{{ params.random_graph_alt }}"></pl-graph>
 </pl-card>
