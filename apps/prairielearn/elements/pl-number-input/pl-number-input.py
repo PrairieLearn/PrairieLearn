@@ -1,3 +1,4 @@
+import pathlib
 import random
 from decimal import Decimal, InvalidOperation
 from enum import Enum
@@ -46,35 +47,12 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
 ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-number-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "comparison",
-        "rtol",
-        "atol",
-        "digits",
-        "allow-complex",
-        "show-help-text",
-        "size",
-        "show-correct-answer",
-        "show-placeholder",
-        "allow-fractions",
-        "allow-blank",
-        "blank-value",
-        "custom-format",
-        "placeholder",
-        "show-score",
-        "initial-value",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
