@@ -251,7 +251,7 @@ function DeletePersonalNoteButton({
 }
 
 /**
- * Returns a display filename for notes file that does not collide with any name
+ * Returns a display filename for notes file that does not collide with any existing name
  */
 function getAvailableFilename(existingNames: Iterable<string>): string {
   const taken = new Set(existingNames);
