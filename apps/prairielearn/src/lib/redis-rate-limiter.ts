@@ -54,17 +54,7 @@ export class RedisRateLimiter {
     // We accept the possibility of a small amount of clock skew here.
     const ttl = this.options.intervalSeconds - ((Date.now() / 1000) % this.options.intervalSeconds);
 
-    // Set TTL only if the key does not have an existing expiry
-    await redis.eval(
-      `redis.call('INCRBYFLOAT', KEYS[1], ARGV[1])
-       if redis.call('TTL', KEYS[1]) < 0 then
-         redis.call('EXPIRE', KEYS[1], ARGV[2])
-       end`,
-      1,
-      prefixedKey,
-      amount.toString(),
-      Math.ceil(ttl).toString(),
-    );
+    await redis.multi().incrbyfloat(prefixedKey, amount).expire(prefixedKey, Math.ceil(ttl)).exec();
   }
 
   async close() {
