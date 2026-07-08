@@ -30,6 +30,13 @@ When adding Python tree validation to an existing element, preserve existing tag
 
 Adding a schema module does not enable AI generation for that element. If AI should generate it, first make sure the example course has high-quality template questions for that element. Then update the relevant support lists in `validateHTML.ts`: add renderable input elements to `INPUT_ELEMENTS`, panel-like elements to `PANEL_ELEMENTS`, and answer-bearing elements to the correct-answer bookkeeping sets when appropriate.
 
+## Runtime enforcement
+
+An element with a schema module should enforce it at runtime in `prepare()` rather than hand-maintaining `pl.check_attribs()` attribute lists, which duplicate the schema and drift from it (this is how `pl-checkbox`'s `allow-blank` gap arose). Both helpers load the generated JSON (the single source of truth) and raise linter-matching messages; they check attribute names, required attributes, and per-attribute formats/enums/patterns — a superset of `check_attribs`. `prepare()` receives post-mustache HTML, so templated typed attributes are already concrete when validated. Keep genuinely semantic checks (cross-attribute rules, cardinality, uniqueness) in Python.
+
+- Childless elements: `pl.validate_element(element, SCHEMA_PATH)` with `SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "<tag>.json"`. Validates attributes only; does not enforce the root tag name, so legacy `pl_underscore` element spellings keep working.
+- Elements with child tags: `pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)` with `SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"`. Also validates child tags and their attributes; pass `allow_legacy_underscore_tags=True` only if the old controller accepted underscore child tags like `pl_answer`.
+
 ## Schema Modules
 
 Schema modules live in `apps/prairielearn/src/lib/element-schemas/elements/` and export `element: ElementSchemaModule`:
