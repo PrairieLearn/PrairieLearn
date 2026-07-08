@@ -4,7 +4,6 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import type { AssessmentInstance, File } from '../lib/db-types.js';
-import { getAvailableFilename } from '../lib/personal-notes.js';
 
 export function PersonalNotesPanel({
   fileList,
@@ -86,7 +85,6 @@ export function PersonalNotesPanel({
                         variantId,
                         csrfToken,
                         defaultFilename: getAvailableFilename(
-                          'notes.txt',
                           fileList.map((file) => file.display_filename),
                         ),
                       })}
@@ -250,4 +248,17 @@ function DeletePersonalNoteButton({
       <i class="far fa-trash-alt"></i>
     </button>
   `;
+}
+
+/**
+ * Returns a display filename for notes file that does not collide with any name
+ */
+function getAvailableFilename(existingNames: Iterable<string>): string {
+  const taken = new Set(existingNames);
+  if (!taken.has('notes.txt')) return 'notes.txt';
+
+  for (let n = 2; ; n++) {
+    const candidate = `notes${n}.txt`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }
