@@ -8,6 +8,8 @@ overrides:
   '@sa11y/format>axe-core': ^4
   '@typescript/native-preview': beta
   'linkinator>marked': ^18
+  'node-jose>uuid': 11.1.1
+  'read-yaml-file>js-yaml': 3.15.0
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
   'typescript-cp>tar': '*'
