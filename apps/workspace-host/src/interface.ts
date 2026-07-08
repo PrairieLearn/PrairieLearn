@@ -897,9 +897,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   debug(`Networking enabled: ${settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${settings.workspace_environment}`);
-  debug(
-    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
-  );
+  debug(`User binding: ${config.workspaceMappedUid}:${config.workspaceMappedGid}`);
   debug(`Port binding: ${workspacePort}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${local_name}`);

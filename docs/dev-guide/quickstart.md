@@ -47,7 +47,7 @@ You may also need to change your configuration to settings that vary depending o
 
     You can list the active hosts by opening, in a browser, the URL `http://localhost:3000/pl/administrator/workspaces` (or the equivalent URL for your PrairieLearn server). If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
 
-    Since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
+    Since PrairieLearn manages the workspace files, in some environments you need to run both PrairieLearn and the workspace host as root.
 
 ## Documentation
 

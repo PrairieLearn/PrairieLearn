@@ -99,7 +99,7 @@ On Linux environments (including WSL on Windows), Docker Desktop allows any user
    sudo make dev
    ```
 
-For WSL in particular, since Docker Desktop runs outside of the specific WSL instance you are using, you may in some cases need to specify the `"workspaceDevContainerHostname"` in your `config.json` to be the IP address of your Windows host. You can find this by running `ip route` in the WSL instance. For example, if the output of `ip route` starts with `default via 172.30.112.1 dev ...`, you would set the following in your `config.json`:
+For WSL in particular, since Docker Desktop runs outside the specific WSL instance you are using, you may in some cases need to specify the `"workspaceDevContainerHostname"` in your `config.json` to be the IP address of your Windows host. You can find this by running `ip route` in the WSL instance. For example, if the output of `ip route` starts with `default via 172.30.112.1 dev ...`, you would set the following in your `config.json`:
 
 ```json title="config.json"
 {
