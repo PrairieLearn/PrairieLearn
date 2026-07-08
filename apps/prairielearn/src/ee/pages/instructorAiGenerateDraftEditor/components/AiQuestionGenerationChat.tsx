@@ -38,14 +38,14 @@ function ProgressStatus({
   showSpinner?: boolean;
 }) {
   return (
+    // Screen-reader announcements are handled centrally by the persistent live
+    // region in AiQuestionGenerationChat. These per-instance elements
+    // mount/unmount per tool call, so a fresh live region here would not
+    // announce reliably.
     <div className="d-flex flex-row align-items-center gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
-          return (
-            <div className="spinner-border spinner-border-text" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          );
+          return <div className="spinner-border spinner-border-text" aria-hidden="true" />;
         } else if (state === 'success') {
           return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
         } else {
@@ -369,7 +369,13 @@ function Message({
     const createdAt = message.metadata?.created_at;
 
     return (
-      <div className="d-flex flex-column align-items-end mb-3">
+      // role="article" + label lets screen-reader users navigate message to
+      // message (e.g. with the "article" quick-nav key).
+      <div
+        className="d-flex flex-column align-items-end mb-3"
+        role="article"
+        aria-label={`Message from ${userName ?? 'you'}`}
+      >
         <div
           className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
           style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
@@ -394,7 +400,11 @@ function Message({
   });
 
   return (
-    <div className="d-flex flex-column gap-2 mb-3">
+    <div
+      className="d-flex flex-column gap-2 mb-3"
+      role="article"
+      aria-label="Message from PrairieLearn"
+    >
       <MessageParts parts={message.parts} />
       {message.metadata?.status === 'canceled' && (
         <div className="small text-muted fst-italic">
@@ -556,7 +566,9 @@ export function AiQuestionGenerationChat({
     useState(true);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
+  const [announcement, setAnnouncement] = useState('');
   const prevIsGeneratingRef = useRef<boolean | null>(null);
+  const prevAnnouncedGeneratingRef = useRef<boolean | null>(null);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
     id: questionId,
@@ -648,6 +660,28 @@ export function AiQuestionGenerationChat({
     }
   }, [isGenerating, onGeneratingChange, onGenerationComplete]);
 
+  // Announce generation start/finish to screen readers via the persistent live
+  // region. Kept separate from the parent-notification effect above so it
+  // depends only on internal chat state, not on the callback props.
+  useEffect(() => {
+    if (prevAnnouncedGeneratingRef.current === isGenerating) return;
+    const isInitialRender = prevAnnouncedGeneratingRef.current === null;
+    prevAnnouncedGeneratingRef.current = isGenerating;
+    // Don't announce anything for the state we mount in (e.g. idle on page load).
+    if (isInitialRender && !isGenerating) return;
+    if (isGenerating) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      setAnnouncement('Generating response…');
+    } else if (status === 'error') {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      setAnnouncement('Generation failed.');
+    } else {
+      const wasCanceled = messages.at(-1)?.metadata?.status === 'canceled';
+      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      setAnnouncement(wasCanceled ? 'Generation stopped.' : 'Response ready.');
+    }
+  }, [isGenerating, messages, status]);
+
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -670,6 +704,9 @@ export function AiQuestionGenerationChat({
 
   return (
     <div className="app-chat-container" style={{ width: chatWidth }}>
+      <div className="visually-hidden" role="status">
+        {announcement}
+      </div>
       <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">
         <div
           className={clsx('app-chat-history', {

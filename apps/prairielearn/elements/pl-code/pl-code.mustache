@@ -1,8 +1,10 @@
 <div class="pl-code mb-3 {{#show_line_numbers}}show-line-numbers{{/show_line_numbers}}"
     style="--pl-code-background-color: {{background_color}}; --pl-code-line-number-color: {{line_number_color}}; {{#foreground_color}}--pl-code-foreground-color: #{{foreground_color}};{{/foreground_color}}">
+    {{! tabindex="0" lets keyboard users focus and scroll overflowing code blocks. }}
     <div
         id="pl-code-{{uuid}}"
         class="rounded {{#prevent_select}}user-select-none{{/prevent_select}}"
+        tabindex="0"
         {{#prevent_select}}
         onselectstart="return false;"
         onmousedown="return false;"
