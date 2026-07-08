@@ -54,11 +54,7 @@ export class RedisRateLimiter {
     // We accept the possibility of a small amount of clock skew here.
     const ttl = this.options.intervalSeconds - ((Date.now() / 1000) % this.options.intervalSeconds);
 
-    // We only set the TTL when the key doesn't already have one, so we don't
-    // overwrite an existing expiry. This is done in a Lua script so the
-    // increment and conditional expiry are atomic. Note that we can't use
-    // `EXPIRE ... NX` here because that option requires Redis 7.0+, and the
-    // bundled Redis in our Docker image is Redis 6.
+    // Set TTL only if the key does not have an existing expiry
     await redis.eval(
       `redis.call('INCRBYFLOAT', KEYS[1], ARGV[1])
        if redis.call('TTL', KEYS[1]) < 0 then
