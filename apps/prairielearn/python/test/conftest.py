@@ -14,7 +14,7 @@ def question_data() -> QuestionData:
         "partial_scores": {},
         "score": 0.0,
         "feedback": {},
-        "variant_seed": "",
+        "variant_seed": 0,
         "options": {},
         "raw_submitted_answers": {},
         "editable": False,
