@@ -214,7 +214,7 @@ typecheck-scripts:
 typecheck-js:
 	@pnpm turbo run build --output-logs=errors-only
 typecheck-python: python-deps
-	@pnpm pyright
+	@python3 -m ty check
 typecheck-sql:
 	@pnpm postgres-language-server check .
 

@@ -27,7 +27,7 @@ doc_site_url = mkdocs_gen_files.config.site_url + "/en/latest/"
 def build_readme_nav() -> None:
     """Copy all relevant README files into the documentation and create a navigation structure."""
     for mapping in readmes_mapping:
-        nav = mkdocs_gen_files.Nav()  # pyright:ignore[reportPrivateImportUsage]
+        nav = mkdocs_gen_files.Nav()
         base = Path(mapping.src).absolute()
         doc_path = Path(mapping.dest)
         title_lookup = {}

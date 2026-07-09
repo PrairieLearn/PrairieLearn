@@ -134,6 +134,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     else:
                         initial_content = empty_diagram
                 else:  # submission
+                    assert drawing_name is not None
                     initial_content = data["submitted_answers"][drawing_name]
             elif fresh and source_available:
                 initial_content = load_file_content(element, data)
@@ -153,6 +154,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if fresh:
                     raise unreachable
                 # submission
+                assert drawing_name is not None
                 initial_content = data["submitted_answers"][drawing_name]
             elif fresh and source_available:
                 initial_content = load_file_content(element, data)

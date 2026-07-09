@@ -561,6 +561,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             }
 
             if should_display_badge and display_score:
+                assert score is not None
                 score_type, _ = pl.determine_score_params(score)
                 answer_html[score_type] = True
 
@@ -596,6 +597,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # Display the score badge if necessary
         if not hide_score_badge and display_score:
+            assert score is not None
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -725,13 +727,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     if not pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT):
         # Still test that valid and invalid submissions are handled correctly
         result = data["test_type"]
-        if result in {"correct", "incorrect"}:
+        if result == "correct" or result == "incorrect":
             data["raw_submitted_answers"][name] = random.choice(all_keys)
         elif result == "invalid":
             data["raw_submitted_answers"][name] = "0"
             data["format_errors"][name] = "INVALID choice"
         else:
-            assert_never(result)  # type: ignore[arg-type]
+            assert_never(result)
         return
 
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
