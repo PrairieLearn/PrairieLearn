@@ -1316,7 +1316,7 @@
       "type": "string"
     },
     "workspaceAutoscalingEnabled": {
-      "default": true,
+      "default": false,
       "type": "boolean"
     },
     "chunksS3Bucket": {

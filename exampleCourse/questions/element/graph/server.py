@@ -35,6 +35,18 @@ def generate(data):
 
     data["params"]["random-graph"] = pl.to_json(random_graph)
 
+    # Text alternative for the graph, generated from the same data so it always
+    # matches what is drawn; a static label like "a random graph" would tell a
+    # screen reader user nothing about the actual edges.
+    edges = ", ".join(
+        f"{in_node} to {out_node} (labeled {edge_data['label']})"
+        for in_node, out_node, edge_data in random_graph.edges(data=True)
+    )
+    data["params"]["random_graph_alt"] = (
+        f"Undirected graph with {random_graph.number_of_nodes()} nodes "
+        f"and {random_graph.number_of_edges()} edges: {edges}."
+    )
+
     multigraph = nx.MultiDiGraph(
         [(1, 2), (2, 1), (1, 2), (1, 3), (3, 2), (2, 3)], rankdir="LR"
     )
