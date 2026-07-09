@@ -15,6 +15,30 @@ export const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
+  postgresqlSsl: z
+    .union([
+      z.boolean(),
+      // A subset of the options that can be provided to the `TLSSocket` constructor.
+      // https://node-postgres.com/features/ssl
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
+    ])
+    .default(false),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('workspace-host-cache:'),
   redisUrl: z.string().default('redis://localhost:6379/'),
