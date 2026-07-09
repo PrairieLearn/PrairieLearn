@@ -245,9 +245,9 @@
     "brotli": 267734
   },
   "scripts/esm-bundles/hydrated-components/QtiImportForm.ts": {
-    "raw": 1180210,
-    "gzip": 390607,
-    "brotli": 336457
+    "raw": 1199712,
+    "gzip": 398461,
+    "brotli": 342285
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
     "raw": 1529080,
