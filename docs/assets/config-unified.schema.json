@@ -154,6 +154,53 @@
       "default": 30000,
       "type": "number"
     },
+    "postgresqlSsl": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "rejectUnauthorized": {
+              "default": true,
+              "type": "boolean"
+            },
+            "ca": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "key": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cert": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "autoScalingGroupName": {
       "default": null,
       "anyOf": [
@@ -342,53 +389,6 @@
     "startServer": {
       "default": true,
       "type": "boolean"
-    },
-    "postgresqlSsl": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "rejectUnauthorized": {
-              "default": true,
-              "type": "boolean"
-            },
-            "ca": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "key": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "cert": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     },
     "namedLocksRenewIntervalMs": {
       "default": 60000,
