@@ -29,7 +29,7 @@
     "migrate-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
     "refresh-workspace-hosts": "pnpm --filter @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit",
     "refresh-workspace-hosts-dev": "pnpm --filter @prairielearn/prairielearn dev:no-watch --refresh-workspace-hosts-and-exit",
-    "release": "turbo run build && changeset publish --no-git-tag",
+    "release": "turbo run build && pnpm publish -r --no-git-checks",
     "start": "pnpm --filter @prairielearn/prairielearn start",
     "start-workspace-host": "pnpm --filter @prairielearn/workspace-host start",
     "test": "vitest run --coverage",

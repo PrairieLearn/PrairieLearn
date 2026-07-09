@@ -59,10 +59,9 @@ jobs:
           # in order to update `pnpm-lock.yaml`: https://pnpm.io/10.x/using-changesets
           version: pnpm run version
           # This invokes the `release` script in `package.json`, which will build
-          # all the packages and then invoke `changeset publish`.
+          # all the packages and then invoke `pnpm publish`.
           publish: pnpm run release
           # Avoid creating GitHub releases, as we don't need them.
-          # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
