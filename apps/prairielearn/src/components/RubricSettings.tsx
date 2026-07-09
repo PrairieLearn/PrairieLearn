@@ -152,7 +152,7 @@ export function RubricSettings({
   const defaultMaxExtraPointsRef = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
   const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
-  // Derived totals/warnings
+  // Derived totals
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
       .map((item) => item.rubric_item.points ?? 0)
@@ -170,22 +170,9 @@ export function RubricSettings({
       : (assessmentQuestion.max_manual_points ?? 0)) + (maxExtraPoints ?? 0),
   );
 
-  const pointsWarnings: string[] = useMemo(() => {
-    const warnings: string[] = [];
-    // Don't alarm users on the empty state before they've added any items.
-    if (rubricItems.length === 0) return warnings;
-    if (totalPositive < maxPoints) {
-      warnings.push(
-        `Rubric item points reach at most ${totalPositive} points. ${roundPoints(
-          maxPoints - totalPositive,
-        )} left to reach maximum.`,
-      );
-    }
-    if (totalNegative > (minPoints ?? 0)) {
-      warnings.push(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
-    }
-    return warnings;
-  }, [rubricItems.length, totalPositive, totalNegative, maxPoints, minPoints]);
+  const minRubricScore = roundPoints(minPoints ?? 0);
+  const maxPointsShortfall = roundPoints(maxPoints - totalPositive);
+  const minPointsShortfall = roundPoints(totalNegative - minRubricScore);
 
   const defaultRubricItems = defaultRubricItemsRef.current;
   const isDirty = run(() => {
@@ -881,17 +868,37 @@ export function RubricSettings({
                   </tr>
                 )}
               </tbody>
+              <tfoot className="table-light">
+                <tr>
+                  <td colSpan={7}>
+                    <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
+                      <span>
+                        <span className="fw-semibold">Max score from items:</span> {totalPositive} /{' '}
+                        {maxPoints} points
+                        {maxPointsShortfall > 0 && rubricItems.length > 0 && (
+                          <span className="text-muted ms-2">
+                            <i className="fas fa-triangle-exclamation" aria-hidden="true" />{' '}
+                            {maxPointsShortfall} below maximum
+                          </span>
+                        )}
+                      </span>
+                      <span>
+                        <span className="fw-semibold">Min score from items:</span> {totalNegative} /{' '}
+                        {minRubricScore} points
+                        {minPointsShortfall > 0 && rubricItems.length > 0 && (
+                          <span className="text-muted ms-2">
+                            <i className="fas fa-triangle-exclamation" aria-hidden="true" />{' '}
+                            {minPointsShortfall} above minimum
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
-          {/* Warnings derive from state; no dismiss button (a previous
-              data-bs-dismiss made Bootstrap remove a React-owned node and
-              crashed the component on the next reconcile). */}
-          {pointsWarnings.map((warning) => (
-            <Alert key={warning} variant="warning">
-              {warning}
-            </Alert>
-          ))}
           <Alert
             show={showSavedNotification}
             variant="success"
