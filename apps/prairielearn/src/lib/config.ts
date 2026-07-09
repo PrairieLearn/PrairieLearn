@@ -426,7 +426,7 @@ export const ConfigSchema = z.object({
   workspaceMaxGradedFilesCount: z.number().default(100),
   /** Controls the maximum size of all graded files in bytes. */
   workspaceMaxGradedFilesSize: z.number().default(100 * 1024 * 1024),
-  workspaceAutoscalingEnabled: z.boolean().default(true),
+  workspaceAutoscalingEnabled: z.boolean().default(false),
 
   chunksS3Bucket: z.string().default('chunks'),
   /** Enables chunk generation. */
