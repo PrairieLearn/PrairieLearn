@@ -579,7 +579,8 @@ function CourseRequestApproveModalContent({
             availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             prefixState={prefixState}
-            emailDomain={request.contact_email?.split('@')[1] ?? ''}
+            contactEmailDomain={request.contact_email?.split('@')[1] ?? ''}
+            accountUidDomain={request.user_uid.split('@')[1] ?? ''}
             aiSecretsConfigured={aiSecretsConfigured}
             autoFilledInstitutionId={autoFilledInstitutionId}
             repositoryRequired={true}
