@@ -68,9 +68,7 @@ const PrairieLearnConfigSchema = z.object({
 const UnifiedConfigJsonSchema = configToJsonSchema(
   z.object({
     ...GraderHostConfigSchema.shape,
-    // The workspace-host config schema has a transform, so we need to use the
-    // underlying definition to get the correct shape.
-    ...WorkspaceHostConfigSchema.def.in.shape,
+    ...WorkspaceHostConfigSchema.shape,
     // We want PrairieLearn config to be the last one, so it overrides any
     // conflicting properties from the other two schemas.
     ...PrairieLearnConfigSchema.shape,

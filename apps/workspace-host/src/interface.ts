@@ -898,7 +898,9 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   debug(`Networking enabled: ${settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${settings.workspace_environment}`);
-  debug(`User binding: ${config.workspaceMappedUid}:${config.workspaceMappedGid}`);
+  debug(
+    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+  );
   debug(`Port binding: ${workspacePort}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${local_name}`);
@@ -909,11 +911,13 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     throw new Error('Could not access workspace files.', { cause: err });
   }
 
-  await fs.chown(
-    workspaceJobPath,
-    config.workspaceJobsDirectoryOwnerUid,
-    config.workspaceJobsDirectoryOwnerGid,
-  );
+  if (config.workspaceJobsDirectoryChangeOwner) {
+    await fs.chown(
+      workspaceJobPath,
+      config.workspaceJobsDirectoryOwnerUid,
+      config.workspaceJobsDirectoryOwnerGid,
+    );
+  }
 
   const container = await docker.createContainer({
     Image: settings.workspace_image,
@@ -921,7 +925,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
       [`${workspacePort}/tcp`]: {},
     },
     Env: settings.workspace_environment,
-    User: `${config.workspaceMappedUid}:${config.workspaceMappedGid}`,
+    User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {
         [`${workspacePort}/tcp`]: [{ HostPort: `${launch_port}` }],
