@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
-    "dev": "tsx watch --clear-screen=false --tsconfig src/tsconfig.json --include \"**/*.sql\" --include \"**/*.py\" --include \"**/*.json\" --exclude \"assets/*\" --exclude \"elements/*\" --exclude \"dist/*\" --exclude \"public/*\" src/server.ts",
+    "dev": "tsx watch --clear-screen=false --tsconfig src/tsconfig.json --include \"**/*.sql\" --include \"**/*.py\" --include \"**/*.json\" --include \"../../config.json\" --exclude \"assets/*\" --exclude \"elements/*\" --exclude \"dist/*\" --exclude \"public/*\" src/server.ts",
     "dev:bun": "bun --watch src/server.ts",
     "dev:no-watch": "tsx --tsconfig src/tsconfig.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
