@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.7.3
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 2.7.2
 
 ### Patch Changes

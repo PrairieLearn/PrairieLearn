@@ -1,3 +1,4 @@
+import pathlib
 import random
 from enum import Enum
 from typing import Any, assert_never
@@ -29,28 +30,12 @@ INITIAL_VALUE_DEFAULT = None
 
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-integer-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "size",
-        "show-help-text",
-        "base",
-        "allow-blank",
-        "blank-value",
-        "placeholder",
-        "initial-value",
-        "show-score",
-    ]
-
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 

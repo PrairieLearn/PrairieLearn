@@ -83,6 +83,7 @@ async.series(
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
 
       function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {

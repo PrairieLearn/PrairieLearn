@@ -1,5 +1,11 @@
 # @prairielearn/signed-token
 
+## 3.1.7
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.1.6
 
 ### Patch Changes

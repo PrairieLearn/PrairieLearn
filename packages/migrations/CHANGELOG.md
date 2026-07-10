@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 5.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 5.1.0
 
 ### Minor Changes

@@ -181,6 +181,7 @@ window.PLDrawingApi = {
         const image_tooltip = elem.get_button_tooltip(opts);
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
+          btn.setAttribute('aria-label', image_tooltip);
         }
         if (!elem_options.editable) {
           btn.disabled = true;
