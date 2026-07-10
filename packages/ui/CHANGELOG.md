@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.7.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 3.7.0
 
 ### Minor Changes

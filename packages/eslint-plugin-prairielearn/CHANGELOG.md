@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 4.3.4
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
 ## 4.3.3
 
 ### Patch Changes
