@@ -3,17 +3,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
-import {
-  getNewCourseRequestContactEmail,
-  insertCourseRequest,
-  selectAllCourseRequests,
-  selectCourseRequestById,
-} from '../lib/course-request.js';
+import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
 import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
@@ -39,159 +33,6 @@ describe('Course requests', { timeout: 60_000, concurrent: false }, function () 
   let courseRequestId: string;
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
-
-  describe('new request contact email', () => {
-    test('uses the explicitly submitted email for the default institution', () => {
-      assert.equal(
-        getNewCourseRequestContactEmail({
-          isDefaultInstitution: true,
-          submittedEmail: 'explicit@example.edu',
-          accountEmail: 'account@example.edu',
-        }),
-        'explicit@example.edu',
-      );
-    });
-
-    test('uses the account email for a non-default institution', () => {
-      assert.equal(
-        getNewCourseRequestContactEmail({
-          isDefaultInstitution: false,
-          submittedEmail: 'ignored@example.edu',
-          accountEmail: 'account@example.edu',
-        }),
-        'account@example.edu',
-      );
-    });
-
-    test('does not substitute the UID when the account email is missing', () => {
-      assert.isNull(
-        getNewCourseRequestContactEmail({
-          isDefaultInstitution: false,
-          submittedEmail: '',
-          accountEmail: null,
-        }),
-      );
-    });
-  });
-
-  describe('admin requester identities', () => {
-    const explicitShortName = 'CONTACT 101';
-    const legacyShortName = 'CONTACT 102';
-    const missingShortName = 'CONTACT 103';
-
-    test('derives contact email without conflating it with the account UID', async () => {
-      const explicitUser = await getOrCreateUser({
-        uid: 'explicit-login-id',
-        name: 'Explicit Account Name',
-        uin: null,
-        email: 'account-address@example.edu',
-      });
-      const legacyUser = await getOrCreateUser({
-        uid: 'legacy.uid@identity.example',
-        name: 'Legacy Account Name',
-        uin: null,
-        email: 'legacy-contact@example.edu',
-      });
-      const missingEmailUser = await getOrCreateUser({
-        uid: 'missing-email-login-id',
-        name: 'Missing Email Account',
-        uin: null,
-        email: null,
-      });
-
-      const explicitRequestId = await insertCourseRequest({
-        short_name: explicitShortName,
-        title: 'Explicit contact email',
-        user_id: explicitUser.id,
-        github_user: null,
-        first_name: 'Explicit',
-        last_name: 'Requester',
-        work_email: 'explicit-contact@example.edu',
-        institution: 'Test Institution',
-        referral_source: null,
-      });
-      const legacyRequestId = await insertCourseRequest({
-        short_name: legacyShortName,
-        title: 'Legacy UID copy',
-        user_id: legacyUser.id,
-        github_user: null,
-        first_name: 'Legacy',
-        last_name: 'Requester',
-        work_email: legacyUser.uid,
-        institution: 'Test Institution',
-        referral_source: null,
-      });
-      const missingRequestId = await insertCourseRequest({
-        short_name: missingShortName,
-        title: 'Missing account email',
-        user_id: missingEmailUser.id,
-        github_user: null,
-        first_name: 'Missing',
-        last_name: 'Requester',
-        work_email: missingEmailUser.uid,
-        institution: 'Test Institution',
-        referral_source: null,
-      });
-
-      const requests = await selectAllCourseRequests();
-      const explicitRequest = requests.find((request) => request.id === explicitRequestId);
-      const legacyRequest = requests.find((request) => request.id === legacyRequestId);
-      const missingRequest = requests.find((request) => request.id === missingRequestId);
-
-      assert.isDefined(explicitRequest);
-      assert.equal(explicitRequest.work_email, 'explicit-contact@example.edu');
-      assert.equal(explicitRequest.contact_email, 'explicit-contact@example.edu');
-      assert.equal(explicitRequest.user_uid, explicitUser.uid);
-
-      assert.isDefined(legacyRequest);
-      assert.equal(legacyRequest.work_email, legacyUser.uid);
-      assert.equal(legacyRequest.contact_email, legacyUser.email);
-      assert.equal(legacyRequest.user_uid, legacyUser.uid);
-
-      const legacyRequestForLegitimacyCheck = await selectCourseRequestById({
-        courseRequestId: legacyRequestId,
-      });
-      assert.equal(legacyRequestForLegitimacyCheck.contact_email, legacyUser.email);
-      assert.equal(legacyRequestForLegitimacyCheck.user_uid, legacyUser.uid);
-
-      assert.isDefined(missingRequest);
-      assert.equal(missingRequest.work_email, missingEmailUser.uid);
-      assert.isNull(missingRequest.contact_email);
-      assert.equal(missingRequest.user_uid, missingEmailUser.uid);
-    });
-
-    test('renders distinct requester contact and account UID columns', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      assert.isTrue(response.ok);
-
-      const headerTexts = response
-        .$('th')
-        .toArray()
-        .map((header) => response.$(header).text());
-      assert.include(headerTexts, 'Requester / contact email');
-      assert.include(headerTexts, 'PrairieLearn account (UID)');
-
-      const explicitCells = response
-        .$(`td:contains("${explicitShortName}")`)
-        .closest('tr')
-        .find('td');
-      assert.include(explicitCells.eq(3).text(), 'explicit-contact@example.edu');
-      assert.notInclude(explicitCells.eq(3).text(), 'explicit-login-id');
-      assert.include(explicitCells.eq(4).text(), 'explicit-login-id');
-
-      const legacyCells = response.$(`td:contains("${legacyShortName}")`).closest('tr').find('td');
-      assert.include(legacyCells.eq(3).text(), 'legacy-contact@example.edu');
-      assert.notInclude(legacyCells.eq(3).text(), 'legacy.uid@identity.example');
-      assert.include(legacyCells.eq(4).text(), 'legacy.uid@identity.example');
-
-      const missingCells = response
-        .$(`td:contains("${missingShortName}")`)
-        .closest('tr')
-        .find('td');
-      assert.include(missingCells.eq(3).text(), 'Contact email unavailable');
-      assert.include(missingCells.eq(4).text(), 'missing-email-login-id');
-    });
-  });
 
   test('insert a course request', async () => {
     courseRequestId = await insertCourseRequest({

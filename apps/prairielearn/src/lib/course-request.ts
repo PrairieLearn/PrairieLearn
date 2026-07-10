@@ -51,18 +51,6 @@ const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
-export function getNewCourseRequestContactEmail({
-  isDefaultInstitution,
-  submittedEmail,
-  accountEmail,
-}: {
-  isDefaultInstitution: boolean;
-  submittedEmail: string;
-  accountEmail: string | null;
-}) {
-  return isDefaultInstitution ? submittedEmail : accountEmail;
-}
-
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
 }

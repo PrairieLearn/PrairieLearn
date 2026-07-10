@@ -41,8 +41,11 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  -- Older non-default-institution requests copied the user's UID into work_email.
+  -- Prefer the account email for those rows, but retain the UID as a best-effort
+  -- contact when no account email is available.
   CASE
-    WHEN r.work_email = u.uid THEN u.email
+    WHEN r.work_email = u.uid THEN coalesce(nullif(u.email, ''), r.work_email)
     ELSE r.work_email
   END AS contact_email,
   r.institution,
@@ -172,8 +175,11 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  -- Older non-default-institution requests copied the user's UID into work_email.
+  -- Prefer the account email for those rows, but retain the UID as a best-effort
+  -- contact when no account email is available.
   CASE
-    WHEN r.work_email = u.uid THEN u.email
+    WHEN r.work_email = u.uid THEN coalesce(nullif(u.email, ''), r.work_email)
     ELSE r.work_email
   END AS contact_email,
   r.institution,

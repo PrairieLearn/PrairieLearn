@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
-import { getNewCourseRequestContactEmail, insertCourseRequest } from '../../lib/course-request.js';
+import { insertCourseRequest } from '../../lib/course-request.js';
 import {
   GITHUB_USERNAME_VALIDATION_MESSAGE,
   isValidGithubUsername,
@@ -115,11 +115,11 @@ router.post(
     const institution = isDefaultInstitution
       ? req.body['cr-institution'] || ''
       : res.locals.authn_institution.long_name;
-    const work_email = getNewCourseRequestContactEmail({
-      isDefaultInstitution,
-      submittedEmail: req.body['cr-email'] || '',
-      accountEmail: res.locals.authn_user.email,
-    });
+    // Default-institution users explicitly provide a contact email. For institutional users,
+    // use the email supplied by their authentication provider; their UID may not be routable.
+    const work_email = isDefaultInstitution
+      ? req.body['cr-email'] || ''
+      : res.locals.authn_user.email;
 
     let error = false;
 
