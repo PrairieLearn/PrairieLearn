@@ -877,7 +877,7 @@ export function RubricSettings({
                         {maxPoints} points
                         {maxPointsShortfall > 0 && rubricItems.length > 0 && (
                           <span className="text-muted ms-2">
-                            <i className="fas fa-triangle-exclamation" aria-hidden="true" />{' '}
+                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
                             {maxPointsShortfall} below maximum
                           </span>
                         )}
@@ -887,7 +887,7 @@ export function RubricSettings({
                         {minRubricScore} points
                         {minPointsShortfall > 0 && rubricItems.length > 0 && (
                           <span className="text-muted ms-2">
-                            <i className="fas fa-triangle-exclamation" aria-hidden="true" />{' '}
+                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
                             {minPointsShortfall} above minimum
                           </span>
                         )}
