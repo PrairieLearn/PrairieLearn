@@ -16,12 +16,12 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@smithy/property-provider": "^4.3.5",
-    "@smithy/types": "^4.14.2"
+    "@smithy/property-provider": "^4.4.6",
+    "@smithy/types": "^4.15.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@typescript/native-preview": "beta"
   }
 }

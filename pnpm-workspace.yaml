@@ -7,6 +7,10 @@ overrides:
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
   '@typescript/native-preview': beta
+  'dependency-cruiser>acorn': ^8.16.0
+  'dependency-cruiser>enhanced-resolve': ^5.22.1
+  'dependency-cruiser>picomatch': ^4.0.4
+  'dependency-cruiser>semver': ^7.8.1
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
   'notebookjs>jsdom': '*'
