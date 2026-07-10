@@ -61,6 +61,7 @@ describe('buildColumnFiltersResult', () => {
       vi.fn(),
     );
     expect(inactive.onResetColumnFilters).toBeUndefined();
+    expect(inactive.activeColumnFilterIds).toEqual([]);
 
     const active = buildColumnFiltersResult(
       makeRegistry(),
@@ -72,6 +73,7 @@ describe('buildColumnFiltersResult', () => {
       vi.fn(),
     );
     expect(active.onResetColumnFilters).toBeTypeOf('function');
+    expect(active.activeColumnFilterIds).toEqual(['enrollment_status']);
   });
 
   it('onResetColumnFilters patches every enabled filter to null', () => {
