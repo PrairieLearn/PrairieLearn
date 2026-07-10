@@ -165,7 +165,7 @@ const checkInstructorLegitimacyProcedure = t.procedure
     return await checkInstructorLegitimacy({
       instructorFirstName: courseRequest.first_name,
       instructorLastName: courseRequest.last_name,
-      instructorEmail: courseRequest.work_email,
+      instructorEmail: courseRequest.contact_email,
       institution: courseRequest.institution,
       userDisplayName: courseRequest.user_name,
       userUid: courseRequest.user_uid,

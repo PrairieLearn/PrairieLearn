@@ -41,6 +41,10 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  CASE
+    WHEN r.work_email = u.uid THEN u.email
+    ELSE r.work_email
+  END AS contact_email,
   r.institution,
   r.referral_source,
   r.approved_status,
@@ -168,6 +172,10 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  CASE
+    WHEN r.work_email = u.uid THEN u.email
+    ELSE r.work_email
+  END AS contact_email,
   r.institution,
   r.referral_source,
   r.approved_status,

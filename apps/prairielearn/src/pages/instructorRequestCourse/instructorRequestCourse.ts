@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
-import { insertCourseRequest } from '../../lib/course-request.js';
+import { getNewCourseRequestContactEmail, insertCourseRequest } from '../../lib/course-request.js';
 import {
   GITHUB_USERNAME_VALIDATION_MESSAGE,
   isValidGithubUsername,
@@ -115,9 +115,11 @@ router.post(
     const institution = isDefaultInstitution
       ? req.body['cr-institution'] || ''
       : res.locals.authn_institution.long_name;
-    const work_email = isDefaultInstitution
-      ? req.body['cr-email'] || ''
-      : res.locals.authn_user.uid;
+    const work_email = getNewCourseRequestContactEmail({
+      isDefaultInstitution,
+      submittedEmail: req.body['cr-email'] || '',
+      accountEmail: res.locals.authn_user.email,
+    });
 
     let error = false;
 
@@ -149,7 +151,7 @@ router.post(
       error = true;
     }
 
-    if (isDefaultInstitution && work_email.length === 0) {
+    if (isDefaultInstitution && work_email?.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
     }
@@ -226,7 +228,7 @@ router.post(
           `Course rubric: ${short_name}\n` +
           `Course title: ${title}\n` +
           `Institution: ${institution}\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email ?? 'email unavailable'})\n` +
           `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
           `GitHub username: ${github_user || 'not provided'}`,
       );

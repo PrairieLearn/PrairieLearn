@@ -32,6 +32,7 @@ const JobsRowSchema = z.object({
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
   approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  contact_email: z.string().nullable(),
   created_at: DateFromISOString,
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
@@ -49,6 +50,18 @@ const CourseRequestRowSchema = z.object({
   work_email: z.string().nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
+
+export function getNewCourseRequestContactEmail({
+  isDefaultInstitution,
+  submittedEmail,
+  accountEmail,
+}: {
+  isDefaultInstitution: boolean;
+  submittedEmail: string;
+  accountEmail: string | null;
+}) {
+  return isDefaultInstitution ? submittedEmail : accountEmail;
+}
 
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
