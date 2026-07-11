@@ -68,8 +68,11 @@ WITH
           )
       ) DESC,
       random()
+      -- Serialize assignments so capacity is rechecked after concurrent updates.
     LIMIT
       1
+    FOR NO KEY UPDATE OF
+      wh
   ),
   updated_workspace AS (
     UPDATE workspaces AS w
@@ -85,20 +88,12 @@ WITH
   updated_workspace_host AS (
     UPDATE workspace_hosts AS wh
     SET
-      load_count = (
-        SELECT
-          count(*)
-        FROM
-          workspaces AS w
-        WHERE
-          w.workspace_host_id = wh.id
-          AND (
-            w.state = 'running'
-            OR w.state = 'launching'
-          )
-      )
+      -- Data-modifying CTEs share a snapshot, so a count would not include the
+      -- assignment in `updated_workspace`. The host row lock makes this increment safe.
+      load_count = wh.load_count + 1
     FROM
       available_host AS ah
+      JOIN updated_workspace AS uw ON (uw.workspace_host_id = ah.id)
     WHERE
       wh.id = ah.id
     RETURNING
@@ -130,7 +125,7 @@ WITH
 SELECT
   id AS workspace_host_id
 FROM
-  available_host;
+  updated_workspace_host;
 
 -- BLOCK recapture_draining_hosts
 WITH
