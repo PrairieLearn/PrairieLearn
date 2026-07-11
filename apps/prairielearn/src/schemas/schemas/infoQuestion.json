@@ -26,6 +26,7 @@
     },
     "topic": {
       "type": "string",
+      "pattern": "\\S",
       "description": "The category of question (e.g., 'Vectors', 'Energy')."
     },
     "tags": {

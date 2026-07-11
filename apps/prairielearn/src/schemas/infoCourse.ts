@@ -39,10 +39,15 @@ export const ColorJsonSchema = z
 
 export type ColorJson = z.infer<typeof ColorJsonSchema>;
 
+export const TopicNameJsonSchema = z
+  .string()
+  .regex(/\S/, 'Topic name cannot be empty.')
+  .describe('Long descriptive name (preferably less than 10 words).');
+
 export const TopicJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
+    name: TopicNameJsonSchema,
     color: ColorJsonSchema,
     description: z.string().describe('Description of the topic.').optional(),
   })

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { TopicNameJsonSchema } from './infoCourse.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
 // and `enum` keys map directly to their JSON Schema equivalents, which allows
@@ -235,7 +236,7 @@ export const QuestionJsonSchema = z
       .describe(
         "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
       ),
-    topic: z.string().describe("The category of question (e.g., 'Vectors', 'Energy')."),
+    topic: TopicNameJsonSchema.describe("The category of question (e.g., 'Vectors', 'Energy')."),
     tags: z
       .array(z.string().describe('A tag associated with a question.'))
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")

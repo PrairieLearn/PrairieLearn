@@ -140,6 +140,7 @@
           },
           "name": {
             "type": "string",
+            "pattern": "\\S",
             "description": "Long descriptive name (preferably less than 10 words)."
           },
           "color": {
