@@ -1886,6 +1886,7 @@ export const TableNames = [
   'topics',
   'user_sessions',
   'users',
+  'user_settings',
   'variants',
   'workspace_host_logs',
   'workspace_hosts',
