@@ -144,3 +144,14 @@ FROM
 WHERE
   ai.id = $assessment_instance_id
   AND s.credit IS NOT NULL;
+
+-- BLOCK select_user_settings
+INSERT INTO
+  user_settings (user_id)
+VALUES
+  ($user_id)
+ON CONFLICT (user_id) DO UPDATE
+SET
+  user_id = EXCLUDED.user_id
+RETURNING
+  *;

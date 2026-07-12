@@ -75,17 +75,19 @@ FROM
   old_row;
 
 -- BLOCK select_user_settings
-WITH
-  inserted AS (
-    INSERT INTO
-      user_settings (user_id)
-    VALUES
-      ($user_id)
-    ON CONFLICT (user_id) DO NOTHING
-  )
-SELECT
-  *
-FROM
-  user_settings
+INSERT INTO
+  user_settings (user_id)
+VALUES
+  ($user_id)
+ON CONFLICT (user_id) DO UPDATE
+SET
+  user_id = EXCLUDED.user_id
+RETURNING
+  *;
+
+-- BLOCK update_user_settings
+UPDATE user_settings
+SET
+  enable_keyboard_shortcut = $enable_keyboard_shortcut
 WHERE
   user_id = $user_id;

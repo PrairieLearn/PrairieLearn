@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
 
@@ -46,7 +47,7 @@ export function UserSettingsPage({
         authnProviderName={authnProviderName}
       />
 
-      <UserSettingsCard userSettings={userSettings} />
+      <UserSettingsCard userSettings={userSettings} csrfToken={csrfToken} />
 
       <PersonalAccessTokensCard
         accessTokens={accessTokens}
@@ -278,13 +279,50 @@ function BrowserConfigurationCard() {
   );
 }
 
-function UserSettingsCard({ userSettings }: { userSettings: PublicUserSetting }) {
+function UserSettingsCard({
+  userSettings,
+  csrfToken,
+}: {
+  userSettings: PublicUserSetting;
+  csrfToken: string;
+}) {
   const [enableKeyboardShortcut, setEnableKeyboardShortcut] = useState<boolean>(
     userSettings.enable_keyboard_shortcut,
   );
 
-  const submitSettings = () => {
-    // TODO
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [showSavedNotification, setShowSavedNotification] = useState(false);
+
+  useEffect(() => {
+    if (!showSavedNotification) return;
+    const t = setTimeout(() => false, 3000);
+    return () => clearTimeout(t);
+  }, [showSavedNotification]);
+
+  const submitSettings = async () => {
+    const payload = {
+      __csrf_token: csrfToken,
+      __action: 'user_setting_update',
+      enable_keyboard_shortcut: enableKeyboardShortcut,
+      user_id: userSettings.user_id,
+    };
+    const res = await fetch(window.location.pathname, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      let data: { err: any };
+      try {
+        data = (await res.json()) ?? {};
+      } catch {
+        data = { err: `Error: ${res.statusText}` };
+      }
+      if (data.err) {
+        return setSettingsError(data.err);
+      }
+    }
+    setShowSavedNotification(true);
     return;
   };
 
@@ -293,30 +331,53 @@ function UserSettingsCard({ userSettings }: { userSettings: PublicUserSetting })
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>User settings</h2>
       </div>
-      <div className="form-check">
-        <label className="form-check-label">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={enableKeyboardShortcut}
-            onChange={() => setEnableKeyboardShortcut(!enableKeyboardShortcut)}
-          />
-          Character keys
-        </label>
-        <button
-          type="button"
-          className="btn btn-sm btn-ghost"
-          data-bs-toggle="tooltip"
-          data-bs-placement="bottom"
-          data-bs-title="Enable keyboard shortcuts."
-          aria-label="More information about enabling keyboard shortcuts."
+      <div className="card-body">
+        <div className="form-check">
+          <label className="form-check-label">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={enableKeyboardShortcut}
+              onChange={() => setEnableKeyboardShortcut(!enableKeyboardShortcut)}
+            />
+            Character keys
+          </label>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            data-bs-title="Enable keyboard shortcuts."
+            aria-label="More information about enabling keyboard shortcuts."
+          >
+            <i className="fas fa-circle-info" aria-hidden="true" />
+          </button>
+        </div>
+        <Alert
+          show={showSavedNotification}
+          variant="success"
+          role="status"
+          aria-live="polite"
+          dismissible
+          onClose={() => setShowSavedNotification(false)}
         >
-          <i className="fas fa-circle-info" aria-hidden="true" />
+          Settings saved
+        </Alert>
+        {settingsError && (
+          <Alert
+            key={settingsError}
+            variant="danger"
+            dismissible
+            onClose={() => setSettingsError(null)}
+          >
+            {settingsError}
+          </Alert>
+        )}
+        <button type="button" className="btn btn-primary" onClick={() => submitSettings()}>
+          Save
         </button>
       </div>
-      <button type="button" className="btn btn-primary" onClick={() => submitSettings()}>
-        Save
-      </button>
     </div>
   );
 }

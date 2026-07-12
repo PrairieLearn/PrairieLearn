@@ -25,6 +25,7 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
+import { UserSchema, UserSettingSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -239,6 +240,13 @@ router.get(
         };
       });
 
+      const authn_user = UserSchema.parse(res.locals.authn_user);
+      const userSettings = await sqldb.queryRow(
+        sql.select_user_settings,
+        { user_id: authn_user.id },
+        UserSettingSchema,
+      );
+
       res.send(
         InstanceQuestionPage({
           ...localsForRender,
@@ -257,6 +265,7 @@ router.get(
           showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
           submissionCredits,
           instanceQuestionAiGradeProps,
+          enable_keyboard_shortcut: userSettings.enable_keyboard_shortcut,
         }),
       );
     },

@@ -139,6 +139,16 @@ router.post(
         user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'user_setting_update') {
+      try {
+        await sqldb.execute(sql.update_user_settings, {
+          user_id: req.body.user_id,
+          enable_keyboard_shortcut: req.body.enable_keyboard_shortcut,
+        });
+        res.send();
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
