@@ -1,5 +1,6 @@
 import { isEmpty } from 'es-toolkit/compat';
 import jsonStringifySafe from 'json-stringify-safe';
+import { z } from 'zod';
 
 import { formatErrorStack } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -40,6 +41,7 @@ export function ErrorPage({
   } = error.data ?? {};
 
   const formattedSqlQuery = formatQueryWithErrorPosition(sqlQuery, sqlError?.position);
+  const formattedError = error instanceof z.ZodError ? z.prettifyError(error) : error.message;
 
   return PageLayout({
     resLocals,
@@ -55,8 +57,9 @@ export function ErrorPage({
         </div>
 
         <div class="card-body">
-          <h2 class="mb-3 h4">${error.message}</h2>
-
+          ${error instanceof z.ZodError
+            ? html`<pre class="mb-3 h4">${formattedError}</pre>`
+            : html`<h2 class="mb-3 h4">${formattedError}</h2>`}
           ${unsafeHtml(errorInfo ?? '')}
 
           <p><strong>Error ID:</strong> <code>${errorId}</code></p>
