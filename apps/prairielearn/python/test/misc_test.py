@@ -1408,6 +1408,8 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     [
         ({"x": None, "y": None}, "z", False),
         ({"x": None, "y": None}, "x", True),
+        ({"x": None, "y": None}, "", True),
+        ({"x": None, "y": None}, " ", True),
         ({}, "y", False),
     ],
 )
