@@ -67,7 +67,8 @@ export function AdministratorCourseFormFields({
   availableTimezones,
   coursesRoot,
   prefixState,
-  emailDomain,
+  contactEmailDomain,
+  accountUidDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
   repositoryRequired,
@@ -77,7 +78,8 @@ export function AdministratorCourseFormFields({
   availableTimezones: Timezone[];
   coursesRoot: string;
   prefixState: InstitutionPrefixState;
-  emailDomain?: string;
+  contactEmailDomain?: string;
+  accountUidDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
   repositoryRequired: boolean;
@@ -124,7 +126,8 @@ export function AdministratorCourseFormFields({
     ...trpc.courseRequests.suggestInstitutionPrefix.queryOptions({
       institutionLongName,
       institutionShortName,
-      emailDomain: emailDomain ?? '',
+      contactEmailDomain: contactEmailDomain ?? '',
+      accountUidDomain: accountUidDomain ?? '',
     }),
     enabled: false,
   });
