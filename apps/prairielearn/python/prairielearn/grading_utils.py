@@ -153,13 +153,15 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict.
+    """Check that answers names are provided and distinct using property in data dict.
 
     Updates the data dictionary with the name if it is not already present.
 
     Raises:
         KeyError: If the name is already present in the data dictionary.
     """
+    if name.strip() == "":
+        raise KeyError('"answers-name" attribute cannot be empty')
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
