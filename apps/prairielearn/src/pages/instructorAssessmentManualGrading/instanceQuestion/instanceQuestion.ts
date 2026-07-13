@@ -25,7 +25,7 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
-import { UserSettingSchema } from '../../../lib/db-types.js';
+import { UserSchema, UserSettingSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -240,9 +240,10 @@ router.get(
         };
       });
 
+      const authn_user = UserSchema.parse(res.locals.authn_user);
       const userSettings = await sqldb.queryRow(
         sql.select_user_settings,
-        { user_id: res.locals.authn_user.id },
+        { user_id: authn_user.id },
         UserSettingSchema,
       );
 
@@ -366,9 +367,10 @@ router.get(
             })) ?? undefined)
           : undefined;
 
+        const authn_user = UserSchema.parse(res.locals.authn_user);
         const userSettings = await sqldb.queryRow(
           sql.select_user_settings,
-          { user_id: res.locals.authn_user.id },
+          { user_id: authn_user.id },
           UserSettingSchema,
         );
 
