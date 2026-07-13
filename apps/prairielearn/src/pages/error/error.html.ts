@@ -57,9 +57,7 @@ export function ErrorPage({
         </div>
 
         <div class="card-body">
-          ${error instanceof z.ZodError
-            ? html`<pre class="mb-3 h4">${formattedError}</pre>`
-            : html`<h2 class="mb-3 h4">${formattedError}</h2>`}
+          <h2 class="mb-3 h4" style="white-space: pre-wrap;">${formattedError}</h2>
           ${unsafeHtml(errorInfo ?? '')}
 
           <p><strong>Error ID:</strong> <code>${errorId}</code></p>
