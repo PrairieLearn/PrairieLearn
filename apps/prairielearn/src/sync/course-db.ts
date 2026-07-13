@@ -739,9 +739,13 @@ async function loadAndValidateJson<T extends ZodType>({
   // use the output type.
   const result = zodSchema.safeParse(loadedJson.data);
   if (!result.success) {
-    infofile.addErrors(loadedJson, [
-      `${z.prettifyError(result.error)}\nReport this error to the PrairieLearn team, this should not happen.`,
-    ]);
+    infofile.addErrors(
+      loadedJson,
+      result.error.issues.map(
+        (e) =>
+          `code: ${e.code}, path: ${e.path.join('.')}, message: ${e.message}. Report this error to the PrairieLearn team, this should not happen.`,
+      ),
+    );
     Sentry.captureException(result.error);
     return loadedJson;
   }
