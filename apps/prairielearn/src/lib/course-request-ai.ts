@@ -93,17 +93,17 @@ export async function checkInstructorLegitimacy({
         'You are helping a PrairieLearn administrator vet a course creation request.',
         'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
         'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
-        'The user provides both the name entered on the course request form and the name on their PrairieLearn account. If the PrairieLearn account name or email differs significantly from the submitted name and work email, lower your confidence accordingly and treat it as a reason to doubt the request.',
+        'The user provides both the requester name and contact email and the name and UID on their PrairieLearn account. If these identities differ significantly, lower your confidence accordingly and treat it as a reason to doubt the request.',
       ]),
     },
     {
       role: 'user',
       content: formatPrompt([
         `Name (from form): ${instructorFirstName ?? 'Unknown'} ${instructorLastName ?? 'Unknown'}`,
-        `Work email (from form): ${instructorEmail ?? 'Unknown'}`,
+        `Requester / contact email: ${instructorEmail ?? 'Unknown'}`,
         `Institution (from form): ${institution ?? 'Unknown'}`,
         `PrairieLearn account name: ${userDisplayName ?? 'Unknown'}`,
-        `PrairieLearn account email/uid: ${userUid}`,
+        `PrairieLearn account (UID): ${userUid}`,
       ]),
     },
   ];
