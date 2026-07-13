@@ -149,6 +149,7 @@ export function InstructorIssues({
                 type="submit"
                 data-bs-toggle="tooltip"
                 data-bs-title="Search"
+                aria-label="Search issues"
               >
                 <i className="fa fa-search" aria-hidden="true" />
               </button>
@@ -157,6 +158,7 @@ export function InstructorIssues({
                 href={`${urlPrefix}/course_admin/issues?q=`}
                 data-bs-toggle="tooltip"
                 data-bs-title="Clear filters"
+                aria-label="Clear filters"
               >
                 <i className="fa fa-times" aria-hidden="true" />
               </a>
