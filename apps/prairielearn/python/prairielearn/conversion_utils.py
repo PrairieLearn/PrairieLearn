@@ -750,7 +750,7 @@ def string_to_number(
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
     # Ignore all spaces when used as thousands separators (i.e., before and after a digit)
-    s = re.sub(r"(?<=\d) (?=\d)", "", s)
+    s = re.sub(r"(?<=\d)\s+(?=\d)", "", s)
     # If complex numbers are allowed...
     if allow_complex:
         # Replace "i" with "j" wherever it occurs
