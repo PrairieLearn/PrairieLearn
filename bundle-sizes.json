@@ -25,9 +25,9 @@
     "brotli": 5699
   },
   "scripts/calculatorClient.ts": {
-    "raw": 1943838,
-    "gzip": 526762,
-    "brotli": 420433
+    "raw": 1943920,
+    "gzip": 526806,
+    "brotli": 420707
   },
   "scripts/examTimeLimitCountdown.ts": {
     "raw": 6597,
