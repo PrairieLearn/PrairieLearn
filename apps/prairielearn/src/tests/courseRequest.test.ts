@@ -3,11 +3,16 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
-import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
+import {
+  insertCourseRequest,
+  selectAllCourseRequests,
+  selectCourseRequestById,
+} from '../lib/course-request.js';
 import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
@@ -33,6 +38,83 @@ describe('Course requests', { timeout: 60_000, concurrent: false }, function () 
   let courseRequestId: string;
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
+
+  test('derives the contact email without conflating it with the account UID', async () => {
+    const [userWithEmail, userWithoutEmail] = await Promise.all([
+      getOrCreateUser({
+        uid: 'contact-test-login',
+        name: 'Contact Test User',
+        uin: null,
+        email: 'account-contact@example.com',
+      }),
+      getOrCreateUser({
+        uid: 'legacy-contact-uid@example.com',
+        name: 'Legacy Contact Test User',
+        uin: null,
+        email: null,
+      }),
+    ]);
+
+    const cases = [
+      {
+        shortName: 'CONTACT EXPLICIT',
+        userId: userWithEmail.id,
+        workEmail: 'explicit-contact@example.com',
+        expectedContactEmail: 'explicit-contact@example.com',
+      },
+      {
+        shortName: 'CONTACT LEGACY',
+        userId: userWithEmail.id,
+        workEmail: userWithEmail.uid,
+        expectedContactEmail: userWithEmail.email,
+      },
+      {
+        shortName: 'CONTACT UID FALLBACK',
+        userId: userWithoutEmail.id,
+        workEmail: userWithoutEmail.uid,
+        expectedContactEmail: userWithoutEmail.uid,
+      },
+      {
+        shortName: 'CONTACT ACCOUNT FALLBACK',
+        userId: userWithEmail.id,
+        workEmail: null,
+        expectedContactEmail: userWithEmail.email,
+      },
+      {
+        shortName: 'CONTACT UNAVAILABLE',
+        userId: userWithoutEmail.id,
+        workEmail: null,
+        expectedContactEmail: null,
+      },
+    ];
+
+    const requests = await Promise.all(
+      cases.map(async ({ shortName, userId, workEmail, expectedContactEmail }) => ({
+        requestId: await insertCourseRequest({
+          short_name: shortName,
+          title: `${shortName} title`,
+          user_id: userId,
+          github_user: null,
+          first_name: 'Contact',
+          last_name: 'Test',
+          work_email: workEmail,
+          institution: 'Test Institution',
+          referral_source: null,
+        }),
+        expectedContactEmail,
+      })),
+    );
+
+    const allRequests = await selectAllCourseRequests();
+    for (const { requestId, expectedContactEmail } of requests) {
+      const listedRequest = allRequests.find((request) => request.id === requestId);
+      assert.isDefined(listedRequest);
+      assert.equal(listedRequest.contact_email, expectedContactEmail);
+
+      const selectedRequest = await selectCourseRequestById({ courseRequestId: requestId });
+      assert.equal(selectedRequest.contact_email, expectedContactEmail);
+    }
+  });
 
   test('insert a course request', async () => {
     courseRequestId = await insertCourseRequest({

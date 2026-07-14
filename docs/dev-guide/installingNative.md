@@ -10,7 +10,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [pnpm](https://pnpm.io)
   - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
   - [PostgreSQL 17](https://www.postgresql.org)
-  - [Redis 6](https://redis.io)
+  - [Redis 7](https://redis.io) or [Valkey](https://valkey.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
   - [pgvector](https://github.com/pgvector/pgvector)

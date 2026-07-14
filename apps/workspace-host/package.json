@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo && tscp",
-    "dev": "tsx watch --clear-screen=false --include \"**/*.sql\" --include \"**/*.json\" src/interface.js",
+    "dev": "tsx watch --clear-screen=false --include \"**/*.sql\" --include \"**/*.json\" --include \"$HOME/.config/prairielearn/config.json\" --include \"../../config.json\" src/interface.js",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"

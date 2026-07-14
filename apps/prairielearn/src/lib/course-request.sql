@@ -41,6 +41,16 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  -- A missing work_email may mean that the auth provider had no email when the
+  -- request was created. Use a current account email if one is now available.
+  -- Older non-default-institution requests copied the user's UID into work_email;
+  -- prefer the account email for those rows, but retain the UID as a best-effort
+  -- contact when no account email is available.
+  CASE
+    WHEN nullif(r.work_email, '') IS NULL THEN nullif(u.email, '')
+    WHEN r.work_email = u.uid THEN coalesce(nullif(u.email, ''), r.work_email)
+    ELSE r.work_email
+  END AS contact_email,
   r.institution,
   r.referral_source,
   r.approved_status,
@@ -168,6 +178,16 @@ SELECT
   r.last_name,
   r.note,
   r.work_email,
+  -- A missing work_email may mean that the auth provider had no email when the
+  -- request was created. Use a current account email if one is now available.
+  -- Older non-default-institution requests copied the user's UID into work_email;
+  -- prefer the account email for those rows, but retain the UID as a best-effort
+  -- contact when no account email is available.
+  CASE
+    WHEN nullif(r.work_email, '') IS NULL THEN nullif(u.email, '')
+    WHEN r.work_email = u.uid THEN coalesce(nullif(u.email, ''), r.work_email)
+    ELSE r.work_email
+  END AS contact_email,
   r.institution,
   r.referral_source,
   r.approved_status,

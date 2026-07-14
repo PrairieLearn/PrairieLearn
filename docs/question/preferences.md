@@ -15,7 +15,7 @@ On the question settings page, the **Preferences** section displays a table wher
 - **Name**: a unique identifier used to reference the preference in code (e.g., `show_hints`).
 - **Type**: `string`, `number`, or `boolean`.
 - **Default**: the value used when the assessment does not provide an override.
-- **Allowed values**: an optional set of allowed values. When set, the default and any assessment override must be one of these values. If left empty (shown as "Any value"), any value matching the type is accepted.
+- **Allowed values**: an optional set of allowed values. When set, the default and any assessment override must be one of these values. If left empty (shown as "Any"), any value matching the type is accepted.
 
 Preferences can be reordered by dragging the handle on the left side of each row.
 

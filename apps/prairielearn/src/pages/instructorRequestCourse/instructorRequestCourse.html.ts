@@ -65,7 +65,7 @@ export function RequestCourse({
             resLocals.authn_institution.short_name === DEFAULT_INSTITUTION_SHORT_NAME,
           institutionName: resLocals.authn_institution.long_name,
           institutionMessageHtml,
-          userEmail: resLocals.authn_user.uid,
+          userEmail: resLocals.authn_user.email,
         })}
       </div>
     `,
@@ -158,7 +158,7 @@ function CourseNewRequestForm({
   isDefaultInstitution: boolean;
   institutionName: string;
   institutionMessageHtml: string;
-  userEmail: string;
+  userEmail: string | null;
 }): HtmlValue {
   return html`
     <form class="question-form" name="course-request" method="POST">
@@ -270,7 +270,7 @@ function CourseNewRequestForm({
                   name="cr-email"
                   id="cr-email"
                   disabled
-                  value="${userEmail}"
+                  value="${userEmail ?? 'Unavailable'}"
                 />
                 <small class="form-text text-muted">
                   This is determined by your sign-in account.

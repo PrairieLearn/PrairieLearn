@@ -165,7 +165,7 @@ const checkInstructorLegitimacyProcedure = t.procedure
     return await checkInstructorLegitimacy({
       instructorFirstName: courseRequest.first_name,
       instructorLastName: courseRequest.last_name,
-      instructorEmail: courseRequest.work_email,
+      instructorEmail: courseRequest.contact_email,
       institution: courseRequest.institution,
       userDisplayName: courseRequest.user_name,
       userUid: courseRequest.user_uid,
@@ -191,7 +191,8 @@ const suggestInstitutionPrefixProcedure = t.procedure
     z.object({
       institutionLongName: z.string(),
       institutionShortName: z.string(),
-      emailDomain: z.string(),
+      contactEmailDomain: z.string(),
+      accountUidDomain: z.string(),
     }),
   )
   .output(
@@ -205,7 +206,8 @@ const suggestInstitutionPrefixProcedure = t.procedure
     return await suggestInstitutionPrefix({
       institutionLongName: input.institutionLongName,
       institutionShortName: input.institutionShortName,
-      emailDomain: input.emailDomain,
+      contactEmailDomain: input.contactEmailDomain,
+      accountUidDomain: input.accountUidDomain,
     });
   });
 
