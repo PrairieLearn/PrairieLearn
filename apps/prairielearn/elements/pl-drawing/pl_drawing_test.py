@@ -91,6 +91,73 @@ def test_parse_valid_submission_works_with_allow_blank() -> None:
     assert data["submitted_answers"]["test"] == valid_answer
 
 
+def test_prepare_uses_parent_tolerance_for_error_boxes() -> None:
+    element_html = """
+    <pl-drawing answers-name="test" gradable="true" grid-size="20" tol="5">
+        <pl-drawing-answer draw-error-box="true">
+            <pl-point x1="100" y1="100"></pl-point>
+            <pl-drawing-group>
+                <pl-controlled-line
+                    x1="20"
+                    y1="40"
+                    x2="60"
+                    y2="40"
+                    offset-tol-x="3"
+                    offset-tol-y="4"
+                ></pl-controlled-line>
+            </pl-drawing-group>
+        </pl-drawing-answer>
+    </pl-drawing>
+    """
+    data = make_question_data()
+
+    pl_drawing.prepare(element_html, data)
+
+    point, line = data["correct_answers"]["test"]
+    assert point["drawErrorBox"] is True
+    assert point["widthErrorBox"] == 10
+    assert point["heightErrorBox"] == 10
+    assert line["drawErrorBox"] is True
+    assert line["widthErrorBox"] == 16
+    assert line["heightErrorBox"] == 18
+
+
+def test_prepare_uses_parent_grid_size_for_default_tolerance() -> None:
+    element_html = """
+    <pl-drawing answers-name="test" gradable="true" grid-size="12">
+        <pl-drawing-answer draw-error-box="true">
+            <pl-point x1="100" y1="100"></pl-point>
+        </pl-drawing-answer>
+    </pl-drawing>
+    """
+    data = make_question_data()
+
+    pl_drawing.prepare(element_html, data)
+
+    point = data["correct_answers"]["test"][0]
+    assert point["widthErrorBox"] == 12
+    assert point["heightErrorBox"] == 12
+
+
+def test_parent_grid_size_does_not_change_paired_vector_position_defaults() -> None:
+    element_html = """
+    <pl-drawing answers-name="test" gradable="true" grid-size="0" tol="5">
+        <pl-drawing-answer>
+            <pl-paired-vector></pl-paired-vector>
+        </pl-drawing-answer>
+    </pl-drawing>
+    """
+    data = make_question_data()
+
+    pl_drawing.prepare(element_html, data)
+
+    paired_vector = data["correct_answers"]["test"][0]
+    assert paired_vector["x1"] == 40
+    assert paired_vector["y1"] == 20
+    assert paired_vector["x2"] == 60
+    assert paired_vector["y2"] == 40
+
+
 def test_grade_blank_submission_without_allow_blank_sets_error() -> None:
     element_html = build_element_html(allow_blank=False)
     data = make_question_data(
