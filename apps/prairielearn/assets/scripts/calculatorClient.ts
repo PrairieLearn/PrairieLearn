@@ -53,8 +53,8 @@ function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
 }
 
 function clipboardOutput(latex: string) {
-  // Remove initial =, and remove all thousands separators
-  return convertLatexToAsciiMath(latex.replace(/^=/, '').replaceAll('\\,', ''));
+  // Remove all thousands separators
+  return convertLatexToAsciiMath(latex.replaceAll('\\,', ''));
 }
 
 const TRIG_FUNCTIONS = new Set([
@@ -709,7 +709,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
     inputCopyBtn.dataset.clipboardText = clipboardOutput(input);
-    outputCopyBtn.dataset.clipboardText = clipboardOutput(outputField.value);
+    outputCopyBtn.dataset.clipboardText = clipboardOutput(outputField.value.replace(/^=/, ''));
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
