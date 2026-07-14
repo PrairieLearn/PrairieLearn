@@ -81,7 +81,7 @@ You should set the workspace host home directory root and home directory root in
 
 In all operating systems supported by PrairieLearn, Docker Desktop allows any user with the `docker` group to run containers, even as root. However, the default configuration of PrairieLearn will attempt to change the owner of the workspace files to the root user before running the workspace container, which will fail if the user is not root. To avoid a problem in these scenarios, you have two options:
 
-- Change the configuration of the workspace host to not chown the workspace files. You can do this by including the following in your `config.json` (assuming the user you are running the workspace host as has UID 1000 and GID 1000):
+- Change the configuration of the workspace host to not chown the workspace files. You can do this by including the following in your `config.json`:
 
   ```json title="config.json"
   {

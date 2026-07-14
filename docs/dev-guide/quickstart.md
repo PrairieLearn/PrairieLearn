@@ -45,7 +45,7 @@ You may also need to change your configuration to settings that vary depending o
 
 ??? note "Troubleshooting workspaces"
 
-    You can list the active hosts by opening, in a browser, the URL `http://localhost:3000/pl/administrator/workspaces` (or the equivalent URL for your PrairieLearn server). If you see no hosts, the workspace host is not running.
+    You can list the active hosts by opening, in a browser, the URL `http://localhost:3000/pl/administrator/workspaces` (or the equivalent URL for your PrairieLearn server). If you see no hosts, the workspace host is not running or not properly configured.
 
 ## Documentation
 
