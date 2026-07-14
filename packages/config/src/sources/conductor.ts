@@ -1,4 +1,12 @@
+import { z } from 'zod';
+
 import type { AbstractConfig, ConfigSource } from '../types.js';
+
+const PortSchema = z.coerce
+  .number('CONDUCTOR_PORT must be a number')
+  .int('CONDUCTOR_PORT must be an integer')
+  .min(1, 'CONDUCTOR_PORT must be at least 1')
+  .max(65535, 'CONDUCTOR_PORT must be at most 65535');
 
 export function makeConductorConfigSource({
   portConfigKey,
@@ -7,25 +15,27 @@ export function makeConductorConfigSource({
 } = {}): ConfigSource {
   return {
     load: async () => {
-      const config: AbstractConfig = {};
-      const port = process.env.CONDUCTOR_PORT;
-
-      if (portConfigKey && port !== undefined) {
-        config[portConfigKey] = port;
+      if (!process.env.CONDUCTOR_PORT || !process.env.CONDUCTOR_WORKSPACE_NAME) {
+        // Probably not running in Conductor.
+        return {};
       }
 
-      const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
-      if (!workspaceName) return config;
+      const config: AbstractConfig = {};
+      const conductorPort = process.env.CONDUCTOR_PORT;
+      const parsedConductorPort = PortSchema.parse(Number(conductorPort));
 
-      const dbSuffix = workspaceName
-        .toLowerCase()
+      if (portConfigKey) {
+        config[portConfigKey] = conductorPort;
+      }
+
+      const dbSuffix = process.env.CONDUCTOR_WORKSPACE_NAME.toLowerCase()
         .replaceAll(/[^a-z0-9_]/g, '_')
         .slice(0, 50);
-      const redisPort = Number.parseInt(port ?? '3000');
+
       // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
       // increments of 10, collisions occur after ~8 workspaces. This is acceptable
       // since Redis stores transient data while Postgres databases remain fully isolated.
-      const redisDb = (redisPort - 3000) % 16;
+      const redisDb = (((parsedConductorPort - 3000) % 16) + 16) % 16;
 
       return {
         ...config,

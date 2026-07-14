@@ -29,30 +29,25 @@ describe('makeConductorConfigSource', () => {
     await expect(makeConductorConfigSource().load({})).resolves.toEqual({});
   });
 
-  it('maps the Conductor port to the configured key', async () => {
-    process.env.CONDUCTOR_PORT = '4010';
-
-    await expect(
-      makeConductorConfigSource({ portConfigKey: 'serverPort' }).load({}),
-    ).resolves.toEqual({ serverPort: '4010' });
-  });
-
-  it('derives workspace-specific database and Redis config', async () => {
+  it('derives expected config', async () => {
     process.env.CONDUCTOR_PORT = '4010';
     process.env.CONDUCTOR_WORKSPACE_NAME = 'Feature/My Branch!';
 
-    await expect(makeConductorConfigSource().load({})).resolves.toEqual({
+    await expect(
+      makeConductorConfigSource({ portConfigKey: 'serverPort' }).load({}),
+    ).resolves.toEqual({
+      serverPort: '4010',
       postgresqlDatabase: 'prairielearn_feature_my_branch_',
       redisUrl: 'redis://localhost:6379/2',
     });
   });
 
-  it('uses the default PrairieLearn port when deriving Redis config without a port', async () => {
+  it('normalizes Redis config for a Conductor port below 3000', async () => {
+    process.env.CONDUCTOR_PORT = '2999';
     process.env.CONDUCTOR_WORKSPACE_NAME = 'my-workspace';
 
-    await expect(makeConductorConfigSource().load({})).resolves.toEqual({
-      postgresqlDatabase: 'prairielearn_my_workspace',
-      redisUrl: 'redis://localhost:6379/0',
+    await expect(makeConductorConfigSource().load({})).resolves.toMatchObject({
+      redisUrl: 'redis://localhost:6379/15',
     });
   });
 });
