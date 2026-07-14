@@ -53,8 +53,8 @@ function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
 }
 
 function clipboardOutput(latex: string) {
-  // Remove all thousands separators
-  return convertLatexToAsciiMath(latex.replaceAll('\\,', ''));
+  // Remove all thousands separators, represented by \, in between digits
+  return convertLatexToAsciiMath(latex.replaceAll(/(?<=\d)\\,(?=\d)/g, ''));
 }
 
 const TRIG_FUNCTIONS = new Set([

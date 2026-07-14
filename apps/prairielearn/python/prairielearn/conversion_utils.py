@@ -749,12 +749,15 @@ def string_to_number(
     """
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace("\u2212", "-")
-    # Ignore all spaces, particularly when used as thousands separators
-    s = s.replace(" ", "")
+    # Ignore all spaces when used as thousands separators (i.e., before and after a digit)
+    s = re.sub(r"(?<=\d) (?=\d)", "", s)
     # If complex numbers are allowed...
     if allow_complex:
         # Replace "i" with "j" wherever it occurs
         s = s.replace("i", "j")
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r" *\+ *", "+", s)
+        s = re.sub(r" *\- *", "-", s)
     # Try to parse as float
     try:
         s_float = float(s)
