@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 5.1.0
+
+### Minor Changes
+
+- 87c8b71: Add a shared config source for Conductor workspace environment variables.
+
 ## 5.0.1
 
 ### Patch Changes
