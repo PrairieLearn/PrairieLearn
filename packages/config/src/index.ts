@@ -8,6 +8,7 @@ import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-
 
 import type { AbstractConfig, ConfigSource } from './types.js';
 
+export { makeConductorConfigSource } from './sources/conductor.js';
 export { makeKmsConfigSource } from './sources/kms.js';
 export type { AbstractConfig, ConfigSource } from './types.js';
 
