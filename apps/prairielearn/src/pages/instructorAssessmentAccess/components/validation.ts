@@ -19,10 +19,13 @@ import {
 } from '../../../lib/assessment-access-control/validation.js';
 import { UUID_REGEXP } from '../../../lib/string-util.js';
 import {
+  MAX_ACCESS_CONTROL_CREDIT,
   MAX_ACCESS_CONTROL_DURATION_MINUTES,
   MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE,
   MAX_ACCESS_CONTROL_PASSWORD_LENGTH,
+  MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
   MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
+  MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT,
 } from '../../../schemas/accessControl.js';
 
 import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
@@ -257,7 +260,7 @@ export function getGlobalDateValidationErrors(
     const dateIssues = validateRuleDateOrderingIssues(validationRule);
     const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
     // Credit ordering assumes deadlines are chronological; skip if dates are
-    // out of order to avoid misleading "credits must strictly decrease" errors.
+    // out of order to avoid misleading credit-ordering errors.
     if (dateIssues.length === 0) {
       issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
     }
@@ -304,12 +307,12 @@ function validateDueDate(date: string | null): string | undefined {
 
 function validateIntegerCredit(
   credit: number,
-  { max, rangeMessage }: { max: number; rangeMessage: string },
+  { min = 0, max, rangeMessage }: { min?: number; max: number; rangeMessage: string },
 ): string | undefined {
   if (Number.isNaN(credit)) return 'Credit is required';
   if (!Number.isFinite(credit)) return 'Credit must be a finite number';
   if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit > max) return rangeMessage;
+  if (credit < min || credit > max) return rangeMessage;
   return undefined;
 }
 
@@ -319,8 +322,8 @@ function validateDueCredit(value: number | null, customCredit: boolean): string 
     return undefined;
   }
   return validateIntegerCredit(value, {
-    max: 200,
-    rangeMessage: 'Credit must be between 0% and 200%',
+    max: MAX_ACCESS_CONTROL_CREDIT,
+    rangeMessage: `Credit must be between 0% and ${MAX_ACCESS_CONTROL_CREDIT}%`,
   });
 }
 
@@ -393,9 +396,12 @@ function validateDeadlineCredit({
   value: number;
 }): string | undefined {
   return validateIntegerCredit(value, {
-    max: type === 'early' ? 200 : 99,
+    min: type === 'early' ? MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT : 0,
+    max: type === 'early' ? MAX_ACCESS_CONTROL_CREDIT : MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
     rangeMessage:
-      type === 'early' ? 'Credit must be 0-200%' : 'Credit after the due date must be 0-99%',
+      type === 'early'
+        ? `Early deadline credit must be ${MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT}-${MAX_ACCESS_CONTROL_CREDIT}%`
+        : `Credit after the due date must be 0-${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%`,
   });
 }
 
@@ -434,8 +440,8 @@ function validateDeadlineArray({
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue): string | undefined {
   if (!value.allowSubmissions) return undefined;
   return validateIntegerCredit(value.credit, {
-    max: 99,
-    rangeMessage: 'Credit after the due date must be 0-99%',
+    max: MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
+    rangeMessage: `Credit after the due date must be 0-${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%`,
   });
 }
 

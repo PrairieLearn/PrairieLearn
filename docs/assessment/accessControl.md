@@ -62,7 +62,7 @@ For example, on a 10-point assessment with 80% available credit, a student who e
 
 #### Early and late deadlines
 
-Use **Early deadlines** for bonus-credit windows before the due date, and **Late deadlines** for reduced-credit windows after the due date.
+Use **Early deadlines** for bonus-credit windows before the due date, and **Late deadlines** for grace periods or reduced-credit windows after the due date.
 
 For each deadline, choose:
 
@@ -73,7 +73,7 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
 !!! tip
 
-    With the default 100% due-date credit, **early deadlines must offer more than 100% credit** and **late deadlines must offer less than 100%**. More generally, early credits must exceed the due-date credit, and all credit after the due date must be below 100%.
+    Credit must strictly decrease at every boundary, except that the first late deadline — or **After due date** credit when there are no late deadlines — may match due-date credit, up to 100%. This supports a single no-penalty grace period while still communicating the original due date. Consecutive late deadlines cannot offer the same credit.
 
 #### After deadlines
 
@@ -81,7 +81,7 @@ Configure what happens after all deadlines have passed. The setting is labeled *
 
 - **No submissions allowed**: students can view only what the assessment visibility settings allow, but cannot submit.
 - **Allow practice submissions**: students can submit for feedback, but receive 0% credit.
-- **Allow submissions for partial credit**: students can submit for the credit percentage you choose.
+- **Allow submissions for credit**: students can submit for the credit percentage you choose.
 
 This setting controls submission permission only. If submissions are not allowed after the final deadline, the **After completion** visibility settings determine what students can review. If after-deadline submissions are allowed, **After completion** applies only after the student's assessment instance closes or its time limit expires.
 
@@ -578,24 +578,24 @@ The first element is the defaults rule and must not have a `uuid`. Every element
 | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `release`           | object  | Object with `date` (ISO datetime). The assessment is not open to students before this date.                                                                                                 |
 | `due`               | object  | Object with `date` (ISO datetime, or `null` for no due date) and optional integer `credit` (0-200, default 100).                                                                            |
-| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines before the due date that offer bonus credit.                                                                                                   |
-| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines after the due date that offer reduced credit.                                                                                                  |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Bonus-credit deadlines before the due date.                                                                                                              |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Grace-period or reduced-credit deadlines after the due date.                                                                                             |
 | `afterLastDeadline` | object  | Controls whether submissions are allowed after all deadlines have passed, and how much credit they receive. Omit on the default rule to disallow submissions; omit on overrides to inherit. |
 | `durationMinutes`   | integer | Time limit in minutes.                                                                                                                                                                      |
 | `password`          | string  | Password required to start the assessment.                                                                                                                                                  |
 
-`due.credit` defaults to 100. Deadline credits may use any integer percentage from 0 to 200, but the resolved sequence of early deadlines, due date, late deadlines, and `afterLastDeadline.credit` must strictly decrease over time. Early deadlines are not allowed when due credit is below 100%. Late deadlines and `afterLastDeadline.credit` must be below 100%.
+`due.credit` defaults to 100. Early-deadline credits must be integers from 101 to 200, while late-deadline and `afterLastDeadline.credit` values must be integers from 0 to 100. The resolved credit timeline must strictly decrease at every boundary, except that the first late deadline — or `afterLastDeadline.credit` when there are no late deadlines — may equal the due credit. Early deadlines are not allowed when due credit is below 100%.
 
 When `due.date` is `null`, the due credit applies indefinitely after release.
 
 ### `afterLastDeadline`
 
-| Field              | Type    | Default | Description                                                                                          |
-| ------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines.                                       |
-| `credit`           | integer | -       | Required when `allowSubmissions` is `true`; credit percentage after the last deadline, from 0 to 99. |
+| Field              | Type    | Default | Description                                                                                           |
+| ------------------ | ------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| `allowSubmissions` | boolean | `false` | Whether students can still submit answers after all deadlines.                                        |
+| `credit`           | integer | -       | Required when `allowSubmissions` is `true`; credit percentage after the last deadline, from 0 to 100. |
 
-If `allowSubmissions` is `true`, `credit` is required and must be below 100% and below the preceding deadline's credit. Use `"credit": 0` for practice submissions.
+If `allowSubmissions` is `true`, `credit` is required and must be at most 100%. With no late deadlines, it may equal the due credit; otherwise, it must be below the last late deadline's credit. Use `"credit": 0` for practice submissions.
 
 If `afterLastDeadline` is omitted on the default rule or set to `{ "allowSubmissions": false }`, students cannot submit after the final deadline. They can still review whatever the `afterComplete` settings make visible. On overrides, omit `afterLastDeadline` to inherit from the default rule, or set `{ "allowSubmissions": false }` to explicitly disable submissions.
 

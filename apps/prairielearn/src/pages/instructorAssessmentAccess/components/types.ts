@@ -374,9 +374,8 @@ export function jsonToOverrideFormData(
 /**
  * Build the JSON `due` object from form state. `customCredit = false` means
  * "use default" and credit is dropped from JSON; otherwise the explicit
- * number (including 100) is preserved — an explicit 100 is semantically
- * distinct from default because cross-rule validation (e.g. forbidding early
- * deadlines) treats any set credit as customized.
+ * number (including 100) is preserved so the editor round-trips the author's
+ * explicit choice.
  *
  * `customCredit: true` with `credit: null` is a transient editing state (the
  * user has cleared the input). The field-level validator surfaces "Credit is

@@ -1,10 +1,13 @@
 import {
   type AccessControlJson,
+  MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
   MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 
-const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be less than 100%.';
+const POST_DUE_CREDIT_MESSAGE = `Credit after the due date must be at most ${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%.`;
+const CREDIT_ORDERING_MESSAGE =
+  'Credit must strictly decrease at every boundary, except that the first late deadline—or after-due credit when there are no late deadlines—may match due-date credit.';
 
 export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
@@ -415,7 +418,8 @@ export function validateGlobalDateConsistencyIssues(
 
 /**
  * Checks each override's effective deadline sequence, after inheriting default
- * fields, for post-due credit below 100% and strictly decreasing credit.
+ * fields, for post-due credit at most 100% and decreasing credit, with one
+ * equal-credit window allowed immediately after the due date.
  */
 export function validateGlobalCreditConsistencyIssues(
   validationRules: AccessControlValidationRule[],
@@ -445,7 +449,7 @@ export function validateGlobalCreditConsistencyIssues(
     const postDueEntry = effectiveEntries.find(
       (entry) =>
         (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
-        entry.credit >= 100 &&
+        entry.credit > MAX_ACCESS_CONTROL_POST_DUE_CREDIT &&
         entry.validationRule === validationRule,
     );
     if (postDueEntry) {
@@ -456,16 +460,13 @@ export function validateGlobalCreditConsistencyIssues(
     for (let i = 1; i < effectiveEntries.length; i++) {
       const previous = effectiveEntries[i - 1];
       const current = effectiveEntries[i];
-      if (current.credit < previous.credit) continue;
+      if (isValidCreditTransition(previous, current)) {
+        continue;
+      }
 
       const issueEntry = chooseEffectiveIssueEntry(validationRule, current, previous);
       if (!issueEntry) continue;
-      pushIssue(
-        issues,
-        issueEntry.validationRule,
-        issueEntry.path,
-        'Deadline credits must strictly decrease over time.',
-      );
+      pushIssue(issues, issueEntry.validationRule, issueEntry.path, CREDIT_ORDERING_MESSAGE);
       break;
     }
   }
@@ -478,16 +479,31 @@ type CreditEntryKind = 'earlyDeadline' | 'due' | 'lateDeadline' | 'afterLastDead
 /**
  * One credit-bearing point in a rule's deadline timeline. The list of entries
  * for a rule, in chronological order, is the model the credit validators
- * operate on: post-due credit must be < 100% and credits must strictly
- * decrease across the list. `validationRule` records which rule supplied the
- * entry — under inheritance the source may differ from the rule being
- * validated, and the path is relative to that source.
+ * operate on: post-due credit must be at most 100%, credits must decrease
+ * across the list, and the first post-due entry may equal the due credit.
+ * `validationRule` records which rule supplied the entry — under inheritance
+ * the source may differ from the rule being validated, and the path is
+ * relative to that source.
  */
 interface CreditEntry {
   kind: CreditEntryKind;
   credit: number;
   validationRule: AccessControlValidationRule;
   path: AccessControlIssuePath;
+}
+
+/**
+ * Credit may stay constant only from the due window into the immediately
+ * following window. Adjacency to `due` is what prevents consecutive equal
+ * late deadlines or equal credit after a late deadline.
+ */
+function isValidCreditTransition(previous: CreditEntry, current: CreditEntry): boolean {
+  if (current.credit < previous.credit) return true;
+  return (
+    current.credit === previous.credit &&
+    previous.kind === 'due' &&
+    (current.kind === 'lateDeadline' || current.kind === 'afterLastDeadline')
+  );
 }
 
 type DateControlField = keyof NonNullable<AccessControlJson['dateControl']>;
@@ -499,7 +515,7 @@ type DateControlField = keyof NonNullable<AccessControlJson['dateControl']>;
  *
  * When `synthesizeImplicitDue` is true and the rule has any other credit
  * field set without a `due`, an implicit 100% due entry is inserted so the
- * strict-decrease check has an anchor. Per-rule validation only synthesizes
+ * credit-ordering check has an anchor. Per-rule validation only synthesizes
  * for the default rule (overrides may legitimately omit `due` and inherit
  * it); cross-rule validation always synthesizes since any override's
  * effective timeline includes the inherited due.
@@ -726,8 +742,8 @@ export function validateRuleDateOrdering(rule: AccessControlJson): string[] {
 
 /**
  * Validates credit ordering within a single access control rule: post-due
- * credits must be below 100%, and credits must strictly decrease across the
- * timeline.
+ * credits must be at most 100%, and credits must strictly decrease except for
+ * the first credit window after the due date, which may equal the due credit.
  */
 export function validateRuleCreditOrderingIssues(
   validationRule: AccessControlValidationRule,
@@ -737,7 +753,8 @@ export function validateRuleCreditOrderingIssues(
 
   const postDueEntry = entries.find(
     (entry) =>
-      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') && entry.credit >= 100,
+      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
+      entry.credit > MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
   );
   if (postDueEntry) {
     pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
@@ -745,13 +762,10 @@ export function validateRuleCreditOrderingIssues(
   }
 
   for (let i = 1; i < entries.length; i++) {
-    if (entries[i].credit < entries[i - 1].credit) continue;
-    pushIssue(
-      issues,
-      validationRule,
-      entries[i].path,
-      'Deadline credits must strictly decrease over time.',
-    );
+    if (isValidCreditTransition(entries[i - 1], entries[i])) {
+      continue;
+    }
+    pushIssue(issues, validationRule, entries[i].path, CREDIT_ORDERING_MESSAGE);
     break;
   }
 
@@ -881,7 +895,7 @@ export function validateRule(
   const dateErrors = validateRuleDateOrdering(rule);
   errors.push(...dateErrors);
   // Credit ordering assumes deadlines are chronological; skip if dates are
-  // out of order to avoid misleading "credits must strictly decrease" errors.
+  // out of order to avoid misleading credit-ordering errors.
   if (dateErrors.length === 0) {
     errors.push(...validateRuleCreditOrdering(rule, targetType));
   }

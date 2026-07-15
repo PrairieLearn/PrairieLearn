@@ -500,15 +500,15 @@ describe('formDataToJson', () => {
       credit: 0,
     });
 
-    const partialCredit: OverrideData = {
+    const fullCredit: OverrideData = {
       ...baseOverride,
       trackingId: 'o-ald-2',
       overriddenFields: ['afterLastDeadline'],
-      afterLastDeadline: { allowSubmissions: true, credit: 50 },
+      afterLastDeadline: { allowSubmissions: true, credit: 100 },
     };
-    expect(formDataToJson(buildFormData(partialCredit))[1].dateControl!.afterLastDeadline).toEqual({
+    expect(formDataToJson(buildFormData(fullCredit))[1].dateControl!.afterLastDeadline).toEqual({
       allowSubmissions: true,
-      credit: 50,
+      credit: 100,
     });
   });
 });

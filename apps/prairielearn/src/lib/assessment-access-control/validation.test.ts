@@ -20,6 +20,9 @@ import {
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
 
+const CREDIT_ORDERING_MESSAGE =
+  'Credit must strictly decrease at every boundary, except that the first late deadline—or after-due credit when there are no late deadlines—may match due-date credit.';
+
 function uuidForIndex(index: number): string {
   return `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
 }
@@ -517,7 +520,7 @@ describe('Date fields must be dates', () => {
     },
     {
       label: 'early deadline date',
-      config: { dateControl: { earlyDeadlines: [{ date: 'NOTADATE', credit: 100 }] } },
+      config: { dateControl: { earlyDeadlines: [{ date: 'NOTADATE', credit: 101 }] } },
       expectedPath: ['dateControl', 'earlyDeadlines', 0, 'date'],
     },
     {
@@ -541,6 +544,66 @@ describe('Date fields must be dates', () => {
         (issue) => JSON.stringify(issue.path) === JSON.stringify(expectedPath),
       ),
     );
+  });
+});
+
+describe('Deadline credit schema validation', () => {
+  it.each([
+    {
+      label: 'minimum bonus credit on an early deadline',
+      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 101 }] },
+    },
+    {
+      label: 'maximum bonus credit on an early deadline',
+      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 200 }] },
+    },
+    {
+      label: '100% credit on a late deadline',
+      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] },
+    },
+    {
+      label: '0% credit on a late deadline',
+      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 0 }] },
+    },
+    {
+      label: '100% credit after the due date',
+      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 100 } },
+    },
+    {
+      label: '0% credit after the due date',
+      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 0 } },
+    },
+  ])('accepts $label', ({ dateControl }) => {
+    assert.isTrue(AccessControlJsonSchema.safeParse({ dateControl }).success);
+  });
+
+  it.each([
+    {
+      label: 'early deadline credit at or below 100%',
+      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] },
+    },
+    {
+      label: 'early deadline credit above 200%',
+      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 201 }] },
+    },
+    {
+      label: 'late deadline credit above 100%',
+      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 101 }] },
+    },
+    {
+      label: 'late deadline credit below 0%',
+      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: -1 }] },
+    },
+    {
+      label: 'after-due credit above 100%',
+      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 101 } },
+    },
+    {
+      label: 'after-due credit below 0%',
+      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: -1 } },
+    },
+  ])('rejects $label', ({ dateControl }) => {
+    assert.isFalse(AccessControlJsonSchema.safeParse({ dateControl }).success);
   });
 });
 
@@ -861,7 +924,19 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
+      errorMatch: CREDIT_ORDERING_MESSAGE,
+    },
+    {
+      label: 'equal early deadline credits',
+      config: {
+        dateControl: {
+          earlyDeadlines: [
+            { date: '2024-03-12T00:00:00', credit: 120 },
+            { date: '2024-03-15T00:00:00', credit: 120 },
+          ],
+        },
+      },
+      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'increasing late deadline credits',
@@ -873,16 +948,7 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
-    },
-    {
-      label: 'early deadline credit equal to implicit due credit',
-      config: {
-        dateControl: {
-          earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }],
-        },
-      },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
+      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'afterLastDeadline credit exceeding last late deadline',
@@ -896,38 +962,31 @@ describe('Credit ordering validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 60 },
         },
       },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
+      errorMatch: CREDIT_ORDERING_MESSAGE,
+    },
+    {
+      label: 'consecutive late deadlines with equal credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00' },
+          lateDeadlines: [
+            { date: '2024-03-25T00:00:00', credit: 100 },
+            { date: '2024-03-28T00:00:00', credit: 100 },
+          ],
+        },
+      },
+      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'afterLastDeadline credit equal to last late deadline',
       config: {
         dateControl: {
           due: { date: '2024-03-21T00:00:00' },
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
-          afterLastDeadline: { allowSubmissions: true, credit: 50 },
-        },
-      },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
-    },
-    {
-      label: 'late deadline credit equal to custom due credit',
-      config: {
-        dateControl: {
-          due: { date: '2024-03-21T00:00:00', credit: 80 },
-          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
-        },
-      },
-      errorMatch: 'Deadline credits must strictly decrease over time.',
-    },
-    {
-      label: 'late deadline credit at 100% under bonus due credit',
-      config: {
-        dateControl: {
-          due: { date: '2024-03-21T00:00:00', credit: 110 },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 100 },
         },
       },
-      errorMatch: 'Credit after the due date must be less than 100%.',
+      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
   ])('rejects $label', ({ config, errorMatch }) => {
     const rule = AccessControlJsonSchema.parse(config);
@@ -946,6 +1005,24 @@ describe('Credit ordering validation', () => {
         dateControl: {
           due: { date: '2024-03-21T00:00:00', credit: 110 },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 99 }],
+        },
+      },
+    },
+    {
+      label: 'late deadline credit at 100% under bonus due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 110 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+        },
+      },
+    },
+    {
+      label: 'late deadline credit equal to custom due credit',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00', credit: 80 },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 80 }],
         },
       },
     },
@@ -980,6 +1057,24 @@ describe('Credit ordering validation', () => {
           due: { date: '2024-03-21T00:00:00' },
           lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 50 }],
           afterLastDeadline: { allowSubmissions: true, credit: 30 },
+        },
+      },
+    },
+    {
+      label: 'full-credit grace period until a late deadline',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00' },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }],
+        },
+      },
+    },
+    {
+      label: 'full credit after the due date without late deadlines',
+      config: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00' },
+          afterLastDeadline: { allowSubmissions: true, credit: 100 },
         },
       },
     },
@@ -1194,7 +1289,25 @@ describe('Global credit validation', () => {
       rules.map((rule, ruleIndex) => validationRule(rule, ruleIndex)),
     ).map((issue) => issue.message);
 
-  it('rejects override late deadline credit equal to inherited due credit', () => {
+  it('rejects override late deadline credit above inherited due credit', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00', credit: 80 },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 90 }],
+        },
+      },
+    );
+
+    assert.isTrue(messages.includes(CREDIT_ORDERING_MESSAGE));
+  });
+
+  it('accepts override late deadline credit equal to inherited due credit', () => {
     const messages = messagesFor(
       {
         dateControl: {
@@ -1209,7 +1322,7 @@ describe('Global credit validation', () => {
       },
     );
 
-    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+    assert.deepEqual(messages, []);
   });
 
   it('uses inherited default due credit to reject override early deadlines', () => {
@@ -1222,7 +1335,7 @@ describe('Global credit validation', () => {
       {
         labels: ['Section A'],
         dateControl: {
-          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 90 }],
+          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 110 }],
         },
       },
     );
@@ -1230,38 +1343,6 @@ describe('Global credit validation', () => {
     assert.isTrue(
       messages.includes('Early deadlines are not allowed when due date credit is below 100%.'),
     );
-  });
-
-  it('rejects an override late deadline credit above 100% when inherited due credit is higher', () => {
-    const messages = messagesFor(
-      {
-        dateControl: {
-          due: { date: '2024-04-10T00:00:00', credit: 110 },
-        },
-      },
-      {
-        labels: ['Section A'],
-        dateControl: {
-          lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 105 }],
-        },
-      },
-    );
-
-    assert.isTrue(messages.includes('Credit after the due date must be less than 100%.'));
-  });
-
-  it('rejects override early deadline credit equal to an implicit inherited due credit', () => {
-    const messages = messagesFor(
-      {},
-      {
-        labels: ['Section A'],
-        dateControl: {
-          earlyDeadlines: [{ date: '2024-04-09T00:00:00', credit: 100 }],
-        },
-      },
-    );
-
-    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
   });
 
   it('does not check enrollment rules against unrelated student-label overrides', () => {
@@ -1306,7 +1387,25 @@ describe('Global credit validation', () => {
       },
     );
 
-    assert.isTrue(messages.includes('Deadline credits must strictly decrease over time.'));
+    assert.isTrue(messages.includes(CREDIT_ORDERING_MESSAGE));
+  });
+
+  it('accepts afterLastDeadline credit equal to inherited due credit without late deadlines', () => {
+    const messages = messagesFor(
+      {
+        dateControl: {
+          due: { date: '2024-04-10T00:00:00' },
+        },
+      },
+      {
+        labels: ['Section A'],
+        dateControl: {
+          afterLastDeadline: { allowSubmissions: true, credit: 100 },
+        },
+      },
+    );
+
+    assert.deepEqual(messages, []);
   });
 });
 
