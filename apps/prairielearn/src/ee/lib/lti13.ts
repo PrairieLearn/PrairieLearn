@@ -778,10 +778,10 @@ const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
 });
 
-async function loadLti13MembershipIndex({
-  lti13_instance,
-  lti13_course_instance,
-}: Lti13CombinedInstance): Promise<Lti13MembershipIndex> {
+function getLti13RosterUrl(
+  { lti13_course_instance }: Lti13CombinedInstance,
+  rlid: string | null,
+): string {
   if (lti13_course_instance.context_memberships_url === null) {
     throw new HttpStatusError(
       403,
@@ -789,20 +789,31 @@ async function loadLti13MembershipIndex({
     );
   }
 
-  const token = await getAccessToken(lti13_instance.id);
-  const membershipsUrl = appendRlidToMembershipsUrl(
-    lti13_course_instance.context_memberships_url,
-    lti13_course_instance.resource_link_id,
-  );
-  const fetchArray = await fetchRetryPaginated(membershipsUrl, {
+  return appendRlidToMembershipsUrl(lti13_course_instance.context_memberships_url, rlid);
+}
+
+async function fetchLti13RosterPages(
+  instance: Lti13CombinedInstance,
+  url: string,
+): Promise<unknown[]> {
+  const token = await getAccessToken(instance.lti13_instance.id);
+  return fetchRetryPaginated(url, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
     },
   });
+}
 
-  const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
+async function loadLti13MembershipIndex(
+  instance: Lti13CombinedInstance,
+): Promise<Lti13MembershipIndex> {
+  const { lti13_instance, lti13_course_instance } = instance;
+  const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
+  const rawRosterPages = await fetchLti13RosterPages(instance, url);
+
+  const containers = ContextMembershipContainerSchema.array().parse(rawRosterPages);
   const memberships = containers
     .flatMap((container) => container.members)
     .filter((member) => {
@@ -984,15 +995,7 @@ export async function inspectRoster({
   job: ServerJob;
 }) {
   const { lti13_instance, lti13_course_instance } = instance;
-
-  if (lti13_course_instance.context_memberships_url === null) {
-    throw new HttpStatusError(
-      403,
-      'LTI 1.3 course instance context_memberships_url not configured',
-    );
-  }
-
-  const url = appendRlidToMembershipsUrl(lti13_course_instance.context_memberships_url, rlid);
+  const url = getLti13RosterUrl(instance, rlid);
 
   job.info(
     `Fetching roster for ${lti13_instance.name}: ${lti13_course_instance.context_label ?? '(no context label)'}`,
@@ -1004,16 +1007,9 @@ export async function inspectRoster({
     job.info('No resource link id selected; fetching a plain roster (no custom claims).');
   }
 
-  const token = await getAccessToken(lti13_instance.id);
-  const fetchArray = await fetchRetryPaginated(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
-    },
-  });
+  const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-  const members = fetchArray
+  const members = rawRosterPages
     .flatMap((container) => {
       const parsed = z.object({ members: z.array(z.unknown()).optional() }).safeParse(container);
       return parsed.success ? (parsed.data.members ?? []) : [];

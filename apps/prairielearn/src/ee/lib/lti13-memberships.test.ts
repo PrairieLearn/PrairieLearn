@@ -4,7 +4,6 @@ import {
   ContextMembershipSchema,
   Lti13MembershipIndex,
   type Lti13MembershipLookupUser,
-  RosterMemberSchema,
   STUDENT_ROLE,
   resolveRosterMemberUin,
 } from './lti13-memberships.js';
@@ -115,11 +114,15 @@ describe('Lti13MembershipIndex', () => {
 });
 
 describe('resolveRosterMemberUin', () => {
-  test.each(['', ' ', ' matching-uin ', '$Canvas.user.sisIntegrationId', 'prefix$value', 123])(
-    'rejects an invalid or unexpanded value: %j',
-    (uin) => {
-      const member = RosterMemberSchema.parse(makeMember({ sub: 'sub', uin }));
-      expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
-    },
-  );
+  test.each([
+    '',
+    ' ',
+    ' matching-uin ',
+    '$Canvas.user.sisIntegrationId',
+    ['prefix-', '$', '{Canvas.user.sisIntegrationId}'].join(''),
+    123,
+  ])('rejects an invalid or unexpanded value: %j', (uin) => {
+    const member = makeMember({ sub: 'sub', uin });
+    expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
+  });
 });

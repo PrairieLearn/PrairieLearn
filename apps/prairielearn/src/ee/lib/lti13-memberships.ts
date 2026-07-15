@@ -94,6 +94,8 @@ export function resolveRosterMemberUin(
   const value = get(claims, uin_attribute);
   if (typeof value !== 'string') return null;
 
+  // LTI leaves unsupported substitution variables unresolved. Canvas also supports
+  // embedded `${...}` substitutions, so reject any `$`, not only a leading one.
   return value.length > 0 && value === value.trim() && !value.includes('$') ? value : null;
 }
 

@@ -649,6 +649,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       );
 
       const capturedRlids: (string | undefined)[] = [];
+      const capturedAuthorizationHeaders: (string | undefined)[] = [];
+      const capturedAcceptHeaders: (string | undefined)[] = [];
       const app = express();
       app.use(express.urlencoded({ extended: true }));
       app.post('/token', (_req, res) => {
@@ -661,6 +663,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
       app.get('/memberships', (req, res) => {
         capturedRlids.push(typeof req.query.rlid === 'string' ? req.query.rlid : undefined);
+        capturedAuthorizationHeaders.push(req.get('authorization'));
+        capturedAcceptHeaders.push(req.get('accept'));
         res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
         res.json({
           id: membershipsUrl,
@@ -739,6 +743,14 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
 
       // The custom run appended the chosen rlid; the lis run requested a plain roster.
       assert.deepEqual(capturedRlids, ['rl-course-nav', undefined]);
+      assert.deepEqual(capturedAuthorizationHeaders, [
+        'Bearer roster-inspector-token',
+        'Bearer roster-inspector-token',
+      ]);
+      assert.deepEqual(capturedAcceptHeaders, [
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+      ]);
 
       const customJobs = await selectJobsByJobSequenceId(customJob.jobSequenceId);
       assert.lengthOf(customJobs, 1);
