@@ -304,7 +304,7 @@ function validateDueDate(date: string | null): string | undefined {
 
 function validateIntegerCredit(
   credit: number,
-  { min = 0, max, rangeMessage }: { min?: number; max: number; rangeMessage: string },
+  { min, max, rangeMessage }: { min: number; max: number; rangeMessage: string },
 ): string | undefined {
   if (Number.isNaN(credit)) return 'Credit is required';
   if (!Number.isFinite(credit)) return 'Credit must be a finite number';
@@ -319,6 +319,7 @@ function validateDueCredit(value: number | null, customCredit: boolean): string 
     return undefined;
   }
   return validateIntegerCredit(value, {
+    min: 0,
     max: 200,
     rangeMessage: 'Credit must be between 0% and 200%',
   });
@@ -437,6 +438,7 @@ function validateDeadlineArray({
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue): string | undefined {
   if (!value.allowSubmissions) return undefined;
   return validateIntegerCredit(value.credit, {
+    min: 0,
     max: 100,
     rangeMessage: 'Credit after the due date must be 0-100%',
   });
