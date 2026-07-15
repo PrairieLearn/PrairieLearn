@@ -119,6 +119,16 @@ Most of these prerequisites can be installed using the package manager of your O
   make python-deps
   ```
 
+  ??? note "Error on pygraphviz for newer versions of gcc"
+
+      For some newer versions of gcc, the `pygraphviz` package may fail to install. If you encounter this error, you can try this command:
+
+      ```sh
+      CFLAGS="-Wno-error=incompatible-pointer-types" make python-deps
+      ```
+
+      This error should only happen the first time you install pygraphviz. For following calls to `make python-deps`, you should not need to set the `CFLAGS` environment variable.
+
 - Install all dependencies and transpile local packages:
 
   ```sh
