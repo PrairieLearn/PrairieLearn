@@ -5,7 +5,6 @@ import {
 } from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be at most 100%.';
-const CREDIT_ORDERING_MESSAGE = 'Credit must strictly decrease over time.';
 
 export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
@@ -452,7 +451,6 @@ export function validateGlobalCreditConsistencyIssues(
     );
     if (postDueEntry) {
       pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
-      continue;
     }
 
     for (let i = 1; i < effectiveEntries.length; i++) {
@@ -464,8 +462,12 @@ export function validateGlobalCreditConsistencyIssues(
 
       const issueEntry = chooseEffectiveIssueEntry(validationRule, current, previous);
       if (!issueEntry) continue;
-      pushIssue(issues, issueEntry.validationRule, issueEntry.path, CREDIT_ORDERING_MESSAGE);
-      break;
+      pushIssue(
+        issues,
+        issueEntry.validationRule,
+        issueEntry.path,
+        'Credit must strictly decrease over time.',
+      );
     }
   }
 
@@ -755,15 +757,13 @@ export function validateRuleCreditOrderingIssues(
   );
   if (postDueEntry) {
     pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
-    return issues;
   }
 
   for (let i = 1; i < entries.length; i++) {
     if (isValidCreditTransition(entries[i - 1], entries[i])) {
       continue;
     }
-    pushIssue(issues, validationRule, entries[i].path, CREDIT_ORDERING_MESSAGE);
-    break;
+    pushIssue(issues, validationRule, entries[i].path, 'Credit must strictly decrease over time.');
   }
 
   return issues;
@@ -777,11 +777,13 @@ export function validateRuleCreditOrdering(
   rule: AccessControlJson,
   targetType: AccessControlRuleTargetType = 'none',
 ): string[] {
-  return validateRuleCreditOrderingIssues({
+  // The legacy string API returns one message; path-aware callers use the issue API above.
+  const [issue] = validateRuleCreditOrderingIssues({
     rule,
     targetType,
     ruleIndex: 0,
-  }).map((issue) => issue.message);
+  });
+  return issue ? [issue.message] : [];
 }
 
 /**

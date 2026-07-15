@@ -20,8 +20,6 @@ import {
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
 
-const CREDIT_ORDERING_MESSAGE = 'Credit must strictly decrease over time.';
-
 function uuidForIndex(index: number): string {
   return `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
 }
@@ -960,7 +958,7 @@ describe('Credit ordering validation', () => {
   ])('rejects $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleCreditOrdering(rule);
-    assert.isTrue(errors.includes(CREDIT_ORDERING_MESSAGE));
+    assert.isTrue(errors.includes('Credit must strictly decrease over time.'));
   });
 
   it.each([
@@ -1273,7 +1271,7 @@ describe('Global credit validation', () => {
       },
     );
 
-    assert.isTrue(messages.includes(CREDIT_ORDERING_MESSAGE));
+    assert.isTrue(messages.includes('Credit must strictly decrease over time.'));
   });
 
   it('accepts override late deadline credit equal to inherited due credit', () => {
@@ -1356,7 +1354,7 @@ describe('Global credit validation', () => {
       },
     );
 
-    assert.isTrue(messages.includes(CREDIT_ORDERING_MESSAGE));
+    assert.isTrue(messages.includes('Credit must strictly decrease over time.'));
   });
 
   it('accepts afterLastDeadline credit equal to inherited due credit without late deadlines', () => {

@@ -180,6 +180,61 @@ describe('getGlobalDateValidationErrors', () => {
     });
   });
 
+  it('reports independent early and late credit-ordering errors', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData([], {
+        earlyDeadlines: [
+          { date: '2024-04-08T00:00:00', credit: 110 },
+          { date: '2024-04-09T00:00:00', credit: 110 },
+        ],
+        lateDeadlines: [
+          { date: '2024-04-11T00:00:00', credit: 100 },
+          { date: '2024-04-12T00:00:00', credit: 100 },
+        ],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.earlyDeadlines.1.credit',
+      message: 'Credit must strictly decrease over time.',
+    });
+    expect(errors).toContainEqual({
+      path: 'defaultRule.lateDeadlines.1.credit',
+      message: 'Credit must strictly decrease over time.',
+    });
+  });
+
+  it('reports multiple inherited credit-ordering errors on an override', () => {
+    const errors = getGlobalDateValidationErrors(
+      makeFormData(
+        [
+          makeOverride({
+            overriddenFields: ['lateDeadlines'],
+            lateDeadlines: [
+              { date: '2024-04-11T00:00:00', credit: 90 },
+              { date: '2024-04-12T00:00:00', credit: 60 },
+            ],
+          }),
+        ],
+        {
+          due: { date: '2024-04-10T00:00:00', credit: 80, customCredit: true },
+          afterLastDeadline: { allowSubmissions: true, credit: 70 },
+        },
+      ),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'overrides.0.lateDeadlines.0.credit',
+      message: 'Credit must strictly decrease over time.',
+    });
+    expect(errors).toContainEqual({
+      path: 'overrides.0.lateDeadlines.1.credit',
+      message: 'Credit must strictly decrease over time.',
+    });
+  });
+
   it('allows after-complete overrides without an automatic completion mechanism', () => {
     const errors = getGlobalDateValidationErrors(
       makeFormData(
@@ -267,6 +322,28 @@ describe('getAccessControlFormValidationErrors', () => {
     expect(errors).toContainEqual({
       path: 'defaultRule.earlyDeadlines.0.credit',
       message: 'Early deadline credit must be 101-200%',
+    });
+  });
+
+  it('reports ordering errors independently of post-due range errors', () => {
+    const errors = getAccessControlFormValidationErrors(
+      makeFormData([], {
+        earlyDeadlines: [
+          { date: '2024-04-08T00:00:00', credit: 110 },
+          { date: '2024-04-09T00:00:00', credit: 110 },
+        ],
+        lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 105 }],
+      }),
+      TEST_TIMEZONE,
+    );
+
+    expect(errors).toContainEqual({
+      path: 'defaultRule.earlyDeadlines.1.credit',
+      message: 'Credit must strictly decrease over time.',
+    });
+    expect(errors).toContainEqual({
+      path: 'defaultRule.lateDeadlines.0.credit',
+      message: 'Credit after the due date must be 0-100%',
     });
   });
 
