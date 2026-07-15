@@ -25,9 +25,9 @@ function makeUser(
   };
 }
 
-function makeMember(user_id: string, { email, uin }: { email?: string; uin?: unknown } = {}) {
+function makeMember({ sub, email, uin }: { sub: string; email?: string; uin?: unknown }) {
   return {
-    user_id,
+    user_id: sub,
     roles: [STUDENT_ROLE],
     ...(email === undefined ? {} : { email }),
     ...(uin === undefined
@@ -49,9 +49,9 @@ describe('Lti13MembershipIndex', () => {
   test('uses a stored sub without rematching or replacing it', () => {
     const user = makeUser('sub', { lti13_sub: 'canonical-sub', uin: 'matching-uin' });
     const members = [
-      makeMember('canonical-sub'),
-      makeMember('different-uin-sub', { uin: user.uin ?? undefined }),
-      makeMember('different-email-sub', { email: user.email ?? undefined }),
+      makeMember({ sub: 'canonical-sub' }),
+      makeMember({ sub: 'different-uin-sub', uin: user.uin ?? undefined }),
+      makeMember({ sub: 'different-email-sub', email: user.email ?? undefined }),
     ];
 
     expect(makeIndex(members).lookup(user)).toMatchObject({
@@ -64,8 +64,8 @@ describe('Lti13MembershipIndex', () => {
   test('uses an institution-scoped UIN before email', () => {
     const user = makeUser('uin', { uin: 'matching-uin' });
     const index = makeIndex([
-      makeMember('uin-sub', { uin: user.uin ?? undefined }),
-      makeMember('different-email-sub', { email: user.email ?? undefined }),
+      makeMember({ sub: 'uin-sub', uin: user.uin ?? undefined }),
+      makeMember({ sub: 'different-email-sub', email: user.email ?? undefined }),
     ]);
 
     expect(index.lookup(user)).toMatchObject({
@@ -81,9 +81,9 @@ describe('Lti13MembershipIndex', () => {
   test('rejects an ambiguous UIN instead of falling back to email', () => {
     const user = makeUser('duplicate-uin', { uin: 'duplicate-uin' });
     const index = makeIndex([
-      makeMember('uin-sub-1', { uin: user.uin ?? undefined }),
-      makeMember('uin-sub-2', { uin: user.uin ?? undefined }),
-      makeMember('email-sub', { email: user.email ?? undefined }),
+      makeMember({ sub: 'uin-sub-1', uin: user.uin ?? undefined }),
+      makeMember({ sub: 'uin-sub-2', uin: user.uin ?? undefined }),
+      makeMember({ sub: 'email-sub', email: user.email ?? undefined }),
     ]);
 
     expect(index.lookup(user)).toBeNull();
@@ -93,7 +93,7 @@ describe('Lti13MembershipIndex', () => {
     'retains the unique %s-to-roster-email fallback',
     (field) => {
       const user = makeUser(field, { uin: 'not-in-roster' });
-      const index = makeIndex([makeMember('email-sub', { email: user[field] ?? undefined })]);
+      const index = makeIndex([makeMember({ sub: 'email-sub', email: user[field] ?? undefined })]);
 
       expect(index.lookup(user)).toMatchObject({
         matchedBy: 'email',
@@ -105,8 +105,8 @@ describe('Lti13MembershipIndex', () => {
   test('rejects duplicate email and absent members', () => {
     const user = makeUser('duplicate-email');
     const index = makeIndex([
-      makeMember('email-sub-1', { email: user.email ?? undefined }),
-      makeMember('email-sub-2', { email: user.email ?? undefined }),
+      makeMember({ sub: 'email-sub-1', email: user.email ?? undefined }),
+      makeMember({ sub: 'email-sub-2', email: user.email ?? undefined }),
     ]);
 
     expect(index.lookup(user)).toBeNull();
@@ -118,7 +118,7 @@ describe('resolveRosterMemberUin', () => {
   test.each(['', ' ', ' matching-uin ', '$Canvas.user.sisIntegrationId', 'prefix$value', 123])(
     'rejects an invalid or unexpanded value: %j',
     (uin) => {
-      const member = RosterMemberSchema.parse(makeMember('sub', { uin }));
+      const member = RosterMemberSchema.parse(makeMember({ sub: 'sub', uin }));
       expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
     },
   );
