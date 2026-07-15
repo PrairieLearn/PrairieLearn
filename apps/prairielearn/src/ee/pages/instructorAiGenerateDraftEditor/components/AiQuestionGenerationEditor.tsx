@@ -6,6 +6,7 @@ import { run } from '@prairielearn/run';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import { DRAFT_QID_PREFIX } from '../../../../lib/draft-question.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -15,7 +16,7 @@ import {
   type NewVariantHandle,
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
-import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import { QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 
 async function fetchQuestionFiles(
   urlPrefix: string,

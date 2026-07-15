@@ -286,14 +286,14 @@
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image."
         },
         "port": {
+          "description": "The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.",
           "type": "integer",
-          "minimum": -9007199254740991,
-          "maximum": 9007199254740991,
-          "description": "The port number used in the Docker image."
+          "minimum": 1,
+          "maximum": 65535
         },
         "home": {
-          "type": "string",
-          "description": "The home directory of the workspace container."
+          "description": "The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.",
+          "type": "string"
         },
         "args": {
           "anyOf": [
@@ -310,9 +310,8 @@
           "description": "Command line arguments to pass to the Docker container."
         },
         "rewriteUrl": {
-          "default": true,
           "type": "boolean",
-          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /."
+          "description": "Controls whether workspace request URLs are rewritten before reaching the container. If not specified, the setting is retrieved from the workspace image labels."
         },
         "gradedFiles": {
           "default": [],
@@ -335,9 +334,16 @@
             "type": "string"
           },
           "additionalProperties": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "description": "Environment variables to set inside the workspace container."
+          "description": "Environment variables to set inside the workspace container. Use a null value to unset a variable."
         },
         "syncIgnore": {
           "type": "array",
@@ -349,7 +355,7 @@
           "deprecated": true
         }
       },
-      "required": ["image", "port", "home"],
+      "required": ["image"],
       "additionalProperties": false,
       "description": "Options for workspace questions."
     },

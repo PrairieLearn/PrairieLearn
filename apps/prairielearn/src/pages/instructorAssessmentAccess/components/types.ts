@@ -127,6 +127,7 @@ export interface DefaultRuleData {
 // to `undefined` (the value silently reverts).
 export interface OverrideData {
   id?: string;
+  uuid: string;
   trackingId: string;
   appliesTo: AppliesTo;
   overriddenFields: OverridableFieldName[];
@@ -153,27 +154,6 @@ export function isOverrideEditable(
   if (!permissions.canEditAccessSettings) return false;
   if (override?.appliesTo.targetType === 'enrollment') return permissions.canEditEnrollmentRules;
   return true;
-}
-
-/**
- * The default rule has a completion mechanism when something can actually
- * close the assessment: a due date, a late deadline, a duration limit, or a
- * PrairieTest exam. `dateControlEnabled` alone is not sufficient — a rule
- * with only a release date or password has date control "on" but nothing to
- * trigger completion. Mirrors the server-side `getCompletionMechanismTypes`
- * in `validation.ts`. Used to gate after-complete UI and serialization on
- * the default rule.
- */
-export function defaultRuleHasCompletionMechanism(
-  rule: Pick<
-    DefaultRuleData,
-    'dateControlEnabled' | 'due' | 'lateDeadlines' | 'durationMinutes' | 'prairieTestExams'
-  >,
-): boolean {
-  const hasDateControlMechanism =
-    rule.dateControlEnabled &&
-    (rule.due.date !== null || rule.lateDeadlines.length > 0 || rule.durationMinutes !== null);
-  return hasDateControlMechanism || rule.prairieTestExams.length > 0;
 }
 
 /**
@@ -270,6 +250,10 @@ export function jsonToOverrideFormData(
   json: AccessControlJsonWithId,
   displayTimezone: string,
 ): OverrideData {
+  if (json.uuid == null) {
+    throw new Error('Non-default access control rules must have a UUID.');
+  }
+
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
@@ -371,7 +355,8 @@ export function jsonToOverrideFormData(
 
   return {
     id: json.id,
-    trackingId: json.id ?? crypto.randomUUID(),
+    uuid: json.uuid,
+    trackingId: json.id ?? json.uuid,
     appliesTo,
     overriddenFields,
     release,
@@ -467,16 +452,15 @@ function defaultRuleToJson(rule: DefaultRuleData): AccessControlJsonWithId {
   }
 
   // Only write afterComplete when values differ from defaults
-  // (questions.hidden: true, score.hidden: false) AND there is a
-  // completion mechanism (dateControl or PrairieTest). Without one,
-  // after-complete settings are meaningless and would fail validation.
-  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
+  // (questions.hidden: true, score.hidden: false). These settings can apply
+  // even without a scheduled deadline when an instructor manually closes a
+  // student's assessment instance.
   const qv = rule.questionVisibility;
   const sv = rule.scoreVisibility;
   const hasNonDefaultQuestions = isNonDefaultQuestionVisibility(qv);
   const hasNonDefaultScore = isNonDefaultScoreVisibility(sv);
 
-  if (hasCompletionMechanism && (hasNonDefaultQuestions || hasNonDefaultScore)) {
+  if (hasNonDefaultQuestions || hasNonDefaultScore) {
     output.afterComplete = {};
     if (hasNonDefaultQuestions) {
       output.afterComplete.questions = qv.hidden
@@ -512,6 +496,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const output: AccessControlJsonWithId = {
     id: rule.id,
+    uuid: rule.uuid,
     labels,
   };
 
@@ -580,6 +565,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
 
 export function createDefaultOverrideFormData(defaultRule?: DefaultRuleData): OverrideData {
   return {
+    uuid: crypto.randomUUID(),
     trackingId: crypto.randomUUID(),
     appliesTo: {
       targetType: 'enrollment',

@@ -105,6 +105,8 @@ lint-dependencies:
 
 check-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts check
+check-element-schemas:
+	@pnpm dlx tsx scripts/gen-element-schemas.mts check
 compile-badge-colors:
 	@npx sass --no-source-map apps/prairielearn/public/stylesheets/colors.scss apps/prairielearn/public/stylesheets/colors.css
 	@pnpm prettier --write apps/prairielearn/public/stylesheets/colors.css
@@ -112,8 +114,14 @@ check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-helper-dependencies:
+	@uv run python scripts/sync-python-helper-dependencies.py --check
+update-python-helper-dependencies:
+	@uv run python scripts/sync-python-helper-dependencies.py
 update-jsonschema:
 	@pnpm dlx tsx scripts/gen-jsonschema.mts
+update-element-schemas:
+	@pnpm dlx tsx scripts/gen-element-schemas.mts
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
@@ -219,7 +227,7 @@ lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 build-docs:
 	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs build --strict
 dev-docs:
-	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 DISABLE_MKDOCS_2_WARNING=true uv run mkdocs serve --livereload --dev-addr "127.0.0.1:$$(( $${CONDUCTOR_PORT:-7999} + 1 ))"
 
 format-d2:
 	@d2 fmt docs/**/*.d2

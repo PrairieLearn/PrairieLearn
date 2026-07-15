@@ -27,6 +27,7 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getAssessmentLogsUrl,
   getAssessmentStudentsUrl,
+  getCourseInstanceSettingsUrl,
   getQuestionSettingsUrl,
 } from '../../lib/client/url.js';
 import type { AssessmentToolsConfig } from '../../lib/editors.js';
@@ -125,6 +126,7 @@ interface SettingsFormValues {
   text?: string;
   allow_issue_reporting: boolean;
   allow_personal_notes: boolean;
+  showQuestionTitles: boolean;
   multiple_instance: boolean;
   auto_close: boolean;
   require_honor_code: boolean;
@@ -221,6 +223,7 @@ export function InstructorAssessmentSettings({
           zonePointsRange={zonePointsRange}
           setZonePointsRange={setZonePointsRange}
           nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
+          courseInstanceSharedPublicly={courseInstance.share_source_publicly}
           questionSharingEnabled={questionSharingEnabled}
           hasInstances={hasInstances}
           typeChangeMessage={typeChangeMessage}
@@ -672,6 +675,7 @@ function InstructorAssessmentSettingsInner({
   zonePointsRange,
   setZonePointsRange,
   nonPublicQuestionsInAssessment,
+  courseInstanceSharedPublicly,
   questionSharingEnabled,
   hasInstances,
   typeChangeMessage,
@@ -680,6 +684,7 @@ function InstructorAssessmentSettingsInner({
   setCurrentOrigHash: (hash: string) => void;
   setAssessment: (assessment: StaffAssessment) => void;
   setZonePointsRange: (range: { min: number; max: number }) => void;
+  courseInstanceSharedPublicly: boolean;
   typeChangeMessage: string | null;
   setTypeChangeMessage: (message: string | null) => void;
 }) {
@@ -707,6 +712,7 @@ function InstructorAssessmentSettingsInner({
     text: assessment.text ?? '',
     allow_issue_reporting: assessment.allow_issue_reporting ?? true,
     allow_personal_notes: assessment.allow_personal_notes,
+    showQuestionTitles: assessment.show_question_titles,
     multiple_instance: assessment.multiple_instance,
     auto_close: assessment.auto_close ?? true,
     require_honor_code: assessment.require_honor_code ?? true,
@@ -792,6 +798,15 @@ function InstructorAssessmentSettingsInner({
       {
         onSuccess: (result) => {
           setCurrentOrigHash(result.origHash);
+          // The sharing card reflects `assessment.share_source_publicly` (not form
+          // state), and the mutation returns only the new hash, so mirror the saved
+          // value onto `assessment` to avoid showing stale sharing status until the
+          // next page load. `??` keeps the current value when the field was omitted
+          // (e.g. a disabled checkbox).
+          setAssessment({
+            ...assessment,
+            share_source_publicly: data.share_source_publicly ?? assessment.share_source_publicly,
+          });
           reset(data);
           setUseCustomMaxPoints(data.max_points !== '');
         },
@@ -1388,7 +1403,7 @@ function InstructorAssessmentSettingsInner({
                   Allow students to report issues for assessment questions.
                 </div>
               </div>
-              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
+              <div className="form-check mb-3">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -1403,6 +1418,24 @@ function InstructorAssessmentSettingsInner({
                 </label>
                 <div id="allow-personal-notes-help" className="small text-muted">
                   Allow students to upload personal notes for this assessment.
+                </div>
+              </div>
+              <div className={clsx('form-check', assessment.type === 'Exam' && 'mb-3')}>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="show_question_titles"
+                  aria-describedby="show-question-titles-help"
+                  disabled={!canEdit}
+                  defaultChecked={defaultValues.showQuestionTitles}
+                  {...register('showQuestionTitles')}
+                />
+                <label className="form-check-label" htmlFor="show_question_titles">
+                  Show question titles to students
+                </label>
+                <div id="show-question-titles-help" className="small text-muted">
+                  Question titles can help students identify questions, but may contain topic names
+                  or other context intended only for staff.
                 </div>
               </div>
               {assessment.type === 'Exam' && (
@@ -1525,6 +1558,14 @@ function InstructorAssessmentSettingsInner({
               publicLink={publicLink}
               entityNoun="assessment"
               childNoun="questions"
+              unshareBlock={
+                assessment.share_source_publicly && courseInstanceSharedPublicly
+                  ? {
+                      parentNoun: 'course instance',
+                      href: getCourseInstanceSettingsUrl(assessment.course_instance_id),
+                    }
+                  : undefined
+              }
             />
           )}
 

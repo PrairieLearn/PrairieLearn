@@ -10,7 +10,6 @@ import type { Entry } from 'fast-glob';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
-import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -201,7 +200,7 @@ async function controlContainer(
 
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError(((await res.json()) as any).message);
+      throw new SubmissionFormatError((await res.json()).message);
     }
 
     const body = res.body;
@@ -216,26 +215,15 @@ async function controlContainer(
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    const stream = fs.createWriteStream(zipPath);
 
-    return new Promise((resolve, reject) => {
-      stream
-        .on('open', () => {
-          body.pipe(stream);
-        })
-        .on('error', (err) => {
-          reject(err);
-        })
-        .on('finish', () => {
-          resolve(zipPath);
-        });
-    });
+    await fsPromises.writeFile(zipPath, body);
+    return zipPath;
   }
 
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = (await res.json()) as any;
+  const json = await res.json();
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
@@ -373,16 +361,24 @@ async function startup(workspace_id: string): Promise<void> {
   // already trying to assign this host to a workspace.
   if (!shouldAssignHost) return;
 
-  let workspace_host_id: string | null = null;
   let attempt = 0;
   while (true) {
     if (attempt > config.workspaceLaunchingRetryAttempts) {
       throw new Error('Time exceeded to deploy more computational resources');
     }
-    workspace_host_id = await assignHost(workspace_id);
-    if (workspace_host_id != null) {
-      break; // success, we got a host
+
+    if (await assignHost(workspace_id)) {
+      // Success, we got a host.
+      break;
     }
+
+    if (!config.workspaceAutoscalingEnabled) {
+      // If no autoscaler is running, there won't be any new hosts after retrying.
+      throw new Error(
+        'No workspace host is available. Ensure the workspace-host process is running ',
+      );
+    }
+
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
     await workspaceUtils.updateWorkspaceMessage(
       workspace_id,
@@ -391,6 +387,7 @@ async function startup(workspace_id: string): Promise<void> {
     await sleep(config.workspaceLaunchingRetryIntervalSec * 1000);
     attempt++;
   }
+
   await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Sending launch command to host');
   await controlContainer(workspace_id, 'init', { useInitialZip });
 }

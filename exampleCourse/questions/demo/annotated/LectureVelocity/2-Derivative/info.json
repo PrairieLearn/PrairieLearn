@@ -5,10 +5,5 @@
   "type": "v3",
   "tags": ["mfsilva", "Sp21"],
   "singleVariant": true,
-  "workspaceOptions": {
-    "image": "prairielearn/workspace-jupyterlab-python",
-    "port": 8080,
-    "home": "/home/jovyan",
-    "rewriteUrl": false
-  }
+  "workspaceOptions": { "image": "prairielearn/workspace-jupyterlab-python" }
 }

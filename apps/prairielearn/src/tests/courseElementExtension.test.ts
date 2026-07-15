@@ -14,7 +14,7 @@ import type { ElementExtensionNameDirMap } from '../question-servers/freeform.js
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
-describe('Course element extensions', { timeout: 60_000 }, function () {
+describe('Course element extensions', { timeout: 60_000, concurrent: false }, function () {
   describe('Extensions can be loaded', function () {
     const extDir = path.resolve(EXAMPLE_COURSE_PATH, 'elementExtensions');
     const element = 'extendable-element';
@@ -95,10 +95,10 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
     const incImg =
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
-    test.sequential('find the example question in the database', async () => {
+    test('find the example question in the database', async () => {
       locals.question = await selectQuestionByQid({ qid: testQid, course_id: '1' });
     });
-    test.sequential('check the question page for extension css and js files', async () => {
+    test('check the question page for extension css and js files', async () => {
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
@@ -128,7 +128,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
         incDynamicJs,
       );
     });
-    test.sequential('check the question page for a client-side image', async () => {
+    test('check the question page for a client-side image', async () => {
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);

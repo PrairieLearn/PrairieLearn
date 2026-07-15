@@ -28,19 +28,27 @@ def generate(data):
 | `indent`            | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                                                   |
 | `no-highlight`      | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                                     |
 | `params-name`       | string  | —       | The name of the key in `data["params"]` to get a value from.                                                                                                                                                                                                                                     |
-| `prefix`            | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `prefix`            | string  | (empty) | Any prefix to add before the output.                                                                                                                                                                                                                                                             |
 | `prefix-newline`    | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                                              |
 | `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                  |
-| `sort-dicts`        | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                                                  |
-| `suffix`            | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `sort-dicts`        | boolean | false   | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                                                  |
+| `suffix`            | string  | (empty) | Any suffix to append to the output.                                                                                                                                                                                                                                                              |
 | `suffix-newline`    | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                                        |
 | `width`             | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                                           |
+
+### Migrating from deprecated attributes
+
+The following deprecated attributes are still supported for backward compatibility:
+
+| Old syntax          | New syntax                    |
+| ------------------- | ----------------------------- |
+| `compact="<value>"` | `compact-sequences="<value>"` |
+
+Printing Pandas DataFrames with this element is deprecated, along with the `text`, `show-header`, `show-index`, and `show-dimensions` attributes that controlled that display. Please use the new [`pl-dataframe`](pl-dataframe.md) element instead.
 
 ## Details
 
 The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](../question/server.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
-
-Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](pl-dataframe.md) element for this purpose.
 
 ## Example implementations
 

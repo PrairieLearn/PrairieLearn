@@ -390,12 +390,14 @@ function AddUsersModal({
   const [courseRole, setCourseRole] = useState<CourseRole>('None');
   const [instanceRoles, setInstanceRoles] = useState<Record<string, string>>({});
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [uidError, setUidError] = useState<string | null>(null);
 
   const resetState = () => {
     setUidText('');
     setCourseRole('None');
     setInstanceRoles({});
     setWarnings([]);
+    setUidError(null);
     mutation.reset();
   };
 
@@ -418,6 +420,16 @@ function AddUsersModal({
     e.preventDefault();
     setWarnings([]);
     const uids = uidText.split(/[,;\s]+/).filter(Boolean);
+
+    if (uids.length === 0) {
+      setUidError('Enter at least one UID.');
+      return;
+    }
+    if (uids.length > uidsLimit) {
+      setUidError(`Enter at most ${uidsLimit} UIDs at a time. You entered ${uids.length}.`);
+      return;
+    }
+    setUidError(null);
 
     const courseInstanceChanges = Object.entries(instanceRoles)
       .filter((entry): entry is [string, 'Student Data Viewer' | 'Student Data Editor'] =>
@@ -450,14 +462,23 @@ function AddUsersModal({
               UIDs:
             </label>
             <textarea
-              className="form-control"
+              className={clsx('form-control', uidError && 'is-invalid')}
               id="addUsersInputUid"
               placeholder="staff1@example.com, staff2@example.com"
               aria-describedby="addUsersInputUidHelp"
+              aria-invalid={uidError ? true : undefined}
+              aria-errormessage={uidError ? 'addUsersInputUid-error' : undefined}
               value={uidText}
-              required
-              onChange={(e) => setUidText(e.target.value)}
+              onChange={(e) => {
+                setUidText(e.target.value);
+                setUidError(null);
+              }}
             />
+            {uidError && (
+              <div id="addUsersInputUid-error" className="invalid-feedback">
+                {uidError}
+              </div>
+            )}
             <small id="addUsersInputUidHelp" className="form-text text-muted">
               Enter up to {uidsLimit} UIDs separated by commas, semicolons, or whitespace.
             </small>
@@ -482,7 +503,7 @@ function AddUsersModal({
           </div>
           {courseInstances.length > 0 && (
             <>
-              <h6 className="font-weight-bolder">Student data access</h6>
+              <h6 className="fw-bolder">Student data access</h6>
               <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 <table className="table table-borderless table-sm align-middle mb-0">
                   <tbody>
@@ -685,7 +706,7 @@ function BulkEditAccessModal({
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <h6 className="font-weight-bolder" id="course-role-label">
+        <h6 className="fw-bolder" id="course-role-label">
           Course content access
         </h6>
         <select
@@ -704,7 +725,7 @@ function BulkEditAccessModal({
 
         {courseInstances.length > 0 && (
           <>
-            <h6 className="font-weight-bolder">Student data access</h6>
+            <h6 className="fw-bolder">Student data access</h6>
             <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
               <table className="table table-borderless table-sm align-middle mb-0">
                 <tbody>

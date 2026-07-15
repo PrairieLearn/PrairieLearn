@@ -9,7 +9,8 @@ import { flash } from '@prairielearn/flash';
 import { run } from '@prairielearn/run';
 
 import { StaffAssessmentSchema } from '../../lib/client/safe-db-types.js';
-import { EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import { type EnumAssessmentType, EnumAssessmentTypeSchema } from '../../lib/db-types.js';
+import { getAssessmentDir, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
@@ -55,6 +56,10 @@ export function settingsScope(json: AssessmentJsonInput) {
 
 const ChangeableAssessmentTypeSchema = EnumAssessmentTypeSchema.extract(['Exam', 'Homework']);
 type ChangeableAssessmentType = z.infer<typeof ChangeableAssessmentTypeSchema>;
+
+function defaultShowQuestionTitles(type: EnumAssessmentType) {
+  return type === 'Homework';
+}
 
 export type TypeChangeLocation =
   | { kind: 'assessment' }
@@ -298,21 +303,6 @@ async function readInfoAssessment(infoAssessmentPath: string): Promise<Assessmen
   }
 }
 
-function infoAssessmentPathFor(
-  course: { path: string },
-  courseInstanceShortName: string,
-  tid: string,
-) {
-  return path.join(
-    course.path,
-    'courseInstances',
-    courseInstanceShortName,
-    'assessments',
-    tid,
-    'infoAssessment.json',
-  );
-}
-
 const updateAssessment = t.procedure
   .use(requireCoursePermissionEdit)
   .input(
@@ -325,6 +315,7 @@ const updateAssessment = t.procedure
       text: z.string().optional(),
       allow_issue_reporting: z.boolean(),
       allow_personal_notes: z.boolean(),
+      showQuestionTitles: z.boolean().optional(),
       multiple_instance: z.boolean(),
       auto_close: z.boolean(),
       require_honor_code: z.boolean(),
@@ -364,18 +355,26 @@ const updateAssessment = t.procedure
       });
     }
 
-    if (
-      locals.question_sharing_enabled &&
-      input.share_source_publicly &&
-      !assessment.share_source_publicly
-    ) {
-      try {
-        await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
-      } catch (err) {
-        if (err instanceof HttpStatusError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+    if (locals.question_sharing_enabled) {
+      if (input.share_source_publicly === true && !assessment.share_source_publicly) {
+        try {
+          await assertAssessmentCanBeSharedPublicly({ assessment_id: assessment.id });
+        } catch (err) {
+          if (err instanceof HttpStatusError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+          }
+          throw err;
         }
-        throw err;
+      } else if (
+        input.share_source_publicly === false &&
+        assessment.share_source_publicly &&
+        course_instance.share_source_publicly
+      ) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'Cannot un-share this assessment publicly because its course instance is publicly shared. Un-share the course instance first.',
+        });
       }
     }
 
@@ -390,14 +389,8 @@ const updateAssessment = t.procedure
       }
     });
 
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir({ course, course_instance, assessment });
+    const infoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
     const prepared = await prepareJsonFileEditor<AssessmentJsonInput>({
       jsonPath: infoAssessmentPath,
@@ -420,6 +413,11 @@ const updateAssessment = t.procedure
           assessmentInfo.allowPersonalNotes,
           input.allow_personal_notes,
           true,
+        );
+        assessmentInfo.showQuestionTitles = propertyValueWithDefault(
+          assessmentInfo.showQuestionTitles,
+          input.showQuestionTitles ?? assessmentInfo.showQuestionTitles,
+          defaultShowQuestionTitles(assessment.type),
         );
 
         assessmentInfo.tools = assessmentInfo.tools ?? {};
@@ -507,8 +505,9 @@ const updateAssessment = t.procedure
         if (locals.question_sharing_enabled) {
           assessmentInfo.shareSourcePublicly = propertyValueWithDefault(
             assessmentInfo.shareSourcePublicly,
-            // If source is already public, preserve that setting regardless of the submitted value.
-            assessment.share_source_publicly || (input.share_source_publicly ?? false),
+            // An omitted value (e.g. disabled checkbox) preserves the current setting;
+            // an explicit value shares or un-shares (validated above).
+            input.share_source_publicly ?? assessment.share_source_publicly,
             false,
           );
         }
@@ -641,7 +640,7 @@ const analyzeTypeChange = t.procedure
     }
 
     const info = await readInfoAssessment(
-      infoAssessmentPathFor(course, course_instance.short_name, assessment.tid!),
+      getAssessmentInfoJsonPath({ course, course_instance, assessment }),
     );
 
     const { blockers, pointsListCollapses, pointsListPromotions } =
@@ -682,20 +681,19 @@ const changeAssessmentType = t.procedure
       });
     }
 
-    const assessmentDir = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name,
-      'assessments',
-      assessment.tid!,
-    );
-    const infoAssessmentPath = path.join(assessmentDir, 'infoAssessment.json');
+    const assessmentDir = getAssessmentDir({ course, course_instance, assessment });
+    const infoAssessmentPath = getAssessmentInfoJsonPath({ course, course_instance, assessment });
 
     const saveResult = await saveJsonFile<AssessmentJsonInput>({
       jsonPath: infoAssessmentPath,
       conflictCheck: { origHash: input.origHash, scope: settingsScope },
       applyChanges: (info) => {
         info.type = input.newType;
+        info.showQuestionTitles = propertyValueWithDefault(
+          info.showQuestionTitles,
+          info.showQuestionTitles,
+          defaultShowQuestionTitles(input.newType),
+        );
 
         if (input.newType === 'Homework') {
           delete info.multipleInstance;

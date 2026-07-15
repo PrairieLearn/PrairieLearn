@@ -366,24 +366,23 @@ export function StudentAssessmentInstance({
                 someQuestionsAllowRealTimeGrading,
               })}
             </thead>
-            <tbody>
-              ${QuestionTableBody({
-                rows: instance_question_rows,
-                courseInstanceId: resLocals.course_instance.id,
-                displayTimezone: resLocals.course_instance.display_timezone,
-                assessmentType: resLocals.assessment.type,
-                someQuestionsAllowRealTimeGrading,
-                someQuestionsForbidRealTimeGrading,
-                hasAutoGradingQuestion: resLocals.has_auto_grading_question,
-                hasManualGradingQuestion: resLocals.has_manual_grading_question,
-                assessmentInstanceOpen: !!resLocals.assessment_instance.open,
-                isGroupAssessment: !!groupConfig,
-                zoneTitleColspan,
-                userGroupRoles,
-                isLockpointCrossable,
-                hasUnmetAdvanceScorePercBeforeLockpoint,
-              })}
-            </tbody>
+            ${QuestionTableBody({
+              rows: instance_question_rows,
+              courseInstanceId: resLocals.course_instance.id,
+              displayTimezone: resLocals.course_instance.display_timezone,
+              assessmentType: resLocals.assessment.type,
+              showQuestionTitles: !!resLocals.assessment.show_question_titles,
+              someQuestionsAllowRealTimeGrading,
+              someQuestionsForbidRealTimeGrading,
+              hasAutoGradingQuestion: resLocals.has_auto_grading_question,
+              hasManualGradingQuestion: resLocals.has_manual_grading_question,
+              assessmentInstanceOpen: !!resLocals.assessment_instance.open,
+              isGroupAssessment: !!groupConfig,
+              zoneTitleColspan,
+              userGroupRoles,
+              isLockpointCrossable,
+              hasUnmetAdvanceScorePercBeforeLockpoint,
+            })}
           </table>
         </div>
 
@@ -555,7 +554,7 @@ function InstanceQuestionTableHeader({
                 <tr>
                   <th rowspan="2">Question</th>
                   <th rowspan="2">Status</th>
-                  <th class="text-center" colspan="2">Auto-grading</th>
+                  <th class="text-center" colspan="2" scope="colgroup">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
@@ -576,7 +575,7 @@ function InstanceQuestionTableHeader({
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" colspan="3">Auto-grading</th>
+                  <th class="text-center" colspan="3" scope="colgroup">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>

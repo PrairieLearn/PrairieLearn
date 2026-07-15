@@ -7,13 +7,8 @@
   "singleVariant": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-r",
-    "port": 8080,
-    "home": "/home/jovyan",
-    "rewriteUrl": false,
     "gradedFiles": ["student.ipynb"],
-    "environment": {
-      "LAUNCH_FILE_NAME": "student.ipynb"
-    }
+    "environment": { "LAUNCH_FILE_NAME": "student.ipynb" }
   },
   "gradingMethod": "External",
   "externalGradingOptions": {

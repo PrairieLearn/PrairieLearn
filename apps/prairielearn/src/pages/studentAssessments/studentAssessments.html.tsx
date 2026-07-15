@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -16,6 +17,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
@@ -39,7 +41,7 @@ export const StudentAssessmentsRowSchema = z.object({
   assessment_instance_open: AssessmentInstanceSchema.shape.open.nullable(),
   assessment_instance_date_limit: AssessmentInstanceSchema.shape.date_limit.nullable(),
   link: z.string(),
-  start_new_assessment_group: z.boolean(),
+  assessment_group_id: IdSchema,
   assessment_group_heading: z.string(),
   show_before_release: z.boolean().optional(),
   will_release_at: z.string().nullable().optional(),
@@ -54,6 +56,21 @@ export function StudentAssessments({
   rows: StudentAssessmentsRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;
+
+  const assessmentGroups: StudentAssessmentsRow[][] = [];
+  rows.forEach((row) => {
+    if (assessmentGroups.length === 0) {
+      assessmentGroups.push([row]);
+    } else {
+      const currentGroup = assessmentGroups[assessmentGroups.length - 1];
+      if (!idsEqual(row.assessment_group_id, currentGroup[0].assessment_group_id)) {
+        assessmentGroups.push([row]);
+      } else {
+        currentGroup.push(row);
+      }
+    }
+  });
+
   return PageLayout({
     resLocals,
     pageTitle: 'Assessments',
@@ -77,57 +94,57 @@ export function StudentAssessments({
                 <th class="text-center">Score</th>
               </tr>
             </thead>
-            <tbody>
-              ${rows.map(
-                (row) => html`
-                  ${row.start_new_assessment_group
-                    ? html`
-                        <tr>
-                          <th colspan="4" scope="row" data-testid="assessment-group-heading">
-                            ${row.assessment_group_heading}
-                          </th>
-                        </tr>
-                      `
-                    : ''}
+            ${assessmentGroups.map(
+              (groupRows) => html`
+                <tbody>
                   <tr>
-                    <td class="align-middle" style="width: 1%">
-                      <span
-                        class="badge color-${row.assessment_set_color}"
-                        data-testid="assessment-set-badge"
-                      >
-                        ${row.label}
-                      </span>
-                    </td>
-                    <td class="align-middle">
-                      ${row.show_before_release
-                        ? html`<span class="text-muted">${row.title}</span>`
-                        : row.multiple_instance_header ||
-                            (!row.active && row.assessment_instance_id == null)
-                          ? row.title
-                          : html`
-                              <a href="${urlPrefix}${row.link}">
-                                ${row.title}
-                                ${row.team_work
-                                  ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                  : ''}
-                              </a>
-                            `}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${AvailableCredit({
-                        row,
-                        displayTimezone: resLocals.course_instance.display_timezone,
-                      })}
-                    </td>
-                    <td class="text-center align-middle">
-                      ${row.multiple_instance_header
-                        ? NewInstanceButton({ urlPrefix, row })
-                        : AssessmentScore(row)}
-                    </td>
+                    <th colspan="4" scope="rowgroup" data-testid="assessment-group-heading">
+                      ${groupRows[0].assessment_group_heading}
+                    </th>
                   </tr>
-                `,
-              )}
-            </tbody>
+                  ${groupRows.map(
+                    (row) => html`
+                      <tr>
+                        <td class="align-middle" style="width: 1%">
+                          <span
+                            class="badge color-${row.assessment_set_color}"
+                            data-testid="assessment-set-badge"
+                          >
+                            ${row.label}
+                          </span>
+                        </td>
+                        <td class="align-middle">
+                          ${row.show_before_release
+                            ? html`<span class="text-muted">${row.title}</span>`
+                            : row.multiple_instance_header ||
+                                (!row.active && row.assessment_instance_id == null)
+                              ? row.title
+                              : html`
+                                  <a href="${urlPrefix}${row.link}">
+                                    ${row.title}
+                                    ${row.team_work
+                                      ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                      : ''}
+                                  </a>
+                                `}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${AvailableCredit({
+                            row,
+                            displayTimezone: resLocals.course_instance.display_timezone,
+                          })}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${row.multiple_instance_header
+                            ? NewInstanceButton({ urlPrefix, row })
+                            : AssessmentScore(row)}
+                        </td>
+                      </tr>
+                    `,
+                  )}
+                </tbody>
+              `,
+            )}
           </table>
         </div>
       </div>

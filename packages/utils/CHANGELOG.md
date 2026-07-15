@@ -1,5 +1,17 @@
 # @prairielearn/utils
 
+## 3.2.2
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.2.1
+
+### Patch Changes
+
+- 1053fc5: Update the archiver test dependency to v8.
+
 ## 3.2.0
 
 ### Minor Changes

@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "allow-blank": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "answers-name": {
+      "type": "string"
+    },
+    "detailed-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "display": {
+      "type": "string",
+      "enum": ["block", "inline"]
+    },
+    "fixed-order": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"order\" attribute instead."
+    },
+    "hide-answer-panel": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use <pl-hide-in-panel> instead."
+    },
+    "hide-help-text": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "hide-letter-keys": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "hide-score-badge": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "inline": {
+      "type": "string",
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use the \"display\" attribute instead."
+    },
+    "max-correct": {
+      "type": "string",
+      "format": "integer"
+    },
+    "max-select": {
+      "type": "string",
+      "format": "integer"
+    },
+    "min-correct": {
+      "type": "string",
+      "format": "integer"
+    },
+    "min-select": {
+      "type": "string",
+      "format": "integer"
+    },
+    "number-answers": {
+      "type": "string",
+      "format": "integer"
+    },
+    "order": {
+      "type": "string",
+      "enum": ["random", "fixed"]
+    },
+    "partial-credit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "boolean",
+          "deprecated": true,
+          "description": "Use partial-credit=\"off|coverage|each-answer|net-correct\" instead."
+        },
+        {
+          "type": "string",
+          "enum": ["off", "coverage", "each-answer", "net-correct"]
+        }
+      ]
+    },
+    "partial-credit-method": {
+      "type": "string",
+      "enum": ["COV", "EDC", "PC"],
+      "deprecated": true,
+      "description": "Use partial-credit=\"coverage|each-answer|net-correct\" instead."
+    },
+    "show-number-correct": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "weight": {
+      "type": "string",
+      "format": "integer"
+    }
+  },
+  "required": ["answers-name"],
+  "additionalProperties": false
+}

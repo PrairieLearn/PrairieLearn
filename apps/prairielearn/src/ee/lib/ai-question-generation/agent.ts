@@ -480,7 +480,10 @@ async function createQuestionGenerationAgent({
             return { errors: ['You must generate a question.html file.'], warnings: [] };
           }
 
-          const { errors, warnings } = validateHTML(files['question.html'], !!files['server.py']);
+          const { errors, warnings } = await validateHTML(
+            files['question.html'],
+            !!files['server.py'],
+          );
 
           // When creating a new question, treat warnings as errors — the AI
           // agent should always fix these issues for freshly generated HTML.

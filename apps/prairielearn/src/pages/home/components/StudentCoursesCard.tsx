@@ -56,7 +56,7 @@ export function StudentCoursesCard({
           </div>
         ) : isDevMode ? (
           <div className="card-body">
-            No courses loaded. Click <strong>"Load from disk"</strong> above and then click
+            No courses loaded. Click <strong>"Load from disk"</strong> above and then click{' '}
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
           </div>
         ) : (

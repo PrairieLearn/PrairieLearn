@@ -12,9 +12,6 @@
   },
   "workspaceOptions": {
     "image": "prairielearn/workspace-jupyterlab-python",
-    "port": 8080,
-    "home": "/home/jovyan",
-    "rewriteUrl": false,
     "gradedFiles": ["Markov-Chains-3.ipynb"]
   }
 }

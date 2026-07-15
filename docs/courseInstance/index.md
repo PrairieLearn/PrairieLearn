@@ -85,7 +85,7 @@ You can extend the end date of the course instance to particular students by cre
 
 !!! warning "`allowAccess` is deprecated"
 
-    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (2) set the end date to a date _before_ the overall end date. The new system does not support these features.
+    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (3) set the end date to a date _before_ the overall end date. The new system does not support these features.
 
 ### Controlling access by institution
 
@@ -317,7 +317,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](../assessment/accessControl.md) for more details.
+It is also necessary to add an `allowAccess` rule in `infoCourseInstance.json` with `"institution": "LTI"`. See [controlling access by institution](#controlling-access-by-institution) for more details.
 
 ### LTI linking into an assessment
 

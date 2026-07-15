@@ -19,7 +19,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
-import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
+import { AssessmentSetsPage } from './components/AssessmentSetsPage.js';
 import {
   InstructorCourseAdminSetFormRowSchema,
   InstructorCourseAdminSetRowSchema,
@@ -175,14 +175,7 @@ router.post(
         }
 
         return new MultiEditor({ locals: res.locals, description: 'Update assessment sets' }, [
-          ...renames.map(
-            (r) =>
-              new AssessmentSetRenameEditor({
-                locals: res.locals,
-                oldName: r.oldName,
-                newName: r.newName,
-              }),
-          ),
+          new AssessmentSetRenameEditor({ locals: res.locals, renames }),
           fileModifyEditor,
         ]);
       });

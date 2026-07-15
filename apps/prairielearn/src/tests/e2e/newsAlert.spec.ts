@@ -1,7 +1,7 @@
 import { setNewsItemHidden, upsertNewsItem } from '../../models/news-items.js';
 
 import { createTest, expect } from './fixtures.js';
-import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
+import { waitForJobAndCheckOutput } from './utils/job-sequence.js';
 
 const test = createTest({
   newsFeedUrl: 'https://example.com/feed.xml',

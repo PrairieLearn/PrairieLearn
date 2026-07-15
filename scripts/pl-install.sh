@@ -28,16 +28,16 @@ dnf -y install \
     postgresql17-server \
     postgresql17-contrib \
     procps-ng \
-    redis6 \
+    valkey \
     tar \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
     tmux
 
-# Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
-# executables to make them work with scripts that expect unversioned ones.
-ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
+# Valkey uses different executable names than Redis. Symlink them to the names
+# expected by the existing startup scripts.
+ln -s /usr/bin/valkey-cli /usr/bin/redis-cli && ln -s /usr/bin/valkey-server /usr/bin/redis-server
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -46,8 +46,8 @@ git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 24
-# Pinned to the packageManager version in package.json.
-npm install -g pnpm@11.5.0
+# Install the latest pnpm 11; package.json enforces the minimum supported version.
+npm install -g pnpm@latest-11
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."

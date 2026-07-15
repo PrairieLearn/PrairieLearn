@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { AccessControlJsonSchema, MAX_ACCESS_CONTROL_RULES } from './accessControl.js';
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 export const EnumAssessmentToolSchema = z.enum(['calculator']);
@@ -432,12 +432,11 @@ export const AssessmentJsonSchema = z
     allowAccess: z
       .array(AssessmentAccessRuleJsonSchema)
       .describe(
-        'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
+        '(Legacy) List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
       .optional(),
     accessControl: z
       .array(AccessControlJsonSchema)
-      .max(MAX_ACCESS_CONTROL_RULES)
       .describe('Access control settings for the assessment.')
       .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),

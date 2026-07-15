@@ -139,7 +139,9 @@ export function ManualGradingAssessment({
                   <th>QID</th>
                   <th>Auto Points</th>
                   <th>Manual Points</th>
-                  <th colSpan={2}>Submissions to grade</th>
+                  <th colSpan={2} scope="colgroup">
+                    Submissions to grade
+                  </th>
                   <th>Grading assigned to</th>
                   <th>Graded by</th>
                   <th>Actions</th>

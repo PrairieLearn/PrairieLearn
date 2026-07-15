@@ -11,6 +11,7 @@ columns
     id: bigint not null default nextval('lti13_course_instances_id_seq'::regclass)
     lineitems_url: text
     lti13_instance_id: bigint
+    resource_link_id: text
 
 indexes
     lti13_course_instances_pkey: PRIMARY KEY (id) USING btree (id)

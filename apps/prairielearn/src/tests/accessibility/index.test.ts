@@ -3,7 +3,6 @@ import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, type RuleConfig, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
@@ -115,6 +114,14 @@ const ROUTE_RULE_OVERRIDES: Record<string, RuleConfig> = {
   // inside a native <button>.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions': {
     'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio', 'button'] }],
+  },
+  // The access control summary uses table roles on a CSS grid so that
+  // columns can span and collapse responsively, which a native <table> can't do.
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access': {
+    'prefer-native-element': [
+      'error',
+      { exclude: ['radiogroup', 'radio', 'table', 'row', 'columnheader', 'cell'] },
+    ],
   },
 };
 
@@ -260,6 +267,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/:filename',
@@ -284,10 +292,12 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file/:filename',
@@ -310,6 +320,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/file_download/*',
   '/pl/course/:course_id/question/:question_id/file/:filename',
   '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course/:course_id/question/:question_id/preview/file/:filename',
   '/pl/course/:course_id/question/:question_id/preview/text/:filename',
   '/pl/course/:course_id/question/:question_id/statistics/:filename',
@@ -323,6 +334,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
+  '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
 
   // File upload pages for external image capture.
@@ -462,7 +474,6 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
-    await features.enable('qti-content-import');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

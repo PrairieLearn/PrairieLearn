@@ -1,0 +1,58 @@
+---
+name: element-validation
+description: Use when changing or reviewing PrairieLearn element question.html contracts, including schema-level attributes/children, Python semantic validation, docs, and AI HTML validation support lists.
+---
+
+Use this when a change affects what course authors may write in an element's `question.html`: tag names, attributes, child tags, accepted values, or validation errors for invalid markup.
+
+JSON Schema is the shared lightweight contract layer. Python is authoritative for semantic validation and final user-facing errors.
+
+## Ownership
+
+- JSON Schema owns local facts: allowed attribute names, required attributes, single-attribute formats/enums, deprecation metadata, and basic child tag structure.
+- Python owns semantics: cross-attribute rules, mode-dependent behavior, child count/content rules, uniqueness, ordering, parsing, defaults, and final validation wording.
+- Docs describe the author-facing contract and should match whichever layer owns the changed behavior.
+- AI HTML validation surfaces `customTagSchema` diagnostics from `lintQuestionHtml()` for schema-backed element attribute and child-tag contracts. `apps/prairielearn/src/ee/lib/validateHTML.ts` owns AI-generation support lists, unsupported parent-tag rejection, input-in-panel warnings, and `server.py` correct-answer bookkeeping; do not add per-element attribute validators there.
+- AI-generation support should remain explicit. An element is ready for the support lists only when it has schema-backed validation and high-quality template questions in `exampleCourse/questions/template/` that show the model the expected authoring pattern.
+- AI element documentation context currently excludes deprecated-attribute migration sections because it is used for new question generation. Put deprecated syntax there instead of in main customization tables when authors should not use it in new questions. Match the established element-docs convention: use a `### Migrating from deprecated attributes` subsection with a short backward-compatibility sentence and an `Old syntax` / `New syntax` table. If this context is reused to edit existing questions, make that exclusion conditional or provide separate migration context so the editor can recognize and migrate deprecated syntax.
+
+If a child attribute is only valid for some parent modes, keep the child schema permissive across the union of valid attributes and enforce the mode-specific subset in Python.
+
+When adding Python tree validation to an existing element, preserve existing tag-name compatibility but do not expand it. If the old controller accepted legacy underscore child tags such as `pl_answer`, call `validate_element_tree(..., allow_legacy_underscore_tags=True)` and keep the parser handling those aliases. If it only accepted kebab-case tags, leave tree validation in its default strict mode.
+
+## Workflow
+
+1. Check for `apps/prairielearn/src/lib/element-schemas/elements/<tag>.ts`.
+2. If the schema module exists, update it for schema-owned facts and run `make update-element-schemas`.
+3. If no schema module exists, prefer adding one for schema-owned facts before enabling AI generation for that element.
+4. Put semantic validation changes in `apps/prairielearn/elements/<tag>/<tag>.py`.
+5. Update `docs/elements/<tag>.md` when the author-facing contract changes.
+
+Adding a schema module does not enable AI generation for that element. If AI should generate it, first make sure the example course has high-quality template questions for that element. Then update the relevant support lists in `validateHTML.ts`: add renderable input elements to `INPUT_ELEMENTS`, panel-like elements to `PANEL_ELEMENTS`, and answer-bearing elements to the correct-answer bookkeeping sets when appropriate.
+
+## Runtime enforcement
+
+An element with a schema module should enforce it at runtime in `prepare()` rather than hand-maintaining `pl.check_attribs()` attribute lists, which duplicate the schema and drift from it. Both helpers load the generated JSON (the single source of truth) and raise linter-matching messages; they check attribute names, required attributes, and per-attribute formats/enums/patterns — a superset of `check_attribs`. `prepare()` receives post-mustache HTML, so templated typed attributes are already concrete when validated. Keep genuinely semantic checks (cross-attribute rules, cardinality, uniqueness) in Python.
+
+- Childless elements: `pl.validate_element(element, SCHEMA_PATH)` with `SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "<tag>.json"`. Validates attributes only; does not enforce the root tag name, so legacy `pl_underscore` element spellings keep working.
+- Elements with child tags: `pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)` with `SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"`. Also validates child tags and their attributes; pass `allow_legacy_underscore_tags=True` only if the old controller accepted underscore child tags like `pl_answer`.
+
+## Schema Modules
+
+Schema modules live in `apps/prairielearn/src/lib/element-schemas/elements/` and export `element: ElementSchemaModule`:
+
+- `tag`: element tag, matching the filename.
+- `schema`: JSON Schema for the element's attributes, usually from `z.toJSONSchema(z.object(...).strict(), { target: 'draft-04' })`.
+- `children`: optional child-tag schemas, keyed by child tag.
+
+Use `helpers.ts` for `booleanFormat()`, `integerFormat()`, and `numberFormat()`. Mark deprecated attributes with `.meta({ deprecated: true, description: 'Use ... instead.' })`.
+
+Generated files are checked by `make check-element-schemas`; never hand-edit them. Change the schema module and regenerate.
+
+When adding schema coverage for an existing element, match runtime behavior for schema-owned facts. If docs and runtime disagree, identify the mismatch before deciding which surface to change.
+
+AI validation only surfaces linter diagnostics whose `ruleName` is `customTagSchema`. Selector-based editor guidance and semantic Python errors are intentionally not part of AI schema validation.
+
+## Tests
+
+Test the layer that changed. For schema modules, add per-element tests only for element-specific facts that are easy to regress, such as shared child tag ownership or unusual child structure. Do not retest generic JSON Schema or linter behavior like required attributes, unknown attributes, enum validation, format validation, or deprecated-attribute warning emission for every element. Use generated schema diffs and `make check-element-schemas` to verify ordinary attribute metadata.

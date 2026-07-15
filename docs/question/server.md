@@ -187,6 +187,13 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+### Grading without a fixed correct answer
+
+A custom `grade` function is not limited to comparing the submission against `data["correct_answers"]`:
+
+- For questions with many correct answers (e.g., "give an example of a matrix with some property"), the grade function can check that the submitted answer satisfies the required property. In this case, `data["correct_answers"]` can hold one example of a valid answer to show to students. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeAnyValidAnswer) for an example.
+- For questions where students collect their own data (e.g., measurements from a lab experiment), the grade function can compute the expected answer from the student's own submitted values, so that any answer consistent with their data is accepted. See [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFromStudentData) for an example.
+
 ### Providing feedback
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.
@@ -482,6 +489,49 @@ We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-dow
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
+
+### Dynamic files that rely on submission data
+
+When a dynamic file is included in a submission panel, it will also get access to the submission information, including `data["submitted_answers"]`, `data["score"]`, `data["partial_scores"]`, and [all other submission-related data listed above](#data-field-scopes).
+
+If your dynamic file relies on submission data (e.g., `data["submitted_answers"]`), you should ensure that the `pl-figure` or `pl-file-download` element is only visible in the submission panel. This can be done by wrapping the element in a `<pl-submission-panel>` tag, as shown below. This ensures that the file is only generated after the student has submitted an answer.
+
+```html title="question.html"
+<pl-submission-panel>
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+</pl-submission-panel>
+```
+
+Note that the submission panel will include the file for any kind of submission, including:
+
+- Valid (correct or incorrect) submissions.
+- Invalid submissions (e.g., submissions with format errors).
+- "Save only" submissions (e.g., when the student clicks "Save only" or in an assessment without real-time grading).
+
+You should ensure that your file generation code can handle all of these cases. For example, if the file relies on a valid submitted answer, you should check that the answer is present and valid in `data["submitted_answers"]` before using it. If the answer is not present, you can generate a default file or a blank image.
+
+```python title="server.py"
+def file(data):
+    if data["filename"] == "submitted.png":
+        if data["submitted_answers"].get("y") is None:
+            # generate a default image
+        else:
+            # generate the file using data["submitted_answers"]["y"]
+```
+
+Alternatively, you can include the image in the HTML only when the answer is present and valid, using a mustache conditional on `data["format_errors"]`:
+
+```html title="question.html"
+<pl-submission-panel>
+  {{^format_errors.y}}
+  <p>Here is a dynamically-rendered figure showing your submitted answer:</p>
+  <pl-figure file-name="submitted.png" type="dynamic"></pl-figure>
+  {{/format_errors.y}}
+</pl-submission-panel>
+```
+
+In particular, note that for "Save only" submissions, scores will not be populated. If your dynamic file uses score information, you should check that `data["score"]` or the values in `data["partial_scores"]` are not `None` before using them.
 
 ## Testing questions with `test()`
 

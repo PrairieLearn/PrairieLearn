@@ -3,6 +3,8 @@ import { assert, describe, it } from 'vitest';
 import {
   type AccessControlJsonInput,
   AccessControlJsonSchema,
+  MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
+  MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 
 import {
@@ -17,6 +19,10 @@ import {
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
+
+function uuidForIndex(index: number): string {
+  return `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
+}
 
 describe('Valid configs', () => {
   const validAccessControlExamples: AccessControlJsonInput[][] = [
@@ -106,6 +112,7 @@ describe('Valid configs', () => {
       },
       {
         // Individual override
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student3'],
         dateControl: {
           durationMinutes: 90,
@@ -189,12 +196,14 @@ describe('Default rule requirement', () => {
   it('should fail validation when no default rule exists', () => {
     const rulesWithoutDefault: AccessControlJsonInput[] = [
       {
+        uuid: '11111111-1111-4111-8111-111111111111',
         labels: ['student1'],
         dateControl: {
           durationMinutes: 90,
         },
       },
       {
+        uuid: '22222222-2222-4222-8222-222222222222',
         labels: ['student2'],
         dateControl: {
           durationMinutes: 120,
@@ -213,36 +222,6 @@ describe('Default rule requirement', () => {
         'No defaults found. The first element of accessControl must apply to everyone.',
       ),
       `Expected "No defaults found" error, but got: ${result.errors.join(', ')}`,
-    );
-  });
-
-  it('should fail validation when multiple default rules exist', () => {
-    const rulesWithMultipleDefault: AccessControlJsonInput[] = [
-      {
-        dateControl: {
-          release: { date: '2024-03-14T00:01:00' },
-          due: { date: '2024-03-21T23:59:00' },
-        },
-      },
-      {
-        dateControl: {
-          release: { date: '2024-03-15T00:01:00' },
-          due: { date: '2024-03-22T23:59:00' },
-        },
-      },
-    ];
-
-    const parsedRules = rulesWithMultipleDefault.map((rule) => AccessControlJsonSchema.parse(rule));
-    const result = validateAccessControlRules({
-      rules: parsedRules,
-    });
-
-    assert.isTrue(result.errors.length > 0, 'Expected error when multiple default rules exist');
-    assert.isTrue(
-      result.errors.includes(
-        'Found 2 defaults entries. Only one element of accessControl should apply to everyone.',
-      ),
-      `Expected "Found 2 defaults entries" error, but got: ${result.errors.join(', ')}`,
     );
   });
 
@@ -290,6 +269,175 @@ describe('Default rule requirement', () => {
     assert.isTrue(
       result.errors.some((err) => err.includes('beforeRelease can only be specified')),
       `Expected beforeRelease validation error, but got: ${result.errors.join(', ')}`,
+    );
+  });
+});
+
+describe('rule UUID validation', () => {
+  it('accepts trailing unlabeled student-specific overrides when all non-default rules have UUIDs', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+      {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.deepEqual(result.errors, []);
+  });
+
+  it('rejects too many student-label overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        labels: [`Section ${i}`],
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES} student-label access control overrides.`,
+    );
+  });
+
+  it('rejects too many student-specific overrides', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      ...Array.from({ length: MAX_ENROLLMENT_ACCESS_CONTROL_RULES + 1 }, (_, i) => ({
+        uuid: uuidForIndex(i),
+        dateControl: { durationMinutes: 90 },
+      })),
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      `An assessment can have at most ${MAX_ENROLLMENT_ACCESS_CONTROL_RULES} student-specific access control overrides.`,
+    );
+  });
+
+  it('rejects non-default rules without UUIDs', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(result.errors, 'Every non-default accessControl rule must specify uuid.');
+  });
+
+  it('rejects duplicate non-default rule UUIDs', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        dateControl: { durationMinutes: 120 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Found duplicate access control rule UUIDs: "22222222-2222-4222-8222-222222222222".',
+    );
+  });
+
+  it('rejects student-label UUID rules after student-specific UUID rules', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+      {
+        uuid: '22222222-2222-4222-8222-222222222222',
+        dateControl: { durationMinutes: 120 },
+      },
+      {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        labels: ['Section A'],
+        dateControl: { durationMinutes: 90 },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'Student-label access control rules must appear before student-specific access control rules.',
+    );
+  });
+
+  it('rejects UUIDs on the default rule', () => {
+    const rules: AccessControlJsonInput[] = [
+      {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
+          due: { date: '2024-03-21T23:59:00' },
+        },
+      },
+    ];
+
+    const parsedRules = rules.map((rule) => AccessControlJsonSchema.parse(rule));
+    const result = validateAccessControlRules({ rules: parsedRules });
+
+    assert.include(
+      result.errors,
+      'uuid can only be specified on non-default access control rules.',
     );
   });
 });
@@ -864,30 +1012,12 @@ describe('Empty accessControl array', () => {
     assert.deepEqual(result.warnings, []);
   });
 
-  it('requires a defaults rule when enrollment-only rules are provided', () => {
-    const result = validateAccessControlRules({
-      rules: [],
-      enrollmentRules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            durationMinutes: 90,
-          },
-        }),
-      ],
-    });
-
-    assert.isTrue(
-      result.errors.includes(
-        'No defaults found. The first element of accessControl must apply to everyone.',
-      ),
-    );
-  });
-
   it('allows inert student-label rules with no labels by default', () => {
     const result = validateAccessControlRules({
       rules: [
         AccessControlJsonSchema.parse({}),
         AccessControlJsonSchema.parse({
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: [],
           dateControl: {
             durationMinutes: 90,
@@ -1363,81 +1493,36 @@ describe('Structural field dependency validation', () => {
     assert.isTrue(issues.some((i) => i.message === 'Late deadlines require a due date.'));
   });
 
-  it('should reject after-complete dates when dateControl exists but has no deadlines', () => {
-    const rule = AccessControlJsonSchema.parse({
-      dateControl: {
-        release: { date: '2024-03-14T00:01:00' },
-      },
-      afterComplete: {
-        questions: {
-          hidden: true,
-          visibleFromDate: '2024-03-23T23:59:00',
-        },
-        score: {
-          hidden: true,
-          visibleFromDate: '2024-03-25T23:59:00',
-        },
-      },
-    });
-    const issues = validateRuleStructuralDependencyIssues({
-      rule,
-      targetType: 'none',
-      ruleIndex: 0,
-    });
-    assert.isTrue(
-      issues.some(
-        (i) =>
-          i.message ===
-            'After-complete dates require at least one deadline (due date or late deadline).' &&
-          JSON.stringify(i.path) ===
-            JSON.stringify(['afterComplete', 'questions', 'visibleFromDate']),
-      ),
-    );
-    assert.isTrue(
-      issues.some(
-        (i) =>
-          i.message ===
-            'After-complete dates require at least one deadline (due date or late deadline).' &&
-          JSON.stringify(i.path) === JSON.stringify(['afterComplete', 'score', 'visibleFromDate']),
-      ),
-    );
-  });
-
   it.each([
     {
-      label: 'after-complete boolean fields with dateControl but no deadlines',
+      label: 'afterComplete dates without dateControl',
       config: {
-        dateControl: { release: { date: '2024-03-14T00:01:00' } },
-        afterComplete: {
-          questions: { hidden: true },
-          score: { hidden: true },
-        },
-      },
-    },
-    {
-      label: 'after-complete dates when durationMinutes is set',
-      config: {
-        dateControl: { durationMinutes: 60 },
         afterComplete: {
           questions: {
             hidden: true,
             visibleFromDate: '2024-03-23T23:59:00',
           },
+          score: {
+            hidden: true,
+            visibleFromDate: '2024-03-25T23:59:00',
+          },
         },
       },
     },
     {
-      label: 'after-complete dates when PrairieTest is configured',
+      label: 'afterComplete dates with dateControl but no deadlines',
       config: {
-        integrations: {
-          prairieTest: {
-            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-          },
+        dateControl: {
+          release: { date: '2024-03-14T00:01:00' },
         },
         afterComplete: {
           questions: {
             hidden: true,
             visibleFromDate: '2024-03-23T23:59:00',
+          },
+          score: {
+            hidden: true,
+            visibleFromDate: '2024-03-25T23:59:00',
           },
         },
       },
@@ -1896,7 +1981,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 0,
-          message: /score cannot be hidden after completion while questions are visible/,
+          message: /Questions cannot be made visible after completion while the score is hidden/,
         },
       ],
     },
@@ -2072,7 +2157,7 @@ describe('afterComplete cross-field validation', () => {
       issues: [
         {
           ruleIndex: 1,
-          message: /score cannot be hidden after completion while questions are visible/,
+          message: /Questions cannot be made visible after completion while the score is hidden/,
         },
       ],
     },
@@ -2196,9 +2281,6 @@ describe('afterComplete cross-field validation', () => {
 });
 
 describe('Global afterComplete validation', () => {
-  const completionMechanismMessage =
-    'After-complete settings require a deadline, duration limit, or PrairieTest exam.';
-
   it('does not duplicate direct afterComplete cross-field errors', () => {
     const result = validateAccessControlRules({
       rules: [
@@ -2221,290 +2303,60 @@ describe('Global afterComplete validation', () => {
     assert.lengthOf(matches, 1);
   });
 
-  it('rejects afterComplete on main rule without dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
+  it.each([
+    {
+      name: 'default rule with no dateControl',
       rules: [
-        AccessControlJsonSchema.parse({
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
+        {
+          afterComplete: { questions: { hidden: false } },
+        },
       ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete with score hidden on main rule without dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
+    },
+    {
+      name: 'default rule with dateControl but no automatic completion mechanism',
       rules: [
-        AccessControlJsonSchema.parse({
-          afterComplete: {
-            score: { hidden: true },
-          },
-        }),
+        {
+          dateControl: { release: { date: '2024-03-14T00:01:00' } },
+          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+        },
       ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on main rule with dateControl', () => {
-    const result = validateAccessControlRules({
+    },
+    {
+      name: 'override with no automatic completion mechanism',
       rules: [
-        AccessControlJsonSchema.parse({
+        {},
+        {
+          uuid: '11111111-1111-4111-8111-111111111111',
+          labels: ['Section A'],
+          afterComplete: { questions: { hidden: true } },
+        },
+      ],
+    },
+    {
+      name: 'override that clears inherited due date',
+      rules: [
+        {
           dateControl: {
             release: { date: '2024-03-14T00:01:00' },
             due: { date: '2024-03-21T23:59:00' },
           },
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on main rule with PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-            },
-          },
-          afterComplete: {
-            questions: { hidden: true },
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete on overrides when no rule has dateControl or PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on overrides when main rule has dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            release: { date: '2024-03-14T00:01:00' },
-            due: { date: '2024-03-21T23:59:00' },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on overrides when main rule has PrairieTest', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          integrations: {
-            prairieTest: {
-              exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
-            },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: {
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on an override that has its own dateControl', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            due: { date: '2024-03-21T23:59:00' },
-          },
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete on main rule when dateControl has no completion mechanism', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { release: { date: '2024-03-14T00:01:00' } },
-          afterComplete: {
-            questions: { hidden: true },
-            score: { hidden: true },
-          },
-        }),
-      ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on main rule with durationMinutes', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { durationMinutes: 60 },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete on overrides when default rule has no completion mechanism', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { release: { date: '2024-03-14T00:01:00' } },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it("rejects afterComplete on an override that explicitly clears the default's only completion mechanism", () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { due: { date: '2024-03-21T23:59:00' } },
-        }),
-        AccessControlJsonSchema.parse({
+        },
+        {
+          uuid: '11111111-1111-4111-8111-111111111111',
           labels: ['Section A'],
           dateControl: { due: { date: null } },
           afterComplete: { questions: { hidden: true } },
-        }),
+        },
       ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
+    },
+  ] satisfies { name: string; rules: AccessControlJsonInput[] }[])(
+    'accepts afterComplete on $name',
+    ({ rules }) => {
+      const result = validateAccessControlRules({
+        rules: rules.map((rule) => AccessControlJsonSchema.parse(rule)),
+      });
 
-  it("accepts an override that clears the default's due when the default still provides another mechanism", () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: {
-            due: { date: '2024-03-21T23:59:00' },
-            durationMinutes: 60,
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { due: { date: null } },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on an override when only another override has dateControl', () => {
-    // Globally we count any rule's mechanism, since overrides stack at runtime
-    // and the contributing rule may apply to the same student.
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: {
-            due: { date: '2024-03-21T23:59:00' },
-          },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          afterComplete: {
-            questions: { hidden: false },
-          },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('accepts afterComplete on an override when another override provides duration', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { durationMinutes: 60 },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isFalse(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete on an override that clears the only globally-available mechanism (duration)', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({
-          dateControl: { durationMinutes: 60 },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { durationMinutes: null },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
-
-  it('rejects afterComplete on an override that clears the only global mechanism contributed by another override', () => {
-    const result = validateAccessControlRules({
-      rules: [
-        AccessControlJsonSchema.parse({}),
-        AccessControlJsonSchema.parse({
-          labels: ['Section A'],
-          dateControl: { due: { date: '2024-03-21T23:59:00' } },
-        }),
-        AccessControlJsonSchema.parse({
-          labels: ['Section B'],
-          dateControl: { due: { date: null } },
-          afterComplete: { questions: { hidden: true } },
-        }),
-      ],
-    });
-    assert.isTrue(result.errors.includes(completionMechanismMessage));
-  });
+      assert.deepEqual(result.errors, []);
+    },
+  );
 });

@@ -1,5 +1,17 @@
 # @prairielearn/formatter
 
+## 2.4.4
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 2.4.3
+
+### Patch Changes
+
+- d192a73: Bugfix: consistently use 24-hour format in formatDateWithinRange
+
 ## 2.4.2
 
 ### Patch Changes

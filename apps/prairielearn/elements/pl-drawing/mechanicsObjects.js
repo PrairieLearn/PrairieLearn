@@ -1,4 +1,4 @@
-/* eslint-disable no-alert, unicorn/no-immediate-mutation */
+/* eslint-disable no-alert */
 /* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 const $V = Sylvester.Vector.create;
@@ -20,6 +20,11 @@ const vec2pt = function (v) {
 };
 
 const mechanicsObjects = {};
+
+const isTrueBooleanOption = function (value) {
+  // Existing saved submissions may contain string booleans; new generated options use booleans.
+  return value === true || value === 'true';
+};
 
 /**
  * New object types.
@@ -1074,7 +1079,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
   initialize(options) {
     this.callSuper('initialize', options);
     this.spacing = options.spacing;
-    this.anchor_is_tail = options.anchor_is_tail === 'true';
+    this.anchor_is_tail = isTrueBooleanOption(options.anchor_is_tail);
     this.w1 = options.w1;
     this.w2 = options.w2;
     this.width = options.range;
@@ -2803,6 +2808,32 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
     obj.evented = false;
     canvas.add(obj);
 
+    let textObj = null;
+    const updateLabel = function () {
+      if (textObj) {
+        textObj.left = obj.left + obj.offsetx;
+        textObj.top = obj.top + obj.offsety;
+        textObj.setCoords();
+      }
+    };
+    const removeLabel = function () {
+      if (textObj) {
+        canvas.remove(textObj);
+      }
+    };
+    if (obj.label) {
+      textObj = new mechanicsObjects.LatexText(obj.label, {
+        left: obj.left + obj.offsetx,
+        top: obj.top + obj.offsety,
+        fontSize: 16,
+        textAlign: 'left',
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+
     if (options.selectable) {
       const cc = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
       const c1 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
@@ -2824,11 +2855,13 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       cc.on('moving', function () {
         obj.set({ x1: cc.left, y1: cc.top });
         obj.fire('update_visuals');
+        updateLabel();
       });
 
       // c1
@@ -2845,6 +2878,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c2);
+          removeLabel();
         },
       );
       c1.on('moving', function () {
@@ -2866,6 +2900,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c1);
+          removeLabel();
         },
       );
       c2.on('moving', function () {
@@ -3300,20 +3335,20 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
   }
 
   static get_button_icon(options) {
-    const wdef = { w1: 60, w2: 60, anchor_is_tail: false };
+    const wdef = { w1: 60, w2: 60 };
     const opts = { ...wdef, ...options };
     const w1 = opts['w1'];
     const w2 = opts['w2'];
-    const anchor = opts['anchor_is_tail'];
+    const anchor = isTrueBooleanOption(opts['anchor_is_tail']);
 
     let file_name;
     if (w1 === w2) {
       file_name = 'DUD';
-    } else if (w1 < w2 && anchor === 'true') {
+    } else if (w1 < w2 && anchor) {
       file_name = 'DTDA';
     } else if (w1 < w2) {
       file_name = 'DTUD';
-    } else if (w1 > w2 && anchor === 'true') {
+    } else if (w1 > w2 && anchor) {
       file_name = 'DTUA';
     } else {
       file_name = 'DTDD';
@@ -4181,8 +4216,16 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (options.label) {
       const offsetlabel = 10;
       const textObj = new mechanicsObjects.LatexText(options.label, {
-        left: xm1 + (l / 2) * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2 + theta),
-        top: ym1 + (l / 2) * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2 + theta),
+        left:
+          xm1 +
+          (l / 2) * Math.cos(theta2 + theta) -
+          offsetlabel * Math.sin(theta2 + theta) +
+          options.offsetx,
+        top:
+          ym1 +
+          (l / 2) * Math.sin(theta2 + theta) +
+          offsetlabel * Math.cos(theta2 + theta) +
+          options.offsety,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,

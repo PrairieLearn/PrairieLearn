@@ -1,38 +1,56 @@
 {{#render_button}}
-<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}" title="{{button_class}}"><img src=""></button>
+<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}" title="{{button_class}}"><img src="" alt=""></button>
 {{/render_button}}
 
 {{#render_element}}
-{{#parse_error}}
-<span class="small" style="white-space: nowrap">
-    <span class="badge text-bg-danger">
-        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-    </span>
-    <a
-        class="link-primary"
-        tabindex="0"
-        role="button"
-        data-bs-placement="auto"
-        data-bs-toggle="popover"
-        data-bs-html="true"
-        title="Format error"
-        data-bs-content="{{parse_error}}"
-    >
-        More info…
-    </a>
-</span>
-{{/parse_error}}
-{{^parse_error}}
 <div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax mb-3">
-    <div>
-        <canvas
-            width="{{width}}"
-            height="{{height}}"
-            {{#preview_mode}}role="img"{{/preview_mode}}
-            {{#aria_description}}aria-description="{{aria_description}}"{{/aria_description}}
-            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-        >
-        </canvas>
+    <div class="pl-drawing-output">
+        <div class="pl-drawing-main">
+            {{#parse_error}}
+                <div class="pl-drawing-header">
+                    <span class="small d-inline-flex align-items-center gap-1 text-nowrap">
+                        <span class="badge text-bg-danger">
+                            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                        </span>
+                        <a
+                            class="link-primary"
+                            tabindex="0"
+                            role="button"
+                            data-bs-placement="auto"
+                            data-bs-toggle="popover"
+                            data-bs-html="true"
+                            title="Format error"
+                            data-bs-content="{{parse_error}}"
+                        >
+                            More info…
+                        </a>
+                    </span>
+                </div>
+            {{/parse_error}}
+            {{#correct}}
+                <div class="pl-drawing-header">
+                    <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+                </div>
+            {{/correct}}
+            {{#partial}}
+                <div class="pl-drawing-header">
+                    <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+                </div>
+            {{/partial}}
+            {{#incorrect}}
+                <div class="pl-drawing-header">
+                    <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+                </div>
+            {{/incorrect}}
+            <canvas
+                width="{{width}}"
+                height="{{height}}"
+                {{#preview_mode}}role="img"{{/preview_mode}}
+                {{#aria_description}}aria-description="{{aria_description}}"{{/aria_description}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            >
+            </canvas>
+        </div>
         {{#show_tolerance}}
             <div><small>({{{ tolerance }}})</small></div>
         {{/show_tolerance}}
@@ -45,21 +63,6 @@
             </div>
         {{/feedback}}
     </div>
-    {{#correct}}
-        <div class="pl-drawing-sidebar">
-            <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
-        </div>
-    {{/correct}}
-    {{#partial}}
-        <div class="pl-drawing-sidebar">
-            <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-        </div>
-    {{/partial}}
-    {{#incorrect}}
-        <div class="pl-drawing-sidebar">
-            <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
-        </div>
-    {{/incorrect}}
     {{#show_buttons}}
         <div class="pl-drawing-sidebar">
             <input type="hidden" name="{{name}}">
@@ -82,5 +85,4 @@
      });
  })();
 </script>
-{{/parse_error}}
 {{/render_element}}

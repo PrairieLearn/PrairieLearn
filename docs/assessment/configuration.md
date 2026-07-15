@@ -18,12 +18,13 @@ Each assessment must set the following properties in their `infoAssessment.json`
 
 ## Optional properties
 
-In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
+In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`accessControl`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
 | Property                                                       | Type    | Description                                                                                                                 |
 | -------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
 | [`module`](#grouping-assessments-by-modules)                   | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
-| [`allowAccess`](../assessment/accessControl.md)                | array   | List of access rules. (default: no student access)                                                                          |
+| [`accessControl`](../assessment/accessControl.md)              | array   | Modern access control rules. (default: no student access)                                                                   |
+| [`allowAccess`](../assessment/accessControlLegacy.md)          | array   | Legacy access rules. Prefer `accessControl` for new assessments. (default: no student access)                               |
 | [`zones`](#question-specification)                             | array   | Specification of zones and questions. (default: none)                                                                       |
 | `text`                                                         | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
 | `multipleInstance`                                             | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
@@ -41,6 +42,7 @@ In addition to those properties, the following properties can be used to further
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
 | [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
+| `showQuestionTitles`                                           | boolean | Whether to show question titles to students. (default: `false` for Exam, `true` for Homework)                               |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -901,7 +903,7 @@ In this example, the calculator is disabled in "Part 1: No calculator" (zone-lev
 
 See the [Assessment access control page](../assessment/accessControl.md) for details.
 
-By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
+By default, an assessment is only accessible to course staff. To allow students to access the assessment, configure `accessControl` on the assessment **Access** page or in the assessment's `infoAssessment.json` file.
 
 Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see [Assessment access control page](../assessment/accessControl.md) for details and examples.
 
@@ -985,7 +987,7 @@ Disabling real-time grading changes a number of things about the student experie
 - The "Grade saved answers" button on the assessment overview will only be shown if at least some questions have real-time grading enabled, and when clicked, it will only grade those questions.
 - Score information won't be shown for questions that have real-time grading disabled.
 
-If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../assessment/accessControl.md#showinghiding-closed-assessments).
+If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will auto-grade any saved answers. Student visibility after closure is controlled by the [After completion](../assessment/accessControl.md#after-completion) settings.
 
 ??? note
 
@@ -1060,6 +1062,20 @@ For example:
 ```json title="infoAssessment.json"
 {
   "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
+
+## Question titles
+
+Question titles can help students identify and discuss questions, but may contain topic names or other context intended only for staff. For this reason, `Homework` assessments show question titles to students by default, while `Exam` assessments hide them by default.
+
+This behavior can be overridden by setting `showQuestionTitles` as a top-level option in the `infoAssessment.json` file.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "showQuestionTitles": true
 }
 ```
 

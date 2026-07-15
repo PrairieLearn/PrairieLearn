@@ -10,7 +10,6 @@ import {
   type AccessControlValidationIssue,
   type AccessControlValidationRule,
   validateAfterCompleteCrossFieldIssues,
-  validateGlobalAfterCompleteIssues,
   validateGlobalCreditConsistencyIssues,
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
@@ -34,7 +33,6 @@ import {
   type OverridableFieldName,
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
-  defaultRuleHasCompletionMechanism,
   formDataToJson,
   isReleasedNow,
 } from './types.js';
@@ -153,13 +151,13 @@ function mapIssueToFormFieldPath(
   }
 }
 
-function mapIssueToEditableFormFieldPath(
+function mapIssueToEditableFormError(
   issue: AccessControlValidationIssue,
   formData: AccessControlFormData,
-): AccessControlFormFieldPath | null {
+): AccessControlFormValidationError | null {
   const path = mapIssueToFormFieldPath(issue);
   if (!path) return null;
-  if (isFormFieldPathEditable(formData, path)) return path;
+  if (isFormFieldPathEditable(formData, path)) return { path, message: issue.message };
 
   // The "score hidden while questions visible" rule is a cross-field
   // constraint between question and score visibility. The default mapping
@@ -174,7 +172,12 @@ function mapIssueToEditableFormFieldPath(
     issue.ruleIndex > 0
   ) {
     const scorePath: AccessControlFormFieldPath = `overrides.${issue.ruleIndex - 1}.scoreVisibility`;
-    if (isFormFieldPathEditable(formData, scorePath)) return scorePath;
+    if (isFormFieldPathEditable(formData, scorePath)) {
+      return {
+        path: scorePath,
+        message: 'The score cannot be hidden after completion while questions are visible.',
+      };
+    }
   }
 
   return null;
@@ -240,18 +243,13 @@ export function getGlobalDateValidationErrors(
     validateGlobalDateConsistencyIssues(validationRules),
     validateGlobalCreditConsistencyIssues(validationRules),
     validateGlobalStructuralDependencyIssues(validationRules),
-    // Run the "no completion mechanism" check before the cross-field check —
-    // both target the same questionVisibility path, but the mechanism error
-    // is more fundamental (cross-field consistency is moot when there's no
-    // mechanism at all).
-    validateGlobalAfterCompleteIssues(validationRules),
     validateAfterCompleteCrossFieldIssues(validationRules),
   ]) {
     for (const issue of issues) {
-      const path = mapIssueToEditableFormFieldPath(issue, formData);
-      if (!path || seenPaths.has(path)) continue;
-      seenPaths.add(path);
-      results.push({ path, message: issue.message });
+      const error = mapIssueToEditableFormError(issue, formData);
+      if (!error || seenPaths.has(error.path)) continue;
+      seenPaths.add(error.path);
+      results.push(error);
     }
   }
 
@@ -265,10 +263,10 @@ export function getGlobalDateValidationErrors(
     }
     for (const issues of issueGroups) {
       for (const issue of issues) {
-        const path = mapIssueToEditableFormFieldPath(issue, formData);
-        if (!path || seenPaths.has(path)) continue;
-        seenPaths.add(path);
-        results.push({ path, message: issue.message });
+        const error = mapIssueToEditableFormError(issue, formData);
+        if (!error || seenPaths.has(error.path)) continue;
+        seenPaths.add(error.path);
+        results.push(error);
       }
     }
   }
@@ -528,14 +526,13 @@ function validateRuleFields(
 
 function validateDefaultRule(formData: AccessControlFormData, addError: AddValidationError) {
   const rule = formData.defaultRule;
-  const hasCompletionMechanism = defaultRuleHasCompletionMechanism(rule);
 
   validateRuleFields(
     rule,
     'defaultRule',
     (fieldName) =>
       fieldName === 'questionVisibility' || fieldName === 'scoreVisibility'
-        ? hasCompletionMechanism
+        ? true
         : rule.dateControlEnabled,
     addError,
   );

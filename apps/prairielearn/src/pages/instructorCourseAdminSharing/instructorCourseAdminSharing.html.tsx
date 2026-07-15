@@ -651,8 +651,7 @@ function AddSharingSetModal({
             </a>{' '}
             is a named set of questions which you can share to another course. This lets you share
             different sets of your questions &mdash; for example, share some questions only with
-            other courses in your department, and other questions with anyone using PrairieLearn.
-            See the{' '}
+            other courses in your department. See the{' '}
             <a
               href="https://docs.prairielearn.com/contentSharing/"
               target="_blank"

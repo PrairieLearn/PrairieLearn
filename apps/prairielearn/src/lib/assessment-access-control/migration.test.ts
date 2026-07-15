@@ -87,6 +87,21 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'timed-assessment-open-ended',
+      rules: [{ credit: 100, timeLimitMin: 50, showClosedAssessment: false }],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: FALLBACK_RELEASE },
+            durationMinutes: 50,
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'declining-credit',
       rules: [
         { credit: 110, startDate: '2024-01-01T00:00:00', endDate: '2024-02-01T00:00:00' },
@@ -101,36 +116,6 @@ describe('migrateAllowAccess', () => {
             earlyDeadlines: [{ date: '2024-02-01T00:00:00', credit: 110 }],
             lateDeadlines: [{ date: '2024-06-01T00:00:00', credit: 50 }],
           },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'prairietest with viewing rule',
-      rules: [
-        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
-        { startDate: '2024-01-01T00:00:00', active: false },
-      ],
-      expected: {
-        accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' } },
-          integrations: {
-            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
-          },
-        },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'view-only',
-      rules: [{ startDate: '2024-01-01T00:00:00', active: false }],
-      expected: {
-        accessControl: {
-          dateControl: { release: { date: '2024-01-01T00:00:00' } },
         },
         errors: [],
         notes: [],
@@ -155,16 +140,6 @@ describe('migrateAllowAccess', () => {
             due: { date: '2024-06-01T00:00:00' },
           },
         },
-        errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'hidden',
-      rules: [{ active: false }],
-      expected: {
-        accessControl: {},
         errors: [],
         notes: [],
         hasUidRules: false,
@@ -647,7 +622,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -694,27 +668,9 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
-        notes: [],
-        hasUidRules: false,
-      },
-    },
-    {
-      name: 'visibility-only inactive rule reports one completion mechanism error',
-      rules: [
-        {
-          showClosedAssessment: false,
-          showClosedAssessmentScore: false,
-          active: false,
-        },
-      ],
-      expected: {
-        accessControl: null,
-        errors: [
-          'After-complete settings require a deadline, duration limit, or PrairieTest exam.',
-        ],
         notes: [],
         hasUidRules: false,
       },
@@ -768,7 +724,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -800,7 +756,7 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true }, score: { hidden: true } },
+          afterComplete: { score: { hidden: true } },
         },
         errors: [],
         notes: [
@@ -1174,7 +1130,6 @@ describe('migrateAllowAccess', () => {
             release: { date: '2024-01-01T00:00:00' },
             due: { date: '2024-06-01T00:00:00' },
           },
-          afterComplete: { questions: { hidden: true } },
         },
         errors: [],
         notes: [],
@@ -1440,6 +1395,24 @@ describe('migrateAllowAccess', () => {
       },
     },
     {
+      name: 'mode-gated only with inactive positive-credit rule',
+      rules: [
+        { mode: 'Exam' },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-01-01T00:00:00',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: null,
+        errors: ['Mode-only access rules are not supported.'],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
       name: 'all-UID rules filtered to no-op',
       rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01T00:00:00' }],
       expected: {
@@ -1549,6 +1522,139 @@ describe('migrateAllowAccess', () => {
             due: { date: '2023-02-18T23:59:59' },
             lateDeadlines: [{ date: '2023-02-20T23:59:59', credit: 95 }],
             afterLastDeadline: { allowSubmissions: true, credit: 0 },
+          },
+        },
+        errors: [],
+        notes: [],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'view-only inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive rule with submission-only fields',
+      rules: [
+        {
+          active: false,
+          credit: 100,
+          timeLimitMin: 90,
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive password rule',
+      rules: [
+        {
+          active: false,
+          credit: 0,
+          password: 'foo',
+          showClosedAssessment: true,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          '1 password on inactive legacy access rule discarded because inactive rules do not allow submissions.',
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'hidden inactive rule without date-control access',
+      rules: [
+        {
+          active: false,
+          showClosedAssessment: false,
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: {
+        accessControl: {},
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'PrairieTest with inactive viewing rule',
+      rules: [
+        { examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34', credit: 100 },
+        { startDate: '2024-01-01T00:00:00', active: false },
+      ],
+      expected: {
+        accessControl: {
+          integrations: {
+            prairieTest: { exams: [{ examUuid: '8d38a804-7858-49a6-abe7-7a057604dd34' }] },
+          },
+        },
+        errors: [],
+        notes: [
+          'Inactive legacy access rules without a date-control access window cannot be faithfully migrated because modern access control cannot represent bounded view-only windows.',
+        ],
+        hasUidRules: false,
+      },
+    },
+    {
+      name: 'inactive positive-credit rule ignored for active credit monotonicity',
+      rules: [
+        {
+          credit: 50,
+          startDate: '2026-01-01T23:55:01',
+          endDate: '2026-06-01T23:59:59',
+        },
+        {
+          active: false,
+          credit: 100,
+          startDate: '2026-07-01T23:55:01',
+          endDate: '2026-12-25T23:59:59',
+        },
+      ],
+      expected: {
+        accessControl: {
+          dateControl: {
+            release: { date: '2026-01-01T23:55:01' },
+            due: { date: '2026-06-01T23:59:59', credit: 50 },
+          },
+          afterComplete: {
+            questions: {
+              hidden: true,
+              visibleFromDate: '2026-07-01T23:55:01',
+              visibleUntilDate: '2026-12-25T23:59:59',
+            },
           },
         },
         errors: [],
@@ -1698,7 +1804,7 @@ describe('analyzeAssessmentFile', () => {
     );
   });
 
-  it('returns null for empty allowAccess array', async () => {
+  it('analyzes an empty allowAccess array as legacy access control', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
         const filePath = path.join(tmpDir, 'infoAssessment.json');
@@ -1711,7 +1817,12 @@ describe('analyzeAssessmentFile', () => {
           }),
         );
         const result = await analyzeAssessmentFile(filePath, 'e01', FALLBACK_RELEASE);
-        assert.isNull(result);
+        assert.isNotNull(result);
+        assert.equal(result.tid, 'e01');
+        assert.equal(result.ruleCount, 0);
+        assert.equal(result.hasUidRules, false);
+        assert.deepEqual(result.errors, []);
+        assert.deepEqual(result.notes, []);
       },
       { unsafeCleanup: true },
     );
@@ -1877,6 +1988,32 @@ describe('applyMigrationToAssessmentFile', () => {
     );
   });
 
+  it('migrate strategy preserves property order', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            uuid: '00000000-0000-0000-0000-000000000000',
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [
+              { credit: 100, startDate: '2024-01-01T00:00:00', endDate: '2024-06-01T00:00:00' },
+            ],
+            zones: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.deepEqual(Object.keys(result), ['uuid', 'type', 'title', 'accessControl', 'zones']);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
   it('migrate strategy without clearIncompatible and incompatible rules keeps allowAccess', async () => {
     await tmp.withDir(
       async ({ path: tmpDir }) => {
@@ -1962,6 +2099,29 @@ describe('applyMigrationToAssessmentFile', () => {
 
         const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
         assert.isUndefined(result.accessControl);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('migrate strategy converts empty allowAccess to empty accessControl', async () => {
+    await tmp.withDir(
+      async ({ path: tmpDir }) => {
+        const filePath = path.join(tmpDir, 'infoAssessment.json');
+        await fs.writeFile(
+          filePath,
+          JSON.stringify({
+            type: 'Homework',
+            title: 'HW1',
+            allowAccess: [],
+          }),
+        );
+
+        await applyMigrationToAssessmentFile(filePath, 'migrate', false, FALLBACK_RELEASE);
+
+        const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+        assert.isUndefined(result.allowAccess);
+        assert.deepEqual(result.accessControl, []);
       },
       { unsafeCleanup: true },
     );
@@ -2139,6 +2299,35 @@ describe('applyMigrationToAssessmentFile', () => {
       },
       { unsafeCleanup: true },
     );
+  });
+});
+
+describe('migrateAssessmentJson', () => {
+  it('converts empty allowAccess to empty accessControl', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    assert.deepEqual(result.notes, []);
+    assert.deepEqual(result.errors, []);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
+  });
+
+  it('drops a stale accessControl key when migrating allowAccess', () => {
+    const json = JSON.stringify({
+      type: 'Homework',
+      accessControl: [{ dateControl: { release: { date: '2020-01-01T00:00:00' } } }],
+      allowAccess: [],
+    });
+    const result = migrateAssessmentJson(json, FALLBACK_RELEASE);
+    assert.isNotNull(result);
+    const parsed = JSON.parse(result.json);
+    assert.isUndefined(parsed.allowAccess);
+    assert.deepEqual(parsed.accessControl, []);
   });
 });
 

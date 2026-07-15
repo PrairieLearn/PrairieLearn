@@ -26,6 +26,7 @@ import type {
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import { getQuestionCreateUrl } from '../../../lib/client/url.js';
 import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
@@ -147,9 +148,9 @@ interface AssessmentEditorInnerProps {
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
-  switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   search: string;
@@ -170,9 +171,9 @@ function AssessmentEditorInner({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  courseHasQuestions,
   csrfToken,
   origHash,
-  switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
   search,
@@ -549,13 +550,26 @@ function AssessmentEditorInner({
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
-  const handleAddZone = () => {
+  const createAndAddZone = () => {
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
     });
     dispatch({ type: 'ADD_ZONE', zone });
+    return zone;
+  };
+
+  const handleAddZone = () => {
+    const zone = createAndAddZone();
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
+  };
+
+  // Empty-state call-to-action: enter edit mode, create the first zone, and
+  // open the question picker so the user lands directly on adding a question.
+  const handleAddFirstQuestions = () => {
+    setEditMode(true);
+    const zone = createAndAddZone();
+    setSelectedItem({ type: 'picker', zoneTrackingId: zone.trackingId });
   };
 
   const handleUpdateZone = (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => {
@@ -1096,7 +1110,6 @@ function AssessmentEditorInner({
                   state={treeState}
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
-                  switchViewUrl={switchViewUrl}
                   editControls={
                     <EditModeToolbar
                       csrfToken={csrfToken}
@@ -1114,9 +1127,14 @@ function AssessmentEditorInner({
                       }}
                     />
                   }
+                  canEdit={canEdit}
+                  canAddQuestions={canEdit && !!origHash}
+                  courseHasQuestions={courseHasQuestions}
+                  questionCreateUrl={getQuestionCreateUrl(courseInstance.id)}
                   onAddZone={handleAddZone}
                   onViewTypeChange={setViewType}
                   onToggleExpandCollapse={toggleExpandCollapse}
+                  onAddFirstQuestions={handleAddFirstQuestions}
                 />
               ),
             }}

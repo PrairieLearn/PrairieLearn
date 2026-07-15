@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 7.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 7.1.0
+
+### Minor Changes
+
+- fd27a2a: Export `escapeIdentifier` for safely constructing SQL queries with dynamic identifiers.
+
 ## 7.0.0
 
 ### Major Changes

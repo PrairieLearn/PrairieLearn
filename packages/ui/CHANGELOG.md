@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 3.7.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.7.0
+
+### Minor Changes
+
+- e3c07aa: Add `BooleanColumnFilter` and `applyBooleanFilter` for boolean-valued table columns, and add a `showModeToggle` prop to `MultiSelectColumnFilter`
+
 ## 3.6.0
 
 ### Minor Changes

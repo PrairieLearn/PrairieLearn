@@ -65,7 +65,7 @@ Most PrairieLearn elements are designed to meet these requirements by default. H
 
 !!! note "Alternative question formats"
 
-    Some elements that are inherently used for visual input, e.g. `<pl-drawing>` and `<pl-excalidraw>`, are currently not usable via keyboard navigation and screen readers. If you use these elements, consider providing an alternative question format for students who cannot use them, e.g. a freeform text input where they can describe the drawing or diagram.
+    Some elements that are inherently used for visual input, e.g. `<pl-drawing>`, `<pl-sketch>`, and `<pl-excalidraw>`, are currently not usable via keyboard navigation and screen readers. If you use these elements, consider providing an alternative question format for students who cannot use them, e.g. a freeform text input where they can describe the drawing or diagram.
 
 ## Understandable content
 

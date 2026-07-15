@@ -1,5 +1,22 @@
 # @prairielearn/migrations
 
+## 5.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 5.1.0
+
+### Minor Changes
+
+- fd27a2a: Add `selectTableIdBounds` for batched migrations that need to derive ID ranges from table names.
+
+### Patch Changes
+
+- Updated dependencies [fd27a2a]
+  - @prairielearn/postgres@7.1.0
+
 ## 5.0.8
 
 ### Patch Changes

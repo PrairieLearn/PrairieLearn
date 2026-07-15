@@ -27,12 +27,18 @@ jobs:
           app-id: ${{ secrets.CI_BOT_APP_ID }}
           private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
           ref: ${{ github.head_ref }}
 
       - uses: pnpm/action-setup@v6
+        with:
+          # Pinned below 11.12.0, whose self-install crashes with
+          # "Cannot use 'in' operator to search for 'integrity' in undefined".
+          # https://github.com/pnpm/action-setup/issues/276
+          # https://github.com/pnpm/pnpm/issues/12959
+          version: 11.11.0
       - uses: actions/setup-node@v6
         with:
           node-version: '24'

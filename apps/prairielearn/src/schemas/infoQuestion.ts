@@ -106,8 +106,21 @@ const WorkspaceOptionsJsonSchema = z
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.number().int().describe('The port number used in the Docker image.'),
-    home: z.string().describe('The home directory of the workspace container.'),
+    port: z
+      .number()
+      .int()
+      .min(1)
+      .max(65535)
+      .optional()
+      .describe(
+        'The port number used in the Docker image. If not specified, the port is retrieved from the workspace image labels.',
+      ),
+    home: z
+      .string()
+      .optional()
+      .describe(
+        'The home directory of the workspace container. If not specified, the home directory is retrieved from the workspace image labels.',
+      ),
     args: z
       .union([z.string(), z.array(z.string())])
       .describe('Command line arguments to pass to the Docker container.')
@@ -115,10 +128,9 @@ const WorkspaceOptionsJsonSchema = z
     rewriteUrl: z
       .boolean()
       .describe(
-        'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
+        'Controls whether workspace request URLs are rewritten before reaching the container. If not specified, the setting is retrieved from the workspace image labels.',
       )
-      .optional()
-      .default(true),
+      .optional(),
     gradedFiles: z
       .array(
         z
@@ -138,8 +150,10 @@ const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string(), z.string())
-      .describe('Environment variables to set inside the workspace container.')
+      .record(z.string(), z.string().nullable())
+      .describe(
+        'Environment variables to set inside the workspace container. Use a null value to unset a variable.',
+      )
       .optional()
       .default({}),
     syncIgnore: z

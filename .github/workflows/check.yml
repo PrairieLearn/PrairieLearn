@@ -46,7 +46,7 @@ jobs:
       PGHOST: localhost
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
@@ -58,6 +58,12 @@ jobs:
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
       - uses: pnpm/action-setup@v6
+        with:
+          # Pinned below 11.12.0, whose self-install crashes with
+          # "Cannot use 'in' operator to search for 'integrity' in undefined".
+          # https://github.com/pnpm/action-setup/issues/276
+          # https://github.com/pnpm/pnpm/issues/12959
+          version: 11.11.0
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -67,7 +73,7 @@ jobs:
         run: pnpm install
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -93,7 +99,7 @@ jobs:
           retention-days: 1
 
       - name: Restore lint caches
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             .eslintcache
@@ -124,6 +130,8 @@ jobs:
         run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that element schemas are up-to-date
+        run: make check-element-schemas
       - name: Check that all packages exist on npm
         run: make check-npm-packages
       - name: Check badge color contrast
@@ -163,7 +171,7 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           show-progress: false
 
@@ -195,6 +203,12 @@ jobs:
         run: make python-deps
 
       - uses: pnpm/action-setup@v6
+        with:
+          # Pinned below 11.12.0, whose self-install crashes with
+          # "Cannot use 'in' operator to search for 'integrity' in undefined".
+          # https://github.com/pnpm/action-setup/issues/276
+          # https://github.com/pnpm/pnpm/issues/12959
+          version: 11.11.0
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -207,6 +221,8 @@ jobs:
         run: make typecheck-python
       - name: Run the Python linter
         run: make lint-python
+      - name: Check Python helper package dependencies
+        run: make check-python-helper-dependencies
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
@@ -221,7 +237,7 @@ jobs:
         run: make lint-html
       - name: Upload Python coverage report to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -233,7 +249,7 @@ jobs:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           show-progress: false
       - name: Install additional dependencies

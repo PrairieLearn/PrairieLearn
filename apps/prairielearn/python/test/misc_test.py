@@ -1092,6 +1092,14 @@ def test_get_color_attrib_invalid(html_str: str) -> None:
         ("1/2", True, False, 0.5, {"submitted_answers": 0.5}),
         # Basic decimals
         ("0.25", True, False, 0.25, {"submitted_answers": 0.25}),
+        # Basic decimals with thousands separators
+        (
+            "12 345.678 901 2",
+            True,
+            False,
+            12345.6789012,
+            {"submitted_answers": 12345.6789012},
+        ),
         # Complex numbers
         (
             "1+2j",
@@ -1408,6 +1416,8 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     [
         ({"x": None, "y": None}, "z", False),
         ({"x": None, "y": None}, "x", True),
+        ({"x": None, "y": None}, "", True),
+        ({"x": None, "y": None}, " ", True),
         ({}, "y", False),
     ],
 )

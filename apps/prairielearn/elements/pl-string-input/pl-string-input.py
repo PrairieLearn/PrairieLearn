@@ -1,4 +1,5 @@
 import html
+import pathlib
 import random
 import re
 from enum import Enum
@@ -51,32 +52,12 @@ CORRECT_ANSWER_FORMAT_DEFAULT = CorrectAnswerFormat.EXACT
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-string-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "remove-leading-trailing",
-        "remove-spaces",
-        "allow-blank",
-        "ignore-case",
-        "placeholder",
-        "initial-value",
-        "size",
-        "show-help-text",
-        "normalize-to-ascii",
-        "show-score",
-        "multiline",
-        "escape-unicode",
-        "correct-answer-format",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)

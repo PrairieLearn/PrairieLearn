@@ -1,5 +1,17 @@
 # @prairielearn/compiled-assets
 
+## 4.1.9
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.1.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
 ## 4.1.7
 
 ### Patch Changes

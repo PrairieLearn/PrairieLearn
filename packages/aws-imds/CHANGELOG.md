@@ -1,5 +1,17 @@
 # @prairielearn/aws-imds
 
+## 3.0.8
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- 8b5bed9: Replace node-fetch with native fetch
+
 ## 3.0.6
 
 ### Patch Changes

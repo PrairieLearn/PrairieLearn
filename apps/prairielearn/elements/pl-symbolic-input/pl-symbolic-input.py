@@ -1,3 +1,4 @@
+import pathlib
 import random
 import re
 from enum import Enum
@@ -43,6 +44,8 @@ SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-symbolic-input.json"
+
 
 def _get_variables_with_fallback(
     element: lxml.html.HtmlElement,
@@ -76,33 +79,7 @@ SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "variables",
-        "label",
-        "aria-label",
-        "display",
-        "allow-sets",
-        "allow-complex",
-        "imaginary-unit-for-display",
-        "allow-trig-functions",
-        "additional-simplifications",
-        "size",
-        "formula-editor",
-        "show-help-text",
-        "allow-blank",
-        "blank-value",
-        "placeholder",
-        "custom-functions",
-        "display-log-as-ln",
-        "display-simplified-expression",
-        "show-score",
-        "suffix",
-        "initial-value",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
 
     # Validate that user-specified variables/functions don't conflict with built-ins
@@ -465,6 +442,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "suffix": suffix,
             "a_tru": sympy.latex(a_tru),
+            display.value: True,
         }
         return chevron.render(template, html_params).strip()
 

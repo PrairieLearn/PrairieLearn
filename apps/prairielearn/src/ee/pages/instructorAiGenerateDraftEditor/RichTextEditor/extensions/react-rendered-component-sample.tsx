@@ -46,7 +46,7 @@ interface PlCodeAttrs {
 // The UI needs to be aware of the defaults on these attributes so that it can
 // render the correct UI.
 const plCodeAttrs: Partial<PlCodeAttrs> = {
-  style: 'friendly',
+  style: 'xcode',
   noHighlight: false,
   preventSelect: false,
   copyCodeButton: false,

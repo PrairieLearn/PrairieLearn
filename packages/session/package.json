@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "4.0.7",
+  "version": "4.0.9",
   "type": "module",
   "repository": {
     "type": "git",
@@ -29,15 +29,14 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0 <1",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.2",
     "@types/on-headers": "^1.0.4",
     "@types/uid-safe": "^2.1.5",
     "@typescript/native-preview": "beta",
-    "@vitest/coverage-v8": "^4.1.7",
-    "express": "^4.22.1 <5",
+    "@vitest/coverage-v8": "^4.1.9",
+    "express": "^4.22.2 <5",
     "fetch-cookie": "^3.2.0",
-    "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^3.1.0",
-    "vitest": "^4.1.7"
+    "set-cookie-parser": "^3.1.1",
+    "vitest": "^4.1.9"
   }
 }

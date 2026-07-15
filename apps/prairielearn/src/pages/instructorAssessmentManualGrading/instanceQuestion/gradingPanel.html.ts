@@ -80,6 +80,10 @@ export function GradingPanel({
 
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
+  // The conflict modal renders additional grading panels; shortcuts are reserved for the main panel.
+  const enableKeyboardShortcuts = context === 'main';
+  const enableEditKeyboardShortcuts = enableKeyboardShortcuts && !disable;
+  const showNextShortcut = enableKeyboardShortcuts && skip_text === 'Next';
 
   // Users are only assigned to grade submissions if they have edit permissions.
   // If the user has no edit permissions (view only), we set show_submissions_assigned_to_me_only to false so
@@ -300,12 +304,16 @@ export function GradingPanel({
         <li class="list-group-item">
           <label>
             Feedback:
+            ${enableEditKeyboardShortcuts
+              ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent mb-1 ms-2">F</kbd>`
+              : ''}
             <textarea
               name="submission_note"
               class="form-control js-submission-feedback"
               style="min-height: 1em;"
               ${disable ? 'readonly' : ''}
               aria-describedby="submission-feedback-help-${context}"
+              ${enableEditKeyboardShortcuts ? html`data-key-binding="f"` : ''}
             >
 ${submission.feedback?.manual}</textarea
             >
@@ -454,11 +462,19 @@ ${submission.feedback?.manual}</textarea
                   <button
                     id="grade-button"
                     type="submit"
-                    class="btn btn-primary ${selectedInstanceQuestionGroup ? 'd-none' : ''}"
+                    class="btn btn-primary ${selectedInstanceQuestionGroup
+                      ? 'd-none'
+                      : 'd-inline-flex'} align-items-center"
                     name="__action"
                     value="add_manual_grade"
+                    ${enableEditKeyboardShortcuts ? html`data-key-binding="g"` : ''}
                   >
                     Grade
+                    ${enableEditKeyboardShortcuts
+                      ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2"
+                          >G</kbd
+                        >`
+                      : ''}
                   </button>
                   ${context === 'main' && aiGradingMode
                     ? html`
@@ -477,11 +493,17 @@ ${submission.feedback?.manual}</textarea
             <div class="btn-group">
               <button
                 type="submit"
-                class="btn btn-secondary"
+                class="btn btn-secondary ${showNextShortcut
+                  ? 'd-inline-flex align-items-center'
+                  : ''}"
                 name="__action"
                 value="next_instance_question"
+                ${showNextShortcut ? html`data-key-binding="n"` : ''}
               >
                 ${skip_text}
+                ${showNextShortcut
+                  ? html`<kbd aria-hidden="true" class="pl-kbd kbd-semi-transparent ms-2">N</kbd>`
+                  : ''}
               </button>
               ${!disable
                 ? html`

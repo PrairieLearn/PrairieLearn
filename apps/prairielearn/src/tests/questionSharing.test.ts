@@ -150,7 +150,7 @@ async function pullAndSyncSharingCourse(course: Course) {
   return jobSequence.status;
 }
 
-describe('Question Sharing', { timeout: 60_000 }, function () {
+describe('Question Sharing', { timeout: 60_000, concurrent: false }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -304,7 +304,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       config.checkSharingOnSync = false;
     });
 
-    test.sequential('Fail to sync course when validating shared question paths', async () => {
+    test('Fail to sync course when validating shared question paths', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings) {
         throw new Error(
@@ -318,48 +318,42 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     let exampleCourseSharingToken: string | null;
     let testCourseSharingToken: string | null;
 
-    test.sequential(
-      'Sync course with sharing enabled, disabling validating shared question paths',
-      async () => {
-        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-        if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
-          throw new Error('Errors or warnings found during sync of consuming course');
-        }
-      },
-    );
+    test('Sync course with sharing enabled, disabling validating shared question paths', async () => {
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+      if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
+        throw new Error('Errors or warnings found during sync of consuming course');
+      }
+    });
 
-    test.sequential(
-      'Fail to access shared question, because permission has not yet been granted',
-      async () => {
-        // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
-        const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
-        assert(!(await res.text()).includes(SHARING_QUESTION_QID));
+    test('Fail to access shared question, because permission has not yet been granted', async () => {
+      // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
+      const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
+      assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
-        // Question can be accessed through the owning course
-        const questionId = (
-          await selectQuestionByQid({
-            course_id: sharingCourse.id,
-            qid: SHARING_QUESTION_QID,
-          })
-        ).id;
-        const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
-        const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
-        assert(sharedQuestionPage.ok);
+      // Question can be accessed through the owning course
+      const questionId = (
+        await selectQuestionByQid({
+          course_id: sharingCourse.id,
+          qid: SHARING_QUESTION_QID,
+        })
+      ).id;
+      const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
+      const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
+      assert(sharedQuestionPage.ok);
 
-        // Question cannot be accessed through the consuming course, sharing permissions not yet set
-        const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${questionId}/settings`;
-        const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
-        assert(!sharedQuestionSharedPage.ok);
-      },
-    );
+      // Question cannot be accessed through the consuming course, sharing permissions not yet set
+      const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${questionId}/settings`;
+      const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
+      assert(!sharedQuestionSharedPage.ok);
+    });
 
-    test.sequential('Fail if trying to set an invalid sharing name', async () => {
+    test('Fail if trying to set an invalid sharing name', async () => {
       await expect(setSharingName(sharingCourse.id, 'invalid@sharingname')).rejects.toThrow();
       await expect(setSharingName(sharingCourse.id, 'invalid / sharingname')).rejects.toThrow();
       await expect(setSharingName(sharingCourse.id, '')).rejects.toThrow();
     });
 
-    test.sequential('Set consuming course sharing name', async () => {
+    test('Set consuming course sharing name', async () => {
       await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(consumingCourse.id));
       assert(sharingPage.ok);
@@ -369,7 +363,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       );
     });
 
-    test.sequential('Set sharing course sharing name', async () => {
+    test('Set sharing course sharing name', async () => {
       await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
       assert(sharingPage.ok);
@@ -379,15 +373,12 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       );
     });
 
-    test.sequential(
-      'Successfully change the sharing name when no questions have been shared',
-      async () => {
-        await setSharingName(sharingCourse.id, 'Nothing shared yet');
-        await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
-      },
-    );
+    test('Successfully change the sharing name when no questions have been shared', async () => {
+      await setSharingName(sharingCourse.id, 'Nothing shared yet');
+      await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
+    });
 
-    test.sequential('Generate and get sharing token for sharing course', async () => {
+    test('Generate and get sharing token for sharing course', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       await client.sharing.regenerateSharingToken.mutate();
 
@@ -397,7 +388,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert(exampleCourseSharingToken != null);
     });
 
-    test.sequential('Get default sharing token for consuming course', async () => {
+    test('Get default sharing token for consuming course', async () => {
       const sharingUrl = sharingPageUrl(consumingCourse.id);
       const response = await fetchCheerio(sharingUrl);
       const result = UUID_REGEXP_INLINE.exec(await response.text());
@@ -405,7 +396,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert(testCourseSharingToken != null);
     });
 
-    test.sequential('Add sharing set to JSON', async () => {
+    test('Add sharing set to JSON', async () => {
       sharingCourseData.course.sharingSets = [
         { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
       ];
@@ -421,7 +412,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       await commitOriginAndSync(courseRepo, 'Add sharing set');
     });
 
-    test.sequential('Share sharing set with test course', async () => {
+    test('Share sharing set with test course', async () => {
       const sharingSet = await selectOptionalSharingSetByName({
         course_id: sharingCourse.id,
         name: SHARING_SET_NAME,
@@ -438,7 +429,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'CONSUMING 101');
     });
 
-    test.sequential('Attempt to share sharing set with invalid course token', async () => {
+    test('Attempt to share sharing set with invalid course token', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       await expect(
         client.sharing.addCourseToSharingSet.mutate({
@@ -448,7 +439,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       ).rejects.toThrow();
     });
 
-    test.sequential('Attempt to share sharing set with own course', async () => {
+    test('Attempt to share sharing set with own course', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       await expect(
         client.sharing.addCourseToSharingSet.mutate({
@@ -458,7 +449,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       ).rejects.toThrow();
     });
 
-    test.sequential('Attempt to share sharing set that does not belong to the course', async () => {
+    test('Attempt to share sharing set that does not belong to the course', async () => {
       const client = await sharingTrpcClient(consumingCourse.id);
       await expect(
         client.sharing.addCourseToSharingSet.mutate({
@@ -468,7 +459,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       ).rejects.toThrow();
     });
 
-    test.sequential('Fail to change the sharing name when a question has been shared', async () => {
+    test('Fail to change the sharing name when a question has been shared', async () => {
       await expect(setSharingName(sharingCourse.id, 'Question shared')).rejects.toThrow();
     });
   });
@@ -485,13 +476,13 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       ).id;
     });
 
-    test.sequential('Fail to Access Questions Not-yet shared publicly', async () => {
+    test('Fail to Access Questions Not-yet shared publicly', async () => {
       const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
     });
 
-    test.sequential('Publicly share a question', async () => {
+    test('Publicly share a question', async () => {
       sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
       await fs.writeJSON(
         path.join(
@@ -540,14 +531,11 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       await commitAndPullSharingCourse();
     });
 
-    test.sequential(
-      'Successfully access publicly shared question through other course',
-      async () => {
-        const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${publiclySharedQuestionId}`;
-        const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
-        assert(sharedQuestionSharedPage.ok);
-      },
-    );
+    test('Successfully access publicly shared question through other course', async () => {
+      const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${publiclySharedQuestionId}`;
+      const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
+      assert(sharedQuestionSharedPage.ok);
+    });
   });
 
   describe('Test syncing code succeeding once questions have been shared', function () {
@@ -557,14 +545,14 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
     afterAll(() => {
       config.checkSharingOnSync = false;
     });
-    test.sequential('Re-sync test course, validating shared questions', async () => {
+    test('Re-sync test course, validating shared questions', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
 
-    test.sequential('Successfully access shared question', async () => {
+    test('Successfully access shared question', async () => {
       const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
       const sharedQuestionLink = res.$('a:contains("Shared via sharing set")');
       assert.lengthOf(sharedQuestionLink, 1);
@@ -579,7 +567,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert(publiclySharedQuestionRes.ok);
     });
 
-    test.sequential('Fail to sync if shared question is renamed', async () => {
+    test('Fail to sync if shared question is renamed', async () => {
       const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
@@ -597,7 +585,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       await fs.rename(questionTempPath, questionPath);
     });
 
-    test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
+    test('Rename shared question in origin, ensure live does not sync it', async () => {
       // Ensure that we can sync before renaming.
       const initialSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
       assert.equal(initialSyncStatus, 'Success');
@@ -636,205 +624,183 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.equal(finalSyncStatus, 'Success');
     });
 
-    test.sequential(
-      'Remove a used question from a sharing set, ensure sync error message identifies it',
-      async () => {
-        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
+    test('Remove a used question from a sharing set, ensure sync error message identifies it', async () => {
+      const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-        const output = await ensureInvalidSharingOperationFailsToSync();
-        assert.match(
-          output,
-          /following questions cannot be removed from these sharing sets because at least one consuming course/,
-        );
-        assert.match(output, new RegExp(`- ${SHARING_QUESTION_QID}: ${SHARING_SET_NAME}`));
+      const output = await ensureInvalidSharingOperationFailsToSync();
+      assert.match(
+        output,
+        /following questions cannot be removed from these sharing sets because at least one consuming course/,
+      );
+      assert.match(output, new RegExp(`- ${SHARING_QUESTION_QID}: ${SHARING_SET_NAME}`));
 
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
-      },
-    );
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+    });
 
-    test.sequential(
-      'Remove a publicly shared question from a sharing set used by a consuming course, ensure sync still fails',
-      async () => {
-        // Pins the decision in `checkInvalidSharingSetRemovals` to ignore
-        // `share_publicly`. Update this test if we loosen that rule.
-        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharePublicly = true;
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
+    test('Remove a publicly shared question from a sharing set used by a consuming course, ensure sync still fails', async () => {
+      // Pins the decision in `checkInvalidSharingSetRemovals` to ignore
+      // `share_publicly`. Update this test if we loosen that rule.
+      const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharePublicly = true;
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-        const output = await ensureInvalidSharingOperationFailsToSync();
-        assert.match(output, new RegExp(`- ${SHARING_QUESTION_QID}: ${SHARING_SET_NAME}`));
+      const output = await ensureInvalidSharingOperationFailsToSync();
+      assert.match(output, new RegExp(`- ${SHARING_QUESTION_QID}: ${SHARING_SET_NAME}`));
 
-        delete sharingCourseData.questions[SHARING_QUESTION_QID].sharePublicly;
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
-      },
-    );
+      delete sharingCourseData.questions[SHARING_QUESTION_QID].sharePublicly;
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+    });
 
-    test.sequential(
-      'Remove a question from a sharing set with no consumers, even when the question is consumed via another set',
-      async () => {
-        const saveCourseSharingSets = sharingCourseData.course.sharingSets!;
-        const saveQuestionSharingSets =
-          sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
+    test('Remove a question from a sharing set with no consumers, even when the question is consumed via another set', async () => {
+      const saveCourseSharingSets = sharingCourseData.course.sharingSets!;
+      const saveQuestionSharingSets =
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets!;
 
-        sharingCourseData.course.sharingSets = [
-          ...saveCourseSharingSets,
-          { name: UNGRANTED_SHARING_SET_NAME, description: 'not shared with any course' },
-        ];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
-          sharingCourseData.course,
-        );
+      sharingCourseData.course.sharingSets = [
+        ...saveCourseSharingSets,
+        { name: UNGRANTED_SHARING_SET_NAME, description: 'not shared with any course' },
+      ];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
 
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [
-          SHARING_SET_NAME,
-          UNGRANTED_SHARING_SET_NAME,
-        ];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [
+        SHARING_SET_NAME,
+        UNGRANTED_SHARING_SET_NAME,
+      ];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const addedSharingSetQuestionId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set_question,
-          {
-            sharing_set_name: UNGRANTED_SHARING_SET_NAME,
-            qid: SHARING_QUESTION_QID,
-            course_id: sharingCourse.id,
-          },
-          IdSchema,
-        );
-        assert.isNotNull(addedSharingSetQuestionId);
+      let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const addedSharingSetQuestionId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set_question,
+        {
+          sharing_set_name: UNGRANTED_SHARING_SET_NAME,
+          qid: SHARING_QUESTION_QID,
+          course_id: sharingCourse.id,
+        },
+        IdSchema,
+      );
+      assert.isNotNull(addedSharingSetQuestionId);
 
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const removedSharingSetQuestionId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set_question,
-          {
-            sharing_set_name: UNGRANTED_SHARING_SET_NAME,
-            qid: SHARING_QUESTION_QID,
-            course_id: sharingCourse.id,
-          },
-          IdSchema,
-        );
-        assert.isNull(removedSharingSetQuestionId);
-        const grantedSharingSetQuestionId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set_question,
-          {
-            sharing_set_name: SHARING_SET_NAME,
-            qid: SHARING_QUESTION_QID,
-            course_id: sharingCourse.id,
-          },
-          IdSchema,
-        );
-        assert.isNotNull(grantedSharingSetQuestionId);
+      syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const removedSharingSetQuestionId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set_question,
+        {
+          sharing_set_name: UNGRANTED_SHARING_SET_NAME,
+          qid: SHARING_QUESTION_QID,
+          course_id: sharingCourse.id,
+        },
+        IdSchema,
+      );
+      assert.isNull(removedSharingSetQuestionId);
+      const grantedSharingSetQuestionId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set_question,
+        {
+          sharing_set_name: SHARING_SET_NAME,
+          qid: SHARING_QUESTION_QID,
+          course_id: sharingCourse.id,
+        },
+        IdSchema,
+      );
+      assert.isNotNull(grantedSharingSetQuestionId);
 
-        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
-        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
-        const restoreSync = await syncFromDisk.syncOrCreateDiskToSql(
+      await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+      await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
+      const restoreSync = await syncFromDisk.syncOrCreateDiskToSql(
+        courseRepo.courseLiveDir,
+        logger,
+      );
+      assert.equal(restoreSync.status, 'complete');
+
+      sharingCourseData.course.sharingSets = saveCourseSharingSets;
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveQuestionSharingSets;
+    });
+
+    test('Remove an unused question from a sharing set, ensure live syncs and removes it', async () => {
+      sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+      await fs.writeJSON(
+        path.join(
           courseRepo.courseLiveDir,
-          logger,
-        );
-        assert.equal(restoreSync.status, 'complete');
+          'questions',
+          UNUSED_SHARING_SET_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID],
+      );
 
-        sharingCourseData.course.sharingSets = saveCourseSharingSets;
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveQuestionSharingSets;
-      },
-    );
+      let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const createdSharingSetQuestionId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set_question,
+        {
+          sharing_set_name: SHARING_SET_NAME,
+          qid: UNUSED_SHARING_SET_QUESTION_QID,
+          course_id: sharingCourse.id,
+        },
+        IdSchema,
+      );
+      assert.isNotNull(createdSharingSetQuestionId);
 
-    test.sequential(
-      'Remove an unused question from a sharing set, ensure live syncs and removes it',
-      async () => {
-        sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID].sharingSets = [
-          SHARING_SET_NAME,
-        ];
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            UNUSED_SHARING_SET_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID],
-        );
+      delete sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID].sharingSets;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          UNUSED_SHARING_SET_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID],
+      );
 
-        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const createdSharingSetQuestionId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set_question,
-          {
-            sharing_set_name: SHARING_SET_NAME,
-            qid: UNUSED_SHARING_SET_QUESTION_QID,
-            course_id: sharingCourse.id,
-          },
-          IdSchema,
-        );
-        assert.isNotNull(createdSharingSetQuestionId);
+      syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const remainingSharingSetQuestionId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set_question,
+        {
+          sharing_set_name: SHARING_SET_NAME,
+          qid: UNUSED_SHARING_SET_QUESTION_QID,
+          course_id: sharingCourse.id,
+        },
+        IdSchema,
+      );
+      assert.isNull(remainingSharingSetQuestionId);
 
-        delete sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID].sharingSets;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            UNUSED_SHARING_SET_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[UNUSED_SHARING_SET_QUESTION_QID],
-        );
+      await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+      await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
+    });
 
-        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const remainingSharingSetQuestionId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set_question,
-          {
-            sharing_set_name: SHARING_SET_NAME,
-            qid: UNUSED_SHARING_SET_QUESTION_QID,
-            course_id: sharingCourse.id,
-          },
-          IdSchema,
-        );
-        assert.isNull(remainingSharingSetQuestionId);
+    test('Unshare a publicly shared question, ensure live does not sync it', async () => {
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
 
-        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
-        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
-      },
-    );
+      await ensureInvalidSharingOperationFailsToSync();
+    });
 
-    test.sequential(
-      'Unshare a publicly shared question, ensure live does not sync it',
-      async () => {
-        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            PUBLICLY_SHARED_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
-        );
-
-        await ensureInvalidSharingOperationFailsToSync();
-      },
-    );
-
-    test.sequential('Rename a publicly shared question that has no consumers', async () => {
+    test('Rename a publicly shared question that has no consumers', async () => {
       const originalQuestionPath = path.join(
         courseRepo.courseOriginDir,
         'questions',
@@ -859,7 +825,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.isTrue(renamedQuestion.share_publicly);
     });
 
-    test.sequential('Unshare a publicly shared question that has no consumers', async () => {
+    test('Unshare a publicly shared question that has no consumers', async () => {
       sharingCourseData.questions[UNUSED_PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
       await fs.writeJSON(
         path.join(
@@ -881,118 +847,109 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.isFalse(unusedQuestion.share_publicly);
     });
 
-    test.sequential(
-      'Delete a referenced sharing set, ensure sync error message identifies it',
-      async () => {
-        assert(sharingCourseData.course.sharingSets);
-        const saveSharingSets = sharingCourseData.course.sharingSets;
-        sharingCourseData.course.sharingSets = saveSharingSets.filter(
-          (ss) => ss.name !== SHARING_SET_NAME,
-        );
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
-          sharingCourseData.course,
-        );
+    test('Delete a referenced sharing set, ensure sync error message identifies it', async () => {
+      assert(sharingCourseData.course.sharingSets);
+      const saveSharingSets = sharingCourseData.course.sharingSets;
+      sharingCourseData.course.sharingSets = saveSharingSets.filter(
+        (ss) => ss.name !== SHARING_SET_NAME,
+      );
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
 
-        const { logger: capturedLogger, getOutput } = makeMockLogger();
-        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(
-          courseRepo.courseLiveDir,
-          capturedLogger,
-        );
-        assert.equal(syncResult.status, 'sharing_error');
-        assert.match(
-          getOutput(),
-          new RegExp(
-            `The following sharing sets are still in use and cannot be removed from 'infoCourse\\.json': ${SHARING_SET_NAME}`,
-          ),
-        );
+      const { logger: capturedLogger, getOutput } = makeMockLogger();
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(
+        courseRepo.courseLiveDir,
+        capturedLogger,
+      );
+      assert.equal(syncResult.status, 'sharing_error');
+      assert.match(
+        getOutput(),
+        new RegExp(
+          `The following sharing sets are still in use and cannot be removed from 'infoCourse\\.json': ${SHARING_SET_NAME}`,
+        ),
+      );
 
-        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
-        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
-        const restoreSync = await syncFromDisk.syncOrCreateDiskToSql(
-          courseRepo.courseLiveDir,
-          logger,
-        );
-        assert.equal(restoreSync.status, 'complete');
+      await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+      await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
+      const restoreSync = await syncFromDisk.syncOrCreateDiskToSql(
+        courseRepo.courseLiveDir,
+        logger,
+      );
+      assert.equal(restoreSync.status, 'complete');
 
-        sharingCourseData.course.sharingSets = saveSharingSets;
-      },
-    );
+      sharingCourseData.course.sharingSets = saveSharingSets;
+    });
 
-    test.sequential(
-      'Delete an unreferenced sharing set, ensure live syncs and removes it',
-      async () => {
-        const newSharingSetName = 'unreferenced-share-set';
-        assert(sharingCourseData.course.sharingSets);
-        const saveSharingSets = sharingCourseData.course.sharingSets;
-        sharingCourseData.course.sharingSets = [
-          ...saveSharingSets,
-          { name: newSharingSetName, description: 'no references' },
-        ];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
-          sharingCourseData.course,
-        );
+    test('Delete an unreferenced sharing set, ensure live syncs and removes it', async () => {
+      const newSharingSetName = 'unreferenced-share-set';
+      assert(sharingCourseData.course.sharingSets);
+      const saveSharingSets = sharingCourseData.course.sharingSets;
+      sharingCourseData.course.sharingSets = [
+        ...saveSharingSets,
+        { name: newSharingSetName, description: 'no references' },
+      ];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
 
-        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const createdId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set,
-          { sharing_set_name: newSharingSetName },
-          IdSchema,
-        );
-        assert.isNotNull(createdId);
+      let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const createdId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set,
+        { sharing_set_name: newSharingSetName },
+        IdSchema,
+      );
+      assert.isNotNull(createdId);
 
-        sharingCourseData.course.sharingSets = saveSharingSets;
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
-          sharingCourseData.course,
-        );
+      sharingCourseData.course.sharingSets = saveSharingSets;
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
+        sharingCourseData.course,
+      );
 
-        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const remainingId = await sqldb.queryOptionalScalar(
-          sql.select_sharing_set,
-          { sharing_set_name: newSharingSetName },
-          IdSchema,
-        );
-        assert.isNull(remainingId);
+      syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const remainingId = await sqldb.queryOptionalScalar(
+        sql.select_sharing_set,
+        { sharing_set_name: newSharingSetName },
+        IdSchema,
+      );
+      assert.isNull(remainingId);
 
-        await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
-        await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
-      },
-    );
+      await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+      await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
+    });
 
-    test.sequential(
-      'Adding question to sharing set that does not exist, ensure sync error is created',
-      async () => {
-        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [
-          ...saveSharingSets,
-          'Fake Sharing Set Name',
-        ];
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
+    test('Adding question to sharing set that does not exist, ensure sync error is created', async () => {
+      const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [
+        ...saveSharingSets,
+        'Fake Sharing Set Name',
+      ];
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const question = await selectQuestionByQid({
-          course_id: sharingCourse.id,
-          qid: SHARING_QUESTION_QID,
-        });
-        assert.isNotNull(question);
-        assert.isNotNull(question.sync_errors);
-        assert.match(question.sync_errors, /Fake Sharing Set Name/);
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      assert.isNotNull(question);
+      assert.isNotNull(question.sync_errors);
+      assert.match(question.sync_errors, /Fake Sharing Set Name/);
 
-        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
-        );
-      },
-    );
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
+    });
   });
 
   describe('Test publicly sharing an assessment', { timeout: 80_000 }, function () {
@@ -1003,72 +960,66 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       config.checkSharingOnSync = false;
     });
 
-    test.sequential(
-      'Shared course instance containing a nonshared assessment creates a sync error on course instance',
-      async () => {
-        sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          sharingCourseData.courseInstances['Fa19'].courseInstance,
-        );
+    test('Shared course instance containing a nonshared assessment creates a sync error on course instance', async () => {
+      sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+        sharingCourseData.courseInstances['Fa19'].courseInstance,
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const courseInstance = await selectCourseInstanceByShortName({
-          course: sharingCourse,
-          shortName: 'Fa19',
-        });
-        assert.isNotNull(courseInstance);
-        assert.isNotNull(courseInstance.sync_errors);
-        assert.match(
-          courseInstance.sync_errors,
-          /contains assessments which are not publicly shared/,
-        );
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const courseInstance = await selectCourseInstanceByShortName({
+        course: sharingCourse,
+        shortName: 'Fa19',
+      });
+      assert.isNotNull(courseInstance);
+      assert.isNotNull(courseInstance.sync_errors);
+      assert.match(
+        courseInstance.sync_errors,
+        /contains assessments which are not publicly shared/,
+      );
 
-        // Restore for now
-        sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
-        await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          sharingCourseData.courseInstances['Fa19'].courseInstance,
-        );
-      },
-    );
+      // Restore for now
+      sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
+      await fs.writeJSON(
+        path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+        sharingCourseData.courseInstances['Fa19'].courseInstance,
+      );
+    });
 
-    test.sequential(
-      'Fail to sync a shared assessment containing a nonshared question',
-      async () => {
-        sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
-        sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
-          {
-            questions: [
-              { id: `${SHARING_QUESTION_QID}`, points: 1 },
-              { id: `${PUBLICLY_SHARED_QUESTION_QID}`, points: 1 },
-            ],
-          },
-        ];
+    test('Fail to sync a shared assessment containing a nonshared question', async () => {
+      sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+      sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+        {
+          questions: [
+            { id: `${SHARING_QUESTION_QID}`, points: 1 },
+            { id: `${PUBLICLY_SHARED_QUESTION_QID}`, points: 1 },
+          ],
+        },
+      ];
 
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'courseInstances/Fa19/assessments/test/infoAssessment.json',
-          ),
-          sharingCourseData.courseInstances['Fa19'].assessments['test'],
-        );
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'courseInstances/Fa19/assessments/test/infoAssessment.json',
+        ),
+        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert(syncResult.status === 'complete');
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert(syncResult.status === 'complete');
 
-        const assessment = await selectAssessmentByTid({
-          course_instance_id: sharingCourseInstanceId,
-          tid: 'test',
-        });
-        assert.isNotNull(assessment);
-        assert.isNotNull(assessment.sync_errors);
-        assert.match(assessment.sync_errors, /contains questions which are not publicly shared/);
-      },
-    );
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: sharingCourseInstanceId,
+        tid: 'test',
+      });
+      assert.isNotNull(assessment);
+      assert.isNotNull(assessment.sync_errors);
+      assert.match(assessment.sync_errors, /contains questions which are not publicly shared/);
+    });
 
-    test.sequential('Successfully sync a shared assessment with a shared question', async () => {
+    test('Successfully sync a shared assessment with a shared question', async () => {
       sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
         {
           questions: [
@@ -1091,81 +1042,92 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.isFalse(syncResult.hadJsonErrorsOrWarnings);
     });
 
-    test.sequential(
-      'Fail to unshare a publicly shared question that is in a publicly shared assessment in the same course',
-      async () => {
-        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
-          false;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
-        );
+    test('Access a publicly shared assessment whose course instance is not shared publicly', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'sharing_error');
+      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+      const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+      assert(sharedAssessmentPage.ok);
 
-        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
-          true;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
-        );
-      },
-    );
+      const courseInstanceAssessmentsUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessments`;
+      const courseInstanceAssessmentsPage = await fetchCheerio(courseInstanceAssessmentsUrl);
+      assert.equal(courseInstanceAssessmentsPage.status, 404);
+    });
 
-    test.sequential(
-      'Allow sharing only the source of a question that is in a publicly shared assessment in the same course',
-      async () => {
-        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
-          false;
-        sharingCourseData.questions[
-          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID
-        ].shareSourcePublicly = true;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
-        );
+    test('Fail to unshare a publicly shared question that is in a publicly shared assessment in the same course', async () => {
+      sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+        false;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
 
-        let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'sharing_error');
 
-        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
-          true;
-        delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]
-          .shareSourcePublicly;
-        await fs.writeJSON(
-          path.join(
-            courseRepo.courseLiveDir,
-            'questions',
-            ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
-            'info.json',
-          ),
-          sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
-        );
+      sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+        true;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+    });
 
-        syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
-      },
-    );
+    test('Allow sharing only the source of a question that is in a publicly shared assessment in the same course', async () => {
+      sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+        false;
+      sharingCourseData.questions[
+        ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID
+      ].shareSourcePublicly = true;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
 
-    test.sequential('Successfully sync a shared course instance', async () => {
+      let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+
+      sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
+        true;
+      delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]
+        .shareSourcePublicly;
+      await fs.writeJSON(
+        path.join(
+          courseRepo.courseLiveDir,
+          'questions',
+          ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
+      syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+    });
+
+    test('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
         path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
@@ -1178,115 +1140,100 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       }
     });
 
-    test.sequential(
-      'Successfully access publicly shared course instance page for the shared course instance',
-      async () => {
-        const sharedCourseInstanceUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessments`;
-        const sharedCourseInstancePage = await fetchCheerio(sharedCourseInstanceUrl);
+    test('Successfully access publicly shared course instance page for the shared course instance', async () => {
+      const sharedCourseInstanceUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessments`;
+      const sharedCourseInstancePage = await fetchCheerio(sharedCourseInstanceUrl);
 
-        assert(sharedCourseInstancePage.ok);
-      },
-    );
+      assert(sharedCourseInstancePage.ok);
+    });
 
-    test.sequential(
-      'Successfully access publicly shared assessment page for the shared assessment',
-      async () => {
-        const sharedAssessmentId = (
-          await selectAssessmentByTid({
-            tid: 'test',
-            course_instance_id: sharingCourseInstanceId,
-          })
-        ).id;
-        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
-        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+    test('Successfully access publicly shared assessment page for the shared assessment', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+      const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
-        assert(sharedAssessmentPage.ok);
-      },
-    );
+      assert(sharedAssessmentPage.ok);
+    });
 
-    test.sequential(
-      'Try adding a draft question to a sharing set, ensure sync error is created',
-      async () => {
-        sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+    test('Try adding a draft question to a sharing set, ensure sync error is created', async () => {
+      sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
 
-        const questionDirectory = path.join(
-          courseRepo.courseLiveDir,
-          'questions',
-          DRAFT_QUESTION_QID,
-        );
-        await fs.ensureDir(questionDirectory);
-        await fs.writeJSON(
-          path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
-        );
+      const questionDirectory = path.join(
+        courseRepo.courseLiveDir,
+        'questions',
+        DRAFT_QUESTION_QID,
+      );
+      await fs.ensureDir(questionDirectory);
+      await fs.writeJSON(
+        path.join(questionDirectory, 'info.json'),
+        sharingCourseData.questions[DRAFT_QUESTION_QID],
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const question = await selectQuestionByQid({
-          course_id: sharingCourse.id,
-          qid: DRAFT_QUESTION_QID,
-        });
-        assert.isNotNull(question);
-        assert.isNotNull(question.sync_errors);
-        assert.match(question.sync_errors, /cannot be added to sharing sets/);
-      },
-    );
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: DRAFT_QUESTION_QID,
+      });
+      assert.isNotNull(question);
+      assert.isNotNull(question.sync_errors);
+      assert.match(question.sync_errors, /cannot be added to sharing sets/);
+    });
 
-    test.sequential(
-      'Try publicly sharing a draft question, ensure sync error is created',
-      async () => {
-        delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets;
-        sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly = true;
+    test('Try publicly sharing a draft question, ensure sync error is created', async () => {
+      delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets;
+      sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly = true;
 
-        const questionDirectory = path.join(
-          courseRepo.courseLiveDir,
-          'questions',
-          DRAFT_QUESTION_QID,
-        );
-        await fs.writeJSON(
-          path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
-        );
+      const questionDirectory = path.join(
+        courseRepo.courseLiveDir,
+        'questions',
+        DRAFT_QUESTION_QID,
+      );
+      await fs.writeJSON(
+        path.join(questionDirectory, 'info.json'),
+        sharingCourseData.questions[DRAFT_QUESTION_QID],
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const question = await selectQuestionByQid({
-          course_id: sharingCourse.id,
-          qid: DRAFT_QUESTION_QID,
-        });
-        assert.isNotNull(question);
-        assert.isNotNull(question.sync_errors);
-        assert.match(question.sync_errors, /cannot be publicly shared/);
-      },
-    );
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: DRAFT_QUESTION_QID,
+      });
+      assert.isNotNull(question);
+      assert.isNotNull(question.sync_errors);
+      assert.match(question.sync_errors, /cannot be publicly shared/);
+    });
 
-    test.sequential(
-      'Try publicly sharing the source of a draft question, ensure sync error is created',
-      async () => {
-        delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly;
-        sharingCourseData.questions[DRAFT_QUESTION_QID].shareSourcePublicly = true;
+    test('Try publicly sharing the source of a draft question, ensure sync error is created', async () => {
+      delete sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly;
+      sharingCourseData.questions[DRAFT_QUESTION_QID].shareSourcePublicly = true;
 
-        const questionDirectory = path.join(
-          courseRepo.courseLiveDir,
-          'questions',
-          DRAFT_QUESTION_QID,
-        );
-        await fs.writeJSON(
-          path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
-        );
+      const questionDirectory = path.join(
+        courseRepo.courseLiveDir,
+        'questions',
+        DRAFT_QUESTION_QID,
+      );
+      await fs.writeJSON(
+        path.join(questionDirectory, 'info.json'),
+        sharingCourseData.questions[DRAFT_QUESTION_QID],
+      );
 
-        const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
-        assert.equal(syncResult.status, 'complete');
-        const question = await selectQuestionByQid({
-          course_id: sharingCourse.id,
-          qid: DRAFT_QUESTION_QID,
-        });
-        assert.isNotNull(question);
-        assert.isNotNull(question.sync_errors);
-        assert.match(question.sync_errors, /cannot be publicly shared/);
-      },
-    );
+      const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+      assert.equal(syncResult.status, 'complete');
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: DRAFT_QUESTION_QID,
+      });
+      assert.isNotNull(question);
+      assert.isNotNull(question.sync_errors);
+      assert.match(question.sync_errors, /cannot be publicly shared/);
+    });
   });
 
   describe('Test that deleted shared questions are excluded from imports', function () {
@@ -1308,49 +1255,39 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       ).id;
     });
 
-    test.sequential(
-      'Soft-delete a sharing-set question, ensure consuming course sync reports errors',
-      async () => {
-        await withConfig({ checkSharingOnSync: true }, async () => {
-          await updateQuestion({
-            question_id: sharingQuestionId,
-            patch: { deleted_at: new Date() },
-          });
-
-          const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-          expect(
-            syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
-          ).toBeTruthy();
-
-          await updateQuestion({
-            question_id: sharingQuestionId,
-            patch: { deleted_at: null },
-          });
+    test('Soft-delete a sharing-set question, ensure consuming course sync reports errors', async () => {
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await updateQuestion({
+          question_id: sharingQuestionId,
+          patch: { deleted_at: new Date() },
         });
-      },
-    );
 
-    test.sequential(
-      'Soft-delete a publicly shared question, ensure consuming course sync reports errors',
-      async () => {
-        await withConfig({ checkSharingOnSync: true }, async () => {
-          await updateQuestion({
-            question_id: publiclySharedQuestionId,
-            patch: { deleted_at: new Date() },
-          });
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+        expect(syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings).toBeTruthy();
 
-          const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-          expect(
-            syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
-          ).toBeTruthy();
-
-          await updateQuestion({
-            question_id: publiclySharedQuestionId,
-            patch: { deleted_at: null },
-          });
+        await updateQuestion({
+          question_id: sharingQuestionId,
+          patch: { deleted_at: null },
         });
-      },
-    );
+      });
+    });
+
+    test('Soft-delete a publicly shared question, ensure consuming course sync reports errors', async () => {
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await updateQuestion({
+          question_id: publiclySharedQuestionId,
+          patch: { deleted_at: new Date() },
+        });
+
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+        expect(syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings).toBeTruthy();
+
+        await updateQuestion({
+          question_id: publiclySharedQuestionId,
+          patch: { deleted_at: null },
+        });
+      });
+    });
   });
 
   describe('Sharing admin gates and CRUD via tRPC', function () {
@@ -1368,7 +1305,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       return await selectOptionalSharingSetByName({ course_id: sharingCourse.id, name });
     }
 
-    test.sequential('non-owner users cannot mutate sharing state', async () => {
+    test('non-owner users cannot mutate sharing state', async () => {
       const viewer = await getOrCreateUser({
         uid: 'sharing-viewer@example.com',
         name: 'Sharing Viewer',
@@ -1405,7 +1342,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('sharing mutations fail when question sharing is disabled', async () => {
+    test('sharing mutations fail when question sharing is disabled', async () => {
       await features.disable('question-sharing', {
         institution_id: sharingCourse.institution_id,
         course_id: sharingCourse.id,
@@ -1429,7 +1366,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       }
     });
 
-    test.sequential('file-editing mutations fail on example courses', async () => {
+    test('file-editing mutations fail on example courses', async () => {
       await updateCourseExampleCourse({
         course_id: sharingCourse.id,
         example_course: true,
@@ -1456,7 +1393,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       }
     });
 
-    test.sequential('createSharingSet writes the set to infoCourse.json', async () => {
+    test('createSharingSet writes the set to infoCourse.json', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       const result = await client.sharing.createSharingSet.mutate({
         name: CRUD_SET_NAME,
@@ -1475,7 +1412,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       assert.equal(createdSet.description, 'CRUD test set');
     });
 
-    test.sequential('createSharingSet rejects duplicate names with DUPLICATE_NAME', async () => {
+    test('createSharingSet rejects duplicate names with DUPLICATE_NAME', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       try {
         await client.sharing.createSharingSet.mutate({
@@ -1490,42 +1427,39 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       }
     });
 
-    test.sequential(
-      'updateSharingSetDescription rewrites the description and rejects NOT_FOUND',
-      async () => {
-        const client = await sharingTrpcClient(sharingCourse.id);
+    test('updateSharingSetDescription rewrites the description and rejects NOT_FOUND', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
 
-        const result = await client.sharing.updateSharingSetDescription.mutate({
-          name: CRUD_SET_NAME,
-          description: 'Updated description',
+      const result = await client.sharing.updateSharingSetDescription.mutate({
+        name: CRUD_SET_NAME,
+        description: 'Updated description',
+        origHash: await getInfoCourseOrigHash(),
+      });
+      assert.ok(result.origHash);
+
+      const courseInfo = JSON.parse(
+        await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+      );
+      const updatedSet = courseInfo.sharingSets.find(
+        (s: { name: string }) => s.name === CRUD_SET_NAME,
+      );
+      assert.equal(updatedSet.description, 'Updated description');
+
+      try {
+        await client.sharing.updateSharingSetDescription.mutate({
+          name: 'does-not-exist',
+          description: 'anything',
           origHash: await getInfoCourseOrigHash(),
         });
-        assert.ok(result.origHash);
+        assert.fail('Expected mutation to throw');
+      } catch (err: unknown) {
+        const appError = getAppError<SharingError['UpdateSharingSetDescription']>(err);
+        assert.isNotNull(appError);
+        assert.equal(appError.code, 'NOT_FOUND');
+      }
+    });
 
-        const courseInfo = JSON.parse(
-          await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
-        );
-        const updatedSet = courseInfo.sharingSets.find(
-          (s: { name: string }) => s.name === CRUD_SET_NAME,
-        );
-        assert.equal(updatedSet.description, 'Updated description');
-
-        try {
-          await client.sharing.updateSharingSetDescription.mutate({
-            name: 'does-not-exist',
-            description: 'anything',
-            origHash: await getInfoCourseOrigHash(),
-          });
-          assert.fail('Expected mutation to throw');
-        } catch (err: unknown) {
-          const appError = getAppError<SharingError['UpdateSharingSetDescription']>(err);
-          assert.isNotNull(appError);
-          assert.equal(appError.code, 'NOT_FOUND');
-        }
-      },
-    );
-
-    test.sequential('deleteSharingSet rejects an in-use set with IN_USE', async () => {
+    test('deleteSharingSet rejects an in-use set with IN_USE', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       try {
         await client.sharing.deleteSharingSet.mutate({
@@ -1540,32 +1474,29 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       }
     });
 
-    test.sequential(
-      'deleteSharingSet succeeds when the unused set already exists in the DB',
-      async () => {
-        const client = await sharingTrpcClient(sharingCourse.id);
-        const createResult = await client.sharing.createSharingSet.mutate({
-          name: DELETE_REGRESSION_SET_NAME,
-          origHash: await getInfoCourseOrigHash(),
-        });
-        assert.isNotNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
+    test('deleteSharingSet succeeds when the unused set already exists in the DB', async () => {
+      const client = await sharingTrpcClient(sharingCourse.id);
+      const createResult = await client.sharing.createSharingSet.mutate({
+        name: DELETE_REGRESSION_SET_NAME,
+        origHash: await getInfoCourseOrigHash(),
+      });
+      assert.isNotNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
 
-        const deleteResult = await client.sharing.deleteSharingSet.mutate({
-          name: DELETE_REGRESSION_SET_NAME,
-          origHash: createResult.origHash,
-        });
-        assert.ok(deleteResult.origHash);
-        assert.isNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
+      const deleteResult = await client.sharing.deleteSharingSet.mutate({
+        name: DELETE_REGRESSION_SET_NAME,
+        origHash: createResult.origHash,
+      });
+      assert.ok(deleteResult.origHash);
+      assert.isNull(await selectSharingSet(DELETE_REGRESSION_SET_NAME));
 
-        const courseInfo = JSON.parse(
-          await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
-        );
-        const sharingSets: { name: string }[] = courseInfo.sharingSets ?? [];
-        assert.isUndefined(sharingSets.find((s) => s.name === DELETE_REGRESSION_SET_NAME));
-      },
-    );
+      const courseInfo = JSON.parse(
+        await fs.readFile(path.join(sharingCourse.path, 'infoCourse.json'), 'utf8'),
+      );
+      const sharingSets: { name: string }[] = courseInfo.sharingSets ?? [];
+      assert.isUndefined(sharingSets.find((s) => s.name === DELETE_REGRESSION_SET_NAME));
+    });
 
-    test.sequential('deleteSharingSet with a stale hash leaves the DB row intact', async () => {
+    test('deleteSharingSet with a stale hash leaves the DB row intact', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       const createResult = await client.sharing.createSharingSet.mutate({
         name: STALE_DELETE_SET_NAME,
@@ -1607,7 +1538,7 @@ describe('Question Sharing', { timeout: 60_000 }, function () {
       });
     });
 
-    test.sequential('deleteSharingSet removes an unused set from infoCourse.json', async () => {
+    test('deleteSharingSet removes an unused set from infoCourse.json', async () => {
       const client = await sharingTrpcClient(sharingCourse.id);
       const result = await client.sharing.deleteSharingSet.mutate({
         name: CRUD_SET_NAME,
