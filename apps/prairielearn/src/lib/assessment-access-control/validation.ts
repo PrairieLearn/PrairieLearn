@@ -770,23 +770,6 @@ export function validateRuleCreditOrderingIssues(
 }
 
 /**
- * Validates credit ordering within a single access control rule.
- * Returns an array of error messages (empty if valid).
- */
-export function validateRuleCreditOrdering(
-  rule: AccessControlJson,
-  targetType: AccessControlRuleTargetType = 'none',
-): string[] {
-  // The legacy string API returns one message; path-aware callers use the issue API above.
-  const [issue] = validateRuleCreditOrderingIssues({
-    rule,
-    targetType,
-    ruleIndex: 0,
-  });
-  return issue ? [issue.message] : [];
-}
-
-/**
  * Validates a single access control rule. Checks duplicates, date ordering,
  * credit ordering, and target-type constraints (e.g. integrations and
  * beforeRelease are only valid on the default rule).
@@ -896,7 +879,13 @@ export function validateRule(
   // Credit ordering assumes deadlines are chronological; skip if dates are
   // out of order to avoid misleading credit-ordering errors.
   if (dateErrors.length === 0) {
-    errors.push(...validateRuleCreditOrdering(rule, targetType));
+    errors.push(
+      ...validateRuleCreditOrderingIssues({
+        rule,
+        targetType,
+        ruleIndex: 0,
+      }).map((issue) => issue.message),
+    );
   }
 
   return errors;

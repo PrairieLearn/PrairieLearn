@@ -15,7 +15,7 @@ import {
   validateGlobalDateConsistencyIssues,
   validateGlobalStructuralDependencyIssues,
   validateRule,
-  validateRuleCreditOrdering,
+  validateRuleCreditOrderingIssues,
   validateRuleDateOrdering,
   validateRuleStructuralDependencyIssues,
 } from './validation.js';
@@ -957,8 +957,14 @@ describe('Credit ordering validation', () => {
     },
   ])('rejects $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    const errors = validateRuleCreditOrdering(rule);
-    assert.isTrue(errors.includes('Credit must strictly decrease over time.'));
+    const issues = validateRuleCreditOrderingIssues({
+      rule,
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+    assert.isTrue(
+      issues.some((issue) => issue.message === 'Credit must strictly decrease over time.'),
+    );
   });
 
   it.each([
@@ -1061,7 +1067,14 @@ describe('Credit ordering validation', () => {
     },
   ])('accepts $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
-    assert.deepEqual(validateRuleCreditOrdering(rule), []);
+    assert.deepEqual(
+      validateRuleCreditOrderingIssues({
+        rule,
+        targetType: 'none',
+        ruleIndex: 0,
+      }),
+      [],
+    );
   });
 });
 
