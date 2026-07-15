@@ -30,15 +30,15 @@ import {
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
-import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../models/lti13-user.js';
+import { ensureLti13UserSub, selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import {
-  ContextMembershipContainerSchema,
   Lti13MembershipIndex,
   RosterMemberSchema,
   STUDENT_ROLE,
   appendRlidToMembershipsUrl,
+  parseContextMemberships,
   resolveRosterMemberUin,
 } from './lti13-memberships.js';
 
@@ -813,12 +813,12 @@ async function loadLti13MembershipIndex(
   const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
   const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-  const containers = ContextMembershipContainerSchema.array().parse(rawRosterPages);
-  const memberships = containers
-    .flatMap((container) => container.members)
-    .filter((member) => {
-      return !member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
-    });
+  const memberships = parseContextMemberships(
+    rawRosterPages,
+    lti13_course_instance.context_id,
+  ).filter((member) => {
+    return !member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
+  });
 
   return new Lti13MembershipIndex(memberships, lti13_instance);
 }
@@ -897,14 +897,6 @@ export async function updateLti13Scores({
     }
 
     const ltiUser = membershipMatch.member;
-    if (membershipMatch.matchedBy === 'uin') {
-      // This records a trusted identity link, independent of enrollment or role.
-      await updateLti13UserSub({
-        user_id: user.id,
-        lti13_instance_id: instance.lti13_instance.id,
-        sub: ltiUser.user_id,
-      });
-    }
 
     if (isCourseStaff) {
       job.info(
@@ -925,6 +917,23 @@ export async function updateLti13Scores({
       );
       counts.not_sent++;
       continue;
+    }
+
+    if (membershipMatch.matchedBy === 'uin' && user.deleted_at === null) {
+      const linked = await ensureLti13UserSub({
+        user_id: user.id,
+        lti13_instance_id: instance.lti13_instance.id,
+        sub: ltiUser.user_id,
+      });
+      if (!linked) {
+        job.warn(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ' The roster identity conflicts with an existing LTI identity link' +
+            ` in ${instance.lti13_instance.name}`,
+        );
+        counts.not_sent++;
+        continue;
+      }
     }
 
     job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);

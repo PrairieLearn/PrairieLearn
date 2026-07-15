@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -29,6 +35,24 @@ export async function updateLti13UserSub({
     lti13_instance_id,
     sub,
   });
+}
+
+/**
+ * Creates an LTI identity binding without changing either side of an existing
+ * binding. Returns whether the requested binding exists after the attempt.
+ */
+export async function ensureLti13UserSub({
+  user_id,
+  lti13_instance_id,
+  sub,
+}: {
+  user_id: string;
+  lti13_instance_id: string;
+  sub: string;
+}): Promise<boolean> {
+  const params = { user_id, lti13_instance_id, sub };
+  await execute(sql.insert_lti13_user_if_unlinked, params);
+  return queryScalar(sql.select_lti13_user_sub_matches, params, z.boolean());
 }
 
 export async function selectLti13InstanceIdentitiesForCourseInstance({

@@ -35,6 +35,27 @@ export const ContextMembershipContainerSchema = z.object({
   members: ContextMembershipSchema.array(),
 });
 
+/**
+ * Parses paginated NRPS responses and verifies that every page belongs to the
+ * course context that supplied the memberships URL.
+ */
+export function parseContextMemberships(
+  pages: unknown[],
+  expectedContextId: string,
+): ContextMembership[] {
+  const containers = ContextMembershipContainerSchema.array().parse(pages);
+
+  for (const container of containers) {
+    if (container.context.id !== expectedContextId) {
+      throw new Error(
+        `LTI roster context ${container.context.id} does not match expected context ${expectedContextId}`,
+      );
+    }
+  }
+
+  return containers.flatMap((container) => container.members);
+}
+
 export type Lti13MembershipLookupUser = Pick<User, 'uid' | 'email' | 'uin' | 'institution_id'> & {
   lti13_sub: string | null;
 };
@@ -66,10 +87,9 @@ export function appendRlidToMembershipsUrl(
  * `uin_attribute` path. That path is written against the launch id_token, but NRPS
  * represents a member differently: standard claims and the lis sourcedid are
  * flattened onto the member, while per-resource-link claims (e.g. custom) live in
- * `message[]`. We rebuild a launch-claim-shaped object so the same path resolves
- * for the configurations seen in practice — both `…/claim/custom` and
- * `…/claim/lis`. Returns null when the attribute isn't configured or nothing
- * resolves to a valid, expanded value.
+ * `message[]`. We resolve the launch claim path against each possible source and
+ * fail closed if the platform returns conflicting values. Returns null when the
+ * attribute isn't configured or nothing resolves to a valid, expanded value.
  */
 export function resolveRosterMemberUin(
   member: RosterMember,
@@ -77,21 +97,24 @@ export function resolveRosterMemberUin(
 ): string | null {
   if (!uin_attribute) return null;
 
-  // `message[]` is typed as an array (each entry tagged with a message_type) and is
-  // only present with `?rlid=`. Canvas only ever emits a single LtiResourceLinkRequest
-  // entry, but merge any entries so a custom claim resolves regardless of position.
-  // The lis sourcedid is the one claim NRPS flattens onto the member, so nest it back
-  // under its claim. es-toolkit's `get` expands a path like 'a[0].b.c'.
-  const claims = {
-    ...member,
-    ...Object.assign({}, ...(member.message ?? [])),
-    'https://purl.imsglobal.org/spec/lti/claim/lis':
-      member.lis_person_sourcedid != null
-        ? { person_sourcedid: member.lis_person_sourcedid }
-        : undefined,
-  };
+  // `message[]` is only present with `?rlid=`. Each entry is already shaped like
+  // launch claims, while NRPS flattens the lis sourcedid onto the member.
+  const claimSources = [
+    {
+      ...member,
+      'https://purl.imsglobal.org/spec/lti/claim/lis':
+        member.lis_person_sourcedid != null
+          ? { person_sourcedid: member.lis_person_sourcedid }
+          : undefined,
+    },
+    ...(member.message ?? []),
+  ];
+  const values = claimSources
+    .map((claims) => get(claims, uin_attribute))
+    .filter((value) => value !== undefined);
+  const value = values[0];
 
-  const value = get(claims, uin_attribute);
+  if (values.some((candidate) => candidate !== value)) return null;
   if (typeof value !== 'string') return null;
 
   // LTI leaves unsupported substitution variables unresolved. Canvas also supports
@@ -119,6 +142,9 @@ export class Lti13MembershipIndex {
     this.#institutionId = institution_id;
 
     for (const member of memberships) {
+      // NRPS defines a missing status as Active.
+      if (member.status === 'Inactive' || member.status === 'Deleted') continue;
+
       this.#membershipsBySub.set(member.user_id, member);
 
       const uin = resolveRosterMemberUin(member, uin_attribute);

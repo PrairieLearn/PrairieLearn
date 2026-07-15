@@ -5,6 +5,7 @@ import {
   Lti13MembershipIndex,
   type Lti13MembershipLookupUser,
   STUDENT_ROLE,
+  parseContextMemberships,
   resolveRosterMemberUin,
 } from './lti13-memberships.js';
 
@@ -24,16 +25,27 @@ function makeUser(
   };
 }
 
-function makeMember({ sub, email, uin }: { sub: string; email?: string; uin?: unknown }) {
+function makeUinMessage(uin: unknown) {
+  return { 'https://purl.imsglobal.org/spec/lti/claim/custom': { uin } };
+}
+
+function makeMember({
+  sub,
+  email,
+  uin,
+  status,
+}: {
+  sub: string;
+  email?: string;
+  uin?: unknown;
+  status?: 'Active' | 'Inactive' | 'Deleted';
+}) {
   return {
     user_id: sub,
     roles: [STUDENT_ROLE],
     ...(email === undefined ? {} : { email }),
-    ...(uin === undefined
-      ? {}
-      : {
-          message: [{ 'https://purl.imsglobal.org/spec/lti/claim/custom': { uin } }],
-        }),
+    ...(uin === undefined ? {} : { message: [makeUinMessage(uin)] }),
+    ...(status === undefined ? {} : { status }),
   };
 }
 
@@ -111,6 +123,13 @@ describe('Lti13MembershipIndex', () => {
     expect(index.lookup(user)).toBeNull();
     expect(index.lookup(makeUser('absent'))).toBeNull();
   });
+
+  test.each(['Inactive', 'Deleted'] as const)('ignores %s memberships', (status) => {
+    const user = makeUser(status, { lti13_sub: 'status-sub' });
+    const index = makeIndex([makeMember({ sub: 'status-sub', status })]);
+
+    expect(index.lookup(user)).toBeNull();
+  });
 });
 
 describe('resolveRosterMemberUin', () => {
@@ -124,5 +143,41 @@ describe('resolveRosterMemberUin', () => {
   ])('rejects an invalid or unexpanded value: %j', (uin) => {
     const member = makeMember({ sub: 'sub', uin });
     expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
+  });
+
+  test('rejects conflicting values across message entries', () => {
+    const member = {
+      ...makeMember({ sub: 'sub' }),
+      message: [makeUinMessage('first-uin'), makeUinMessage('second-uin')],
+    };
+
+    expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
+  });
+});
+
+describe('parseContextMemberships', () => {
+  test('returns members from pages for the expected context', () => {
+    const members = [makeMember({ sub: 'first' }), makeMember({ sub: 'second' })];
+    const pages = members.map((member) => ({
+      id: 'roster',
+      context: { id: 'expected-context' },
+      members: [member],
+    }));
+
+    expect(parseContextMemberships(pages, 'expected-context')).toHaveLength(2);
+  });
+
+  test('rejects a page for a different context', () => {
+    const pages = [
+      {
+        id: 'roster',
+        context: { id: 'different-context' },
+        members: [makeMember({ sub: 'sub' })],
+      },
+    ];
+
+    expect(() => parseContextMemberships(pages, 'expected-context')).toThrow(
+      'does not match expected context',
+    );
   });
 });

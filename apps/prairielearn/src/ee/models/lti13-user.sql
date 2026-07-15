@@ -7,6 +7,26 @@ ON CONFLICT (user_id, lti13_instance_id) DO UPDATE
 SET
   sub = $sub;
 
+-- BLOCK insert_lti13_user_if_unlinked
+INSERT INTO
+  lti13_users (user_id, lti13_instance_id, sub)
+VALUES
+  ($user_id, $lti13_instance_id, $sub)
+ON CONFLICT DO NOTHING;
+
+-- BLOCK select_lti13_user_sub_matches
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      lti13_users
+    WHERE
+      user_id = $user_id
+      AND lti13_instance_id = $lti13_instance_id
+      AND sub = $sub
+  );
+
 -- BLOCK select_lti13_instance_identities_for_course_instance
 SELECT DISTINCT
   ON (lti13_instances.id) to_jsonb(lti13_instances.*) AS lti13_instance,
