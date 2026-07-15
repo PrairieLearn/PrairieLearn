@@ -38,9 +38,9 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 
 ### Opening a WSL 2 shell on Windows
 
-Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, you are not using WSL.
-
 To run a WSL 2 shell, open the Windows Start menu, search for "WSL", and select the WSL 2 instance you installed. Alternatively, install the [Windows Terminal](https://aka.ms/terminal) application and select your WSL 2 instance from the dropdown menu.
+
+Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, you are not using WSL.
 
 ### Storing your course content in WSL 2
 
