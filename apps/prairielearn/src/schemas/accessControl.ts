@@ -18,12 +18,8 @@ export const MAX_ACCESS_CONTROL_PASSWORD_LENGTH = 128;
 export const EarlyDeadlineJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z
-      .number()
-      .int()
-      .min(101) // Early deadlines require due credit >= 100% and must offer more credit.
-      .max(200)
-      .describe('Integer bonus-credit percentage to allow'),
+    // Early deadlines require due credit >= 100% and must offer more credit.
+    credit: z.number().int().min(101).max(200).describe('Integer bonus-credit percentage to allow'),
   })
   .strict();
 
