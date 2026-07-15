@@ -241,11 +241,17 @@ router.get(
       });
 
       const authn_user = UserSchema.parse(res.locals.authn_user);
-      const userSettings = await sqldb.queryRow(
-        sql.select_user_settings,
-        { user_id: authn_user.id },
-        UserSettingSchema,
-      );
+      const userSettings =
+        (await sqldb.queryOptionalRow(
+          sql.select_user_settings,
+          { user_id: authn_user.id },
+          UserSettingSchema,
+        )) ??
+        (await sqldb.queryRow(
+          sql.insert_user_settings,
+          { user_id: authn_user.id },
+          UserSettingSchema,
+        ));
 
       res.send(
         InstanceQuestionPage({
@@ -368,11 +374,17 @@ router.get(
           : undefined;
 
         const authn_user = UserSchema.parse(res.locals.authn_user);
-        const userSettings = await sqldb.queryRow(
-          sql.select_user_settings,
-          { user_id: authn_user.id },
-          UserSettingSchema,
-        );
+        const userSettings =
+          (await sqldb.queryOptionalRow(
+            sql.select_user_settings,
+            { user_id: authn_user.id },
+            UserSettingSchema,
+          )) ??
+          (await sqldb.queryRow(
+            sql.insert_user_settings,
+            { user_id: authn_user.id },
+            UserSettingSchema,
+          ));
 
         const gradingPanel = GradingPanel({
           ...locals,

@@ -36,11 +36,17 @@ router.get(
       { user_id: authn_user.id },
       AccessTokenSchema,
     );
-    const userSettings = await sqldb.queryRow(
-      sql.select_user_settings,
-      { user_id: authn_user.id },
-      UserSettingSchema,
-    );
+    const userSettings =
+      (await sqldb.queryOptionalRow(
+        sql.select_user_settings,
+        { user_id: authn_user.id },
+        UserSettingSchema,
+      )) ??
+      (await sqldb.queryRow(
+        sql.insert_user_settings,
+        { user_id: authn_user.id },
+        UserSettingSchema,
+      ));
 
     // If the raw tokens are present for any of these hashes, include them
     // in this response and then delete them from memory

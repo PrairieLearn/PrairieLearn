@@ -75,13 +75,18 @@ FROM
   old_row;
 
 -- BLOCK select_user_settings
+SELECT
+  *
+FROM
+  user_settings
+WHERE
+  user_id = $user_id;
+
+-- BLOCK insert_user_settings
 INSERT INTO
   user_settings (user_id)
 VALUES
   ($user_id)
-ON CONFLICT (user_id) DO UPDATE
-SET
-  user_id = EXCLUDED.user_id
 RETURNING
   *;
 
