@@ -295,7 +295,7 @@ function UserSettingsCard({
 
   useEffect(() => {
     if (!showSavedNotification) return;
-    const t = setTimeout(() => false, 3000);
+    const t = setTimeout(() => setShowSavedNotification(false), 3000);
     return () => clearTimeout(t);
   }, [showSavedNotification]);
 
@@ -304,7 +304,6 @@ function UserSettingsCard({
       __csrf_token: csrfToken,
       __action: 'user_setting_update',
       enable_keyboard_shortcut: enableKeyboardShortcut,
-      user_id: userSettings.user_id,
     };
     const res = await fetch(window.location.pathname, {
       method: 'POST',

@@ -146,9 +146,10 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'user_setting_update') {
+      const authn_user = UserSchema.parse(res.locals.authn_user);
       try {
         await sqldb.execute(sql.update_user_settings, {
-          user_id: req.body.user_id,
+          user_id: authn_user.id,
           enable_keyboard_shortcut: req.body.enable_keyboard_shortcut,
         });
         res.send();
