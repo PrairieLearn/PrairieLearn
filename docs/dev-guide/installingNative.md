@@ -22,7 +22,7 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-common
+    sudo apt install git gcc g++ make libc6-dev graphviz libgraphviz-dev redis postgresql-common
     # Configure Postgres repository
     sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
     sudo apt install postgresql-17 postgresql-17-pgvector
@@ -69,14 +69,10 @@ Most of these prerequisites can be installed using the package manager of your O
     curl -fsSL https://d2lang.com/install.sh | sh -s --
     ```
 
-    The pgvector Postgres extension can be installed with the following script:
+    The pgvector Postgres extension can be enabled with the following script:
 
     ```sh
-    cd /tmp
-    git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
-    cd pgvector
-    make
-    sudo make install
+    sudo -u postgres psql postgres -c "CREATE EXTENSION IF NOT EXISTS vector;"
     ```
 
 === "macOS"
@@ -140,16 +136,16 @@ Most of these prerequisites can be installed using the package manager of your O
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
-```sh
-createdb postgres
-psql postgres -c "CREATE USER postgres;"
-psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
-```
+  ```sh
+  sudo -u postgres createdb postgres
+  sudo -u postgres psql postgres -c "CREATE USER postgres;"
+  sudo -u postgres psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+  ```
 
 - Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
 
   ```sh
-  psql postgres -c "SHOW hba_file;"
+  sudo -u postgres psql postgres -c "SHOW hba_file;"
   ```
 
   The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). If the last two lines already say "trust", no modifications are needed. This will typically be shown as:
