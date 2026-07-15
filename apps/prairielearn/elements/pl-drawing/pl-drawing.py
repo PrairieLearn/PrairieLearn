@@ -266,7 +266,8 @@ def render_drawing_items(elem, curid=0, defaults=None, tol=None):
         else:
             if tol is not None:
                 generated_el = copy.copy(el)
-                generated_el.attrib.setdefault("tol", str(tol))
+                if "tol" not in generated_el.attrib:
+                    generated_el.attrib["tol"] = str(tol)
             else:
                 generated_el = el
             obj = elements.generate(generated_el, generated_el.tag, defaults)
