@@ -22,6 +22,7 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
+    sudo apt update
     sudo apt install git gcc g++ make libc6-dev graphviz libgraphviz-dev redis postgresql-common
     # Configure Postgres repository
     sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
