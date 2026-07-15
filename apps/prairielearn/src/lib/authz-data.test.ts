@@ -177,8 +177,9 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       lti_managed: false,
       pending_lti13_instance_id: null,
       pending_lti13_sub: null,
-      pending_lti13_name: null,
-      pending_lti13_email: null,
+      pending_name: null,
+      pending_email: null,
+      pending_uin: null,
       ...overrides,
     };
   }
