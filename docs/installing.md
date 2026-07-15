@@ -44,6 +44,12 @@ If you are using Windows, store your course content inside the WSL 2 instance. T
 
 ## Running instructions
 
+!!! info
+
+    The following instructions must be executed in a terminal window. For MacOS and Linux, you can use the default terminal application.
+
+    For Windows, use a terminal connected to a WSL 2 instance. Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL 2 shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see a name of a Linux distribution, you are using WSL 2. If you see nothing, you are not using WSL 2.
+
 To run PrairieLearn using the example course only, open a terminal window and type the command:
 
 ```sh
@@ -57,8 +63,6 @@ docker run -it --rm -p 3000:3000 -v $HOME/pl-tam212:/course prairielearn/prairie
 ```
 
 Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:/course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
-
-If you are running on Windows, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt.
 
 After running the command above, you should see a message that says:
 
