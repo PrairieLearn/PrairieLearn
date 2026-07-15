@@ -12,7 +12,6 @@ import {
 import { RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import { MAX_ACCESS_CONTROL_POST_DUE_CREDIT } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverrideField } from '../hooks/useOverrideField.js';
@@ -63,8 +62,8 @@ function getDefaultCredit(precedingCredit: number | undefined): number {
   // capping bonus-credit anchors and keeping the default credit positive.
   const anchor =
     precedingCredit === undefined || !Number.isFinite(precedingCredit)
-      ? MAX_ACCESS_CONTROL_POST_DUE_CREDIT
-      : Math.min(precedingCredit, MAX_ACCESS_CONTROL_POST_DUE_CREDIT);
+      ? 100
+      : Math.min(precedingCredit, 100);
   return Math.max(1, anchor - 10);
 }
 
@@ -151,9 +150,9 @@ function AfterLastDeadlineInput({
   // Credit may equal the due credit only when there are no late deadlines.
   const maximumCredit =
     precedingCredit === undefined || !Number.isFinite(precedingCredit)
-      ? MAX_ACCESS_CONTROL_POST_DUE_CREDIT
+      ? 100
       : Math.min(
-          MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
+          100,
           lateDeadlines.length > 0 ? Math.max(0, precedingCredit - 1) : precedingCredit,
         );
   // Preserve an existing invalid selection so its validation error remains

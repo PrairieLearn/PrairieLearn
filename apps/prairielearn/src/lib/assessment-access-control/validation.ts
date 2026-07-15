@@ -1,11 +1,10 @@
 import {
   type AccessControlJson,
-  MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
   MAX_ENROLLMENT_ACCESS_CONTROL_RULES,
   MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES,
 } from '../../schemas/accessControl.js';
 
-const POST_DUE_CREDIT_MESSAGE = `Credit after the due date must be at most ${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%.`;
+const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be at most 100%.';
 const CREDIT_ORDERING_MESSAGE =
   'Credit must strictly decrease at every boundary, except that the first late deadline—or after-due credit when there are no late deadlines—may match due-date credit.';
 
@@ -449,7 +448,7 @@ export function validateGlobalCreditConsistencyIssues(
     const postDueEntry = effectiveEntries.find(
       (entry) =>
         (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
-        entry.credit > MAX_ACCESS_CONTROL_POST_DUE_CREDIT &&
+        entry.credit > 100 &&
         entry.validationRule === validationRule,
     );
     if (postDueEntry) {
@@ -753,8 +752,7 @@ export function validateRuleCreditOrderingIssues(
 
   const postDueEntry = entries.find(
     (entry) =>
-      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
-      entry.credit > MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
+      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') && entry.credit > 100,
   );
   if (postDueEntry) {
     pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);

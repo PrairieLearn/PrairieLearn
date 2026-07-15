@@ -16,12 +16,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-import {
-  MAX_ACCESS_CONTROL_CREDIT,
-  MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE,
-  MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
-  MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT,
-} from '../../../../schemas/accessControl.js';
+import { MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE } from '../../../../schemas/accessControl.js';
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { ToggleTitle } from '../ToggleTitle.js';
@@ -36,14 +31,8 @@ type DeadlineArrayFieldName =
   | `overrides.${number}.lateDeadlines`;
 
 function clampCredit(value: number, type: 'early' | 'late'): number {
-  const minimum = type === 'early' ? MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT : 0;
-  return Math.max(
-    minimum,
-    Math.min(
-      type === 'early' ? MAX_ACCESS_CONTROL_CREDIT : MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
-      value,
-    ),
-  );
+  const minimum = type === 'early' ? 101 : 0;
+  return Math.max(minimum, Math.min(type === 'early' ? 200 : 100, value));
 }
 
 function computeNextDeadline({
@@ -111,7 +100,7 @@ function computeNextDeadline({
       );
     }
     // Cap the anchor so bonus due credit still produces a conventional reduced-credit default.
-    const anchor = previousCredit ?? Math.min(dueCredit, MAX_ACCESS_CONTROL_POST_DUE_CREDIT);
+    const anchor = previousCredit ?? Math.min(dueCredit, 100);
     return clampCredit(anchor - 10, 'late');
   });
   return { date: defaultDate, credit: defaultCredit };
@@ -135,8 +124,8 @@ function getAddCreditDisabledTitle(
     if (dueCredit < 100) {
       return 'Early deadlines are not allowed when due date credit is below 100%.';
     }
-    if (dueCredit >= MAX_ACCESS_CONTROL_CREDIT) {
-      return `Early deadlines require credit above due credit, but due date credit is already ${MAX_ACCESS_CONTROL_CREDIT}%.`;
+    if (dueCredit >= 200) {
+      return 'Early deadlines require credit above due credit, but due date credit is already 200%.';
     }
     if (previousCredit !== undefined && previousCredit <= dueCredit + 1) {
       return 'No valid integer credit remains between the last early-deadline credit and due-date credit.';
@@ -360,9 +349,7 @@ function DeadlineArrayInput({
                     if (previousCredit != null && Number.isFinite(previousCredit)) {
                       return clampCredit(previousCredit - 1, type);
                     }
-                    return type === 'early'
-                      ? MAX_ACCESS_CONTROL_CREDIT
-                      : clampCredit(dueCredit, 'late');
+                    return type === 'early' ? 200 : clampCredit(dueCredit, 'late');
                   })}
                   step={1}
                   disabled={!ruleEditable}

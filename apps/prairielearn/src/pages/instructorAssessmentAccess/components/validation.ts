@@ -19,13 +19,10 @@ import {
 } from '../../../lib/assessment-access-control/validation.js';
 import { UUID_REGEXP } from '../../../lib/string-util.js';
 import {
-  MAX_ACCESS_CONTROL_CREDIT,
   MAX_ACCESS_CONTROL_DURATION_MINUTES,
   MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE,
   MAX_ACCESS_CONTROL_PASSWORD_LENGTH,
-  MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
   MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS,
-  MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT,
 } from '../../../schemas/accessControl.js';
 
 import { isFormFieldPathEditable, isOverrideFieldActive } from './overrideFields.js';
@@ -322,8 +319,8 @@ function validateDueCredit(value: number | null, customCredit: boolean): string 
     return undefined;
   }
   return validateIntegerCredit(value, {
-    max: MAX_ACCESS_CONTROL_CREDIT,
-    rangeMessage: `Credit must be between 0% and ${MAX_ACCESS_CONTROL_CREDIT}%`,
+    max: 200,
+    rangeMessage: 'Credit must be between 0% and 200%',
   });
 }
 
@@ -396,12 +393,12 @@ function validateDeadlineCredit({
   value: number;
 }): string | undefined {
   return validateIntegerCredit(value, {
-    min: type === 'early' ? MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT : 0,
-    max: type === 'early' ? MAX_ACCESS_CONTROL_CREDIT : MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
+    min: type === 'early' ? 101 : 0,
+    max: type === 'early' ? 200 : 100,
     rangeMessage:
       type === 'early'
-        ? `Early deadline credit must be ${MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT}-${MAX_ACCESS_CONTROL_CREDIT}%`
-        : `Credit after the due date must be 0-${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%`,
+        ? 'Early deadline credit must be 101-200%'
+        : 'Credit after the due date must be 0-100%',
   });
 }
 
@@ -440,8 +437,8 @@ function validateDeadlineArray({
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue): string | undefined {
   if (!value.allowSubmissions) return undefined;
   return validateIntegerCredit(value.credit, {
-    max: MAX_ACCESS_CONTROL_POST_DUE_CREDIT,
-    rangeMessage: `Credit after the due date must be 0-${MAX_ACCESS_CONTROL_POST_DUE_CREDIT}%`,
+    max: 100,
+    rangeMessage: 'Credit after the due date must be 0-100%',
   });
 }
 

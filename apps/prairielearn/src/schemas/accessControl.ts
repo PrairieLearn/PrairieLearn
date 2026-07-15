@@ -14,15 +14,6 @@ export const MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE = 10;
 export const MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS = 10;
 export const MAX_ACCESS_CONTROL_DURATION_MINUTES = 365 * 24 * 60;
 export const MAX_ACCESS_CONTROL_PASSWORD_LENGTH = 128;
-export const MAX_ACCESS_CONTROL_CREDIT = 200;
-/**
- * Early deadlines are only allowed when due-date credit is at least 100%, and
- * their credit must strictly exceed due-date credit. Since credits are
- * integers, 101% is therefore the lowest early-deadline credit that can ever
- * be valid.
- */
-export const MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT = 101;
-export const MAX_ACCESS_CONTROL_POST_DUE_CREDIT = 100;
 
 export const EarlyDeadlineJsonSchema = z
   .object({
@@ -30,8 +21,8 @@ export const EarlyDeadlineJsonSchema = z
     credit: z
       .number()
       .int()
-      .min(MIN_ACCESS_CONTROL_EARLY_DEADLINE_CREDIT)
-      .max(MAX_ACCESS_CONTROL_CREDIT)
+      .min(101) // Early deadlines require due credit >= 100% and must offer more credit.
+      .max(200)
       .describe('Integer bonus-credit percentage to allow'),
   })
   .strict();
@@ -39,12 +30,7 @@ export const EarlyDeadlineJsonSchema = z
 export const LateDeadlineJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z
-      .number()
-      .int()
-      .min(0)
-      .max(MAX_ACCESS_CONTROL_POST_DUE_CREDIT)
-      .describe('Integer credit percentage to allow'),
+    credit: z.number().int().min(0).max(100).describe('Integer credit percentage to allow'),
   })
   .strict();
 
@@ -57,7 +43,7 @@ const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
   z
     .object({
       allowSubmissions: z.literal(true),
-      credit: z.number().int().min(0).max(MAX_ACCESS_CONTROL_POST_DUE_CREDIT),
+      credit: z.number().int().min(0).max(100),
     })
     .strict(),
 ]);
@@ -77,10 +63,10 @@ const DueJsonSchema = z
       .number()
       .int()
       .min(0)
-      .max(MAX_ACCESS_CONTROL_CREDIT)
+      .max(200)
       .optional()
       .describe(
-        `Custom credit percentage at the due date (0-${MAX_ACCESS_CONTROL_CREDIT}). Omitted means default 100% credit.`,
+        'Custom credit percentage at the due date (0-200). Omitted means default 100% credit.',
       ),
   })
   .strict();
