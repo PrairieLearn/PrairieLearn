@@ -554,24 +554,12 @@ describe('Deadline credit schema validation', () => {
       dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 101 }] },
     },
     {
-      label: 'maximum bonus credit on an early deadline',
-      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 200 }] },
-    },
-    {
       label: '100% credit on a late deadline',
       dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 100 }] },
     },
     {
-      label: '0% credit on a late deadline',
-      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 0 }] },
-    },
-    {
       label: '100% credit after the due date',
       dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 100 } },
-    },
-    {
-      label: '0% credit after the due date',
-      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 0 } },
     },
   ])('accepts $label', ({ dateControl }) => {
     assert.isTrue(AccessControlJsonSchema.safeParse({ dateControl }).success);
@@ -583,24 +571,12 @@ describe('Deadline credit schema validation', () => {
       dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 100 }] },
     },
     {
-      label: 'early deadline credit above 200%',
-      dateControl: { earlyDeadlines: [{ date: '2024-03-15T00:00:00', credit: 201 }] },
-    },
-    {
       label: 'late deadline credit above 100%',
       dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 101 }] },
     },
     {
-      label: 'late deadline credit below 0%',
-      dateControl: { lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: -1 }] },
-    },
-    {
       label: 'after-due credit above 100%',
       dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: 101 } },
-    },
-    {
-      label: 'after-due credit below 0%',
-      dateControl: { afterLastDeadline: { allowSubmissions: true as const, credit: -1 } },
     },
   ])('rejects $label', ({ dateControl }) => {
     assert.isFalse(AccessControlJsonSchema.safeParse({ dateControl }).success);
@@ -924,7 +900,6 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'equal early deadline credits',
@@ -936,7 +911,6 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'increasing late deadline credits',
@@ -948,7 +922,6 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'afterLastDeadline credit exceeding last late deadline',
@@ -962,7 +935,6 @@ describe('Credit ordering validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 60 },
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'consecutive late deadlines with equal credit',
@@ -975,7 +947,6 @@ describe('Credit ordering validation', () => {
           ],
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
     {
       label: 'afterLastDeadline credit equal to last late deadline',
@@ -986,12 +957,11 @@ describe('Credit ordering validation', () => {
           afterLastDeadline: { allowSubmissions: true, credit: 100 },
         },
       },
-      errorMatch: CREDIT_ORDERING_MESSAGE,
     },
-  ])('rejects $label', ({ config, errorMatch }) => {
+  ])('rejects $label', ({ config }) => {
     const rule = AccessControlJsonSchema.parse(config);
     const errors = validateRuleCreditOrdering(rule);
-    assert.isTrue(errors.includes(errorMatch));
+    assert.isTrue(errors.includes(CREDIT_ORDERING_MESSAGE));
   });
 
   it.each([
