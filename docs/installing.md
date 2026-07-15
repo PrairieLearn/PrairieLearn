@@ -18,7 +18,7 @@ Using the course repository with a local installation simplifies the process of 
 
 Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-If you are using Windows, you are strongly encouraged to also use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features.
+If you are using Windows, use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features.
 
 Here are the instructions to install WSL 2 and enable its integration with Docker:
 
@@ -44,11 +44,11 @@ If you are using Windows, store your course content inside the WSL 2 instance. T
 
 ## Running instructions
 
-!!! info
+The following instructions must be executed in a terminal window. For MacOS and Linux, you can use the default terminal application. For Windows, use a terminal connected to a WSL 2 instance.
 
-    The following instructions must be executed in a terminal window. For MacOS and Linux, you can use the default terminal application.
+??? info "Opening a WSL 2 shell on Windows"
 
-    For Windows, use a terminal connected to a WSL 2 instance. Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, you are not using WSL.
+    Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, you are not using WSL.
 
     To run a WSL 2 shell, open the Windows Start menu, search for "WSL", and select the WSL 2 instance you installed. Alternatively, install the [Windows Terminal](https://aka.ms/terminal) application and select your WSL 2 instance from the dropdown menu.
 
