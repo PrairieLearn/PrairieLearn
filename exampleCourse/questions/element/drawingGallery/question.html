@@ -18,7 +18,7 @@
 
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
-        <pl-coordinates x1="60" y1="80" label="0" angle="30"></pl-coordinates>
+        <pl-coordinates x1="60" y1="80" label="O" angle="30" relpos-active="true"></pl-coordinates>
     </pl-drawing-initial>
 </pl-drawing>
 
@@ -38,8 +38,9 @@
 
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
-        <pl-point x1="60" y1="120" label="A"></pl-point>
-        <pl-point x1="160" y1="60" label="B"></pl-point>
+        <pl-point x1="60" y1="120" label="A" label-pos="above"></pl-point>
+        <pl-point x1="160" y1="60" label="B" label-pos="below right"></pl-point>
+        <pl-point x1="120" y1="160" label="Origin" label-latex="false" label-pos="left"></pl-point>
     </pl-drawing-initial>
 </pl-drawing>
 
@@ -124,16 +125,16 @@
 
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
-        <pl-fixed-pin x1="80" y1="100" angle="50" color="turquoise1"></pl-fixed-pin>
-        <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
-        <pl-arc-dimensions x1="80" y1="100" end-angle="50" label="\\theta" offsetx="10" end-support-line="true" stroke-color="blue"></pl-arc-dimensions>
-      </pl-drawing-initial>
+        <pl-fixed-pin x1="80" y1="120" angle="50" color="turquoise1"></pl-fixed-pin>
+        <pl-coordinates x1="80" y1="120" width="80" relpos-active="true"></pl-coordinates>
+        <pl-arc-dimensions x1="80" y1="120" end-angle="50" label="\\theta" offsetx="10" end-support-line="true" stroke-color="blue"></pl-arc-dimensions>
+    </pl-drawing-initial>
 </pl-drawing>
 
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
-        <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
-        <pl-arc-dimensions x1="80" y1="100" radius="40" start-angle="180" end-angle="-150" offsetx="-10" label="a" start-support-line="true" end-support-line="true"></pl-arc-dimensions>
+        <pl-coordinates x1="80" y1="120" width="80" relpos-active="true"></pl-coordinates>
+        <pl-arc-dimensions x1="80" y1="120" radius="40" start-angle="180" end-angle="-150" offsetx="-10" label="a" start-support-line="true" end-support-line="true"></pl-arc-dimensions>
 
     </pl-drawing-initial>
 </pl-drawing>
@@ -142,14 +143,14 @@
     <pl-drawing-initial>
         <pl-point x1="100" y1="100"></pl-point>
         <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
-        <pl-vector x1="100" y1="100" width="80" angle="45" label="F"></pl-vector>
+        <pl-vector x1="100" y1="100" width="80" angle="45" label="F" label-relpos="ahead"></pl-vector>
         <pl-vector x1="100" y1="100" width="80" angle="45" color="green3" anchor-is-tail="false"></pl-vector>
     </pl-drawing-initial>
 </pl-drawing>
 
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
-        <pl-double-headed-vector x1="40" y1="120" width="120" color="blue" angle="-30" label="T"></pl-double-headed-vector>
+        <pl-double-headed-vector x1="40" y1="120" width="120" color="blue" angle="-30" label="T" label-relpos="ahead"></pl-double-headed-vector>
     </pl-drawing-initial>
 </pl-drawing>
 
@@ -214,8 +215,8 @@
 
 <pl-drawing width="200" height="200" grid-size="0">
     <pl-drawing-initial>
-        <pl-text x1="20" y1="40" label="Moment of inertia:" latex="false"></pl-text>
-        <pl-text x1="20" y1="80" label="\\int_A y^2 dA"></pl-text>
+        <pl-text x1="100" y1="70" pos="at" label="Moment of inertia:" latex="false"></pl-text>
+        <pl-text x1="100" y1="100" pos="at" label="\\int_A y^2\\,\\mathrm{d}A"></pl-text>
     </pl-drawing-initial>
 </pl-drawing>
 
@@ -255,6 +256,52 @@
         <pl-inductor></pl-inductor>
         <pl-inductor x1="40" y1="80" x2="180" y2="120" stroke-color="red" label="4 H"></pl-inductor>
         <pl-inductor x1="30" y1="160" width="140" interval="60" height="30" stroke-color="purple" label="2 H"></pl-inductor>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<pl-drawing width="200" height="200" grid-size="25">
+    <pl-drawing-initial>
+        <pl-text x1="100" y1="100" label="above left" pos="above left" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="above" pos="above" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="above right" pos="above right" latex="false" sep="25" font-size="14"></pl-text>
+        
+        <pl-text x1="100" y1="100" label="left" pos="left" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="at" pos="at" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="right" pos="right" latex="false" sep="25" font-size="14"></pl-text>
+        
+        <pl-text x1="100" y1="100" label="below left" pos="below left" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="below" pos="below" latex="false" sep="25" font-size="14"></pl-text>
+        <pl-text x1="100" y1="100" label="below right" pos="below right" latex="false" sep="25" font-size="14"></pl-text>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<pl-drawing width="200" height="200" grid-size="20">
+    <pl-drawing-initial>
+        <pl-point x1="70" y1="75" label="above left" label-pos="above left" label-latex="false"></pl-point>
+        <pl-point x1="95" y1="50" label="above" label-pos="above" label-latex="false"></pl-point>
+        <pl-point x1="120" y1="75" label="above right" label-pos="above right" label-latex="false"></pl-point>
+        
+        <pl-point x1="45" y1="100" label="left" label-pos="left" label-latex="false"></pl-point>
+        <pl-point x1="95" y1="100" label="at" label-pos="at" label-latex="false"></pl-point>
+        <pl-point x1="145" y1="100" label="right" label-pos="right" label-latex="false"></pl-point>
+        
+        <pl-point x1="70" y1="125" label="below left" label-pos="below left" label-latex="false"></pl-point>
+        <pl-point x1="95" y1="150" label="below" label-pos="below" label-latex="false"></pl-point>
+        <pl-point x1="120" y1="125" label="below right" label-pos="below right" label-latex="false"></pl-point>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<pl-drawing width="200" height="200" grid-size="20">
+    <pl-drawing-initial>
+        <pl-vector x1="50" y1="150" angle="-85" width="100" label-latex="false" label-relpos="ahead" label="ahead"></pl-vector>
+        <pl-vector x1="50" y1="150" angle="-85" width="100" label-latex="false" label-relpos="left" label="left"></pl-vector>
+        <pl-vector x1="50" y1="150" angle="-85" width="100" label-latex="false" label-relpos="right" label="right"></pl-vector>
+        <pl-vector x1="50" y1="150" angle="-85" width="100" label-latex="false" label-relpos="behind" label="behind" label-anchor-is-tail="false"></pl-vector>
+        <pl-vector x1="15" y1="120" angle="-15" width="100" label-latex="false" label-relpos="ahead left" label="ahead left"></pl-vector>
+        <pl-vector x1="15" y1="120" angle="-15" width="100" label-latex="false" label-relpos="ahead right" label="ahead right"></pl-vector>
+        <pl-vector x1="55" y1="160" angle="0" width="100" label-latex="false" label-relpos="at" label="at" label-anchor-is-tail="false"></pl-vector>
+        <pl-vector x1="55" y1="160" angle="0" width="100" label-latex="false" label-relpos="behind left" label="behind left" label-anchor-is-tail="false"></pl-vector>
+        <pl-vector x1="55" y1="160" angle="0" width="100" label-latex="false" label-relpos="behind right" label="behind right" label-anchor-is-tail="false"></pl-vector>
     </pl-drawing-initial>
 </pl-drawing>
 
