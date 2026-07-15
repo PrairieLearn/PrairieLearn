@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   ConfigLoader,
   type ConfigSource,
+  makeConductorConfigSource,
   makeImdsConfigSource,
   makeKmsConfigSource,
   makeSecretsManagerConfigSource,
@@ -175,6 +176,7 @@ export const config = loader.config;
 
 export async function loadConfig() {
   await loader.loadAndValidate([
+    makeConductorConfigSource(),
     makeProductionConfigSource(),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
