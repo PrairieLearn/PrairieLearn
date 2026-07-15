@@ -73,7 +73,7 @@ Deadlines form one chronological credit timeline. For example, an assessment mig
 
 !!! tip
 
-    Credit must strictly decrease at every boundary, except that the first late deadline — or **After due date** credit when there are no late deadlines — may match due-date credit, up to 100%. This supports a single no-penalty grace period while still communicating the original due date. Consecutive late deadlines cannot offer the same credit.
+    Credit must strictly decrease at every boundary. The first late deadline may match the due-date credit, up to 100%. If there are no late deadlines, **After due date** credit may match it instead. This supports a single no-penalty grace period while still communicating the original due date. Consecutive late deadlines cannot offer the same credit.
 
 #### After deadlines
 
@@ -584,7 +584,7 @@ The first element is the defaults rule and must not have a `uuid`. Every element
 | `durationMinutes`   | integer | Time limit in minutes.                                                                                                                                                                      |
 | `password`          | string  | Password required to start the assessment.                                                                                                                                                  |
 
-`due.credit` defaults to 100. Early-deadline credits must be integers from 101 to 200, while late-deadline and `afterLastDeadline.credit` values must be integers from 0 to 100. The resolved credit timeline must strictly decrease at every boundary, except that the first late deadline — or `afterLastDeadline.credit` when there are no late deadlines — may equal the due credit. Early deadlines are not allowed when due credit is below 100%.
+`due.credit` defaults to 100. Early-deadline credits must be integers from 101 to 200, while late-deadline and `afterLastDeadline.credit` values must be integers from 0 to 100. The resolved credit timeline must strictly decrease at every boundary. The first late deadline may equal the due credit. If there are no late deadlines, `afterLastDeadline.credit` may equal it instead. Early deadlines are not allowed when due credit is below 100%.
 
 When `due.date` is `null`, the due credit applies indefinitely after release.
 

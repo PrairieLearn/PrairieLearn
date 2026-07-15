@@ -5,8 +5,7 @@ import {
 } from '../../schemas/accessControl.js';
 
 const POST_DUE_CREDIT_MESSAGE = 'Credit after the due date must be at most 100%.';
-const CREDIT_ORDERING_MESSAGE =
-  'Credit must strictly decrease at every boundary, except that the first late deadline—or after-due credit when there are no late deadlines—may match due-date credit.';
+const CREDIT_ORDERING_MESSAGE = 'Credit must strictly decrease over time.';
 
 export type AccessControlRuleTargetType = 'none' | 'student_label' | 'enrollment';
 
