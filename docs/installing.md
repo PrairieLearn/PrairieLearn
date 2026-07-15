@@ -50,6 +50,8 @@ If you are using Windows, store your course content inside the WSL 2 instance. T
 
     For Windows, use a terminal connected to a WSL 2 instance. Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL 2 shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see a name of a Linux distribution, you are using WSL 2. If you see nothing, you are not using WSL 2.
 
+    To run a WSL 2 shell, open the Windows Start menu, search for "WSL", and select the WSL 2 instance you installed. Alternatively, install the [Windows Terminal](https://aka.ms/terminal) application and select your WSL 2 instance from the dropdown menu.
+
 To run PrairieLearn using the example course only, open a terminal window and type the command:
 
 ```sh
