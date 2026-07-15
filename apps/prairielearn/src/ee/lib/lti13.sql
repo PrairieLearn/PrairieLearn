@@ -115,7 +115,10 @@ SELECT DISTINCT
 FROM
   course_assessment_instances AS cai
   JOIN users AS u ON (u.id = cai.user_id)
-  LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
+  LEFT JOIN lti13_users AS lu ON (
+    lu.user_id = cai.user_id
+    AND lu.lti13_instance_id = $lti13_instance_id
+  )
 ORDER BY
   cai.user_id ASC,
   cai.assessment_id ASC,

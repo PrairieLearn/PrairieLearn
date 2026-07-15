@@ -30,8 +30,17 @@ import {
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
-import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
+import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
+
+import {
+  ContextMembershipContainerSchema,
+  Lti13MembershipIndex,
+  RosterMemberSchema,
+  STUDENT_ROLE,
+  appendRlidToMembershipsUrl,
+  resolveRosterMemberUin,
+} from './lti13-memberships.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -186,8 +195,6 @@ export const Lti13ClaimSchema = z.discriminatedUnion(
   [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
 );
 type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
-
-export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
 export async function getOpenidClientConfig(
   lti13_instance: Lti13Instance,
@@ -770,123 +777,39 @@ type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
 });
-type UserWithLti13Sub = z.infer<typeof UserWithLti13SubSchema>;
 
-// https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
-const ContextMembershipSchema = z.object({
-  user_id: z.string(),
-  roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
-  status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
-  email: z.string().optional(),
-});
-type ContextMembership = z.infer<typeof ContextMembershipSchema>;
-
-const ContextMembershipContainerSchema = z.object({
-  id: z.string(),
-  context: z.object({
-    id: z.string(),
-  }),
-  members: ContextMembershipSchema.array(),
-});
-
-/**
- * Appends a resource link id to a NRPS `context_memberships_url` so that the
- * platform resolves per-member `message[]` claims (including custom claims) for
- * that resource link. Returns the URL unchanged when no rlid is provided.
- *
- * https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
- */
-function appendRlidToMembershipsUrl(context_memberships_url: string, rlid: string | null): string {
-  if (!rlid) return context_memberships_url;
-  const url = new URL(context_memberships_url);
-  url.searchParams.set('rlid', rlid);
-  return url.toString();
-}
-
-class Lti13ContextMembership {
-  #membershipsByEmail: Record<string, ContextMembership[]> = {};
-  #membershipsBySub: Record<string, ContextMembership> = {};
-
-  private constructor(memberships: ContextMembership[]) {
-    // Turn array into an object for efficient lookups. We need to retain duplicates
-    // so that we can detect and handle the case where two users have the same email.
-    for (const member of memberships) {
-      this.#membershipsBySub[member.user_id] = member;
-
-      if (member.email === undefined) {
-        continue;
-      }
-      this.#membershipsByEmail[member.email] ??= [];
-      this.#membershipsByEmail[member.email].push(member);
-    }
+async function loadLti13MembershipIndex({
+  lti13_instance,
+  lti13_course_instance,
+}: Lti13CombinedInstance): Promise<Lti13MembershipIndex> {
+  if (lti13_course_instance.context_memberships_url === null) {
+    throw new HttpStatusError(
+      403,
+      'LTI 1.3 course instance context_memberships_url not configured',
+    );
   }
 
-  static async loadForInstance({
-    lti13_instance,
-    lti13_course_instance,
-  }: Lti13CombinedInstance): Promise<Lti13ContextMembership> {
-    if (lti13_course_instance.context_memberships_url === null) {
-      throw new HttpStatusError(
-        403,
-        'LTI 1.3 course instance context_memberships_url not configured',
-      );
-    }
+  const token = await getAccessToken(lti13_instance.id);
+  const membershipsUrl = appendRlidToMembershipsUrl(
+    lti13_course_instance.context_memberships_url,
+    lti13_course_instance.resource_link_id,
+  );
+  const fetchArray = await fetchRetryPaginated(membershipsUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+    },
+  });
 
-    const token = await getAccessToken(lti13_instance.id);
-    const fetchArray = await fetchRetryPaginated(lti13_course_instance.context_memberships_url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
-      },
+  const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
+  const memberships = containers
+    .flatMap((container) => container.members)
+    .filter((member) => {
+      return !member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
     });
 
-    const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
-    const ltiMemberships = containers.flatMap((c) => {
-      return c.members;
-    });
-
-    const filteredMemberships = ltiMemberships.filter((member: ContextMembership) => {
-      // Skip invalid cases
-      if (
-        member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
-        !('email' in member)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-
-    return new Lti13ContextMembership(filteredMemberships);
-  }
-
-  /**
-   * @param user The user to look up with optional lti13_sub
-   * @returns The LTI 1.3 record for the user, or null if not found.
-   */
-  lookup(user: UserWithLti13Sub): ContextMembership | null {
-    if (user.lti13_sub !== null) {
-      return this.#membershipsBySub[user.lti13_sub] ?? null;
-    }
-    for (const match of ['uid', 'email'] as const) {
-      const key = user[match];
-      if (key == null) continue;
-
-      const memberResults = this.#membershipsByEmail[key];
-
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!memberResults) continue;
-
-      // member.email cannot be duplicated in memberships
-      if (memberResults.length > 1) return null;
-
-      return memberResults[0];
-    }
-
-    // The user wasn't found.
-    return null;
-  }
+  return new Lti13MembershipIndex(memberships, lti13_instance);
 }
 
 export async function updateLti13Scores({
@@ -918,7 +841,7 @@ export async function updateLti13Scores({
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    { assessment_id: assessment.id },
+    { assessment_id: assessment.id, lti13_instance_id: assessment.lti13_instance_id },
     z.object({
       id: IdSchema,
       score_perc: z.number(),
@@ -934,7 +857,7 @@ export async function updateLti13Scores({
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 
-  const memberships = await Lti13ContextMembership.loadForInstance(instance);
+  const memberships = await loadLti13MembershipIndex(instance);
 
   const timestamp = new Date();
   const counts = {
@@ -948,14 +871,34 @@ export async function updateLti13Scores({
     const token = await getAccessToken(instance.lti13_instance.id);
 
     const user = assessment_instance.user;
-    const ltiUser = memberships.lookup(user);
+    const membershipMatch = memberships.lookup(user);
     const isCourseStaff = courseStaffUids.has(user.uid);
 
     // User not found in LTI, reporting only
-    if (ltiUser === null) {
+    if (membershipMatch === null) {
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
           ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
+
+    const ltiUser = membershipMatch.member;
+    if (membershipMatch.matchedBy === 'uin') {
+      // This records a trusted identity link, independent of enrollment or role.
+      await updateLti13UserSub({
+        user_id: user.id,
+        lti13_instance_id: instance.lti13_instance.id,
+        sub: ltiUser.user_id,
+      });
+    }
+
+    if (isCourseStaff) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` Course staff ${user.uid} is excluded from grade passback` +
           ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
       );
       counts.not_sent++;
@@ -966,7 +909,7 @@ export async function updateLti13Scores({
     if (!ltiUser.roles.includes(STUDENT_ROLE)) {
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-          ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+          ` User ${user.uid} does not have the LTI student role` +
           ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
       );
       counts.not_sent++;
@@ -1023,51 +966,6 @@ export async function updateLti13Scores({
     );
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
-}
-
-// Loose schema for the inspector: we want to dump members verbatim, so we only
-// parse the few fields needed for match annotation and keep everything else.
-const RosterMemberSchema = z
-  .object({
-    user_id: z.string(),
-    // NRPS flattens the lis sourcedid onto the member rather than nesting it under
-    // the lis claim the way a launch id_token does.
-    lis_person_sourcedid: z.string().optional(),
-    // Present only when the roster is fetched with a resource link id (`?rlid=`).
-    message: z.array(z.record(z.string(), z.unknown())).optional(),
-  })
-  .loose();
-type RosterMember = z.infer<typeof RosterMemberSchema>;
-
-/**
- * Resolves the UIN for a roster member using the instance's configured
- * `uin_attribute` path. That path is written against the launch id_token, but NRPS
- * represents a member differently: standard claims and the lis sourcedid are
- * flattened onto the member, while per-resource-link claims (e.g. custom) live in
- * `message[]`. We rebuild a launch-claim-shaped object so the same path resolves
- * for the configurations seen in practice — both `…/claim/custom` and
- * `…/claim/lis`. Returns null when the attribute isn't configured or nothing
- * resolves to a non-empty value.
- */
-function resolveRosterMemberUin(member: RosterMember, uin_attribute: string | null): string | null {
-  if (!uin_attribute) return null;
-
-  // `message[]` is typed as an array (each entry tagged with a message_type) and is
-  // only present with `?rlid=`. Canvas only ever emits a single LtiResourceLinkRequest
-  // entry, but merge any entries so a custom claim resolves regardless of position.
-  // The lis sourcedid is the one claim NRPS flattens onto the member, so nest it back
-  // under its claim. es-toolkit's `get` expands a path like 'a[0].b.c'.
-  const claims = {
-    ...member,
-    ...Object.assign({}, ...(member.message ?? [])),
-    'https://purl.imsglobal.org/spec/lti/claim/lis':
-      member.lis_person_sourcedid != null
-        ? { person_sourcedid: member.lis_person_sourcedid }
-        : undefined,
-  };
-
-  const value = get(claims, uin_attribute);
-  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 /**
