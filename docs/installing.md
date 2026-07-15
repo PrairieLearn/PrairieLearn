@@ -128,7 +128,6 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 
 - Install WSL 2. For current instructions, [follow the Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
-- On the shell of your WSL 2 instance, make sure Docker Engine is installed. The installation process may depend on the distribution of your WSL 2 instance. For current instructions, [follow the Docker documentation](https://docs.docker.com/engine/install/).
 
 ### Opening a WSL 2 shell on Windows
 
