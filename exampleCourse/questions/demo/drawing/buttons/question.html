@@ -3,11 +3,17 @@
         <pl-drawing-answer></pl-drawing-answer>
         <pl-controls>
             <pl-controls-group label="Misc">
-                <pl-drawing-button type="pl-coordinates"></pl-drawing-button>
+                <pl-drawing-button type="pl-coordinates" label="O" angle="0" width="60" x1="140" y1="140" relpos-active="true"></pl-drawing-button>
                 <pl-drawing-button type="pl-line"></pl-drawing-button>
                 <pl-drawing-button type="pl-arc"></pl-drawing-button>
-                <pl-drawing-button type="pl-point"></pl-drawing-button>
+                <pl-drawing-button type="pl-point" label="A"></pl-drawing-button>
                 <pl-drawing-button type="pl-text"></pl-drawing-button>
+            </pl-controls-group>
+            <pl-controls-group label="Forces and Vectors">
+                <pl-drawing-button type="pl-vector" label="\vec{v}" label-latex="true" x1="50" y1="100" angle="-40" label-relpos="ahead" offsety="100"></pl-drawing-button>
+                <pl-drawing-button type="pl-double-headed-vector" label="T" label-relpos="ahead"x1="50" y1="100"></pl-drawing-button>
+                <pl-drawing-button type="pl-arc-vector-CW"></pl-drawing-button>
+                <pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
             </pl-controls-group>
             <pl-controls-group label="Shapes">
                 <pl-drawing-button type="pl-triangle"></pl-drawing-button>
@@ -28,12 +34,7 @@
                 <pl-drawing-button type="pl-spring"></pl-drawing-button>
                 <pl-drawing-button type="pl-pulley"></pl-drawing-button>
             </pl-controls-group>
-            <pl-controls-group label="Forces and Vectors">
-                <pl-drawing-button type="pl-vector"></pl-drawing-button>
-                <pl-drawing-button type="pl-double-headed-vector"></pl-drawing-button>
-                <pl-drawing-button type="pl-arc-vector-CW"></pl-drawing-button>
-                <pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
-            </pl-controls-group>
+            
             <pl-controls-group label="Controlled Lines">
                 <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
                 <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
