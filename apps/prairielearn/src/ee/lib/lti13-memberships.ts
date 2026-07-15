@@ -27,7 +27,7 @@ export const ContextMembershipSchema = RosterMemberSchema.extend({
 });
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
-export const ContextMembershipContainerSchema = z.object({
+const ContextMembershipContainerSchema = z.object({
   id: z.string(),
   context: z.object({
     id: z.string(),
