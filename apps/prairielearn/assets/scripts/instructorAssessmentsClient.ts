@@ -4,6 +4,7 @@ import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-ut
 
 import { renderHistMini } from '../../src/components/HistMini.js';
 import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
+import { setupShortNameSuggestion } from '../../src/pages/instructorAssessments/shortNameSuggestion.js';
 
 const statElements = [
   '.score-stat-number',
@@ -13,6 +14,12 @@ const statElements = [
 ];
 
 onDocumentReady(() => {
+  const titleInput = document.getElementById('title');
+  const shortNameInput = document.getElementById('aid');
+  if (titleInput instanceof HTMLInputElement && shortNameInput instanceof HTMLInputElement) {
+    setupShortNameSuggestion(titleInput, shortNameInput);
+  }
+
   updatePlots(document.body);
 
   const { assessmentIdsNeedingStatsUpdate, urlPrefix } =
