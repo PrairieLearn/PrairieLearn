@@ -1,0 +1,1 @@
+ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_lti13_sub_requires_lti_managed;
