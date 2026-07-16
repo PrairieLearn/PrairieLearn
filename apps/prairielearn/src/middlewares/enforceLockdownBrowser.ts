@@ -1,8 +1,9 @@
+import type { Request } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { LockdownBrowserRequiredError, isLockdownBrowserBlocked } from '../lib/exam-mode.js';
 
-function isPrairieTestAuthRequest(req: { method: string; path: string }): boolean {
+function isPrairieTestAuthRequest(req: Request): boolean {
   return (
     req.method === 'GET' &&
     (req.path === '/pl/prairietest/auth' || req.path === '/pl/prairietest/auth/')
@@ -23,6 +24,10 @@ export default asyncHandler(async (req, res, next) => {
   // Students begin the PrairieTest sign-in flow in a regular browser, then launch
   // LockDown Browser from PrairieTest. This route only hands the authenticated user
   // off to PrairieTest, so it must remain reachable after the student is checked in.
+  //
+  // We do not limit access even after the student has started their reservation.
+  // They may need to resume on a different machine during an in-progress session,
+  // e.g. because of hardware failure.
   if (!res.locals.authn_user || isPrairieTestAuthRequest(req)) {
     next();
     return;
