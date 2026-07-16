@@ -3,8 +3,8 @@ import * as async from 'async';
 import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-utils';
 
 import { renderHistMini } from '../../src/components/HistMini.js';
+import { suggestShortName } from '../../src/lib/short-name.js';
 import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
-import { setupShortNameSuggestion } from '../../src/pages/instructorAssessments/shortNameSuggestion.js';
 
 const statElements = [
   '.score-stat-number',
@@ -17,7 +17,16 @@ onDocumentReady(() => {
   const titleInput = document.getElementById('title');
   const shortNameInput = document.getElementById('aid');
   if (titleInput instanceof HTMLInputElement && shortNameInput instanceof HTMLInputElement) {
-    setupShortNameSuggestion(titleInput, shortNameInput);
+    let shortNameEdited = false;
+
+    shortNameInput.addEventListener('input', () => {
+      shortNameEdited = true;
+    });
+    titleInput.addEventListener('input', () => {
+      if (!shortNameEdited) {
+        shortNameInput.value = suggestShortName(titleInput.value);
+      }
+    });
   }
 
   updatePlots(document.body);
