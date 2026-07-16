@@ -2533,7 +2533,7 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
         subObj.top += options['offsety' + suffix];
       } else if (!options[prefix + '_relpos_is_at']) {
         // In relative positions other than 'at', the relative position of the text depends on the coordinate system's angle
-        var angle_deg;
+        let angle_deg;
         if (obj.selectable) {
           angle_deg = (options[prefix + '_relpos_angle'] + obj.angle) % 360;
         } else {
@@ -3182,9 +3182,9 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
           textObj.top += obj.offsety;
         } else if (!options.label_relpos_is_at) {
           // In relative positions other than 'at', the relative position of the text depends on the vector's angle
-          var angle_deg = options.label_relpos_angle + obj.angle;
+          const angle_deg = options.label_relpos_angle + obj.angle;
 
-          var angle_rad = (Math.PI / 180) * angle_deg;
+          const angle_rad = (Math.PI / 180) * angle_deg;
           textObj.left += (textObj.width / 2 + options.label_sep) * Math.cos(angle_rad);
           textObj.top += (textObj.height / 2 + options.label_sep) * Math.sin(angle_rad);
         }
@@ -3464,9 +3464,9 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
           textObj.top += obj.offsety;
         } else if (!options.label_relpos_is_at) {
           // In relative positions other than 'at', the relative position of the text depends on the vector's angle
-          var angle_deg = options.label_relpos_angle + obj.angle;
+          const angle_deg = options.label_relpos_angle + obj.angle;
 
-          var angle_rad = (Math.PI / 180) * angle_deg;
+          const angle_rad = (Math.PI / 180) * angle_deg;
           textObj.left += (textObj.width / 2 + options.label_sep) * Math.cos(angle_rad);
           textObj.top += (textObj.height / 2 + options.label_sep) * Math.sin(angle_rad);
         }
