@@ -168,6 +168,10 @@ updates:
       # https://github.com/PrairieLearn/PrairieLearn/pull/15373
       - dependency-name: 'pygraphviz'
         versions: ['>=2']
+      # numpy 2.5 removes some deprecated functionality that may be in use by
+      # instructors. Retaining for now out of an abundance of caution.
+      - dependency-name: 'numpy'
+        versions: ['>=2.5']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -183,3 +187,7 @@ updates:
       # See the note on the pip entry above.
       - dependency-name: 'pygraphviz'
         versions: ['>=2']
+      # numpy 2.5 removes some deprecated functionality that may be in use by
+      # instructors. Retaining for now out of an abundance of caution.
+      - dependency-name: 'numpy'
+        versions: ['>=2.5']
