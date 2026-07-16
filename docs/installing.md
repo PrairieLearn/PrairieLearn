@@ -120,9 +120,9 @@ Additional tags are available for older versions. The list of available versions
 
 ## Additional instructions for Windows users
 
-We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
+We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented.
 
-If you are using Windows, use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features.
+If you are using Windows, use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features. All examples in this page assume that, if Windows is in use, commands are executed and files are stored within the WSL 2 environment.
 
 Here are the instructions to install WSL 2 and enable its integration with Docker:
 
@@ -133,7 +133,7 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 
 To run a WSL 2 shell, open the Windows Start menu, search for "WSL", and select the WSL 2 instance you installed. Alternatively, install the [Windows Terminal](https://aka.ms/terminal) application and select your WSL 2 instance from the dropdown menu.
 
-Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, you are not using WSL.
+Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, or you see `$WSL_DISTRO_NAME`, you are not using WSL.
 
 ### Storing your course content in WSL 2
 
