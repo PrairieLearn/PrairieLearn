@@ -1046,6 +1046,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.callSuper('initialize', options);
     this.image = null;
     this.label = text;
+    this.initialized = false;
 
     if (text && text.trim()) {
       this.gen_text(this.label, options);
@@ -1070,8 +1071,11 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
   _render(ctx) {
     if (this.image != null) {
       this.image._render(ctx);
-      // Dynamic placement using height and width can set up to run when this event fires (before this point, height and width are not known)
-      this.fire('initialized');
+      if (!this.initialized) {
+        this.initialized = true;
+        // Dynamic placement using height and width can set up to run when this event fires (before this point, height and width are not known)
+        this.fire('initialized');
+      }
     }
   },
 });
@@ -2480,10 +2484,14 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
       if (options[prefix + '_latex']) {
         result = new mechanicsObjects.LatexText(options[prefix], {
           fontSize: 20,
+          evented: false,
+          selectable: false,
         });
       } else {
         result = new fabric.Text(options[prefix], {
           fontSize: 20,
+          evented: false,
+          selectable: false,
         });
       }
 
@@ -2503,12 +2511,6 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     const labelObj = gen_label('label');
     const labelxObj = gen_label('labelx');
     const labelyObj = gen_label('labely');
-
-    labelxObj.evented = false;
-    labelxObj.selectable = false;
-
-    labelyObj.evented = false;
-    labelyObj.selectable = false;
 
     canvas.add(labelObj);
     canvas.add(labelxObj);
@@ -3197,8 +3199,8 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
       obj.on('moving', update_label);
       obj.on('rotating', update_label);
     }
-    if (options.label_latex) {
-      // 'initialized' will fire when mathJax rendering is complete. This is the earliest point at which positioning can be updated because relative positioning requires width and height
+    if (textObj && options.label_latex) {
+      // 'initialized' will fire when MathJax rendering is complete. This is the earliest point at which positioning can be updated because relative positioning requires width and height
       textObj.on('initialized', update_label);
     } else {
       // text was prepared synchronously, so initial position can be set immediately
@@ -3474,7 +3476,7 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
         canvas.requestRenderAll();
       }
     };
-    if (options.selectable) {
+    if (textObj && options.selectable) {
       submittedAnswer.registerAnswerObject(options, obj);
       obj.on('moving', update_label);
       obj.on('rotating', update_label);
