@@ -1,0 +1,13 @@
+-- The backing index was built concurrently, so attaching it does not rebuild or scan it.
+ALTER TABLE enrollments
+-- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
+ADD CONSTRAINT enrollments_pending_uin_course_instance_id_key UNIQUE USING INDEX enrollments_pending_uin_course_instance_id_idx;
+
+ALTER TABLE enrollments
+DROP CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid_lti13_sub,
+DROP CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending,
+DROP CONSTRAINT enrollments_lti13_pending_lti_managed_true,
+DROP CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected;
+
+ALTER TABLE enrollments
+RENAME CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_pending TO enrollments_user_id_null_only_if_invited_rejected;
