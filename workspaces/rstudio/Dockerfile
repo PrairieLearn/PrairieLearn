@@ -39,7 +39,7 @@
 # Their site has more documentation.
 
 FROM rocker/rstudio:4.6.1
-ARG CACHEBUST=2026-06-15-15-59-28
+ARG CACHEBUST=2026-07-15-14-34-04
 LABEL com.prairielearn.workspace.home="/home/rstudio/workspace"
 LABEL com.prairielearn.workspace.port="3939"
 LABEL com.prairielearn.workspace.rewrite-url="false"
