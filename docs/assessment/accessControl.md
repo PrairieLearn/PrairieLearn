@@ -33,6 +33,8 @@ The summary card shows the current access state, the release/due timeline, credi
 
 Click **Edit** in the **Defaults** section. Defaults are the baseline settings for every student who does not match a more specific override.
 
+By default, students cannot access the assessment. Grant access through a **Date control** release or an active **PrairieTest** reservation for a linked exam.
+
 ![Defaults editor panel for access control](accessControl/02-defaults-editor.png)
 /// caption
 Editing the defaults opens a side panel with date control, PrairieTest, before-release, and after-completion settings.
@@ -41,6 +43,8 @@ Editing the defaults opens a side panel with date control, PrairieTest, before-r
 ### Date control
 
 Use **Date control** to configure when students can open the assessment, when submissions are accepted, and how much credit submissions receive over time.
+
+Date control is initially disabled. When first enabled, it defaults to **Released** with no due date.
 
 Set a **Release** option:
 
@@ -506,7 +510,9 @@ The `accessControl` field is an array in `infoAssessment.json`:
 }
 ```
 
-The first element is the defaults rule and must not have a `uuid`. Every element after the first is an override and must have a `uuid`. Overrides with `labels` target student labels; trailing overrides without `labels` store student-specific rule bodies, while the selected students stay in PrairieLearn rather than in course content. Use `labels: []` for a student-label override that intentionally targets no labels.
+If `accessControl` is omitted or set to `[]`, students have no access. In a nonempty array, the first element is the defaults rule and must not have a `uuid`. When the defaults grant no access but overrides follow, keep `{}` as the first element; without it, the first override occupies the defaults position and validation fails.
+
+Every later element is an override and must have a `uuid`. Overrides with `labels` target student labels; trailing overrides without `labels` store student-specific rule bodies, while the selected students stay in PrairieLearn rather than in course content. Use `labels: []` for a student-label override that intentionally targets no labels.
 
 ### Full JSON skeleton
 
