@@ -2,7 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { withConfig } from '../tests/utils/config.js';
 
-import { parseGithubRepository } from './github-utils.js';
+import { isValidGithubUsername, parseGithubRepository } from './github-utils.js';
 import {
   addMachineAccessToRepo,
   checkGithubOrgAccess,
@@ -179,6 +179,29 @@ describe('parseGithubRepository', () => {
   it('returns null for non-GitHub URLs', () => {
     assert.isNull(parseGithubRepository('git@gitlab.com:u/r.git'));
     assert.isNull(parseGithubRepository(''));
+  });
+});
+
+describe('isValidGithubUsername', () => {
+  it('accepts GitHub username syntax', () => {
+    for (const username of ['nathan', 'EduardoMVAz', 'pl-user1', 'a', 'a'.repeat(39)]) {
+      assert.isTrue(isValidGithubUsername(username));
+    }
+  });
+
+  it('rejects values that GitHub will not accept as usernames', () => {
+    for (const username of [
+      '',
+      'test@example.com',
+      '-leading',
+      'trailing-',
+      'double--hyphen',
+      'has space',
+      'has_underscore',
+      'a'.repeat(40),
+    ]) {
+      assert.isFalse(isValidGithubUsername(username));
+    }
   });
 });
 

@@ -30,7 +30,11 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 11
+          # Pinned below 11.12.0, whose self-install crashes with
+          # "Cannot use 'in' operator to search for 'integrity' in undefined".
+          # https://github.com/pnpm/action-setup/issues/276
+          # https://github.com/pnpm/pnpm/issues/12959
+          version: 11.11.0
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -59,10 +63,9 @@ jobs:
           # in order to update `pnpm-lock.yaml`: https://pnpm.io/10.x/using-changesets
           version: pnpm run version
           # This invokes the `release` script in `package.json`, which will build
-          # all the packages and then invoke `changeset publish`.
+          # all the packages and then invoke `pnpm publish`.
           publish: pnpm run release
-          # Avoid creating GitHub releaseses, as we don't need them.
-          # This complements `--no-git-tag` in the `release` script in `package.json`.
+          # Avoid creating GitHub releases, as we don't need them.
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

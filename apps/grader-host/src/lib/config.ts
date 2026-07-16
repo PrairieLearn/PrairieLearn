@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   ConfigLoader,
   type ConfigSource,
+  makeConductorConfigSource,
   makeImdsConfigSource,
   makeKmsConfigSource,
   makeSecretsManagerConfigSource,
@@ -47,6 +48,30 @@ export const ConfigSchema = z.object({
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlPoolSize: z.number().default(2),
   postgresqlIdleTimeoutMillis: z.number().default(30000),
+  postgresqlSsl: z
+    .union([
+      z.boolean(),
+      // A subset of the options that can be provided to the `TLSSocket` constructor.
+      // https://node-postgres.com/features/ssl
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
+    ])
+    .default(false),
   autoScalingGroupName: z.string().nullable().default(null),
   // Will be automatically detected when running in EC2.
   instanceId: z.string().default('server'),
@@ -151,6 +176,7 @@ export const config = loader.config;
 
 export async function loadConfig() {
   await loader.loadAndValidate([
+    makeConductorConfigSource(),
     makeProductionConfigSource(),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

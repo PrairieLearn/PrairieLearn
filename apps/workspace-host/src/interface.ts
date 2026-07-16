@@ -107,6 +107,17 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
+async function updateLoadCount() {
+  const params = { instance_id: workspace_server_settings.instance_id };
+
+  await sqldb.runInTransactionAsync(async () => {
+    // Lock in a separate statement so the recount gets a fresh snapshot after
+    // any concurrent workspace assignment finishes.
+    await sqldb.execute(sql.lock_workspace_host_for_load_count_update, params);
+    await sqldb.execute(sql.update_load_count, params);
+  });
+}
+
 const app = express();
 app.use(Sentry.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -119,9 +130,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.execute(sql.update_load_count, {
-        instance_id: workspace_server_settings.instance_id,
-      });
+      await updateLoadCount();
       db_status = 'ok';
     } catch {
       db_status = null;
@@ -224,6 +233,7 @@ async
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
@@ -256,9 +266,7 @@ async
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.execute(sql.update_load_count, {
-            instance_id: workspace_server_settings.instance_id,
-          });
+          await updateLoadCount();
         } catch (err) {
           logger.error('Error pruning containers', err);
           Sentry.captureException(err);
@@ -958,9 +966,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
   });
 
-  await sqldb.execute(sql.update_load_count, {
-    instance_id: workspace_server_settings.instance_id,
-  });
+  await updateLoadCount();
 
   return container;
 }

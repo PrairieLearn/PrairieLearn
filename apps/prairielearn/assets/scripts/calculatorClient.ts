@@ -52,6 +52,11 @@ function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
   localStorage.setItem(storageKey, JSON.stringify(data));
 }
 
+function clipboardOutput(latex: string) {
+  // Remove all thousands separators, represented by \, in between digits
+  return convertLatexToAsciiMath(latex.replaceAll(/(?<=\d)\\,(?=\d)/g, ''));
+}
+
 const TRIG_FUNCTIONS = new Set([
   'Sin',
   'Cos',
@@ -110,7 +115,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const displayModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#displayModeSwitch'));
   const angleModeSwitch = ensureElement(drawer.querySelector<HTMLElement>('#angleModeSwitch'));
 
-  const latexFieldOnExport = (_mf: Mathfield, latex: string) => convertLatexToAsciiMath(latex);
+  const latexFieldOnExport = (_mf: Mathfield, latex: string) => clipboardOutput(latex);
 
   calculatorInputElement.onExport = latexFieldOnExport;
   calculatorOutput.onExport = latexFieldOnExport;
@@ -352,7 +357,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    copyButton.dataset.clipboardText = convertLatexToAsciiMath(displayed);
+    copyButton.dataset.clipboardText = clipboardOutput(displayed);
 
     // Add to history
     if (addToHistory) {
@@ -703,10 +708,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputCopyBtn = ensureElement(
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
-    inputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(input);
-    outputCopyBtn.dataset.clipboardText = convertLatexToAsciiMath(
-      outputField.value.replace(/^=/, ''),
-    );
+    inputCopyBtn.dataset.clipboardText = clipboardOutput(input);
+    outputCopyBtn.dataset.clipboardText = clipboardOutput(outputField.value.replace(/^=/, ''));
 
     // Insert buttons
     const inputInsertBtn = ensureElement(
