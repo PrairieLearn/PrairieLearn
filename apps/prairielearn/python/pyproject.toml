@@ -18,7 +18,7 @@ dependencies = [
   "jsonschema==4.26.0",
   "lxml==6.1.1",
   "networkx==3.6.1",
-  "numpy==2.5.0",
+  "numpy==2.4.6",
   "pandas==2.3.3",
   "pint==0.25.3",
   "rich==15.0.0",

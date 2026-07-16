@@ -28,7 +28,7 @@ from prairielearn.sympy_utils import (
 from prairielearn.to_precision import to_precision
 
 if TYPE_CHECKING:
-    from numpy._core.arrayprint import _FormatDict
+    from numpy.core.arrayprint import _FormatDict
 
 
 class _JSONSerializedGeneric(TypedDict):
