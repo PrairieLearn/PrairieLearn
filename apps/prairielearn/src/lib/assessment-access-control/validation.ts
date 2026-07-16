@@ -443,14 +443,14 @@ export function validateGlobalCreditConsistencyIssues(
       }
     }
 
-    const postDueEntry = effectiveEntries.find(
-      (entry) =>
+    for (const entry of effectiveEntries) {
+      if (
         (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
         entry.credit > 100 &&
-        entry.validationRule === validationRule,
-    );
-    if (postDueEntry) {
-      pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+        entry.validationRule === validationRule
+      ) {
+        pushIssue(issues, validationRule, entry.path, POST_DUE_CREDIT_MESSAGE);
+      }
     }
 
     for (let i = 1; i < effectiveEntries.length; i++) {
@@ -751,12 +751,13 @@ export function validateRuleCreditOrderingIssues(
   const issues: AccessControlValidationIssue[] = [];
   const entries = getRuleCreditEntries(validationRule);
 
-  const postDueEntry = entries.find(
-    (entry) =>
-      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') && entry.credit > 100,
-  );
-  if (postDueEntry) {
-    pushIssue(issues, validationRule, postDueEntry.path, POST_DUE_CREDIT_MESSAGE);
+  for (const entry of entries) {
+    if (
+      (entry.kind === 'lateDeadline' || entry.kind === 'afterLastDeadline') &&
+      entry.credit > 100
+    ) {
+      pushIssue(issues, validationRule, entry.path, POST_DUE_CREDIT_MESSAGE);
+    }
   }
 
   for (let i = 1; i < entries.length; i++) {

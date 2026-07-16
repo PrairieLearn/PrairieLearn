@@ -967,6 +967,30 @@ describe('Credit ordering validation', () => {
     );
   });
 
+  it('reports every post-due credit above 100%', () => {
+    const issues = validateRuleCreditOrderingIssues({
+      rule: {
+        dateControl: {
+          due: { date: '2024-03-21T00:00:00' },
+          lateDeadlines: [{ date: '2024-03-25T00:00:00', credit: 101 }],
+          afterLastDeadline: { allowSubmissions: true, credit: 102 },
+        },
+      },
+      targetType: 'none',
+      ruleIndex: 0,
+    });
+
+    assert.deepEqual(
+      issues
+        .filter((issue) => issue.message === 'Credit after the due date must be at most 100%.')
+        .map((issue) => issue.path),
+      [
+        ['dateControl', 'lateDeadlines', 0, 'credit'],
+        ['dateControl', 'afterLastDeadline', 'credit'],
+      ],
+    );
+  });
+
   it.each([
     {
       label: 'early deadline credit above default due credit',
@@ -1268,6 +1292,39 @@ describe('Global credit validation', () => {
     validateGlobalCreditConsistencyIssues(
       rules.map((rule, ruleIndex) => validationRule(rule, ruleIndex)),
     ).map((issue) => issue.message);
+
+  it('reports every post-due credit above 100% on an override', () => {
+    const issues = validateGlobalCreditConsistencyIssues([
+      {
+        rule: {
+          dateControl: { due: { date: '2024-04-10T00:00:00', credit: 110 } },
+        },
+        targetType: 'none',
+        ruleIndex: 0,
+      },
+      {
+        rule: {
+          labels: ['Section A'],
+          dateControl: {
+            lateDeadlines: [{ date: '2024-04-11T00:00:00', credit: 101 }],
+            afterLastDeadline: { allowSubmissions: true, credit: 102 },
+          },
+        },
+        targetType: 'student_label',
+        ruleIndex: 1,
+      },
+    ]);
+
+    assert.deepEqual(
+      issues
+        .filter((issue) => issue.message === 'Credit after the due date must be at most 100%.')
+        .map((issue) => issue.path),
+      [
+        ['dateControl', 'lateDeadlines', 0, 'credit'],
+        ['dateControl', 'afterLastDeadline', 'credit'],
+      ],
+    );
+  });
 
   it('rejects override late deadline credit above inherited due credit', () => {
     const messages = messagesFor(
