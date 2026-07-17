@@ -36,7 +36,6 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 import {
   Lti13MembershipIndex,
   RosterMemberSchema,
-  STUDENT_ROLE,
   appendRlidToMembershipsUrl,
   parseContextMemberships,
   resolveRosterMemberUin,
@@ -890,21 +889,7 @@ export async function updateLti13Scores({
     const token = await getAccessToken(instance.lti13_instance.id);
 
     const user = assessment_instance.user;
-    const membershipMatch = memberships.lookup(user);
     const isCourseStaff = courseStaffUids.has(user.uid);
-
-    // User not found in LTI, reporting only
-    if (membershipMatch === null) {
-      job.info(
-        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-          ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
-          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
-      );
-      counts.not_sent++;
-      continue;
-    }
-
-    const ltiUser = membershipMatch;
 
     if (isCourseStaff) {
       job.info(
@@ -916,11 +901,13 @@ export async function updateLti13Scores({
       continue;
     }
 
-    // User is not a student in LTI, reporting only
-    if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+    const ltiMember = memberships.lookup(user);
+
+    // User not found in LTI, reporting only
+    if (ltiMember === null) {
       job.info(
         `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-          ` User ${user.uid} does not have the LTI student role` +
+          ` Could not find student ${user.uid}` +
           ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
       );
       counts.not_sent++;
@@ -942,7 +929,7 @@ export async function updateLti13Scores({
       scoreMaximum: 100,
       activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
       gradingProgress: 'FullyGraded',
-      userId: ltiUser.user_id,
+      userId: ltiMember.user_id,
       submission: {
         startedAt: assessment_instance.date,
         submittedAt: submittedAt ?? undefined,
