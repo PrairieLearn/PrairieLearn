@@ -6,7 +6,7 @@ import {
   type Lti13MembershipLookupUser,
   STUDENT_ROLE,
   parseContextMemberships,
-  resolveRosterMemberUin,
+  analyzeRosterMemberUin,
 } from './lti13-memberships.js';
 
 const CUSTOM_UIN_ATTRIBUTE = '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]';
@@ -163,6 +163,23 @@ describe('Lti13MembershipIndex', () => {
     expect(makeIndex(memberships).lookup(user)).toBeNull();
   });
 
+  test('rejects every UIN candidate shared with a member whose claims conflict', () => {
+    const firstUser = makeUser('first-conflicted-uin', { uin: 'first-uin' });
+    const secondUser = makeUser('second-conflicted-uin', { uin: 'second-uin' });
+    const conflictedMember = {
+      ...makeMember({ sub: 'conflicted-sub' }),
+      message: [makeUinMessage(firstUser.uin), makeUinMessage(secondUser.uin)],
+    };
+    const index = makeIndex([
+      conflictedMember,
+      makeMember({ sub: 'first-valid-sub', uin: firstUser.uin }),
+      makeMember({ sub: 'second-valid-sub', uin: secondUser.uin }),
+    ]);
+
+    expect(index.lookup(firstUser)).toBeNull();
+    expect(index.lookup(secondUser)).toBeNull();
+  });
+
   test('rejects a duplicate sub across roster pages', () => {
     const uinUser = makeUser('duplicate-sub-uin', { uin: 'first-uin' });
     const emailUser = makeUser('duplicate-sub-email');
@@ -257,7 +274,7 @@ describe('Lti13MembershipIndex', () => {
   });
 });
 
-describe('resolveRosterMemberUin', () => {
+describe('analyzeRosterMemberUin', () => {
   test.each([
     '',
     ' ',
@@ -267,7 +284,7 @@ describe('resolveRosterMemberUin', () => {
     123,
   ])('rejects an invalid or unexpanded value: %j', (uin) => {
     const member = makeMember({ sub: 'sub', uin });
-    expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
+    expect(analyzeRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE).uin).toBeNull();
   });
 
   test('rejects conflicting values across message entries', () => {
@@ -276,7 +293,7 @@ describe('resolveRosterMemberUin', () => {
       message: [makeUinMessage('first-uin'), makeUinMessage('second-uin')],
     };
 
-    expect(resolveRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE)).toBeNull();
+    expect(analyzeRosterMemberUin(member, CUSTOM_UIN_ATTRIBUTE).uin).toBeNull();
   });
 });
 

@@ -88,19 +88,21 @@ function getUsableUin(value: unknown): string | null {
 }
 
 /**
- * Resolves the UIN for a roster member using the instance's configured
+ * Analyzes the UIN for a roster member using the instance's configured
  * `uin_attribute` path. That path is written against the launch id_token, but NRPS
  * represents a member differently: standard claims and the lis sourcedid are
  * flattened onto the member, while per-resource-link claims (e.g. custom) live in
  * `message[]`. We resolve the launch claim path against each possible source and
- * fail closed if the platform returns conflicting values. Returns null when the
- * attribute isn't configured or nothing resolves to a valid, expanded value.
+ * fail closed if the platform returns conflicting values. `uin` is null when the
+ * attribute isn't configured or nothing resolves to a valid, expanded value;
+ * `usableCandidates` retains valid values from conflicting claims so callers can
+ * treat those values as ambiguous across the complete roster.
  */
-export function resolveRosterMemberUin(
+export function analyzeRosterMemberUin(
   member: RosterMember,
   uin_attribute: string | null,
-): string | null {
-  if (!uin_attribute) return null;
+): { uin: string | null; usableCandidates: string[] } {
+  if (!uin_attribute) return { uin: null, usableCandidates: [] };
 
   // `message[]` is only present with `?rlid=`. Each entry is already shaped like
   // launch claims, while NRPS flattens the lis sourcedid onto the member.
@@ -118,9 +120,14 @@ export function resolveRosterMemberUin(
     .map((claims) => get(claims, uin_attribute))
     .filter((value) => value !== undefined);
   const value = values[0];
+  const usableCandidates = [
+    ...new Set(values.map(getUsableUin).filter((uin): uin is string => uin !== null)),
+  ];
 
-  if (values.some((candidate) => candidate !== value)) return null;
-  return getUsableUin(value);
+  return {
+    uin: values.some((candidate) => candidate !== value) ? null : getUsableUin(value),
+    usableCandidates,
+  };
 }
 
 /**
@@ -128,7 +135,9 @@ export function resolveRosterMemberUin(
  * configured UIN require a unique institution-scoped UIN and any stored sub to
  * resolve to one member; roster email is ignored. Integrations without a UIN
  * retain the best-effort stored-sub-then-email lookup. Duplicate subs, UINs, and
- * matched emails fail closed.
+ * matched emails fail closed. This index preserves per-student passback isolation;
+ * roster sync must instead reject the entire snapshot when an in-scope member
+ * lacks a usable UIN, has conflicting UIN values, or shares a sub or UIN.
  */
 export class Lti13MembershipIndex {
   // null marks an identity key shared by multiple roster entries.
@@ -164,12 +173,14 @@ export class Lti13MembershipIndex {
         this.#membershipsBySub.set(member.user_id, member);
       }
 
-      const uin = resolveRosterMemberUin(member, this.#uinAttribute);
-      if (uin !== null) {
-        if (!this.#membershipsByUin.has(uin)) {
-          this.#membershipsByUin.set(uin, member);
+      const { uin, usableCandidates } = analyzeRosterMemberUin(member, this.#uinAttribute);
+      for (const candidate of usableCandidates) {
+        if (candidate === uin && !this.#membershipsByUin.has(candidate)) {
+          this.#membershipsByUin.set(candidate, member);
         } else {
-          this.#membershipsByUin.set(uin, null);
+          // A conflicted member still poisons each usable candidate so a later
+          // otherwise-valid member cannot make that UIN appear unique.
+          this.#membershipsByUin.set(candidate, null);
         }
       }
 

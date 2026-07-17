@@ -38,7 +38,7 @@ import {
   RosterMemberSchema,
   appendRlidToMembershipsUrl,
   parseContextMemberships,
-  resolveRosterMemberUin,
+  analyzeRosterMemberUin,
 } from './lti13-memberships.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -1029,7 +1029,7 @@ export async function inspectRoster({
       sub: member.user_id,
     });
 
-    const uin = resolveRosterMemberUin(member, lti13_instance.uin_attribute);
+    const { uin } = analyzeRosterMemberUin(member, lti13_instance.uin_attribute);
     const userByUin = uin
       ? await selectOptionalUserByUin({ uin, institution_id: lti13_instance.institution_id })
       : null;
