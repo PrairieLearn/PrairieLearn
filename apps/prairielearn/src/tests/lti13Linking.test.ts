@@ -579,7 +579,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   });
 
   describe('LTI 1.3 NRPS roster inspector', () => {
-    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis matches', async () => {
+    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis identity candidates', async () => {
       // Ensure course instance 1 is linked to LTI instance 1.
       await execute(
         `DELETE FROM lti13_course_instances
@@ -595,7 +595,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         courseInstanceId: '1',
       });
 
-      // Create a user with a known sub and UIN to exercise both match paths.
+      // Create a user with a known sub and UIN to exercise both identity annotations.
       const knownSub = 'roster-inspector-sub-1';
       const knownUin = '555000555';
       await grantCoursePermissions({
@@ -757,12 +757,13 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const customOutput = customJobs[0].output ?? '';
       assert.include(customOutput, 'Found 3 members.');
       assert.include(customOutput, 'roster-inspector@example.com');
-      assert.include(customOutput, 'Matched by sub');
+      assert.include(customOutput, 'Stored sub binding: PrairieLearn user');
       assert.include(
         customOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
-      assert.include(customOutput, 'No PrairieLearn user matched');
+      assert.include(customOutput, 'Stored sub binding: none');
+      assert.include(customOutput, 'Configured-UIN grade routing would fail');
 
       // With no rlid (no custom claims), the lis-configured instance still resolves
       // the UIN from the lis sourcedid that NRPS flattens onto the member.
@@ -771,7 +772,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const lisOutput = lisJobs[0].output ?? '';
       assert.include(
         lisOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
     });
   });

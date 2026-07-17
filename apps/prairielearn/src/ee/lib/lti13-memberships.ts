@@ -143,7 +143,9 @@ export class Lti13MembershipIndex {
     { institution_id, uin_attribute }: { institution_id: string; uin_attribute: string | null },
   ) {
     this.#institutionId = institution_id;
-    this.#uinAttribute = uin_attribute;
+    // Cleared optional admin fields may be stored as empty strings; LTI auth
+    // treats an empty UIN attribute as unconfigured too.
+    this.#uinAttribute = uin_attribute || null;
 
     for (const member of memberships) {
       // NRPS defines a missing status as Active.
@@ -162,7 +164,7 @@ export class Lti13MembershipIndex {
         this.#membershipsBySub.set(member.user_id, member);
       }
 
-      const uin = resolveRosterMemberUin(member, uin_attribute);
+      const uin = resolveRosterMemberUin(member, this.#uinAttribute);
       if (uin !== null) {
         if (!this.#membershipsByUin.has(uin)) {
           this.#membershipsByUin.set(uin, member);

@@ -210,6 +210,13 @@ describe('Lti13MembershipIndex', () => {
     expect(index.lookup(user)).toMatchObject({ user_id: 'stored-sub' });
   });
 
+  test('treats an empty UIN attribute as unconfigured', () => {
+    const user = makeUser('empty-uin-attribute');
+    const index = makeIndex([makeMember({ sub: 'email-sub', email: user.email ?? undefined })], '');
+
+    expect(index.lookup(user)).toMatchObject({ user_id: 'email-sub' });
+  });
+
   test('rejects duplicate email and absent members', () => {
     const user = makeUser('duplicate-email');
     const index = makeIndex(

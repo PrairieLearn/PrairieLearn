@@ -743,10 +743,9 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
-  let currentUrl = new URL(
+  const origin = new URL(
     typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-  );
-  const origin = currentUrl.origin;
+  ).origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -754,12 +753,11 @@ export async function fetchRetryPaginated(
 
     const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
     if ('next' in parsed) {
-      const nextUrl = new URL(parsed.next.url, currentUrl);
+      const nextUrl = new URL(parsed.next.url, res.url);
       if (nextUrl.origin !== origin) {
         throw new Error('Refusing to follow a cross-origin pagination link');
       }
       input = nextUrl;
-      currentUrl = nextUrl;
     } else {
       return output;
     }
@@ -1004,8 +1002,17 @@ export async function inspectRoster({
     .map((raw) => ({ raw, parsed: RosterMemberSchema.safeParse(raw) }));
 
   job.info(`\nFound ${members.length} member${members.length === 1 ? '' : 's'}.\n`);
+  job.info(
+    'Identity annotations show independent database candidates and obvious conflicts; they are not grade-routing decisions and do not check snapshot-wide ambiguity.\n',
+  );
 
-  const counts = { by_sub: 0, by_uin: 0, unmatched: 0, unparseable: 0 };
+  const hasConfiguredUin = Boolean(lti13_instance.uin_attribute);
+  const counts = {
+    sub_bindings: 0,
+    uin_users: 0,
+    no_candidates: 0,
+    unparseable: 0,
+  };
 
   for (const { raw, parsed } of members) {
     job.info(JSON.stringify(raw, null, 2));
@@ -1023,32 +1030,59 @@ export async function inspectRoster({
     });
 
     const uin = resolveRosterMemberUin(member, lti13_instance.uin_attribute);
-    const userByUin =
-      !userBySub && uin
-        ? await selectOptionalUserByUin({ uin, institution_id: lti13_instance.institution_id })
-        : null;
+    const userByUin = uin
+      ? await selectOptionalUserByUin({ uin, institution_id: lti13_instance.institution_id })
+      : null;
 
     if (userBySub) {
-      counts.by_sub++;
+      counts.sub_bindings++;
       job.info(
-        `  Matched by sub to PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}).`,
+        `  Stored sub binding: PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}${userBySub.deleted_at ? ', soft-deleted' : ''}).`,
       );
-    } else if (userByUin) {
-      counts.by_uin++;
-      job.info(`  Matched by UIN ${uin} to PrairieLearn user ${userByUin.uid}.`);
     } else {
-      counts.unmatched++;
+      job.info('  Stored sub binding: none.');
+    }
+
+    if (!uin) {
+      job.info('  Usable roster UIN: none.');
+    } else if (userByUin) {
+      counts.uin_users++;
       job.info(
-        `  No PrairieLearn user matched${uin ? ` (UIN ${uin} resolved but no user found)` : ''}.`,
+        `  Roster UIN ${uin}: PrairieLearn user ${userByUin.uid}${userByUin.deleted_at ? ' (soft-deleted)' : ''}.`,
       );
+    } else {
+      job.info(`  Roster UIN ${uin}: no PrairieLearn user in this institution.`);
+    }
+
+    if (hasConfiguredUin && !uin) {
+      job.warn('  Configured-UIN grade routing would fail: no usable roster UIN resolved.');
+    }
+
+    if (userBySub?.deleted_at) {
+      job.warn('  Stored sub belongs to a soft-deleted PrairieLearn user.');
+    }
+    if (userByUin?.deleted_at && userByUin.id !== userBySub?.id) {
+      job.warn('  Roster UIN belongs to a soft-deleted PrairieLearn user.');
+    }
+
+    if (hasConfiguredUin && userBySub && uin) {
+      if (userByUin?.id === userBySub.id) {
+        job.info('  Stored sub and roster UIN identify the same PrairieLearn user.');
+      } else {
+        job.warn('  Stored sub and roster UIN do not identify the same PrairieLearn user.');
+      }
+    }
+
+    if (!userBySub && !userByUin) {
+      counts.no_candidates++;
     }
   }
 
   job.info('\nDone.\n\nSummary:');
-  job.info(`${counts.by_sub} matched by LTI sub.`);
-  job.info(`${counts.by_uin} matched by UIN.`);
-  job.info(`${counts.unmatched} unmatched.`);
-  job.info(`${counts.unparseable} could not be parsed.`);
+  job.info(`Stored LTI sub bindings: ${counts.sub_bindings}.`);
+  job.info(`UIN-resolved PrairieLearn users: ${counts.uin_users}.`);
+  job.info(`Members with neither identity candidate: ${counts.no_candidates}.`);
+  job.info(`Unparseable members: ${counts.unparseable}.`);
 
   // Whether the platform returned any per-member custom data (`message`). If a
   // resource link was requested but none came back, the rlid is likely stale.

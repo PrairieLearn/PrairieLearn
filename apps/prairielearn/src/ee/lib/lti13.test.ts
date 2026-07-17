@@ -104,6 +104,16 @@ describe('fetchRetry()', { concurrent: false }, () => {
     res.json({ page });
   });
 
+  app.get('/redirect', (_req, res) => {
+    res.redirect('/redirected/1');
+  });
+
+  app.get('/redirected/:page', (req, res) => {
+    const page = Number(req.params.page);
+    if (page === 1) res.set('Link', '<2>; rel="next"');
+    res.json({ page });
+  });
+
   app.get('/', productApi);
 
   let apiCount: number;
@@ -136,6 +146,19 @@ describe('fetchRetry()', { concurrent: false }, () => {
 
     expect(relativeAuthorizationHeaders).toEqual(['Bearer secret', 'Bearer secret']);
     assert.equal(apiCount, 2);
+  });
+
+  test('resolves relative links against the effective response URL after a redirect', async () => {
+    apiCount = 0;
+
+    await withServer(app, async ({ url }) => {
+      await expect(fetchRetryPaginated(`${url}/redirect`)).resolves.toEqual([
+        { page: 1 },
+        { page: 2 },
+      ]);
+    });
+
+    assert.equal(apiCount, 3);
   });
 
   test('rejects a cross-origin next link before forwarding authorization', async () => {
