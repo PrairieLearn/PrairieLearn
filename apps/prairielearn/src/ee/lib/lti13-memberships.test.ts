@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  ContextMembershipSchema,
+  type ContextMembership,
   Lti13MembershipIndex,
   type Lti13MembershipLookupUser,
   STUDENT_ROLE,
@@ -16,6 +16,7 @@ function makeUser(
   overrides: Partial<Lti13MembershipLookupUser> = {},
 ): Lti13MembershipLookupUser {
   return {
+    deleted_at: null,
     uid: `${id}-uid@example.com`,
     email: `${id}-email@example.com`,
     uin: null,
@@ -34,99 +35,216 @@ function makeMember({
   email,
   uin,
   status,
+  roles = [STUDENT_ROLE],
 }: {
   sub: string;
   email?: string;
   uin?: unknown;
   status?: 'Active' | 'Inactive' | 'Deleted';
-}) {
+  roles?: string[];
+}): ContextMembership {
   return {
     user_id: sub,
-    roles: [STUDENT_ROLE],
+    roles,
     ...(email === undefined ? {} : { email }),
     ...(uin === undefined ? {} : { message: [makeUinMessage(uin)] }),
     ...(status === undefined ? {} : { status }),
   };
 }
 
-function makeIndex(members: ReturnType<typeof makeMember>[]) {
-  return new Lti13MembershipIndex(ContextMembershipSchema.array().parse(members), {
+function makeIndex(
+  members: ContextMembership[],
+  uinAttribute: string | null = CUSTOM_UIN_ATTRIBUTE,
+) {
+  return new Lti13MembershipIndex(members, {
     institution_id: 'institution',
-    uin_attribute: CUSTOM_UIN_ATTRIBUTE,
+    uin_attribute: uinAttribute,
   });
 }
 
+function makePage(members?: ContextMembership[], contextId = 'expected-context') {
+  return {
+    id: 'roster',
+    context: { id: contextId },
+    ...(members === undefined ? {} : { members }),
+  };
+}
+
 describe('Lti13MembershipIndex', () => {
-  test('uses a stored sub without rematching or replacing it', () => {
+  test('uses a stored sub when sub, UIN, and email converge', () => {
     const user = makeUser('sub', { lti13_sub: 'canonical-sub', uin: 'matching-uin' });
-    const members = [
-      makeMember({ sub: 'canonical-sub' }),
-      makeMember({ sub: 'different-uin-sub', uin: user.uin ?? undefined }),
-      makeMember({ sub: 'different-email-sub', email: user.email ?? undefined }),
-    ];
-
-    expect(makeIndex(members).lookup(user)).toMatchObject({
-      matchedBy: 'sub',
-      member: { user_id: 'canonical-sub' },
-    });
-    expect(makeIndex(members.slice(1)).lookup(user)).toBeNull();
-  });
-
-  test('uses an institution-scoped UIN before email', () => {
-    const user = makeUser('uin', { uin: 'matching-uin' });
     const index = makeIndex([
-      makeMember({ sub: 'uin-sub', uin: user.uin ?? undefined }),
-      makeMember({ sub: 'different-email-sub', email: user.email ?? undefined }),
+      makeMember({
+        sub: 'canonical-sub',
+        uin: user.uin ?? undefined,
+        email: user.email ?? undefined,
+      }),
     ]);
 
-    expect(index.lookup(user)).toMatchObject({
-      matchedBy: 'uin',
-      member: { user_id: 'uin-sub' },
-    });
-    expect(index.lookup({ ...user, institution_id: 'other-institution' })).toMatchObject({
-      matchedBy: 'email',
-      member: { user_id: 'different-email-sub' },
-    });
+    expect(index.lookup(user)).toMatchObject({ user_id: 'canonical-sub' });
   });
 
-  test('rejects an ambiguous UIN instead of falling back to email', () => {
-    const user = makeUser('duplicate-uin', { uin: 'duplicate-uin' });
+  test('rejects a stored sub when it disagrees with the configured UIN', () => {
+    const user = makeUser('sub-conflict', {
+      lti13_sub: 'stored-sub',
+      uin: 'matching-uin',
+    });
     const index = makeIndex([
-      makeMember({ sub: 'uin-sub-1', uin: user.uin ?? undefined }),
-      makeMember({ sub: 'uin-sub-2', uin: user.uin ?? undefined }),
-      makeMember({ sub: 'email-sub', email: user.email ?? undefined }),
+      makeMember({ sub: 'stored-sub', uin: 'different-uin' }),
+      makeMember({ sub: 'matching-uin-sub', uin: user.uin ?? undefined }),
     ]);
 
     expect(index.lookup(user)).toBeNull();
   });
 
-  test.each(['uid', 'email'] as const)(
-    'retains the unique %s-to-roster-email fallback',
-    (field) => {
-      const user = makeUser(field, { uin: 'not-in-roster' });
-      const index = makeIndex([makeMember({ sub: 'email-sub', email: user[field] ?? undefined })]);
+  test('rejects a stored sub whose roster member has no usable configured UIN', () => {
+    const user = makeUser('sub-missing-uin', {
+      lti13_sub: 'stored-sub',
+      uin: 'matching-uin',
+    });
+    const index = makeIndex([
+      makeMember({
+        sub: 'stored-sub',
+        email: user.email ?? undefined,
+      }),
+    ]);
 
-      expect(index.lookup(user)).toMatchObject({
-        matchedBy: 'email',
-        member: { user_id: 'email-sub' },
-      });
+    expect(index.lookup(user)).toBeNull();
+  });
+
+  test('uses an institution-scoped UIN when all available keys converge', () => {
+    const user = makeUser('uin', { uin: 'matching-uin' });
+    const index = makeIndex([
+      makeMember({
+        sub: 'uin-sub',
+        uin: user.uin ?? undefined,
+        email: user.email ?? undefined,
+      }),
+    ]);
+
+    expect(index.lookup(user)).toMatchObject({ user_id: 'uin-sub' });
+    expect(index.lookup({ ...user, institution_id: 'other-institution' })).toBeNull();
+  });
+
+  test.each([null, ' malformed ', '$Canvas.user.sisIntegrationId'])(
+    'rejects an unusable PrairieLearn UIN without falling back to email: %j',
+    (uin) => {
+      const user = makeUser('invalid-user-uin', { uin });
+      const index = makeIndex([
+        makeMember({ sub: 'email-sub', uin: 'valid-uin', email: user.email ?? undefined }),
+      ]);
+
+      expect(index.lookup(user)).toBeNull();
     },
   );
 
-  test('rejects duplicate email and absent members', () => {
-    const user = makeUser('duplicate-email');
-    const index = makeIndex([
-      makeMember({ sub: 'email-sub-1', email: user.email ?? undefined }),
-      makeMember({ sub: 'email-sub-2', email: user.email ?? undefined }),
-    ]);
+  test.each([undefined, ' malformed ', '$Canvas.user.sisIntegrationId'])(
+    'rejects an unusable roster UIN without falling back to email: %j',
+    (uin) => {
+      const user = makeUser('invalid-roster-uin', { uin: 'matching-uin' });
+      const index = makeIndex([
+        makeMember({ sub: 'email-sub', uin, email: user.email ?? undefined }),
+      ]);
 
-    expect(index.lookup(user)).toBeNull();
-    expect(index.lookup(makeUser('absent'))).toBeNull();
+      expect(index.lookup(user)).toBeNull();
+    },
+  );
+
+  test('rejects a duplicate UIN across roster pages', () => {
+    const user = makeUser('duplicate-uin', { uin: 'matching-uin' });
+    const memberships = parseContextMemberships(
+      [
+        makePage([makeMember({ sub: 'first-sub', uin: user.uin ?? undefined })]),
+        makePage([makeMember({ sub: 'second-sub', uin: user.uin ?? undefined })]),
+      ],
+      'expected-context',
+    );
+
+    expect(makeIndex(memberships).lookup(user)).toBeNull();
   });
 
-  test.each(['Inactive', 'Deleted'] as const)('ignores %s memberships', (status) => {
-    const user = makeUser(status, { lti13_sub: 'status-sub' });
-    const index = makeIndex([makeMember({ sub: 'status-sub', status })]);
+  test('rejects a duplicate sub across roster pages', () => {
+    const uinUser = makeUser('duplicate-sub-uin', { uin: 'first-uin' });
+    const emailUser = makeUser('duplicate-sub-email');
+    const memberships = parseContextMemberships(
+      [
+        makePage([
+          makeMember({
+            sub: 'duplicate-sub',
+            uin: uinUser.uin ?? undefined,
+            email: emailUser.email ?? undefined,
+          }),
+        ]),
+        makePage([makeMember({ sub: 'duplicate-sub', uin: 'second-uin' })]),
+      ],
+      'expected-context',
+    );
+
+    expect(makeIndex(memberships).lookup(uinUser)).toBeNull();
+    expect(makeIndex(memberships, null).lookup(emailUser)).toBeNull();
+  });
+
+  test.each(['uid', 'email'] as const)(
+    'uses the unique %s-to-roster-email fallback without a configured UIN',
+    (field) => {
+      const user = makeUser(field);
+      const index = makeIndex(
+        [makeMember({ sub: 'email-sub', email: user[field] ?? undefined })],
+        null,
+      );
+
+      expect(index.lookup(user)).toMatchObject({ user_id: 'email-sub' });
+    },
+  );
+
+  test('uses a unique stored sub before email without a configured UIN', () => {
+    const user = makeUser('no-uin-sub', { lti13_sub: 'stored-sub' });
+    const index = makeIndex(
+      [
+        makeMember({ sub: 'stored-sub' }),
+        makeMember({ sub: 'email-sub', email: user.email ?? undefined }),
+      ],
+      null,
+    );
+
+    expect(index.lookup(user)).toMatchObject({ user_id: 'stored-sub' });
+  });
+
+  test('rejects duplicate email and absent members', () => {
+    const user = makeUser('duplicate-email');
+    const index = makeIndex(
+      [
+        makeMember({ sub: 'email-sub-1', email: user.email ?? undefined }),
+        makeMember({ sub: 'email-sub-2', email: user.email ?? undefined }),
+      ],
+      null,
+    );
+
+    expect(index.lookup(user)).toBeNull();
+    expect(makeIndex([], null).lookup(makeUser('absent'))).toBeNull();
+  });
+
+  test('rejects soft-deleted PrairieLearn users', () => {
+    const user = makeUser('deleted-user', {
+      deleted_at: new Date(),
+      lti13_sub: 'matching-sub',
+      uin: 'matching-uin',
+    });
+    const index = makeIndex([makeMember({ sub: 'matching-sub', uin: user.uin ?? undefined })]);
+
+    expect(index.lookup(user)).toBeNull();
+  });
+
+  test.each([
+    { status: 'Inactive' as const },
+    { status: 'Deleted' as const },
+    { roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'] },
+    { roles: [STUDENT_ROLE, 'http://purl.imsglobal.org/vocab/lti/system/person#TestUser'] },
+  ])('ignores ineligible roster members: %j', (overrides) => {
+    const user = makeUser('ineligible', { lti13_sub: 'matching-sub', uin: 'matching-uin' });
+    const index = makeIndex([
+      makeMember({ sub: 'matching-sub', uin: user.uin ?? undefined, ...overrides }),
+    ]);
 
     expect(index.lookup(user)).toBeNull();
   });
@@ -179,5 +297,9 @@ describe('parseContextMemberships', () => {
     expect(() => parseContextMemberships(pages, 'expected-context')).toThrow(
       'does not match expected context',
     );
+  });
+
+  test('treats an omitted members field as empty', () => {
+    expect(parseContextMemberships([makePage()], 'expected-context')).toEqual([]);
   });
 });

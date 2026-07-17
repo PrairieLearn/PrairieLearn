@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { User } from '../../lib/db-types.js';
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+const TEST_USER_ROLE = 'http://purl.imsglobal.org/vocab/lti/system/person#TestUser';
 
 // Loose schema for NRPS roster members. The inspector dumps members verbatim,
 // while grade passback extends this with the fields it needs for routing.
@@ -20,19 +21,19 @@ export const RosterMemberSchema = z
 type RosterMember = z.infer<typeof RosterMemberSchema>;
 
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
-export const ContextMembershipSchema = RosterMemberSchema.extend({
+const ContextMembershipSchema = RosterMemberSchema.extend({
   roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
   status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
   email: z.string().optional(),
 });
-type ContextMembership = z.infer<typeof ContextMembershipSchema>;
+export type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 const ContextMembershipContainerSchema = z.object({
   id: z.string(),
   context: z.object({
     id: z.string(),
   }),
-  members: ContextMembershipSchema.array(),
+  members: ContextMembershipSchema.array().default([]),
 });
 
 /**
@@ -56,14 +57,10 @@ export function parseContextMemberships(
   return containers.flatMap((container) => container.members);
 }
 
-export type Lti13MembershipLookupUser = Pick<User, 'uid' | 'email' | 'uin' | 'institution_id'> & {
-  lti13_sub: string | null;
-};
-
-interface Lti13MembershipMatch {
-  member: ContextMembership;
-  matchedBy: 'sub' | 'uin' | 'email';
-}
+export type Lti13MembershipLookupUser = Pick<
+  User,
+  'uid' | 'email' | 'uin' | 'institution_id' | 'deleted_at'
+> & { lti13_sub: string | null };
 
 /**
  * Appends a resource link id to a NRPS `context_memberships_url` so that the
@@ -80,6 +77,14 @@ export function appendRlidToMembershipsUrl(
   const url = new URL(context_memberships_url);
   url.searchParams.set('rlid', rlid);
   return url.toString();
+}
+
+function getUsableUin(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+
+  // LTI leaves unsupported substitution variables unresolved. Canvas also supports
+  // embedded `${...}` substitutions, so reject any `$`, not only a leading one.
+  return value.length > 0 && value === value.trim() && !value.includes('$') ? value : null;
 }
 
 /**
@@ -115,77 +120,105 @@ export function resolveRosterMemberUin(
   const value = values[0];
 
   if (values.some((candidate) => candidate !== value)) return null;
-  if (typeof value !== 'string') return null;
-
-  // LTI leaves unsupported substitution variables unresolved. Canvas also supports
-  // embedded `${...}` substitutions, so reject any `$`, not only a leading one.
-  return value.length > 0 && value === value.trim() && !value.includes('$') ? value : null;
+  return getUsableUin(value);
 }
 
 /**
- * Indexes a live NRPS roster and applies the grade-routing identity order during
- * lookup: canonical stored `sub`, then institution-scoped UIN, then unique roster
- * email. A stored `sub` that is absent and an ambiguous UIN or email fail closed.
- * `matchedBy` is a trust signal; only UIN matches may establish a new stored `sub`.
+ * Indexes active learners from a complete live NRPS roster. Integrations with a
+ * configured UIN require a unique institution-scoped UIN and any stored sub to
+ * resolve to one member; roster email is ignored. Integrations without a UIN
+ * retain the best-effort stored-sub-then-email lookup. Duplicate subs, UINs, and
+ * matched emails fail closed.
  */
 export class Lti13MembershipIndex {
-  #membershipsByEmail = new Map<string, ContextMembership[]>();
-  #membershipsBySub = new Map<string, ContextMembership>();
-  // null marks a UIN shared by distinct roster members.
+  // null marks an identity key shared by multiple roster entries.
+  #membershipsByEmail = new Map<string, ContextMembership | null>();
+  #membershipsBySub = new Map<string, ContextMembership | null>();
   #membershipsByUin = new Map<string, ContextMembership | null>();
   #institutionId: string;
+  #uinAttribute: string | null;
 
   constructor(
     memberships: ContextMembership[],
     { institution_id, uin_attribute }: { institution_id: string; uin_attribute: string | null },
   ) {
     this.#institutionId = institution_id;
+    this.#uinAttribute = uin_attribute;
 
     for (const member of memberships) {
       // NRPS defines a missing status as Active.
-      if (member.status === 'Inactive' || member.status === 'Deleted') continue;
+      if (
+        member.status === 'Inactive' ||
+        member.status === 'Deleted' ||
+        !member.roles.includes(STUDENT_ROLE) ||
+        member.roles.includes(TEST_USER_ROLE)
+      ) {
+        continue;
+      }
 
-      this.#membershipsBySub.set(member.user_id, member);
+      if (this.#membershipsBySub.has(member.user_id)) {
+        this.#membershipsBySub.set(member.user_id, null);
+      } else {
+        this.#membershipsBySub.set(member.user_id, member);
+      }
 
       const uin = resolveRosterMemberUin(member, uin_attribute);
       if (uin !== null) {
         if (!this.#membershipsByUin.has(uin)) {
           this.#membershipsByUin.set(uin, member);
-        } else if (this.#membershipsByUin.get(uin)?.user_id !== member.user_id) {
+        } else {
           this.#membershipsByUin.set(uin, null);
         }
       }
 
-      if (member.email === undefined) continue;
-      const emailMemberships = this.#membershipsByEmail.get(member.email) ?? [];
-      emailMemberships.push(member);
-      this.#membershipsByEmail.set(member.email, emailMemberships);
+      if (member.email !== undefined) {
+        this.#membershipsByEmail.set(
+          member.email,
+          this.#membershipsByEmail.has(member.email) ? null : member,
+        );
+      }
     }
   }
 
-  lookup(user: Lti13MembershipLookupUser): Lti13MembershipMatch | null {
-    if (user.lti13_sub !== null) {
-      const member = this.#membershipsBySub.get(user.lti13_sub);
-      return member === undefined ? null : { member, matchedBy: 'sub' };
+  lookup(user: Lti13MembershipLookupUser): ContextMembership | null {
+    if (user.deleted_at !== null) return null;
+
+    if (this.#uinAttribute !== null) {
+      return this.#lookupWithUin(user);
     }
 
-    if (user.institution_id === this.#institutionId && user.uin !== null) {
-      const member = this.#membershipsByUin.get(user.uin);
-      if (member === null) return null;
-      if (member !== undefined) return { member, matchedBy: 'uin' };
+    if (user.lti13_sub !== null) {
+      const member = this.#membershipsBySub.get(user.lti13_sub);
+      return member ?? null;
     }
 
     for (const match of ['uid', 'email'] as const) {
       const key = user[match];
       if (key == null) continue;
 
-      const memberResults = this.#membershipsByEmail.get(key);
-      if (!memberResults) continue;
-      if (memberResults.length > 1) return null;
-
-      return { member: memberResults[0], matchedBy: 'email' };
+      const member = this.#membershipsByEmail.get(key);
+      if (member === undefined) continue;
+      if (member === null) return null;
+      if (this.#membershipsBySub.get(member.user_id) !== member) return null;
+      return member;
     }
 
     return null;
+  }
+
+  #lookupWithUin(user: Lti13MembershipLookupUser): ContextMembership | null {
+    if (user.institution_id !== this.#institutionId) return null;
+
+    const uin = getUsableUin(user.uin);
+    if (uin === null) return null;
+
+    const member = this.#membershipsByUin.get(uin);
+    if (member == null || this.#membershipsBySub.get(member.user_id) !== member) return null;
+
+    if (user.lti13_sub !== null && this.#membershipsBySub.get(user.lti13_sub) !== member) {
+      return null;
+    }
+
+    return member;
   }
 }

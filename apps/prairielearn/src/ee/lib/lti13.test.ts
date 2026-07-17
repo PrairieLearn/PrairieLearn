@@ -97,9 +97,17 @@ describe('fetchRetry()', { concurrent: false }, () => {
     }
   });
 
+  app.get('/relative', (req, res) => {
+    relativeAuthorizationHeaders.push(req.get('authorization'));
+    const page = req.query.page === '2' ? 2 : 1;
+    if (page === 1) res.set('Link', '</relative?page=2>; rel="next"');
+    res.json({ page });
+  });
+
   app.get('/', productApi);
 
   let apiCount: number;
+  let relativeAuthorizationHeaders: (string | undefined)[];
 
   test('should return the full list by iterating', async () => {
     apiCount = 0;
@@ -112,6 +120,52 @@ describe('fetchRetry()', { concurrent: false }, () => {
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 3);
     });
+  });
+
+  test('follows relative same-origin links with the original authorization', async () => {
+    apiCount = 0;
+    relativeAuthorizationHeaders = [];
+
+    await withServer(app, async ({ url }) => {
+      await expect(
+        fetchRetryPaginated(`${url}/relative`, {
+          headers: { Authorization: 'Bearer secret' },
+        }),
+      ).resolves.toEqual([{ page: 1 }, { page: 2 }]);
+    });
+
+    expect(relativeAuthorizationHeaders).toEqual(['Bearer secret', 'Bearer secret']);
+    assert.equal(apiCount, 2);
+  });
+
+  test('rejects a cross-origin next link before forwarding authorization', async () => {
+    let targetRequestCount = 0;
+    const target = express();
+    target.get('/', (_req, res) => {
+      targetRequestCount++;
+      res.json([]);
+    });
+
+    await withServer(target, async ({ url: targetUrl }) => {
+      const source = express();
+      source.get('/', (_req, res) => {
+        // This request handler will run on the `source` server. The `target` server
+        // is on a different port and thus a different origin, so this counts as a
+        // cross-origin link.
+        res.set('Link', `<${targetUrl}>; rel="next"`);
+        res.json({ page: 1 });
+      });
+
+      await withServer(source, async ({ url }) => {
+        await expect(
+          fetchRetryPaginated(url, {
+            headers: { Authorization: 'Bearer secret' },
+          }),
+        ).rejects.toThrow('cross-origin pagination link');
+      });
+    });
+
+    assert.equal(targetRequestCount, 0);
   });
 
   test('should return the full list with a large limit', async () => {

@@ -30,7 +30,7 @@ import {
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectOptionalUserByUin } from '../../models/user.js';
-import { ensureLti13UserSub, selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
+import { selectOptionalUserByLti13Sub } from '../models/lti13-user.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import {
@@ -724,6 +724,10 @@ export async function fetchRetry(
 
 /**
  * Pagination wrapper around fetchRetry
+ *
+ * Only same-origin `rel="next"` links are followed so bearer credentials cannot
+ * be forwarded to another origin.
+ *
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
@@ -740,6 +744,10 @@ export async function fetchRetryPaginated(
   },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
+  let currentUrl = new URL(
+    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+  );
+  const origin = currentUrl.origin;
 
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
@@ -747,7 +755,12 @@ export async function fetchRetryPaginated(
 
     const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
     if ('next' in parsed) {
-      input = parsed.next.url;
+      const nextUrl = new URL(parsed.next.url, currentUrl);
+      if (nextUrl.origin !== origin) {
+        throw new Error('Refusing to follow a cross-origin pagination link');
+      }
+      input = nextUrl;
+      currentUrl = nextUrl;
     } else {
       return output;
     }
@@ -813,12 +826,7 @@ async function loadLti13MembershipIndex(
   const url = getLti13RosterUrl(instance, lti13_course_instance.resource_link_id);
   const rawRosterPages = await fetchLti13RosterPages(instance, url);
 
-  const memberships = parseContextMemberships(
-    rawRosterPages,
-    lti13_course_instance.context_id,
-  ).filter((member) => {
-    return !member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
-  });
+  const memberships = parseContextMemberships(rawRosterPages, lti13_course_instance.context_id);
 
   return new Lti13MembershipIndex(memberships, lti13_instance);
 }
@@ -896,7 +904,7 @@ export async function updateLti13Scores({
       continue;
     }
 
-    const ltiUser = membershipMatch.member;
+    const ltiUser = membershipMatch;
 
     if (isCourseStaff) {
       job.info(
@@ -917,23 +925,6 @@ export async function updateLti13Scores({
       );
       counts.not_sent++;
       continue;
-    }
-
-    if (membershipMatch.matchedBy === 'uin' && user.deleted_at === null) {
-      const linked = await ensureLti13UserSub({
-        user_id: user.id,
-        lti13_instance_id: instance.lti13_instance.id,
-        sub: ltiUser.user_id,
-      });
-      if (!linked) {
-        job.warn(
-          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ' The roster identity conflicts with an existing LTI identity link' +
-            ` in ${instance.lti13_instance.name}`,
-        );
-        counts.not_sent++;
-        continue;
-      }
     }
 
     job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
