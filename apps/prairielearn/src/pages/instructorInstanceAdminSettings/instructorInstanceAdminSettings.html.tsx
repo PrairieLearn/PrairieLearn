@@ -131,6 +131,7 @@ function InstructorInstanceAdminSettingsInner({
         courseInstance={courseInstance}
         isAdministrator={isAdministrator}
         accessControlMigrationNeeded={accessControlMigrationNeeded}
+        names={names}
         onHide={() => setShowCopyModal(false)}
       />
       <form
