@@ -100,11 +100,11 @@ Preferences can also be set on individual alternatives within a question alterna
   "numberChoose": 1,
   "alternatives": [
     {
-      "id": "forces/fallingObject",
+      "id": "forces/fallingObjectEarth",
       "preferences": { "gravitational_constant": 9.8 }
     },
     {
-      "id": "forces/fallingObject",
+      "id": "forces/fallingObjectMoon",
       "preferences": { "gravitational_constant": 1.6 }
     }
   ]
