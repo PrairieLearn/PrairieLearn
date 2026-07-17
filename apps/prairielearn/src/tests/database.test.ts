@@ -18,6 +18,13 @@ class DatabaseError extends Error {
 }
 
 const SOFT_DELETE_CASCADE_EXCEPTIONS: Record<string, string[]> = {
+  // Users are never deleted in normal operation. These existing cascades are
+  // safe even though `users` no longer has an unused `deleted_at` column, and
+  // listing every source column explicitly ensures new cascades are still rejected.
+  file_edits: ['user_id'],
+  file_transfers: ['user_id'],
+  files: ['user_id'],
+
   // We want grading jobs to be soft deleted, primarily to support deleting AI
   // grading jobs while still retaining the jobs and their associated `ai_grading_jobs`
   // row for logging and auditing purposes, as well as usage tracking.
@@ -26,7 +33,14 @@ const SOFT_DELETE_CASCADE_EXCEPTIONS: Record<string, string[]> = {
   // instance is deleted, it's not a data integrity issue; we'll just lose some visibility
   // into what happened on the assessment instance. In the future, assessment instances
   // may be soft-deleted, which would allow us to retain the grading jobs.
-  grading_jobs: ['submission_id'],
+  grading_jobs: [
+    // These user columns are covered by the `users` rationale above.
+    'auth_user_id',
+    'deleted_by',
+    'graded_by',
+    'grading_request_canceled_by',
+    'submission_id',
+  ],
 };
 
 describe('database', { timeout: 20_000 }, function () {
