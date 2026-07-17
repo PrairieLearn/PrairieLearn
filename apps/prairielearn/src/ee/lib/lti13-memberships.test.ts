@@ -16,7 +16,6 @@ function makeUser(
   overrides: Partial<Lti13MembershipLookupUser> = {},
 ): Lti13MembershipLookupUser {
   return {
-    deleted_at: null,
     uid: `${id}-uid@example.com`,
     email: `${id}-email@example.com`,
     uin: null,
@@ -246,17 +245,6 @@ describe('Lti13MembershipIndex', () => {
 
     expect(index.lookup(user)).toBeNull();
     expect(makeIndex([], null).lookup(makeUser('absent'))).toBeNull();
-  });
-
-  test('rejects soft-deleted PrairieLearn users', () => {
-    const user = makeUser('deleted-user', {
-      deleted_at: new Date(),
-      lti13_sub: 'matching-sub',
-      uin: 'matching-uin',
-    });
-    const index = makeIndex([makeMember({ sub: 'matching-sub', uin: user.uin ?? undefined })]);
-
-    expect(index.lookup(user)).toBeNull();
   });
 
   test.each([

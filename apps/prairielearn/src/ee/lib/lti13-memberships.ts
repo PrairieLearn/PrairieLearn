@@ -57,10 +57,9 @@ export function parseContextMemberships(
   return containers.flatMap((container) => container.members);
 }
 
-export type Lti13MembershipLookupUser = Pick<
-  User,
-  'uid' | 'email' | 'uin' | 'institution_id' | 'deleted_at'
-> & { lti13_sub: string | null };
+export type Lti13MembershipLookupUser = Pick<User, 'uid' | 'email' | 'uin' | 'institution_id'> & {
+  lti13_sub: string | null;
+};
 
 /**
  * Appends a resource link id to a NRPS `context_memberships_url` so that the
@@ -194,8 +193,6 @@ export class Lti13MembershipIndex {
   }
 
   lookup(user: Lti13MembershipLookupUser): ContextMembership | null {
-    if (user.deleted_at !== null) return null;
-
     if (this.#uinAttribute !== null) {
       return this.#lookupWithUin(user);
     }

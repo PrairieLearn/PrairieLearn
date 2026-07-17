@@ -1037,7 +1037,7 @@ export async function inspectRoster({
     if (userBySub) {
       counts.sub_bindings++;
       job.info(
-        `  Stored sub binding: PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}${userBySub.deleted_at ? ', soft-deleted' : ''}).`,
+        `  Stored sub binding: PrairieLearn user ${userBySub.uid} (UIN ${userBySub.uin ?? 'none'}).`,
       );
     } else {
       job.info('  Stored sub binding: none.');
@@ -1047,22 +1047,13 @@ export async function inspectRoster({
       job.info('  Usable roster UIN: none.');
     } else if (userByUin) {
       counts.uin_users++;
-      job.info(
-        `  Roster UIN ${uin}: PrairieLearn user ${userByUin.uid}${userByUin.deleted_at ? ' (soft-deleted)' : ''}.`,
-      );
+      job.info(`  Roster UIN ${uin}: PrairieLearn user ${userByUin.uid}.`);
     } else {
       job.info(`  Roster UIN ${uin}: no PrairieLearn user in this institution.`);
     }
 
     if (hasConfiguredUin && !uin) {
       job.warn('  Configured-UIN grade routing would fail: no usable roster UIN resolved.');
-    }
-
-    if (userBySub?.deleted_at) {
-      job.warn('  Stored sub belongs to a soft-deleted PrairieLearn user.');
-    }
-    if (userByUin?.deleted_at && userByUin.id !== userBySub?.id) {
-      job.warn('  Roster UIN belongs to a soft-deleted PrairieLearn user.');
     }
 
     if (hasConfiguredUin && userBySub && uin) {
