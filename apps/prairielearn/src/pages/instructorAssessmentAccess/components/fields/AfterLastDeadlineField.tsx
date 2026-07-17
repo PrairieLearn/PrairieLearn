@@ -24,7 +24,7 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'no_submissions',
     label: 'No submissions allowed',
-    description: 'Students can review what after-completion visibility allows',
+    description: 'Students can review their work based on After completion visibility settings',
   },
   {
     value: 'practice_submissions',
