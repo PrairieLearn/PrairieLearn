@@ -5,8 +5,8 @@ import {
   Lti13MembershipIndex,
   type Lti13MembershipLookupUser,
   STUDENT_ROLE,
-  parseContextMemberships,
   analyzeRosterMemberUin,
+  parseContextMemberships,
 } from './lti13-memberships.js';
 
 const CUSTOM_UIN_ATTRIBUTE = '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]';

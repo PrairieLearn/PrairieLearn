@@ -36,9 +36,9 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 import {
   Lti13MembershipIndex,
   RosterMemberSchema,
+  analyzeRosterMemberUin,
   appendRlidToMembershipsUrl,
   parseContextMemberships,
-  analyzeRosterMemberUin,
 } from './lti13-memberships.js';
 
 const sql = loadSqlEquiv(import.meta.url);
