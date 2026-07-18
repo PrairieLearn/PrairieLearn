@@ -1,11 +1,12 @@
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import { UserSchema } from './db-types.js';
-import { ipToMode, isLockdownBrowserBlocked } from './exam-mode.js';
+import { ipToMode, selectActiveReservationInfo } from './exam-mode.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -462,41 +463,26 @@ describe('ipToMode tests', function () {
     });
   });
 
-  describe('isLockdownBrowserBlocked', () => {
+  describe('requires_lockdown_browser', () => {
+    // The `enforceLockdownBrowser` middleware denies access when this is true
+    // and the session was not established inside LockDown Browser.
     describe('Center exam at LDB-required location', () => {
-      it('should block a non-LDB session once the reservation is active', async () => {
+      it('should require LDB once the reservation is active', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
           await execute(sql.enable_lockdown_browser_on_location);
           await execute(sql.check_in_reservations);
 
-          const blocked = await isLockdownBrowserBlocked({
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
             ip: '10.0.0.1',
             date: new Date(),
             authn_user_id,
-            session_is_lockdown_browser: false,
           });
-          assert.isTrue(blocked);
+          assert.isTrue(requires_lockdown_browser);
         });
       });
 
-      it('should not block an LDB session once the reservation is active', async () => {
-        await helperDb.runInTransactionAndRollback(async () => {
-          await createCenterExamReservation();
-          await execute(sql.enable_lockdown_browser_on_location);
-          await execute(sql.check_in_reservations);
-
-          const blocked = await isLockdownBrowserBlocked({
-            ip: '10.0.0.1',
-            date: new Date(),
-            authn_user_id,
-            session_is_lockdown_browser: true,
-          });
-          assert.isFalse(blocked);
-        });
-      });
-
-      it('should not block before check-in, even from a non-LDB session', async () => {
+      it('should not require LDB before check-in', async () => {
         // Before check-in the reservation isn't active yet, so the LDB
         // requirement doesn't bind — students can still browse PrairieLearn
         // on a regular browser ahead of the exam.
@@ -504,51 +490,90 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.enable_lockdown_browser_on_location);
 
-          const blocked = await isLockdownBrowserBlocked({
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
             ip: '10.0.0.1',
             // 10 minutes from now: WHERE clause includes it, but
             // reservation_active is false because there's no check-in.
             date: new Date(Date.now() + 1000 * 60 * 10),
             authn_user_id,
-            session_is_lockdown_browser: false,
           });
-          assert.isFalse(blocked);
+          assert.isFalse(requires_lockdown_browser);
         });
       });
     });
 
     describe('Course exam with LDB-required session', () => {
-      it('should block a non-LDB session once the reservation is active', async () => {
+      it('should require LDB once the reservation is active', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCourseExamReservation();
           await execute(sql.enable_lockdown_browser_on_course_session);
           await execute(sql.check_in_reservations);
 
-          const blocked = await isLockdownBrowserBlocked({
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
             ip: '192.168.0.1',
             date: new Date(),
             authn_user_id,
-            session_is_lockdown_browser: false,
           });
-          assert.isTrue(blocked);
+          assert.isTrue(requires_lockdown_browser);
         });
       });
+    });
+  });
 
-      it('should not block an LDB session once the reservation is active', async () => {
-        await helperDb.runInTransactionAndRollback(async () => {
-          await createCourseExamReservation();
-          await execute(sql.enable_lockdown_browser_on_course_session);
-          await execute(sql.check_in_reservations);
+  describe('cheating_report_reservation_id', () => {
+    // Drives the navbar "Report cheating" control. It's set whenever access is
+    // open; PrairieTest enforces the center/course opt-in at submit time.
+    it('should return the reservation id once access is open (center exam)', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCenterExamReservation();
+        await execute(sql.start_reservations);
 
-          const blocked = await isLockdownBrowserBlocked({
-            ip: '192.168.0.1',
-            date: new Date(),
-            authn_user_id,
-            session_is_lockdown_browser: true,
-          });
-          assert.isFalse(blocked);
+        const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+        const info = await selectActiveReservationInfo({
+          ip: '10.0.0.1',
+          date: new Date(),
+          authn_user_id,
         });
+        assert.equal(info.cheating_report_reservation_id, reservation_id);
       });
+    });
+
+    it('should return the reservation id once access is open (course exam)', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCourseExamReservation();
+        await execute(sql.start_reservations);
+
+        const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+        const info = await selectActiveReservationInfo({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
+        assert.equal(info.cheating_report_reservation_id, reservation_id);
+      });
+    });
+
+    it('should return null after check-in but before access starts', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCenterExamReservation();
+        await execute(sql.check_in_reservations);
+
+        const info = await selectActiveReservationInfo({
+          ip: '10.0.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
+        assert.isNull(info.cheating_report_reservation_id);
+      });
+    });
+
+    it('should return null when there is no reservation', async () => {
+      const info = await selectActiveReservationInfo({
+        ip: '10.0.0.1',
+        date: new Date(),
+        authn_user_id,
+      });
+      assert.isNull(info.cheating_report_reservation_id);
     });
   });
 });

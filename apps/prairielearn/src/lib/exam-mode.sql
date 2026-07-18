@@ -19,6 +19,16 @@ WITH
         AND r.access_end IS NOT NULL
         AND $date BETWEEN r.access_start AND r.access_end
       ) AS reservation_active,
+      (
+        -- The strict "access is open right now" window, without
+        -- `reservation_active`'s post-check-in grace: PT only accepts a
+        -- cheating report while access is open, so the control should
+        -- appear exactly then.
+        r.access_start IS NOT NULL
+        AND r.access_end IS NOT NULL
+        AND $date BETWEEN r.access_start AND r.access_end
+      ) AS reservation_in_access_window,
+      r.id AS reservation_id,
       l.id AS location_id,
       l.filter_networks AS location_filter_networks,
       -- For center sessions the location's flag is authoritative; for
@@ -96,6 +106,14 @@ SELECT
       AND reservation.reservation_requires_lockdown_browser
     ),
     FALSE
-  ) AS requires_lockdown_browser
+  ) AS requires_lockdown_browser,
+  -- An in-access-window reservation, if any; its presence decides whether the
+  -- navbar shows the "Report cheating" control. We only surface an id — whether
+  -- the owning center/course has opted in is enforced authoritatively by
+  -- PrairieTest when the report is submitted, not here.
+  MIN(reservation.reservation_id) FILTER (
+    WHERE
+      reservation.reservation_in_access_window
+  ) AS cheating_report_reservation_id
 FROM
   active_reservations AS reservation;

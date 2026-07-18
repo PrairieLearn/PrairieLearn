@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { LockdownBrowserRequiredError, isLockdownBrowserBlocked } from '../lib/exam-mode.js';
+import { LockdownBrowserRequiredError, selectActiveReservationInfo } from '../lib/exam-mode.js';
 
 function isPrairieTestAuthRequest(req: Request): boolean {
   return (
@@ -33,16 +33,21 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  const blocked = await isLockdownBrowserBlocked({
+  const info = await selectActiveReservationInfo({
     ip: req.ip ?? null,
     date: res.locals.req_date,
     authn_user_id: res.locals.authn_user.id,
-    // API requests skip session middleware, so `req.session` can be absent at runtime.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    session_is_lockdown_browser: req.session?.lockdown_browser ?? false,
   });
 
-  if (blocked) {
+  // The navbar's "Report cheating" control renders when the user has an active
+  // in-access-window reservation; PrairieTest enforces the center/course opt-in
+  // when a report is actually submitted.
+  res.locals.cheating_report_reservation_id = info.cheating_report_reservation_id;
+
+  // API requests skip session middleware, so `req.session` can be absent at runtime.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const session_is_lockdown_browser = req.session?.lockdown_browser ?? false;
+  if (info.requires_lockdown_browser && !session_is_lockdown_browser) {
     throw new LockdownBrowserRequiredError();
   }
 

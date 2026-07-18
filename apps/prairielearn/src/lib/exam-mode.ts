@@ -3,6 +3,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from './config.js';
 import { type EnumMode } from './db-types.js';
@@ -12,7 +13,35 @@ const sql = loadSqlEquiv(import.meta.url);
 const ActiveReservationInfoSchema = z.object({
   exam_mode: z.boolean(),
   requires_lockdown_browser: z.boolean(),
+  cheating_report_reservation_id: IdSchema.nullable(),
 });
+export type ActiveReservationInfo = z.infer<typeof ActiveReservationInfoSchema>;
+
+/**
+ * Looks up the user's active PrairieTest reservations and returns the derived
+ * per-request state: whether they're in 'Exam' mode, whether they must be
+ * inside LockDown Browser, and the id of an active in-access-window reservation
+ * (used to show the "Report cheating" control), or null if none.
+ */
+export async function selectActiveReservationInfo({
+  ip,
+  date,
+  authn_user_id,
+}: {
+  ip: string | null | undefined;
+  date: Date;
+  authn_user_id: string;
+}): Promise<ActiveReservationInfo> {
+  // Express's types indicate that `ip` may be undefined in some cases. We want
+  // to ensure that we don't try to proceed without one.
+  if (ip == null) throw new Error('IP address is required');
+
+  return await queryRow(
+    sql.select_active_prairietest_reservation,
+    { ip, date, authn_user_id },
+    ActiveReservationInfoSchema,
+  );
+}
 
 export async function getModeForRequest(req: Request, res: Response): Promise<EnumMode> {
   // If we're lucky, `authzCourseOrInstance` has already populated the mode.
@@ -43,15 +72,7 @@ export async function ipToMode({
   date: Date;
   authn_user_id: string;
 }): Promise<EnumMode> {
-  // Express's types indicate that `ip` may be undefined in some cases. We want
-  // to ensure that we don't try to proceed without one.
-  if (ip == null) throw new Error('IP address is required');
-
-  const { exam_mode } = await queryRow(
-    sql.select_active_prairietest_reservation,
-    { ip, date, authn_user_id },
-    ActiveReservationInfoSchema,
-  );
+  const { exam_mode } = await selectActiveReservationInfo({ ip, date, authn_user_id });
 
   return exam_mode ? 'Exam' : 'Public';
 }
@@ -59,23 +80,8 @@ export async function ipToMode({
 /**
  * Error thrown when a user with an active LockDown-Browser-required reservation
  * accesses PrairieLearn from a session that was not established inside LockDown
- * Browser. See {@link isLockdownBrowserBlocked} for the attack this guards
- * against. The denial is global (not just exam pages), so it's raised from the
+ * Browser. The denial is global (not just exam pages), so it's raised from the
  * `enforceLockdownBrowser` middleware rather than per page.
- */
-export class LockdownBrowserRequiredError extends HttpStatusError {
-  constructor() {
-    super(
-      403,
-      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
-    );
-  }
-}
-
-/**
- * Determines whether a user must be denied all PrairieLearn access because they
- * have an in-progress LockDown-Browser-required reservation but the current
- * session was not established from inside LockDown Browser.
  *
  * Attack vector this guards against:
  *
@@ -93,31 +99,14 @@ export class LockdownBrowserRequiredError extends HttpStatusError {
  * Refusing all access matches the policy that an LDB-required reservation
  * confines the user to LDB for its full duration. A student in a non-LDB
  * browser would otherwise be free to look up answers in other course pages
- * while the exam runs.
+ * while the exam runs. The decision uses `requires_lockdown_browser` from
+ * {@link selectActiveReservationInfo}.
  */
-export async function isLockdownBrowserBlocked({
-  ip,
-  date,
-  authn_user_id,
-  session_is_lockdown_browser,
-}: {
-  ip: string | null | undefined;
-  date: Date;
-  authn_user_id: string;
-  session_is_lockdown_browser: boolean;
-}): Promise<boolean> {
-  if (ip == null) throw new Error('IP address is required');
-
-  if (session_is_lockdown_browser) return false;
-
-  // Appropriate indexes exist, so this should be fast.
-  // TODO: consider caching this and the ipToMode result
-
-  const { requires_lockdown_browser } = await queryRow(
-    sql.select_active_prairietest_reservation,
-    { ip, date, authn_user_id },
-    ActiveReservationInfoSchema,
-  );
-
-  return requires_lockdown_browser && !session_is_lockdown_browser;
+export class LockdownBrowserRequiredError extends HttpStatusError {
+  constructor() {
+    super(
+      403,
+      'This user has an active LockDown Browser reservation. PrairieLearn must be accessed from inside LockDown Browser for the duration of the exam.',
+    );
+  }
 }
