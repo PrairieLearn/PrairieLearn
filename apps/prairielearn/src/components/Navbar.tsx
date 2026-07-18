@@ -122,7 +122,8 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${EndExamControl({ resLocals })} ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${ReportCheatingControl({ resLocals })} ${EndExamControl({ resLocals })}
+          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
@@ -211,6 +212,67 @@ function EndExamModal({ csrfToken }: { csrfToken: string }) {
         ></span>
         <span class="js-end-exam-submit-label">End exam</span>
       </button>
+    `,
+  });
+}
+
+/**
+ * Renders a "Report cheating" control when the user has an active PrairieTest
+ * exam reservation (looked up in the `enforceLockdownBrowser` middleware). The
+ * button opens a modal whose form POSTs to `/pl/report-cheating`; that handler
+ * mints a short-lived JWT and calls PT server-to-server to file the report with
+ * the proctors. PrairieTest is the authority on whether the owning
+ * center/course has enabled reports, and declines the submission if not.
+ *
+ * As with the End exam control, PL's CSRF token is bound to the request URL,
+ * so we mint one specifically for `/pl/report-cheating`.
+ */
+function ReportCheatingControl({ resLocals }: { resLocals: UntypedResLocals }) {
+  if (resLocals.cheating_report_reservation_id == null) return '';
+  const reportCheatingCsrfToken = generateCsrfToken({
+    url: '/pl/report-cheating',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-outline-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#reportCheatingModal"
+    >
+      Report cheating
+    </button>
+    ${ReportCheatingModal({ csrfToken: reportCheatingCsrfToken })}
+  `;
+}
+
+function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'Report cheating',
+    id: 'reportCheatingModal',
+    formAction: '/pl/report-cheating',
+    body: html`
+      <p>
+        If you see someone breaking exam rules (for example, using a phone or unauthorized
+        materials), describe what you saw below. Your report goes only to exam staff; other students
+        will not see it.
+      </p>
+      <div class="mb-0">
+        <label class="form-label" for="report-cheating-text">What did you see?</label>
+        <textarea
+          class="form-control"
+          id="report-cheating-text"
+          name="report"
+          rows="4"
+          maxlength="10000"
+          required
+        ></textarea>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Submit report</button>
     `,
   });
 }
