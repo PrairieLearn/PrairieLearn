@@ -21,6 +21,7 @@ const plCheckboxAnswerAttributesSchema = z
 
 const plCheckboxAttributesSchema = z
   .object({
+    'allow-blank': booleanFormat().optional(),
     'answers-name': z.string(),
     'detailed-help-text': booleanFormat().optional(),
     display: z.enum(['block', 'inline']).optional(),
