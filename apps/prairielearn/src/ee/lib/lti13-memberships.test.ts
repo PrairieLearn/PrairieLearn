@@ -226,6 +226,16 @@ describe('Lti13MembershipIndex', () => {
     expect(index.lookup(user)).toMatchObject({ user_id: 'stored-sub' });
   });
 
+  test('falls back to a unique email when the stored sub is absent from the roster', () => {
+    const user = makeUser('stale-sub', { lti13_sub: 'stale-sub' });
+    const index = makeIndex(
+      [makeMember({ sub: 'current-sub', email: user.email ?? undefined })],
+      null,
+    );
+
+    expect(index.lookup(user)).toMatchObject({ user_id: 'current-sub' });
+  });
+
   test('treats an empty UIN attribute as unconfigured', () => {
     const user = makeUser('empty-uin-attribute');
     const index = makeIndex([makeMember({ sub: 'email-sub', email: user.email ?? undefined })], '');

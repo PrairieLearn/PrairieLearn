@@ -194,12 +194,16 @@ export class Lti13MembershipIndex {
 
   lookup(user: Lti13MembershipLookupUser): ContextMembership | null {
     if (this.#uinAttribute !== null) {
+      // A configured UIN is the trusted identity key; missing or conflicting
+      // UIN data must fail closed rather than falling back to roster email.
       return this.#lookupWithUin(user);
     }
 
     if (user.lti13_sub !== null) {
       const member = this.#membershipsBySub.get(user.lti13_sub);
-      return member ?? null;
+      // null means the sub is ambiguous and must fail closed. undefined means
+      // it is absent from the live roster, where best-effort email may still work.
+      if (member !== undefined) return member;
     }
 
     for (const match of ['uid', 'email'] as const) {
@@ -209,6 +213,7 @@ export class Lti13MembershipIndex {
       const member = this.#membershipsByEmail.get(key);
       if (member === undefined) continue;
       if (member === null) return null;
+      // A unique email is still ambiguous if its roster member's sub is duplicated.
       if (this.#membershipsBySub.get(member.user_id) !== member) return null;
       return member;
     }
