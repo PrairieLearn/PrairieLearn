@@ -1,0 +1,10 @@
+ALTER TABLE enrollments
+DROP CONSTRAINT enrollments_pending_fields_null_if_resolved,
+DROP CONSTRAINT enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key,
+DROP CONSTRAINT enrollments_pending_lti13_instance_id_fkey,
+DROP COLUMN pending_lti13_name,
+DROP COLUMN pending_lti13_email,
+DROP COLUMN pending_lti13_instance_id;
+
+ALTER TABLE enrollments
+RENAME CONSTRAINT enrollments_pending_fields_null_if_resolved_v2 TO enrollments_pending_fields_null_if_resolved;
