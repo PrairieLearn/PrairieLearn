@@ -1,0 +1,3 @@
+ALTER TABLE enrollments
+ALTER COLUMN lti_managed
+DROP DEFAULT;
