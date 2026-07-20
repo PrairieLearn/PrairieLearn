@@ -265,7 +265,7 @@ export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Prom
 }
 
 export async function selectStudentLabelsForEnrollment(
-  enrollment: Enrollment,
+  enrollment: Pick<Enrollment, 'id'>,
 ): Promise<StudentLabel[]> {
   return await queryRows(
     sql.select_student_labels_for_enrollment,
