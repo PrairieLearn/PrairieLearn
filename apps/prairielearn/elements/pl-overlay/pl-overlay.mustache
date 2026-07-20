@@ -8,6 +8,11 @@
         {{/locations}}
     </div>
     {{#background}}
-        <div aria-hidden="true">{{{background}}}</div>
+        {{#background_aria_hidden}}
+            <div aria-hidden="true">{{{background}}}</div>
+        {{/background_aria_hidden}}
+        {{^background_aria_hidden}}
+            {{{background}}}
+        {{/background_aria_hidden}}
     {{/background}}
 </div>
