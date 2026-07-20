@@ -474,13 +474,14 @@ describe('DB validation of enrollment', () => {
         pending_uid: null,
         pending_uin: 'rejected-uin',
       },
-      // status is 'joined', first_joined_at must not be null
+      // Resolved non-LTI enrollments are allowed; joined rows require first_joined_at
       {
         user_id: user3.id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
         pending_uid: null,
+        lti_managed: false,
       },
       // status is 'left', first_joined_at must not be null
       {
@@ -659,6 +660,16 @@ describe('DB validation of enrollment', () => {
         pending_uid: null,
         pending_uin: 'rejected-lti-managed-uin',
         lti_managed: true,
+      },
+      // Pending enrollments cannot be explicitly marked as non-LTI-managed
+      {
+        constraint: 'enrollments_pending_lti_managed_not_false',
+        user_id: null,
+        status: 'invited',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: 'pending-non-lti-managed@example.com',
+        lti_managed: false,
       },
     ];
 
