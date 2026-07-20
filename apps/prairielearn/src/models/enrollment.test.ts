@@ -274,7 +274,7 @@ describe('DB validation of enrollment', () => {
       pending_name,
       pending_email,
       pending_lti13_sub,
-      pending_lti13_instance_id,
+      pending_lti13_course_instance_id,
       lti_managed,
     }: {
       user_id: string | null;
@@ -286,12 +286,12 @@ describe('DB validation of enrollment', () => {
       pending_name?: string | null;
       pending_email?: string | null;
       pending_lti13_sub?: string | null;
-      pending_lti13_instance_id?: string | null;
-      lti_managed?: boolean;
+      pending_lti13_course_instance_id?: string | null;
+      lti_managed?: boolean | null;
     }) => {
       return await queryRow(
-        `INSERT INTO enrollments (user_id, course_instance_id, status, created_at, first_joined_at, pending_uid, pending_uin, pending_name, pending_email, pending_lti13_sub, pending_lti13_instance_id, lti_managed)
-         VALUES ($user_id, $course_instance_id, $status, $created_at, $first_joined_at, $pending_uid, $pending_uin, $pending_name, $pending_email, $pending_lti13_sub, $pending_lti13_instance_id, $lti_managed)
+        `INSERT INTO enrollments (user_id, course_instance_id, status, created_at, first_joined_at, pending_uid, pending_uin, pending_name, pending_email, pending_lti13_sub, pending_lti13_course_instance_id, lti_managed)
+         VALUES ($user_id, $course_instance_id, $status, $created_at, $first_joined_at, $pending_uid, $pending_uin, $pending_name, $pending_email, $pending_lti13_sub, $pending_lti13_course_instance_id, $lti_managed)
          RETURNING *`,
         {
           user_id,
@@ -304,8 +304,8 @@ describe('DB validation of enrollment', () => {
           pending_name: pending_name ?? null,
           pending_email: pending_email ?? null,
           pending_lti13_sub: pending_lti13_sub ?? null,
-          pending_lti13_instance_id: pending_lti13_instance_id ?? null,
-          lti_managed: lti_managed ?? false,
+          pending_lti13_course_instance_id: pending_lti13_course_instance_id ?? null,
+          lti_managed: lti_managed ?? null,
         },
         EnrollmentSchema,
       );
@@ -398,7 +398,16 @@ describe('DB validation of enrollment', () => {
         pending_name: 'Expected Student',
         pending_email: 'expected@example.com',
       },
-      // An LTI association can accompany a generic key
+      // UID and UIN may coexist when both are known
+      {
+        user_id: null,
+        status: 'invited',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: 'both-keys@example.com',
+        pending_uin: 'both-keys-uin',
+      },
+      // An LTI association accompanies the UIN supplied by the roster
       {
         user_id: null,
         status: 'invited',
@@ -407,33 +416,21 @@ describe('DB validation of enrollment', () => {
         pending_uid: null,
         pending_uin: 'lti-expected-uin',
         pending_lti13_sub: 'lti-expected-sub',
-        pending_lti13_instance_id: lti13CourseInstance.id,
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
         lti_managed: true,
       },
-      // An LTI association can also accompany a pending UID
+      // The roster may supply both generic keys alongside the LTI association
       {
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
         pending_uid: 'lti-expected-uid@example.com',
+        pending_uin: 'lti-expected-uid-uin',
         pending_name: 'Expected UID Student',
         pending_email: 'lti-expected-uid@example.com',
         pending_lti13_sub: 'lti-expected-uid-sub',
-        pending_lti13_instance_id: lti13CourseInstance.id,
-        lti_managed: true,
-      },
-      // An LTI association can stand alone when there is no generic key
-      {
-        user_id: null,
-        status: 'invited',
-        created_at: '2025-01-01',
-        first_joined_at: null,
-        pending_uid: null,
-        pending_name: 'Sub-only Student',
-        pending_email: 'sub-only@example.com',
-        pending_lti13_sub: 'lti-sub-only',
-        pending_lti13_instance_id: lti13CourseInstance.id,
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
         lti_managed: true,
       },
       // status is 'rejected', first_joined_at can be null or not null
@@ -482,6 +479,7 @@ describe('DB validation of enrollment', () => {
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
         pending_uid: null,
+        lti_managed: true,
       },
       // The source discriminator persists after an LTI-managed enrollment resolves
       {
@@ -554,19 +552,9 @@ describe('DB validation of enrollment', () => {
         first_joined_at: null,
         pending_uid: null,
       },
-      // Generic identity keys are mutually exclusive
-      {
-        constraint: 'enrollments_at_most_one_generic_identity',
-        user_id: null,
-        status: 'invited',
-        created_at: '2025-01-01',
-        first_joined_at: null,
-        pending_uid: 'multiple-keys@example.com',
-        pending_uin: 'multiple-keys',
-      },
       // Display fields do not identify an expected user
       {
-        constraint: 'enrollments_identity_required',
+        constraint: 'enrollments_pending_identity_required',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
@@ -577,35 +565,38 @@ describe('DB validation of enrollment', () => {
       },
       // Both parts of the LTI association are required
       {
-        constraint: 'enrollments_lti13_sub_instance_id_pair',
+        constraint: 'enrollments_lti13_sub_course_instance_id_pair',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
         pending_uid: null,
+        pending_uin: 'sub-without-course-instance-uin',
         pending_lti13_sub: 'sub-without-instance',
         lti_managed: true,
       },
       {
-        constraint: 'enrollments_lti13_sub_instance_id_pair',
+        constraint: 'enrollments_lti13_sub_course_instance_id_pair',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
         pending_uid: 'instance-without-sub@example.com',
-        pending_lti13_instance_id: lti13CourseInstance.id,
+        pending_uin: 'instance-without-sub-uin',
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
         lti_managed: true,
       },
-      // LTI associations belong only to LTI-managed enrollments
+      // The roster's LTI association is only usable alongside its required UIN
       {
-        constraint: 'enrollments_lti13_sub_requires_lti_managed',
+        constraint: 'enrollments_lti13_sub_requires_uin',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pending_uid: null,
-        pending_lti13_sub: 'non-lti-managed-sub',
-        pending_lti13_instance_id: lti13CourseInstance.id,
+        pending_uid: 'sub-without-uin@example.com',
+        pending_lti13_sub: 'sub-without-uin',
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
+        lti_managed: true,
       },
       // Resolved rows cannot retain pending display data
       {
@@ -627,6 +618,30 @@ describe('DB validation of enrollment', () => {
         pending_uid: null,
         pending_uin: 'expected-uin',
       },
+      // An LTI association is unique within its LTI and PL course instances
+      {
+        constraint: 'enrollments_pending_lti13_ciid_sub_course_instance_id_key',
+        user_id: null,
+        status: 'invited',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: null,
+        pending_uin: 'duplicate-lti-association-uin',
+        pending_lti13_sub: 'lti-expected-sub',
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
+        lti_managed: true,
+      },
+      // Rejected enrollments cannot remain LTI-managed
+      {
+        constraint: 'enrollments_rejected_not_lti_managed',
+        user_id: null,
+        status: 'rejected',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: null,
+        pending_uin: 'rejected-lti-managed-uin',
+        lti_managed: true,
+      },
     ];
 
     for (const state of invalidStates) {
@@ -637,11 +652,11 @@ describe('DB validation of enrollment', () => {
     // mask a missing database constraint.
     await expect(
       execute(
-        `INSERT INTO enrollments (user_id, course_instance_id, status, created_at, first_joined_at, pending_uid, pending_lti13_sub, pending_lti13_instance_id, lti_managed)
-         VALUES (NULL, $course_instance_id, 'lti13_pending', '2025-01-01', NULL, NULL, 'legacy-status-sub', $pending_lti13_instance_id, TRUE)`,
+        `INSERT INTO enrollments (user_id, course_instance_id, status, created_at, first_joined_at, pending_uid, pending_uin, pending_lti13_sub, pending_lti13_course_instance_id, lti_managed)
+         VALUES (NULL, $course_instance_id, 'lti13_pending', '2025-01-01', NULL, NULL, 'legacy-status-uin', 'legacy-status-sub', $pending_lti13_course_instance_id, TRUE)`,
         {
           course_instance_id: courseInstance.id,
-          pending_lti13_instance_id: lti13CourseInstance.id,
+          pending_lti13_course_instance_id: lti13CourseInstance.id,
         },
       ),
     ).rejects.toThrow('enrollments_status_not_lti13_pending');
