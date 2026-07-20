@@ -6,9 +6,6 @@ columns
     lti_managed: boolean
     pending_email: text
     pending_lti13_course_instance_id: bigint
-    pending_lti13_email: text
-    pending_lti13_instance_id: bigint
-    pending_lti13_name: text
     pending_lti13_sub: text
     pending_name: text
     pending_uid: text
@@ -19,7 +16,6 @@ columns
 indexes
     enrollments_pkey: PRIMARY KEY (id) USING btree (id)
     enrollments_pending_lti13_ciid_sub_course_instance_id_key: UNIQUE (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id)
-    enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key: UNIQUE (pending_lti13_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_instance_id, pending_lti13_sub, course_instance_id)
     enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
     enrollments_pending_uin_course_instance_id_key: UNIQUE (course_instance_id, pending_uin) USING btree (course_instance_id, pending_uin)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
@@ -28,7 +24,7 @@ indexes
 check constraints
     enrollments_lti13_sub_course_instance_id_pair: CHECK ((pending_lti13_sub IS NULL) = (pending_lti13_course_instance_id IS NULL))
     enrollments_lti13_sub_requires_uin: CHECK (pending_lti13_sub IS NULL OR pending_uin IS NOT NULL)
-    enrollments_pending_fields_null_if_resolved: CHECK (user_id IS NULL OR pending_uid IS NULL AND pending_uin IS NULL AND pending_name IS NULL AND pending_email IS NULL AND pending_lti13_name IS NULL AND pending_lti13_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_course_instance_id IS NULL AND pending_lti13_instance_id IS NULL)
+    enrollments_pending_fields_null_if_resolved: CHECK (user_id IS NULL OR pending_uid IS NULL AND pending_uin IS NULL AND pending_name IS NULL AND pending_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_course_instance_id IS NULL)
     enrollments_pending_identity_required: CHECK (user_id IS NOT NULL OR pending_uid IS NOT NULL OR pending_uin IS NOT NULL)
     enrollments_pending_lti_managed_not_false: CHECK (user_id IS NOT NULL OR lti_managed IS DISTINCT FROM false)
     enrollments_rejected_not_lti_managed: CHECK (status <> 'rejected'::enum_enrollment_status OR lti_managed IS NOT TRUE)
@@ -39,7 +35,6 @@ check constraints
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_pending_lti13_course_instance_id_fkey: FOREIGN KEY (pending_lti13_course_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    enrollments_pending_lti13_instance_id_fkey: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

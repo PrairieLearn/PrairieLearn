@@ -1,0 +1,1 @@
+ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_pending_fields_null_if_resolved_v2;
