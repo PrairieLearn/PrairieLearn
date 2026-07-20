@@ -14,27 +14,27 @@ import { expect, test } from './fixtures.js';
 const parseErrorCases = [
   {
     latex: String.raw`\foo`,
-    message: String.raw`Unexpected LaTeX command '\foo'.`,
+    message: String.raw`'\foo' is not a recognized symbol.`,
   },
   {
     latex: String.raw`\frac{}{2}`,
-    message: 'Missing value.',
+    message: 'Fill in the empty box.',
   },
   {
     latex: '(x',
-    message: "Unexpected delimiter '('.",
+    message: "There is an unmatched '('.",
   },
   {
     latex: 'x+',
-    message: "Unexpected operator '+'.",
+    message: "'+' is missing a value next to it.",
   },
   {
     latex: '@',
-    message: "Unexpected input '@'.",
+    message: "'@' cannot be used here.",
   },
   {
     latex: String.raw`x\left(5x^2+2x+1\right.`,
-    message: String.raw`Unexpected LaTeX command '\left'. Unexpected delimiter '('.`,
+    message: String.raw`'\left' is not a recognized symbol.`,
   },
 ] as const;
 
@@ -203,7 +203,7 @@ async function submitFormulaEditorMathJson(page: Page, rawMathJson: string): Pro
 }
 
 test.describe('pl-symbolic-input', () => {
-  test('reports and clears formula editor client-side parse errors', async ({
+  test('reports formula editor parse errors on blur without blocking submission', async ({
     page,
     testCoursePath,
     courseInstance,
@@ -225,33 +225,63 @@ test.describe('pl-symbolic-input', () => {
       const formulaEditor = getFormulaEditor(page);
       await expect(formulaEditor).toBeVisible();
       await expect(getSetsFormulaEditor(page)).toBeVisible();
-      const validationProxy = page.locator('#symbolic-input-validation-sets-editor');
-      await expect(validationProxy).toHaveCount(1);
-      await expect(validationProxy).not.toHaveAttribute('name', /.*/);
+
+      // Simulate the editor losing focus, mirroring how fillFormulaEditor
+      // simulates editing with a synthetic input event.
+      const blurFormulaEditor = async (editor: Locator) => {
+        await editor.evaluate((el) => el.dispatchEvent(new Event('blur')));
+      };
+
+      // No error feedback while the expression is being edited.
+      await fillFormulaEditor(formulaEditor, String.raw`\foo`);
+      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeHidden();
+      await expect(formulaEditor).not.toHaveClass(/is-invalid/);
+
+      // Errors are reported when the editor loses focus...
+      await blurFormulaEditor(formulaEditor);
+      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeVisible();
+
+      // ...and cleared again as soon as the student resumes editing.
+      await fillFormulaEditor(formulaEditor, 'x + 1');
+      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeHidden();
+
       for (const { latex, message } of parseErrorCases) {
         await fillFormulaEditor(formulaEditor, latex);
+        await blurFormulaEditor(formulaEditor);
         await expect(page.getByText(message)).toBeVisible();
 
         await fillFormulaEditor(formulaEditor, 'x + 1');
         await expect(page.getByText(message)).toBeHidden();
       }
 
+      // Missing values always render a highlighted placeholder box, even when
+      // the student deleted a slot's contents, and each error renders as its
+      // own prompt.
+      await fillFormulaEditor(formulaEditor, String.raw`\frac{}{}`);
+      await blurFormulaEditor(formulaEditor);
+      await expect(page.getByText('Fill in the empty box.')).toHaveCount(2);
+      expect(
+        await formulaEditor.evaluate((el) =>
+          (el as HTMLElement & { getValue: (format: string) => string }).getValue('latex-unstyled'),
+        ),
+      ).toBe(String.raw`\frac{\placeholder{}}{\placeholder{}}`);
+      await fillFormulaEditor(formulaEditor, 'x + 1');
+      await expect(page.getByText('Fill in the empty box.')).toBeHidden();
+
+      // Each editor validates on its own blur.
       await fillFormulaEditor(getSetsFormulaEditor(page), String.raw`\{1\}+2`);
+      await expect(page.getByText('Expected a numeric expression.')).toBeHidden();
+      await blurFormulaEditor(getSetsFormulaEditor(page));
       await expect(page.getByText('Expected a numeric expression.')).toBeVisible();
-      await expect
-        .poll(() =>
-          validationProxy.evaluate((el) => ({
-            validationMessage: (el as HTMLInputElement).validationMessage,
-            willValidate: (el as HTMLInputElement).willValidate,
-          })),
-        )
-        .toEqual({
-          validationMessage: 'Expected a numeric expression.',
-          willValidate: true,
-        });
+
+      // Validation never blocks submission: grading with parse errors present
+      // submits, and the server reports the errors on the submission.
+      await fillFormulaEditor(formulaEditor, String.raw`\foo`);
+      await blurFormulaEditor(formulaEditor);
+      await expect(page.getByText(String.raw`'\foo' is not a recognized symbol.`)).toBeVisible();
       await page.getByRole('button', { name: /Save & Grade/ }).click();
-      await page.waitForTimeout(500);
-      expect(submitRequests).toBe(0);
+      await expect.poll(() => submitRequests).toBe(1);
+      await expect(page.getByText('Invalid', { exact: true }).first()).toBeVisible();
     } finally {
       await cleanupQuestion();
     }

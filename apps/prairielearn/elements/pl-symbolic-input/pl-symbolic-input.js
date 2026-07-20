@@ -469,7 +469,7 @@
    * @returns {import('@cortex-js/compute-engine').LatexSyntax} The LatexSyntax instance
    */
   function createSyntax(el) {
-    const customFunctions = el.getAttribute('custom-functions')?.split(',') ?? [];
+    const customFunctions = el.getAttribute('custom-functions')?.split(',').filter(Boolean) ?? [];
     const allowTrig = el.hasAttribute('allow-trig');
     const allowSets = el.hasAttribute('allow-sets');
     const cacheKey = `${allowTrig}:${allowSets}:${customFunctions.toSorted().join(',')}`;
@@ -559,20 +559,54 @@
   }
 
   /**
-   * @param {unknown} expr
-   * @returns {string[]} User-facing formula editor parse error messages
+   * A user-facing client error message with the LaTeX source range it refers
+   * to, when the parser reported one.
+   * @typedef {{ message: string, sourceOffsets: [number, number] | null }} ClientErrorItem
+   */
+
+  /**
+   * @param {import('@cortex-js/compute-engine').MathJsonExpression} expr
+   * @returns {ClientErrorItem[]} User-facing formula editor parse errors
    */
   function collectMathJSONParseErrors(expr) {
     if (Array.isArray(expr)) {
-      if (expr[0] === 'Error') return [formatMathJSONParseError(expr)];
-      return expr.slice(1).flatMap(collectMathJSONParseErrors);
+      if (expr[0] === 'Error') {
+        return [{ message: formatMathJSONParseError(expr), sourceOffsets: null }];
+      }
+      return Array.from(expr.slice(1)).flatMap(collectMathJSONParseErrors);
     }
 
     if (expr && typeof expr === 'object' && 'fn' in expr) {
-      return collectMathJSONParseErrors(expr.fn);
+      const fn = expr.fn;
+      if (Array.isArray(fn) && fn[0] === 'Error') {
+        return [
+          {
+            message: formatMathJSONParseError(fn),
+            sourceOffsets: isSourceOffset(expr.sourceOffsets) ? expr.sourceOffsets : null,
+          },
+        ];
+      }
+      return collectMathJSONParseErrors(fn);
     }
 
     return [];
+  }
+
+  const sourceErrorColor = '#dc3545';
+
+  /**
+   * @param {unknown} value
+   * @returns {value is [number, number]} Whether the value is a valid source-offset tuple.
+   */
+  function isSourceOffset(value) {
+    return (
+      Array.isArray(value) &&
+      value.length === 2 &&
+      Number.isInteger(value[0]) &&
+      Number.isInteger(value[1]) &&
+      value[0] >= 0 &&
+      value[1] >= value[0]
+    );
   }
 
   /**
@@ -629,12 +663,15 @@
   /**
    * @param {unknown} expr
    * @param {{ allowSets: boolean }} options
-   * @returns {string[]} User-facing formula editor error messages
+   * @returns {ClientErrorItem[]} User-facing formula editor errors
    */
   function collectMathJSONClientErrors(expr, options) {
     const parseErrors = collectMathJSONParseErrors(expr);
     if (parseErrors.length > 0) return parseErrors;
-    return collectMathJSONConversionErrors(expr, options);
+    return collectMathJSONConversionErrors(expr, options).map((message) => ({
+      message,
+      sourceOffsets: null,
+    }));
   }
 
   /**
@@ -840,21 +877,25 @@
 
     switch (code) {
       case 'missing':
-        return 'Missing value.';
+        return 'Fill in the empty box.';
       case 'unexpected-command':
-        return detail ? `Unexpected LaTeX command '${detail}'.` : 'Unexpected LaTeX command.';
+        return detail
+          ? `'${detail}' is not a recognized symbol.`
+          : 'This symbol is not recognized.';
       case 'unexpected-delimiter':
-        return detail ? `Unexpected delimiter '${detail}'.` : 'Unexpected delimiter.';
+        return detail ? `There is an unmatched '${detail}'.` : 'There is an unmatched parenthesis.';
       case 'unexpected-operator':
-        return detail ? `Unexpected operator '${detail}'.` : 'Unexpected operator.';
+        return detail
+          ? `'${detail}' is missing a value next to it.`
+          : 'An operator is missing a value.';
       case 'expected-operand':
-        return 'Expected another value.';
+        return 'A value is missing.';
       case 'unexpected-token':
-        return detail ? `Unexpected input '${detail}'.` : 'Unexpected input.';
-      case '':
-        return 'Could not parse this expression.';
+        return detail ? `'${detail}' cannot be used here.` : 'This character cannot be used here.';
+      case 'invalid-symbol':
+        return 'This symbol cannot be used here.';
       default:
-        return detail ? `Could not parse this expression: ${code} (${detail}).` : code;
+        return 'This expression could not be understood.';
     }
   }
 
@@ -913,29 +954,70 @@
   }
 
   /**
+   * The value that error feedback was rendered for, the rendered prompts, and
+   * the mathfield ranges they refer to (used to emphasize the prompt at the
+   * caret).
+   * @type {WeakMap<HTMLElement, { value: string, prompts: { el: HTMLElement | null, ranges: [number, number][] }[] }>}
+   */
+  const errorPromptState = new WeakMap();
+
+  /**
    * @param {HTMLElement} inputEl
-   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
    * @param {unknown} mathJSON
    */
-  function syncClientParseError(inputEl, validationEl, errorEl, mathJSON) {
-    const errors = collectMathJSONClientErrors(mathJSON, {
+  function syncClientParseError(inputEl, errorEl, mathJSON) {
+    const items = collectMathJSONClientErrors(mathJSON, {
       allowSets: inputEl.hasAttribute('allow-sets'),
     });
-    if (errors.length === 0) {
-      clearClientParseError(inputEl, validationEl, errorEl);
+    if (items.length === 0) {
+      clearClientParseError(inputEl, errorEl);
+      clearSourceErrorHighlights(inputEl);
       return;
     }
-    setClientParseError(inputEl, validationEl, errorEl, errors.join(' '));
+    const rangesPerItem = applySourceErrorHighlights(inputEl, items);
+    const promptEls = setClientParseError(
+      inputEl,
+      errorEl,
+      items.map((item) => item.message),
+    );
+    errorPromptState.set(inputEl, {
+      value:
+        'getValue' in inputEl
+          ? /** @type {import('mathlive').MathfieldElement} */ (inputEl).getValue('latex-unstyled')
+          : '',
+      prompts: items.map((item, i) => ({ el: promptEls[i] ?? null, ranges: rangesPerItem[i] })),
+    });
+    updateActiveErrorPrompt(inputEl);
+  }
+
+  /**
+   * Emphasize the error prompt whose highlighted range contains the caret so
+   * students can tell which prompt matches which highlight in the field.
+   * @param {HTMLElement} inputEl
+   */
+  function updateActiveErrorPrompt(inputEl) {
+    const state = errorPromptState.get(inputEl);
+    if (!state) return;
+
+    const mf = /** @type {import('mathlive').MathfieldElement} */ (inputEl);
+    const position =
+      'position' in mf && typeof mf.hasFocus === 'function' && mf.hasFocus() ? mf.position : null;
+    for (const { el, ranges } of state.prompts) {
+      el?.classList.toggle(
+        'pl-symbolic-input-error-active',
+        position !== null && ranges.some(([start, end]) => position >= start && position <= end),
+      );
+    }
   }
 
   /**
    * @param {HTMLElement} inputEl
-   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
-   * @param {string} message
+   * @param {string[]} messages
+   * @returns {HTMLElement[]} The rendered per-error prompt elements
    */
-  function setClientParseError(inputEl, validationEl, errorEl, message) {
+  function setClientParseError(inputEl, errorEl, messages) {
     if (!inputEl.classList.contains('is-invalid')) inputEl.dataset.clientParseWasValid = 'true';
     inputEl.dataset.clientParseError = 'true';
     inputEl.classList.add('is-invalid');
@@ -946,19 +1028,24 @@
       }
       inputEl.setAttribute('aria-errormessage', errorEl.id);
     }
-    setCustomValidity(validationEl ?? inputEl, message);
 
-    if (!errorEl) return;
-    errorEl.textContent = message;
+    if (!errorEl) return [];
+    const promptEls = messages.map((message) => {
+      const promptEl = document.createElement('span');
+      promptEl.className = 'pl-symbolic-input-error-item';
+      promptEl.textContent = message;
+      return promptEl;
+    });
+    errorEl.replaceChildren(...promptEls);
     errorEl.classList.remove('invisible');
+    return promptEls;
   }
 
   /**
    * @param {HTMLElement} inputEl
-   * @param {HTMLElement | null | undefined} validationEl
    * @param {HTMLElement | null | undefined} errorEl
    */
-  function clearClientParseError(inputEl, validationEl, errorEl) {
+  function clearClientParseError(inputEl, errorEl) {
     if (inputEl.dataset.clientParseWasValid === 'true') {
       inputEl.classList.remove('is-invalid');
       inputEl.removeAttribute('aria-invalid');
@@ -969,7 +1056,7 @@
     delete inputEl.dataset.clientParseWasValid;
     delete inputEl.dataset.clientParseAddedErrormessage;
     delete inputEl.dataset.clientParseError;
-    setCustomValidity(validationEl ?? inputEl, '');
+    errorPromptState.delete(inputEl);
 
     if (!errorEl) return;
     errorEl.textContent = '\u00a0'; // NBSP to preserve element height
@@ -978,12 +1065,181 @@
 
   /**
    * @param {HTMLElement} inputEl
-   * @param {string} message
+   * @param {ClientErrorItem[]} items
+   * @returns {[number, number][][]} The highlighted mathfield ranges for each item
    */
-  function setCustomValidity(inputEl, message) {
-    if ('setCustomValidity' in inputEl && typeof inputEl.setCustomValidity === 'function') {
-      inputEl.setCustomValidity(message);
+  function applySourceErrorHighlights(inputEl, items) {
+    removeSourceErrorHighlights(inputEl);
+    if (!('getValue' in inputEl) || !('applyStyle' in inputEl)) return items.map(() => []);
+
+    const mf = /** @type {import('mathlive').MathfieldElement} */ (inputEl);
+    // Missing values are reported as a zero-width range: there is no token to
+    // color. Each one claims the nearest placeholder atom (`\placeholder{}`,
+    // rendered as ▢), which can't be color-styled but accepts a background
+    // style; custom shadow CSS then renders that background as a red outline
+    // of the glyph instead of a solid fill.
+    const freePlaceholders = collectPlaceholderOffsets(mf);
+    return items.map(({ sourceOffsets }) => {
+      if (!sourceOffsets) return [];
+      const [start, end] = sourceOffsets;
+      if (start === end) {
+        const near = latexOffsetToMathfieldOffset(mf, start) ?? mf.lastOffset;
+        const index = nearestOffsetIndex(freePlaceholders, near);
+        if (index === -1) return [];
+        const offset = freePlaceholders[index];
+        freePlaceholders.splice(index, 1);
+        const range = /** @type {[number, number]} */ ([offset, offset + 1]);
+        mf.applyStyle({ backgroundColor: sourceErrorColor }, applyStyleOptions(range));
+        return [range];
+      }
+      const range = latexOffsetsToMathfieldRange(mf, start, end);
+      if (!range) return [];
+      mf.applyStyle({ color: sourceErrorColor }, applyStyleOptions(range));
+      return [range];
+    });
+  }
+
+  /**
+   * @param {import('mathlive').MathfieldElement} mf
+   * @returns {number[]} The offsets of all placeholder atoms in the field
+   */
+  function collectPlaceholderOffsets(mf) {
+    const offsets = [];
+    for (let offset = 0; offset < mf.lastOffset; offset++) {
+      if (mf.getValue(offset, offset + 1, 'latex-unstyled') === '\\placeholder{}') {
+        offsets.push(offset);
+      }
     }
+    return offsets;
+  }
+
+  /**
+   * @param {number[]} offsets
+   * @param {number} target
+   * @returns {number} The index of the offset closest to the target, or -1
+   */
+  function nearestOffsetIndex(offsets, target) {
+    let best = -1;
+    for (let i = 0; i < offsets.length; i++) {
+      if (best === -1 || Math.abs(offsets[i] - target) < Math.abs(offsets[best] - target)) {
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   */
+  function clearSourceErrorHighlights(inputEl) {
+    removeSourceErrorHighlights(inputEl);
+  }
+
+  /**
+   * @param {HTMLElement} inputEl
+   */
+  function removeSourceErrorHighlights(inputEl) {
+    if (!('applyStyle' in inputEl)) return;
+
+    const mf = /** @type {import('mathlive').MathfieldElement} */ (inputEl);
+    if (mf.lastOffset <= 0) return;
+    // Clear across the whole field rather than just the previously highlighted
+    // ranges: a newly typed character inherits the style of the atom to its
+    // left, so typing next to a red error token (or placeholder box) leaves the
+    // new character styled red even once the expression parses cleanly.
+    mf.applyStyle(
+      { color: 'none', backgroundColor: 'none' },
+      applyStyleOptions([0, mf.lastOffset]),
+    );
+  }
+
+  /**
+   * @param {[number, number]} range
+   * @returns {{ range: [number, number], operation: 'set', silenceNotifications: boolean }} Options for non-notifying style updates.
+   */
+  function applyStyleOptions(range) {
+    return { range, operation: 'set', silenceNotifications: true };
+  }
+
+  /**
+   * @param {import('mathlive').MathfieldElement} mf
+   * @param {number} start
+   * @param {number} end
+   * @returns {[number, number] | null} A non-empty MathLive range for the LaTeX offsets.
+   */
+  function latexOffsetsToMathfieldRange(mf, start, end) {
+    let startOffset = latexOffsetToMathfieldOffset(mf, start);
+    let endOffset = latexOffsetToMathfieldOffset(mf, end);
+
+    if (startOffset === null || endOffset === null) {
+      return mf.lastOffset > 0 ? [0, mf.lastOffset] : null;
+    }
+
+    if (endOffset <= startOffset) {
+      endOffset = Math.min(mf.lastOffset, startOffset + 1);
+      if (endOffset <= startOffset) {
+        startOffset = Math.max(0, startOffset - 1);
+      }
+    }
+
+    if (endOffset <= startOffset) return null;
+    return [startOffset, endOffset];
+  }
+
+  /**
+   * @param {import('mathlive').MathfieldElement} mf
+   * @param {number} latexOffset
+   * @returns {number | null} The MathLive field offset for the LaTeX source offset.
+   */
+  function latexOffsetToMathfieldOffset(mf, latexOffset) {
+    for (let offset = 0; offset <= mf.lastOffset; offset++) {
+      const prefixLength = mf.getValue(0, offset, 'latex-unstyled').length;
+      if (prefixLength >= latexOffset) {
+        return offset;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * MathLive only renders a placeholder box (▢) for empty fraction/root/etc.
+   * slots it created itself; deleting a slot's contents leaves a bare empty
+   * group with nothing visible for a missing-value highlight to attach to.
+   * Insert a placeholder into each empty group the parser flagged as a
+   * missing value so the highlight always has a visible box. Only groups the
+   * parser flagged are touched: some empty groups (e.g. an empty exponent)
+   * parse cleanly and must not gain a placeholder, which would itself parse
+   * as a missing value.
+   * @param {import('mathlive').MathfieldElement} mf
+   * @returns {boolean} Whether the mathfield value was rewritten
+   */
+  function insertMissingValuePlaceholders(mf) {
+    const latex = mf.getValue('latex-unstyled');
+    const items = collectMathJSONParseErrors(parseLatex(createSyntax(mf), latex));
+    const insertAt = new Set();
+    for (const { sourceOffsets } of items) {
+      if (!sourceOffsets || sourceOffsets[0] !== sourceOffsets[1]) continue;
+      const offset = sourceOffsets[0];
+      // Missing values point just past the empty group's closing brace.
+      if (latex.slice(offset - 2, offset) !== '{}') continue;
+      // Never fill a placeholder's own (empty) braces.
+      if (latex.slice(0, offset - 2).endsWith('\\placeholder')) continue;
+      insertAt.add(offset - 1);
+    }
+    if (insertAt.size === 0) return false;
+
+    let value = latex;
+    for (const index of [...insertAt].sort((a, b) => b - a)) {
+      value = `${value.slice(0, index)}#?${value.slice(index)}`;
+    }
+    // Replace through the editing pipeline: programmatically setting a value
+    // that contains empty groups can leave content behind that later value
+    // updates cannot replace, while the editing commands handle it correctly.
+    // The `#?` token inserts a placeholder atom, matching how the keyboard
+    // and menu templates create them.
+    mf.executeCommand('deleteAll');
+    mf.insert(value, { silenceNotifications: true });
+    return true;
   }
 
   /**
@@ -996,7 +1252,6 @@
     const mf = /** @type {import('mathlive').MathfieldElement} */ (
       document.getElementById('symbolic-input-' + name)
     );
-    const validationEl = document.getElementById(`symbolic-input-validation-${name}`);
     const clientErrorEl = document.getElementById(`pl-symbolic-input-client-error-${name}`);
 
     // Always keep basic right-click items and append to other menu items
@@ -1264,17 +1519,48 @@
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
       $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
+      $('#symbolic-input-latex-' + name).val(mf.getValue('latex-unstyled'));
 
       // Use the custom syntax parser with the same settings
       const ls = createSyntax(mf);
       const json = parseLatex(ls, mf.getValue('latex-unstyled'));
       $('#symbolic-input-json-' + name).val(JSON.stringify(json));
-      syncClientParseError(/** @type {HTMLElement} */ (mf), validationEl, clientErrorEl, json);
+
+      // The student is editing again: clear any error feedback from the last
+      // blur so they aren't distracted while constructing their answer. The
+      // expression is re-validated at the next blur. Only clear if the value
+      // actually changed: placeholder normalization on blur emits a deferred
+      // input event for the very value the feedback was rendered for.
+      if (
+        mf.dataset.clientParseError === 'true' &&
+        errorPromptState.get(/** @type {HTMLElement} */ (mf))?.value !==
+          mf.getValue('latex-unstyled')
+      ) {
+        clearClientParseError(/** @type {HTMLElement} */ (mf), clientErrorEl);
+        clearSourceErrorHighlights(/** @type {HTMLElement} */ (mf));
+      }
     };
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+
+    // Students find error feedback while typing distracting, so parse errors
+    // are only reported when the field loses focus, and are cleared again as
+    // soon as the student resumes editing. Validation never blocks submission:
+    // both "Save only" and "Save & Grade" always submit, and the server
+    // reports any remaining errors on the submission itself.
+    mf.addEventListener('blur', () => {
+      if (insertMissingValuePlaceholders(mf)) updateSubmissionData();
+      const json = parseLatex(createSyntax(mf), mf.getValue('latex-unstyled'));
+      syncClientParseError(/** @type {HTMLElement} */ (mf), clientErrorEl, json);
+    });
+    mf.addEventListener('selection-change', () =>
+      updateActiveErrorPrompt(/** @type {HTMLElement} */ (mf)),
+    );
+    // selection-change fires during the focus transition, before the field
+    // reports having focus; refresh once focus settles so the caret's error
+    // prompt is emphasized immediately.
+    mf.addEventListener('focus', () => updateActiveErrorPrompt(/** @type {HTMLElement} */ (mf)));
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
@@ -1295,6 +1581,16 @@
     customCSS.replaceSync(`
     .ML__content-placeholder .ML__text {
       background: inherit;
+    }
+    /* Missing-value highlights apply a background color to placeholder atoms
+       (the only style MathLive supports on them). Suppress the solid fill and
+       color the placeholder glyph itself instead, so a missing value renders
+       as a red outlined square rather than a filled box. */
+    .ML__bg::before {
+      background: transparent !important;
+    }
+    .ML__bg {
+      color: var(--bg-color);
     }
     @media (pointer: coarse) {
       .ML__virtual-keyboard-toggle {
