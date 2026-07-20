@@ -37,6 +37,17 @@ export async function loadAndValidate(path: string) {
 export default configLoader.config;
 ```
 
+### Loading config in Conductor
+
+`makeConductorConfigSource()` derives `postgresqlDatabase` and `redisUrl` from `CONDUCTOR_WORKSPACE_NAME` and `CONDUCTOR_PORT`, allowing multiple Conductor workspaces to use isolated local services. Applications that should listen on `CONDUCTOR_PORT` can pass the corresponding config key:
+
+```ts
+await configLoader.loadAndValidate([
+  makeConductorConfigSource({ portConfigKey: 'serverPort' }),
+  makeFileConfigSource('config.json'),
+]);
+```
+
 ### Loading config from AWS
 
 If you're running in AWS, you can use `makeImdsConfigSource()`, `makeSecretsManagerConfigSource()`, and `makeKmsConfigSource()` to load config from IMDS, Secrets Manager, and AWS KMS, respectively:
