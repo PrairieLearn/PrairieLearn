@@ -16,33 +16,17 @@ Using the course repository with a local installation simplifies the process of 
 
 ## Installation instructions
 
-Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-
-If you are using Windows, you are strongly encouraged to also use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features.
-
-Here are the instructions to install WSL 2 and enable its integration with Docker:
-
-- Install WSL 2. For current instructions, [follow the Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
-- Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
-- On the shell of your WSL 2 instance, make sure Docker Engine is installed. The installation process may depend on the distribution of your WSL 2 instance. For current instructions, [follow the Docker documentation](https://docs.docker.com/engine/install/).
-
-!!! warning
-
-    We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
+Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/). For Windows users, you will also need to install [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) and enable its integration with Docker Desktop. See the [Additional instructions for Windows users](#additional-instructions-for-windows-users) section below for more details.
 
 ## Cloning your course repository
 
 If you are running PrairieLearn with the example course only, you may skip this section.
 
-When you request your course, you will typically receive a GitHub repository URL to your course's content. You may use [Git](https://git-scm.com/) to clone (make a local copy of) this course content in your own computer. Make note of the directory you are cloning your course to. If you are working with multiple courses, you will need to store each course in a separate directory.
-
-If you are using Windows, store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`).
-
-!!! warning
-
-    While there are ways to store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the `C:\` drive) and to translate those paths to WSL mounted paths (e.g., via `/mnt/c/...` paths), these are not recommended due to performance concerns.
+When you request your course, you will typically receive a GitHub repository URL to your course's content. You may use [Git](https://git-scm.com/) to clone (make a local copy of) this course content in your own computer. Make note of the directory you are cloning your course to. If you are working with multiple courses, you will need to store each course in a separate directory. For Windows users, it is recommended to [store your course content inside the WSL 2 instance](#storing-your-course-content-in-wsl-2) for better performance.
 
 ## Running instructions
+
+The following instructions must be executed in a terminal window. For MacOS and Linux, you can use the default terminal application. For Windows, [use a terminal connected to a WSL 2 instance](#opening-a-wsl-2-shell-on-windows).
 
 To run PrairieLearn using the example course only, open a terminal window and type the command:
 
@@ -57,8 +41,6 @@ docker run -it --rm -p 3000:3000 -v $HOME/pl-tam212:/course prairielearn/prairie
 ```
 
 Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:/course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
-
-If you are running on Windows, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt.
 
 After running the command above, you should see a message that says:
 
@@ -135,3 +117,26 @@ docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairie
     The command above uses the `--pull=always` option, which will update the local version of the image every time the Docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
+
+## Additional instructions for Windows users
+
+We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented.
+
+If you are using Windows, use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features. All examples in this page assume that, if Windows is in use, commands are executed and files are stored within the WSL 2 environment.
+
+Here are the instructions to install WSL 2 and enable its integration with Docker:
+
+- Install WSL 2. For current instructions, [follow the Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
+- Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
+
+### Opening a WSL 2 shell on Windows
+
+To run a WSL 2 shell, open the Windows Start menu, search for "WSL", and select the WSL 2 instance you installed. Alternatively, install the [Windows Terminal](https://aka.ms/terminal) application and select your WSL 2 instance from the dropdown menu.
+
+Note that PowerShell, the Command Prompt, Git Bash, Cygwin, MinGW and other similar environments are not supported and may not work properly. You can check if you are using a WSL shell by typing `echo $WSL_DISTRO_NAME` in the terminal. If you see the name of the Linux distribution you installed in [the previous step](#installation-instructions), you are using WSL. If you see nothing, or you see `$WSL_DISTRO_NAME`, you are not using WSL.
+
+### Storing your course content in WSL 2
+
+While there are ways to store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the `C:\` drive) and to translate those paths to WSL mounted paths (e.g., via `/mnt/c/...` paths), these are not recommended due to performance concerns.
+
+If you are using Windows, store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`).

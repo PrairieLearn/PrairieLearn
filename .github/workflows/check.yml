@@ -59,11 +59,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # Pinned below 11.12.0, whose self-install crashes with
-          # "Cannot use 'in' operator to search for 'integrity' in undefined".
-          # https://github.com/pnpm/action-setup/issues/276
-          # https://github.com/pnpm/pnpm/issues/12959
-          version: 11.11.0
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -204,11 +200,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # Pinned below 11.12.0, whose self-install crashes with
-          # "Cannot use 'in' operator to search for 'integrity' in undefined".
-          # https://github.com/pnpm/action-setup/issues/276
-          # https://github.com/pnpm/pnpm/issues/12959
-          version: 11.11.0
+          version: 11
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
