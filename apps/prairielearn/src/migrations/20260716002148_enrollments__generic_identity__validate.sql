@@ -1,1 +1,0 @@
-ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_at_most_one_generic_identity;

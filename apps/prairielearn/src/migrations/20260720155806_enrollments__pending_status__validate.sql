@@ -1,0 +1,1 @@
+ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_v2;

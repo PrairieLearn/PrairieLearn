@@ -10,32 +10,48 @@ ADD COLUMN pending_name TEXT;
 ALTER TABLE enrollments
 ADD COLUMN pending_email TEXT;
 
+-- This replaces pending_lti13_instance_id. The old column is intentionally
+-- retained for rolling-deploy compatibility and can be dropped later.
+ALTER TABLE enrollments
+ADD COLUMN pending_lti13_course_instance_id BIGINT;
+
+-- Keep the FALSE default during this compatibility stage so old application
+-- processes never receive NULL. After nullable readers are fully deployed, one
+-- follow-up PR can drop the default so new rows receive NULL. Once that is fully
+-- deployed, another PR can enqueue a batched FALSE-to-NULL rewrite, and a final
+-- PR can finalize the backfill and enforce the pending-row rule.
+ALTER TABLE enrollments
+ALTER COLUMN lti_managed
+DROP NOT NULL;
+
 -- PostgreSQL does not support removing an enum value without recreating the enum
 -- and rewriting the column. Keep the legacy value in the database enum, but make
 -- it invalid for enrollments.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_status_not_lti13_pending CHECK (status != 'lti13_pending') NOT VALID;
 
--- A generic identity is either resolved or waiting on exactly one supported key
--- type. An LTI sub is a separate association and may accompany a pending key.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_at_most_one_generic_identity CHECK (
-  num_nonnulls (user_id, pending_uid, pending_uin) <= 1
+ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_v2 CHECK (
+  (status IN ('invited', 'rejected')) = (user_id IS NULL)
 ) NOT VALID;
 
--- Sub-only pending enrollments are allowed, but display fields alone do not
--- identify an expected user.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_identity_required CHECK (
-  num_nonnulls (
-    user_id,
-    pending_uid,
-    pending_uin,
-    pending_lti13_sub
-  ) >= 1
+ADD CONSTRAINT first_joined_at_not_null_if_joined_and_created_at_not_null_v2 CHECK (
+  created_at IS NULL
+  OR status IN ('invited', 'rejected')
+  OR first_joined_at IS NOT NULL
 ) NOT VALID;
 
--- Once the generic identity is resolved, all pending identity and association
+-- Every pending enrollment must have at least one generic identity key. UID and
+-- UIN may coexist when both are known.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_pending_identity_required CHECK (
+  user_id IS NOT NULL
+  OR pending_uid IS NOT NULL
+  OR pending_uin IS NOT NULL
+) NOT VALID;
+
+-- Once an enrollment is resolved, all pending identity, display, and association
 -- data must have been consumed.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_pending_fields_null_if_resolved CHECK (
@@ -48,17 +64,27 @@ ADD CONSTRAINT enrollments_pending_fields_null_if_resolved CHECK (
     AND pending_lti13_name IS NULL
     AND pending_lti13_email IS NULL
     AND pending_lti13_sub IS NULL
+    AND pending_lti13_course_instance_id IS NULL
     AND pending_lti13_instance_id IS NULL
   )
 ) NOT VALID;
 
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_lti13_sub_instance_id_pair CHECK (
-  (pending_lti13_sub IS NULL) = (pending_lti13_instance_id IS NULL)
+ADD CONSTRAINT enrollments_lti13_sub_course_instance_id_pair CHECK (
+  (pending_lti13_sub IS NULL) = (pending_lti13_course_instance_id IS NULL)
 ) NOT VALID;
 
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_lti13_sub_requires_lti_managed CHECK (
+ADD CONSTRAINT enrollments_lti13_sub_requires_uin CHECK (
   pending_lti13_sub IS NULL
-  OR lti_managed
+  OR pending_uin IS NOT NULL
 ) NOT VALID;
+
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_rejected_not_lti_managed CHECK (
+  status != 'rejected'
+  OR lti_managed IS NOT TRUE
+) NOT VALID;
+
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_pending_lti13_course_instance_id_fkey FOREIGN KEY (pending_lti13_course_instance_id) REFERENCES lti13_course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE NOT VALID;

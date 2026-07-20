@@ -310,8 +310,9 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
+  lti_managed: null,
   pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_email: null,
   pending_lti13_instance_id: null,
   pending_lti13_name: null,
@@ -450,6 +451,7 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   id: '9',
   lti_managed: false,
   pending_email: null,
+  pending_lti13_course_instance_id: null,
   pending_lti13_email: null,
   pending_lti13_instance_id: null,
   pending_lti13_name: null,
@@ -686,11 +688,22 @@ describe('safe-db-types schemas', () => {
   it('parses a RawStaffEnrollment returned by an old server during a rolling deploy', () => {
     const {
       pending_email: _pendingEmail,
+      pending_lti13_course_instance_id: _pendingLti13CourseInstanceId,
       pending_name: _pendingName,
       pending_uin: _pendingUin,
       ...oldServerEnrollment
     } = minimalRawStaffEnrollment;
     expect(() => RawStaffEnrollmentSchema.parse(oldServerEnrollment)).not.toThrow();
+  });
+
+  it('parses a RawStaffEnrollment after the legacy columns are dropped', () => {
+    const {
+      pending_lti13_email: _pendingLti13Email,
+      pending_lti13_instance_id: _pendingLti13InstanceId,
+      pending_lti13_name: _pendingLti13Name,
+      ...withoutLegacyColumns
+    } = minimalRawStaffEnrollment;
+    expect(() => RawStaffEnrollmentSchema.parse(withoutLegacyColumns)).not.toThrow();
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {

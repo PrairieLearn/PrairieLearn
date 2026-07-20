@@ -886,11 +886,14 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  lti_managed: z.boolean(),
+  lti_managed: z.boolean().nullable(),
   pending_email: z.string().nullable(),
-  pending_lti13_email: z.unknown(),
-  pending_lti13_instance_id: IdSchema.nullable(),
-  pending_lti13_name: z.unknown(),
+  pending_lti13_course_instance_id: IdSchema.nullable(),
+  // These legacy columns are retained during the rolling deploy. Keeping them
+  // optional lets a later cleanup deploy drop the columns before new code runs.
+  pending_lti13_email: z.unknown().optional(),
+  pending_lti13_instance_id: z.unknown().optional(),
+  pending_lti13_name: z.unknown().optional(),
   pending_lti13_sub: z.string().nullable(),
   pending_name: z.string().nullable(),
   pending_uid: z.string().nullable(),

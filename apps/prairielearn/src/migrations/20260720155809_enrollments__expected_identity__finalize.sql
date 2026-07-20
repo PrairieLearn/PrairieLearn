@@ -1,0 +1,23 @@
+-- The backing indexes were built concurrently, so attaching them does not rebuild or scan them.
+ALTER TABLE enrollments
+-- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
+ADD CONSTRAINT enrollments_pending_uin_course_instance_id_key UNIQUE USING INDEX enrollments_course_instance_id_pending_uin_idx;
+
+ALTER TABLE enrollments
+-- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
+ADD CONSTRAINT enrollments_pending_lti13_ciid_sub_course_instance_id_key UNIQUE USING INDEX enrollments_pending_lti13_ciid_sub_course_instance_id_idx;
+
+ALTER TABLE enrollments
+DROP CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid_lti13_sub,
+DROP CONSTRAINT enrollments_impossible_lti_managed,
+DROP CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending,
+DROP CONSTRAINT enrollments_lti13_pending_lti_managed_true,
+DROP CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected,
+DROP CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_pending,
+DROP CONSTRAINT first_joined_at_not_null_if_joined_and_created_at_not_null;
+
+ALTER TABLE enrollments
+RENAME CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_v2 TO enrollments_user_id_null_only_if_invited_rejected;
+
+ALTER TABLE enrollments
+RENAME CONSTRAINT first_joined_at_not_null_if_joined_and_created_at_not_null_v2 TO first_joined_at_not_null_if_joined_and_created_at_not_null;

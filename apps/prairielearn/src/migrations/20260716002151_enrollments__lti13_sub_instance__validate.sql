@@ -1,1 +1,0 @@
-ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_lti13_sub_instance_id_pair;
