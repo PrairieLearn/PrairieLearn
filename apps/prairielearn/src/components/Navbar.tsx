@@ -122,7 +122,7 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${ReportCheatingControl({ resLocals })} ${EndExamControl({ resLocals })}
+          ${ReportCheatingControl({ resLocals, navPage })} ${EndExamControl({ resLocals })}
           ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
@@ -217,18 +217,29 @@ function EndExamModal({ csrfToken }: { csrfToken: string }) {
 }
 
 /**
- * Renders a "Report cheating" control when the user has an active PrairieTest
- * exam reservation (looked up in the `enforceLockdownBrowser` middleware). The
- * button opens a modal whose form POSTs to `/pl/report-cheating`; that handler
- * mints a short-lived JWT and calls PT server-to-server to file the report with
- * the proctors. PrairieTest is the authority on whether the owning
- * center/course has enabled reports, and declines the submission if not.
+ * Renders a "Report cheating" control while a student is taking an exam: on the
+ * assessment-instance pages, when they have an active PrairieTest exam
+ * reservation (looked up in the `enforceLockdownBrowser` middleware). Scoping
+ * to the exam pages keeps the control out of the rest of PrairieLearn, where a
+ * "report cheating" button would be out of context. The button opens a modal
+ * whose form POSTs to `/pl/report-cheating`; that handler mints a short-lived
+ * JWT and calls PT server-to-server to file the report with the proctors.
+ * PrairieTest is the authority on whether the owning center/course has enabled
+ * reports, and declines the submission if not.
  *
  * As with the End exam control, PL's CSRF token is bound to the request URL,
  * so we mint one specifically for `/pl/report-cheating`.
  */
-function ReportCheatingControl({ resLocals }: { resLocals: UntypedResLocals }) {
-  if (resLocals.cheating_report_reservation_id == null) return '';
+function ReportCheatingControl({
+  resLocals,
+  navPage,
+}: {
+  resLocals: UntypedResLocals;
+  navPage: NavPage;
+}) {
+  if (navPage !== 'assessment_instance' || resLocals.cheating_report_reservation_id == null) {
+    return '';
+  }
   const reportCheatingCsrfToken = generateCsrfToken({
     url: '/pl/report-cheating',
     authnUserId: resLocals.authn_user.id,
