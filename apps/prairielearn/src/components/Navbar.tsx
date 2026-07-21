@@ -219,13 +219,13 @@ function EndExamModal({ csrfToken }: { csrfToken: string }) {
 /**
  * Renders a "Report cheating" control while a student is taking an exam: on the
  * assessment-instance pages, when they have an active PrairieTest exam
- * reservation (looked up in the `enforceLockdownBrowser` middleware). Scoping
- * to the exam pages keeps the control out of the rest of PrairieLearn, where a
- * "report cheating" button would be out of context. The button opens a modal
- * whose form POSTs to `/pl/report-cheating`; that handler mints a short-lived
- * JWT and calls PT server-to-server to file the report with the proctors.
- * PrairieTest is the authority on whether the owning center/course has enabled
- * reports, and declines the submission if not.
+ * reservation whose owning center or course has opted in to cheating reports
+ * (looked up in the `enforceLockdownBrowser` middleware). Scoping to the exam
+ * pages keeps the control out of the rest of PrairieLearn, where a "report
+ * cheating" button would be out of context. The button opens a modal whose
+ * form POSTs to `/pl/report-cheating`; that handler mints a short-lived JWT and
+ * calls PT server-to-server to file the report with the proctors. PrairieTest
+ * re-checks the opt-in authoritatively and declines the submission if it is off.
  *
  * As with the End exam control, PL's CSRF token is bound to the request URL,
  * so we mint one specifically for `/pl/report-cheating`.

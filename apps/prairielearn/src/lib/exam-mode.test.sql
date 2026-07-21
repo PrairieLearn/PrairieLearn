@@ -8,11 +8,21 @@ WITH
     RETURNING
       *
   ),
+  new_centers AS (
+    INSERT INTO
+      pt_centers
+    DEFAULT VALUES
+    RETURNING
+      *
+  ),
   new_locations AS (
     INSERT INTO
-      pt_locations (filter_networks)
-    VALUES
-      (TRUE)
+      pt_locations (center_id, filter_networks)
+    SELECT
+      id,
+      TRUE
+    FROM
+      new_centers
     RETURNING
       *
   ),
@@ -56,10 +66,20 @@ WITH
     RETURNING
       *
   ),
+  new_courses AS (
+    INSERT INTO
+      pt_courses
+    DEFAULT VALUES
+    RETURNING
+      *
+  ),
   new_exams AS (
     INSERT INTO
-      pt_exams
-    DEFAULT VALUES
+      pt_exams (course_id)
+    SELECT
+      id
+    FROM
+      new_courses
     RETURNING
       *
   )
@@ -161,6 +181,16 @@ SET
   lockdown_browser_enabled = TRUE
 WHERE
   location_id IS NULL;
+
+-- BLOCK enable_cheating_reports_on_center
+UPDATE pt_centers
+SET
+  cheating_reports_enabled = TRUE;
+
+-- BLOCK enable_cheating_reports_on_course
+UPDATE pt_courses
+SET
+  cheating_reports_enabled = TRUE;
 
 -- BLOCK check_in_reservations
 UPDATE pt_reservations

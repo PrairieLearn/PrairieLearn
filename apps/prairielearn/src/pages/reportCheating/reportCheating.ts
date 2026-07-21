@@ -20,12 +20,12 @@ const MAX_REPORT_LENGTH = 10_000;
  *
  * The reporting reservation is `res.locals.cheating_report_reservation_id`,
  * which `enforceLockdownBrowser` recomputes on this request (the id of an
- * active in-access-window reservation, or null). PT is the authority on
- * whether the owning center/course has opted in to cheating reports — PL
- * surfaces the button for any active exam reservation and lets PT accept or
- * decline. PT stores the report and notifies proctors; PL keeps no report
- * history of its own. The outcome surfaces as a flash message on the page the
- * student came from.
+ * active in-access-window reservation whose owning center/course has opted in,
+ * or null). PL only shows the control for opted-in exams, but PrairieTest
+ * re-checks the opt-in authoritatively and can still decline (e.g. if the flag
+ * was toggled off after the page loaded). PT stores the report and notifies
+ * proctors; PL keeps no report history of its own. The outcome surfaces as a
+ * flash message on the page the student came from.
  */
 router.post(
   '/',

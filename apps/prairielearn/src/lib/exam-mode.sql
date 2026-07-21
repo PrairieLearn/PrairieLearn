@@ -39,12 +39,27 @@ WITH
         l.lockdown_browser_enabled,
         s.lockdown_browser_enabled,
         FALSE
-      ) AS reservation_requires_lockdown_browser
+      ) AS reservation_requires_lockdown_browser,
+      -- Whether the session's owner has opted in to student cheating reports.
+      -- A center session's owner is the center (through the location); a
+      -- course-run session's owner is the course (through the reservation's
+      -- exam). PrairieTest re-checks this authoritatively on submit; we read it
+      -- here so the control only appears for opted-in exams.
+      COALESCE(
+        CASE
+          WHEN l.id IS NOT NULL THEN ctr.cheating_reports_enabled
+          ELSE crs.cheating_reports_enabled
+        END,
+        FALSE
+      ) AS cheating_reports_enabled
     FROM
       pt_reservations AS r
       JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
       JOIN pt_sessions AS s ON (s.id = r.session_id)
       LEFT JOIN pt_locations AS l ON (l.id = s.location_id)
+      LEFT JOIN pt_centers AS ctr ON (ctr.id = l.center_id)
+      LEFT JOIN pt_exams AS x ON (x.id = r.exam_id)
+      LEFT JOIN pt_courses AS crs ON (crs.id = x.course_id)
     WHERE
       e.user_id = $authn_user_id
       AND (
@@ -107,13 +122,14 @@ SELECT
     ),
     FALSE
   ) AS requires_lockdown_browser,
-  -- An in-access-window reservation, if any; its presence decides whether the
-  -- navbar shows the "Report cheating" control. We only surface an id — whether
-  -- the owning center/course has opted in is enforced authoritatively by
-  -- PrairieTest when the report is submitted, not here.
+  -- An in-access-window reservation whose owning center/course has opted in to
+  -- cheating reports, if any; its presence decides whether the navbar shows the
+  -- "Report cheating" control. PrairieTest re-checks the opt-in authoritatively
+  -- when a report is submitted.
   MIN(reservation.reservation_id) FILTER (
     WHERE
       reservation.reservation_in_access_window
+      AND reservation.cheating_reports_enabled
   ) AS cheating_report_reservation_id
 FROM
   active_reservations AS reservation;

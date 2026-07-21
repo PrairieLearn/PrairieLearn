@@ -21,7 +21,8 @@ export type ActiveReservationInfo = z.infer<typeof ActiveReservationInfoSchema>;
  * Looks up the user's active PrairieTest reservations and returns the derived
  * per-request state: whether they're in 'Exam' mode, whether they must be
  * inside LockDown Browser, and the id of an active in-access-window reservation
- * (used to show the "Report cheating" control), or null if none.
+ * whose owning center/course has opted in to cheating reports (used to show the
+ * "Report cheating" control), or null if none.
  */
 export async function selectActiveReservationInfo({
   ip,

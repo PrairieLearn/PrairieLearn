@@ -521,49 +521,99 @@ describe('ipToMode tests', function () {
   });
 
   describe('cheating_report_reservation_id', () => {
-    // Drives the navbar "Report cheating" control. It's set whenever access is
-    // open; PrairieTest enforces the center/course opt-in at submit time.
-    it('should return the reservation id once access is open (center exam)', async () => {
-      await helperDb.runInTransactionAndRollback(async () => {
-        await createCenterExamReservation();
-        await execute(sql.start_reservations);
+    // Drives the navbar "Report cheating" control. It's set only when access is
+    // open AND the owning center/course has opted in to cheating reports.
+    describe('center exam', () => {
+      it('should return the reservation id when access is open and the center has opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.start_reservations);
 
-        const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
-        const info = await selectActiveReservationInfo({
-          ip: '10.0.0.1',
-          date: new Date(),
-          authn_user_id,
+          const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+          const info = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.equal(info.cheating_report_reservation_id, reservation_id);
         });
-        assert.equal(info.cheating_report_reservation_id, reservation_id);
+      });
+
+      it('should return null when the center has not opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.start_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
+      });
+
+      it('should return null after check-in but before access starts', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.check_in_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
       });
     });
 
-    it('should return the reservation id once access is open (course exam)', async () => {
-      await helperDb.runInTransactionAndRollback(async () => {
-        await createCourseExamReservation();
-        await execute(sql.start_reservations);
+    describe('course exam', () => {
+      it('should return the reservation id when access is open and the course has opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_cheating_reports_on_course);
+          await execute(sql.start_reservations);
 
-        const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
-        const info = await selectActiveReservationInfo({
-          ip: '192.168.0.1',
-          date: new Date(),
-          authn_user_id,
+          const reservation_id = await queryScalar('SELECT id FROM pt_reservations', IdSchema);
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.equal(info.cheating_report_reservation_id, reservation_id);
         });
-        assert.equal(info.cheating_report_reservation_id, reservation_id);
       });
-    });
 
-    it('should return null after check-in but before access starts', async () => {
-      await helperDb.runInTransactionAndRollback(async () => {
-        await createCenterExamReservation();
-        await execute(sql.check_in_reservations);
+      it('should return null when the course has not opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.start_reservations);
 
-        const info = await selectActiveReservationInfo({
-          ip: '10.0.0.1',
-          date: new Date(),
-          authn_user_id,
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
         });
-        assert.isNull(info.cheating_report_reservation_id);
+      });
+
+      it('should not use the center flag for a course exam', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.start_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
       });
     });
 

@@ -40,8 +40,8 @@ export default asyncHandler(async (req, res, next) => {
   });
 
   // The navbar's "Report cheating" control renders when the user has an active
-  // in-access-window reservation; PrairieTest enforces the center/course opt-in
-  // when a report is actually submitted.
+  // in-access-window reservation whose owning center/course has opted in;
+  // PrairieTest re-checks the opt-in when a report is actually submitted.
   res.locals.cheating_report_reservation_id = info.cheating_report_reservation_id;
 
   // API requests skip session middleware, so `req.session` can be absent at runtime.

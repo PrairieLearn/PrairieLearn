@@ -1,10 +1,14 @@
 columns
+    center_id: bigint
     filter_networks: boolean not null default false
     id: bigint not null default nextval('pt_locations_id_seq'::regclass)
     lockdown_browser_enabled: boolean not null default false
 
 indexes
     pt_locations_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pt_locations_center_id_fkey: FOREIGN KEY (center_id) REFERENCES pt_centers(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     pt_location_networks: FOREIGN KEY (location_id) REFERENCES pt_locations(id) ON UPDATE CASCADE ON DELETE CASCADE
