@@ -34,12 +34,13 @@ const SOFT_DELETE_CASCADE_EXCEPTIONS: Record<string, string[]> = {
   // into what happened on the assessment instance. In the future, assessment instances
   // may be soft-deleted, which would allow us to retain the grading jobs.
   grading_jobs: [
+    'submission_id',
+
     // These user columns are covered by the `users` rationale above.
     'auth_user_id',
     'deleted_by',
     'graded_by',
     'grading_request_canceled_by',
-    'submission_id',
   ],
 };
 
