@@ -54,10 +54,12 @@ function makeMember({
 function makeIndex(
   members: ContextMembership[],
   uinAttribute: string | null = CUSTOM_UIN_ATTRIBUTE,
+  { resourceLinkId = 'resource-link-id' }: { resourceLinkId?: string | null } = {},
 ) {
   return new Lti13MembershipIndex(members, {
     institution_id: 'institution',
     uin_attribute: uinAttribute,
+    allowLegacyFallbackWithoutUin: !resourceLinkId,
   });
 }
 
@@ -107,6 +109,38 @@ describe('Lti13MembershipIndex', () => {
         email: user.email ?? undefined,
       }),
     ]);
+
+    expect(index.lookup(user)).toBeNull();
+  });
+
+  test('temporarily falls back without an RLID when the roster has no usable UIN data', () => {
+    const user = makeUser('missing-rlid', {
+      lti13_sub: 'stored-sub',
+      uin: 'matching-uin',
+    });
+    const index = makeIndex([makeMember({ sub: 'stored-sub' })], CUSTOM_UIN_ATTRIBUTE, {
+      resourceLinkId: null,
+    });
+
+    expect(index.lookup(user)).toMatchObject({ user_id: 'stored-sub' });
+  });
+
+  test('does not use the no-RLID fallback when the roster contains usable UIN data', () => {
+    const user = makeUser('missing-rlid-with-uin-data', {
+      lti13_sub: 'stale-sub',
+      uin: 'matching-uin',
+    });
+    const index = makeIndex(
+      [
+        makeMember({
+          sub: 'current-sub',
+          uin: 'different-uin',
+          email: user.email ?? undefined,
+        }),
+      ],
+      CUSTOM_UIN_ATTRIBUTE,
+      { resourceLinkId: null },
+    );
 
     expect(index.lookup(user)).toBeNull();
   });

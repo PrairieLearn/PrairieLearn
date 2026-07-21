@@ -825,7 +825,13 @@ async function loadLti13MembershipIndex(
 
   const memberships = parseContextMemberships(rawRosterPages, lti13_course_instance.context_id);
 
-  return new Lti13MembershipIndex(memberships, lti13_instance);
+  return new Lti13MembershipIndex(memberships, {
+    institution_id: lti13_instance.institution_id,
+    uin_attribute: lti13_instance.uin_attribute,
+    // TODO(2027-01-01): Remove this compatibility fallback after existing course
+    // instances have had a full fall term to capture resource link IDs.
+    allowLegacyFallbackWithoutUin: !lti13_course_instance.resource_link_id,
+  });
 }
 
 export async function updateLti13Scores({

@@ -134,23 +134,35 @@ export function analyzeRosterMemberUin(
  * configured UIN require a unique institution-scoped UIN and any stored sub to
  * resolve to one member; roster email is ignored. Integrations without a UIN
  * retain the best-effort stored-sub-then-email lookup. Duplicate subs, UINs, and
- * matched emails fail closed. This index preserves per-student passback isolation;
- * roster sync must instead reject the entire snapshot when an in-scope member
- * lacks a usable UIN, has conflicting UIN values, or shares a sub or UIN.
+ * matched emails fail closed. Grade passback may temporarily opt into legacy
+ * matching when no RLID was stored and the roster has no usable UIN data. This
+ * index preserves per-student passback isolation; roster sync must instead reject
+ * the entire snapshot when an in-scope member lacks a usable UIN, has conflicting
+ * UIN values, or shares a sub or UIN.
  */
 export class Lti13MembershipIndex {
   // null marks an identity key shared by multiple roster entries.
   #membershipsByEmail = new Map<string, ContextMembership | null>();
   #membershipsBySub = new Map<string, ContextMembership | null>();
   #membershipsByUin = new Map<string, ContextMembership | null>();
+  #allowLegacyFallbackWithoutUin: boolean;
   #institutionId: string;
   #uinAttribute: string | null;
 
   constructor(
     memberships: ContextMembership[],
-    { institution_id, uin_attribute }: { institution_id: string; uin_attribute: string | null },
+    {
+      institution_id,
+      uin_attribute,
+      allowLegacyFallbackWithoutUin,
+    }: {
+      institution_id: string;
+      uin_attribute: string | null;
+      allowLegacyFallbackWithoutUin: boolean;
+    },
   ) {
     this.#institutionId = institution_id;
+    this.#allowLegacyFallbackWithoutUin = allowLegacyFallbackWithoutUin;
     // Cleared optional admin fields may be stored as empty strings; LTI auth
     // treats an empty UIN attribute as unconfigured too.
     this.#uinAttribute = uin_attribute || null;
@@ -193,7 +205,13 @@ export class Lti13MembershipIndex {
   }
 
   lookup(user: Lti13MembershipLookupUser): ContextMembership | null {
-    if (this.#uinAttribute !== null) {
+    // Only fall back without an RLID when no roster member has a usable UIN.
+    // Otherwise, keep strict UIN matching, including for ambiguous UINs.
+    const useConfiguredUin =
+      this.#uinAttribute !== null &&
+      (!this.#allowLegacyFallbackWithoutUin || this.#membershipsByUin.size > 0);
+
+    if (useConfiguredUin) {
       // A configured UIN is the trusted identity key; missing or conflicting
       // UIN data must fail closed rather than falling back to roster email.
       return this.#lookupWithUin(user);
