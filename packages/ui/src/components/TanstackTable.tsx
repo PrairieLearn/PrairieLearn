@@ -497,6 +497,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
  * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
  * @param params.onResetColumnFilters - Callback that if provided, adds a clear filters control.
+ * @param params.activeColumnFilterIds - Active column filters to summarize in the clear filters control.
  */
 export function TanstackTableCard<RowDataModel>({
   table,
@@ -510,6 +511,7 @@ export function TanstackTableCard<RowDataModel>({
   downloadButtonOptions,
   statusContent,
   onResetColumnFilters,
+  activeColumnFilterIds,
   className,
   ...divProps
 }: {
@@ -532,6 +534,7 @@ export function TanstackTableCard<RowDataModel>({
   > & { pluralLabel?: string; singularLabel?: string };
   statusContent?: ReactNode;
   onResetColumnFilters?: () => void;
+  activeColumnFilterIds?: string[];
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -561,6 +564,27 @@ export function TanstackTableCard<RowDataModel>({
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
 
+  const activeColumnFilterLabels = useMemo(
+    () =>
+      (activeColumnFilterIds ?? []).map((id) => {
+        const header = table.getColumn(id)?.columnDef.header;
+        return typeof header === 'string' ? header : id;
+      }),
+    [activeColumnFilterIds, table],
+  );
+
+  const clearFiltersTooltip =
+    activeColumnFilterLabels.length > 0
+      ? `Clear filters: ${activeColumnFilterLabels.join(', ')}`
+      : 'Clear filters';
+  const activeColumnFilterSummary =
+    activeColumnFilterIds == null
+      ? 'Filters'
+      : `${activeColumnFilterIds.length} filter${activeColumnFilterIds.length === 1 ? '' : 's'}`;
+  const clearFiltersLabel =
+    activeColumnFilterIds == null
+      ? 'Clear filters'
+      : `Clear ${activeColumnFilterSummary} applied to columns`;
   return (
     <div className={clsx('card d-flex flex-column', className)} {...divProps}>
       <div className="card-header bg-primary text-white">
@@ -619,14 +643,15 @@ export function TanstackTableCard<RowDataModel>({
         </div>
         <div className="ms-auto d-flex align-items-center gap-1 text-muted text-nowrap">
           {onResetColumnFilters && (
-            <OverlayTrigger overlay={<Tooltip>Clear filters</Tooltip>}>
+            <OverlayTrigger overlay={<Tooltip>{clearFiltersTooltip}</Tooltip>}>
               <button
                 type="button"
-                className="btn btn-link btn-sm text-muted p-0"
-                aria-label="Clear filters"
+                className="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+                aria-label={clearFiltersLabel}
                 onClick={onResetColumnFilters}
               >
-                <i className="bi bi-x-circle" aria-hidden="true" />
+                <i className="bi bi-funnel-fill" aria-hidden="true" />
+                <span>{activeColumnFilterSummary}</span>
               </button>
             </OverlayTrigger>
           )}
