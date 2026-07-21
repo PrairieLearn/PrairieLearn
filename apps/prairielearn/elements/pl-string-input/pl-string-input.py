@@ -13,6 +13,7 @@ import prairielearn as pl
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+    EMBED = "embed"
 
 
 class CorrectAnswerFormat(Enum):
@@ -119,8 +120,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         DisplayType.BLOCK if multiline else DISPLAY_DEFAULT,
     )
 
-    if display is DisplayType.INLINE and multiline:
-        raise ValueError('Display cannot be "inline" for multiline input.')
+    if display in (DisplayType.INLINE, DisplayType.EMBED) and multiline:
+        raise ValueError('Display cannot be "inline" or "embed" for multiline input.')
 
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
@@ -139,6 +140,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         show_help_text = pl.get_boolean_attrib(
             element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
         )
+        size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
         html_params = {
             "question": True,
@@ -149,10 +151,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "info": info,
             "placeholder": placeholder,
-            "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
+            "size": size,
+            "embed_input_style": (
+                f"width: {size}px; flex: 0 0 {size}px;"
+                if display is DisplayType.EMBED
+                else None
+            ),
             "show_info": show_help_text,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
             "raw_submitted_answer": raw_submitted_answer,
             "parse_error": parse_error,
             "multiline": multiline,
@@ -161,6 +169,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         return chevron.render(template, html_params).strip()
 
@@ -173,6 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "multiline": multiline,
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -195,6 +206,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         return chevron.render(template, html_params).strip()
 

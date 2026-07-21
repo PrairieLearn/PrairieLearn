@@ -1,5 +1,6 @@
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
+{{#embed}}<span class="d-inline-block pl-integer-input-embed {{#embed_correct}}pl-input-embed-correct{{/embed_correct}}{{#embed_partial}}pl-input-embed-partial{{/embed_partial}}{{#embed_incorrect}}pl-input-embed-incorrect{{/embed_incorrect}}{{#parse_error}}pl-input-embed-invalid{{/parse_error}}">{{/embed}}
     <span class="input-group pl-integer-input">
         {{#label}}
         <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
@@ -10,9 +11,10 @@
             inputmode="{{#use_numeric}}numeric{{/use_numeric}}{{^use_numeric}}text{{/use_numeric}}"
             autocomplete="off"
             autocorrect="off"
-            class="form-control pl-integer-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+            class="form-control pl-integer-input-input {{#parse_error}}{{^embed}}has-validation is-invalid{{/embed}}{{/parse_error}}"
             {{#parse_error}}aria-invalid="true"{{/parse_error}}
             size="{{size}}"
+            {{#embed_input_style}}style="{{embed_input_style}}"{{/embed_input_style}}
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             placeholder="{{placeholder}}"
@@ -29,24 +31,30 @@
             <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
         {{/show_info}}
-        {{#correct}}
+        {{^embed_feedback}}{{#correct}}
             <span class="input-group-text">
                 <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
             </span>
-        {{/correct}}
-        {{#partial}}
+        {{/correct}}{{/embed_feedback}}
+        {{^embed_feedback}}{{#partial}}
             <span class="input-group-text">
                 <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
             </span>
-        {{/partial}}
-        {{#incorrect}}
+        {{/partial}}{{/embed_feedback}}
+        {{^embed_feedback}}{{#incorrect}}
             <span class="input-group-text">
                 <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
             </span>
-        {{/incorrect}}
+        {{/incorrect}}{{/embed_feedback}}
     </span>
+    {{#embed_feedback}}
+        {{#embed_correct}}<span class="pl-input-embed-feedback text-success" title="Correct"><i class="fas fa-check" aria-hidden="true"></i></span>{{/embed_correct}}
+        {{#embed_partial}}<span class="pl-input-embed-feedback text-warning" title="Partially correct"><i class="far fa-circle" aria-hidden="true"></i></span>{{/embed_partial}}
+        {{#embed_incorrect}}<span class="pl-input-embed-feedback text-danger" title="Incorrect"><i class="fas fa-times" aria-hidden="true"></i></span>{{/embed_incorrect}}
+        {{#parse_error}}<span class="pl-input-embed-feedback text-danger" title="Invalid format"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></span>{{/parse_error}}
+    {{/embed_feedback}}
     {{#parse_error}}
-        <span class="invalid-feedback d-block">
+        <span class="invalid-feedback {{#embed_feedback}}visually-hidden{{/embed_feedback}}{{^embed_feedback}}d-block{{/embed_feedback}}">
             <span class="badge text-bg-danger">
                 Invalid 
                 <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
@@ -66,18 +74,19 @@
         </span>
     {{/parse_error}}
 {{#inline}}</span>{{/inline}}
+{{#embed}}</span>{{/embed}}
 {{/question}}
 
 
 {{#submission}}
-{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}{{#embed}}<span class="d-inline-block pl-integer-input-embed pl-input-embed-submission {{#embed_correct}}pl-input-embed-correct{{/embed_correct}}{{#embed_partial}}pl-input-embed-partial{{/embed_partial}}{{#embed_incorrect}}pl-input-embed-incorrect{{/embed_incorrect}}{{#parse_error}}pl-input-embed-invalid{{/parse_error}}{{#missing_input}}pl-input-embed-invalid{{/missing_input}}">{{/embed}}
 {{#error}}
 <span>
 
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <span class="small" style="white-space: nowrap">
+    <span class="{{#embed_feedback}}visually-hidden{{/embed_feedback}}{{^embed_feedback}}small{{/embed_feedback}}" style="white-space: nowrap">
         <span class="badge text-bg-danger">
             Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
@@ -97,7 +106,7 @@
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <span class="small" style="white-space: nowrap">
+    <span class="{{#embed_feedback}}visually-hidden{{/embed_feedback}}{{^embed_feedback}}small{{/embed_feedback}}" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing input 
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
@@ -124,19 +133,26 @@
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{^embed_feedback}}{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}{{/embed_feedback}}
+{{^embed_feedback}}{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}{{/embed_feedback}}
+{{^embed_feedback}}{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}{{/embed_feedback}}
 {{/error}}
-{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
+{{#embed_feedback}}
+    {{#embed_correct}}<span class="pl-input-embed-feedback text-success" title="Correct"><i class="fas fa-check" aria-hidden="true"></i></span>{{/embed_correct}}
+    {{#embed_partial}}<span class="pl-input-embed-feedback text-warning" title="Partially correct"><i class="far fa-circle" aria-hidden="true"></i></span>{{/embed_partial}}
+    {{#embed_incorrect}}<span class="pl-input-embed-feedback text-danger" title="Incorrect"><i class="fas fa-times" aria-hidden="true"></i></span>{{/embed_incorrect}}
+    {{#parse_error}}<span class="pl-input-embed-feedback text-danger" title="Invalid format"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></span>{{/parse_error}}
+    {{#missing_input}}<span class="pl-input-embed-feedback text-danger" title="Missing input"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></span>{{/missing_input}}
+{{/embed_feedback}}
+{{#inline}}</span>{{/inline}}{{#embed}}</span>{{/embed}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
-{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}{{#embed}}<span class="d-inline-block">{{/embed}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_tru}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
+{{#inline}}</span>{{/inline}}{{#embed}}</span>{{/embed}}{{#block}}</div>{{/block}}
 {{/answer}}
 
 {{#format}}

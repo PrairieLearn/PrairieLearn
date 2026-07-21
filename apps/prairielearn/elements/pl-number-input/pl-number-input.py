@@ -14,6 +14,7 @@ from prairielearn.to_precision import to_precision
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+    EMBED = "embed"
 
 
 class ComparisonType(Enum):
@@ -207,6 +208,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
         parse_error = data["format_errors"].get(name, None)
+        size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
         html_params = {
             "question": True,
@@ -215,17 +217,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
-            "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
+            "size": size,
+            "embed_input_style": (
+                f"width: {size}px; flex: 0 0 {size}px;"
+                if display is DisplayType.EMBED
+                else None
+            ),
             "uuid": pl.get_uuid(),
             "show_score": show_score,
             "parse_error": parse_error,
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
             "raw_submitted_answer": raw_submitted_answer,
         }
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         # Get comparison parameters and info strings
         comparison = pl.get_enum_attrib(
@@ -332,6 +342,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "show_score": show_score,
             display.value: True,
+            "embed_feedback": display is DisplayType.EMBED,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -362,6 +373,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            if display is DisplayType.EMBED:
+                html_params[f"embed_{score_type}"] = True
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False

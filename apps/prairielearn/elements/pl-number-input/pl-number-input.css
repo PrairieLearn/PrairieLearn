@@ -15,3 +15,67 @@
 .pl-number-input-input {
   height: auto;
 }
+
+.pl-number-input-embed .pl-number-input {
+  width: auto;
+}
+
+.pl-number-input-embed .pl-number-input-input {
+  padding: 0 1px;
+  margin: 0;
+}
+
+.pl-number-input-embed {
+  position: relative;
+}
+
+.pl-number-input-embed.pl-input-embed-correct .pl-number-input-input {
+  border-color: var(--bs-success);
+}
+
+.pl-number-input-embed.pl-input-embed-partial .pl-number-input-input {
+  border-color: var(--bs-warning);
+}
+
+.pl-number-input-embed.pl-input-embed-incorrect .pl-number-input-input,
+.pl-number-input-embed.pl-input-embed-invalid .pl-number-input-input {
+  border-color: var(--bs-danger);
+}
+
+.pl-number-input-embed .pl-input-embed-feedback {
+  position: absolute;
+  top: -0.65rem;
+  right: -0.45rem;
+  z-index: 2;
+  font-size: 0.7rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.pl-number-input-embed.pl-input-embed-submission samp,
+.pl-number-input-embed.pl-input-embed-submission code {
+  display: inline-block;
+  min-width: 1.25rem;
+  padding: 0 0.25rem;
+  text-align: center;
+}
+
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-correct samp,
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-correct code {
+  border: 1px solid var(--bs-success);
+  border-radius: 0.25rem;
+}
+
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-partial samp,
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-partial code {
+  border: 1px solid var(--bs-warning);
+  border-radius: 0.25rem;
+}
+
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-incorrect samp,
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-incorrect code,
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-invalid samp,
+.pl-number-input-embed.pl-input-embed-submission.pl-input-embed-invalid code {
+  border: 1px solid var(--bs-danger);
+  border-radius: 0.25rem;
+}

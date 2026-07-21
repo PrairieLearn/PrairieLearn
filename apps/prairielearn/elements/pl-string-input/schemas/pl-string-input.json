@@ -21,7 +21,7 @@
     },
     "display": {
       "type": "string",
-      "enum": ["block", "inline"]
+      "enum": ["block", "inline", "embed"]
     },
     "escape-unicode": {
       "type": "string",
