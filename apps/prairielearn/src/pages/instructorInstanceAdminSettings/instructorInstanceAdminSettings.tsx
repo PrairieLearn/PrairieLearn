@@ -21,6 +21,7 @@ import {
   getSelfEnrollmentLinkUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../lib/course-instances.shared.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -240,10 +241,7 @@ router.post(
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
 
       if (existingShortNames.includes(short_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this short name already exists',
-        );
+        throw new error.HttpStatusError(400, DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR);
       }
 
       const updatedCourseInstance = {

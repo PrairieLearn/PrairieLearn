@@ -24,6 +24,7 @@ import {
   getCourseInstanceEditErrorUrl,
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../../lib/course-instances.shared.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { InstanceAdminSettingsError } from '../../../trpc/courseInstance/instance-admin-settings.js';
@@ -155,11 +156,13 @@ export function CopyCourseInstanceModal({
     },
     onError: (error, variables) => {
       // Map the short-name conflict back to its field, block the rejected value,
-      // and return to the settings step so the user lands where the fix is.
-      if (error.message === 'A course instance with this short name already exists') {
+      // and return to the settings step so the user lands where the fix is. Reset
+      // the mutation so the message shows only on the field, not also in the alert.
+      if (error.message === DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR) {
         setTakenShortNames((prev) => new Set(prev).add(variables.short_name.trim().toLowerCase()));
         setError('short_name', { type: 'server', message: error.message });
         setStep('settings');
+        copyMutation.reset();
       }
     },
   });
@@ -341,7 +344,7 @@ function SettingsStep({
               },
               duplicate: (value) =>
                 !takenShortNames.has(value.trim().toLowerCase()) ||
-                'A course instance with this short name already exists',
+                DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR,
             },
           })}
         />
