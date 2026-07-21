@@ -32,10 +32,6 @@ const parseErrorCases = [
     latex: '@',
     message: "'@' cannot be used here.",
   },
-  {
-    latex: String.raw`x\left(5x^2+2x+1\right.`,
-    message: String.raw`'\left' is not a recognized symbol.`,
-  },
 ] as const;
 
 const backendErrorCases = [

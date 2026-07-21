@@ -482,8 +482,8 @@ importers:
         specifier: ^3.1079.0
         version: 3.1079.0(@aws-sdk/client-s3@3.1079.0)
       '@cortex-js/compute-engine':
-        specifier: ^0.63.0
-        version: 0.63.0
+        specifier: ^0.69.1
+        version: 0.69.1
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3201,8 +3201,8 @@ packages:
     resolution: {integrity: sha512-lWnZ34gtFpUDpFmEMdsL+5HJuh7hyj0DoaZhVTFnVtGX2Rf7qFyD+zgTs1vY9h2qhcpKymiakE6evvWzI6kwtA==}
     engines: {node: '>=21.7.3', npm: '>=10.5.0'}
 
-  '@cortex-js/compute-engine@0.63.0':
-    resolution: {integrity: sha512-tfEZtZeDXp+IJclYT62MTz291ypyCjoMAqj2HnopRxEqjd94RBkdzqCluPPYAStPAEESmBuFVXF+hQWpCl5FNQ==}
+  '@cortex-js/compute-engine@0.69.1':
+    resolution: {integrity: sha512-jUrCSSumfi/UnbbhbkAVM1WjZmFicOnFmtpGxJlVsBEupx1+MuT80+dIcxQqrUN6xtmUNb9nfkHrjmCrLluerg==}
     engines: {node: '>=21.7.3', npm: '>=10.5.0'}
 
   '@cropper/element-canvas@2.1.1':
@@ -11410,7 +11410,7 @@ snapshots:
       complex-esm: 2.1.1-esm1
       decimal.js: 10.6.0
 
-  '@cortex-js/compute-engine@0.63.0':
+  '@cortex-js/compute-engine@0.69.1':
     dependencies:
       '@arnog/colors': 0.5.0
       complex-esm: 2.1.1-esm1
