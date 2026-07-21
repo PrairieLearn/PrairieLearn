@@ -18,7 +18,7 @@ import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate } from '../utils/dateUtils.js';
 
-type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
+type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'credit';
 
 const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
@@ -32,9 +32,9 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
     description: 'No credit is given for practice submissions',
   },
   {
-    value: 'partial_credit',
-    label: 'Allow submissions for partial credit',
-    description: 'Students receive partial credit for submissions',
+    value: 'credit',
+    label: 'Allow submissions for credit',
+    description: 'Students receive the selected credit for submissions',
   },
 ];
 
@@ -54,14 +54,17 @@ function getLastDeadlineNoun(lateDeadlines: DeadlineEntry[]): string {
 function getMode(value: AfterLastDeadlineValue): AfterLastDeadlineMode {
   if (!value.allowSubmissions) return 'no_submissions';
   if (value.credit === 0) return 'practice_submissions';
-  return 'partial_credit';
+  return 'credit';
 }
 
-function getDefaultPartialCredit(precedingCredit: number | undefined): number {
+function getDefaultCredit(precedingCredit: number | undefined): number {
   // Match late-deadline defaults: choose 10 points below the preceding credit,
-  // capping bonus-credit anchors at 100 and keeping partial credit positive.
-  const anchor = precedingCredit === undefined ? 100 : Math.min(precedingCredit, 100);
-  return Math.max(1, Math.min(anchor - 10, 99));
+  // capping bonus-credit anchors and keeping the default credit positive.
+  const anchor =
+    precedingCredit === undefined || !Number.isFinite(precedingCredit)
+      ? 100
+      : Math.min(precedingCredit, 100);
+  return Math.max(1, anchor - 10);
 }
 
 /**
@@ -144,11 +147,25 @@ function AfterLastDeadlineInput({
   // explicitly. Use primitives (not object refs) so the effect is stable.
   const precedingCredit =
     lateDeadlines.at(-1)?.credit ?? (dueDate != null ? effectiveDueCredit : undefined);
+  // Credit may equal the due credit only when there are no late deadlines.
+  const maximumCredit =
+    precedingCredit === undefined || !Number.isFinite(precedingCredit)
+      ? 100
+      : Math.min(
+          100,
+          lateDeadlines.length > 0 ? Math.max(0, precedingCredit - 1) : precedingCredit,
+        );
+  // Preserve an existing invalid selection so its validation error remains
+  // visible, but don't offer credit mode when only 0% practice credit is valid.
+  const modeItems =
+    maximumCredit > 0 || mode === 'credit'
+      ? AFTER_LAST_DEADLINE_ITEMS
+      : AFTER_LAST_DEADLINE_ITEMS.filter((item) => item.value !== 'credit');
   useEffect(() => {
-    if (mode === 'partial_credit') {
+    if (mode === 'credit') {
       void trigger(creditFieldPath);
     }
-  }, [trigger, creditFieldPath, mode, precedingCredit]);
+  }, [trigger, creditFieldPath, mode, precedingCredit, lateDeadlines.length]);
 
   // For overrides we can't fully reason about the effective deadlines (override
   // stacking may produce a different set), so we fall back to a generic label.
@@ -181,13 +198,13 @@ function AfterLastDeadlineInput({
       case 'practice_submissions':
         onChange({ allowSubmissions: true, credit: 0 });
         break;
-      case 'partial_credit':
+      case 'credit':
         onChange({
           allowSubmissions: true,
           credit:
             value.allowSubmissions && value.credit > 0
               ? value.credit
-              : getDefaultPartialCredit(precedingCredit),
+              : getDefaultCredit(precedingCredit),
         });
         break;
     }
@@ -201,7 +218,7 @@ function AfterLastDeadlineInput({
       <small className="text-muted d-block">{getLastDeadlineText()}</small>
       <div className="mb-2 mt-2">
         <RichSelect
-          items={AFTER_LAST_DEADLINE_ITEMS}
+          items={modeItems}
           value={mode}
           aria-label={label}
           id={`${idPrefix}-after-deadline-mode`}
@@ -216,7 +233,7 @@ function AfterLastDeadlineInput({
           unless you want students to keep working.
         </Alert>
       )}
-      {mode === 'partial_credit' && (
+      {mode === 'credit' && (
         <div className="mt-2">
           <div className="d-flex align-items-center gap-2 flex-wrap">
             <label
@@ -236,7 +253,7 @@ function AfterLastDeadlineInput({
                   creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
                 }
                 min="0"
-                max="99"
+                max={maximumCredit}
                 step={1}
                 placeholder="0"
                 isInvalid={!!creditError}
@@ -250,11 +267,11 @@ function AfterLastDeadlineInput({
             </InputGroup>
           </div>
           <Form.Text className="text-muted d-block">
-            Students will receive this percentage of credit for submissions after the deadline
+            Students will receive this percentage of credit for submissions after the last deadline
           </Form.Text>
         </div>
       )}
-      {/* Outside the partial_credit block so cross-field errors (e.g. "requires a due date") show in all modes. */}
+      {/* Outside the credit block so cross-field errors (e.g. "requires a due date") show in all modes. */}
       {creditError && (
         <Form.Text
           id={`${idPrefix}-after-deadline-credit-error`}

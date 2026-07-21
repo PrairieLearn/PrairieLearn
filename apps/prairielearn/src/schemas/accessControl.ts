@@ -15,10 +15,18 @@ export const MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS = 10;
 export const MAX_ACCESS_CONTROL_DURATION_MINUTES = 365 * 24 * 60;
 export const MAX_ACCESS_CONTROL_PASSWORD_LENGTH = 128;
 
-export const DeadlineEntryJsonSchema = z
+export const EarlyDeadlineJsonSchema = z
   .object({
     date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
-    credit: z.number().int().min(0).max(200).describe('Integer credit percentage to allow'),
+    // Early deadlines require due credit >= 100% and must offer more credit.
+    credit: z.number().int().min(101).max(200).describe('Integer bonus-credit percentage to allow'),
+  })
+  .strict();
+
+export const LateDeadlineJsonSchema = z
+  .object({
+    date: DatetimeLocalStringSchema.describe('Date as ISO String for additional deadline'),
+    credit: z.number().int().min(0).max(100).describe('Integer credit percentage to allow'),
   })
   .strict();
 
@@ -31,7 +39,7 @@ const AfterLastDeadlineJsonSchema = z.discriminatedUnion('allowSubmissions', [
   z
     .object({
       allowSubmissions: z.literal(true),
-      credit: z.number().int().min(0).max(99),
+      credit: z.number().int().min(0).max(100),
     })
     .strict(),
 ]);
@@ -68,13 +76,13 @@ const DateControlJsonSchema = z
       'Due date configuration. Overrides replace the entire due object atomically.',
     ),
     earlyDeadlines: z
-      .array(DeadlineEntryJsonSchema)
+      .array(EarlyDeadlineJsonSchema)
       .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()
       .describe('Array of early deadlines with credit as percentages'),
     lateDeadlines: z
-      .array(DeadlineEntryJsonSchema)
+      .array(LateDeadlineJsonSchema)
       .max(MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE)
       .nullable()
       .optional()

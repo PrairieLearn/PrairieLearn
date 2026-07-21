@@ -31,7 +31,8 @@ type DeadlineArrayFieldName =
   | `overrides.${number}.lateDeadlines`;
 
 function clampCredit(value: number, type: 'early' | 'late'): number {
-  return Math.max(0, Math.min(type === 'early' ? 200 : 99, value));
+  const minimum = type === 'early' ? 101 : 0;
+  return Math.max(minimum, Math.min(type === 'early' ? 200 : 100, value));
 }
 
 function computeNextDeadline({
@@ -98,21 +99,41 @@ function computeNextDeadline({
         'early',
       );
     }
-    // Anchor at min(dueCredit, 100) so dueCredit > 100 still lands on a clean
-    // 90 instead of clamping to 99.
+    // Cap the anchor so bonus due credit still produces a conventional reduced-credit default.
     const anchor = previousCredit ?? Math.min(dueCredit, 100);
     return clampCredit(anchor - 10, 'late');
   });
   return { date: defaultDate, credit: defaultCredit };
 }
 
-function getAddEarlyDisabledTitle(dueCredit: number): string | undefined {
-  if (dueCredit < 100) {
-    return 'Early deadlines are not allowed when due date credit is below 100%.';
+function getAddCreditDisabledTitle(
+  type: 'early' | 'late',
+  dueCredit: number,
+  deadlines: DeadlineEntry[],
+): string | undefined {
+  const previousCredit = deadlines.at(-1)?.credit;
+
+  if (previousCredit !== undefined && !Number.isFinite(previousCredit)) {
+    return `Enter a valid credit for the last ${type} deadline before adding another.`;
   }
-  if (dueCredit >= 200) {
-    return 'Early deadlines require credit above due credit, but due date credit is already 200%.';
+  if (!Number.isFinite(dueCredit) && (type === 'early' || previousCredit === undefined)) {
+    return 'Enter a valid due-date credit before adding a deadline.';
   }
+
+  if (type === 'early') {
+    if (dueCredit < 100) {
+      return 'Early deadlines are not allowed when due date credit is below 100%.';
+    }
+    if (dueCredit >= 200) {
+      return 'Early deadlines require credit above due credit, but due date credit is already 200%.';
+    }
+    if (previousCredit !== undefined && previousCredit <= dueCredit + 1) {
+      return 'No valid integer credit remains between the last early-deadline credit and due-date credit.';
+    }
+  } else if (previousCredit !== undefined && previousCredit <= 0) {
+    return 'No valid credit remains below the last late-deadline credit.';
+  }
+
   return undefined;
 }
 
@@ -156,10 +177,10 @@ function DeadlineArrayInput({
   const ruleEditable = useAccessControlRuleEditable();
   const { register, trigger } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
-  const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
+  const addCreditDisabledTitle = getAddCreditDisabledTitle(type, dueCredit, deadlines);
   const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, deadlineFields.length);
-  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
-  const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabledTitle = addCreditDisabledTitle ?? addLimitDisabledTitle;
+  const addCreditDisabled = addCreditDisabledTitle !== undefined;
   const addDisabled = addDisabledTitle !== undefined;
 
   const { errors } = useFormState();
@@ -249,9 +270,9 @@ function DeadlineArrayInput({
             id={`${idPrefix}-${type}-deadlines-enabled`}
             label={isEarly ? 'Early deadlines' : 'Late deadlines'}
             checked={deadlineFields.length > 0}
-            disabled={!ruleEditable || (addEarlyDisabled && deadlineFields.length === 0)}
+            disabled={!ruleEditable || (addCreditDisabled && deadlineFields.length === 0)}
             title={
-              addEarlyDisabled && deadlineFields.length === 0 ? addEarlyDisabledTitle : undefined
+              addCreditDisabled && deadlineFields.length === 0 ? addCreditDisabledTitle : undefined
             }
             onChange={(checked) => {
               if (checked) {
@@ -328,7 +349,7 @@ function DeadlineArrayInput({
                     if (previousCredit != null && Number.isFinite(previousCredit)) {
                       return clampCredit(previousCredit - 1, type);
                     }
-                    return type === 'early' ? 200 : clampCredit(dueCredit - 1, 'late');
+                    return type === 'early' ? 200 : clampCredit(dueCredit, 'late');
                   })}
                   step={1}
                   disabled={!ruleEditable}
@@ -497,10 +518,10 @@ export function OverrideDeadlineArrayField({
       displayTimezone,
     });
 
-  const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(effectiveDueCredit) : undefined;
+  const addCreditDisabledTitle = getAddCreditDisabledTitle(type, effectiveDueCredit, deadlines);
   const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, fields.length);
-  const addDisabledTitle = addEarlyDisabledTitle ?? addLimitDisabledTitle;
-  const addEarlyDisabled = addEarlyDisabledTitle !== undefined;
+  const addDisabledTitle = addCreditDisabledTitle ?? addLimitDisabledTitle;
+  const addCreditDisabled = addCreditDisabledTitle !== undefined;
   const addDisabled = addDisabledTitle !== undefined;
 
   return (
@@ -512,8 +533,8 @@ export function OverrideDeadlineArrayField({
           id={`${idPrefix}-${type}-deadlines-enabled`}
           label={label}
           checked={fields.length > 0}
-          disabled={!ruleEditable || (addEarlyDisabled && fields.length === 0)}
-          title={addEarlyDisabled && fields.length === 0 ? addEarlyDisabledTitle : undefined}
+          disabled={!ruleEditable || (addCreditDisabled && fields.length === 0)}
+          title={addCreditDisabled && fields.length === 0 ? addCreditDisabledTitle : undefined}
           onChange={(checked) => {
             if (checked) {
               append(nextDeadline());

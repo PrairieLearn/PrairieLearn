@@ -257,7 +257,7 @@ export function getGlobalDateValidationErrors(
     const dateIssues = validateRuleDateOrderingIssues(validationRule);
     const issueGroups = [validateRuleStructuralDependencyIssues(validationRule), dateIssues];
     // Credit ordering assumes deadlines are chronological; skip if dates are
-    // out of order to avoid misleading "credits must strictly decrease" errors.
+    // out of order to avoid misleading credit-ordering errors.
     if (dateIssues.length === 0) {
       issueGroups.push(validateRuleCreditOrderingIssues(validationRule));
     }
@@ -304,12 +304,12 @@ function validateDueDate(date: string | null): string | undefined {
 
 function validateIntegerCredit(
   credit: number,
-  { max, rangeMessage }: { max: number; rangeMessage: string },
+  { min, max, rangeMessage }: { min: number; max: number; rangeMessage: string },
 ): string | undefined {
   if (Number.isNaN(credit)) return 'Credit is required';
   if (!Number.isFinite(credit)) return 'Credit must be a finite number';
   if (!Number.isInteger(credit)) return 'Credit must be an integer';
-  if (credit < 0 || credit > max) return rangeMessage;
+  if (credit < min || credit > max) return rangeMessage;
   return undefined;
 }
 
@@ -319,6 +319,7 @@ function validateDueCredit(value: number | null, customCredit: boolean): string 
     return undefined;
   }
   return validateIntegerCredit(value, {
+    min: 0,
     max: 200,
     rangeMessage: 'Credit must be between 0% and 200%',
   });
@@ -393,9 +394,12 @@ function validateDeadlineCredit({
   value: number;
 }): string | undefined {
   return validateIntegerCredit(value, {
-    max: type === 'early' ? 200 : 99,
+    min: type === 'early' ? 101 : 0,
+    max: type === 'early' ? 200 : 100,
     rangeMessage:
-      type === 'early' ? 'Credit must be 0-200%' : 'Credit after the due date must be 0-99%',
+      type === 'early'
+        ? 'Early deadline credit must be 101-200%'
+        : 'Credit after the due date must be 0-100%',
   });
 }
 
@@ -434,8 +438,9 @@ function validateDeadlineArray({
 function validateAfterLastDeadlineCredit(value: AfterLastDeadlineValue): string | undefined {
   if (!value.allowSubmissions) return undefined;
   return validateIntegerCredit(value.credit, {
-    max: 99,
-    rangeMessage: 'Credit after the due date must be 0-99%',
+    min: 0,
+    max: 100,
+    rangeMessage: 'Credit after the due date must be 0-100%',
   });
 }
 

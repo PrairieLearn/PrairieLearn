@@ -3,7 +3,11 @@ import { z } from 'zod';
 
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
-import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
+import {
+  AccessControlJsonSchema,
+  EarlyDeadlineJsonSchema,
+  LateDeadlineJsonSchema,
+} from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -56,7 +60,8 @@ const namedDefinitions = {
   CommentJsonSchema,
   DatetimeLocalStringSchema,
   AccessControlJsonSchema,
-  DeadlineEntryJsonSchema,
+  EarlyDeadlineJsonSchema,
+  LateDeadlineJsonSchema,
   ColorJsonSchema,
   PointsJsonSchema,
   PointsListJsonSchema,
