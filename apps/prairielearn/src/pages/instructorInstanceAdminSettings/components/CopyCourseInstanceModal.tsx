@@ -60,7 +60,7 @@ export function CopyCourseInstanceModal({
   courseShortName: string;
   isAdministrator: boolean;
   accessControlMigrationNeeded: boolean;
-  names: { short_name: string; long_name: string | null }[];
+  names: { short_name: string }[];
 }) {
   const [step, setStep] = useState<Step>('settings');
 

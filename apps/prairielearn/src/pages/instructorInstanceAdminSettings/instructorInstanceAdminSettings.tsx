@@ -72,7 +72,7 @@ router.get(
     const names = await sqldb.queryRows(
       sql.select_names,
       { course_id: course.id },
-      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+      z.object({ short_name: z.string() }),
     );
     const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
@@ -236,7 +236,7 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+        z.object({ short_name: z.string() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
 

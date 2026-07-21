@@ -29,7 +29,7 @@ interface InstructorInstanceAdminSettingsProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
-  names: { short_name: string; long_name: string | null }[];
+  names: { short_name: string }[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
