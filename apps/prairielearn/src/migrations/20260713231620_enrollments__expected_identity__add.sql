@@ -1,4 +1,7 @@
 ALTER TABLE enrollments
+ADD COLUMN is_guest BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE enrollments
 ADD COLUMN pending_uin TEXT;
 
 -- These replace pending_lti13_name and pending_lti13_email. The old columns are
@@ -14,15 +17,6 @@ ADD COLUMN pending_email TEXT;
 -- retained for rolling-deploy compatibility and can be dropped later.
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_course_instance_id BIGINT;
-
--- Keep the FALSE default during this compatibility stage so old application
--- processes never receive NULL. After nullable readers are fully deployed, one
--- follow-up PR can drop the default so new rows receive NULL. Once that is fully
--- deployed, another PR can enqueue a batched FALSE-to-NULL rewrite, and a final
--- PR can finalize the backfill and enforce the pending-row rule.
-ALTER TABLE enrollments
-ALTER COLUMN lti_managed
-DROP NOT NULL;
 
 -- PostgreSQL does not support removing an enum value without recreating the enum
 -- and rewriting the column. Keep the legacy value in the database enum, but make
@@ -78,12 +72,6 @@ ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_lti13_sub_requires_uin CHECK (
   pending_lti13_sub IS NULL
   OR pending_uin IS NOT NULL
-) NOT VALID;
-
-ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_rejected_not_lti_managed CHECK (
-  status != 'rejected'
-  OR lti_managed IS NOT TRUE
 ) NOT VALID;
 
 ALTER TABLE enrollments
