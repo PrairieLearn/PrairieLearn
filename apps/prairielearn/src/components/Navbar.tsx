@@ -621,7 +621,6 @@ function AuthnOverrides({
         type="email"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
-        style="min-width: 12rem;"
         aria-label="UID"
       />
       <button
