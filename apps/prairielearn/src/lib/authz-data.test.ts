@@ -174,6 +174,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       status: 'joined',
       pending_uid: null,
       first_joined_at: null,
+      is_guest: false,
       lti_managed: false,
       pending_lti13_course_instance_id: null,
       pending_lti13_email: null,
