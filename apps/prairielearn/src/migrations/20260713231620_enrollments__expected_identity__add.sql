@@ -55,11 +55,8 @@ ADD CONSTRAINT enrollments_pending_fields_null_if_resolved CHECK (
     AND pending_uin IS NULL
     AND pending_name IS NULL
     AND pending_email IS NULL
-    AND pending_lti13_name IS NULL
-    AND pending_lti13_email IS NULL
     AND pending_lti13_sub IS NULL
     AND pending_lti13_course_instance_id IS NULL
-    AND pending_lti13_instance_id IS NULL
   )
 ) NOT VALID;
 

@@ -29,7 +29,7 @@ indexes
 check constraints
     enrollments_lti13_sub_course_instance_id_pair: CHECK ((pending_lti13_sub IS NULL) = (pending_lti13_course_instance_id IS NULL))
     enrollments_lti13_sub_requires_uin: CHECK (pending_lti13_sub IS NULL OR pending_uin IS NOT NULL)
-    enrollments_pending_fields_null_if_resolved: CHECK (user_id IS NULL OR pending_uid IS NULL AND pending_uin IS NULL AND pending_name IS NULL AND pending_email IS NULL AND pending_lti13_name IS NULL AND pending_lti13_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_course_instance_id IS NULL AND pending_lti13_instance_id IS NULL)
+    enrollments_pending_fields_null_if_resolved: CHECK (user_id IS NULL OR pending_uid IS NULL AND pending_uin IS NULL AND pending_name IS NULL AND pending_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_course_instance_id IS NULL)
     enrollments_pending_identity_required: CHECK (user_id IS NOT NULL OR pending_uid IS NOT NULL OR pending_uin IS NOT NULL)
     enrollments_status_not_lti13_pending: CHECK (status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_user_id_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (user_id IS NULL))
