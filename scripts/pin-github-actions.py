@@ -26,7 +26,7 @@ def make_request(url: str) -> Any:
 
     req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             return json.loads(response.read().decode())
     except Exception as e:
         print(f"API Error on {url}: {e}", file=sys.stderr)
@@ -89,6 +89,9 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
     for action_name, tag in matches:
         if len(tag) == 40 and all(c in string.hexdigits for c in tag):
             sha = tag  # Already a SHA, no need to fetch
+        elif check_only:
+            print(f"Action {action_name}@{tag} is not pinned to a commit SHA.")
+            sys.exit(1)
         else:
             cache_key = f"{action_name}@{tag}"
             if cache_key not in hash_cache:
@@ -107,6 +110,7 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
             resolved_tag = get_tag_from_hash(action_name, sha)
             if resolved_tag:
                 tag_cache[tag_cache_key] = resolved_tag
+        # Purposely override original tag with "tag not found" if it wasn't resolved, to avoid misleading comments
         resolved_tag = tag_cache.get(tag_cache_key) or "tag not found"
 
         # Replace the tag with the SHA and add a comment indicating the original tag
