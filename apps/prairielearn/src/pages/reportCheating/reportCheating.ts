@@ -85,7 +85,12 @@ router.post(
       return;
     }
 
-    const jwt = await signPrairieTestJwt({ user_id, reservation_id, report });
+    const jwt = await signPrairieTestJwt({
+      purpose: 'cheating_report',
+      user_id,
+      reservation_id,
+      report,
+    });
 
     // 'ok' → filed; 'declined' → PT rejected it (most often the center/course
     // hasn't enabled reports, since we show the button for any active exam);

@@ -120,7 +120,11 @@ router.post(
       return;
     }
 
-    const jwt = await signPrairieTestJwt({ user_id, reservation_id: reservation.id });
+    const jwt = await signPrairieTestJwt({
+      purpose: 'end_exam',
+      user_id,
+      reservation_id: reservation.id,
+    });
 
     // Only exit LDB once PT confirms the reservation ended — releasing the
     // student while it's still active would let them browse and return. On
