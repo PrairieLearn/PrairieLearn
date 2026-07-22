@@ -25,7 +25,7 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { getAiGradingSettingsUrl, getAssessmentQuestionTrpcUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
-import { UserSchema, UserSettingSchema } from '../../../lib/db-types.js';
+import { UserSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -37,6 +37,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-local
 import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectUserSettings } from '../../../models/user-settings.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -241,17 +242,7 @@ router.get(
       });
 
       const authn_user = UserSchema.parse(res.locals.authn_user);
-      const userSettings =
-        (await sqldb.queryOptionalRow(
-          sql.select_user_settings,
-          { user_id: authn_user.id },
-          UserSettingSchema,
-        )) ??
-        (await sqldb.queryRow(
-          sql.insert_user_settings,
-          { user_id: authn_user.id },
-          UserSettingSchema,
-        ));
+      const userSettings = await selectUserSettings({ user_id: authn_user.id });
 
       res.send(
         InstanceQuestionPage({
@@ -374,17 +365,7 @@ router.get(
           : undefined;
 
         const authn_user = UserSchema.parse(res.locals.authn_user);
-        const userSettings =
-          (await sqldb.queryOptionalRow(
-            sql.select_user_settings,
-            { user_id: authn_user.id },
-            UserSettingSchema,
-          )) ??
-          (await sqldb.queryRow(
-            sql.insert_user_settings,
-            { user_id: authn_user.id },
-            UserSettingSchema,
-          ));
+        const userSettings = await selectUserSettings({ user_id: authn_user.id });
 
         const gradingPanel = GradingPanel({
           ...locals,

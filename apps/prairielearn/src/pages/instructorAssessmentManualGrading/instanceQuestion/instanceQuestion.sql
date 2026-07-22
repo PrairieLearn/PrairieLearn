@@ -144,19 +144,3 @@ FROM
 WHERE
   ai.id = $assessment_instance_id
   AND s.credit IS NOT NULL;
-
--- BLOCK select_user_settings
-SELECT
-  *
-FROM
-  user_settings
-WHERE
-  user_id = $user_id;
-
--- BLOCK insert_user_settings
-INSERT INTO
-  user_settings (user_id)
-VALUES
-  ($user_id)
-RETURNING
-  *;

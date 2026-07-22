@@ -73,26 +73,3 @@ SELECT
   to_jsonb(old_row) - 'token'
 FROM
   old_row;
-
--- BLOCK select_user_settings
-SELECT
-  *
-FROM
-  user_settings
-WHERE
-  user_id = $user_id;
-
--- BLOCK insert_user_settings
-INSERT INTO
-  user_settings (user_id)
-VALUES
-  ($user_id)
-RETURNING
-  *;
-
--- BLOCK update_user_settings
-UPDATE user_settings
-SET
-  enable_keyboard_shortcut = $enable_keyboard_shortcut
-WHERE
-  user_id = $user_id;
