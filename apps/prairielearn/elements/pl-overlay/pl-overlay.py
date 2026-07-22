@@ -58,7 +58,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if halign not in HALIGN_VALUES:
                 raise ValueError(f'Unknown horizontal alignment "{halign}"')
         elif child.tag == "pl-background":
-            pl.check_attribs(child, required_attribs=[], optional_attribs=[])
+            pl.check_attribs(
+                child, required_attribs=[], optional_attribs=["aria-hidden"]
+            )
             num_backgrounds += 1
         else:
             raise ValueError(f'Unknown tag "{child.tag}" found as child of pl-overlay')
@@ -82,6 +84,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_float_attrib(element, "width", None)
     height = pl.get_float_attrib(element, "height", None)
     background = None
+    background_aria_hidden = False
 
     # Assign layer index in order children are defined
     # Later defined elements will be placed on top of earlier ones
@@ -95,6 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Don't do any special processing for backgrounds
         if child.tag == "pl-background":
             background = pl.inner_html(child)
+            background_aria_hidden = pl.get_boolean_attrib(child, "aria-hidden", False)
             continue
 
         # Otherwise, continue as normal
@@ -140,6 +144,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "height": height,
         "locations": locations,
         "background": background,
+        "background_aria_hidden": background_aria_hidden,
         "clip": pl.get_boolean_attrib(element, "clip", CLIP_DEFAULT),
     }
 
