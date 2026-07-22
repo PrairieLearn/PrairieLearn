@@ -242,7 +242,6 @@ function AfterLastDeadlineInput({
                 isInvalid={!!creditError}
                 disabled={!ruleEditable}
                 {...register(creditFieldPath, {
-                  shouldUnregister: true,
                   valueAsNumber: true,
                   deps: creditDeps,
                 })}

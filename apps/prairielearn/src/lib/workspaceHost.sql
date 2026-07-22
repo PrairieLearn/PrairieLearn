@@ -41,9 +41,38 @@ WITH
       wh.state = 'ready'
       AND wh.load_count < $capacity
     ORDER BY
+      -- Prefer a host with a workspace that is launching or running the requested image.
+      -- Randomize among equally preferred hosts to distribute their load.
+      EXISTS (
+        SELECT
+          1
+        FROM
+          workspaces AS existing_workspace
+          JOIN variants AS existing_variant ON (
+            existing_variant.workspace_id = existing_workspace.id
+          )
+          JOIN questions AS existing_question ON (
+            existing_question.id = existing_variant.question_id
+          )
+        WHERE
+          existing_workspace.workspace_host_id = wh.id
+          AND existing_workspace.state IN ('launching', 'running')
+          AND existing_question.workspace_image = (
+            SELECT
+              target_question.workspace_image
+            FROM
+              variants AS target_variant
+              JOIN questions AS target_question ON (target_question.id = target_variant.question_id)
+            WHERE
+              target_variant.workspace_id = $workspace_id
+          )
+      ) DESC,
       random()
+      -- Serialize assignments so capacity is rechecked after concurrent updates.
     LIMIT
       1
+    FOR NO KEY UPDATE OF
+      wh
   ),
   updated_workspace AS (
     UPDATE workspaces AS w
@@ -59,20 +88,12 @@ WITH
   updated_workspace_host AS (
     UPDATE workspace_hosts AS wh
     SET
-      load_count = (
-        SELECT
-          count(*)
-        FROM
-          workspaces AS w
-        WHERE
-          w.workspace_host_id = wh.id
-          AND (
-            w.state = 'running'
-            OR w.state = 'launching'
-          )
-      )
+      -- Data-modifying CTEs share a snapshot, so a count would not include the
+      -- assignment in `updated_workspace`. The host row lock makes this increment safe.
+      load_count = wh.load_count + 1
     FROM
       available_host AS ah
+      JOIN updated_workspace AS uw ON (uw.workspace_host_id = ah.id)
     WHERE
       wh.id = ah.id
     RETURNING
@@ -104,7 +125,7 @@ WITH
 SELECT
   id AS workspace_host_id
 FROM
-  available_host;
+  updated_workspace_host;
 
 -- BLOCK recapture_draining_hosts
 WITH
