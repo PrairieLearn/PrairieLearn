@@ -310,7 +310,7 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  is_guest: false,
+  lti_managed: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
   pending_lti13_email: null,
@@ -329,7 +329,7 @@ const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  is_guest: false,
+  lti_managed: false,
   pending_uid: null,
   status: 'joined',
   user_id: null,
@@ -449,7 +449,7 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   created_at: null,
   first_joined_at: null,
   id: '9',
-  is_guest: false,
+  lti_managed: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
   pending_lti13_email: null,
@@ -680,8 +680,13 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid RawStaffEnrollment and drops extra fields', () => {
-    const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
+    const parsed = RawStaffEnrollmentSchema.parse({
+      ...minimalRawStaffEnrollment,
+      extra: 123,
+      is_guest: true,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
   });
 
@@ -698,6 +703,7 @@ describe('safe-db-types schemas', () => {
 
   it('parses a RawStaffEnrollment after the legacy columns are dropped', () => {
     const {
+      lti_managed: _ltiManaged,
       pending_lti13_email: _pendingLti13Email,
       pending_lti13_instance_id: _pendingLti13InstanceId,
       pending_lti13_name: _pendingLti13Name,
@@ -707,8 +713,13 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {
-    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    const parsed = RawStudentEnrollmentSchema.parse({
+      ...minimalStudentEnrollment,
+      extra: 123,
+      is_guest: true,
+    });
     expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).not.toHaveProperty('is_guest');
     expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 
