@@ -109,9 +109,10 @@ router.post(
         const ptResponse = await fetch(new URL('/pt/cheating-report', config.ptHost).toString(), {
           method: 'POST',
           body: new URLSearchParams({ jwt }),
+          redirect: 'error',
           signal: AbortSignal.timeout(PT_CHEATING_REPORT_TIMEOUT_MS),
         });
-        if (ptResponse.ok) return 'ok';
+        if (ptResponse.status === 200) return 'ok';
         // 403 is expected when the center/course hasn't opted in, but PT also
         // uses it for auth failures (e.g. a mismatched shared secret), so log
         // it to keep a misconfiguration distinguishable from a normal decline.
