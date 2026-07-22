@@ -1,6 +1,6 @@
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
-import { execute, queryRow } from '@prairielearn/postgres';
+import { queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import {
@@ -507,6 +507,18 @@ describe('DB validation of enrollment', () => {
 
     // Invalid states that should violate the constraint
     const invalidStates = [
+      // The legacy LTI-specific lifecycle status is no longer valid
+      {
+        constraint: 'enrollments_status_not_lti13_pending',
+        user_id: null,
+        status: 'lti13_pending',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: null,
+        pending_uin: 'legacy-status-uin',
+        pending_lti13_sub: 'legacy-status-sub',
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
+      },
       // status is 'joined', first_joined_at is null
       {
         constraint: 'first_joined_at_not_null_if_joined_and_created_at_not_null',
@@ -614,18 +626,5 @@ describe('DB validation of enrollment', () => {
     for (const state of invalidStates) {
       await expect(createEnrollmentWithState(state)).rejects.toThrow(state.constraint);
     }
-
-    // Use a raw insert so EnrollmentSchema's intentionally narrower status enum cannot
-    // mask a missing database constraint.
-    await expect(
-      execute(
-        `INSERT INTO enrollments (user_id, course_instance_id, status, created_at, first_joined_at, pending_uid, pending_uin, pending_lti13_sub, pending_lti13_course_instance_id)
-         VALUES (NULL, $course_instance_id, 'lti13_pending', '2025-01-01', NULL, NULL, 'legacy-status-uin', 'legacy-status-sub', $pending_lti13_course_instance_id)`,
-        {
-          course_instance_id: courseInstance.id,
-          pending_lti13_course_instance_id: lti13CourseInstance.id,
-        },
-      ),
-    ).rejects.toThrow('enrollments_status_not_lti13_pending');
   });
 });
