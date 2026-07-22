@@ -88,7 +88,7 @@ function InstructorInstanceAdminSettingsInner({
 }: Omit<InstructorInstanceAdminSettingsProps, 'trpcCsrfToken' | 'isDevMode'>) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  const shortNames = new Set(names.map((name) => name.short_name));
+  const shortNames = new Set(names.map((name) => name.short_name.toLowerCase()));
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -174,7 +174,10 @@ function InstructorInstanceAdminSettingsInner({
                         return result.valid || result.message;
                       },
                       duplicate: (value) => {
-                        if (shortNames.has(value) && value !== defaultValues.ciid) {
+                        if (
+                          shortNames.has(value.toLowerCase()) &&
+                          value.toLowerCase() !== defaultValues.ciid.toLowerCase()
+                        ) {
                           return 'This ID is already in use';
                         }
                         return true;

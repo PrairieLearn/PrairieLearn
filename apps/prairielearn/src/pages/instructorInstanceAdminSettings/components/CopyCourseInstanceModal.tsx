@@ -433,6 +433,7 @@ function AccessControlStep({
   const assessmentsNeedingAttention = assessments.filter(
     (a) => a.errors.length > 0 || a.notes.length > 0,
   );
+  const cleanlyMigratableCount = assessments.length - assessmentsNeedingAttention.length;
 
   if (!appError && assessments.length === 0) {
     return (
@@ -460,8 +461,14 @@ function AccessControlStep({
             <strong>
               {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
             </strong>{' '}
-            with legacy access control rules. Choose how to handle them in the copy. Learn more
-            about{' '}
+            with legacy access control rules. Choose how to handle copying them.{' '}
+            {cleanlyMigratableCount > 0 && assessmentsNeedingAttention.length > 0 && (
+              <>
+                <strong>{cleanlyMigratableCount}</strong> will migrate cleanly and{' '}
+                {cleanlyMigratableCount === 1 ? 'is' : 'are'} not listed below.{' '}
+              </>
+            )}
+            Learn more about{' '}
             <a
               href="https://docs.prairielearn.com/assessment/accessControl/"
               target="_blank"
