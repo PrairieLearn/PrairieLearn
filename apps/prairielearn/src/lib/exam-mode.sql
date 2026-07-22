@@ -20,10 +20,7 @@ WITH
         AND $date BETWEEN r.access_start AND r.access_end
       ) AS reservation_active,
       (
-        -- The strict "access is open right now" window, without
-        -- `reservation_active`'s post-check-in grace: PT only accepts a
-        -- cheating report while access is open, so the control should
-        -- appear exactly then.
+        -- PrairieTest accepts reports only while access is open.
         r.access_start IS NOT NULL
         AND r.access_end IS NOT NULL
         AND $date BETWEEN r.access_start AND r.access_end
@@ -40,11 +37,6 @@ WITH
         s.lockdown_browser_enabled,
         FALSE
       ) AS reservation_requires_lockdown_browser,
-      -- Whether the session's owner has opted in to student cheating reports.
-      -- A center session's owner is the center (through the location); a
-      -- course-run session's owner is the course (through the reservation's
-      -- exam). PrairieTest re-checks this authoritatively on submit; we read it
-      -- here so the control only appears for opted-in exams.
       COALESCE(
         CASE
           WHEN l.id IS NOT NULL THEN ctr.cheating_reports_enabled

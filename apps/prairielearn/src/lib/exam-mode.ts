@@ -17,13 +17,6 @@ const ActiveReservationInfoSchema = z.object({
 });
 export type ActiveReservationInfo = z.infer<typeof ActiveReservationInfoSchema>;
 
-/**
- * Looks up the user's active PrairieTest reservations and returns the derived
- * per-request state: whether they're in 'Exam' mode, whether they must be
- * inside LockDown Browser, and the id of an active in-access-window reservation
- * whose owning center/course has opted in to cheating reports (used to show the
- * "Report cheating" control), or null if none.
- */
 export async function selectActiveReservationInfo({
   ip,
   date,
@@ -33,8 +26,6 @@ export async function selectActiveReservationInfo({
   date: Date;
   authn_user_id: string;
 }): Promise<ActiveReservationInfo> {
-  // Express's types indicate that `ip` may be undefined in some cases. We want
-  // to ensure that we don't try to proceed without one.
   if (ip == null) throw new Error('IP address is required');
 
   return await queryRow(
@@ -100,8 +91,7 @@ export async function ipToMode({
  * Refusing all access matches the policy that an LDB-required reservation
  * confines the user to LDB for its full duration. A student in a non-LDB
  * browser would otherwise be free to look up answers in other course pages
- * while the exam runs. The decision uses `requires_lockdown_browser` from
- * {@link selectActiveReservationInfo}.
+ * while the exam runs.
  */
 export class LockdownBrowserRequiredError extends HttpStatusError {
   constructor() {

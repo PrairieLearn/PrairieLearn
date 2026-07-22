@@ -52,19 +52,6 @@ function respondToReportSubmission({
   res.redirect(303, redirectUrl);
 }
 
-/**
- * Receives the navbar "Report cheating" modal submission, mints a short-lived
- * JWT carrying the report text, and calls PT server-to-server to file it.
- *
- * The reporting reservation is `res.locals.cheating_report_reservation_id`,
- * which `enforceLockdownBrowser` recomputes on this request (the id of an
- * active in-access-window reservation whose owning center/course has opted in,
- * or null). PL only shows the control for opted-in exams, but PrairieTest
- * re-checks the opt-in authoritatively and can still decline (e.g. if the flag
- * was toggled off after the page loaded). PT stores the report and notifies
- * proctors; PL keeps no report history of its own. The outcome surfaces as a
- * flash message on the page the student came from.
- */
 export function createReportCheatingRouter({
   ptFetch = fetch,
   rateLimiter = defaultRateLimiter,
@@ -81,9 +68,7 @@ export function createReportCheatingRouter({
         throw new HttpStatusError(403, 'Not authenticated');
       }
       const user_id = String(res.locals.authn_user.id);
-      // Redirect back to the page the report was filed from. We keep only the
-      // Referer's path so the redirect stays on our own origin, avoiding an open
-      // redirect (cf. pages/jobSequence).
+      // Ignore the referrer's origin to prevent open redirects.
       const redirectUrl = run(() => {
         const referrer = req.get('Referrer');
         const parsed = referrer ? URL.parse(referrer) : null;
@@ -161,9 +146,6 @@ export function createReportCheatingRouter({
         submission_id: submissionIdResult.data,
       });
 
-      // 'ok' → filed; 'declined' → PT rejected it (most often the center/course
-      // hasn't enabled reports, since we show the button for any active exam);
-      // 'failed' → PT unreachable or errored, so it's worth retrying.
       const outcome = await run(async (): Promise<'ok' | 'declined' | 'failed'> => {
         try {
           const ptResponse = await ptFetch(
@@ -176,15 +158,13 @@ export function createReportCheatingRouter({
             },
           );
           if (ptResponse.status === 200) return 'ok';
-          // 403 is expected when the center/course hasn't opted in, but PT also
-          // uses it for auth failures (e.g. a mismatched shared secret), so log
-          // it to keep a misconfiguration distinguishable from a normal decline.
           logger.error('PrairieTest cheating-report call returned non-ok', {
             status: ptResponse.status,
             statusText: ptResponse.statusText,
             user_id,
             reservation_id,
           });
+          // PrairieTest uses 403 when reports are disabled.
           return ptResponse.status === 403 ? 'declined' : 'failed';
         } catch (err) {
           logger.error('PrairieTest cheating-report call threw', { err, user_id, reservation_id });

@@ -464,8 +464,6 @@ describe('ipToMode tests', function () {
   });
 
   describe('requires_lockdown_browser', () => {
-    // The `enforceLockdownBrowser` middleware denies access when this is true
-    // and the session was not established inside LockDown Browser.
     describe('Center exam at LDB-required location', () => {
       it('should require LDB once the reservation is active', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
@@ -483,17 +481,12 @@ describe('ipToMode tests', function () {
       });
 
       it('should not require LDB before check-in', async () => {
-        // Before check-in the reservation isn't active yet, so the LDB
-        // requirement doesn't bind — students can still browse PrairieLearn
-        // on a regular browser ahead of the exam.
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
           await execute(sql.enable_lockdown_browser_on_location);
 
           const { requires_lockdown_browser } = await selectActiveReservationInfo({
             ip: '10.0.0.1',
-            // 10 minutes from now: WHERE clause includes it, but
-            // reservation_active is false because there's no check-in.
             date: new Date(Date.now() + 1000 * 60 * 10),
             authn_user_id,
           });
@@ -521,8 +514,6 @@ describe('ipToMode tests', function () {
   });
 
   describe('cheating_report_reservation_id', () => {
-    // Drives the navbar "Report cheating" control. It's set only when access is
-    // open AND the owning center/course has opted in to cheating reports.
     describe('center exam', () => {
       it('should return the reservation id when access is open and the center has opted in', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
