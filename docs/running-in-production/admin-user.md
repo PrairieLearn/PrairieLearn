@@ -12,7 +12,10 @@ After setting up authentication we can elevate a user that's logged into the sys
 
   ```sql
   SELECT
-    *
+    id,
+    uid,
+    uin,
+    name
   FROM
     users;
   ```
@@ -20,12 +23,12 @@ After setting up authentication we can elevate a user that's logged into the sys
   Which will display a table of users in the database:
 
   ```txt
-  user_id |       uid       |    uin    |   name   | lti_course_instance_id | lti_user_id | lti_context_id | institution_id | deleted_at
-  --------+-----------------+-----------+----------+------------------------+-------------+----------------+----------------+------------
-        1 | dev@example.com | 000000000 | Dev User |                        |             |                |              1 |
+  id |       uid       |    uin    |   name
+  ---+-----------------+-----------+----------
+   1 | dev@example.com | 000000000 | Dev User
   ```
 
-- Add the desired user to the administrators table by running the following (substitute the `1` with your desired `user_id`):
+- Add the desired user to the administrators table by running the following (substitute the `1` with the desired user's `id`):
 
   ```sql
   INSERT INTO

@@ -1645,7 +1645,6 @@ export const TopicSchema = z.object({
 export type Topic = z.infer<typeof TopicSchema>;
 
 export const UserSchema = z.object({
-  deleted_at: DateFromISOString.nullable(),
   email: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
