@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { Redis } from 'ioredis';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -8,11 +9,26 @@ import { run } from '@prairielearn/run';
 
 import { signPrairieTestJwt } from '../../ee/auth/prairieTestJwt.js';
 import { config } from '../../lib/config.js';
+import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 
 const router = Router();
 
 const PT_CHEATING_REPORT_TIMEOUT_MS = 10_000;
 const MAX_REPORT_LENGTH = 10_000;
+const MAX_REPORTS_PER_HOUR = 5;
+
+const rateLimiter = new RedisRateLimiter({
+  redis: () => {
+    if (!config.nonVolatileRedisUrl) {
+      throw new Error('nonVolatileRedisUrl must be set in config');
+    }
+    const redis = new Redis(config.nonVolatileRedisUrl);
+    redis.on('error', (err) => logger.error('Cheating report Redis error', { err }));
+    return redis;
+  },
+  keyPrefix: () => `${config.cacheKeyPrefix}cheating-report:`,
+  intervalSeconds: 60 * 60,
+});
 
 /**
  * Receives the navbar "Report cheating" modal submission, mints a short-lived
@@ -58,6 +74,13 @@ router.post(
     const reservation_id: string | null = res.locals.cheating_report_reservation_id;
     if (!reservation_id) {
       flash('error', 'Cheating reports are not available for you right now.');
+      res.redirect(redirectUrl);
+      return;
+    }
+
+    const reportCount = await rateLimiter.addToIntervalUsage(`${user_id}:${reservation_id}`, 1);
+    if (reportCount > MAX_REPORTS_PER_HOUR) {
+      flash('error', 'You have submitted too many reports. Please tell your proctor directly.');
       res.redirect(redirectUrl);
       return;
     }
