@@ -52,3 +52,18 @@ jobs:
           git add .
           git commit -m 'Dedupe dependencies' || true
           git push
+
+      # While dependabot uses hash versions for GitHub Actions if the action is
+      # pinned to a hash, it will not include the comment with the corresponding
+      # tag in the format used by our script. Therefore, we run the script to
+      # add the comment after deduping.
+      - name: 'Pin GitHub Actions'
+        run: python3 scripts/pin-github-actions.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Commit and push changes'
+        run: |
+          git add .
+          git commit -m 'Pin GitHub Actions' || true
+          git push
