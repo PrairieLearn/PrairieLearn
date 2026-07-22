@@ -13,7 +13,7 @@ runs:
     # The default Azure apt mirror on GitHub Actions runners is frequently
     # slow or throttled, causing apt-get operations to take minutes instead
     # of seconds. This action finds and configures a faster mirror.
-    - uses: vegardit/fast-apt-mirror.sh@v1
+    - uses: vegardit/fast-apt-mirror.sh@806c59276adfff2df420124ad5e4587f018c358a # 1.4.5
       with:
         exclude-current: true # Don't include the current APT mirror since it is unreliable.
 
@@ -29,11 +29,11 @@ runs:
         sudo apt-get purge -y man-db
         sudo apt-get install -y --no-install-recommends graphviz libgraphviz-dev
 
-    - uses: pnpm/action-setup@v6
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
       with:
         version: 11
     - name: Set up Node
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
       with:
         node-version: '24'
         cache: 'pnpm'
@@ -46,11 +46,11 @@ runs:
       run: pnpm playwright install chromium --with-deps
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: '3.13'
     - name: Install uv
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       with:
         enable-cache: true
         cache-dependency-glob: 'pyproject.toml'
@@ -62,7 +62,7 @@ runs:
       run: make python-deps-core
 
     - name: Set up Turborepo cache
-      uses: actions/cache@v5
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
       with:
         path: .turbo/cache
         key: ${{ runner.os }}-turbo-${{ github.sha }}
