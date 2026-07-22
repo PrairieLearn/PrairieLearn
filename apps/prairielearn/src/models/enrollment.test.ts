@@ -18,7 +18,6 @@ import { getOrCreateUser } from '../tests/utils/auth.js';
 import { selectCourseInstanceById } from './course-instances.js';
 import {
   ensureUncheckedEnrollment,
-  inviteStudentByUid,
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
 } from './enrollment.js';
@@ -89,7 +88,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
     assert.isNull(initialEnrollment.first_joined_at);
-    assert.isNull(initialEnrollment.lti_managed);
+    assert.isFalse(initialEnrollment.is_guest);
     assert.isNull(initialEnrollment.user_id);
 
     await ensureUncheckedEnrollment({
@@ -109,7 +108,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
-    assert.isNull(finalEnrollment.lti_managed);
+    assert.isFalse(finalEnrollment.is_guest);
     assert.isNull(finalEnrollment.pending_uid);
     assert.equal(finalEnrollment.user_id, user.id);
 
@@ -120,20 +119,6 @@ describe('ensureUncheckedEnrollment', () => {
       authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(invitedEnrollment);
-  });
-
-  it('creates pending UID invitations with null LTI provenance', async () => {
-    const enrollment = await inviteStudentByUid({
-      uid: 'pending@example.com',
-      courseInstance,
-      requiredRole: ['System'],
-      authzData: dangerousFullSystemAuthz(),
-    });
-
-    assert.equal(enrollment.status, 'invited');
-    assert.equal(enrollment.pending_uid, 'pending@example.com');
-    assert.isNull(enrollment.lti_managed);
-    assert.isNull(enrollment.user_id);
   });
 
   it('does not transition blocked user to enrolled status', async () => {
@@ -219,7 +204,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
-    assert.isNull(finalEnrollment.lti_managed);
+    assert.isFalse(finalEnrollment.is_guest);
   });
 
   it('does not modify already enrolled user', async () => {
