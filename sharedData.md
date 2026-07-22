@@ -18,14 +18,6 @@ only uses `string`/`number`) and a "one writer, many read-only downstream
 readers" sharing pattern rather than subnet design's "both sides read and
 write."
 
-The issue thread tried several designs (copying `params`/`submitted_answers`
-between questions, a zone-level `shareData` flag, arbitrary up/down data flow
-through the course hierarchy) and settled on the maintainers' preferred direction
-(see [comment](https://github.com/PrairieLearn/PrairieLearn/issues/5501#issuecomment-4195318865)):
-
-> a small chunk of writeable memory in the `data` object which can be shared
-> across multiple contexts ... totally up to the instructor what data to save.
-
 This doc scopes a first implementation ("v1") per direction given directly for
 this task:
 
@@ -171,7 +163,7 @@ foreign-key constraints
 
 Migration file: `apps/prairielearn/src/migrations/{timestamp}_assessment_instance_shared_data_pools__create.sql`.
 
-### New table: `course_user_shared_data_pools` (preview mode — see §7)
+### New table: `course_instructor_shared_data_pools` (preview mode — see §7)
 
 ```
 columns
@@ -201,7 +193,7 @@ foreign-key constraints
 - Add Zod row types in `apps/prairielearn/src/lib/db-types.ts`:
   `SharedDataPoolValuesSchema` (`z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))`,
   same shape as `QuestionPreferenceValuesSchema`),
-  `AssessmentInstanceSharedDataPoolSchema`, `CourseUserSharedDataPoolSchema`.
+  `AssessmentInstanceSharedDataPoolSchema`, `CourseInstructorSharedDataPoolSchema`.
 - Add `shared_data_pools` to `QuestionSchema` and `shared_data_pool_schemas` to
   `AssessmentSchema`, typed via the JSON-schema-of-schema types added in
   `schemas/infoQuestion.ts`.
@@ -295,9 +287,7 @@ preference overrides (`pages/instructorAssessmentQuestions/components/detail/Que
 
 ## 9. Size limits
 
-Per the maintainers' discussion on the issue
-(["likely on the order of kilobytes of JSON"](https://github.com/PrairieLearn/PrairieLearn/issues/5501#issuecomment-4184811589)),
-enforce a small hard cap on `JSON.stringify(data).length` per pool (start at,
+Enforce a small hard cap on `JSON.stringify(data).length` per pool (start at,
 e.g., 5 KB) when writing back in step 6.4 above — reject the write and surface
 a `format_errors`-style error to the question rather than silently truncating
 or letting arbitrarily large blobs accumulate per assessment instance.
@@ -320,7 +310,7 @@ or letting arbitrarily large blobs accumulate per assessment instance.
 ## 11. Task breakdown
 
 1. `schemas/infoQuestion.ts`: add `SharedDataPoolSchemaJsonSchema` / `sharedDataPools` to `QuestionJsonSchema`. Run `make update-jsonschema`.
-2. Migrations: `questions.shared_data_pools`, `assessments.shared_data_pool_schemas`, `assessment_instance_shared_data_pools` table, `course_user_shared_data_pools` table. Update `database/` + `db-types.ts` afterward.
+2. Migrations: `questions.shared_data_pools`, `assessments.shared_data_pool_schemas`, `assessment_instance_shared_data_pools` table, `course_instructor_shared_data_pools` table. Update `database/` + `db-types.ts` afterward.
 3. Sync: merge/validate pool schemas per assessment (`sync/fromDisk/assessments.ts` or a new sibling module); populate `questions.shared_data_pools` from disk in the question sync path.
 4. Models: `models/shared-data-pool.ts` (+ `.sql`) with select/upsert functions for both the assessment-instance-scoped and course/user-scoped (preview) variants.
 5. `question-servers/freeform.ts`: add `shared_data` to `checkData()`; thread it through `generate`/`prepare`/`parse`/`grade`/`render`'s `data` construction.
@@ -415,8 +405,3 @@ two independent read-only downstream questions):
 - Authorization: a user without instructor access to the course instance
   cannot GET/POST this route (follow the existing authz pattern already
   used elsewhere on `instructorAssessmentInstance`).
-- End-to-end (Playwright, `apps/prairielearn/src/tests/e2e`): as an
-  instructor, open a student's assessment instance, edit a pool value in the
-  UI, save, and confirm the new value is reflected both in the instructor UI
-  after reload and in the question's rendered output next time that student
-  (or the instructor previewing the same question) loads it.
