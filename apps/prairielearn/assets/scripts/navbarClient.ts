@@ -6,9 +6,11 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { removeCookieClient, setCookieClient } from '../../src/lib/client/cookie.js';
 
 import { setupEndExamModal } from './lib/endExamModal.js';
+import { setupReportCheatingModal } from './lib/reportCheatingModal.js';
 
 onDocumentReady(() => {
   setupEndExamModal();
+  setupReportCheatingModal();
 
   const usernameNav = document.getElementById('username-nav');
   // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.

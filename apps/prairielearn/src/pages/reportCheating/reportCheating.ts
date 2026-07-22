@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
@@ -31,6 +31,29 @@ const rateLimiter = new RedisRateLimiter({
   intervalSeconds: 60 * 60,
 });
 
+function respondToReportSubmission({
+  req,
+  res,
+  redirectUrl,
+  type,
+  message,
+  status,
+}: {
+  req: Request;
+  res: Response;
+  redirectUrl: string;
+  type: 'error' | 'success';
+  message: string;
+  status: number;
+}) {
+  if (req.accepts(['html', 'json']) === 'json') {
+    res.status(status).json({ type, message });
+    return;
+  }
+  flash(type, message);
+  res.redirect(303, redirectUrl);
+}
+
 /**
  * Receives the navbar "Report cheating" modal submission, mints a short-lived
  * JWT carrying the report text, and calls PT server-to-server to file it.
@@ -62,34 +85,64 @@ router.post(
 
     const report = typeof req.body.report === 'string' ? req.body.report.trim() : '';
     if (report.length === 0) {
-      flash('error', 'Your report was empty, so nothing was submitted.');
-      res.redirect(redirectUrl);
+      respondToReportSubmission({
+        req,
+        res,
+        redirectUrl,
+        type: 'error',
+        message: 'Your report was empty, so nothing was submitted.',
+        status: 400,
+      });
       return;
     }
     if (report.length > MAX_REPORT_LENGTH) {
-      flash('error', `Reports are limited to ${MAX_REPORT_LENGTH} characters.`);
-      res.redirect(redirectUrl);
+      respondToReportSubmission({
+        req,
+        res,
+        redirectUrl,
+        type: 'error',
+        message: `Reports are limited to ${MAX_REPORT_LENGTH} characters.`,
+        status: 400,
+      });
       return;
     }
 
     const submissionIdResult = z.uuid().safeParse(req.body.submission_id);
     if (!submissionIdResult.success) {
-      flash('error', 'Your report could not be submitted. Please reload the page and try again.');
-      res.redirect(redirectUrl);
+      respondToReportSubmission({
+        req,
+        res,
+        redirectUrl,
+        type: 'error',
+        message: 'Your report could not be submitted. Please reload the page and try again.',
+        status: 400,
+      });
       return;
     }
 
     const reservation_id: string | null = res.locals.cheating_report_reservation_id;
     if (!reservation_id) {
-      flash('error', 'Cheating reports are not available for you right now.');
-      res.redirect(redirectUrl);
+      respondToReportSubmission({
+        req,
+        res,
+        redirectUrl,
+        type: 'error',
+        message: 'Cheating reports are not available for you right now.',
+        status: 403,
+      });
       return;
     }
 
     const reportCount = await rateLimiter.addToIntervalUsage(`${user_id}:${reservation_id}`, 1);
     if (reportCount > MAX_REPORTS_PER_HOUR) {
-      flash('error', 'You have submitted too many reports. Please tell your proctor directly.');
-      res.redirect(redirectUrl);
+      respondToReportSubmission({
+        req,
+        res,
+        redirectUrl,
+        type: 'error',
+        message: 'You have submitted too many reports. Please tell your proctor directly.',
+        status: 429,
+      });
       return;
     }
 
@@ -129,17 +182,22 @@ router.post(
       }
     });
 
-    if (outcome === 'ok') {
-      flash('success', 'Your report has been submitted.');
-    } else if (outcome === 'declined') {
-      flash('error', 'Cheating reports are not available for your exam.');
-    } else {
-      flash(
-        'error',
-        'We could not submit your report. Please try again, or tell your proctor directly.',
-      );
-    }
-    res.redirect(redirectUrl);
+    const response =
+      outcome === 'ok'
+        ? { type: 'success' as const, message: 'Your report has been submitted.', status: 200 }
+        : outcome === 'declined'
+          ? {
+              type: 'error' as const,
+              message: 'Cheating reports are not available for your exam.',
+              status: 403,
+            }
+          : {
+              type: 'error' as const,
+              message:
+                'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
+              status: 502,
+            };
+    respondToReportSubmission({ req, res, redirectUrl, ...response });
   }),
 );
 
