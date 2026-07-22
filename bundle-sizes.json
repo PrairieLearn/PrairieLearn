@@ -175,9 +175,9 @@
     "brotli": 356
   },
   "stylesheets/pageLayout.css": {
-    "raw": 6992,
-    "gzip": 1700,
-    "brotli": 1430
+    "raw": 7023,
+    "gzip": 1714,
+    "brotli": 1433
   },
   "stylesheets/prairielearn-ui.css": {
     "raw": 2962,
