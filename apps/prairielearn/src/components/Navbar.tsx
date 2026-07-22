@@ -253,7 +253,7 @@ function ReportCheatingControl({
   return html`
     <button
       type="button"
-      class="btn btn-outline-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
       data-bs-toggle="modal"
       data-bs-target="#reportCheatingModal"
     >
