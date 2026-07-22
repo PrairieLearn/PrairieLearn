@@ -122,14 +122,16 @@ SELECT
     ),
     FALSE
   ) AS requires_lockdown_browser,
-  -- An in-access-window reservation whose owning center/course has opted in to
-  -- cheating reports, if any; its presence decides whether the navbar shows the
-  -- "Report cheating" control. PrairieTest re-checks the opt-in authoritatively
-  -- when a report is submitted.
-  MIN(reservation.reservation_id) FILTER (
-    WHERE
-      reservation.reservation_in_access_window
-      AND reservation.cheating_reports_enabled
-  ) AS cheating_report_reservation_id
+  CASE
+  -- Avoid attributing a report to the wrong exam when access windows overlap.
+    WHEN COUNT(*) FILTER (
+      WHERE
+        reservation.reservation_in_access_window
+    ) = 1 THEN MIN(reservation.reservation_id) FILTER (
+      WHERE
+        reservation.reservation_in_access_window
+        AND reservation.cheating_reports_enabled
+    )
+  END AS cheating_report_reservation_id
 FROM
   active_reservations AS reservation;

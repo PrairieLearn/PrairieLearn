@@ -237,7 +237,11 @@ function ReportCheatingControl({
   resLocals: UntypedResLocals;
   navPage: NavPage;
 }) {
-  if (navPage !== 'assessment_instance' || resLocals.cheating_report_reservation_id == null) {
+  if (
+    navPage !== 'assessment_instance' ||
+    resLocals.authz_result?.mode !== 'Exam' ||
+    resLocals.cheating_report_reservation_id == null
+  ) {
     return '';
   }
   const reportCheatingCsrfToken = generateCsrfToken({

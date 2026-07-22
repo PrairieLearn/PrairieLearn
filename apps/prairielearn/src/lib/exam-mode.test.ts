@@ -617,6 +617,22 @@ describe('ipToMode tests', function () {
       });
     });
 
+    it('should return null when multiple access windows overlap', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCenterExamReservation();
+        await execute(sql.insert_second_reservation, { user_id: authn_user_id });
+        await execute(sql.enable_cheating_reports_on_center);
+        await execute(sql.start_reservations);
+
+        const info = await selectActiveReservationInfo({
+          ip: '10.0.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
+        assert.isNull(info.cheating_report_reservation_id);
+      });
+    });
+
     it('should return null when there is no reservation', async () => {
       const info = await selectActiveReservationInfo({
         ip: '10.0.0.1',
