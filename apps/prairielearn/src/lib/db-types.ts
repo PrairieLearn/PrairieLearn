@@ -886,7 +886,8 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  lti_managed: z.boolean().nullable(),
+  is_guest: z.boolean(),
+  lti_managed: z.boolean(),
   pending_email: z.string().nullable(),
   pending_lti13_course_instance_id: IdSchema.nullable(),
   // These legacy columns are retained during the rolling deploy. Keeping them
