@@ -15,7 +15,7 @@ import { config } from '../../lib/config.js';
  */
 const PRAIRIE_TEST_JWT_LIFETIME = '5m';
 
-interface PrairieTestJwtPayload {
+interface PrairieTestJwtPayload extends jose.JWTPayload {
   user_id: string;
   reservation_id: string;
   /** The report text, for the cheating-report callback only. */
