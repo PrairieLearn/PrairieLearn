@@ -579,7 +579,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   });
 
   describe('LTI 1.3 NRPS roster inspector', () => {
-    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis matches', async () => {
+    test('inspectRoster appends rlid, dumps members, and annotates sub/custom/lis identity candidates', async () => {
       // Ensure course instance 1 is linked to LTI instance 1.
       await execute(
         `DELETE FROM lti13_course_instances
@@ -595,7 +595,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         courseInstanceId: '1',
       });
 
-      // Create a user with a known sub and UIN to exercise both match paths.
+      // Create a user with a known sub and UIN to exercise both identity annotations.
       const knownSub = 'roster-inspector-sub-1';
       const knownUin = '555000555';
       await grantCoursePermissions({
@@ -649,6 +649,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       );
 
       const capturedRlids: (string | undefined)[] = [];
+      const capturedAuthorizationHeaders: (string | undefined)[] = [];
+      const capturedAcceptHeaders: (string | undefined)[] = [];
       const app = express();
       app.use(express.urlencoded({ extended: true }));
       app.post('/token', (_req, res) => {
@@ -661,6 +663,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
       app.get('/memberships', (req, res) => {
         capturedRlids.push(typeof req.query.rlid === 'string' ? req.query.rlid : undefined);
+        capturedAuthorizationHeaders.push(req.get('authorization'));
+        capturedAcceptHeaders.push(req.get('accept'));
         res.setHeader('Content-Type', 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json');
         res.json({
           id: membershipsUrl,
@@ -739,18 +743,27 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
 
       // The custom run appended the chosen rlid; the lis run requested a plain roster.
       assert.deepEqual(capturedRlids, ['rl-course-nav', undefined]);
+      assert.deepEqual(capturedAuthorizationHeaders, [
+        'Bearer roster-inspector-token',
+        'Bearer roster-inspector-token',
+      ]);
+      assert.deepEqual(capturedAcceptHeaders, [
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+      ]);
 
       const customJobs = await selectJobsByJobSequenceId(customJob.jobSequenceId);
       assert.lengthOf(customJobs, 1);
       const customOutput = customJobs[0].output ?? '';
       assert.include(customOutput, 'Found 3 members.');
       assert.include(customOutput, 'roster-inspector@example.com');
-      assert.include(customOutput, 'Matched by sub');
+      assert.include(customOutput, 'Stored sub binding: PrairieLearn user');
       assert.include(
         customOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
-      assert.include(customOutput, 'No PrairieLearn user matched');
+      assert.include(customOutput, 'Stored sub binding: none');
+      assert.include(customOutput, 'Configured-UIN grade routing would fail');
 
       // With no rlid (no custom claims), the lis-configured instance still resolves
       // the UIN from the lis sourcedid that NRPS flattens onto the member.
@@ -759,7 +772,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       const lisOutput = lisJobs[0].output ?? '';
       assert.include(
         lisOutput,
-        `Matched by UIN ${knownUin} to PrairieLearn user roster-inspector@example.com`,
+        `Roster UIN ${knownUin}: PrairieLearn user roster-inspector@example.com`,
       );
     });
   });
