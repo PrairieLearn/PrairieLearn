@@ -6,9 +6,6 @@ columns
     is_guest: boolean not null default false
     pending_email: text
     pending_lti13_course_instance_id: bigint
-    pending_lti13_email: text
-    pending_lti13_instance_id: bigint
-    pending_lti13_name: text
     pending_lti13_sub: text
     pending_name: text
     pending_uid: text
@@ -19,7 +16,6 @@ columns
 indexes
     enrollments_pkey: PRIMARY KEY (id) USING btree (id)
     enrollments_pending_lti13_ciid_sub_course_instance_id_key: UNIQUE (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id)
-    enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key: UNIQUE (pending_lti13_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_instance_id, pending_lti13_sub, course_instance_id)
     enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
     enrollments_pending_uin_course_instance_id_key: UNIQUE (course_instance_id, pending_uin) USING btree (course_instance_id, pending_uin)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
@@ -37,7 +33,6 @@ check constraints
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_pending_lti13_course_instance_id_fkey: FOREIGN KEY (pending_lti13_course_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    enrollments_pending_lti13_instance_id_fkey: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

@@ -313,9 +313,6 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   is_guest: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
   pending_lti13_sub: null,
   pending_name: null,
   pending_uid: null,
@@ -452,9 +449,6 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   is_guest: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
   pending_lti13_sub: null,
   pending_name: null,
   pending_uid: null,
@@ -694,16 +688,6 @@ describe('safe-db-types schemas', () => {
       ...oldServerEnrollment
     } = minimalRawStaffEnrollment;
     expect(() => RawStaffEnrollmentSchema.parse(oldServerEnrollment)).not.toThrow();
-  });
-
-  it('parses a RawStaffEnrollment after the legacy columns are dropped', () => {
-    const {
-      pending_lti13_email: _pendingLti13Email,
-      pending_lti13_instance_id: _pendingLti13InstanceId,
-      pending_lti13_name: _pendingLti13Name,
-      ...withoutLegacyColumns
-    } = minimalRawStaffEnrollment;
-    expect(() => RawStaffEnrollmentSchema.parse(withoutLegacyColumns)).not.toThrow();
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {
