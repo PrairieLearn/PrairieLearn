@@ -7,6 +7,17 @@ build a multi-part exercise (e.g. "design a subnet in part A, then configure
 interfaces for that same subnet in part B") has to cram everything into one giant
 question, because part B has no way to see what a student did in part A.
 
+A second, simpler motivating example, used throughout this doc alongside the
+subnet-design one: a "pick a theme" question where a student chooses between
+`sports`, `cooking`, and `travel`, followed by two independent simple
+arithmetic questions later in the assessment that reuse that theme to flavor
+their wording (e.g. "a chef needs 3 batches of 12 cookies..." vs. "a runner
+completes 3 laps of 12 minutes each..."). This example is useful specifically
+because it exercises an `enum`-typed field (unlike the subnet example, which
+only uses `string`/`number`) and a "one writer, many read-only downstream
+readers" sharing pattern rather than subnet design's "both sides read and
+write."
+
 The issue thread tried several designs (copying `params`/`submitted_answers`
 between questions, a zone-level `shareData` flag, arbitrary up/down data flow
 through the course hierarchy) and settled on the maintainers' preferred direction
@@ -78,6 +89,25 @@ Example, for the subnet-design use case from the issue:
   }
 }
 ```
+
+And for the themed-arithmetic example — the theme-picker question declares
+the pool with an `enum` field:
+
+```json
+"sharedDataPools": {
+  "assessmentTheme": {
+    "theme": { "type": "string", "default": "sports", "enum": ["sports", "cooking", "travel"] }
+  }
+}
+```
+
+The two downstream arithmetic questions declare the *same* pool name and
+field (so sync-time merge validation in §4 sees identical definitions and
+accepts it), but only ever read `data["shared_data"]["assessmentTheme"]["theme"]`
+in `generate()` to pick their wording — they never write to it. Nothing in the
+schema or storage layer distinguishes "reads and writes" (subnet design) from
+"writes once, reads many times" (theme) — that's purely a convention in how
+each question's `server.py` chooses to use the pool.
 
 A pool name (`"subnetDesign"`) has no central declaration anywhere else — it's
 just a string that two or more questions happen to agree on, the same way
@@ -206,10 +236,10 @@ but read/write:
    `makeAndInsertVariant`/`ensureVariant` (for `generate`/`prepare`) and in
    `lib/grading.ts` immediately before `questionModule.parse(...)` /
    `questionModule.grade(...)` (for `parse`/`grade`), fetch the current pool
-   values via `selectSharedDataPools(...)` and inject as `data.shared_data`.
+   values via `selectSharedDataPools(...)` and inject as `data["shared_data"]`.
    Reading fresh (not frozen on the variant, unlike `preferences`) is what
    lets question B see question A's latest write.
-4. **Write back, after each phase**: if the returned `data.shared_data`
+4. **Write back, after each phase**: if the returned `data["shared_data"]`
    differs from what was read, call `updateSharedDataPools(...)` inside the
    same transaction that already persists the variant (`generate`/`prepare`)
    or the submission/score update (`parse`/`grade`). Grading already takes a
@@ -218,10 +248,11 @@ but read/write:
    for one student — reuse that same lock for pool writes rather than adding
    new locking, so a student submitting two questions in quick succession
    can't race two pool updates.
-5. Elements do **not** get access to `shared_data` (only `server.py` and
-   `question.html` via `{{shared_data.poolName.field}}`), matching the "footgun
-   for reusable elements" concern raised in the issue thread for the earlier
-   `shareData` proposal.
+5. Elements do **not** get access to `shared_data` (only `server.py`, via
+   `data["shared_data"]["poolName"]["field"]`, and `question.html` via Mustache's
+   `{{shared_data.poolName.field}}`), matching the "footgun for reusable
+   elements" concern raised in the issue thread for the earlier `shareData`
+   proposal.
 
 ## 7. Instructor preview mode
 
@@ -320,11 +351,13 @@ its own coverage, not just the model layer.
 
 ### Student/assessment-instance integration tests (Vitest, `apps/prairielearn/src/tests`)
 
-Use a small test course fixture with two questions in the same assessment
-declaring the same pool name (mirrors the "subnet design" motivating example):
+Use two small test course fixtures, one per motivating example:
+
+**Subnet-design fixture** (two questions, both read and write the pool):
 
 - Question A writes a value in `generate`; question B, rendered afterward in
-  the *same* assessment instance, reads that value via `data.shared_data`.
+  the *same* assessment instance, reads that value via
+  `data["shared_data"]["subnetDesign"]`.
 - Question B's write in `grade` is visible back to question A on its next
   `parse`/`grade` call.
 - Two different students' assessment instances of the same assessment do
@@ -334,6 +367,27 @@ declaring the same pool name (mirrors the "subnet design" motivating example):
 - Regenerating a variant of one question does not itself clear the pool
   (matches the "no auto-reset" non-goal in §10) — assert the sibling
   question still sees the old value.
+
+**Themed-arithmetic fixture** (one theme-picker question, `enum`-typed field,
+two independent read-only downstream questions):
+
+- Selecting a theme in the picker question makes that theme visible to
+  *both* downstream arithmetic questions, in either order, within the same
+  assessment instance.
+- Both downstream questions independently compute their own (unrelated)
+  arithmetic answers correctly while sharing only the `theme` string — i.e.
+  the pool constrains wording/flavor, not the grading logic.
+- An attempt to write a value outside the declared `enum` (e.g. from a
+  hand-edited `info.json` bug, or a future question mistakenly writing an
+  invalid theme) is rejected the same way an invalid preferences value would
+  be.
+- Changing the theme partway through (student revisits the picker question
+  and picks a different theme, still within the same assessment instance)
+  is reflected the next time either downstream question is (re)rendered —
+  confirms reads are live, not frozen at first access.
+- A student who never visits the theme-picker question at all sees the
+  downstream questions fall back to the schema default (`"sports"`) rather
+  than erroring.
 
 ### Instructor-preview integration tests
 
