@@ -1,1 +1,0 @@
-ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_rejected_not_lti_managed;
