@@ -75,7 +75,7 @@ def get_tag_from_hash(action_name: str, commit_sha: str) -> str | None:
     return None
 
 
-def process_workflow_file(file_path: str, check_only: bool) -> None:
+def process_workflow_file(file_path: str, *, check_only: bool) -> None:
     """Reads a file, replaces tags with hashes, and writes back the changes."""
     with open(file_path, encoding="utf-8") as f:
         content = f.read()
@@ -155,7 +155,7 @@ def main() -> None:  # noqa: D103
             if file.endswith((".yml", ".yaml")):
                 file_path = os.path.join(root, file)
                 print(f"Processing {file_path}...")
-                process_workflow_file(file_path, check_only)
+                process_workflow_file(file_path, check_only=check_only)
 
 
 if __name__ == "__main__":
