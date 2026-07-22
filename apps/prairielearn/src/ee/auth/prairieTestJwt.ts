@@ -21,6 +21,7 @@ interface PrairieTestJwtPayload extends jose.JWTPayload {
   reservation_id: string;
   /** The report text, for the cheating-report callback only. */
   report?: string;
+  submission_id?: string;
 }
 
 export async function signPrairieTestJwt(payload: PrairieTestJwtPayload): Promise<string> {

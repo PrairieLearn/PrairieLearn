@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { type FlashMessageType, flash } from '@prairielearn/flash';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -257,11 +259,20 @@ function ReportCheatingControl({
     >
       Report cheating
     </button>
-    ${ReportCheatingModal({ csrfToken: reportCheatingCsrfToken })}
+    ${ReportCheatingModal({
+      csrfToken: reportCheatingCsrfToken,
+      submissionId: crypto.randomUUID(),
+    })}
   `;
 }
 
-function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
+function ReportCheatingModal({
+  csrfToken,
+  submissionId,
+}: {
+  csrfToken: string;
+  submissionId: string;
+}) {
   return Modal({
     title: 'Report cheating',
     id: 'reportCheatingModal',
@@ -286,6 +297,7 @@ function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="submission_id" value="${submissionId}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Submit report</button>
     `,

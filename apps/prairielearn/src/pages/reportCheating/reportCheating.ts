@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Redis } from 'ioredis';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -71,6 +72,13 @@ router.post(
       return;
     }
 
+    const submissionIdResult = z.uuid().safeParse(req.body.submission_id);
+    if (!submissionIdResult.success) {
+      flash('error', 'Your report could not be submitted. Please reload the page and try again.');
+      res.redirect(redirectUrl);
+      return;
+    }
+
     const reservation_id: string | null = res.locals.cheating_report_reservation_id;
     if (!reservation_id) {
       flash('error', 'Cheating reports are not available for you right now.');
@@ -90,6 +98,7 @@ router.post(
       user_id,
       reservation_id,
       report,
+      submission_id: submissionIdResult.data,
     });
 
     // 'ok' → filed; 'declined' → PT rejected it (most often the center/course
