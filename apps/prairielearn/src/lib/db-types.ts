@@ -887,9 +887,6 @@ export const EnrollmentSchema = z.object({
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
   is_guest: z.boolean(),
-  // Retained only for compatibility with servers running before the is_guest
-  // rollout. A later migration can drop the column after they have drained.
-  lti_managed: z.unknown().optional(),
   pending_email: z.string().nullable(),
   pending_lti13_course_instance_id: IdSchema.nullable(),
   // These legacy columns are retained during the rolling deploy. Keeping them

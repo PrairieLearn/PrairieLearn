@@ -4,7 +4,6 @@ columns
     first_joined_at: timestamp with time zone
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
     is_guest: boolean not null default false
-    lti_managed: boolean not null default false
     pending_email: text
     pending_lti13_course_instance_id: bigint
     pending_lti13_email: text
