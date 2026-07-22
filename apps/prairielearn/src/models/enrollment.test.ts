@@ -88,6 +88,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
     assert.isNull(initialEnrollment.first_joined_at);
+    assert.isFalse(initialEnrollment.is_guest);
     assert.isNull(initialEnrollment.user_id);
 
     await ensureUncheckedEnrollment({
@@ -107,6 +108,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
+    assert.isFalse(finalEnrollment.is_guest);
     assert.isNull(finalEnrollment.pending_uid);
     assert.equal(finalEnrollment.user_id, user.id);
 
@@ -202,6 +204,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
+    assert.isFalse(finalEnrollment.is_guest);
   });
 
   it('does not modify already enrolled user', async () => {

@@ -1,4 +1,7 @@
 ALTER TABLE enrollments
+ADD COLUMN is_guest BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE enrollments
 ADD COLUMN pending_uin TEXT;
 
 -- These replace pending_lti13_name and pending_lti13_email. The old columns are
