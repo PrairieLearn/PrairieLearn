@@ -24,17 +24,14 @@ const AFTER_LAST_DEADLINE_ITEMS: RichSelectItem<AfterLastDeadlineMode>[] = [
   {
     value: 'no_submissions',
     label: 'No submissions allowed',
-    description: 'Students can review what after-completion visibility allows',
   },
   {
     value: 'practice_submissions',
-    label: 'Allow practice submissions',
-    description: 'No credit is given for practice submissions',
+    label: 'Allow practice submissions for zero credit',
   },
   {
     value: 'partial_credit',
     label: 'Allow submissions for partial credit',
-    description: 'Students receive partial credit for submissions',
   },
 ];
 
@@ -161,8 +158,7 @@ function AfterLastDeadlineInput({
         <>
           This controls the ability to submit after{' '}
           <FriendlyDate date={lastDate} timezone={displayTimezone} options={{ includeTz: false }} />
-          , until the course instance end date. Visibility is controlled by the after-completion
-          settings.
+          , until the course instance end date.
         </>
       );
     }
@@ -170,7 +166,7 @@ function AfterLastDeadlineInput({
     // TODO: we want to update the UI to completely hide the "after last deadline" options
     // when there are in fact no deadlines. That'll render this branch obsolete, but in the
     // meantime we have to show something here.
-    return 'This controls the ability to submit until the course instance end date. Visibility is controlled by the after-completion settings.';
+    return 'This controls the ability to submit until the course instance end date.';
   };
 
   const handleModeChange = (newMode: AfterLastDeadlineMode) => {
