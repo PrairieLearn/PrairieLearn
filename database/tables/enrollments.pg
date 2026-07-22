@@ -3,7 +3,7 @@ columns
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     first_joined_at: timestamp with time zone
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
-    lti_managed: boolean
+    lti_managed: boolean not null default false
     pending_email: text
     pending_lti13_course_instance_id: bigint
     pending_lti13_email: text
@@ -30,7 +30,6 @@ check constraints
     enrollments_lti13_sub_requires_uin: CHECK (pending_lti13_sub IS NULL OR pending_uin IS NOT NULL)
     enrollments_pending_fields_null_if_resolved: CHECK (user_id IS NULL OR pending_uid IS NULL AND pending_uin IS NULL AND pending_name IS NULL AND pending_email IS NULL AND pending_lti13_name IS NULL AND pending_lti13_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_course_instance_id IS NULL AND pending_lti13_instance_id IS NULL)
     enrollments_pending_identity_required: CHECK (user_id IS NOT NULL OR pending_uid IS NOT NULL OR pending_uin IS NOT NULL)
-    enrollments_rejected_not_lti_managed: CHECK (status <> 'rejected'::enum_enrollment_status OR lti_managed IS NOT TRUE)
     enrollments_status_not_lti13_pending: CHECK (status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_user_id_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (user_id IS NULL))
     first_joined_at_not_null_if_joined_and_created_at_not_null: CHECK (created_at IS NULL OR (status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) OR first_joined_at IS NOT NULL)

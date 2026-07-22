@@ -310,7 +310,7 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: null,
+  lti_managed: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
   pending_lti13_email: null,
