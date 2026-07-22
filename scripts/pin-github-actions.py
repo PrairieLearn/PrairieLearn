@@ -104,15 +104,15 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
         # Retrieve the tag associated with the SHA to include in the comment
         tag_cache_key = f"{action_name}@{sha}"
         if tag_cache_key not in tag_cache:
-            original_tag = get_tag_from_hash(action_name, sha)
-            if original_tag:
-                tag_cache[tag_cache_key] = original_tag
-        original_tag = tag_cache.get(tag_cache_key) or "tag not found"
+            resolved_tag = get_tag_from_hash(action_name, sha)
+            if resolved_tag:
+                tag_cache[tag_cache_key] = resolved_tag
+        resolved_tag = tag_cache.get(tag_cache_key) or "tag not found"
 
         # Replace the tag with the SHA and add a comment indicating the original tag
         # Example: actions/checkout@v4 -> actions/checkout@b4ffde... # v4
         old_pattern = f"{action_name}@{tag}"
-        new_pattern = f"{action_name}@{sha} # {original_tag}"
+        new_pattern = f"{action_name}@{sha} # {resolved_tag}"
 
         if old_pattern in content:
             pattern = rf"uses:\s*{re.escape(old_pattern)}[ \t]*(#.*)?"
