@@ -1,6 +1,6 @@
 import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 export type MultiSelectFilterMode = 'include' | 'exclude';
@@ -30,6 +30,7 @@ function defaultRenderValueLabel({ value }: { value: string }) {
  * @param params.column - The TanStack Table column object
  * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
+ * @param params.searchPlaceholder - When provided, renders a search input with this placeholder
  * @param params.showModeToggle - Whether to show the "Include" / "Exclude" toggle.
  * Disable for columns where the two modes are redundant (e.g. boolean columns).
  */
@@ -37,13 +38,16 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
+  searchPlaceholder,
   showModeToggle = true,
 }: {
   column: Column<TData, unknown>;
   allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;
+  searchPlaceholder?: string;
   showModeToggle?: boolean;
 }) {
+  const [search, setSearch] = useState('');
   const columnId = column.id;
 
   const label =
@@ -56,6 +60,11 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   const { values, mode } = filterValue;
   const selected = new Set(values);
   const hasActiveFilter = values.length > 0;
+  const visibleColumnValues = search
+    ? allColumnValues.filter((value) =>
+        value.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+      )
+    : allColumnValues;
 
   const apply = (newMode: MultiSelectFilterMode, newSelected: Set<TValue>) => {
     column.setFilterValue({ values: Array.from(newSelected), mode: newMode });
@@ -101,6 +110,17 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
               Clear
             </button>
           </div>
+
+          {searchPlaceholder && (
+            <input
+              type="search"
+              className="form-control form-control-sm mb-2"
+              value={search}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          )}
 
           {showModeToggle && (
             <div className="btn-group btn-group-sm w-100 mb-2">
@@ -149,7 +169,7 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
             } as React.CSSProperties
           }
         >
-          {allColumnValues.map((value) => {
+          {visibleColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
               <div key={value} className="list-group-item d-flex align-items-center gap-3">

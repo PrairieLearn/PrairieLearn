@@ -470,6 +470,7 @@ export function createQuestionsTableFilters({
       <MultiSelectColumnFilter
         column={header.column}
         allColumnValues={allTags}
+        searchPlaceholder="Search tags"
         renderValueLabel={({ value }) => {
           const tag = tagsByName.get(value);
           return tag ? <TagBadge tag={tag} /> : <span className="text-nowrap">{value}</span>;
