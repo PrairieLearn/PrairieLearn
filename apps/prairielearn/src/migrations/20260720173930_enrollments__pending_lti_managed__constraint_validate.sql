@@ -1,1 +1,0 @@
-ALTER TABLE enrollments VALIDATE CONSTRAINT enrollments_pending_lti_managed_not_false;
