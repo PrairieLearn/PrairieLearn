@@ -16,6 +16,11 @@ const schemaNameOverrides: Record<string, string | null> = {
   time_series: 'TimeSeriesSchema',
 };
 
+const extraDatabaseColumnExceptions: Record<string, string[]> = {
+  // Retained temporarily while removing `users.deleted_at` in a staged migration.
+  users: ['deleted_at'],
+};
+
 // Schemas not associated with a table.
 const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
 const unusedSchemas = new Set([
@@ -90,7 +95,10 @@ describe('Database Schema Sync Test', () => {
 
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys((schema as z.ZodObject<any>).shape);
-      const extraColumns = difference(dbColumnNames, schemaKeys);
+      const extraColumns = difference(
+        difference(dbColumnNames, schemaKeys),
+        extraDatabaseColumnExceptions[tableName] ?? [],
+      );
       const missingColumns = difference(schemaKeys, dbColumnNames);
 
       if (extraColumns.length > 0 || missingColumns.length > 0) {
