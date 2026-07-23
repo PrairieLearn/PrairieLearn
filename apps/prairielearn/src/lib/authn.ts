@@ -50,7 +50,7 @@ export async function loadUser(
     'lti13_pending_sub',
     'lti13_pending_instance_id',
   ].some((key) => Object.hasOwn(req.session, key));
-  if (isEnterprise() && hasPendingLti13Auth) {
+  if (isEnterprise() && hasPendingLti13Auth && authnParams.user_id === undefined) {
     // These imports must remain dynamic so non-enterprise installations do not load
     // enterprise-only code.
     const { authenticatePendingLti13User, consumePendingLti13Auth } =
@@ -72,7 +72,6 @@ export async function loadUser(
   }
 
   const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
-
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
   }
@@ -88,16 +87,25 @@ export async function loadUser(
     // The LTI 1.3 launch flow stores `lti13_claims` and `authn_lti13_instance_id`
     // in the session before authentication completes and consumes them afterward.
     // These must be carried forward across this session regeneration.
-
     const inLti13Launch = authnParams.provider === 'LTI 1.3' || consumedPendingLti13Auth;
-
     const preservedSessionData = inLti13Launch
       ? ['lti13_claims', 'authn_lti13_instance_id']
           .map((key) => [key, req.session[key]] as const)
           .filter(([_, v]) => v !== undefined)
       : [];
 
-    await req.session.regenerate();
+    try {
+      await req.session.regenerate();
+    } catch (error) {
+      // Never leave a verified launch attached to the previous authenticated
+      // session when the identity transition itself could not complete.
+      if (inLti13Launch) {
+        delete req.session.lti13_claims;
+        delete req.session.authn_lti13_instance_id;
+        clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
+      }
+      throw error;
+    }
 
     for (const [key, value] of preservedSessionData) {
       req.session[key] = value;

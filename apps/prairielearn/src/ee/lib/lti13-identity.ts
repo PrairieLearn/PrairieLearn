@@ -76,20 +76,18 @@ type MutableLti13IdentityDecision = Extract<
 >;
 
 export async function resolveLti13IdentityMatch({
-  launch,
-  loadSnapshot,
+  decide,
   applyMutation,
   isRetryableConflict,
 }: {
-  launch: Lti13IdentityLaunch;
-  loadSnapshot: () => Promise<Lti13IdentitySnapshot>;
+  decide: () => Promise<Lti13IdentityDecision>;
   applyMutation: (
     decision: MutableLti13IdentityDecision,
   ) => Promise<Extract<Lti13IdentityDecision, { type: 'authenticate' }>>;
   isRetryableConflict: (error: unknown) => boolean;
 }): Promise<Extract<Lti13IdentityDecision, { type: 'authenticate' | 'secondary_auth' }>> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const decision = decideLti13IdentityMatch(launch, await loadSnapshot());
+    const decision = await decide();
     if (decision.type !== 'create_binding' && decision.type !== 'create_user') {
       return decision;
     }
@@ -102,7 +100,7 @@ export async function resolveLti13IdentityMatch({
         return { type: 'secondary_auth', reason: 'concurrency_conflict' };
       }
       // Another request may have created either identity while this request was
-      // inserting. Reload all matches once and rerun the complete decision tree.
+      // inserting. Rerun the complete decision tree against fresh data once.
     }
   }
 

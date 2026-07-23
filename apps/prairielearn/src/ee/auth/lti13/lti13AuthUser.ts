@@ -7,10 +7,14 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { selectOrInsertUserId } from '../../../lib/authn-user.js';
 import { type LoadUserAuth } from '../../../lib/authn.types.js';
-import { type Lti13Instance, type User, UserSchema } from '../../../lib/db-types.js';
+import { type Lti13Instance, UserSchema } from '../../../lib/db-types.js';
 import { insertAuditEvent } from '../../../models/audit-event.js';
 import { selectAndLockUser, selectOptionalUserByUin } from '../../../models/user.js';
-import { getUsableLti13Uin, resolveLti13IdentityMatch } from '../../lib/lti13-identity.js';
+import {
+  decideLti13IdentityMatch,
+  getUsableLti13Uin,
+  resolveLti13IdentityMatch,
+} from '../../lib/lti13-identity.js';
 import {
   insertLti13User,
   selectAndLockOptionalLti13UserForUser,
@@ -81,13 +85,14 @@ export function createPendingLti13Auth({
 export function consumePendingLti13Auth(session: SessionData, now = new Date()): PendingLti13Auth {
   const value = session.pending_lti13_auth;
 
+  // Concurrent requests can each have an already-loaded copy of this state.
+  // We accept duplicate processing in that rare case: the identity transaction
+  // revalidates ownership under row locks, and uniqueness conflicts retry or
+  // fail closed. The remaining risk is a failed callback forcing a new launch.
   // Delete before validating so malformed, expired, and valid state are all
   // one-time. The three legacy keys are deliberately rejected and cleared so
   // sessions created by an older server cannot bypass the expiration check.
-  delete session.pending_lti13_auth;
-  delete session.lti13_pending_uin;
-  delete session.lti13_pending_sub;
-  delete session.lti13_pending_instance_id;
+  clearPendingLti13Auth(session);
 
   const result = PendingLti13AuthSchema.safeParse(value);
   if (!result.success || new Date(result.data.expires_at).getTime() <= now.getTime()) {
@@ -98,6 +103,13 @@ export function consumePendingLti13Auth(session: SessionData, now = new Date()):
   }
 
   return result.data;
+}
+
+export function clearPendingLti13Auth(session: SessionData) {
+  delete session.pending_lti13_auth;
+  delete session.lti13_pending_uin;
+  delete session.lti13_pending_sub;
+  delete session.lti13_pending_instance_id;
 }
 
 function isIdentityUniqueViolation(error: unknown): boolean {
@@ -136,7 +148,7 @@ async function createUserAndLti13Binding({
   launch: Lti13LaunchData;
   uid: string;
   uin: string;
-}): Promise<User> {
+}): Promise<string> {
   return await runInTransactionAsync(async () => {
     const user = await queryRow(
       sql.insert_user,
@@ -164,30 +176,13 @@ async function createUserAndLti13Binding({
       institutionId: user.institution_id,
       subjectUserId: user.id,
     });
-    return user;
+    return user.id;
   });
 }
 
-export async function matchLti13LaunchUser(launch: Lti13LaunchData): Promise<
-  | { type: 'authenticate'; userId: string }
-  | {
-      type: 'secondary_auth';
-      reason: 'concurrency_conflict' | 'sub_replacement' | 'sub_uin_mismatch' | 'unmatched';
-    }
-> {
-  // Without a UIN we are only allowed to use an existing sub binding, so there
-  // is no reason to validate a candidate UID for the new-user path.
-  const candidateUid =
-    launch.uin === null
-      ? null
-      : await candidateUidForLaunch({
-          email: launch.email,
-          institution_id: launch.instance.institution_id,
-        });
-
+export async function matchLti13LaunchUser(launch: Lti13LaunchData) {
   return await resolveLti13IdentityMatch({
-    launch: { sub: launch.sub, uin: launch.uin, candidateUid },
-    loadSnapshot: async () => {
+    decide: async () => {
       const [userFromSub, userFromUin] = await Promise.all([
         selectOptionalUserByLti13Sub({
           lti13_instance_id: launch.instance.id,
@@ -200,14 +195,25 @@ export async function matchLti13LaunchUser(launch: Lti13LaunchData): Promise<
               uin: launch.uin,
             }),
       ]);
-      const userFromUinBinding = userFromUin
-        ? await selectOptionalLti13UserForUser({
-            user_id: userFromUin.id,
-            lti13_instance_id: launch.instance.id,
-          })
-        : null;
+      const userFromUinBinding =
+        !userFromSub && userFromUin
+          ? await selectOptionalLti13UserForUser({
+              user_id: userFromUin.id,
+              lti13_instance_id: launch.instance.id,
+            })
+          : null;
+      const candidateUid =
+        !userFromSub && launch.uin !== null && userFromUin === null
+          ? await candidateUidForLaunch({
+              email: launch.email,
+              institution_id: launch.instance.institution_id,
+            })
+          : null;
 
-      return { userFromSub, userFromUin, userFromUinBinding };
+      return decideLti13IdentityMatch(
+        { sub: launch.sub, uin: launch.uin, candidateUid },
+        { userFromSub, userFromUin, userFromUinBinding },
+      );
     },
     applyMutation: async (decision) => {
       if (decision.type === 'create_binding') {
@@ -219,12 +225,12 @@ export async function matchLti13LaunchUser(launch: Lti13LaunchData): Promise<
         return { type: 'authenticate', userId: decision.userId };
       }
 
-      const user = await createUserAndLti13Binding({
+      const userId = await createUserAndLti13Binding({
         launch,
         uid: decision.uid,
         uin: decision.uin,
       });
-      return { type: 'authenticate', userId: user.id };
+      return { type: 'authenticate', userId };
     },
     isRetryableConflict: isIdentityUniqueViolation,
   });

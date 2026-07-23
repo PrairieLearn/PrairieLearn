@@ -19,7 +19,11 @@ import { Lti13Claim, Lti13ClaimSchema, getOpenidClientConfig } from '../../lib/l
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
-import { createPendingLti13Auth, matchLti13LaunchUser } from './lti13AuthUser.js';
+import {
+  clearPendingLti13Auth,
+  createPendingLti13Auth,
+  matchLti13LaunchUser,
+} from './lti13AuthUser.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -215,6 +219,12 @@ router.post(
     });
 
     // If we get here, auth succeeded and lti13_claims is populated
+
+    // A newly verified launch supersedes any incomplete launch in this browser
+    // session. If this launch also needs secondary authentication, fresh state
+    // and a fresh redirect cookie are installed below.
+    clearPendingLti13Auth(req.session);
+    clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
 
     // Put the LTI 1.3 claims in the session
     req.session.lti13_claims = lti13_claims;

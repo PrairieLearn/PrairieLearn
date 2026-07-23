@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperDb from '../tests/helperDb.js';
+import { withConfig } from '../tests/utils/config.js';
 
 import { loadUser } from './authn.js';
 
@@ -87,6 +88,31 @@ describe('loadUser', () => {
     );
 
     assert.equal(req.session.lockdown_browser, true);
+  });
+
+  it('does not consume pending LTI state during middleware session reloads', async () => {
+    const req = makeReq();
+    const res = makeRes();
+    await loadTestUser(req, res);
+
+    const pendingLti13Auth = { marker: 'pending' };
+    req.session.pending_lti13_auth = pendingLti13Auth;
+    req.session.lti13_claims = { sub: 'pending-sub' };
+
+    await withConfig({ isEnterprise: true }, async () => {
+      await loadUser(
+        req,
+        res,
+        {
+          user_id: req.session.user_id,
+          provider: req.session.authn_provider_name,
+        },
+        { preserveLockdownBrowser: true },
+      );
+    });
+
+    assert.deepEqual(req.session.pending_lti13_auth, pendingLti13Auth);
+    assert.deepEqual(req.session.lti13_claims, { sub: 'pending-sub' });
   });
 
   it('regenerates the session when elevating to LockDown Browser state', async () => {

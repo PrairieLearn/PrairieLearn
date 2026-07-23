@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import {
   type Lti13IdentitySnapshot,
@@ -12,6 +12,29 @@ const EMPTY_SNAPSHOT: Lti13IdentitySnapshot = {
   userFromUin: null,
   userFromUinBinding: null,
 };
+
+type Launch = Parameters<typeof decideLti13IdentityMatch>[0];
+type Decision = ReturnType<typeof decideLti13IdentityMatch>;
+
+function launch(overrides: Partial<Launch> = {}): Launch {
+  return { sub: 'new-sub', uin: 'matching-uin', candidateUid: null, ...overrides };
+}
+
+function snapshot(overrides: Partial<Lti13IdentitySnapshot> = {}): Lti13IdentitySnapshot {
+  return { ...EMPTY_SNAPSHOT, ...overrides };
+}
+
+function user(id: string, uin: string | null) {
+  return { id, uin };
+}
+
+function authenticate(userId: string): Decision {
+  return { type: 'authenticate', userId };
+}
+
+function secondary(reason: Extract<Decision, { type: 'secondary_auth' }>['reason']): Decision {
+  return { type: 'secondary_auth', reason };
+}
 
 describe('getUsableLti13Uin', () => {
   test.each([
@@ -33,159 +56,118 @@ describe('getUsableLti13Uin', () => {
 });
 
 describe('decideLti13IdentityMatch', () => {
-  test('uses an existing sub binding when no UIN is configured', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'sub', uin: null, candidateUid: 'candidate@example.com' },
-        {
-          ...EMPTY_SNAPSHOT,
-          userFromSub: { id: '1', uin: 'stored-uin' },
-        },
-      ),
-    ).toEqual({ type: 'authenticate', userId: '1' });
-  });
+  const cases: [string, Launch, Lti13IdentitySnapshot, Decision][] = [
+    [
+      'uses an existing sub without a configured UIN',
+      launch({ uin: null }),
+      snapshot({ userFromSub: user('1', 'stored-uin') }),
+      authenticate('1'),
+    ],
+    [
+      'uses an existing sub corroborated by the launch UIN',
+      launch(),
+      snapshot({ userFromSub: user('1', 'matching-uin') }),
+      authenticate('1'),
+    ],
+    ...[null, 'different-uin'].map((uin): [string, Launch, Lti13IdentitySnapshot, Decision] => [
+      `requires secondary auth when the bound user has UIN ${JSON.stringify(uin)}`,
+      launch(),
+      snapshot({ userFromSub: user('1', uin) }),
+      secondary('sub_uin_mismatch'),
+    ]),
+    [
+      'creates a missing binding for an existing UIN identity',
+      launch(),
+      snapshot({ userFromUin: user('2', 'matching-uin') }),
+      { type: 'create_binding', userId: '2' },
+    ],
+    [
+      'uses a UIN identity whose binding already matches',
+      launch({ sub: 'existing-sub' }),
+      snapshot({
+        userFromUin: user('2', 'matching-uin'),
+        userFromUinBinding: { sub: 'existing-sub' },
+      }),
+      authenticate('2'),
+    ],
+    [
+      'requires secondary auth before replacing a UIN identity binding',
+      launch(),
+      snapshot({
+        userFromUin: user('2', 'matching-uin'),
+        userFromUinBinding: { sub: 'old-sub' },
+      }),
+      secondary('sub_replacement'),
+    ],
+    [
+      'creates a user with both a configured UIN and valid UID',
+      launch({ candidateUid: 'new@example.com' }),
+      EMPTY_SNAPSHOT,
+      { type: 'create_user', uid: 'new@example.com', uin: 'matching-uin' },
+    ],
+    [
+      'does not create a user from a UID alone',
+      launch({ uin: null, candidateUid: 'new@example.com' }),
+      EMPTY_SNAPSHOT,
+      secondary('unmatched'),
+    ],
+    ['does not create a user from a UIN alone', launch(), EMPTY_SNAPSHOT, secondary('unmatched')],
+  ];
 
-  test('uses an existing sub binding when its UIN agrees with the launch', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'sub', uin: 'matching-uin', candidateUid: null },
-        {
-          ...EMPTY_SNAPSHOT,
-          userFromSub: { id: '1', uin: 'matching-uin' },
-        },
-      ),
-    ).toEqual({ type: 'authenticate', userId: '1' });
-  });
-
-  test.each([null, 'different-uin'])(
-    'requires secondary auth for a sub/UIN mismatch: %j',
-    (uin) => {
-      expect(
-        decideLti13IdentityMatch(
-          { sub: 'sub', uin: 'launch-uin', candidateUid: null },
-          {
-            ...EMPTY_SNAPSHOT,
-            userFromSub: { id: '1', uin },
-          },
-        ),
-      ).toEqual({ type: 'secondary_auth', reason: 'sub_uin_mismatch' });
-    },
-  );
-
-  test('creates a binding for an existing UIN identity without one', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'new-sub', uin: 'matching-uin', candidateUid: null },
-        {
-          ...EMPTY_SNAPSHOT,
-          userFromUin: { id: '2', uin: 'matching-uin' },
-        },
-      ),
-    ).toEqual({ type: 'create_binding', userId: '2' });
-  });
-
-  test('uses an existing UIN identity whose binding already matches', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'existing-sub', uin: 'matching-uin', candidateUid: null },
-        {
-          userFromSub: null,
-          userFromUin: { id: '2', uin: 'matching-uin' },
-          userFromUinBinding: { sub: 'existing-sub' },
-        },
-      ),
-    ).toEqual({ type: 'authenticate', userId: '2' });
-  });
-
-  test('requires secondary auth before replacing a UIN identity binding', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'new-sub', uin: 'matching-uin', candidateUid: null },
-        {
-          userFromSub: null,
-          userFromUin: { id: '2', uin: 'matching-uin' },
-          userFromUinBinding: { sub: 'old-sub' },
-        },
-      ),
-    ).toEqual({ type: 'secondary_auth', reason: 'sub_replacement' });
-  });
-
-  test('creates a user only with both a configured UIN and candidate UID', () => {
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'new-sub', uin: 'new-uin', candidateUid: 'new@example.com' },
-        EMPTY_SNAPSHOT,
-      ),
-    ).toEqual({ type: 'create_user', uid: 'new@example.com', uin: 'new-uin' });
-
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'new-sub', uin: null, candidateUid: 'new@example.com' },
-        EMPTY_SNAPSHOT,
-      ),
-    ).toEqual({ type: 'secondary_auth', reason: 'unmatched' });
-    expect(
-      decideLti13IdentityMatch(
-        { sub: 'new-sub', uin: 'new-uin', candidateUid: null },
-        EMPTY_SNAPSHOT,
-      ),
-    ).toEqual({ type: 'secondary_auth', reason: 'unmatched' });
+  test.each(cases)('%s', (_name, launch, snapshot, expected) => {
+    expect(decideLti13IdentityMatch(launch, snapshot)).toEqual(expected);
   });
 });
 
 describe('resolveLti13IdentityMatch', () => {
   const launch = { sub: 'sub', uin: 'uin', candidateUid: 'candidate@example.com' };
 
-  test('reloads fresh identities once after a uniqueness race', async () => {
-    const loadSnapshot = vi
-      .fn<() => Promise<Lti13IdentitySnapshot>>()
-      .mockResolvedValueOnce(EMPTY_SNAPSHOT)
-      .mockResolvedValueOnce({
-        ...EMPTY_SNAPSHOT,
-        userFromSub: { id: 'created-concurrently', uin: 'uin' },
-      });
-    const applyMutation = vi.fn().mockRejectedValue({ code: '23505' });
+  async function resolveConflicts(decisions: Decision[]) {
+    let decisionCount = 0;
+    let mutationCount = 0;
+    const result = await resolveLti13IdentityMatch({
+      decide: async () => decisions[decisionCount++],
+      applyMutation: async () => {
+        mutationCount += 1;
+        throw new Error('conflict');
+      },
+      isRetryableConflict: () => true,
+    });
+    return { result, decisionCount, mutationCount };
+  }
 
-    await expect(
-      resolveLti13IdentityMatch({
-        launch,
-        loadSnapshot,
-        applyMutation,
-        isRetryableConflict: () => true,
-      }),
-    ).resolves.toEqual({ type: 'authenticate', userId: 'created-concurrently' });
-    expect(loadSnapshot).toHaveBeenCalledTimes(2);
-    expect(applyMutation).toHaveBeenCalledTimes(1);
+  test('reloads fresh identities once after a uniqueness race', async () => {
+    const { result, decisionCount, mutationCount } = await resolveConflicts([
+      decideLti13IdentityMatch(launch, EMPTY_SNAPSHOT),
+      { type: 'authenticate', userId: 'created-concurrently' },
+    ]);
+
+    expect(result).toEqual({ type: 'authenticate', userId: 'created-concurrently' });
+    expect([decisionCount, mutationCount]).toEqual([2, 1]);
   });
 
   test('falls back to secondary auth after a second uniqueness race', async () => {
-    const loadSnapshot = vi.fn().mockResolvedValue(EMPTY_SNAPSHOT);
-    const applyMutation = vi.fn().mockRejectedValue({ code: '23505' });
+    const decision = decideLti13IdentityMatch(launch, EMPTY_SNAPSHOT);
+    const { result, decisionCount, mutationCount } = await resolveConflicts([decision, decision]);
 
-    await expect(
-      resolveLti13IdentityMatch({
-        launch,
-        loadSnapshot,
-        applyMutation,
-        isRetryableConflict: () => true,
-      }),
-    ).resolves.toEqual({ type: 'secondary_auth', reason: 'concurrency_conflict' });
-    expect(loadSnapshot).toHaveBeenCalledTimes(2);
-    expect(applyMutation).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ type: 'secondary_auth', reason: 'concurrency_conflict' });
+    expect([decisionCount, mutationCount]).toEqual([2, 2]);
   });
 
   test('does not retry non-uniqueness errors', async () => {
     const error = new Error('database unavailable');
-    const applyMutation = vi.fn().mockRejectedValue(error);
+    let mutationCount = 0;
 
     await expect(
       resolveLti13IdentityMatch({
-        launch,
-        loadSnapshot: async () => EMPTY_SNAPSHOT,
-        applyMutation,
+        decide: async () => decideLti13IdentityMatch(launch, EMPTY_SNAPSHOT),
+        applyMutation: async () => {
+          mutationCount += 1;
+          throw error;
+        },
         isRetryableConflict: () => false,
       }),
     ).rejects.toBe(error);
-    expect(applyMutation).toHaveBeenCalledTimes(1);
+    expect(mutationCount).toBe(1);
   });
 });

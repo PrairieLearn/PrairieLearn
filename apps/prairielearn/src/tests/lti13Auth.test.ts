@@ -33,6 +33,39 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
+  async function createTestLti13Instance(
+    attributes?: NonNullable<Parameters<typeof createLti13Instance>[0]['attributes']>,
+  ) {
+    await createLti13Instance({
+      siteUrl,
+      issuer_params: {
+        issuer: `http://localhost:${oidcProviderPort}`,
+        authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+        jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+        token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+      },
+      attributes,
+    });
+  }
+
+  async function makeTestLoginExecutor({
+    instanceId,
+    ...options
+  }: { instanceId: string } & Pick<
+    Parameters<typeof makeLoginExecutor>[0],
+    'fetchWithCookies' | 'user'
+  >) {
+    const instanceUrl = `${siteUrl}/pl/lti13_instance/${instanceId}`;
+    return await makeLoginExecutor({
+      ...options,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${instanceUrl}/auth/login`,
+      callbackUrl: `${instanceUrl}/auth/callback`,
+      targetLinkUri: `${instanceUrl}/course_navigation`,
+    });
+  }
+
   beforeAll(async () => {
     config.isEnterprise = true;
     await helperServer.before()();
@@ -55,15 +88,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
   });
 
   test('create and configure an LTI instance', async () => {
-    await createLti13Instance({
-      siteUrl,
-      issuer_params: {
-        issuer: `http://localhost:${oidcProviderPort}`,
-        authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-        jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-        token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-      },
-    });
+    await createTestLti13Instance();
   });
 
   test('enable LTI 1.3 as an authentication provider', async () => {
@@ -104,7 +129,8 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
   test('perform login', async () => {
     const fetchWithCookies = fetchCookie(fetch);
 
-    const executor = await makeLoginExecutor({
+    const executor = await makeTestLoginExecutor({
+      instanceId: '1',
       user: {
         name: 'Test User',
         email: 'test-user@example.com',
@@ -112,11 +138,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
         sub: USER_SUB,
       },
       fetchWithCookies,
-      oidcProviderPort,
-      keystore,
-      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
-      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-      targetLinkUri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
     });
 
     const res = await executor.login();
@@ -157,7 +178,8 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     { description: 'whitespace-padded', uin: ' malformed ' },
   ])('rejects $description configured UIN data', async ({ description, uin }) => {
     await withoutLogging(async () => {
-      const executor = await makeLoginExecutor({
+      const executor = await makeTestLoginExecutor({
+        instanceId: '1',
         user: {
           name: `Malformed UIN ${description}`,
           email: `malformed-uin-${description.replaceAll(' ', '-')}@example.com`,
@@ -165,11 +187,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: `malformed-uin-${description.replaceAll(' ', '-')}`,
         },
         fetchWithCookies: fetchCookie(fetch),
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
-        targetLinkUri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       });
 
       const res = await executor.login();
@@ -272,27 +289,18 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
 
   describe('LTI 1.3 instance that does not provide UIDs', () => {
     test('create second LTI 1.3 instance', async () => {
-      await createLti13Instance({
-        siteUrl,
-        issuer_params: {
-          issuer: `http://localhost:${oidcProviderPort}`,
-          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-        },
-        attributes: {
-          uid_attribute: '',
-          uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
-          email_attribute: 'email',
-          name_attribute: 'name',
-        },
+      await createTestLti13Instance({
+        uid_attribute: '',
+        uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+        email_attribute: 'email',
+        name_attribute: 'name',
       });
     });
 
     test('creates a user from the configured UIN and institution-valid email', async () => {
       const fetchWithCookies = fetchCookie(fetch);
-      const callbackUrl = `${siteUrl}/pl/lti13_instance/2/auth/callback`;
-      const executor = await makeLoginExecutor({
+      const executor = await makeTestLoginExecutor({
+        instanceId: '2',
         user: {
           name: 'Test User 2',
           email: 'test-user-2@example.com',
@@ -300,11 +308,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: USER_WITHOUT_UID_SUB,
         },
         fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
-        callbackUrl,
-        targetLinkUri: `${siteUrl}/pl/lti13_instance/2/course_navigation`,
       });
 
       const res = await executor.login();
@@ -333,7 +336,8 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
       const fetchWithCookies = fetchCookie(fetch);
 
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/2/course_navigation`;
-      const executor = await makeLoginExecutor({
+      const executor = await makeTestLoginExecutor({
+        instanceId: '2',
         user: {
           name: 'Test User 2',
           email: 'test-user-2@example.com',
@@ -341,11 +345,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: USER_WITHOUT_UID_SUB,
         },
         fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/2/auth/callback`,
-        targetLinkUri,
       });
 
       const res = await executor.login();
@@ -362,26 +361,17 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     const testUin = '1234512345';
 
     test('create LTI 1.3 instance with UID but no UIN attribute', async () => {
-      await createLti13Instance({
-        siteUrl,
-        issuer_params: {
-          issuer: `http://localhost:${oidcProviderPort}`,
-          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-        },
-        attributes: {
-          uid_attribute: 'email',
-          uin_attribute: '',
-          email_attribute: 'email',
-          name_attribute: 'name',
-        },
+      await createTestLti13Instance({
+        uid_attribute: 'email',
+        uin_attribute: '',
+        email_attribute: 'email',
+        name_attribute: 'name',
       });
     });
 
     test('requires secondary auth before creating the initial binding', async () => {
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
-      const initialExecutor = await makeLoginExecutor({
+      const initialExecutor = await makeTestLoginExecutor({
+        instanceId: '3',
         user: {
           name: 'Test User No UIN',
           email: initialUid,
@@ -389,11 +379,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: testSub,
         },
         fetchWithCookies: sharedFetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-        targetLinkUri,
       });
 
       const initialLoginResult = await initialExecutor.login();
@@ -435,7 +420,8 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
 
     test('does not update a bound user profile from a later LTI launch', async () => {
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
-      const executor = await makeLoginExecutor({
+      const executor = await makeTestLoginExecutor({
+        instanceId: '3',
         user: {
           name: 'UID Update Test User No UIN',
           email: newUid,
@@ -443,11 +429,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: testSub,
         },
         fetchWithCookies: fetchCookie(fetch),
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-        targetLinkUri,
       });
 
       const loginResult = await executor.login();
@@ -466,27 +447,17 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     const fetchWithCookies = fetchCookie(fetch);
 
     test('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
-      await createLti13Instance({
-        siteUrl,
-        issuer_params: {
-          issuer: `http://localhost:${oidcProviderPort}`,
-          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-        },
-        attributes: {
-          uid_attribute: '',
-          uin_attribute: '',
-          email_attribute: 'email',
-          name_attribute: 'name',
-        },
+      await createTestLti13Instance({
+        uid_attribute: '',
+        uin_attribute: '',
+        email_attribute: 'email',
+        name_attribute: 'name',
       });
     });
 
     test('unmatched login falls back to secondary auth', async () => {
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
-
-      const executor = await makeLoginExecutor({
+      const executor = await makeTestLoginExecutor({
+        instanceId: '4',
         user: {
           name: 'Test User',
           email: 'test-user@example.com',
@@ -494,11 +465,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           sub: USER_SUB,
         },
         fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
-        targetLinkUri,
       });
 
       const res = await executor.login();

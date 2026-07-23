@@ -1,12 +1,11 @@
-import { type Request, type Response } from 'express';
 import { afterAll, assert, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { loadUser } from '../../../lib/authn.js';
+import { type LoadUserAuth } from '../../../lib/authn.types.js';
 import { config } from '../../../lib/config.js';
-import { Lti13InstanceSchema, type User } from '../../../lib/db-types.js';
+import { type Lti13Instance, Lti13InstanceSchema, type User } from '../../../lib/db-types.js';
 import { selectAuditEventsByInstitutionId } from '../../../models/audit-event.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
 import * as helperDb from '../../../tests/helperDb.js';
@@ -26,16 +25,32 @@ async function createFixture() {
   return await queryRow(sql.insert_lti13_instance, Lti13InstanceSchema);
 }
 
-async function createUser({
-  uid,
-  uin,
-  name,
-}: {
-  uid: string;
-  uin: string;
-  name: string;
-}): Promise<User> {
+async function createUser(uid: string, uin: string, name: string): Promise<User> {
   return await getOrCreateUser({ uid, uin, name, email: uid, institutionId: '1' });
+}
+
+function authnParams(uid: string, uin: string, name = uid, email = uid): LoadUserAuth {
+  return { uid, uin, name, email, provider: 'dev' };
+}
+
+function pendingLti13Auth(lti13_instance_id: string, sub: string, uin: string | null) {
+  return createPendingLti13Auth({
+    lti13_instance_id,
+    sub,
+    uin,
+    launchExpiresAtSeconds: Date.now() / 1000 + 60,
+  });
+}
+
+async function insertBinding(instance: Lti13Instance, user: User, sub: string) {
+  return await insertLti13User({ user_id: user.id, lti13_instance_id: instance.id, sub });
+}
+
+async function selectBinding(instance: Lti13Instance, user: User) {
+  return await selectOptionalLti13UserForUser({
+    user_id: user.id,
+    lti13_instance_id: instance.id,
+  });
 }
 
 describe('LTI 1.3 authentication identity transactions', { concurrent: false }, () => {
@@ -64,10 +79,7 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     const user = await selectOptionalUserByUid('new-user@example.com');
     assert.ok(user);
     assert.equal(user.uin, 'new-uin');
-    const binding = await selectOptionalLti13UserForUser({
-      user_id: user.id,
-      lti13_instance_id: instance.id,
-    });
+    const binding = await selectBinding(instance, user);
     assert.equal(binding?.sub, 'new-sub');
 
     const auditEvents = await selectAuditEventsByInstitutionId({
@@ -96,11 +108,11 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('retries a UID uniqueness conflict once before falling back to secondary auth', async () => {
     const instance = await createFixture();
-    const existingUser = await createUser({
-      uid: 'uid-conflict@example.com',
-      uin: 'existing-uin',
-      name: 'Existing User',
-    });
+    const existingUser = await createUser(
+      'uid-conflict@example.com',
+      'existing-uin',
+      'Existing User',
+    );
 
     const result = await matchLti13LaunchUser({
       instance,
@@ -113,21 +125,16 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     assert.deepEqual(result, { type: 'secondary_auth', reason: 'concurrency_conflict' });
     const unchangedUser = await selectOptionalUserByUid(existingUser.uid);
     assert.equal(unchangedUser?.uin, 'existing-uin');
-    assert.isNull(
-      await selectOptionalLti13UserForUser({
-        user_id: existingUser.id,
-        lti13_instance_id: instance.id,
-      }),
-    );
+    assert.isNull(await selectBinding(instance, existingUser));
   });
 
   test('adds a binding for an existing UIN identity without changing its profile', async () => {
     const instance = await createFixture();
-    const user = await createUser({
-      uid: 'existing@example.com',
-      uin: 'existing-uin',
-      name: 'Authoritative Existing Name',
-    });
+    const user = await createUser(
+      'existing@example.com',
+      'existing-uin',
+      'Authoritative Existing Name',
+    );
 
     const result = await matchLti13LaunchUser({
       instance,
@@ -141,50 +148,47 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     const unchangedUser = await selectOptionalUserByUid(user.uid);
     assert.equal(unchangedUser?.name, 'Authoritative Existing Name');
     assert.equal(unchangedUser?.email, user.uid);
-    const binding = await selectOptionalLti13UserForUser({
-      user_id: user.id,
-      lti13_instance_id: instance.id,
-    });
+    const binding = await selectBinding(instance, user);
     assert.equal(binding?.sub, 'existing-user-sub');
+  });
+
+  test('an existing sub match does not evaluate weaker UID policy', async () => {
+    const instance = await createFixture();
+    const user = await createUser('existing-sub@example.com', 'existing-sub-uin', 'Existing Sub');
+    await insertBinding(instance, user, 'existing-sub');
+    await execute(sql.configure_invalid_uid_regexp);
+
+    const result = await matchLti13LaunchUser({
+      instance,
+      sub: 'existing-sub',
+      uin: user.uin,
+      name: 'Ignored Name',
+      email: 'candidate@example.com',
+    });
+
+    assert.deepEqual(result, { type: 'authenticate', userId: user.id });
   });
 
   test('secondary auth replaces a binding and audits it in the same transaction', async () => {
     const instance = await createFixture();
-    const user = await createUser({
-      uid: 'replacement@example.com',
-      uin: 'replacement-uin',
-      name: 'Old Name',
-    });
-    const oldBinding = await insertLti13User({
-      user_id: user.id,
-      lti13_instance_id: instance.id,
-      sub: 'old-sub',
-    });
+    const user = await createUser('replacement@example.com', 'replacement-uin', 'Old Name');
+    const oldBinding = await insertBinding(instance, user, 'old-sub');
 
     const userId = await authenticatePendingLti13User({
-      authnParams: {
-        uid: user.uid,
-        uin: user.uin,
-        name: 'Authoritative Name',
-        email: 'authoritative@example.com',
-        provider: 'dev',
-      },
-      pendingLti13Auth: createPendingLti13Auth({
-        lti13_instance_id: instance.id,
-        sub: 'new-sub',
-        uin: user.uin,
-        launchExpiresAtSeconds: Date.now() / 1000 + 60,
-      }),
+      authnParams: authnParams(
+        user.uid,
+        user.uin,
+        'Authoritative Name',
+        'authoritative@example.com',
+      ),
+      pendingLti13Auth: pendingLti13Auth(instance.id, 'new-sub', user.uin),
     });
 
     assert.equal(userId, user.id);
     const updatedUser = await selectOptionalUserByUid(user.uid);
     assert.equal(updatedUser?.name, 'Authoritative Name');
     assert.equal(updatedUser?.email, 'authoritative@example.com');
-    const updatedBinding = await selectOptionalLti13UserForUser({
-      user_id: user.id,
-      lti13_instance_id: instance.id,
-    });
+    const updatedBinding = await selectBinding(instance, user);
     assert.equal(updatedBinding?.sub, 'new-sub');
 
     const auditEvents = await selectAuditEventsByInstitutionId({
@@ -200,43 +204,25 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('rolls back authoritative profile changes when the launch sub belongs to another user', async () => {
     const instance = await createFixture();
-    const currentSubOwner = await createUser({
-      uid: 'owner@example.com',
-      uin: 'owner-uin',
-      name: 'Current Owner',
-    });
-    const authUser = await createUser({
-      uid: 'auth-user@example.com',
-      uin: 'auth-user-uin',
-      name: 'Original Auth Name',
-    });
-    await insertLti13User({
-      user_id: currentSubOwner.id,
-      lti13_instance_id: instance.id,
-      sub: 'claimed-sub',
-    });
-    await insertLti13User({
-      user_id: authUser.id,
-      lti13_instance_id: instance.id,
-      sub: 'auth-old-sub',
-    });
+    const currentSubOwner = await createUser('owner@example.com', 'owner-uin', 'Current Owner');
+    const authUser = await createUser(
+      'auth-user@example.com',
+      'auth-user-uin',
+      'Original Auth Name',
+    );
+    await insertBinding(instance, currentSubOwner, 'claimed-sub');
+    await insertBinding(instance, authUser, 'auth-old-sub');
 
     await withoutLogging(async () => {
       await expect(
         authenticatePendingLti13User({
-          authnParams: {
-            uid: authUser.uid,
-            uin: authUser.uin,
-            name: 'Must Roll Back',
-            email: 'changed@example.com',
-            provider: 'dev',
-          },
-          pendingLti13Auth: createPendingLti13Auth({
-            lti13_instance_id: instance.id,
-            sub: 'claimed-sub',
-            uin: authUser.uin,
-            launchExpiresAtSeconds: Date.now() / 1000 + 60,
-          }),
+          authnParams: authnParams(
+            authUser.uid,
+            authUser.uin,
+            'Must Roll Back',
+            'changed@example.com',
+          ),
+          pendingLti13Auth: pendingLti13Auth(instance.id, 'claimed-sub', authUser.uin),
         }),
       ).rejects.toThrow(/already linked to another user/);
     });
@@ -244,10 +230,7 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     const unchangedUser = await selectOptionalUserByUid(authUser.uid);
     assert.equal(unchangedUser?.name, 'Original Auth Name');
     assert.equal(unchangedUser?.email, authUser.uid);
-    const unchangedBinding = await selectOptionalLti13UserForUser({
-      user_id: authUser.id,
-      lti13_instance_id: instance.id,
-    });
+    const unchangedBinding = await selectBinding(instance, authUser);
     assert.equal(unchangedBinding?.sub, 'auth-old-sub');
     const auditEvents = await selectAuditEventsByInstitutionId({
       institution_id: '1',
@@ -262,19 +245,8 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     await withoutLogging(async () => {
       await expect(
         authenticatePendingLti13User({
-          authnParams: {
-            uid: 'mismatch@example.com',
-            uin: 'auth-uin',
-            name: 'Mismatch',
-            email: 'mismatch@example.com',
-            provider: 'dev',
-          },
-          pendingLti13Auth: createPendingLti13Auth({
-            lti13_instance_id: instance.id,
-            sub: 'mismatch-sub',
-            uin: 'launch-uin',
-            launchExpiresAtSeconds: Date.now() / 1000 + 60,
-          }),
+          authnParams: authnParams('mismatch@example.com', 'auth-uin', 'Mismatch'),
+          pendingLti13Auth: pendingLti13Auth(instance.id, 'mismatch-sub', 'launch-uin'),
         }),
       ).rejects.toThrow(/identities do not match/);
     });
@@ -284,33 +256,18 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('fails closed after repeated secondary-auth uniqueness conflicts', async () => {
     const instance = await createFixture();
-    const authUser = await createUser({
-      uid: 'canonical@example.com',
-      uin: 'canonical-uin',
-      name: 'Canonical User',
-    });
-    const uidOwner = await createUser({
-      uid: 'already-owned@example.com',
-      uin: 'other-uin',
-      name: 'UID Owner',
-    });
+    const authUser = await createUser('canonical@example.com', 'canonical-uin', 'Canonical User');
+    const uidOwner = await createUser('already-owned@example.com', 'other-uin', 'UID Owner');
 
     await withoutLogging(async () => {
       await expect(
         authenticatePendingLti13User({
-          authnParams: {
-            uid: uidOwner.uid,
-            uin: authUser.uin,
-            name: 'Must Not Commit',
-            email: uidOwner.uid,
-            provider: 'dev',
-          },
-          pendingLti13Auth: createPendingLti13Auth({
-            lti13_instance_id: instance.id,
-            sub: 'secondary-unique-conflict-sub',
-            uin: authUser.uin,
-            launchExpiresAtSeconds: Date.now() / 1000 + 60,
-          }),
+          authnParams: authnParams(uidOwner.uid, authUser.uin, 'Must Not Commit'),
+          pendingLti13Auth: pendingLti13Auth(
+            instance.id,
+            'secondary-unique-conflict-sub',
+            authUser.uin,
+          ),
         }),
       ).rejects.toThrow(/Unable to safely link/);
     });
@@ -318,49 +275,6 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     const unchangedAuthUser = await selectOptionalUserByUid(authUser.uid);
     assert.equal(unchangedAuthUser?.name, 'Canonical User');
     assert.equal(unchangedAuthUser?.email, authUser.uid);
-    assert.isNull(
-      await selectOptionalLti13UserForUser({
-        user_id: authUser.id,
-        lti13_instance_id: instance.id,
-      }),
-    );
-  });
-
-  test('consumes expired pending state before any normal authentication mutation', async () => {
-    await createFixture();
-    const req: Partial<Request> = {
-      cookies: {},
-      ip: '127.0.0.1',
-      session: {
-        id: 'expired-lti-session',
-        pending_lti13_auth: {
-          expires_at: new Date(Date.now() - 1).toISOString(),
-          lti13_instance_id: '1',
-          sub: 'expired-sub',
-          uin: 'expired-uin',
-        },
-        lti13_claims: { sub: 'expired-sub' },
-        authn_lti13_instance_id: '1',
-        destroy: async () => {},
-        regenerate: async () => {},
-        setExpiration: () => {},
-        getExpirationDate: () => new Date(Date.now() + 60_000),
-      },
-    };
-
-    await expect(
-      loadUser(req as Request, { locals: {}, clearCookie: () => {} } as unknown as Response, {
-        uid: 'expired@example.com',
-        uin: 'expired-uin',
-        name: 'Expired User',
-        email: 'expired@example.com',
-        provider: 'dev',
-      }),
-    ).rejects.toThrow(/invalid or expired/);
-
-    assert.notProperty(req.session!, 'pending_lti13_auth');
-    assert.notProperty(req.session!, 'lti13_claims');
-    assert.notProperty(req.session!, 'authn_lti13_instance_id');
-    assert.isNull(await selectOptionalUserByUid('expired@example.com'));
+    assert.isNull(await selectBinding(instance, authUser));
   });
 });

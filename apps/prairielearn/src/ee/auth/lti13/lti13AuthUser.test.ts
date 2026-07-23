@@ -1,44 +1,37 @@
 import { describe, expect, test } from 'vitest';
 
-import { consumePendingLti13Auth, createPendingLti13Auth } from './lti13AuthUser.js';
+import {
+  clearPendingLti13Auth,
+  consumePendingLti13Auth,
+  createPendingLti13Auth,
+} from './lti13AuthUser.js';
 
 const NOW = new Date('2026-07-22T12:00:00.000Z');
 
+function createState({
+  uin = 'uin',
+  expiresInSeconds = 60,
+}: { uin?: string | null; expiresInSeconds?: number } = {}) {
+  return createPendingLti13Auth({
+    lti13_instance_id: '1',
+    sub: 'sub',
+    uin,
+    launchExpiresAtSeconds: NOW.getTime() / 1000 + expiresInSeconds,
+    now: NOW,
+  });
+}
+
 describe('pending LTI secondary authentication state', () => {
   test('expires with the original LTI launch', () => {
-    const state = createPendingLti13Auth({
-      lti13_instance_id: '1',
-      sub: 'sub',
-      uin: 'uin',
-      launchExpiresAtSeconds: NOW.getTime() / 1000 + 60 * 60,
-      now: NOW,
-    });
-
-    expect(state.expires_at).toBe('2026-07-22T13:00:00.000Z');
+    expect(createState({ expiresInSeconds: 60 * 60 }).expires_at).toBe('2026-07-22T13:00:00.000Z');
   });
 
   test('rejects an already-expired launch', () => {
-    expect(() =>
-      createPendingLti13Auth({
-        lti13_instance_id: '1',
-        sub: 'sub',
-        uin: null,
-        launchExpiresAtSeconds: NOW.getTime() / 1000,
-        now: NOW,
-      }),
-    ).toThrow(/expired/);
+    expect(() => createState({ uin: null, expiresInSeconds: 0 })).toThrow(/expired/);
   });
 
-  test('is atomically consumed once', () => {
-    const session = {
-      pending_lti13_auth: createPendingLti13Auth({
-        lti13_instance_id: '1',
-        sub: 'sub',
-        uin: 'uin',
-        launchExpiresAtSeconds: NOW.getTime() / 1000 + 60,
-        now: NOW,
-      }),
-    };
+  test('is consumed once from a loaded session', () => {
+    const session = { pending_lti13_auth: createState() };
 
     expect(consumePendingLti13Auth(session, NOW)).toMatchObject({
       lti13_instance_id: '1',
@@ -84,5 +77,19 @@ describe('pending LTI secondary authentication state', () => {
 
     expect(() => consumePendingLti13Auth(session, NOW)).toThrow(/invalid or expired/);
     expect(session).toEqual({});
+  });
+
+  test('clears superseded pending and legacy state', () => {
+    const session = {
+      pending_lti13_auth: { marker: 'current' },
+      lti13_pending_uin: 'legacy-uin',
+      lti13_pending_sub: 'legacy-sub',
+      lti13_pending_instance_id: '1',
+      unrelated: 'preserved',
+    };
+
+    clearPendingLti13Auth(session);
+
+    expect(session).toEqual({ unrelated: 'preserved' });
   });
 });

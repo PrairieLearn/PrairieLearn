@@ -5,6 +5,13 @@ SET
 WHERE
   id = 1;
 
+-- BLOCK configure_invalid_uid_regexp
+UPDATE institutions
+SET
+  uid_regexp = '['
+WHERE
+  id = 1;
+
 -- BLOCK insert_lti13_instance
 INSERT INTO
   lti13_instances (institution_id, name)
