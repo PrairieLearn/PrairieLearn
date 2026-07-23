@@ -22,20 +22,20 @@ jobs:
     steps:
       - name: Generate token
         id: generate-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.CI_BOT_APP_ID }}
           private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
           ref: ${{ github.head_ref }}
 
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@v6
         with:
           version: 11
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -51,19 +51,4 @@ jobs:
         run: |
           git add .
           git commit -m 'Dedupe dependencies' || true
-          git push
-
-      # While dependabot uses hash versions for GitHub Actions if the action is
-      # pinned to a hash, it will not include the comment with the corresponding
-      # tag in the format used by our script. Therefore, we run the script to
-      # add the comment after deduping.
-      - name: 'Pin GitHub Actions'
-        run: python3 scripts/pin-github-actions.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 'Commit and push changes'
-        run: |
-          git add .
-          git commit -m 'Pin GitHub Actions' || true
           git push
