@@ -10,12 +10,6 @@ import {
 type Launch = Parameters<typeof decideLti13IdentityMatch>[0];
 type Decision = ReturnType<typeof decideLti13IdentityMatch>;
 
-const DEFAULT_LAUNCH: Launch = {
-  sub: 'new-sub',
-  uin: 'matching-uin',
-  candidateUid: null,
-};
-
 const EMPTY_SNAPSHOT: Lti13IdentitySnapshot = {
   userFromSub: null,
   userFromUin: null,
@@ -44,40 +38,89 @@ describe('getUsableLti13Uin', () => {
 describe('decideLti13IdentityMatch', () => {
   const cases: {
     name: string;
-    launch?: Partial<Launch>;
-    snapshot?: Partial<Lti13IdentitySnapshot>;
+    launch: Launch;
+    snapshot: Lti13IdentitySnapshot;
     expected: Decision;
   }[] = [
     {
       name: 'uses an existing sub without a configured UIN',
-      launch: { uin: null },
-      snapshot: { userFromSub: { id: '1', uin: 'stored-uin' } },
+      launch: {
+        sub: 'existing-sub',
+        uin: null,
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: { id: '1', uin: 'stored-uin' },
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'authenticate', userId: '1' },
     },
     {
       name: 'uses an existing sub corroborated by the launch UIN',
-      snapshot: { userFromSub: { id: '1', uin: 'matching-uin' } },
+      launch: {
+        sub: 'existing-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: { id: '1', uin: 'matching-uin' },
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'authenticate', userId: '1' },
     },
     {
       name: 'requires secondary auth when the bound user has no UIN',
-      snapshot: { userFromSub: { id: '1', uin: null } },
+      launch: {
+        sub: 'existing-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: { id: '1', uin: null },
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'secondary_auth', reason: 'sub_uin_mismatch' },
     },
     {
       name: 'requires secondary auth when the bound user has a different UIN',
-      snapshot: { userFromSub: { id: '1', uin: 'different-uin' } },
+      launch: {
+        sub: 'existing-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: { id: '1', uin: 'different-uin' },
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'secondary_auth', reason: 'sub_uin_mismatch' },
     },
     {
       name: 'creates a missing binding for an existing UIN identity',
-      snapshot: { userFromUin: { id: '2', uin: 'matching-uin' } },
+      launch: {
+        sub: 'new-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: null,
+        userFromUin: { id: '2', uin: 'matching-uin' },
+        userFromUinBinding: null,
+      },
       expected: { type: 'create_binding', userId: '2' },
     },
     {
       name: 'uses a UIN identity whose binding already matches',
-      launch: { sub: 'existing-sub' },
+      launch: {
+        sub: 'existing-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
       snapshot: {
+        userFromSub: null,
         userFromUin: { id: '2', uin: 'matching-uin' },
         userFromUinBinding: { sub: 'existing-sub' },
       },
@@ -85,7 +128,13 @@ describe('decideLti13IdentityMatch', () => {
     },
     {
       name: 'requires secondary auth before replacing a UIN identity binding',
+      launch: {
+        sub: 'new-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
       snapshot: {
+        userFromSub: null,
         userFromUin: { id: '2', uin: 'matching-uin' },
         userFromUinBinding: { sub: 'old-sub' },
       },
@@ -93,27 +142,50 @@ describe('decideLti13IdentityMatch', () => {
     },
     {
       name: 'creates a user with both a configured UIN and valid UID',
-      launch: { candidateUid: 'new@example.com' },
+      launch: {
+        sub: 'new-sub',
+        uin: 'matching-uin',
+        candidateUid: 'new@example.com',
+      },
+      snapshot: {
+        userFromSub: null,
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'create_user', uid: 'new@example.com', uin: 'matching-uin' },
     },
     {
       name: 'does not create a user from a UID alone',
-      launch: { uin: null, candidateUid: 'new@example.com' },
+      launch: {
+        sub: 'new-sub',
+        uin: null,
+        candidateUid: 'new@example.com',
+      },
+      snapshot: {
+        userFromSub: null,
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'secondary_auth', reason: 'unmatched' },
     },
     {
       name: 'does not create a user from a UIN alone',
+      launch: {
+        sub: 'new-sub',
+        uin: 'matching-uin',
+        candidateUid: null,
+      },
+      snapshot: {
+        userFromSub: null,
+        userFromUin: null,
+        userFromUinBinding: null,
+      },
       expected: { type: 'secondary_auth', reason: 'unmatched' },
     },
   ];
 
   test.each(cases)('$name', ({ launch, snapshot, expected }) => {
-    expect(
-      decideLti13IdentityMatch(
-        { ...DEFAULT_LAUNCH, ...launch },
-        { ...EMPTY_SNAPSHOT, ...snapshot },
-      ),
-    ).toEqual(expected);
+    expect(decideLti13IdentityMatch(launch, snapshot)).toEqual(expected);
   });
 });
 
