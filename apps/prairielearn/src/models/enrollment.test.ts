@@ -510,14 +510,11 @@ describe('DB validation of enrollment', () => {
       // The legacy LTI-specific lifecycle status is no longer valid
       {
         constraint: 'enrollments_status_not_lti13_pending',
-        user_id: null,
+        user_id: invalidUser1.id,
         status: 'lti13_pending',
-        created_at: '2025-01-01',
+        created_at: null,
         first_joined_at: null,
         pending_uid: null,
-        pending_uin: 'legacy-status-uin',
-        pending_lti13_sub: 'legacy-status-sub',
-        pending_lti13_course_instance_id: lti13CourseInstance.id,
       },
       // status is 'joined', first_joined_at is null
       {
@@ -601,7 +598,7 @@ describe('DB validation of enrollment', () => {
       },
       // pending_uin is unique within a course instance
       {
-        constraint: 'enrollments_pending_uin_course_instance_id_key',
+        constraint: 'enrollments_course_instance_id_pending_uin_key',
         user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
