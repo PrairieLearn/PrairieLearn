@@ -207,6 +207,7 @@ nav:
       - 'Concepts': 'concepts/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
+      - 'Reporting suspected cheating': 'student-guide/report-cheating.md'
   - Instructor Guide:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
