@@ -21,6 +21,7 @@ import {
   getSelfEnrollmentLinkUrl,
 } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../lib/course-instances.shared.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
@@ -71,7 +72,7 @@ router.get(
     const names = await sqldb.queryRows(
       sql.select_names,
       { course_id: course.id },
-      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+      z.object({ short_name: z.string() }),
     );
     const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
@@ -235,25 +236,12 @@ router.post(
       const existingNames = await sqldb.queryRows(
         sql.select_names,
         { course_id: course.id },
-        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+        z.object({ short_name: z.string() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
-      const existingLongNames = existingNames
-        .map((name) => name.long_name?.toLowerCase())
-        .filter((name) => name != null);
 
       if (existingShortNames.includes(short_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this short name already exists',
-        );
-      }
-
-      if (existingLongNames.includes(long_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this long name already exists',
-        );
+        throw new error.HttpStatusError(400, DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR);
       }
 
       const updatedCourseInstance = {

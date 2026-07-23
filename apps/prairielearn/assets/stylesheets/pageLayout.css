@@ -219,6 +219,10 @@ body:has(div.app-main-container) {
 /* Side nav collapsed styles are applied on wider viewports (768px and above).
  * On narrower viewports (less than 768px), the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
+  #effective-uid {
+    min-width: 12rem;
+  }
+
   .app-container.side-nav-enabled.collapsed {
     grid-template:
       'top-nav top-nav' auto

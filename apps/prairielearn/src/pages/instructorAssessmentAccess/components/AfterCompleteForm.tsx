@@ -411,7 +411,8 @@ function AfterCompleteCard({
           </OverlayTrigger>
         </div>
         <div className="text-muted small mt-1">
-          What students can see once they can no longer answer questions on the assessment.
+          Control question and score visibility once students can no longer make submissions to the
+          assessment.
         </div>
       </div>
       <div className="d-flex flex-column gap-3">{children}</div>
@@ -493,7 +494,7 @@ export function DefaultAfterCompleteForm({
       )}
       <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-score-visibility-mode">
-          Score visibility
+          Score visibility after completion
         </Form.Label>
         <ScoreVisibilityInput
           value={svField.value}
@@ -506,7 +507,7 @@ export function DefaultAfterCompleteForm({
       </div>
       <div>
         <Form.Label className="fw-bold" htmlFor="defaultRule-question-visibility-mode">
-          Question visibility
+          Question visibility after completion
         </Form.Label>
         <QuestionVisibilityInput
           value={qvField.value}
@@ -591,7 +592,7 @@ export function OverrideAfterCompleteForm({
       <div>
         <FieldWrapper
           isOverridden={svOverridden}
-          label="Score visibility"
+          label="Score visibility after completion"
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
@@ -615,7 +616,7 @@ export function OverrideAfterCompleteForm({
       <div>
         <FieldWrapper
           isOverridden={qvOverridden}
-          label="Question visibility"
+          label="Question visibility after completion"
           onOverride={() => {
             qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
