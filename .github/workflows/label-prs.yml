@@ -10,7 +10,7 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/labeler@v7
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
         with:
           sync-labels: false
   # labeler cannot label PRs by title: https://github.com/actions/labeler/issues/55
@@ -23,6 +23,6 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: fuxingloh/multi-labeler@b40774a90b449fe5311b96cef6bab906b671342d # v4
+      - uses: fuxingloh/multi-labeler@b40774a90b449fe5311b96cef6bab906b671342d # tag not found
         with:
           config-path: .github/title-labeler.yml
