@@ -124,7 +124,7 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
                 for match in re.finditer(pattern, content):
                     if match.group(0) != f"uses: {new_pattern}":
                         print(
-                            f"Check failed: {file_path} uses invalid tag format.\nExpected: uses: {new_pattern}\nFound:    {match.group(0)}"
+                            f"Check failed: {file_path} uses invalid tag format.\nExpected: uses: {new_pattern}\nFound:    {match.group(0)}\nRun `make format-actions-version` to update the file."
                         )
                         sys.exit(1)
             else:
