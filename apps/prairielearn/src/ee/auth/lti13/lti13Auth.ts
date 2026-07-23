@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 
 import * as authnLib from '../../../lib/authn.js';
 import { clearCookie, setCookie } from '../../../lib/cookie.js';
@@ -279,25 +280,29 @@ router.post(
         name,
         email,
       });
-      if (match.type === 'secondary_auth') {
-        req.session.pending_lti13_auth = createPendingLti13Auth({
-          lti13_instance_id: lti13_instance.id,
-          sub,
-          uin,
-          launchExpiresAtSeconds: lti13_claims.exp,
-        });
-        setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
-        res.redirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
-        return;
+      switch (match.type) {
+        case 'secondary_auth':
+          req.session.pending_lti13_auth = createPendingLti13Auth({
+            lti13_instance_id: lti13_instance.id,
+            sub,
+            uin,
+            launchExpiresAtSeconds: lti13_claims.exp,
+          });
+          setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
+          res.redirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
+          return;
+        case 'authenticate':
+          await authnLib.loadUser(req, res, {
+            user_id: match.userId,
+            provider: 'LTI 1.3',
+          });
+
+          // Get the target_link out of the LTI request and redirect.
+          res.redirect(ltiClaim.target_link_uri);
+          return;
+        default:
+          return assertNever(match);
       }
-
-      await authnLib.loadUser(req, res, {
-        user_id: match.userId,
-        provider: 'LTI 1.3',
-      });
-
-      // Get the target_link out of the LTI request and redirect.
-      res.redirect(ltiClaim.target_link_uri);
     } catch (error) {
       ltiClaim.remove();
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);

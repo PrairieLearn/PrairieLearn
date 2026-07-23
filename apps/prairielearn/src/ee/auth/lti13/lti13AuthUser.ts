@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectOrInsertUserId } from '../../../lib/authn-user.js';
@@ -216,21 +217,25 @@ export async function matchLti13LaunchUser(launch: Lti13LaunchData) {
       );
     },
     applyMutation: async (decision) => {
-      if (decision.type === 'create_binding') {
-        await insertLti13User({
-          user_id: decision.userId,
-          lti13_instance_id: launch.instance.id,
-          sub: launch.sub,
-        });
-        return { type: 'authenticate', userId: decision.userId };
+      switch (decision.type) {
+        case 'create_binding':
+          await insertLti13User({
+            user_id: decision.userId,
+            lti13_instance_id: launch.instance.id,
+            sub: launch.sub,
+          });
+          return { type: 'authenticate', userId: decision.userId };
+        case 'create_user': {
+          const userId = await createUserAndLti13Binding({
+            launch,
+            uid: decision.uid,
+            uin: decision.uin,
+          });
+          return { type: 'authenticate', userId };
+        }
+        default:
+          return assertNever(decision);
       }
-
-      const userId = await createUserAndLti13Binding({
-        launch,
-        uid: decision.uid,
-        uin: decision.uin,
-      });
-      return { type: 'authenticate', userId };
     },
     isRetryableConflict: isIdentityUniqueViolation,
   });
