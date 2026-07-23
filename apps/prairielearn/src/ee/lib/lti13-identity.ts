@@ -88,7 +88,7 @@ export async function resolveLti13IdentityMatch({
 }): Promise<Extract<Lti13IdentityDecision, { type: 'authenticate' | 'secondary_auth' }>> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const decision = await decide();
-    if (decision.type !== 'create_binding' && decision.type !== 'create_user') {
+    if (decision.type === 'authenticate' || decision.type === 'secondary_auth') {
       return decision;
     }
 
