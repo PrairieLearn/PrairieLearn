@@ -352,6 +352,13 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   pending_uid: true,
   status: true,
   user_id: true,
+}).extend({
+  // Keep the new fields optional until old servers have left the rolling-deploy pool.
+  pending_email: RawEnrollmentSchema.shape.pending_email.optional(),
+  pending_lti13_course_instance_id:
+    RawEnrollmentSchema.shape.pending_lti13_course_instance_id.optional(),
+  pending_name: RawEnrollmentSchema.shape.pending_name.optional(),
+  pending_uin: RawEnrollmentSchema.shape.pending_uin.optional(),
 });
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;

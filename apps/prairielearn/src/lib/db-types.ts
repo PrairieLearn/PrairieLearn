@@ -65,7 +65,6 @@ export const EnumEnrollmentStatusSchema = z.enum([
   'removed',
   'rejected',
   'blocked',
-  'lti13_pending',
 ]);
 export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
@@ -887,12 +886,21 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  lti_managed: z.boolean(),
-  pending_lti13_email: z.string().nullable(),
-  pending_lti13_instance_id: IdSchema.nullable(),
-  pending_lti13_name: z.string().nullable(),
+  is_guest: z.boolean(),
+  // Retained only for compatibility with servers running before the is_guest
+  // rollout. A later migration can drop the column after they have drained.
+  lti_managed: z.boolean().optional(),
+  pending_email: z.string().nullable(),
+  pending_lti13_course_instance_id: IdSchema.nullable(),
+  // These legacy columns are retained during the rolling deploy. Keeping them
+  // optional lets a later cleanup deploy drop the columns before new code runs.
+  pending_lti13_email: z.string().nullable().optional(),
+  pending_lti13_instance_id: IdSchema.nullable().optional(),
+  pending_lti13_name: z.string().nullable().optional(),
   pending_lti13_sub: z.string().nullable(),
+  pending_name: z.string().nullable(),
   pending_uid: z.string().nullable(),
+  pending_uin: z.string().nullable(),
   status: EnumEnrollmentStatusSchema,
   user_id: IdSchema.nullable(),
 });
