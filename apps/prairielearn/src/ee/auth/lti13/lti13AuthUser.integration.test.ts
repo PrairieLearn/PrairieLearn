@@ -29,7 +29,7 @@ async function createUser(uid: string, uin: string, name: string): Promise<User>
   return await getOrCreateUser({ uid, uin, name, email: uid, institutionId: '1' });
 }
 
-function authnParams(uid: string, uin: string, name = uid, email = uid): LoadUserAuth {
+function authnParams(uid: string, uin: string | null, name = uid, email = uid): LoadUserAuth {
   return { uid, uin, name, email, provider: 'dev' };
 }
 
