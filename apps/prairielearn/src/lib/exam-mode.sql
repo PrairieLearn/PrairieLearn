@@ -19,6 +19,13 @@ WITH
         AND r.access_end IS NOT NULL
         AND $date BETWEEN r.access_start AND r.access_end
       ) AS reservation_active,
+      (
+        -- PrairieTest accepts reports only while access is open.
+        r.access_start IS NOT NULL
+        AND r.access_end IS NOT NULL
+        AND $date BETWEEN r.access_start AND r.access_end
+      ) AS reservation_in_access_window,
+      r.id AS reservation_id,
       l.id AS location_id,
       l.filter_networks AS location_filter_networks,
       -- For center sessions the location's flag is authoritative; for
@@ -29,12 +36,22 @@ WITH
         l.lockdown_browser_enabled,
         s.lockdown_browser_enabled,
         FALSE
-      ) AS reservation_requires_lockdown_browser
+      ) AS reservation_requires_lockdown_browser,
+      COALESCE(
+        CASE
+          WHEN l.id IS NOT NULL THEN ctr.cheating_reports_enabled
+          ELSE crs.cheating_reports_enabled
+        END,
+        FALSE
+      ) AS cheating_reports_enabled
     FROM
       pt_reservations AS r
       JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
       JOIN pt_sessions AS s ON (s.id = r.session_id)
       LEFT JOIN pt_locations AS l ON (l.id = s.location_id)
+      LEFT JOIN pt_centers AS ctr ON (ctr.id = l.center_id)
+      LEFT JOIN pt_exams AS x ON (x.id = r.exam_id)
+      LEFT JOIN pt_courses AS crs ON (crs.id = x.course_id)
     WHERE
       e.user_id = $authn_user_id
       AND (
@@ -96,6 +113,17 @@ SELECT
       AND reservation.reservation_requires_lockdown_browser
     ),
     FALSE
-  ) AS requires_lockdown_browser
+  ) AS requires_lockdown_browser,
+  CASE
+  -- Avoid attributing a report to the wrong exam when access windows overlap.
+    WHEN COUNT(*) FILTER (
+      WHERE
+        reservation.reservation_in_access_window
+    ) = 1 THEN MIN(reservation.reservation_id) FILTER (
+      WHERE
+        reservation.reservation_in_access_window
+        AND reservation.cheating_reports_enabled
+    )
+  END AS cheating_report_reservation_id
 FROM
   active_reservations AS reservation;

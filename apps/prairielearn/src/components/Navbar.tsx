@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { type FlashMessageType, flash } from '@prairielearn/flash';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -122,7 +124,8 @@ export function Navbar({
                 </a>
               `
             : ''}
-          ${EndExamControl({ resLocals })} ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${ReportCheatingControl({ resLocals, navPage })} ${EndExamControl({ resLocals })}
+          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
@@ -210,6 +213,99 @@ function EndExamModal({ csrfToken }: { csrfToken: string }) {
           aria-hidden="true"
         ></span>
         <span class="js-end-exam-submit-label">End exam</span>
+      </button>
+    `,
+  });
+}
+
+function ReportCheatingControl({
+  resLocals,
+  navPage,
+}: {
+  resLocals: UntypedResLocals;
+  navPage: NavPage;
+}) {
+  if (
+    navPage !== 'assessment_instance' ||
+    resLocals.authz_result?.mode !== 'Exam' ||
+    resLocals.cheating_report_reservation_id == null
+  ) {
+    return '';
+  }
+  const reportCheatingCsrfToken = generateCsrfToken({
+    url: '/pl/report-cheating',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#reportCheatingModal"
+    >
+      Report cheating
+    </button>
+    ${ReportCheatingModal({
+      csrfToken: reportCheatingCsrfToken,
+      submissionId: crypto.randomUUID(),
+    })}
+  `;
+}
+
+function ReportCheatingModal({
+  csrfToken,
+  submissionId,
+}: {
+  csrfToken: string;
+  submissionId: string;
+}) {
+  return Modal({
+    title: 'Report cheating',
+    id: 'reportCheatingModal',
+    formAction: '/pl/report-cheating',
+    formClass: 'js-report-cheating-form',
+    body: html`
+      <div class="js-report-cheating-fields">
+        <p>
+          If you see someone breaking exam rules (for example, using a phone or unauthorized
+          materials), describe what you saw below. Your report goes only to exam staff; other
+          students will not see it.
+        </p>
+        <div class="mb-0">
+          <label class="form-label" for="report-cheating-text">What did you see?</label>
+          <textarea
+            class="form-control"
+            id="report-cheating-text"
+            name="report"
+            rows="4"
+            maxlength="10000"
+            required
+          ></textarea>
+        </div>
+      </div>
+      <div class="alert alert-success d-none js-report-cheating-success" role="status"></div>
+      <div
+        class="alert alert-danger d-none js-report-cheating-error"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+      <div class="text-muted d-none js-report-cheating-loading" aria-live="polite">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Submitting report…
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="submission_id" value="${submissionId}" />
+      <button
+        type="button"
+        class="btn btn-secondary js-report-cheating-cancel"
+        data-bs-dismiss="modal"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger js-report-cheating-submit">
+        <span class="js-report-cheating-submit-label">Submit report</span>
       </button>
     `,
   });
