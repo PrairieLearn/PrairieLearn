@@ -345,7 +345,7 @@ export async function authenticatePendingLti13User({
 
   // A recognized uniqueness error rolls the entire transaction back. Retrying
   // reruns user resolution and every consistency check against fresh rows.
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (const attempt of [0, 1]) {
     try {
       return await authenticatePendingLti13UserOnce({
         authnParams,
