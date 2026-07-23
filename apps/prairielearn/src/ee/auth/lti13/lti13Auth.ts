@@ -249,6 +249,13 @@ router.post(
     }
 
     try {
+      if (ltiClaim.isRoleTestUser()) {
+        throw new HttpStatusError(
+          403,
+          'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
+        );
+      }
+
       const {
         uin: rawUin,
         name,

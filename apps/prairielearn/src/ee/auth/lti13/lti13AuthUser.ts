@@ -261,13 +261,15 @@ async function authenticatePendingLti13UserOnce({
   instance: Lti13Instance;
 }): Promise<string> {
   return await runInTransactionAsync(async () => {
-    // The secondary provider is authoritative for the profile fields, but the
-    // LTI instance fixes the institution. users_select_or_insert locks any
-    // existing user before updating it; we then reselect and lock that user so
-    // the identity checks and binding mutation below share one stable view.
+    // The secondary login is authoritative for profile fields. If it did not
+    // identify an institution, constrain the user lookup to the institution
+    // that owns the LTI instance.
+    // users_select_or_insert locks any existing user before updating it; we then
+    // reselect and lock that user so the identity checks and binding mutation
+    // below share one stable view.
     const userId = await selectOrInsertUserId({
       ...authnParams,
-      institution_id: instance.institution_id,
+      institution_id: authnParams.institution_id ?? instance.institution_id,
     });
     const user = await selectAndLockUser(userId);
 
@@ -341,6 +343,22 @@ export async function authenticatePendingLti13User({
   pendingLti13Auth: PendingLti13Auth;
 }): Promise<string> {
   const instance = await selectLti13Instance(pendingLti13Auth.lti13_instance_id);
+  // If the secondary login identifies an institution, it must be the institution
+  // that owns the LTI instance. UID policy should also reject a cross-institution
+  // login, but this identity boundary should not depend on that indirect safeguard.
+  if (
+    authnParams.institution_id != null &&
+    String(authnParams.institution_id) !== instance.institution_id
+  ) {
+    logger.error('LTI and secondary authentication used different institutions', {
+      lti13_instance_id: instance.id,
+      lti13_institution_id: instance.institution_id,
+      authn_institution_id: authnParams.institution_id,
+      authn_provider_name: authnParams.provider,
+    });
+    throwLti13IdentityConflict('The LTI and login identities do not match.');
+  }
+
   const authnUin = getUsableLti13Uin(authnParams.uin);
   if (pendingLti13Auth.uin !== null && pendingLti13Auth.uin !== authnUin) {
     logger.error('LTI and secondary authentication provided different UINs', {

@@ -38,7 +38,7 @@ export function Lti13Test({
             to bypass this debugging report and continue to authentication.
           </p>
           <h2>Mapped LTI 1.3 claims</h2>
-          <p>The user would be authenticated as:</p>
+          <p>The configured claim mappings produced:</p>
           <ul>
             <li><b>UID:</b> ${userInfo.uid} (<code>${lti13_instance.uid_attribute}</code>)</li>
             <li><b>UIN:</b> ${userInfo.uin} (<code>${lti13_instance.uin_attribute}</code>)</li>

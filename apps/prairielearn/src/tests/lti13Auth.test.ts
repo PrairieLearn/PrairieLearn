@@ -53,7 +53,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     ...options
   }: { instanceId: string } & Pick<
     Parameters<typeof makeLoginExecutor>[0],
-    'fetchWithCookies' | 'user'
+    'fetchWithCookies' | 'roles' | 'user'
   >) {
     const instanceUrl = `${siteUrl}/pl/lti13_instance/${instanceId}`;
     return await makeLoginExecutor({
@@ -367,6 +367,30 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
         email_attribute: 'email',
         name_attribute: 'name',
       });
+    });
+
+    test('rejects Canvas TestUser launches', async () => {
+      await withoutLogging(async () => {
+        const executor = await makeTestLoginExecutor({
+          instanceId: '3',
+          user: {
+            name: 'Student View',
+            email: 'student-view@example.com',
+            uin: null,
+            sub: 'student-view-sub',
+          },
+          roles: [
+            'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+            'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
+          ],
+          fetchWithCookies: fetchCookie(fetch),
+        });
+
+        const res = await executor.login();
+        assert.equal(res.status, 403);
+      });
+
+      assert.isNull(await selectOptionalUserByUid('student-view@example.com'));
     });
 
     test('requires secondary auth before creating the initial binding', async () => {
