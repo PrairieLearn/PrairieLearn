@@ -15,9 +15,9 @@ columns
 
 indexes
     enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    enrollments_course_instance_id_pending_uin_key: UNIQUE (course_instance_id, pending_uin) USING btree (course_instance_id, pending_uin)
     enrollments_pending_lti13_ciid_sub_course_instance_id_key: UNIQUE (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_course_instance_id, pending_lti13_sub, course_instance_id)
     enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
-    enrollments_course_instance_id_pending_uin_key: UNIQUE (course_instance_id, pending_uin) USING btree (course_instance_id, pending_uin)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
     enrollments_course_instance_id_idx: USING btree (course_instance_id)
 
