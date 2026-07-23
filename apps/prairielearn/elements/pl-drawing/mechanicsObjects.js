@@ -1046,6 +1046,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.callSuper('initialize', options);
     this.image = null;
     this.label = text;
+    this.initialized = false;
 
     if (text && text.trim()) {
       this.gen_text(this.label, options);
@@ -1070,6 +1071,11 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
   _render(ctx) {
     if (this.image != null) {
       this.image._render(ctx);
+      if (!this.initialized) {
+        this.initialized = true;
+        // Dynamic placement using height and width can set up to run when this event fires (before this point, height and width are not known)
+        this.fire('initialized');
+      }
     }
   },
 });
@@ -1559,10 +1565,12 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
       textObj = new mechanicsObjects.LatexText(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
+        originX: options.originX,
+        originY: options.originY,
         fontSize: options.fontSize,
         selectable,
         evented: selectable,
-        textAlign: 'left',
+        textAlign: options.textAlign,
         angle: options.angle || 0,
         scaleX: options.scaleX || 1,
         scaleY: options.scaleY || 1,
@@ -1571,10 +1579,12 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
       textObj = new fabric.Text(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
+        originX: options.originX,
+        originY: options.originY,
         fontSize: options.fontSize,
         selectable,
         evented: selectable,
-        textAlign: 'left',
+        textAlign: options.textAlign,
         angle: options.angle || 0,
         scaleX: options.scaleX || 1,
         scaleY: options.scaleY || 1,
@@ -2469,30 +2479,45 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     }
     canvas.add(obj);
 
+    const gen_label = function (prefix) {
+      let result;
+      if (options[prefix + '_latex']) {
+        result = new mechanicsObjects.LatexText(options[prefix], {
+          fontSize: 20,
+          evented: false,
+          selectable: false,
+        });
+      } else {
+        result = new fabric.Text(options[prefix], {
+          fontSize: 20,
+          evented: false,
+          selectable: false,
+        });
+      }
+
+      if (!options.relpos_active) {
+        result.originX = 'left';
+        result.originY = 'top';
+        result.textAlign = 'right';
+      } else {
+        result.originX = 'center';
+        result.originY = 'center';
+        result.textAlign = 'center';
+      }
+
+      return result;
+    };
+
+    const labelObj = gen_label('label');
+    const labelxObj = gen_label('labelx');
+    const labelyObj = gen_label('labely');
+
+    canvas.add(labelObj);
+    canvas.add(labelxObj);
+    canvas.add(labelyObj);
+
     const groupOffsetX = options.left - obj.left;
     const groupOffsetY = options.top - obj.top;
-
-    const textObj = new mechanicsObjects.LatexText(options.label, {
-      fontSize: 20,
-      textAlign: 'left',
-    });
-    canvas.add(textObj);
-
-    const textObj2 = new mechanicsObjects.LatexText(options.labelx, {
-      fontSize: 20,
-      textAlign: 'left',
-    });
-    textObj2.evented = false;
-    textObj2.selectable = false;
-    canvas.add(textObj2);
-
-    const textObj3 = new mechanicsObjects.LatexText(options.labely, {
-      fontSize: 20,
-      textAlign: 'left',
-    });
-    textObj3.evented = false;
-    textObj3.selectable = false;
-    canvas.add(textObj3);
 
     const modify = function (subObj) {
       const x = obj.left + groupOffsetX;
@@ -2503,28 +2528,115 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     };
     submittedAnswer.registerAnswerObject(options, obj, modify);
 
-    const update_labels = function () {
-      const angle_rad = (Math.PI / 180) * (360 - obj.angle);
-      const x = obj.left + Math.cos(angle_rad) * groupOffsetX + Math.sin(angle_rad) * groupOffsetY;
-      const y = obj.top + Math.cos(angle_rad) * groupOffsetY - Math.sin(angle_rad) * groupOffsetX;
-      const cosw = Math.cos(angle_rad) * options.width;
-      const sinw = Math.sin(angle_rad) * options.width;
+    const update_label = function (subObj, prefix, suffix, obj) {
+      if (!options.relpos_active) {
+        // In absolute positioning, the position of the text is independent of the vector's angle
+        subObj.left += options['offsetx' + suffix];
+        subObj.top += options['offsety' + suffix];
+      } else if (!options[prefix + '_relpos_is_at']) {
+        // In relative positions other than 'at', the relative position of the text depends on the coordinate system's angle
+        let angle_deg;
+        if (obj.selectable) {
+          angle_deg = (options[prefix + '_relpos_angle'] + obj.angle) % 360;
+        } else {
+          angle_deg = (options[prefix + '_relpos_angle'] + options.angle) % 360;
+        }
+        if (angle_deg < 0) {
+          angle_deg += 360;
+        }
 
-      textObj.left = x + options.offsetx;
-      textObj.top = y + options.offsety;
-      textObj2.left = x + cosw + options.offsetx_label_x;
-      textObj2.top = y - sinw + options.offsety_label_x;
-      textObj3.left = x - sinw + options.offsetx_label_y;
-      textObj3.top = y - cosw + options.offsety_label_y;
+        const angle_rad = (Math.PI / 180) * angle_deg;
+        const sep = options[prefix + '_sep'];
+
+        if (subObj.width > 0) {
+          const crit_angle_rad = Math.atan((subObj.height / 2 + sep) / (subObj.width / 2 + sep));
+
+          if (angle_rad <= crit_angle_rad || 2 * Math.PI - crit_angle_rad <= angle_rad) {
+            // Position text to right of reference point
+            subObj.left += subObj.width / 2 + sep;
+            subObj.top += (subObj.width / 2 + sep) * Math.tan(angle_rad);
+          } else if (
+            Math.PI - crit_angle_rad <= angle_rad &&
+            angle_rad <= Math.PI + crit_angle_rad
+          ) {
+            // Position text to left of reference point
+            subObj.left -= subObj.width / 2 + sep;
+            subObj.top -= (subObj.width / 2 + sep) * Math.tan(angle_rad);
+          } else {
+            if (angle_rad > Math.PI) {
+              // Position text above reference point
+              subObj.top -= subObj.height / 2 + sep;
+              subObj.left -=
+                ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
+            } else {
+              // Position text below reference point
+              subObj.top += subObj.height / 2 + sep;
+              subObj.left +=
+                ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
+            }
+          }
+        }
+      }
+      labelObj.setCoords();
+      labelObj.dirty = true;
+    };
+    const update_labels = function () {
+      if (obj.selectable) {
+        const base_angle_rad = (Math.PI / 180) * (360 - obj.angle);
+
+        labelObj.left =
+          obj.left +
+          (obj.width / 2 + obj._objects[2].left) * Math.cos(base_angle_rad) +
+          (obj.height / 2 + obj._objects[2].top) * Math.sin(base_angle_rad);
+        labelObj.top =
+          obj.top -
+          (obj.width / 2 + obj._objects[2].left) * Math.sin(base_angle_rad) +
+          (obj.height / 2 + obj._objects[2].top) * Math.cos(base_angle_rad);
+
+        const cosw = Math.cos(base_angle_rad) * options.width;
+        const sinw = Math.sin(base_angle_rad) * options.width;
+
+        labelxObj.left = labelObj.left + cosw;
+        labelxObj.top = labelObj.top - sinw;
+
+        labelyObj.left = labelObj.left - sinw;
+        labelyObj.top = labelObj.top - cosw;
+      } else {
+        const base_angle_rad = (Math.PI / 180) * (360 - options.angle);
+
+        labelObj.left = obj.left + (obj.width / 2 + obj._objects[2].left);
+        labelObj.top = obj.top + (obj.height / 2 + obj._objects[2].top);
+
+        const cosw = Math.cos(base_angle_rad) * options.width;
+        const sinw = Math.sin(base_angle_rad) * options.width;
+
+        labelxObj.left = obj.left + (obj.width / 2 + obj._objects[2].left) + cosw;
+        labelxObj.top = obj.top + (obj.height / 2 + obj._objects[2].top) - sinw;
+
+        labelyObj.left = obj.left + (obj.width / 2 + obj._objects[2].left) - sinw;
+        labelyObj.top = obj.top + (obj.height / 2 + obj._objects[2].top) - cosw;
+      }
+
+      update_label(labelObj, 'label', '', obj);
+      update_label(labelxObj, 'labelx', '_label_x', obj);
+      update_label(labelyObj, 'labely', '_label_y', obj);
+
+      canvas.requestRenderAll();
     };
     obj.on('moving', update_labels);
     obj.on('rotating', update_labels);
-    update_labels();
+    labelObj.on('initialized', update_labels);
+    labelxObj.on('initialized', update_labels);
+    labelyObj.on('initialized', update_labels);
+    if (!options.label_latex || !options.labelx_latex || !options.labely_latex) {
+      // If any of the labels is not LaTeX, it is ready immediately and its position must be set now
+      update_labels();
+    }
 
     obj.on('removed', function () {
-      canvas.remove(textObj);
-      canvas.remove(textObj2);
-      canvas.remove(textObj3);
+      canvas.remove(labelObj);
+      canvas.remove(labelxObj);
+      canvas.remove(labelyObj);
     });
 
     return obj;
@@ -3025,30 +3137,79 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
       canvas.add(error_box);
     }
 
-    const angle_rad = (Math.PI * obj.angle) / 180;
-    const dx = obj.width * Math.cos(angle_rad);
-    const dy = obj.width * Math.sin(angle_rad);
     let textObj = null;
     if (obj.label) {
-      textObj = new mechanicsObjects.LatexText(obj.label, {
-        left: obj.left + dx + obj.offsetx,
-        top: obj.top + dy + obj.offsety,
-        fontSize: 20,
-        textAlign: 'left',
-        selectable: false,
-      });
+      if (obj.label_latex) {
+        textObj = new mechanicsObjects.LatexText(obj.label, {
+          fontSize: 20,
+          selectable: false,
+        });
+      } else {
+        textObj = new fabric.Text(obj.label, {
+          fontSize: 20,
+          selectable: false,
+        });
+      }
+
+      if (!options.relpos_active) {
+        textObj.originX = 'left';
+        textObj.originY = 'top';
+        textObj.textAlign = 'right';
+      } else {
+        textObj.originX = 'center';
+        textObj.originY = 'center';
+        textObj.textAlign = 'center';
+      }
       canvas.add(textObj);
     }
 
+    const update_label = function () {
+      if (textObj) {
+        const base_angle_rad = (Math.PI * obj.angle) / 180;
+        const dx = obj.width * Math.cos(base_angle_rad);
+        const dy = obj.width * Math.sin(base_angle_rad);
+
+        // Position relative to head or tail as appropriate
+        if (options.label_anchor_is_tail) {
+          textObj.left = obj.left;
+          textObj.top = obj.top;
+        } else {
+          textObj.left = obj.left + dx;
+          textObj.top = obj.top + dy;
+        }
+
+        if (!options.relpos_active) {
+          // In absolute positioning, the position of the text is independent of the vector's angle
+          textObj.left += obj.offsetx;
+          textObj.top += obj.offsety;
+        } else if (!options.label_relpos_is_at) {
+          // In relative positions other than 'at', the relative position of the text depends on the vector's angle
+          const angle_deg = options.label_relpos_angle + obj.angle;
+
+          const angle_rad = (Math.PI / 180) * angle_deg;
+          textObj.left += (textObj.width / 2 + options.label_sep) * Math.cos(angle_rad);
+          textObj.top += (textObj.height / 2 + options.label_sep) * Math.sin(angle_rad);
+        }
+        textObj.dirty = true;
+        canvas.requestRenderAll();
+      }
+    };
     if (options.selectable) {
       submittedAnswer.registerAnswerObject(options, obj);
-      obj.on('moving', () => {
-        if (textObj) {
-          textObj.left = obj.left + dx + obj.offsetx;
-          textObj.top = obj.top + dy + obj.offsety;
-        }
-      });
+      obj.on('moving', update_label);
+      obj.on('rotating', update_label);
     }
+    if (textObj && options.label_latex) {
+      // 'initialized' will fire when MathJax rendering is complete. This is the earliest point at which positioning can be updated because relative positioning requires width and height
+      textObj.on('initialized', update_label);
+    } else {
+      // text was prepared synchronously, so initial position can be set immediately
+      update_label();
+    }
+
+    obj.on('removed', function () {
+      canvas.remove(textObj);
+    });
 
     return obj;
   }
@@ -3258,30 +3419,80 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
       canvas.add(error_box);
     }
 
-    const angle_rad = (Math.PI * obj.angle) / 180;
-    const dx = obj.width * Math.cos(angle_rad);
-    const dy = obj.width * Math.sin(angle_rad);
     let textObj = null;
     if (obj.label) {
-      textObj = new mechanicsObjects.LatexText(obj.label, {
-        left: obj.left + dx + obj.offsetx,
-        top: obj.top + dy + obj.offsety,
-        fontSize: 20,
-        textAlign: 'left',
-        selectable: false,
-      });
+      if (obj.label_latex) {
+        textObj = new mechanicsObjects.LatexText(obj.label, {
+          fontSize: 20,
+          selectable: false,
+        });
+      } else {
+        textObj = new fabric.Text(obj.label, {
+          fontSize: 20,
+          selectable: false,
+        });
+      }
+
+      if (!options.relpos_active) {
+        textObj.originX = 'left';
+        textObj.originY = 'top';
+        textObj.textAlign = 'right';
+      } else {
+        textObj.originX = 'center';
+        textObj.originY = 'center';
+        textObj.textAlign = 'center';
+      }
       canvas.add(textObj);
     }
 
-    if (options.selectable) {
-      submittedAnswer.registerAnswerObject(options, obj);
-      obj.on('moving', () => {
-        if (textObj) {
-          textObj.left = obj.left + dx + obj.offsetx;
-          textObj.top = obj.top + dy + obj.offsety;
+    const update_label = function () {
+      if (textObj) {
+        const base_angle_rad = (Math.PI * obj.angle) / 180;
+        const dx = obj.width * Math.cos(base_angle_rad);
+        const dy = obj.width * Math.sin(base_angle_rad);
+
+        // Position relative to head or tail as appropriate
+        if (options.label_anchor_is_tail) {
+          textObj.left = obj.left;
+          textObj.top = obj.top;
+        } else {
+          textObj.left = obj.left + dx;
+          textObj.top = obj.top + dy;
         }
-      });
+
+        if (!options.relpos_active) {
+          // In absolute positioning, the position of the text is independent of the vector's angle
+          textObj.left += obj.offsetx;
+          textObj.top += obj.offsety;
+        } else if (!options.label_relpos_is_at) {
+          // In relative positions other than 'at', the relative position of the text depends on the vector's angle
+          const angle_deg = options.label_relpos_angle + obj.angle;
+
+          const angle_rad = (Math.PI / 180) * angle_deg;
+          textObj.left += (textObj.width / 2 + options.label_sep) * Math.cos(angle_rad);
+          textObj.top += (textObj.height / 2 + options.label_sep) * Math.sin(angle_rad);
+        }
+        textObj.dirty = true;
+        canvas.requestRenderAll();
+      }
+    };
+    if (textObj && options.selectable) {
+      submittedAnswer.registerAnswerObject(options, obj);
+      obj.on('moving', update_label);
+      obj.on('rotating', update_label);
     }
+
+    if (options.label_latex) {
+      // 'initialized' will fire when mathJax rendering is complete. This is the earliest point at which positioning can be updated because relative positioning requires width and height
+      textObj.on('initialized', update_label);
+    } else {
+      // text was prepared synchronously, so initial position can be set immediately
+      update_label();
+    }
+
+    obj.on('removed', function () {
+      canvas.remove(textObj);
+    });
 
     return obj;
   }
@@ -3444,13 +3655,27 @@ mechanicsObjects.byType['pl-point'] = class extends PLDrawingBaseElement {
 
     let textObj = null;
     if (obj.label) {
-      textObj = new mechanicsObjects.LatexText(obj.label, {
-        left: obj.left + obj.offsetx,
-        top: obj.top + obj.offsety,
-        fontSize: 16,
-        textAlign: 'left',
-        selectable: false,
-      });
+      if (options.label_latex) {
+        textObj = new mechanicsObjects.LatexText(obj.label, {
+          left: obj.left + obj.offsetx,
+          top: obj.top + obj.offsety,
+          originX: options.label_originX,
+          originY: options.label_originY,
+          fontSize: 16,
+          textAlign: options.label_textAlign,
+          selectable: false,
+        });
+      } else {
+        textObj = new fabric.Text(obj.label, {
+          left: obj.left + obj.offsetx,
+          top: obj.top + obj.offsety,
+          originX: options.label_originX,
+          originY: options.label_originY,
+          fontSize: 16,
+          textAlign: options.label_textAlign,
+          selectable: false,
+        });
+      }
       canvas.add(textObj);
     }
 

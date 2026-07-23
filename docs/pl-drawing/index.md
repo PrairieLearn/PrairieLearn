@@ -90,7 +90,7 @@ The element `pl-drawing-answer` is required for gradable canvases, but there are
       width="100"
       angle="0"
       label="A"
-      offsetx="-20"
+      relpos-active="true"
     ></pl-coordinates>
   </pl-drawing-initial>
 
@@ -256,7 +256,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-coordinates x1="60" y1="80" label="0" angle="30"></pl-coordinates>
+    <pl-coordinates x1="60" y1="80" label="O" angle="30" relpos-active="true"></pl-coordinates>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -265,25 +265,43 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute           | Type   | Default | Description                                                                                                                                                             |
-| ------------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float  | 40      | `x` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas. |
-| `y1`                | float  | 40      | `y` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.    |
-| `width`             | float  | 30      | Length of the arrow vector.                                                                                                                                             |
-| `angle`             | float  | 0       | Angle of the coordinate system. Angle is positive when clockwise orientation.                                                                                           |
-| `label`             | string | -       | Text to label the center of the coordinate system                                                                                                                       |
-| `offsetx`           | float  | -16     | Horizontal distance of `label` from the origin of the coordinate system.                                                                                                |
-| `offsety`           | float  | -10     | Vertical distance of `label` from the origin of the coordinate system.                                                                                                  |
-| `label-x`           | string | x       | Text to label the horizontal arrow vector (x-axis)                                                                                                                      |
-| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                  |
-| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the tip of the horizontal arrow vector (x-axis).                                                                                    |
-| `label-y`           | string | y       | Text to label the vertical arrow vector (y-axis)                                                                                                                        |
-| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                    |
-| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the tip of the vertical arrow vector (y-axis).                                                                                      |
-| `color`             | string | black   | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )            |
-| `stroke-width`      | float  | 2       | Set the width of the stroke.                                                                                                                                            |
-| `arrow-head-width`  | float  | 1       | Scale factor for the width of the arrow head.                                                                                                                           |
-| `arrow-head-length` | float  | 1       | Scale factor for the length of the arrow head.                                                                                                                          |
+| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                      |
+| ------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                | float   | 40      | `x` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.                                                                                                          |
+| `y1`                | float   | 40      | `y` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.                                                                                                             |
+| `width`             | float   | 30      | Length of the axis vectors.                                                                                                                                                                                                                                                      |
+| `angle`             | float   | 0       | Angle of the coordinate system (clockwise positive).                                                                                                                                                                                                                             |
+| `relpos-active`     | boolean | false   | If true, all label positions are specified relative to the orientation of the axis system using the `...-relpos` and `...-sep` attributes. If false, all label positions are specified relative to the orientation of the canvas using `offsetx...` and `offsety...` attributes. |
+| `label`             | string  | -       | Text to label the origin of the coordinate system                                                                                                                                                                                                                                |
+| `label-latex`       | boolean | true    | If true, `label` is parsed as math-mode LaTeX; otherwise, `label` is parsed as plain text                                                                                                                                                                                        |
+| `label-relpos`      | string  | behind  | Position of `label` relative to the origin of the coordinate system, expressed with orientation relative to the (x+y) direction (i.e. the direction in which both coordinates increase along the line y = x). Only used if `relpos-active` is true.                              |
+| `label-sep`         | float   | 5       | Horizontal and/or vertical separation distance between `label` and the origin of the coordinate system. Only used if `relpos-active` is true.                                                                                                                                    |
+| `offsetx`           | float   | -16     | Horizontal distance of `label` from the origin of the coordinate system. Ignored if `relpos-active` is true.                                                                                                                                                                     |
+| `offsety`           | float   | -10     | Vertical distance of `label` from the origin of the coordinate system. Ignored if `relpos-active` is true.                                                                                                                                                                       |
+| `label-x`           | string  | x       | Text to label the x axis                                                                                                                                                                                                                                                         |
+| `label-x-latex`     | boolean | true    | If true, `label-x` is parsed as math-mode LaTeX; otherwise, `label-x` is parsed as plain text                                                                                                                                                                                    |
+| `label-x-relpos`    | string  | ahead   | Position of `label-x` relative to the tip of the x axis, expressed with orientation relative to the x direction. Only used if `relpos-active` is true.                                                                                                                           |
+| `label-x-sep`       | float   | 5       | Horizontal and/or vertical separation distance between `label-x` and the tip of the x axis. Only used if `relpos-active` is true.                                                                                                                                                |
+| `offsetx-label-x`   | float   | 0       | Horizontal distance of `label-x` from the tip of the x axis. Ignored if `relpos-active` is true.                                                                                                                                                                                 |
+| `offsety-label-x`   | float   | 0       | Vertical distance of `label-x` from the tip of the x axis. Ignored if `relpos-active` is true.                                                                                                                                                                                   |
+| `label-y`           | string  | y       | Text to label the y axis                                                                                                                                                                                                                                                         |
+| `label-y-latex`     | boolean | true    | If true, `label-y` is parsed as math-mode LaTeX; otherwise, `label-y` is parsed as plain text                                                                                                                                                                                    |
+| `label-y-relpos`    | string  | ahead   | Position of `label-y` relative to the tip of the y axis, expressed with orientation relative to the y direction. Only used if `relpos-active` is true.                                                                                                                           |
+| `label-y-sep`       | float   | 5       | Horizontal and/or vertical separation distance between `label-y` and the tip of the y axis. Only used if `relpos-active` is true.                                                                                                                                                |
+| `offsetx-label-y`   | float   | -20     | Horizontal distance of `label-y` from the tip of the y axis. Ignored if `relpos-active` is true.                                                                                                                                                                                 |
+| `offsety-label-y`   | float   | -10     | Vertical distance of `label-y` from the tip of the y axis. Ignored if `relpos-active` is true.                                                                                                                                                                                   |
+| `color`             | string  | black   | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                                                     |
+| `stroke-width`      | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                                                     |
+| `arrow-head-width`  | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                    |
+| `arrow-head-length` | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                   |
+
+Valid values of `label-relpos`, `label-x-relpos`, and `label-y-relpos` attributes are:
+
+- `ahead left`, `ahead`, `ahead right`
+- `left`, `at`, `right`
+- `behind left`, `behind`, `behind right`
+
+The effects of these options are illustrated in the [pl-vector](#pl-vector-element) section.
 
 #### Example implementations
 
@@ -298,8 +316,8 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200" grid-size="0">
   <pl-drawing-initial>
-    <pl-text x1="20" y1="40" label="Moment of inertia:" latex="false"></pl-text>
-    <pl-text x1="20" y1="80" label="\\int_A y^2 dA"></pl-text>
+    <pl-text x1="100" y1="70" pos="at" label="Moment of inertia:" latex="false"></pl-text>
+    <pl-text x1="100" y1="100" pos="at" label="\\int_A y^2\\,\\mathrm{d}A"></pl-text>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -308,15 +326,35 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute   | Type    | Default  | Description                                                                                                         |
-| ----------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
-| `label`     | string  | " Text " | Text to be added.                                                                                                   |
-| `latex`     | boolean | true     | Adds the text in `label` using latex. Otherwise, uses Times New Romans.                                             |
-| `font-size` | float   | 16       | Font size.                                                                                                          |
-| `x1`        | float   | 40       | `x` position for the top-left corner of the text, i.e., the horizontal distance from the left border of the canvas. |
-| `y1`        | float   | 40       | `y` position for the top-left corner of the text, i.e., the vertical distance from the top border of the canvas     |
-| `offsetx`   | float   | 0        | Offset in x direction from `x1`                                                                                     |
-| `offsety`   | float   | 0        | Offset in y direction from `y1`                                                                                     |
+| Attribute   | Type    | Default  | Description                                                                                                                                                                                                                                                  |
+| ----------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `label`     | string  | " Text " | Text to be added.                                                                                                                                                                                                                                            |
+| `latex`     | boolean | true     | If true, `label` is parsed as math-mode LaTeX; otherwise, `label` is parsed as plain text.                                                                                                                                                                   |
+| `pos`       | string  | -        | Position of the text relative to the anchor point (`x1`,`y1`). If specified, text positioning is based on the `pos` and `sep` attribute s as detailed below. If not specified, text is positioned below and to the right of (`x1`+`offsetx`,`y1`+`offsety`). |
+| `sep`       | float   | 0        | Horizontal and/or vertical separation distance between the text and the anchor point (`x1`,`y1`). Ignored if `pos` is "at" or not specified.                                                                                                                 |
+| `font-size` | float   | 16       | Font size.                                                                                                                                                                                                                                                   |
+| `x1`        | float   | 40       | `x` position for the anchor point, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                         |
+| `y1`        | float   | 40       | `y` position for the anchor point, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                            |
+| `offsetx`   | float   | 5        | Offset in x direction from `x1`. Ignored if `pos` is specified.                                                                                                                                                                                              |
+| `offsety`   | float   | 5        | Offset in y direction from `y1`. Ignored if `pos` is specified.                                                                                                                                                                                              |
+
+As detailed below, there are 9 valid values of `pos` and each uses the value of `sep` to shift the text in a different way:
+
+| `pos`          | Shift                                    |
+| -------------- | ---------------------------------------- |
+| `above left`   | leftward by `sep` and upward by `sep`    |
+| `above`        | updard by `sep`                          |
+| `aboove right` | rightward by `sep` and upward by `sep`   |
+| `left`         | leftward by `sep`                        |
+| `at`           | none                                     |
+| `right`        | rightward by `sep`                       |
+| `below left`   | leftward by `sep` and downward by `sep`  |
+| `below`        | downward by `sep`                        |
+| `below right`  | rightward by `sep` and downward by `sep` |
+
+In the example below, the text elements are all configured with the anchor point (`x1`,`y1`) at the center of the canvas and `sep="25"` (1 grid square), but with different values of `pos`:
+
+![Screenshot showing the various pos options for the pl-text element](pl-text-pos.png){ width=100% style="max-width: 300px" }
 
 #### Example implementations
 
@@ -403,16 +441,17 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-fixed-pin x1="80" y1="100" angle="50" color="turquoise1"></pl-fixed-pin>
-    <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
+    <pl-fixed-pin x1="80" y1="120" angle="50" color="turquoise1"></pl-fixed-pin>
+    <pl-coordinates x1="80" y1="120" width="80" relpos-active="true"></pl-coordinates>
     <pl-arc-dimensions
       x1="80"
-      y1="100"
+      y1="120"
       end-angle="50"
       label="\\theta"
       offsetx="5"
       offsety="-5"
       end-support-line="true"
+      stroke-color="blue"
     ></pl-arc-dimensions>
   </pl-drawing-initial>
 </pl-drawing>
@@ -661,8 +700,9 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-point x1="60" y1="120" label="A"></pl-point>
-    <pl-point x1="160" y1="60" label="B"></pl-point>
+    <pl-point x1="60" y1="120" label="A" label-pos="above"></pl-point>
+    <pl-point x1="160" y1="60" label="B" label-pos="below right"></pl-point>
+    <pl-point x1="120" y1="160" label="Origin" label-latex="false" label-pos="left"></pl-point>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -671,17 +711,38 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 
 #### Customizations
 
-| Attribute        | Type    | Default | Description                                                                                                                                            |
-| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`             | float   | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`             | float   | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `radius`         | float   | 4       | Radius of the circle that defines the point.                                                                                                           |
-| `label`          | string  | -       | Text to label the point.                                                                                                                               |
-| `offsetx`        | float   | 5       | Horizontal distance of `label` from the point.                                                                                                         |
-| `offsety`        | float   | 5       | Vertical distance of `label` from the point.                                                                                                           |
-| `opacity`        | float   | 1       | Set the opacity of the point.                                                                                                                          |
-| `color`          | string  | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `draw-error-box` | boolean | -       | Draw the error bounding box, where the location of the point is accepted as correct.                                                                   |
+| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                              |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`             | float   | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                             |
+| `y1`             | float   | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                |
+| `radius`         | float   | 4       | Radius of the circle that defines the point.                                                                                                                                                                                                                             |
+| `label`          | string  | -       | Text to label the point.                                                                                                                                                                                                                                                 |
+| `label-latex`    | bool    | true    | If true, `label` is parsed as math-mode LaTeX; otherwise, `label` is parsed as plain text                                                                                                                                                                                |
+| `label-pos`      | string  | -       | Position of the label relative to the anchor point (`x1`,`y1`). If specified, text positioning is based on the `label-pos` and `label-sep` attributes as detailed below. If not specified, text is positioned below and to the right of (`x1`+`offsetx`,`y1`+`offsety`). |
+| `label-sep`      | float   | 5       | Horizontal and/or vertical separation distance between the text and the anchor point (`x1`,`y1`). Ignored if `pos` is `at` or not specified.                                                                                                                             |
+| `offsetx`        | float   | 5       | Horizontal distance of `label` from the point. Ignored if `label-pos` is specified.                                                                                                                                                                                      |
+| `offsety`        | float   | 5       | Vertical distance of `label` from the point. Ignored if `label-pos` is specified                                                                                                                                                                                         |
+| `opacity`        | float   | 1       | Set the opacity of the point.                                                                                                                                                                                                                                            |
+| `color`          | string  | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                   |
+| `draw-error-box` | boolean | -       | Draw the error bounding box, where the location of the point is accepted as correct.                                                                                                                                                                                     |
+
+As detailed below, there are 9 valid values of `label-pos` and each uses the value of `label-sep` to shift the label in a different way:
+
+| `label-pos`    | Shift                                                |
+| -------------- | ---------------------------------------------------- |
+| `above left`   | leftward by `label-sep` and upward by `label-sep`    |
+| `above`        | updard by `label-sep`                                |
+| `aboove right` | rightward by `label-sep` and upward by `label-sep`   |
+| `left`         | leftward by `label-sep`                              |
+| `at`           | none                                                 |
+| `right`        | rightward by `label-sep`                             |
+| `below left`   | leftward by `label-sep` and downward by `label-sep`  |
+| `below`        | downward by `label-sep`                              |
+| `below right`  | rightward by `label-sep` and downward by `label-sep` |
+
+The example below illustrates how label positioning varies with `label-pos`:
+
+![Screenshot showing the various label-pos options for the pl-point element](pl-point-pos.png){ width=100% style="max-width: 300px" }
 
 #### Example implementations
 
@@ -842,7 +903,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
   <pl-drawing-initial>
     <pl-point x1="100" y1="100"></pl-point>
     <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
-    <pl-vector x1="100" y1="100" width="80" angle="45" label="F"></pl-vector>
+    <pl-vector x1="100" y1="100" width="80" angle="45" label="F" label-relpos="ahead"></pl-vector>
     <pl-vector
       x1="100"
       y1="100"
@@ -859,25 +920,39 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                                                       |
-| ------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float   | 30      | `x` position for the anchor point of the vector, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                |
-| `y1`                | float   | 10      | `y` position for the anchor point of the vector , i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                  |
-| `anchor-is-tail`    | boolean | true    | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
-| `width`             | float   | 60      | Length of the vector.                                                                                                                                                                                                                                                                                             |
-| `angle`             | float   | 0       | Angle of rotation around the starting point of the vector. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                                               |
-| `label`             | string  | -       | Text to label the vector.                                                                                                                                                                                                                                                                                         |
-| `offsetx`           | float   | 2       | Horizontal distance of `label` from the head of the vector.                                                                                                                                                                                                                                                       |
-| `offsety`           | float   | 2       | Vertical distance of `label` from the head of the vector.                                                                                                                                                                                                                                                         |
-| `color`             | string  | red3    | Set the color of the vector ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                |
-| `stroke-width`      | float   | 3       | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
-| `arrow-head-width`  | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
-| `arrow-head-length` | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
-| `disregard-sense`   | boolean | false   | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
-| `draw-error-box`    | boolean | -       | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
-| `offset-forward`    | float   | 0       | Length of the bounding box measured from the anchor point in the same orientation of the vector. The default is `width` when `disregard-sense=true`.                                                                                                                                                              |
-| `offset-backward`   | float   | width   | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.                                                                                                                                                                                                              |
-| `optional-grading`  | boolean | false   | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                     |
+| Attribute              | Type    | Default         | Description                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------- | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                   | float   | 30              | `x` position for the anchor point of the vector, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                                                                                                                                    |
+| `y1`                   | float   | 10              | `y` position for the anchor point of the vector , i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                                                                                                                                      |
+| `anchor-is-tail`       | boolean | true            | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `width`                | float   | 60              | Length of the vector.                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `angle`                | float   | 0               | Angle of rotation around the starting point of the vector. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                                                                                                                                                                   |
+| `label`                | string  | -               | Text to label the vector.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `label-latex`          | boolean | true            | If true, `label` is parsed as math-mode LaTeX; otherwise, `label` is parsed as plain text.                                                                                                                                                                                                                                                                                                                                            |
+| `label-relpos`         | string  | -               | Position of the label relative to the label anchor point (tip or tail, depending on the value of `label-anchor-is-tail`), expressed with orientation relative to the direction of the vector. If specified, text positioning is based on the `label-relpos` and `label-sep` attributes as detailed below. If not specified, text is positioned below and to the right of the label anchor point and shifted by (`offsetx`,`offsety`). |
+| `label-sep`            | float   | 5               | Horizontal and/or vertical distance between the label and the label anchor point (tip or tail, depending on the value of `label-anchor-is-tail`). Ignored if `label-relpos` is `at` or not specified.                                                                                                                                                                                                                                 |
+| `label-anchor-is-tail` | boolean | see description | If true, the label anchor point is the vector's tail; otherwise, the label anchor point is the vector's tip. Default value is `false` unless `label-relpos` is `behind left`, `behind`, or `behind right`, in which case it is `true`                                                                                                                                                                                                 |
+| `offsetx`              | float   | 2               | Horizontal distance of `label` from the label anchor point (tip or tail, depending on the value of `label-anchor-is-tail`). Ignored if `label-relpos` is specified.                                                                                                                                                                                                                                                                   |
+| `offsety`              | float   | 2               | Vertical distance of `label` from the label anchor point (tip or tail, depending on the value of `label-anchor-is-tail`). Ignored if `label-relpos` is specified.                                                                                                                                                                                                                                                                     |
+| `color`                | string  | red3            | Set the color of the vector ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                                                                                                                                    |
+| `stroke-width`         | float   | 3               | Set the width of the stroke.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `arrow-head-width`     | float   | 1               | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `arrow-head-length`    | float   | 1               | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                                                                                                                                        |
+| `disregard-sense`      | boolean | false           | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct).                                                                                                                     |
+| `draw-error-box`       | boolean | -               | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                                                                                                                                           |
+| `offset-forward`       | float   | 0               | Length of the bounding box measured from the anchor point in the same orientation of the vector. The default is `width` when `disregard-sense=true`.                                                                                                                                                                                                                                                                                  |
+| `offset-backward`      | float   | width           | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.                                                                                                                                                                                                                                                                                                                                  |
+| `optional-grading`     | boolean | false           | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                                                                                                                                         |
+
+Valid values of the `label-relpos` attribute are:
+
+- `ahead left`, `ahead`, `ahead right`,
+- `left`, `at`, `right`,
+- `behind left`, `behind`, `behind right`.
+
+The example below illustrates how the various values of `label-relpos` impact label placement (note that `label-anchor-is-tail` has been explicitly set to `false` for the `behind left`, `behind`, and `behind right` cases so that the label remains anchored to the vector's tip):
+
+![Screenshot showing the various label-relpos options for the pl-vector element](pl-vector-relpos.png){ width=100% style="max-width: 300px" }
 
 More information about the grading attributes in the Grading section below.
 
@@ -904,6 +979,8 @@ More information about the grading attributes in the Grading section below.
       width="120"
       color="blue"
       angle="-30"
+      label="T"
+      label-relpos="ahead"
     ></pl-double-headed-vector>
   </pl-drawing-initial>
 </pl-drawing>
@@ -913,25 +990,7 @@ More information about the grading attributes in the Grading section below.
 
 #### Customizations
 
-| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                                                       |
-| ------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float   | 30      | `x` position for the anchor point of the vector, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                |
-| `y1`                | float   | 10      | `y` position for the anchor point of the vector , i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                  |
-| `anchor-is-tail`    | boolean | true    | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
-| `width`             | float   | 60      | Length of the vector.                                                                                                                                                                                                                                                                                             |
-| `angle`             | float   | 0       | Angle of rotation around the starting point of the vector. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                                               |
-| `label`             | string  | -       | Text to label the vector.                                                                                                                                                                                                                                                                                         |
-| `offsetx`           | float   | 2       | Horizontal distance of `label` from the head of the vector.                                                                                                                                                                                                                                                       |
-| `offsety`           | float   | 2       | Vertical distance of `label` from the head of the vector.                                                                                                                                                                                                                                                         |
-| `color`             | string  | red3    | Set the color of the vector ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                |
-| `stroke-width`      | float   | 3       | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
-| `arrow-head-width`  | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
-| `arrow-head-length` | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
-| `disregard-sense`   | boolean | false   | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
-| `draw-error-box`    | boolean | -       | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
-| `offset-forward`    | float   | 0       | Length of the bounding box measured from the anchor point in the same orientation of the vector. The default is `width` when `disregard-sense=true`.                                                                                                                                                              |
-| `offset-backward`   | float   | width   | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.                                                                                                                                                                                                              |
-| `optional-grading`  | boolean | false   | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.                                                                                                                                                                                                     |
+Identical to those of [pl-vector](#pl-vector-element).
 
 #### Example implementations
 
@@ -975,7 +1034,7 @@ More information about the grading attributes in the Grading section below.
 | `x1`                | float   | 2 \* grid_size | `x` position for the anchor point of the first vector, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                          |
 | `y1`                | float   | 1 \* grid_size | `y` position for the anchor point of the first vector , i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                            |
 | `x2`                | float   | 3 \* grid_size | `x` position for the anchor point of the second vector, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                         |
-| `y2`                | float   | 2 \* grid_size | `y` position for the anchor point of the second vector , i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                           |
+| `y2`                | float   | 2 \* grid_size | `y` position for the anchor point of the second vector, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                            |
 | `anchor-is-tail`    | boolean | true           | The anchor points `(x1,y1)` and `(x2,y2)` are the tails of the vectors.                                                                                                                                                                                                                                           |
 | `width`             | float   | 60             | Length of the vectors.                                                                                                                                                                                                                                                                                            |
 | `angle1`            | float   | 0              | Angle of rotation around the starting point of the first vector. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                                         |
@@ -1083,7 +1142,7 @@ More information about the grading attributes in the Grading section below.
 | ------------------- | ------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `x1`                | float   | 30                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
 | `y1`                | float   | 10                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
-| `anchor-is-tail`    | boolean | true                | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
+| `anchor-is-tail`    | boolean | true                | The anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
 | `width`             | float   | 60                  | Range of the distributed load.                                                                                                                                                                                                                                                                                    |
 | `spacing`           | float   | 20                  | Spacing between the vectors.                                                                                                                                                                                                                                                                                      |
 | `w1`                | float   | 60                  | Height of the distributed load at the start of the range.                                                                                                                                                                                                                                                         |
