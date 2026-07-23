@@ -5,6 +5,7 @@ import re
 import string
 import sys
 import urllib.request
+from functools import partial
 from itertools import chain
 from typing import Any
 
@@ -78,19 +79,19 @@ def get_tag_from_hash(action_name: str, commit_sha: str) -> str | None:
 def process_workflow_file(file_path: str, *, check_only: bool) -> None:
     """Reads a file, replaces tags with hashes, and writes back the changes."""
     with open(file_path, encoding="utf-8") as f:
-        content = f.read()
+        old_content = content = f.read()
 
     matches = ACTION_REGEX.findall(content)
     if not matches:
         return
 
-    modified = False
-
     for action_name, tag in matches:
         if len(tag) == 40 and all(c in string.hexdigits for c in tag):
             sha = tag  # Already a SHA, no need to fetch
         elif check_only:
-            print(f"Action {action_name}@{tag} is not pinned to a commit SHA.")
+            print(
+                f"Action {action_name}@{tag} is not pinned to a commit SHA.\nRun `make format-actions-version` to update the file."
+            )
             sys.exit(1)
         else:
             cache_key = f"{action_name}@{tag}"
@@ -115,23 +116,22 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
 
         # Replace the tag with the SHA and add a comment indicating the original tag
         # Example: actions/checkout@v4 -> actions/checkout@b4ffde... # v4
-        old_pattern = f"{action_name}@{tag}"
-        new_pattern = f"{action_name}@{sha} # {resolved_tag}"
+        old_pattern = rf"uses:\s*{re.escape(action_name)}@{re.escape(tag)}[ \t]*(#.*)?"
+        new_pattern = f"uses: {action_name}@{sha} # {resolved_tag}"
 
-        if old_pattern in content:
-            pattern = rf"uses:\s*{re.escape(old_pattern)}[ \t]*(#.*)?"
-            if check_only:
-                for match in re.finditer(pattern, content):
-                    if match.group(0) != f"uses: {new_pattern}":
-                        print(
-                            f"Check failed: {file_path} uses invalid tag format.\nExpected: uses: {new_pattern}\nFound:    {match.group(0)}\nRun `make format-actions-version` to update the file."
-                        )
-                        sys.exit(1)
-            else:
-                content = re.sub(pattern, f"uses: {new_pattern}", content)
-                modified = True
+        def replacement(match: re.Match[str], new_pattern: str) -> str:
+            if check_only and match.group(0) != new_pattern:
+                print(
+                    f"Check failed: {file_path} uses invalid tag format.\nExpected: {new_pattern}\nFound:    {match.group(0)}\nRun `make format-actions-version` to update the file."
+                )
+                sys.exit(1)
+            return new_pattern
 
-    if modified:
+        content = re.sub(
+            old_pattern, partial(replacement, new_pattern=new_pattern), content
+        )
+
+    if content != old_content:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
         print(f"Updated: {file_path}")
