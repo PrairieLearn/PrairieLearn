@@ -6,6 +6,7 @@ interface Lti13IdentityUser {
 export interface Lti13IdentitySnapshot {
   userFromSub: Lti13IdentityUser | null;
   userFromUin: Lti13IdentityUser | null;
+  userFromUid: Lti13IdentityUser | null;
   userFromUinBinding: { sub: string } | null;
 }
 
@@ -15,7 +16,12 @@ export type Lti13IdentityDecision =
   | { type: 'create_user'; uid: string; uin: string }
   | {
       type: 'secondary_auth';
-      reason: 'concurrency_conflict' | 'sub_replacement' | 'sub_uin_mismatch' | 'unmatched';
+      reason:
+        | 'concurrency_conflict'
+        | 'sub_replacement'
+        | 'sub_uin_mismatch'
+        | 'uid_match_requires_auth'
+        | 'unmatched';
     };
 
 interface Lti13IdentityLaunch {
@@ -62,6 +68,12 @@ export function decideLti13IdentityMatch(
   }
 
   if (launch.uin !== null && launch.candidateUid !== null) {
+    // A UID-only user may already have privileges from being added to a course.
+    // LTI email is not sufficient proof to claim that account or fill its UIN.
+    if (snapshot.userFromUid) {
+      return { type: 'secondary_auth', reason: 'uid_match_requires_auth' };
+    }
+
     // New users require both institution-valid UID and UIN. Neither identifier
     // is synthesized or copied from an unvalidated LTI claim.
     return { type: 'create_user', uid: launch.candidateUid, uin: launch.uin };

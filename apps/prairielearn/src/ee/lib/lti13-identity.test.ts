@@ -13,6 +13,7 @@ type Decision = ReturnType<typeof decideLti13IdentityMatch>;
 const EMPTY_SNAPSHOT: Lti13IdentitySnapshot = {
   userFromSub: null,
   userFromUin: null,
+  userFromUid: null,
   userFromUinBinding: null,
 };
 
@@ -52,6 +53,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: { id: '1', uin: 'stored-uin' },
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'authenticate', userId: '1' },
@@ -66,6 +68,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: { id: '1', uin: 'matching-uin' },
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'authenticate', userId: '1' },
@@ -80,6 +83,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: { id: '1', uin: null },
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'secondary_auth', reason: 'sub_uin_mismatch' },
@@ -94,6 +98,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: { id: '1', uin: 'different-uin' },
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'secondary_auth', reason: 'sub_uin_mismatch' },
@@ -108,6 +113,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: { id: '2', uin: 'matching-uin' },
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'create_binding', userId: '2' },
@@ -122,6 +128,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: { id: '2', uin: 'matching-uin' },
+        userFromUid: null,
         userFromUinBinding: { sub: 'existing-sub' },
       },
       expected: { type: 'authenticate', userId: '2' },
@@ -136,6 +143,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: { id: '2', uin: 'matching-uin' },
+        userFromUid: null,
         userFromUinBinding: { sub: 'old-sub' },
       },
       expected: { type: 'secondary_auth', reason: 'sub_replacement' },
@@ -150,9 +158,25 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'create_user', uid: 'new@example.com', uin: 'matching-uin' },
+    },
+    {
+      name: 'requires secondary auth before claiming an existing UID-only user',
+      launch: {
+        sub: 'new-sub',
+        uin: 'matching-uin',
+        candidateUid: 'existing@example.com',
+      },
+      snapshot: {
+        userFromSub: null,
+        userFromUin: null,
+        userFromUid: { id: '3', uin: null },
+        userFromUinBinding: null,
+      },
+      expected: { type: 'secondary_auth', reason: 'uid_match_requires_auth' },
     },
     {
       name: 'does not create a user from a UID alone',
@@ -164,6 +188,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'secondary_auth', reason: 'unmatched' },
@@ -178,6 +203,7 @@ describe('decideLti13IdentityMatch', () => {
       snapshot: {
         userFromSub: null,
         userFromUin: null,
+        userFromUid: null,
         userFromUinBinding: null,
       },
       expected: { type: 'secondary_auth', reason: 'unmatched' },

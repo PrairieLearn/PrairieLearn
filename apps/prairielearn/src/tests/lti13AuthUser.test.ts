@@ -13,7 +13,7 @@ import { type LoadUserAuth } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema, type User } from '../lib/db-types.js';
 import { selectAuditEventsByInstitutionId } from '../models/audit-event.js';
-import { selectOptionalUserByUid } from '../models/user.js';
+import { selectOptionalUserByUid, selectUserByUid } from '../models/user.js';
 
 import * as helperDb from './helperDb.js';
 import { getOrCreateUser } from './utils/auth.js';
@@ -106,25 +106,27 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     assert.isNull(await selectOptionalUserByUid('invalid-email@outside.edu'));
   });
 
-  test('retries a UID uniqueness conflict once before falling back to secondary auth', async () => {
+  test('requires secondary auth before claiming an existing UID-only user', async () => {
     const instance = await createFixture();
-    const existingUser = await createUser(
-      'uid-conflict@example.com',
-      'existing-uin',
-      'Existing User',
-    );
+    const existingUser = await getOrCreateUser({
+      uid: 'invited-staff@example.com',
+      uin: null,
+      name: null,
+      institutionId: '1',
+    });
 
     const result = await matchLti13LaunchUser({
       instance,
-      sub: 'uid-conflict-sub',
-      uin: 'different-launch-uin',
-      name: 'Conflicting User',
+      sub: 'invited-staff-sub',
+      uin: 'launch-uin',
+      name: 'Untrusted LTI Name',
       email: existingUser.uid,
     });
 
-    assert.deepEqual(result, { type: 'secondary_auth', reason: 'concurrency_conflict' });
-    const unchangedUser = await selectOptionalUserByUid(existingUser.uid);
-    assert.equal(unchangedUser?.uin, 'existing-uin');
+    assert.deepEqual(result, { type: 'secondary_auth', reason: 'uid_match_requires_auth' });
+    const unchangedUser = await selectUserByUid(existingUser.uid);
+    assert.isNull(unchangedUser.uin);
+    assert.isNull(unchangedUser.name);
     assert.isNull(await selectBinding(instance, existingUser));
   });
 

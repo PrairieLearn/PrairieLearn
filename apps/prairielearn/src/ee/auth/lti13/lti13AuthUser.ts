@@ -10,7 +10,11 @@ import { selectOrInsertUserId } from '../../../lib/authn-user.js';
 import { type LoadUserAuth } from '../../../lib/authn.types.js';
 import { type Lti13Instance, UserSchema } from '../../../lib/db-types.js';
 import { insertAuditEvent } from '../../../models/audit-event.js';
-import { selectAndLockUser, selectOptionalUserByUin } from '../../../models/user.js';
+import {
+  selectAndLockUser,
+  selectOptionalUserByUid,
+  selectOptionalUserByUin,
+} from '../../../models/user.js';
 import {
   decideLti13IdentityMatch,
   getUsableLti13Uin,
@@ -210,10 +214,12 @@ export async function matchLti13LaunchUser(launch: Lti13LaunchData) {
               institution_id: launch.instance.institution_id,
             })
           : null;
+      const userFromUid =
+        candidateUid === null ? null : await selectOptionalUserByUid(candidateUid);
 
       return decideLti13IdentityMatch(
         { sub: launch.sub, uin: launch.uin, candidateUid },
-        { userFromSub, userFromUin, userFromUinBinding },
+        { userFromSub, userFromUin, userFromUid, userFromUinBinding },
       );
     },
     applyMutation: async (decision) => {
