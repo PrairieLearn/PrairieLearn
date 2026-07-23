@@ -1,7 +1,7 @@
 -- The backing indexes were built concurrently, so attaching them does not rebuild or scan them.
 ALTER TABLE enrollments
 -- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
-ADD CONSTRAINT enrollments_pending_uin_course_instance_id_key UNIQUE USING INDEX enrollments_course_instance_id_pending_uin_idx;
+ADD CONSTRAINT enrollments_course_instance_id_pending_uin_key UNIQUE USING INDEX enrollments_course_instance_id_pending_uin_idx;
 
 ALTER TABLE enrollments
 -- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
