@@ -95,8 +95,7 @@ describe('loadUser', () => {
     const res = makeRes();
     await loadTestUser(req, res);
 
-    const pendingLti13Auth = { marker: 'pending' };
-    req.session.pending_lti13_auth = pendingLti13Auth;
+    req.session.pending_lti13_auth = { marker: 'pending' };
     req.session.lti13_claims = { sub: 'pending-sub' };
 
     await withConfig({ isEnterprise: true }, async () => {
@@ -111,7 +110,7 @@ describe('loadUser', () => {
       );
     });
 
-    assert.deepEqual(req.session.pending_lti13_auth, pendingLti13Auth);
+    assert.deepEqual(req.session.pending_lti13_auth, { marker: 'pending' });
     assert.deepEqual(req.session.lti13_claims, { sub: 'pending-sub' });
   });
 
