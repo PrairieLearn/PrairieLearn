@@ -40,10 +40,13 @@ router.post(
 
     // The ID of the course instance we are copying
     const fromCourseInstance = await selectOptionalCourseInstanceById(course_instance_id);
-    if (!fromCourseInstance?.share_source_publicly) {
+    if (!fromCourseInstance?.share_source_publicly || fromCourseInstance.deleted_at != null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
     const fromCourse = await selectCourseById(fromCourseInstance.course_id);
+    if (fromCourse.deleted_at != null) {
+      throw new error.HttpStatusError(404, 'Not Found');
+    }
 
     // The ID of the course to copy the instance into
     const toCourseId = course.id;
