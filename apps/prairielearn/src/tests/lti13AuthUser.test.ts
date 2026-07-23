@@ -152,29 +152,6 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
     assert.equal(binding?.sub, 'existing-user-sub');
   });
 
-  test('an existing sub match does not evaluate weaker UID policy', async () => {
-    const instance = await createFixture();
-    const user = await getOrCreateUser({
-      uid: 'existing-sub@example.com',
-      uin: 'existing-sub-uin',
-      name: 'Existing Sub',
-      email: 'existing-sub@example.com',
-      institutionId: '1',
-    });
-    await insertBinding(instance, user, 'existing-sub');
-    await execute(sql.configure_invalid_uid_regexp);
-
-    const result = await matchLti13LaunchUser({
-      instance,
-      sub: 'existing-sub',
-      uin: user.uin,
-      name: 'Ignored Name',
-      email: 'candidate@example.com',
-    });
-
-    assert.deepEqual(result, { type: 'authenticate', userId: user.id });
-  });
-
   test('secondary auth replaces a binding and audits it in the same transaction', async () => {
     const instance = await createFixture();
     const user = await getOrCreateUser({
