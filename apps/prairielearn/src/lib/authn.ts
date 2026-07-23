@@ -1,6 +1,3 @@
-// @ts-check
-import assert from 'node:assert';
-
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 
@@ -9,50 +6,13 @@ import * as sqldb from '@prairielearn/postgres';
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
+import { selectOrInsertUserId } from './authn-user.js';
 import { type LoadUserAuth, SelectUserSchema } from './authn.types.js';
 import { config } from './config.js';
-import { SprocUsersSelectOrInsertSchema, type User } from './db-types.js';
+import { type User } from './db-types.js';
 import { isEnterprise } from './license.js';
-import { HttpRedirect } from './redirect.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-async function handlePendingLti13User({
-  user,
-  uin,
-  sub,
-  lti13_instance_id,
-}: {
-  user: User;
-  uin: string;
-  sub: string;
-  lti13_instance_id: string;
-}) {
-  // This function will only be called in enterprise mode. We use dynamic
-  // imports to avoid loading enterprise code in non-enterprise installations.
-  const { updateLti13UserSub } = await import('../ee/models/lti13-user.js');
-  const { selectLti13Instance } = await import('../ee/models/lti13Instance.js');
-
-  // This will error if the LTI 1.3 instance doesn't exist.
-  const lti13Instance = await selectLti13Instance(lti13_instance_id);
-
-  if (user.uin !== uin) {
-    throw new Error(`UIN from LTI (${uin}) does not match user UIN (${user.uin})`);
-  }
-
-  if (lti13Instance.institution_id !== user.institution_id) {
-    throw new Error(
-      `Institution ID from LTI (${lti13Instance.institution_id}) does not match user institution ID (${user.institution_id})`,
-    );
-  }
-
-  // Store the `sub` claim.
-  await updateLti13UserSub({
-    user_id: user.id,
-    lti13_instance_id: lti13Instance.id,
-    sub,
-  });
-}
 
 interface LoadUserOptions {
   /** Redirect after processing? */
@@ -80,64 +40,41 @@ export async function loadUser(
 ): Promise<{ user: User }> {
   const options = { redirect: false, ...optionsParams };
 
-  const lti13_pending_uin = req.session.lti13_pending_uin;
-  const lti13_pending_sub = req.session.lti13_pending_sub;
-  const lti13_pending_instance_id = req.session.lti13_pending_instance_id;
-
-  // Immediately clear these values from the session. They're only used once,
-  // and on the unlikely chance that they contain bad data, we want to
-  // aggressively clear them so they don't interfere with future logins.
-  req.session.lti13_pending_uin = undefined;
-  req.session.lti13_pending_sub = undefined;
-  req.session.lti13_pending_instance_id = undefined;
-
   let user_id: number | string;
-  if (authnParams.user_id !== undefined) {
+  let consumedPendingLti13Auth = false;
+  // Recognize the old split keys only to consume and reject them. They lack an
+  // expiration, so an in-flight session from an older server must fail closed.
+  const hasPendingLti13Auth = [
+    'pending_lti13_auth',
+    'lti13_pending_uin',
+    'lti13_pending_sub',
+    'lti13_pending_instance_id',
+  ].some((key) => Object.hasOwn(req.session, key));
+  if (isEnterprise() && hasPendingLti13Auth) {
+    // These imports must remain dynamic so non-enterprise installations do not load
+    // enterprise-only code.
+    const { authenticatePendingLti13User, consumePendingLti13Auth } =
+      await import('../ee/auth/lti13/lti13AuthUser.js');
+    try {
+      const pendingLti13Auth = consumePendingLti13Auth(req.session);
+      consumedPendingLti13Auth = true;
+      user_id = await authenticatePendingLti13User({ authnParams, pendingLti13Auth });
+    } catch (error) {
+      delete req.session.lti13_claims;
+      delete req.session.authn_lti13_instance_id;
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
+      throw error;
+    }
+  } else if (authnParams.user_id !== undefined) {
     user_id = authnParams.user_id;
   } else {
-    const params = [
-      authnParams.uid,
-      authnParams.name,
-      authnParams.uin,
-      authnParams.email,
-      authnParams.provider,
-      authnParams.institution_id,
-    ];
-
-    const userSelectOrInsertRes = await sqldb.callRow(
-      'users_select_or_insert',
-      params,
-      SprocUsersSelectOrInsertSchema,
-    );
-
-    const { result, user_institution_id } = userSelectOrInsertRes;
-    if (result === 'invalid_authn_provider') {
-      assert(user_institution_id !== null);
-      throw new HttpRedirect(
-        `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
-      );
-    }
-
-    assert(userSelectOrInsertRes.user_id !== null);
-    user_id = userSelectOrInsertRes.user_id;
+    user_id = await selectOrInsertUserId(authnParams);
   }
 
   const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
 
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
-  }
-
-  // If the student is authing as part of an LTI 1.3 launch, we need to associate
-  // the pending `sub` claim with the user. We'll take care to ensure that the
-  // UIN and institution ID match.
-  if (isEnterprise() && lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id) {
-    await handlePendingLti13User({
-      user: selectedUser.user,
-      uin: lti13_pending_uin,
-      sub: lti13_pending_sub,
-      lti13_instance_id: lti13_pending_instance_id,
-    });
   }
 
   // Regenerate the session on any identity transition to prevent session
@@ -152,9 +89,7 @@ export async function loadUser(
     // in the session before authentication completes and consumes them afterward.
     // These must be carried forward across this session regeneration.
 
-    const inLti13Launch =
-      authnParams.provider === 'LTI 1.3' ||
-      Boolean(lti13_pending_uin && lti13_pending_sub && lti13_pending_instance_id);
+    const inLti13Launch = authnParams.provider === 'LTI 1.3' || consumedPendingLti13Auth;
 
     const preservedSessionData = inLti13Launch
       ? ['lti13_claims', 'authn_lti13_instance_id']
