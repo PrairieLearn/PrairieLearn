@@ -3,20 +3,20 @@ import { afterAll, assert, beforeAll, beforeEach, describe, expect, test } from 
 import { withoutLogging } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { type LoadUserAuth } from '../../../lib/authn.types.js';
-import { config } from '../../../lib/config.js';
-import { type Lti13Instance, Lti13InstanceSchema, type User } from '../../../lib/db-types.js';
-import { selectAuditEventsByInstitutionId } from '../../../models/audit-event.js';
-import { selectOptionalUserByUid } from '../../../models/user.js';
-import * as helperDb from '../../../tests/helperDb.js';
-import { getOrCreateUser } from '../../../tests/utils/auth.js';
-import { insertLti13User, selectOptionalLti13UserForUser } from '../../models/lti13-user.js';
-
 import {
   authenticatePendingLti13User,
   createPendingLti13Auth,
   matchLti13LaunchUser,
-} from './lti13AuthUser.js';
+} from '../ee/auth/lti13/lti13AuthUser.js';
+import { insertLti13User, selectOptionalLti13UserForUser } from '../ee/models/lti13-user.js';
+import { type LoadUserAuth } from '../lib/authn.types.js';
+import { config } from '../lib/config.js';
+import { type Lti13Instance, Lti13InstanceSchema, type User } from '../lib/db-types.js';
+import { selectAuditEventsByInstitutionId } from '../models/audit-event.js';
+import { selectOptionalUserByUid } from '../models/user.js';
+
+import * as helperDb from './helperDb.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
