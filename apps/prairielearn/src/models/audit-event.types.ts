@@ -18,6 +18,7 @@ export const requiredTableFields = {
   assessments: ['assessment_id'],
   institution_settings: ['institution_id'],
   institutions: ['institution_id'],
+  lti13_users: ['institution_id', 'subject_user_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
   student_label_enrollments: ['enrollment_id', 'action_detail'],
   assessment_access_control_rules: ['assessment_id'],
@@ -66,6 +67,10 @@ export type SupportedTableActionCombination =
   | {
       tableName: 'institutions';
       actionDetail?: null;
+    }
+  | {
+      tableName: 'lti13_users';
+      actionDetail?: 'sub' | null;
     }
   | {
       tableName: 'institution_settings';

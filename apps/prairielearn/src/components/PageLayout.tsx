@@ -234,6 +234,8 @@ export function PageLayout({
     dataAttributes?: Record<string, string>;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
+    /** Whether the navbar should hide all controls associated with the current session. */
+    hideNavbarSessionControls?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -262,6 +264,7 @@ export function PageLayout({
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
+    hideNavbarSessionControls: false,
     showFooter: false,
     ...options,
   };
@@ -366,6 +369,7 @@ export function PageLayout({
                   navSubPage: navContext.subPage,
                   navbarType: navContext.type,
                   sideNavEnabled,
+                  hideSessionControls: resolvedOptions.hideNavbarSessionControls,
                 })}
               </div>`
             : ''}

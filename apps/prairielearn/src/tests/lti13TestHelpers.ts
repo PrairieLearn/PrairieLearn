@@ -6,6 +6,7 @@ import { assert } from 'vitest';
 import { execute, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectOrInsertUserId } from '../lib/authn-user.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -45,6 +46,7 @@ export async function makeLoginExecutor({
   callbackUrl,
   targetLinkUri,
   isInstructor = true,
+  roles,
 }: {
   user: {
     name: string;
@@ -59,8 +61,21 @@ export async function makeLoginExecutor({
   callbackUrl: string;
   targetLinkUri: string;
   isInstructor?: boolean;
+  roles?: string[];
 }) {
   const siteUrl = new URL(loginUrl).origin;
+  const launchRoles =
+    roles ??
+    (isInstructor
+      ? [
+          'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+          'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
+        ]
+      : [
+          'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
+        ]);
 
   const startLoginResponse = await fetchWithCookies(loginUrl, {
     method: 'POST',
@@ -109,16 +124,7 @@ export async function makeLoginExecutor({
       id: LTI_CONTEXT_ID,
       title: 'Test Course',
     },
-    'https://purl.imsglobal.org/spec/lti/claim/roles': isInstructor
-      ? [
-          'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-          'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
-        ]
-      : [
-          'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
-          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
-        ],
+    'https://purl.imsglobal.org/spec/lti/claim/roles': launchRoles,
     'https://purl.imsglobal.org/spec/lti/claim/context': {
       id: LTI_CONTEXT_ID,
       type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
@@ -329,6 +335,7 @@ export async function linkLtiContext({
  */
 export async function grantCoursePermissions({
   uid,
+  uin,
   courseId,
   courseRole,
   courseInstanceId,
@@ -336,6 +343,7 @@ export async function grantCoursePermissions({
   authnUserId,
 }: {
   uid: string;
+  uin?: string;
   courseId: string;
   courseRole: 'Owner' | 'Editor' | 'Viewer' | 'Previewer' | 'None';
   courseInstanceId?: string;
@@ -346,6 +354,10 @@ export async function grantCoursePermissions({
     throw new Error(
       'grantCoursePermissions: courseInstanceId and courseInstanceRole must both be provided or both omitted',
     );
+  }
+
+  if (uin !== undefined) {
+    await selectOrInsertUserId({ uid, uin, provider: 'dev' });
   }
 
   const user = await insertCoursePermissionsByUserUid({

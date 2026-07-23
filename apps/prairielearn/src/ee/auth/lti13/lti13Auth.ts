@@ -9,24 +9,31 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import * as authnLib from '../../../lib/authn.js';
-import { setCookie } from '../../../lib/cookie.js';
+import { clearCookie, setCookie } from '../../../lib/cookie.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
-import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
+import { getUsableLti13Uin } from '../../lib/lti13-identity.js';
 import { Lti13Claim, Lti13ClaimSchema, getOpenidClientConfig } from '../../lib/lti13.js';
-import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
+import {
+  clearPendingLti13Auth,
+  createPendingLti13Auth,
+  matchLti13LaunchUser,
+} from './lti13AuthUser.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const STATE_TEST = '-StateTest';
+
+function getOptionalStringClaim(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
 
 function getClaimUserAttributes({
   claim,
@@ -43,25 +50,25 @@ function getClaimUserAttributes({
   if (lti13_instance.uin_attribute) {
     // Here and below, we use es-toolkit's get to expand path representation in text to the object, like 'a[0].b.c'
     // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-    uin = claim.get(lti13_instance.uin_attribute);
+    uin = getOptionalStringClaim(claim.get(lti13_instance.uin_attribute));
   }
 
   if (lti13_instance.uid_attribute) {
     // Reasonable default is "email"
     // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-    uid = claim.get(lti13_instance.uid_attribute);
+    uid = getOptionalStringClaim(claim.get(lti13_instance.uid_attribute));
   }
 
   if (lti13_instance.name_attribute) {
     // Reasonable default is "name"
     // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-    name = claim.get(lti13_instance.name_attribute);
+    name = getOptionalStringClaim(claim.get(lti13_instance.name_attribute));
   }
 
   if (lti13_instance.email_attribute) {
     // Reasonable default is "email"
     // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-    email = claim.get(lti13_instance.email_attribute);
+    email = getOptionalStringClaim(claim.get(lti13_instance.email_attribute));
   }
 
   return { uin, uid, name, email };
@@ -214,6 +221,12 @@ router.post(
 
     // If we get here, auth succeeded and lti13_claims is populated
 
+    // A newly verified launch supersedes any incomplete launch in this browser
+    // session. If this launch also needs secondary authentication, fresh state
+    // and a fresh redirect cookie are installed below.
+    clearPendingLti13Auth(req.session);
+    clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
+
     // Put the LTI 1.3 claims in the session
     req.session.lti13_claims = lti13_claims;
     req.session.authn_lti13_instance_id = lti13_instance.id;
@@ -235,118 +248,73 @@ router.post(
       return;
     }
 
-    const { uin, uid, name, email } = getClaimUserAttributes({ lti13_instance, claim: ltiClaim });
-
-    const resolvedUid = await run(async () => {
-      if (lti13_instance.uid_attribute) {
-        if (!uid) {
-          // Canvas Student View does not include a uid but has a deterministic role, nicer error message
-          if (ltiClaim.isRoleTestUser()) {
-            throw new HttpStatusError(
-              403,
-              'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
-            );
-          } else {
-            // Error about missing UID
-            throw new HttpStatusError(
-              500,
-              `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
-            );
-          }
-        }
-
-        // If the `uid_attribute` is present, we must have a claim for it by this point.
-        //
-        // It's possible that the UID for a user may have changed, but we may or may not
-        // have a UIN attribute here. To account for a missing UIN, we'll try to find an
-        // existing user by their `sub` claim. If we do, and the UIDs don't match, we'll
-        // update the UID for that existing user.
-        //
-        // This is trusting that `sub` is immutable for a given user, which the LTI spec
-        // requires. Note that `sub` is scoped to an LTI 1.3 instance.
-        const user = await selectOptionalUserByLti13Sub({
-          lti13_instance_id: lti13_instance.id,
-          sub: ltiClaim.get('sub'),
-        });
-
-        if (user && user.uid !== uid) {
-          await updateUserUid({ user_id: user.id, uid });
-        }
-
-        // We still have a valid UID; pass it back.
-        return uid;
-      } else if (lti13_instance.uin_attribute) {
-        if (!uin) {
-          // Error about missing UIN
-          throw new HttpStatusError(
-            500,
-            `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
-          );
-        }
-
-        // If the `uin_attribute` is present, we must have a claim for it by this point.
-        //
-        // Without a UIN, we can't use the LTI 1.3 auth flow to create a user directly.
-        // Instead, there are two things that can happen:
-        //
-        // - The user could have already authenticated before via SAML or another
-        //   auth provider. In this case, we'll look them up by UIN/institution_id.
-        //   If we find them, we use that UID and proceed as normal.
-        // - The user has never authed via another auth provider. We'll have to
-        //   force them through another auth provider. We'll shove their UIN and
-        //   LTI 1.3 `sub` into the session so that, after they've authed, we can
-        //   check that the UINs match, create the user, and then add the LTI 1.3
-        //   `sub` to the user.
-
-        const user = await selectOptionalUserByUin({
-          uin,
-          institution_id: lti13_instance.institution_id,
-        });
-
-        if (user) return user.uid;
-
-        // We couldn't locate the user by their UIN, so they're a new user.
-        //
-        // We'll force them through the normal auth flow to pick up a UID and
-        // associate the user account with this information.
-
-        // Remember the user's details for after auth.
-        req.session.lti13_pending_uin = uin;
-        req.session.lti13_pending_sub = ltiClaim.get('sub');
-        req.session.lti13_pending_instance_id = lti13_instance.id;
-
-        // Remember where the user was headed so we can redirect them after auth.
-        if (ltiClaim.target_link_uri) {
-          setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
-        }
-
-        throw new HttpRedirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
-      } else {
+    try {
+      if (ltiClaim.isRoleTestUser()) {
         throw new HttpStatusError(
-          500,
-          'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+          403,
+          'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
         );
       }
-    });
 
-    const authedUser = await authnLib.loadUser(req, res, {
-      uin,
-      uid: resolvedUid,
-      name,
-      email,
-      provider: 'LTI 1.3',
-      institution_id: lti13_instance.institution_id,
-    });
+      const {
+        uin: rawUin,
+        name,
+        email,
+      } = getClaimUserAttributes({
+        lti13_instance,
+        claim: ltiClaim,
+      });
+      // The configured UID claim is still shown by the instance test page, but
+      // authentication deliberately uses the launch email only after checking
+      // it against the institution's UID policy.
+      const uin = lti13_instance.uin_attribute ? getUsableLti13Uin(rawUin) : null;
+      if (lti13_instance.uin_attribute && uin === null) {
+        throw new HttpStatusError(
+          400,
+          `Missing or malformed UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing, empty, or unexpanded)`,
+        );
+      }
 
-    // Record the LTI 1.3 user's subject id.
-    await updateLti13UserSub({
-      user_id: authedUser.user.id,
-      lti13_instance_id: lti13_instance.id,
-      sub: ltiClaim.get('sub'),
-    });
+      const sub = getOptionalStringClaim(ltiClaim.get('sub'));
+      if (!sub) {
+        throw new HttpStatusError(400, 'Missing sub data from LTI 1.3 login');
+      }
 
-    // Get the target_link out of the LTI request and redirect.
-    res.redirect(ltiClaim.target_link_uri);
+      const match = await matchLti13LaunchUser({
+        instance: lti13_instance,
+        sub,
+        uin,
+        name,
+        email,
+      });
+      switch (match.type) {
+        case 'secondary_auth':
+          req.session.pending_lti13_auth = createPendingLti13Auth({
+            lti13_instance_id: lti13_instance.id,
+            sub,
+            uin,
+            launchExpiresAtSeconds: lti13_claims.exp,
+          });
+          setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
+          res.redirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
+          return;
+        case 'authenticate':
+          await authnLib.loadUser(req, res, {
+            user_id: match.userId,
+            provider: 'LTI 1.3',
+          });
+
+          // Get the target_link out of the LTI request and redirect.
+          res.redirect(ltiClaim.target_link_uri);
+          return;
+        default:
+          return assertNever(match);
+      }
+    } catch (error) {
+      ltiClaim.remove();
+      clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
+      throw error;
+    }
   }),
 );
 

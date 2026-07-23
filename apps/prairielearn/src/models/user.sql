@@ -67,15 +67,6 @@ SELECT
 FROM
   inserted_user;
 
--- BLOCK update_user_uid
-UPDATE users
-SET
-  uid = $uid
-WHERE
-  id = $user_id
-RETURNING
-  *;
-
 -- BLOCK insert_user
 INSERT INTO
   users (uid, name, email)
