@@ -106,8 +106,8 @@ describe('setupReportCheatingModal', () => {
     dispatchFormEvent('submit');
     await vi.waitFor(() => assert.equal(fetchMock.mock.calls.length, 2));
 
-    const firstBody = fetchMock.mock.calls[0][1].body;
-    const secondBody = fetchMock.mock.calls[1][1].body;
+    const firstBody = fetchMock.mock.calls[0][1]!.body;
+    const secondBody = fetchMock.mock.calls[1][1]!.body;
     assert.instanceOf(firstBody, URLSearchParams);
     assert.instanceOf(secondBody, URLSearchParams);
     assert.equal(firstBody.get('submission_id'), secondBody.get('submission_id'));
@@ -137,8 +137,8 @@ describe('setupReportCheatingModal', () => {
     dispatchFormEvent('submit');
     await vi.waitFor(() => assert.equal(fetchMock.mock.calls.length, 2));
 
-    const firstBody = fetchMock.mock.calls[0][1].body;
-    const secondBody = fetchMock.mock.calls[1][1].body;
+    const firstBody = fetchMock.mock.calls[0][1]!.body;
+    const secondBody = fetchMock.mock.calls[1][1]!.body;
     assert.instanceOf(firstBody, URLSearchParams);
     assert.instanceOf(secondBody, URLSearchParams);
     assert.notEqual(firstBody.get('submission_id'), secondBody.get('submission_id'));
