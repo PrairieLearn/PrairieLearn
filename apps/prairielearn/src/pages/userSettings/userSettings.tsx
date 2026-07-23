@@ -10,10 +10,11 @@ import { Hydrate } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import { PublicUserSettingSchema, UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
 import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
+import { selectUserSettings, updateUserSettings } from '../../models/user-settings.js';
 
 import { UserSettingsPage } from './components/UserSettingsPage.js';
 
@@ -31,6 +32,7 @@ router.get(
       { user_id: authn_user.id },
       AccessTokenSchema,
     );
+    const userSettings = await selectUserSettings({ user_id: authn_user.id });
 
     // If the raw tokens are present for any of these hashes, include them
     // in this response and then delete them from memory
@@ -82,6 +84,7 @@ router.get(
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
+                userSettings={PublicUserSettingSchema.parse(userSettings)}
               />
             </Hydrate>
             {
@@ -128,6 +131,17 @@ router.post(
         user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'user_setting_update') {
+      const authn_user = UserSchema.parse(res.locals.authn_user);
+      try {
+        await updateUserSettings({
+          user_id: authn_user.id,
+          enable_keyboard_shortcut: req.body.enable_keyboard_shortcut,
+        });
+        res.send();
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
