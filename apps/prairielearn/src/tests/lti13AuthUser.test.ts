@@ -25,10 +25,6 @@ async function createFixture() {
   return await queryRow(sql.insert_lti13_instance, Lti13InstanceSchema);
 }
 
-async function createUser(uid: string, uin: string, name: string): Promise<User> {
-  return await getOrCreateUser({ uid, uin, name, email: uid, institutionId: '1' });
-}
-
 function authnParams(uid: string, uin: string | null, name = uid, email = uid): LoadUserAuth {
   return { uid, uin, name, email, provider: 'dev' };
 }
@@ -132,11 +128,13 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('adds a binding for an existing UIN identity without changing its profile', async () => {
     const instance = await createFixture();
-    const user = await createUser(
-      'existing@example.com',
-      'existing-uin',
-      'Authoritative Existing Name',
-    );
+    const user = await getOrCreateUser({
+      uid: 'existing@example.com',
+      uin: 'existing-uin',
+      name: 'Authoritative Existing Name',
+      email: 'existing@example.com',
+      institutionId: '1',
+    });
 
     const result = await matchLti13LaunchUser({
       instance,
@@ -156,7 +154,13 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('an existing sub match does not evaluate weaker UID policy', async () => {
     const instance = await createFixture();
-    const user = await createUser('existing-sub@example.com', 'existing-sub-uin', 'Existing Sub');
+    const user = await getOrCreateUser({
+      uid: 'existing-sub@example.com',
+      uin: 'existing-sub-uin',
+      name: 'Existing Sub',
+      email: 'existing-sub@example.com',
+      institutionId: '1',
+    });
     await insertBinding(instance, user, 'existing-sub');
     await execute(sql.configure_invalid_uid_regexp);
 
@@ -173,7 +177,13 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('secondary auth replaces a binding and audits it in the same transaction', async () => {
     const instance = await createFixture();
-    const user = await createUser('replacement@example.com', 'replacement-uin', 'Old Name');
+    const user = await getOrCreateUser({
+      uid: 'replacement@example.com',
+      uin: 'replacement-uin',
+      name: 'Old Name',
+      email: 'replacement@example.com',
+      institutionId: '1',
+    });
     const oldBinding = await insertBinding(instance, user, 'old-sub');
 
     const userId = await authenticatePendingLti13User({
@@ -206,12 +216,20 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('rolls back authoritative profile changes when the launch sub belongs to another user', async () => {
     const instance = await createFixture();
-    const currentSubOwner = await createUser('owner@example.com', 'owner-uin', 'Current Owner');
-    const authUser = await createUser(
-      'auth-user@example.com',
-      'auth-user-uin',
-      'Original Auth Name',
-    );
+    const currentSubOwner = await getOrCreateUser({
+      uid: 'owner@example.com',
+      uin: 'owner-uin',
+      name: 'Current Owner',
+      email: 'owner@example.com',
+      institutionId: '1',
+    });
+    const authUser = await getOrCreateUser({
+      uid: 'auth-user@example.com',
+      uin: 'auth-user-uin',
+      name: 'Original Auth Name',
+      email: 'auth-user@example.com',
+      institutionId: '1',
+    });
     await insertBinding(instance, currentSubOwner, 'claimed-sub');
     await insertBinding(instance, authUser, 'auth-old-sub');
 
@@ -258,8 +276,20 @@ describe('LTI 1.3 authentication identity transactions', { concurrent: false }, 
 
   test('fails closed after repeated secondary-auth uniqueness conflicts', async () => {
     const instance = await createFixture();
-    const authUser = await createUser('canonical@example.com', 'canonical-uin', 'Canonical User');
-    const uidOwner = await createUser('already-owned@example.com', 'other-uin', 'UID Owner');
+    const authUser = await getOrCreateUser({
+      uid: 'canonical@example.com',
+      uin: 'canonical-uin',
+      name: 'Canonical User',
+      email: 'canonical@example.com',
+      institutionId: '1',
+    });
+    const uidOwner = await getOrCreateUser({
+      uid: 'already-owned@example.com',
+      uin: 'other-uin',
+      name: 'UID Owner',
+      email: 'already-owned@example.com',
+      institutionId: '1',
+    });
 
     await withoutLogging(async () => {
       await expect(
