@@ -310,12 +310,8 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
   pending_lti13_sub: null,
   pending_name: null,
   pending_uid: null,
@@ -329,7 +325,6 @@ const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
   created_at: new Date(),
   first_joined_at: new Date(),
   id: '1',
-  lti_managed: false,
   pending_uid: null,
   status: 'joined',
   user_id: null,
@@ -449,12 +444,8 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   created_at: null,
   first_joined_at: null,
   id: '9',
-  lti_managed: false,
   pending_email: null,
   pending_lti13_course_instance_id: null,
-  pending_lti13_email: null,
-  pending_lti13_instance_id: null,
-  pending_lti13_name: null,
   pending_lti13_sub: null,
   pending_name: null,
   pending_uid: null,
@@ -684,32 +675,12 @@ describe('safe-db-types schemas', () => {
       ...minimalRawStaffEnrollment,
       extra: 123,
       is_guest: true,
+      lti_managed: false,
     });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
-  });
-
-  it('parses a RawStaffEnrollment returned by an old server during a rolling deploy', () => {
-    const {
-      pending_email: _pendingEmail,
-      pending_lti13_course_instance_id: _pendingLti13CourseInstanceId,
-      pending_name: _pendingName,
-      pending_uin: _pendingUin,
-      ...oldServerEnrollment
-    } = minimalRawStaffEnrollment;
-    expect(() => RawStaffEnrollmentSchema.parse(oldServerEnrollment)).not.toThrow();
-  });
-
-  it('parses a RawStaffEnrollment after the legacy columns are dropped', () => {
-    const {
-      lti_managed: _ltiManaged,
-      pending_lti13_email: _pendingLti13Email,
-      pending_lti13_instance_id: _pendingLti13InstanceId,
-      pending_lti13_name: _pendingLti13Name,
-      ...withoutLegacyColumns
-    } = minimalRawStaffEnrollment;
-    expect(() => RawStaffEnrollmentSchema.parse(withoutLegacyColumns)).not.toThrow();
   });
 
   it('parses valid RawStudentEnrollment and drops extra fields', () => {
@@ -717,9 +688,11 @@ describe('safe-db-types schemas', () => {
       ...minimalStudentEnrollment,
       extra: 123,
       is_guest: true,
+      lti_managed: false,
     });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).not.toHaveProperty('is_guest');
+    expect(parsed).not.toHaveProperty('lti_managed');
     expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 

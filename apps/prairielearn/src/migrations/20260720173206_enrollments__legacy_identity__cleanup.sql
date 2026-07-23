@@ -1,0 +1,7 @@
+ALTER TABLE enrollments
+DROP CONSTRAINT enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key,
+DROP CONSTRAINT enrollments_pending_lti13_instance_id_fkey,
+DROP COLUMN lti_managed,
+DROP COLUMN pending_lti13_name,
+DROP COLUMN pending_lti13_email,
+DROP COLUMN pending_lti13_instance_id;
