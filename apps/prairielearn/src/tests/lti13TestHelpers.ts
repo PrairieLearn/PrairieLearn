@@ -6,6 +6,7 @@ import { assert } from 'vitest';
 import { execute, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectOrInsertUserId } from '../lib/authn-user.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -329,6 +330,7 @@ export async function linkLtiContext({
  */
 export async function grantCoursePermissions({
   uid,
+  uin,
   courseId,
   courseRole,
   courseInstanceId,
@@ -336,6 +338,7 @@ export async function grantCoursePermissions({
   authnUserId,
 }: {
   uid: string;
+  uin?: string;
   courseId: string;
   courseRole: 'Owner' | 'Editor' | 'Viewer' | 'Previewer' | 'None';
   courseInstanceId?: string;
@@ -346,6 +349,10 @@ export async function grantCoursePermissions({
     throw new Error(
       'grantCoursePermissions: courseInstanceId and courseInstanceRole must both be provided or both omitted',
     );
+  }
+
+  if (uin !== undefined) {
+    await selectOrInsertUserId({ uid, uin, provider: 'dev' });
   }
 
   const user = await insertCoursePermissionsByUserUid({

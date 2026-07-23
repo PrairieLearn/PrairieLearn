@@ -1,4 +1,4 @@
-export interface Lti13IdentityUser {
+interface Lti13IdentityUser {
   id: string;
   uin: string | null;
 }
