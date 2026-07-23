@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
@@ -98,22 +99,34 @@ export function Lti13AuthRequired({
   institution_id: string;
   resLocals: UntypedResLocals;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 authentication required' })}
-      </head>
-      <body>
-        <main id="content" class="container mb-4">
-          <h1>Authentication required</h1>
-          <p>
-            Your institution requires you to authenticate via an additional method to complete the
-            login process.
-          </p>
-          <a href="/pl/login?institution_id=${institution_id}">Log in</a>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Complete your sign-in',
+    navContext: {
+      type: 'plain',
+      page: undefined,
+    },
+    options: {
+      hideNavbarSessionControls: true,
+      showFooter: true,
+    },
+    content: html`
+      <div class="row justify-content-center py-4">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow-sm">
+            <div class="card-body p-4 text-center">
+              <h1 class="h3 mb-3">Complete your sign-in</h1>
+              <p class="text-body-secondary mb-4" style="text-wrap: balance;">
+                Sign in once to finish setting up your PrairieLearn access. When you're done, we'll
+                return you to your course.
+              </p>
+              <a class="btn btn-primary" href="/pl/login?institution_id=${institution_id}">
+                Continue to sign in
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+  });
 }
