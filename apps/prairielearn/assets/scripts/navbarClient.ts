@@ -4,9 +4,9 @@ import 'htmx-ext-loading-states/dist/loading-states.js';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { removeCookieClient, setCookieClient } from '../../src/lib/client/cookie.js';
+import { setupReportCheatingModal } from '../../src/lib/client/reportCheatingModal.js';
 
 import { setupEndExamModal } from './lib/endExamModal.js';
-import { setupReportCheatingModal } from './lib/reportCheatingModal.js';
 
 onDocumentReady(() => {
   setupEndExamModal();

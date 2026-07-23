@@ -10,8 +10,16 @@ export function setupReportCheatingModal() {
   const cancelButton = form.querySelector<HTMLButtonElement>('.js-report-cheating-cancel');
   const submitButton = form.querySelector<HTMLButtonElement>('.js-report-cheating-submit');
   const submitLabel = form.querySelector<HTMLElement>('.js-report-cheating-submit-label');
+  const report = form.querySelector<HTMLTextAreaElement>('textarea[name="report"]');
   const submissionId = form.querySelector<HTMLInputElement>('input[name="submission_id"]');
-  let submitted = false;
+  let submissionSucceeded = false;
+  let submitting = false;
+  let submittedReport: string | null = null;
+
+  function rotateSubmissionId() {
+    if (submissionId) submissionId.value = crypto.randomUUID();
+    submittedReport = null;
+  }
 
   function showForm() {
     fields?.classList.remove('d-none');
@@ -62,6 +70,10 @@ export function setupReportCheatingModal() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (submitting) return;
+
+    submitting = true;
+    submittedReport = report?.value ?? null;
     showLoading();
 
     const body = new URLSearchParams();
@@ -87,24 +99,36 @@ export function setupReportCheatingModal() {
         throw new Error('Invalid report response');
       }
       if (response.ok && result.type === 'success') {
-        submitted = true;
+        submitting = false;
+        submissionSucceeded = true;
         showSuccess(result.message);
       } else {
+        submitting = false;
         showError(result.message);
       }
     } catch {
+      submitting = false;
       showError(
         'We could not confirm whether your report was submitted. Please try again, or tell your proctor directly.',
       );
     }
   });
 
+  report?.addEventListener('input', () => {
+    if (submittedReport !== null && report.value !== submittedReport) {
+      rotateSubmissionId();
+    }
+  });
+
   modal?.addEventListener('show.bs.modal', showForm);
+  modal?.addEventListener('hide.bs.modal', (event) => {
+    if (submitting) event.preventDefault();
+  });
   modal?.addEventListener('hidden.bs.modal', () => {
-    if (!submitted) return;
+    if (!submissionSucceeded) return;
     form.reset();
-    if (submissionId) submissionId.value = crypto.randomUUID();
-    submitted = false;
+    rotateSubmissionId();
+    submissionSucceeded = false;
     showForm();
   });
 }
