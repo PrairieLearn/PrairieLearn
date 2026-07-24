@@ -394,6 +394,7 @@ export const ConfigSchema = z.object({
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
+  workspaceJobsDirectoryChangeOwner: z.boolean().default(true),
   workspaceHeartbeatIntervalSec: z.number().default(60),
   workspaceHeartbeatTimeoutSec: z.number().default(10 * 60),
   workspaceVisibilityTimeoutSec: z.number().default(30 * 60),
