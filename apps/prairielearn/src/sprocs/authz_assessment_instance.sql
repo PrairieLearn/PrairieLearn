@@ -4,7 +4,6 @@ CREATE FUNCTION
         IN authz_data jsonb,
         IN req_date timestamptz,
         IN display_timezone text,
-        IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
@@ -111,9 +110,14 @@ BEGIN
     -- What about groups? No problem. Everything is the same, except for group work
     -- we need to check instead that "there exists a team_users with the same team_id
     -- as the assessment instance and the same user_id as the effective user."
+    --
+    -- Ownership is determined by the data on the assessment instance itself
+    -- (team_id vs. user_id), not by the assessment's current team_work setting.
+    -- This ensures that instances created before/after team_work was toggled
+    -- continue to recognize their original owner.
     IF
-        (((group_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS gu JOIN teams AS g ON g.id = gu.team_id WHERE gu.team_id = assessment_instance.team_id AND gu.user_id = (authz_data->'user'->>'id')::bigint AND g.deleted_at IS NULL)))
-        OR ((NOT group_work) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
+        (((assessment_instance.team_id IS NOT NULL) AND (NOT EXISTS (SELECT 1 FROM team_users AS gu JOIN teams AS g ON g.id = gu.team_id WHERE gu.team_id = assessment_instance.team_id AND gu.user_id = (authz_data->'user'->>'id')::bigint AND g.deleted_at IS NULL)))
+        OR ((assessment_instance.team_id IS NULL) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
     THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;

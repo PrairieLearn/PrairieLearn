@@ -161,10 +161,13 @@ export async function resolveModernAssessmentInstanceAccess({
   });
 
   // Determine if the effective user owns this assessment instance.
-  // For group work, check that the user is in an active group matching
-  // the instance's team. For individual work, check that the user_id matches.
+  // Ownership is determined by the data on the instance itself, not the
+  // assessment's current team_work setting: an instance created before/after
+  // team_work was toggled may have user_id set even when team_work is now
+  // true (or vice versa), and the original creator should still be recognized
+  // as the owner.
   let ownsInstance: boolean;
-  if (assessment.team_work && assessmentInstance.team_id != null) {
+  if (assessmentInstance.team_id != null) {
     const userGroupId = await getGroupId(assessment.id, authzData.user.id);
     ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
   } else {
