@@ -156,6 +156,7 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
         iconClasses: 'far fa-file-alt',
         tabLabel: 'Questions',
+        renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
       },
       {
         activeSubPage: 'settings',

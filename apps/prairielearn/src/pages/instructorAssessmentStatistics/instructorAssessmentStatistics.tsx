@@ -101,6 +101,7 @@ router.get(
             assessment={assessment}
             courseInstance={res.locals.course_instance}
             assessmentSet={res.locals.assessment_set}
+            hasCoursePermissionPreview={res.locals.authz_data.has_course_permission_preview}
             hasCoursePermissionEdit={res.locals.authz_data.has_course_permission_edit}
             hasCourseInstancePermissionEdit={
               res.locals.authz_data.has_course_instance_permission_edit
