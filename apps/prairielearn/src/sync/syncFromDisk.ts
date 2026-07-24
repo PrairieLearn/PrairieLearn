@@ -31,6 +31,7 @@ import * as syncAuthors from './fromDisk/authors.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
+import * as syncSharedState from './fromDisk/sharedState.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
 import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
@@ -145,6 +146,13 @@ export async function syncDiskToSqlWithLock(
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
+    // This must run before `syncCourseInfo`, since it can add errors to
+    // `courseData.course` (e.g. an incompatible schema change without a
+    // `dataVersion` bump) that need to be reflected in `courses.sync_errors`,
+    // which `syncCourseInfo` writes based on the error state at the time it runs.
+    await timed('Synced shared state objects', () =>
+      syncSharedState.sync(course.id, courseData),
+    );
     await timed('Synced course info', () =>
       syncCourseInfo.sync(course.path, courseData, course.id),
     );

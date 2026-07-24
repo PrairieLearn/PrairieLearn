@@ -1,0 +1,53 @@
+-- BLOCK select_value
+SELECT
+  *
+FROM
+  assessment_instance_shared_state_values
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND shared_state_object_id = $shared_state_object_id;
+
+-- BLOCK select_value_for_update
+SELECT
+  *
+FROM
+  assessment_instance_shared_state_values
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND shared_state_object_id = $shared_state_object_id
+FOR UPDATE;
+
+-- BLOCK select_other_objects_total_bytes
+SELECT
+  COALESCE(SUM(octet_length(data::text)), 0)::integer AS total_bytes
+FROM
+  assessment_instance_shared_state_values
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND shared_state_object_id != $shared_state_object_id;
+
+-- BLOCK upsert_value
+INSERT INTO
+  assessment_instance_shared_state_values (
+    assessment_instance_id,
+    shared_state_object_id,
+    revision_id,
+    data,
+    write_seq
+  )
+VALUES
+  (
+    $assessment_instance_id,
+    $shared_state_object_id,
+    $revision_id,
+    $data,
+    1
+  )
+ON CONFLICT (assessment_instance_id, shared_state_object_id) DO UPDATE
+SET
+  revision_id = EXCLUDED.revision_id,
+  data = EXCLUDED.data,
+  write_seq = assessment_instance_shared_state_values.write_seq + 1,
+  updated_at = now()
+RETURNING
+  *;

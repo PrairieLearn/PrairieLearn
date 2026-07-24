@@ -307,6 +307,11 @@ export const QuestionJsonSchema = z
       .optional()
       .default(false),
     preferences: QuestionPreferencesSchemaJsonSchema.optional(),
+    sharedStateAccess: z
+      .array(z.string().describe('The name of a shared-state object declared in infoCourse.json.'))
+      .describe('The shared-state objects that this question reads and writes.')
+      .optional()
+      .default([]),
   })
   .strict()
   .describe('Info files for questions.')

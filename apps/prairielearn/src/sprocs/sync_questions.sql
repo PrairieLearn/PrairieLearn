@@ -169,6 +169,7 @@ BEGIN
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
         json_workspace_comment = (src.data->'workspace_comment'),
         preferences_schema = (src.data->'preferences_schema'),
+        shared_state_access = COALESCE((src.data->'shared_state_access')::jsonb, '[]'::jsonb),
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

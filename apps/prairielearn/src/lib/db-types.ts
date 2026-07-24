@@ -5,7 +5,11 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+import {
+  EnumAssessmentToolSchema,
+  QuestionPreferencesSchemaJsonSchema,
+  SharedStateObjectPropertiesJsonSchema,
+} from '../schemas/index.js';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
 
@@ -523,6 +527,25 @@ export const AssessmentInstanceSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
+
+export const SharedStateObjectValueSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
+export type SharedStateObjectValue = z.infer<typeof SharedStateObjectValueSchema>;
+
+export const AssessmentInstanceSharedStateValueSchema = z.object({
+  assessment_instance_id: IdSchema,
+  data: SharedStateObjectValueSchema,
+  id: IdSchema,
+  revision_id: IdSchema,
+  shared_state_object_id: IdSchema,
+  updated_at: DateFromISOString,
+  write_seq: z.number(),
+});
+export type AssessmentInstanceSharedStateValue = z.infer<
+  typeof AssessmentInstanceSharedStateValueSchema
+>;
 
 export const AssessmentModuleSchema = z.object({
   course_id: IdSchema,
@@ -1443,6 +1466,7 @@ export const QuestionSchema = z.object({
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
+  shared_state_access: z.array(z.string()),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -1540,6 +1564,26 @@ export const SamlProviderSchema = z.object({
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
 export const ServerLoadSchema = null;
+
+export const SharedStateObjectSchema = z.object({
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  current_revision_id: IdSchema.nullable(),
+  id: IdSchema,
+  name: z.string(),
+});
+export type SharedStateObject = z.infer<typeof SharedStateObjectSchema>;
+
+export const SharedStateObjectRevisionSchema = z.object({
+  created_at: DateFromISOString,
+  data_version: z.number(),
+  fingerprint: z.string(),
+  id: IdSchema,
+  properties: SharedStateObjectPropertiesJsonSchema,
+  scope: z.enum(['assessment_instance', 'course_instance']),
+  shared_state_object_id: IdSchema,
+});
+export type SharedStateObjectRevision = z.infer<typeof SharedStateObjectRevisionSchema>;
 
 export const SharingSetSchema = z.object({
   course_id: IdSchema,

@@ -44,6 +44,7 @@ export interface GenerateResultData {
   params: Record<string, unknown>;
   true_answer: Record<string, unknown>;
   options?: Record<string, unknown>;
+  shared_state: Record<string, Record<string, string | number | boolean>>;
 }
 
 export type PrepareResultData = GenerateResultData;
@@ -63,6 +64,7 @@ export interface ParseResultData {
   raw_submitted_answer: Record<string, unknown>;
   format_errors: Record<string, unknown>;
   gradable: boolean;
+  shared_state: Record<string, Record<string, string | number | boolean>>;
 }
 
 export interface GradeResultData {
@@ -76,6 +78,7 @@ export interface GradeResultData {
   feedback: Record<string, unknown>;
   gradable: boolean;
   v2_score?: number;
+  shared_state: Record<string, Record<string, string | number | boolean>>;
 }
 
 export interface TestResultData {
@@ -91,7 +94,14 @@ export interface TestResultData {
 export type PrepareVariant = Pick<
   Variant,
   'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'preferences'
->;
+> & {
+  /**
+   * Unlike `preferences`, shared state is not frozen on the variant row: it's
+   * read live so that a sibling question's latest write is visible. This
+   * carries the pre-phase snapshot through `generate`/`prepare` in memory.
+   */
+  shared_state: Record<string, Record<string, string | number | boolean>>;
+};
 
 export type ParseSubmission = Pick<
   Partial<Submission>,
@@ -104,6 +114,7 @@ export interface QuestionServer {
     course: Course,
     variant_seed: string,
     preferences: Record<string, string | number | boolean>,
+    sharedState: Record<string, Record<string, string | number | boolean>>,
     caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
@@ -127,6 +138,7 @@ export interface QuestionServer {
     variant: Variant,
     question: Question,
     course: Course,
+    sharedState: Record<string, Record<string, string | number | boolean>>,
     caller: QuestionCaller,
   ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
@@ -134,6 +146,7 @@ export interface QuestionServer {
     variant: Variant,
     question: Question,
     course: Course,
+    sharedState: Record<string, Record<string, string | number | boolean>>,
     caller: QuestionCaller,
   ) => QuestionServerReturnValue<Partial<GradeResultData>>;
   file?: (
@@ -174,6 +187,7 @@ export interface ExecutionData {
     group: QuestionGroup | null;
   };
   preferences: Record<string, string | number | boolean>;
+  shared_state?: Record<string, Record<string, string | number | boolean>>;
   answers_names?: Record<string, string>;
   submitted_answers?: Record<string, unknown>;
   format_errors?: Record<string, unknown>;

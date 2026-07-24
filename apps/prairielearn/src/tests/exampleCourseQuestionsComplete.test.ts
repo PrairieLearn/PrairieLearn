@@ -320,7 +320,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
-      const variant = rawVariant as Variant;
+      const variant = rawVariant as unknown as Variant;
       variant.num_tries = 0;
 
       // Render
@@ -385,6 +385,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        {},
         caller,
       );
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
@@ -401,6 +402,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        {},
         caller,
       );
 

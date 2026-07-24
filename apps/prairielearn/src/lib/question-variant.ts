@@ -11,6 +11,11 @@ import { IdSchema } from '@prairielearn/zod';
 import { selectPreferencesForInstanceQuestion } from '../models/assessment-question.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
+import {
+  readSharedStateValuesForAssessmentInstance,
+  selectSharedStateObjectsForQuestion,
+  writeSharedStateValuesForAssessmentInstance,
+} from '../models/shared-state-value.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
@@ -18,6 +23,7 @@ import {
   type CourseInstance,
   type Question,
   type QuestionPreferenceValuesSchema,
+  type SharedStateObjectValue,
   type Submission,
   type Variant,
   VariantSchema,
@@ -25,10 +31,12 @@ import {
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import { extractDefaultPreferences } from './question-preferences.js';
+import { extractSharedStateObjectDefaults } from './shared-state.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type QuestionPreferenceValues = z.infer<typeof QuestionPreferenceValuesSchema>;
+type SharedStateValues = Record<string, SharedStateObjectValue>;
 
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
@@ -46,6 +54,7 @@ interface VariantCreationData {
   true_answer: Record<string, any>;
   options: Record<string, any>;
   preferences: QuestionPreferenceValues;
+  shared_state: SharedStateValues;
   broken: boolean;
 }
 
@@ -58,6 +67,7 @@ export async function makeVariant({
   variant_course,
   variant_seed: variant_seed_option,
   preferences = {},
+  shared_state = {},
   effective_user_id,
   group_id,
 }: {
@@ -67,6 +77,12 @@ export async function makeVariant({
   variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
+  /**
+   * The current value of each shared-state object this question can access.
+   * Unlike `preferences`, this is read live (not frozen) so that a sibling
+   * question's latest write is visible to `generate`/`prepare`.
+   */
+  shared_state?: SharedStateValues;
   /** The user that owns the variant, or `null` for group variants. Used to expose user info to `server.py` if the course has opted in. */
   effective_user_id: string | null;
   /** The group the variant belongs to, if this is a group-work variant. */
@@ -94,6 +110,7 @@ export async function makeVariant({
     course,
     variant_seed,
     preferences,
+    shared_state,
     caller,
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -103,6 +120,7 @@ export async function makeVariant({
     true_answer: data.true_answer || {},
     options: data.options || {},
     preferences,
+    shared_state: data.shared_state || shared_state,
     broken: hasFatalIssue,
   };
 
@@ -135,6 +153,7 @@ export async function makeVariant({
       options: data.options || {},
       broken: hasFatalIssue,
       preferences,
+      shared_state: data.shared_state || variant.shared_state,
     };
   }
 
@@ -293,11 +312,21 @@ async function makeAndInsertVariant({
     preferences = result ? { ...preferences, ...result } : preferences;
   }
 
+  // Resolve which shared-state objects this question can access. We resolve
+  // these regardless of whether this is an instance-question-backed variant,
+  // so that a floating/preview variant still sees each object's schema
+  // defaults under `data["shared_state"]` rather than an empty dict.
+  const sharedStateObjects = await selectSharedStateObjectsForQuestion({
+    course_id: question_course.id,
+    question,
+  });
+
   // Look up the variant's owner and group for instance-question-backed variants
   // so we can build the user/group context for `generate`/`prepare`, which run
   // before the variant is persisted (and so before `variant.user_id` exists).
   let variant_user_id: string | null = user_id;
   let group_id: string | null = null;
+  let assessment_instance_id: string | null = null;
   if (instance_question_id != null) {
     const instance_question = await sqldb.queryOptionalRow(
       sql.select_instance_question_data,
@@ -306,7 +335,23 @@ async function makeAndInsertVariant({
     );
     variant_user_id = instance_question?.user_id ?? null;
     group_id = instance_question?.team_id ?? null;
+    assessment_instance_id = instance_question?.assessment_instance_id ?? null;
   }
+
+  const sharedStateBefore: SharedStateValues =
+    Object.keys(sharedStateObjects).length === 0
+      ? {}
+      : assessment_instance_id != null
+        ? await readSharedStateValuesForAssessmentInstance({
+            assessment_instance_id,
+            objects: sharedStateObjects,
+          })
+        : Object.fromEntries(
+            Object.entries(sharedStateObjects).map(([name, object]) => [
+              name,
+              extractSharedStateObjectDefaults(object.properties),
+            ]),
+          );
 
   const { courseIssues, variant: variantData } = await makeVariant({
     question,
@@ -314,6 +359,7 @@ async function makeAndInsertVariant({
     variant_course,
     variant_seed: options.variant_seed,
     preferences,
+    shared_state: sharedStateBefore,
     effective_user_id: variant_user_id,
     group_id,
   });
@@ -357,6 +403,27 @@ async function makeAndInsertVariant({
       assert(course_instance);
       assert(instance_question.course_instance_id === course_instance.id);
 
+      // Persist this variant's shared-state patch now that we know we're
+      // actually inserting a new variant (not falling back to an existing
+      // one from a concurrent request). This runs inside the same
+      // transaction as the variant insert and under the same
+      // assessment-instance lock acquired above, so a losing
+      // variant-creation race never mutates shared state.
+      if (Object.keys(sharedStateObjects).length > 0) {
+        const { issues } = await writeSharedStateValuesForAssessmentInstance({
+          assessment_instance_id: instance_question.assessment_instance_id,
+          objects: sharedStateObjects,
+          before: sharedStateBefore,
+          after: variantData.shared_state,
+        });
+        if (issues.length > 0) {
+          variantData.broken = true;
+          courseIssues.push(
+            ...issues.map((issue) => Object.assign(new Error(issue), { fatal: true })),
+          );
+        }
+      }
+
       question_id = instance_question.question_id;
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.team_id;
@@ -388,10 +455,14 @@ async function makeAndInsertVariant({
       );
     }
 
+    // `shared_state` is not a column on `variants` (it's live, not frozen),
+    // so it's deliberately excluded from the insert params below.
+    const { shared_state: _shared_state, ...variantColumns } = variantData;
+
     return await sqldb.queryRow(
       sql.insert_variant,
       {
-        ...variantData,
+        ...variantColumns,
         instance_question_id,
         question_id,
         course_instance_id: course_instance?.id ?? null,
