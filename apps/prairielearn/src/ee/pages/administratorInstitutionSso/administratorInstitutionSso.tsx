@@ -12,6 +12,7 @@ import {
   StaffAuthnProviderSchema,
   StaffInstitutionSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { selectInstitutionIdentityConfigurationStatus } from '../../../lib/institution-identity.js';
 import { updateInstitutionAuthnProviders } from '../../../models/institution-authn-provider.js';
 import {
   getInstitution,
@@ -63,6 +64,9 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
+    const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+      req.params.institution_id,
+    );
 
     const pageContext = extractPageContext(res.locals, {
       pageType: 'plain',
@@ -90,6 +94,7 @@ router.get(
               institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
                 institutionAuthenticationProviders,
               )}
+              hasConfiguredLti13Uin={identityConfigurationStatus.has_configured_lti13_uin}
               urlPrefix={pageContext.urlPrefix}
               csrfToken={pageContext.__csrf_token}
             />

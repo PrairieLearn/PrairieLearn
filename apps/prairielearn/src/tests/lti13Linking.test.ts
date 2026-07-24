@@ -16,13 +16,14 @@ import { Lti13CourseInstanceSchema } from '../lib/db-types.js';
 import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   LTI_CONTEXT_ID,
   LTI_DEPLOYMENT_ID,
+  configureInstitutionSamlForLtiUin,
   createCrossInstitutionFixture,
   createLti13Instance,
+  enableLti13Authentication,
   grantCoursePermissions,
   linkLtiContext,
   makeLoginExecutor,
@@ -40,6 +41,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
+    await configureInstitutionSamlForLtiUin();
 
     oidcProviderPort = await getPort();
 
@@ -61,25 +63,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       },
     });
 
-    // Enable LTI 1.3 as auth provider
-    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
-    assert.equal(ssoResponse.status, 200, 'Failed to load SSO settings page');
-
-    const saveButton = ssoResponse.$('button:contains(Save)');
-    const form = saveButton.closest('form');
-    const lti13Input = form.find('label:contains(LTI 1.3)').closest('div').find('input');
-    const lti13InputValue = lti13Input.attr('value');
-    assert.ok(lti13InputValue, 'Could not find LTI 1.3 input value in SSO form');
-
-    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        enabled_authn_provider_ids: lti13InputValue,
-        default_authn_provider_id: '',
-      }),
-    });
-    assert.equal(enableLtiResponse.status, 200, 'Failed to enable LTI 1.3 as auth provider');
+    await enableLti13Authentication(siteUrl);
   });
 
   afterAll(async () => {

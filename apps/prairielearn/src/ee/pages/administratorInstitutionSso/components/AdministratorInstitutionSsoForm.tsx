@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { isInstitutionalAuthenticationProvider } from '../../../../lib/authn-provider-classification.js';
 import type { StaffAuthnProvider, StaffInstitution } from '../../../../lib/client/safe-db-types.js';
 import type { AuthnProvider } from '../../../../lib/db-types.js';
 
@@ -22,6 +23,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider,
   supportedAuthenticationProviders,
   institutionAuthenticationProviders,
+  hasConfiguredLti13Uin,
   urlPrefix,
   csrfToken,
 }: {
@@ -29,6 +31,7 @@ export function AdministratorInstitutionSsoForm({
   hasSamlProvider: boolean;
   supportedAuthenticationProviders: StaffAuthnProvider[];
   institutionAuthenticationProviders: StaffAuthnProvider[];
+  hasConfiguredLti13Uin: boolean;
   urlPrefix: string;
   csrfToken: string;
 }) {
@@ -38,32 +41,43 @@ export function AdministratorInstitutionSsoForm({
 
   const [defaultProviderId, setDefaultProviderId] = useState(institution.default_authn_provider_id);
 
-  const googleProvider = supportedAuthenticationProviders.find((p) => p.name === 'Google');
-  const microsoftProvider = supportedAuthenticationProviders.find((p) => p.name === 'Azure');
-  const samlProvider = supportedAuthenticationProviders.find((p) => p.name === 'SAML');
-
-  // A "primary provider" is one of Google, Microsoft, or SAML. These are the ones will
-  // actually provision accounts for users. Other providers (e.g. LTI) are secondary
-  // and do not provision accounts.
-  //
-  // Note that LTI 1.3 *does* provision accounts, but we're in the process of changing that,
-  // so it's not included here.
-  const enabledPrimaryProviders = [...enabledProviderIds]
-    .filter((id) => {
-      return [googleProvider, microsoftProvider, samlProvider].some((p) => p?.id === id);
-    })
-    .map((id) => {
-      return supportedAuthenticationProviders.find((p) => p.id === id)!;
-    });
+  // LTI providers are launch providers, so they are allowed alongside SAML when the LTI UIN
+  // guardrail is active.
+  const enabledPrimaryProviders = supportedAuthenticationProviders.filter(
+    (provider) =>
+      enabledProviderIds.has(provider.id) && isInstitutionalAuthenticationProvider(provider.name),
+  );
 
   return (
     <form method="POST">
       <div className="mb-3">
         <h2 className="h4">Enabled single sign-on providers</h2>
+        {hasConfiguredLti13Uin && (
+          <div className="alert alert-info" role="alert">
+            An LTI 1.3 instance uses a UIN attribute. SAML must remain the only enabled
+            institutional authentication provider. Secondary LTI launch providers may remain
+            enabled.
+          </div>
+        )}
         {supportedAuthenticationProviders.map((provider) => {
           const isEnabled = enabledProviderIds.has(provider.id);
+          const isInstitutionalProvider = isInstitutionalAuthenticationProvider(provider.name);
+          const isLockedEnabledSaml =
+            hasConfiguredLti13Uin && provider.name === 'SAML' && isEnabled;
+          const isLockedDisabledProvider =
+            hasConfiguredLti13Uin &&
+            isInstitutionalProvider &&
+            provider.name !== 'SAML' &&
+            !isEnabled;
+          const isDisabled =
+            (provider.name === 'SAML' && !hasSamlProvider) ||
+            isLockedEnabledSaml ||
+            isLockedDisabledProvider;
           return (
             <div key={provider.id} className="form-check">
+              {isLockedEnabledSaml && (
+                <input type="hidden" name="enabled_authn_provider_ids" value={provider.id} />
+              )}
               <input
                 className="form-check-input js-authentication-provider"
                 type="checkbox"
@@ -71,7 +85,7 @@ export function AdministratorInstitutionSsoForm({
                 id={`provider-${provider.id}-enabled`}
                 name="enabled_authn_provider_ids"
                 checked={isEnabled}
-                disabled={provider.name === 'SAML' && !hasSamlProvider}
+                disabled={isDisabled}
                 onChange={({ currentTarget }) => {
                   setEnabledProviderIds((prev) => {
                     const newSet = new Set(prev);

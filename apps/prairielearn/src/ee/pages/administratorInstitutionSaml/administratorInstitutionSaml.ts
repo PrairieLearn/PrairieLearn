@@ -11,6 +11,12 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
+import {
+  assertLti13UinCompatibilityConfirmed,
+  lockInstitutionForIdentityConfiguration,
+  normalizeUinAttribute,
+  selectInstitutionIdentityConfigurationStatus,
+} from '../../../lib/institution-identity.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {
@@ -46,12 +52,16 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
+    const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+      req.params.institution_id,
+    );
 
     res.send(
       AdministratorInstitutionSaml({
         institution,
         samlProvider,
         institutionAuthenticationProviders,
+        hasConfiguredLti13Uin: identityConfigurationStatus.has_configured_lti13_uin,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       }),
@@ -64,10 +74,26 @@ router.post(
   typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'save') {
       await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
         // only create a new keypair if there's no existing provider.
         const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
+        const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+          req.params.institution_id,
+        );
+        const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
+
+        if (identityConfigurationStatus.has_configured_lti13_uin) {
+          if (!uinAttribute) {
+            throw new error.HttpStatusError(
+              400,
+              'The SAML UIN attribute cannot be removed while an LTI 1.3 instance uses a UIN attribute',
+            );
+          }
+          assertLti13UinCompatibilityConfirmed(req.body);
+        }
 
         let publicKey, privateKey;
         if (!samlProvider) {
@@ -95,7 +121,7 @@ router.post(
           want_assertions_signed: req.body.want_assertions_signed === '1',
           want_authn_response_signed: req.body.want_authn_response_signed === '1',
           // Normalize empty strings to `null`.
-          uin_attribute: req.body.uin_attribute || null,
+          uin_attribute: uinAttribute,
           uid_attribute: req.body.uid_attribute || null,
           name_attribute: req.body.name_attribute || null,
           given_name_attribute: req.body.given_name_attribute || null,
@@ -110,10 +136,23 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete') {
-      await execute(sql.delete_institution_saml_provider, {
-        institution_id: req.params.institution_id,
-        // For audit logs
-        authn_user_id: res.locals.authn_user.id,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+          req.params.institution_id,
+        );
+        if (identityConfigurationStatus.has_configured_lti13_uin) {
+          throw new error.HttpStatusError(
+            400,
+            'SAML configuration cannot be deleted while an LTI 1.3 instance uses a UIN attribute',
+          );
+        }
+
+        await execute(sql.delete_institution_saml_provider, {
+          institution_id: req.params.institution_id,
+          // For audit logs
+          authn_user_id: res.locals.authn_user.id,
+        });
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'decode_assertion') {

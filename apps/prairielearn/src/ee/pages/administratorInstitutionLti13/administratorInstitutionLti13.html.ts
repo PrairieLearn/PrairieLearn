@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { Lti13UinCompatibilityConfirmations } from '../../../components/Lti13UinCompatibilityConfirmations.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
@@ -36,6 +37,7 @@ export function AdministratorInstitutionLti13({
   resLocals,
   platform_defaults,
   canonicalHost,
+  lti13UinConfigurationIssues,
 }: {
   institution: Institution;
   lti13Instances: Lti13Instance[];
@@ -44,6 +46,7 @@ export function AdministratorInstitutionLti13({
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
+  lti13UinConfigurationIssues: string[];
 }): string {
   return PageLayout({
     resLocals: {
@@ -96,6 +99,7 @@ export function AdministratorInstitutionLti13({
             resLocals,
             platform_defaults,
             canonicalHost,
+            lti13UinConfigurationIssues,
           })}
         </div>
       </div>
@@ -109,12 +113,14 @@ function LTI13Instance({
   resLocals,
   platform_defaults,
   canonicalHost,
+  lti13UinConfigurationIssues,
 }: {
   instance: Lti13Instance | null;
   linkedCourseInstances: LinkedCourseInstance[];
   resLocals: ResLocalsForPage<'plain'>;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
+  lti13UinConfigurationIssues: string[];
 }) {
   if (instance) {
     return html`
@@ -276,6 +282,13 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
+          ${instance.uin_attribute
+            ? Lti13UinCompatibilityConfirmations({
+                idPrefix: 'lti-platform',
+                description:
+                  'Required when changing the platform configuration because this instance uses its UIN data for institutional identity matching.',
+              })
+            : ''}
           <button type="submit" class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
@@ -324,6 +337,18 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       <hr />
       <h5>PrairieLearn configuration</h5>
 
+      ${lti13UinConfigurationIssues.length > 0
+        ? html`
+            <div class="alert alert-warning">
+              <h6>LTI UIN configuration is unavailable</h6>
+              <p>The following institution prerequisites must be completed first:</p>
+              <ul class="mb-0">
+                ${lti13UinConfigurationIssues.map((issue) => html`<li>${issue}</li>`)}
+              </ul>
+            </div>
+          `
+        : ''}
+
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="save_pl_config" />
@@ -369,7 +394,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             class="form-control"
             name="uin_attribute"
             id="uin_attribute"
-            value="${instance.uin_attribute}"
+            value="${instance.uin_attribute ?? ''}"
             aria-describedby="uinAttributeHelp"
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
@@ -396,6 +421,12 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             will use this to send email to the user.
           </small>
         </div>
+
+        ${Lti13UinCompatibilityConfirmations({
+          idPrefix: 'lti-identity',
+          description:
+            'Required when setting or changing the UIN attribute. Leave these unchecked when saving unrelated configuration without changing the UIN attribute.',
+        })}
 
         <div class="mb-3 form-check">
           <input

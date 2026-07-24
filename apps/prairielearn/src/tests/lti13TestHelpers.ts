@@ -3,9 +3,10 @@ import * as jose from 'jose';
 import type nodeJose from 'node-jose';
 import { assert } from 'vitest';
 
-import { execute, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS } from '../lib/institution-identity.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -14,10 +15,53 @@ import {
 import { fetchCheerio } from './helperClient.js';
 
 export const CLIENT_ID = 'prairielearn_test_lms';
+const sql = loadSqlEquiv(import.meta.url);
+const DEFAULT_ATTRIBUTES = {
+  uid_attribute: 'email',
+  uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+  email_attribute: 'email',
+  name_attribute: 'name',
+};
 
 // LTI claim constants - used in JWT tokens and must match across test files
 export const LTI_DEPLOYMENT_ID = '7fdce954-4c33-47c9-97b4-e435dbbed9bb';
 export const LTI_CONTEXT_ID = 'f6bc7a50-448c-4469-94f7-54d6ea882c2a';
+
+export function withLti13UinConfirmations(body: Record<string, string>): Record<string, string> {
+  return {
+    ...body,
+    ...Object.fromEntries(
+      Object.values(LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS).map((field) => [field, '1']),
+    ),
+  };
+}
+
+export async function configureInstitutionSamlForLtiUin(institutionId = '1'): Promise<void> {
+  await execute(sql.configure_institution_saml_for_lti_uin, { institution_id: institutionId });
+}
+
+export async function enableLti13Authentication(siteUrl: string): Promise<void> {
+  const page = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
+  assert.equal(page.status, 200);
+  const form = page.$('button:contains(Save)').closest('form');
+  const providerIds = ['SAML', 'LTI 1.3'].map((name) => {
+    const id = form
+      .find(`label:contains(${name})`)
+      .closest('div')
+      .find('input[type=checkbox]')
+      .attr('value');
+    assert.ok(id, `Could not find ${name} input value in SSO form`);
+    return id;
+  });
+  const body = new URLSearchParams({
+    __csrf_token: form.find('input[name=__csrf_token]').val() as string,
+    default_authn_provider_id: '',
+  });
+  providerIds.forEach((id) => body.append('enabled_authn_provider_ids', id));
+
+  const response = await fetchCheerio(page.url, { method: 'POST', body });
+  assert.equal(response.status, 200);
+}
 
 export async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
   const server = app.listen(port);
@@ -251,32 +295,29 @@ export async function createLti13Instance({
   const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
   const keystoreForm = addKeyButton.closest('form');
 
-  // Update the attributes if needed.
-  if (attributes) {
-    const savePrairieLearnConfigButton = ltiInstanceResponse.$(
-      'button:contains(Save PrairieLearn config)',
-    );
-    const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
+  const savePrairieLearnConfigButton = ltiInstanceResponse.$(
+    'button:contains(Save PrairieLearn config)',
+  );
+  const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
+  const plConfigCsrfToken = prairieLearnOptionsForm.find('input[name=__csrf_token]').val();
+  assert.ok(
+    typeof plConfigCsrfToken === 'string',
+    'CSRF token not found in PrairieLearn config form',
+  );
 
-    const plConfigCsrfToken = prairieLearnOptionsForm.find('input[name=__csrf_token]').val();
-    assert.ok(
-      typeof plConfigCsrfToken === 'string',
-      'CSRF token not found in PrairieLearn config form',
-    );
-
-    const updateRes = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'save_pl_config',
-        __csrf_token: plConfigCsrfToken,
-        uid_attribute: attributes.uid_attribute,
-        uin_attribute: attributes.uin_attribute,
-        email_attribute: attributes.email_attribute,
-        name_attribute: attributes.name_attribute,
-      }),
-    });
-    assert.equal(updateRes.status, 200);
-  }
+  const configuredAttributes = attributes ?? DEFAULT_ATTRIBUTES;
+  const body = {
+    __action: 'save_pl_config',
+    __csrf_token: plConfigCsrfToken,
+    ...configuredAttributes,
+  };
+  const updateRes = await fetchCheerio(instanceUrl, {
+    method: 'POST',
+    body: new URLSearchParams(
+      configuredAttributes.uin_attribute ? withLti13UinConfirmations(body) : body,
+    ),
+  });
+  assert.equal(updateRes.status, 200);
 
   const addKeyButtonValue = addKeyButton.attr('value');
   assert.ok(addKeyButtonValue);

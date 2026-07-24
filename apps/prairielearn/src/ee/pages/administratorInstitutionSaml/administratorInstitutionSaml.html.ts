@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { Lti13UinCompatibilityConfirmations } from '../../../components/Lti13UinCompatibilityConfirmations.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
@@ -9,12 +10,14 @@ export function AdministratorInstitutionSaml({
   institution,
   samlProvider,
   institutionAuthenticationProviders,
+  hasConfiguredLti13Uin,
   host,
   resLocals,
 }: {
   institution: Institution;
   samlProvider: SamlProvider | null;
   institutionAuthenticationProviders: AuthnProvider[];
+  hasConfiguredLti13Uin: boolean;
   host: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
@@ -48,6 +51,18 @@ export function AdministratorInstitutionSaml({
     },
     preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
+      ${hasConfiguredLti13Uin
+        ? html`
+            <div class="alert alert-info">
+              <h2 class="h5">LTI 1.3 depends on this SAML configuration</h2>
+              <p class="mb-0">
+                An LTI 1.3 instance uses a UIN attribute. The SAML configuration and its UIN
+                attribute cannot be deleted. Saving changes requires reconfirming that SAML and LTI
+                still provide the same canonical UIN.
+              </p>
+            </div>
+          `
+        : ''}
       ${hasSamlProvider && !hasEnabledSaml
         ? html`
             <div class="alert alert-warning">
@@ -348,6 +363,13 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           </small>
         </div>
 
+        ${hasConfiguredLti13Uin
+          ? Lti13UinCompatibilityConfirmations({
+              idPrefix: 'saml-lti-uin',
+              description:
+                'Required because an active LTI 1.3 configuration depends on this SAML identity mapping.',
+            })
+          : ''}
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <button type="submit" class="btn btn-primary" name="__action" value="save">Save</button>
         <a class="btn btn-secondary" href="">Cancel</a>
@@ -382,9 +404,17 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
                 type="button"
                 data-bs-toggle="modal"
                 data-bs-target="#deleteModal"
+                ${hasConfiguredLti13Uin ? 'disabled' : ''}
               >
                 Delete SAML configuration
               </button>
+              ${hasConfiguredLti13Uin
+                ? html`
+                    <small class="d-block text-muted">
+                      Remove the UIN attribute from every LTI 1.3 instance first.
+                    </small>
+                  `
+                : ''}
             </p>
 
             <h2 class="h4">Decode SAML assertion</h2>

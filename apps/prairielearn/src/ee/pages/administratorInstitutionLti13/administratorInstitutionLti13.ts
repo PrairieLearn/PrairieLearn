@@ -12,10 +12,18 @@ import {
   queryRow,
   queryRows,
   queryScalar,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import {
+  assertLti13UinConfigurationAllowed,
+  getLti13UinConfigurationIssues,
+  lockInstitutionForIdentityConfiguration,
+  normalizeUinAttribute,
+  selectInstitutionIdentityConfigurationStatus,
+} from '../../../lib/institution-identity.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -34,7 +42,7 @@ const router = Router({ mergeParams: true });
 const lti13_instance_defaults = {
   name_attr: 'name',
   uid_attr: 'email',
-  uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
+  uin_attr: null,
   email_attr: 'email',
   require_linked_lti_user: false,
 };
@@ -47,6 +55,9 @@ router.get(
       sql.select_instances,
       { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
+    );
+    const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+      req.params.institution_id,
     );
 
     const platform_defaults_hardcoded: LTI13InstancePlatforms = [
@@ -115,6 +126,7 @@ router.get(
         resLocals: res.locals,
         platform_defaults,
         canonicalHost: getCanonicalHost(req),
+        lti13UinConfigurationIssues: getLti13UinConfigurationIssues(identityConfigurationStatus),
       }),
     );
   }),
@@ -198,13 +210,29 @@ router.post(
         token_endpoint_auth_signing_alg: 'RS256',
       };
 
-      await execute(sql.update_platform, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-        issuer_params: req.body.issuer_params,
-        platform: req.body.platform,
-        client_params,
-        custom_fields: req.body.custom_fields,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const instance = await queryRow(
+          sql.select_instance_for_update,
+          {
+            unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+            institution_id: req.params.institution_id,
+          },
+          Lti13InstanceSchema,
+        );
+
+        if (normalizeUinAttribute(instance.uin_attribute)) {
+          await assertLti13UinConfigurationAllowed(req.params.institution_id, req.body);
+        }
+
+        await execute(sql.update_platform, {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+          issuer_params: req.body.issuer_params,
+          platform: req.body.platform,
+          client_params,
+          custom_fields: req.body.custom_fields,
+        });
       });
       flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
@@ -231,14 +259,31 @@ router.post(
       flash('success', 'Name updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
-      await execute(sql.update_pl_config, {
-        name_attribute: req.body.name_attribute,
-        uid_attribute: req.body.uid_attribute,
-        uin_attribute: req.body.uin_attribute,
-        email_attribute: req.body.email_attribute,
-        require_linked_lti_user: !!req.body.require_linked_lti_user,
-        institution_id: req.params.institution_id,
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+      await runInTransactionAsync(async () => {
+        await lockInstitutionForIdentityConfiguration(req.params.institution_id);
+        const instance = await queryRow(
+          sql.select_instance_for_update,
+          {
+            unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+            institution_id: req.params.institution_id,
+          },
+          Lti13InstanceSchema,
+        );
+        const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
+
+        if (uinAttribute && uinAttribute !== normalizeUinAttribute(instance.uin_attribute)) {
+          await assertLti13UinConfigurationAllowed(req.params.institution_id, req.body);
+        }
+
+        await execute(sql.update_pl_config, {
+          name_attribute: req.body.name_attribute,
+          uid_attribute: req.body.uid_attribute,
+          uin_attribute: uinAttribute,
+          email_attribute: req.body.email_attribute,
+          require_linked_lti_user: !!req.body.require_linked_lti_user,
+          institution_id: req.params.institution_id,
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+        });
       });
       flash('success', 'PrairieLearn config updated.');
       res.redirect(req.originalUrl);

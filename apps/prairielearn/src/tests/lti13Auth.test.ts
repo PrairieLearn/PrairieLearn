@@ -19,7 +19,9 @@ import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   CLIENT_ID,
+  configureInstitutionSamlForLtiUin,
   createLti13Instance,
+  enableLti13Authentication,
   makeLoginExecutor,
   withServer,
 } from './lti13TestHelpers.js';
@@ -38,6 +40,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     await helperServer.before()();
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
+    await configureInstitutionSamlForLtiUin();
 
     oidcProviderPort = await getPort();
 
@@ -67,26 +70,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
   });
 
   test('enable LTI 1.3 as an authentication provider', async () => {
-    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
-    assert.equal(ssoResponse.status, 200);
-
-    const saveButton = ssoResponse.$('button:contains(Save)');
-
-    const form = saveButton.closest('form');
-    const lti13Label = form.find('label:contains(LTI 1.3)');
-    const lti13Input = lti13Label.closest('div').find('input');
-    const lti13InputValue = lti13Input.attr('value');
-    assert.ok(lti13InputValue);
-
-    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        enabled_authn_provider_ids: lti13InputValue,
-        default_authn_provider_id: '',
-      }),
-    });
-    assert.equal(enableLtiResponse.status, 200);
+    await enableLti13Authentication(siteUrl);
   });
 
   test('validate metadata', async () => {
