@@ -12,7 +12,7 @@ from typing import Any
 # Regex to find GitHub Actions usages: 'uses: owner/repo@tag'
 # It captures 'owner/repo' in group 1, 'tag' in group 2
 ACTION_REGEX = re.compile(
-    r"uses:\s*([a-zA-Z0-9-_\.]+/[a-zA-Z0-9-_\.]+)(?:/.*)?@([a-zA-Z0-9-_\.]+)"
+    r"uses:\s*([a-zA-Z0-9_\.-]+/[a-zA-Z0-9_\.-]+)(?:/.*)?@([a-zA-Z0-9_\.-]+)"
 )
 
 
