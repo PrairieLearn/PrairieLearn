@@ -2548,37 +2548,35 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
         const angle_rad = (Math.PI / 180) * angle_deg;
         const sep = options[prefix + '_sep'];
 
-        if (subObj.width > 0) {
-          const crit_angle_rad = Math.atan((subObj.height / 2 + sep) / (subObj.width / 2 + sep));
+        const crit_angle_rad = Math.atan2(subObj.height / 2 + sep, subObj.width / 2 + sep);
 
-          if (angle_rad <= crit_angle_rad || 2 * Math.PI - crit_angle_rad <= angle_rad) {
-            // Position text to right of reference point
-            subObj.left += subObj.width / 2 + sep;
-            subObj.top += (subObj.width / 2 + sep) * Math.tan(angle_rad);
-          } else if (
-            Math.PI - crit_angle_rad <= angle_rad &&
-            angle_rad <= Math.PI + crit_angle_rad
-          ) {
-            // Position text to left of reference point
-            subObj.left -= subObj.width / 2 + sep;
-            subObj.top -= (subObj.width / 2 + sep) * Math.tan(angle_rad);
+        if (angle_rad <= crit_angle_rad || 2 * Math.PI - crit_angle_rad <= angle_rad) {
+          // Position text to right of reference point
+          subObj.left += subObj.width / 2 + sep;
+          subObj.top += (subObj.width / 2 + sep) * Math.tan(angle_rad);
+        } else if (
+          Math.PI - crit_angle_rad <= angle_rad &&
+          angle_rad <= Math.PI + crit_angle_rad
+        ) {
+          // Position text to left of reference point
+          subObj.left -= subObj.width / 2 + sep;
+          subObj.top -= (subObj.width / 2 + sep) * Math.tan(angle_rad);
+        } else {
+          if (angle_rad > Math.PI) {
+            // Position text above reference point
+            subObj.top -= subObj.height / 2 + sep;
+            subObj.left -=
+              ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
           } else {
-            if (angle_rad > Math.PI) {
-              // Position text above reference point
-              subObj.top -= subObj.height / 2 + sep;
-              subObj.left -=
-                ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
-            } else {
-              // Position text below reference point
-              subObj.top += subObj.height / 2 + sep;
-              subObj.left +=
-                ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
-            }
+            // Position text below reference point
+            subObj.top += subObj.height / 2 + sep;
+            subObj.left +=
+              ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
           }
         }
       }
-      labelObj.setCoords();
-      labelObj.dirty = true;
+      subObj.setCoords();
+      subObj.dirty = true;
     };
     const update_labels = function () {
       if (obj.selectable) {
