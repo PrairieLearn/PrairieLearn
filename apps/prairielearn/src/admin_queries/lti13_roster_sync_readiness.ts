@@ -20,7 +20,7 @@ const ReadinessRowSchema = z.object({
   platform: z.string(),
   lti13_uin_attribute: z.string().nullable(),
   saml_uin_attribute: z.string().nullable(),
-  enabled_authn_provider_names: AuthnProviderSchema.shape.name.unwrap().array(),
+  enabled_authn_provider_names: AuthnProviderSchema.shape.name.array(),
   active_lti13_instances_without_uin_count: z.coerce.number(),
   users_without_uin_count: z.coerce.number(),
 });
@@ -58,6 +58,14 @@ export default async function (): Promise<AdministratorQueryResult> {
       if (row.users_without_uin_count > 0) {
         issues.push(`${row.users_without_uin_count} existing user record(s) need a UIN backfill`);
       }
+      const needsManualReview = issues.length === 0;
+      const followUpTasks = [
+        ...issues,
+        'Confirm that the configured SAML and LTI attributes represent the same canonical UIN',
+        'Confirm that existing user UIN values are compatible with both providers',
+        'Confirm that every in-scope roster member has a usable UIN',
+      ];
+
       return {
         institution_id: row.institution_id,
         institution: `${row.institution_short_name}: ${row.institution_long_name}`,
@@ -68,10 +76,11 @@ export default async function (): Promise<AdministratorQueryResult> {
         saml_uin_attribute: row.saml_uin_attribute,
         enabled_institutional_authn_providers: row.enabled_authn_provider_names
           .filter(isInstitutionalAuthenticationProvider)
+          .map((name) => name ?? '(unknown)')
           .join(', '),
         users_without_uin: row.users_without_uin_count,
-        readiness_status: issues.length > 0 ? 'follow-up required' : 'automated checks passed',
-        follow_up_tasks: issues.join('\n'),
+        readiness_status: needsManualReview ? 'manual review required' : 'follow-up required',
+        follow_up_tasks: followUpTasks.join('\n'),
       };
     }),
   };

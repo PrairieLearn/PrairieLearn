@@ -30,7 +30,6 @@ SELECT
         JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
       WHERE
         iap.institution_id = i.id
-        AND ap.name IS NOT NULL
     ),
     ARRAY[]::text[]
   ) AS enabled_authn_provider_names,
@@ -56,6 +55,5 @@ FROM
   authn_providers
 WHERE
   id = ANY ($authn_provider_ids::bigint[])
-  AND name IS NOT NULL
 ORDER BY
   id;

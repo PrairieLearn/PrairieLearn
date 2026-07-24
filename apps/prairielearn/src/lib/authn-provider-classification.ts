@@ -1,5 +1,5 @@
 export function isInstitutionalAuthenticationProvider(name: string | null): boolean {
-  return name != null && name !== 'LTI' && name !== 'LTI 1.3';
+  return name !== 'LTI' && name !== 'LTI 1.3';
 }
 
 export function hasSamlAsSoleInstitutionalAuthenticationProvider(

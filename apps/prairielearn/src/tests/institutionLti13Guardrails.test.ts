@@ -1,7 +1,8 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { withoutLogging } from '@prairielearn/logger';
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import getLti13RosterSyncReadiness from '../admin_queries/lti13_roster_sync_readiness.js';
 import { selectLti13Instance } from '../ee/models/lti13Instance.js';
@@ -118,6 +119,12 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
     ssoBody.append('enabled_authn_provider_ids', googleProviderId);
 
     await expectBadRequest(ssoPage.url, ssoBody);
+
+    const unnamedProviderId = await queryScalar(sql.insert_unnamed_authn_provider, IdSchema);
+    ssoBody.set('enabled_authn_provider_ids', samlProviderId);
+    ssoBody.append('enabled_authn_provider_ids', unnamedProviderId);
+
+    await expectBadRequest(ssoPage.url, ssoBody);
     config.hasOauth = false;
 
     const samlPage = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/saml`);
@@ -176,10 +183,14 @@ describe('institution LTI 1.3 UIN guardrails', { concurrent: false }, () => {
     const afterBackfill = await getLti13RosterSyncReadiness();
     const afterBackfillRow = afterBackfill.rows.find((row) => row.lti13_instance_id === instanceId);
     assert.ok(afterBackfillRow);
-    assert.equal(afterBackfillRow.readiness_status, 'ready for manual review');
+    assert.equal(afterBackfillRow.readiness_status, 'manual review required');
     assert.equal(
       afterBackfillRow.follow_up_tasks,
-      'Complete and record the institution-specific compatibility review',
+      [
+        'Confirm that the configured SAML and LTI attributes represent the same canonical UIN',
+        'Confirm that existing user UIN values are compatible with both providers',
+        'Confirm that every in-scope roster member has a usable UIN',
+      ].join('\n'),
     );
   });
 });

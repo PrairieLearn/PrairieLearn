@@ -9,7 +9,7 @@ import { AuthnProviderSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AuthnProviderNameSchema = AuthnProviderSchema.shape.name.unwrap();
+const AuthnProviderNameSchema = AuthnProviderSchema.shape.name;
 
 const InstitutionIdentityConfigurationStatusSchema = z.object({
   saml_uin_attribute: z.string().nullable(),
