@@ -61,6 +61,7 @@ Note that answers can include underscores which are ignored (i.e., `1_000` will 
 ## Example implementations
 
 - [element/integerInput]
+- [demo/calculation]
 
 ## See also
 
@@ -70,4 +71,5 @@ Note that answers can include underscores which are ignored (i.e., `1_000` will 
 
 ---
 
-[element/integerinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
+[demo/calculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/calculation
+[element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
