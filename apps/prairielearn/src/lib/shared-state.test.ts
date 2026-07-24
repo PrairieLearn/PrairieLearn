@@ -27,7 +27,7 @@ describe('validateSharedStateObjectProperties', () => {
 
   it('rejects a default whose type does not match the declared type', () => {
     const errors = validateSharedStateObjectProperties({
-      stage: { type: 'number', default: 'zero' as unknown as number },
+      stage: { type: 'number', default: 'zero' },
     });
     assert.lengthOf(errors, 1);
     assert.match(errors[0], /default value must be of type "number"/);
@@ -51,7 +51,7 @@ describe('validateSharedStateObjectProperties', () => {
 
   it('rejects an enum value of the wrong type', () => {
     const errors = validateSharedStateObjectProperties({
-      theme: { type: 'string', default: 'sports', enum: ['sports', 1 as unknown as string] },
+      theme: { type: 'string', default: 'sports', enum: ['sports', 1] },
     });
     assert.lengthOf(errors, 1);
     assert.match(errors[0], /enum values must be of type "string"/);
@@ -220,7 +220,10 @@ describe('normalizeSharedStateObjectValueForRead', () => {
 
   it('drops properties the schema does not recognize', () => {
     assert.deepEqual(
-      normalizeSharedStateObjectValueForRead({ stage: 2, theme: 'cooking', extra: 'x' }, properties),
+      normalizeSharedStateObjectValueForRead(
+        { stage: 2, theme: 'cooking', extra: 'x' },
+        properties,
+      ),
       { stage: 2, theme: 'cooking' },
     );
   });
@@ -258,20 +261,23 @@ describe('validateSharedStateObjectValueForWrite', () => {
       { stage: 1, theme: 'cooking', extra: 'x' },
       properties,
     );
-    assert.isTrue(errors.some((e) => /unknown property "extra"/.test(e)));
+    assert.isTrue(errors.some((e) => e.includes('unknown property "extra"')));
   });
 
   it('rejects a value of the wrong type', () => {
     const errors = validateSharedStateObjectValueForWrite(
-      { stage: 'one' as unknown as number, theme: 'cooking' },
+      { stage: 'one', theme: 'cooking' },
       properties,
     );
-    assert.isTrue(errors.some((e) => /must be of type "number"/.test(e)));
+    assert.isTrue(errors.some((e) => e.includes('must be of type "number"')));
   });
 
   it('rejects a value outside its enum', () => {
-    const errors = validateSharedStateObjectValueForWrite({ stage: 1, theme: 'travel' }, properties);
-    assert.isTrue(errors.some((e) => /must be one of: sports, cooking/.test(e)));
+    const errors = validateSharedStateObjectValueForWrite(
+      { stage: 1, theme: 'travel' },
+      properties,
+    );
+    assert.isTrue(errors.some((e) => e.includes('must be one of: sports, cooking')));
   });
 
   it('rejects a value that exceeds the per-object byte limit', () => {
@@ -279,6 +285,6 @@ describe('validateSharedStateObjectValueForWrite', () => {
       { stage: 1, theme: 'a'.repeat(SHARED_STATE_MAX_OBJECT_BYTES) },
       { stage: { type: 'number', default: 0 }, theme: { type: 'string', default: '' } },
     );
-    assert.isTrue(errors.some((e) => /exceeds the per-object limit/.test(e)));
+    assert.isTrue(errors.some((e) => e.includes('exceeds the per-object limit')));
   });
 });

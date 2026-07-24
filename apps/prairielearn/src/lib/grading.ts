@@ -38,7 +38,10 @@ import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
-import { diffSharedStateObjectValue, validateSharedStateObjectValueForWrite } from './shared-state.js';
+import {
+  diffSharedStateObjectValue,
+  validateSharedStateObjectValueForWrite,
+} from './shared-state.js';
 import * as workspaceHelper from './workspace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -102,14 +105,14 @@ function validateSharedStatePatch({
   after,
 }: {
   objects: Record<string, ResolvedSharedStateObject>;
-  before: Record<string, SharedStateObjectValue>;
-  after: Record<string, SharedStateObjectValue>;
+  before: Partial<Record<string, SharedStateObjectValue>>;
+  after: Partial<Record<string, SharedStateObjectValue>>;
 }): string[] {
   const issues: string[] = [];
   for (const [name, object] of Object.entries(objects)) {
     const patch = diffSharedStateObjectValue(before[name] ?? {}, after[name] ?? before[name] ?? {});
     if (Object.keys(patch).length === 0) continue;
-    const merged = { ...(before[name] ?? {}), ...patch };
+    const merged = { ...before[name], ...patch };
     const errors = validateSharedStateObjectValueForWrite(merged, object.properties);
     if (errors.length > 0) {
       issues.push(`Shared-state object "${name}": ${errors.join('; ')}`);

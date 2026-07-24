@@ -72,9 +72,9 @@ describe('Shared-state object syncing', () => {
 
     const result = await selectSyncedObjectWithRevision(SHARED_STATE_OBJECT_NAME);
     assert.isNotNull(result);
-    assert.equal(result?.revision?.data_version, 1);
-    assert.equal(result?.revision?.scope, 'assessment_instance');
-    assert.deepEqual(Object.keys(result?.revision?.properties ?? {}).sort(), ['stage', 'theme']);
+    assert.equal(result.revision?.data_version, 1);
+    assert.equal(result.revision?.scope, 'assessment_instance');
+    assert.deepEqual(Object.keys(result.revision?.properties ?? {}).sort(), ['stage', 'theme']);
 
     const question = await selectSyncedQuestion(util.QUESTION_ID);
     assert.isNotOk(question?.sync_errors);
@@ -90,7 +90,7 @@ describe('Shared-state object syncing', () => {
 
     const question = await selectSyncedQuestion(util.QUESTION_ID);
     assert.isNotNull(question?.sync_errors);
-    assert.match(question!.sync_errors!, /"doesNotExist".*not declared/);
+    assert.match(question!.sync_errors, /"doesNotExist".*not declared/);
   });
 
   it('rejects "courseInstance" scope as not yet supported', async () => {
@@ -102,7 +102,7 @@ describe('Shared-state object syncing', () => {
 
     const syncedCourse = await selectSyncedCourse();
     assert.isNotNull(syncedCourse.sync_errors);
-    assert.match(syncedCourse.sync_errors!, /not yet supported/);
+    assert.match(syncedCourse.sync_errors, /not yet supported/);
 
     const result = await selectSyncedObjectWithRevision(SHARED_STATE_OBJECT_NAME);
     assert.isNull(result?.revision ?? null);
@@ -143,10 +143,7 @@ describe('Shared-state object syncing', () => {
     const after = await selectSyncedObjectWithRevision(SHARED_STATE_OBJECT_NAME);
     assert.notEqual(after?.revision?.id, before?.revision?.id);
     assert.equal(after?.revision?.data_version, 1);
-    assert.deepEqual(Object.keys(after?.revision?.properties ?? {}).sort(), [
-      'completed',
-      'stage',
-    ]);
+    assert.deepEqual(Object.keys(after?.revision?.properties ?? {}).sort(), ['completed', 'stage']);
   });
 
   it('does not create a new revision when re-syncing an unchanged definition', async () => {

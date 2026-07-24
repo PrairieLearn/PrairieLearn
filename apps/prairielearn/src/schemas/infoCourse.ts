@@ -107,9 +107,7 @@ export const SharedStateObjectJsonSchema = z
 
 export type SharedStateObjectJson = z.infer<typeof SharedStateObjectJsonSchema>;
 export type SharedStateObjectPropertyJson = z.infer<typeof SharedStateObjectPropertyJsonSchema>;
-export type SharedStateObjectPropertiesJson = z.infer<
-  typeof SharedStateObjectPropertiesJsonSchema
->;
+export type SharedStateObjectPropertiesJson = z.infer<typeof SharedStateObjectPropertiesJsonSchema>;
 
 export const AssessmentSetJsonSchema = z
   .object({

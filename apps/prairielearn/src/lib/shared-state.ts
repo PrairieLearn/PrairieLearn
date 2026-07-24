@@ -143,11 +143,11 @@ export function classifySharedStateObjectPropertiesChange(
   const reasons: string[] = [];
 
   for (const [key, oldField] of Object.entries(oldProperties)) {
-    const newField = newProperties[key];
-    if (newField == null) {
+    if (!(key in newProperties)) {
       reasons.push(`property "${key}" was removed or renamed`);
       continue;
     }
+    const newField = newProperties[key];
     if (newField.type !== oldField.type) {
       reasons.push(`property "${key}" changed type from "${oldField.type}" to "${newField.type}"`);
       continue;

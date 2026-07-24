@@ -41,7 +41,7 @@ def generate(data):
     data["params"]["observed_count"] = data["shared_state"]["labProgress"]["count"]
 `;
 
-const QUESTION_HTML = `<pl-question-panel><p>Test question.</p></pl-question-panel>`;
+const QUESTION_HTML = '<pl-question-panel><p>Test question.</p></pl-question-panel>';
 
 async function buildCourseDir(): Promise<string> {
   const courseData: util.CourseData = util.getCourseData();
@@ -83,15 +83,9 @@ async function buildCourseDir(): Promise<string> {
   const courseDir = await util.writeCourseToTempDirectory(courseData);
 
   await fs.writeFile(path.join(courseDir, 'questions', WRITER_QID, 'server.py'), WRITER_SERVER_PY);
-  await fs.writeFile(
-    path.join(courseDir, 'questions', WRITER_QID, 'question.html'),
-    QUESTION_HTML,
-  );
+  await fs.writeFile(path.join(courseDir, 'questions', WRITER_QID, 'question.html'), QUESTION_HTML);
   await fs.writeFile(path.join(courseDir, 'questions', READER_QID, 'server.py'), READER_SERVER_PY);
-  await fs.writeFile(
-    path.join(courseDir, 'questions', READER_QID, 'question.html'),
-    QUESTION_HTML,
-  );
+  await fs.writeFile(path.join(courseDir, 'questions', READER_QID, 'question.html'), QUESTION_HTML);
 
   return courseDir;
 }

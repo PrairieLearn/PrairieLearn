@@ -1,18 +1,19 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import * as helperDb from '../tests/helperDb.js';
+import * as util from '../tests/sync/util.js';
+
 import { selectAssessmentByTid } from './assessment.js';
 import { selectCourseInstanceByShortName } from './course-instances.js';
 import { selectCourseById } from './course.js';
-import { selectOrInsertUserByUid } from './user.js';
+import { selectSharedStateObjectWithRevisionByName } from './shared-state-object.js';
 import {
   type ResolvedSharedStateObject,
   readSharedStateValuesForAssessmentInstance,
   writeSharedStateValuesForAssessmentInstance,
 } from './shared-state-value.js';
-import { selectSharedStateObjectWithRevisionByName } from './shared-state-object.js';
-import * as helperDb from '../tests/helperDb.js';
-import * as util from '../tests/sync/util.js';
+import { selectOrInsertUserByUid } from './user.js';
 
 const OBJECT_NAME = 'labProgress';
 
@@ -82,7 +83,7 @@ async function setUpObjectAndTwoAssessmentInstances(): Promise<{
   const object: ResolvedSharedStateObject = {
     id: objectWithRevision.id,
     revisionId: objectWithRevision.revision.id,
-    properties: objectWithRevision.revision.properties as any,
+    properties: objectWithRevision.revision.properties,
   };
 
   return { object, assessmentInstanceIdA, assessmentInstanceIdB };

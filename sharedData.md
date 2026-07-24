@@ -42,7 +42,7 @@ is the explicit template to follow:
   `QuestionPreferencesFieldSchema` / `QuestionPreferencesSchemaJsonSchema`).
 - `questions.preferences_schema jsonb` stores the authored schema.
 - `assessment_questions.preferences jsonb` stores per-assessment override
-  *values*, validated against the schema at sync time via AJV
+  _values_, validated against the schema at sync time via AJV
   (`sync/fromDisk/assessments.ts`, `mergeAndValidatePreferences`).
 - `variants.preferences jsonb` stores the final resolved values, frozen once
   at variant creation (`lib/question-variant.ts:261-330`).
@@ -55,7 +55,7 @@ Shared data pools diverge from preferences in one essential way: preferences
 are **frozen per-variant and read-only**; pool values must be **live and
 read/write**, because their entire purpose is letting question B see (and
 extend) what question A most recently wrote. Everywhere below, "do it like
-preferences" applies to the *authoring/typing* story; the *runtime* story is
+preferences" applies to the _authoring/typing_ story; the _runtime_ story is
 new.
 
 ## 3. `info.json` changes
@@ -93,7 +93,7 @@ the pool with an `enum` field:
 }
 ```
 
-The two downstream arithmetic questions declare the *same* pool name and
+The two downstream arithmetic questions declare the _same_ pool name and
 field (so sync-time merge validation in §4 sees identical definitions and
 accepts it), but only ever read `data["shared_data"]["assessmentTheme"]["theme"]`
 in `generate()` to pick their wording — they never write to it. Nothing in the
@@ -103,7 +103,7 @@ each question's `server.py` chooses to use the pool.
 
 A pool name (`"subnetDesign"`) has no central declaration anywhere else — it's
 just a string that two or more questions happen to agree on, the same way
-`sharingSets`/`tags` are bare strings, except here the *schema* rides along
+`sharingSets`/`tags` are bare strings, except here the _schema_ rides along
 with the name rather than being registered centrally. Multiple questions may
 declare the same pool name with different (but non-conflicting) field sets;
 see sync validation below.
@@ -132,10 +132,10 @@ to `assessments` since a pool is shared across questions, not owned by one.
 
 ### New/changed columns
 
-| Table | Column | Purpose |
-|---|---|---|
-| `questions` | `shared_data_pools jsonb not null default '{}'` | Per-question declared pool schemas, synced from `info.json` (mirrors `preferences_schema`). |
-| `assessments` | `shared_data_pool_schemas jsonb not null default '{}'` | Merged/validated effective schema per pool name, computed at sync time (see §4). |
+| Table         | Column                                                 | Purpose                                                                                     |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `questions`   | `shared_data_pools jsonb not null default '{}'`        | Per-question declared pool schemas, synced from `info.json` (mirrors `preferences_schema`). |
+| `assessments` | `shared_data_pool_schemas jsonb not null default '{}'` | Merged/validated effective schema per pool name, computed at sync time (see §4).            |
 
 ### New table: `assessment_instance_shared_data_pools`
 
@@ -294,7 +294,7 @@ or letting arbitrarily large blobs accumulate per assessment instance.
 
 ## 10. Explicit non-goals for v1 (flag, don't build)
 
-- Sharing pools *across* assessments/course instances (only within one
+- Sharing pools _across_ assessments/course instances (only within one
   `assessment_instance`, or one course for preview, per the scope given).
 - Auto-resetting sibling questions' pool data when one question gets a new
   variant (the issue thread wanted this eventually; punt to a follow-up —
@@ -304,7 +304,7 @@ or letting arbitrarily large blobs accumulate per assessment instance.
   discussed in the issue but out of scope here; instructors can implement
   ordering themselves in `parse()`/`generate()` using the pool contents.
 - Schema-authoring UI for pools (the `PreferencesTable.tsx`-style editor) —
-  v1 only needs a *value* editor (§8); schemas are authored directly in
+  v1 only needs a _value_ editor (§8); schemas are authored directly in
   `info.json`.
 
 ## 11. Task breakdown
@@ -346,7 +346,7 @@ Use two small test course fixtures, one per motivating example:
 **Subnet-design fixture** (two questions, both read and write the pool):
 
 - Question A writes a value in `generate`; question B, rendered afterward in
-  the *same* assessment instance, reads that value via
+  the _same_ assessment instance, reads that value via
   `data["shared_data"]["subnetDesign"]`.
 - Question B's write in `grade` is visible back to question A on its next
   `parse`/`grade` call.
@@ -362,7 +362,7 @@ Use two small test course fixtures, one per motivating example:
 two independent read-only downstream questions):
 
 - Selecting a theme in the picker question makes that theme visible to
-  *both* downstream arithmetic questions, in either order, within the same
+  _both_ downstream arithmetic questions, in either order, within the same
   assessment instance.
 - Both downstream questions independently compute their own (unrelated)
   arithmetic answers correctly while sharing only the `theme` string — i.e.

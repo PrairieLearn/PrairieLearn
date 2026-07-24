@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { SharedStateObjectRevisionSchema, SharedStateObjectSchema } from '../lib/db-types.js';
 import {
   classifySharedStateObjectPropertiesChange,
   computeSharedStateObjectFingerprint,
   validateSharedStateObjectProperties,
 } from '../lib/shared-state.js';
-import { SharedStateObjectRevisionSchema, SharedStateObjectSchema } from '../lib/db-types.js';
 import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -94,8 +94,7 @@ export async function syncSharedStateObjectsForCourse(
         const fingerprint = computeSharedStateObjectFingerprint(scope, definition.properties);
 
         const unchanged =
-          state != null &&
-          state.current_fingerprint === fingerprint &&
+          state?.current_fingerprint === fingerprint &&
           state.current_data_version === definition.dataVersion;
         if (unchanged) return;
 
@@ -107,7 +106,10 @@ export async function syncSharedStateObjectsForCourse(
           return;
         }
 
-        if (state?.current_data_version != null && definition.dataVersion === state.current_data_version) {
+        if (
+          state?.current_data_version != null &&
+          definition.dataVersion === state.current_data_version
+        ) {
           if (scope !== state.current_scope) {
             errors.push('changing "scope" requires increasing "dataVersion".');
             return;

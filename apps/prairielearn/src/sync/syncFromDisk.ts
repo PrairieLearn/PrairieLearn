@@ -150,9 +150,7 @@ export async function syncDiskToSqlWithLock(
     // `courseData.course` (e.g. an incompatible schema change without a
     // `dataVersion` bump) that need to be reflected in `courses.sync_errors`,
     // which `syncCourseInfo` writes based on the error state at the time it runs.
-    await timed('Synced shared state objects', () =>
-      syncSharedState.sync(course.id, courseData),
-    );
+    await timed('Synced shared state objects', () => syncSharedState.sync(course.id, courseData));
     await timed('Synced course info', () =>
       syncCourseInfo.sync(course.path, courseData, course.id),
     );

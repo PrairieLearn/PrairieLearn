@@ -54,7 +54,7 @@ export async function selectSharedStateObjectsForQuestion({
     resolved[name] = {
       id: objectWithRevision.id,
       revisionId: objectWithRevision.revision.id,
-      properties: objectWithRevision.revision.properties as SharedStateObjectPropertiesJson,
+      properties: objectWithRevision.revision.properties,
     };
   }
   return resolved;
@@ -81,7 +81,7 @@ export async function readSharedStateValuesForAssessmentInstance({
       AssessmentInstanceSharedStateValueSchema,
     );
     const base =
-      row != null && row.revision_id === object.revisionId
+      row?.revision_id === object.revisionId
         ? row.data
         : extractSharedStateObjectDefaults(object.properties);
     values[name] = normalizeSharedStateObjectValueForRead(base, object.properties);
@@ -110,8 +110,8 @@ export async function writeSharedStateValuesForAssessmentInstance({
 }: {
   assessment_instance_id: string;
   objects: Record<string, ResolvedSharedStateObject>;
-  before: Record<string, SharedStateObjectValue>;
-  after: Record<string, SharedStateObjectValue>;
+  before: Partial<Record<string, SharedStateObjectValue>>;
+  after: Partial<Record<string, SharedStateObjectValue>>;
 }): Promise<{ issues: string[] }> {
   const issues: string[] = [];
 
@@ -126,7 +126,7 @@ export async function writeSharedStateValuesForAssessmentInstance({
         AssessmentInstanceSharedStateValueSchema,
       );
       const base =
-        row != null && row.revision_id === object.revisionId
+        row?.revision_id === object.revisionId
           ? row.data
           : extractSharedStateObjectDefaults(object.properties);
       const merged = { ...base, ...patch };
