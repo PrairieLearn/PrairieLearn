@@ -26,6 +26,10 @@ exclude_rules = aliasing.column,
     layout.select_targets,
     layout.spacing,
     layout.start_of_file,
+    # Migration locking is linted by squawk (`make lint-sql-migrations`); the
+    # bootstrap migrations sqlfluff sees run inside transactions, where
+    # CONCURRENTLY is invalid.
+    postgres.excessive_locks,
     references.consistent,
     references.from,
     references.keywords,
