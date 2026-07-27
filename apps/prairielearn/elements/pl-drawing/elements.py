@@ -111,10 +111,10 @@ def insert_relative_text_position(
         default_pos: A string indicating the default position. Not directly validated, but if the prefix+"relpos" attribute is not specified, this will become the actual position key, which must be an element of valid_relative_positions below
         default_sep: The default separation distance used if the prefix+"sep" attribute is not specified
         destination_dict: The dictionary into which the relevant key-value pairs should be inserted
+
+    Raises:
+        ValueError: If the relative position is not an element of valid_relative_positions below
     """
-
-    position_data = {}
-
     relpos = pl.get_string_attrib(el, prefix + "relpos", default_pos)
 
     # Validate
@@ -1556,13 +1556,13 @@ class Coordinates(BaseElement):
         }
 
         if relpos_active:
-            label_position_data = insert_relative_text_position(
+            insert_relative_text_position(
                 "pl-coordinates", el, -45, "label-", "behind", 5, result
             )
-            labelx_position_data = insert_relative_text_position(
+            insert_relative_text_position(
                 "pl-coordinates", el, 0, "label-x-", "ahead", 5, result
             )
-            labely_position_data = insert_relative_text_position(
+            insert_relative_text_position(
                 "pl-coordinates", el, -90, "label-y-", "ahead", 5, result
             )
 
