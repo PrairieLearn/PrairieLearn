@@ -27,7 +27,7 @@ const SharedStateObjectStateSchema = z.object({
   object_id: z.string(),
 });
 
-export const SharedStateObjectWithRevisionSchema = SharedStateObjectSchema.extend({
+const SharedStateObjectWithRevisionSchema = SharedStateObjectSchema.extend({
   revision: SharedStateObjectRevisionSchema.nullable(),
 });
 export type SharedStateObjectWithRevision = z.infer<typeof SharedStateObjectWithRevisionSchema>;

@@ -16,9 +16,7 @@ export const SHARED_STATE_MAX_OBJECT_BYTES = 4096;
  */
 export const SHARED_STATE_MAX_TOTAL_BYTES_PER_ASSESSMENT_INSTANCE = 16384;
 
-export const SHARED_STATE_MAX_PROPERTIES_PER_OBJECT = 32;
-
-export type SharedStatePropertyType = 'string' | 'number' | 'boolean';
+const SHARED_STATE_MAX_PROPERTIES_PER_OBJECT = 32;
 
 export type SharedStateObjectValue = Record<string, string | number | boolean>;
 
