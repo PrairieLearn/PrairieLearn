@@ -11,8 +11,9 @@ from typing import Any
 
 # Regex to find GitHub Actions usages: 'uses: owner/repo@tag'
 # It captures 'owner/repo' in group 1, 'tag' in group 2
+# This does not handle paths (e.g., 'uses: owner/repo/path@tag'), which are not used in our repo.
 ACTION_REGEX = re.compile(
-    r"uses:\s*([a-zA-Z0-9_\.-]+/[a-zA-Z0-9_\.-]+)(?:/.*)?@([a-zA-Z0-9_\.-]+)"
+    r"uses:\s*([a-zA-Z0-9_\.-]+/[a-zA-Z0-9_\.-]+)@([a-zA-Z0-9_\.-]+)"
 )
 
 
@@ -85,7 +86,7 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
     if not matches:
         return
 
-    for action_name, tag in matches:
+    for action_name, path, tag in matches:
         if len(tag) == 40 and all(c in string.hexdigits for c in tag):
             sha = tag  # Already a SHA, no need to fetch
         elif check_only:
@@ -137,7 +138,7 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
         print(f"Updated: {file_path}")
 
 
-def main() -> None:  # noqa: D103
+def main() -> None:  # ruff:ignore[undocumented-public-function]
 
     # Read arguments, if --check is provided, we only check for changes without writing
     check_only = "--check" in sys.argv
