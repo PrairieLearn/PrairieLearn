@@ -243,9 +243,6 @@ importers:
       '@prairielearn/eslint-config':
         specifier: workspace:^
         version: link:packages/eslint-config
-      '@prairielearn/pin-github-actions':
-        specifier: workspace:^
-        version: link:packages/pin-github-actions
       '@prairielearn/signed-token':
         specifier: workspace:^
         version: link:packages/signed-token
