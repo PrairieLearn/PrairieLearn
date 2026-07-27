@@ -100,7 +100,7 @@ def insert_relative_text_position(
     default_pos: str,
     default_sep: float,
     destination_dict: dict,
-) -> dict:
+) -> None:
     """Insert relative text position into destination_dict
 
     Args:
@@ -155,7 +155,7 @@ def insert_relative_text_position(
             angle + ordered_rotational_positions.index(relpos) * 45
         )
         destination_dict[prefix_in_dict + "sep"] = pl.get_float_attrib(
-            el, prefix_in_dict + "sep", default_sep
+            el, prefix + "sep", default_sep
         )
 
 
