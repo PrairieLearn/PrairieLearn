@@ -2554,10 +2554,7 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
           // Position text to right of reference point
           subObj.left += subObj.width / 2 + sep;
           subObj.top += (subObj.width / 2 + sep) * Math.tan(angle_rad);
-        } else if (
-          Math.PI - crit_angle_rad <= angle_rad &&
-          angle_rad <= Math.PI + crit_angle_rad
-        ) {
+        } else if (Math.PI - crit_angle_rad <= angle_rad && angle_rad <= Math.PI + crit_angle_rad) {
           // Position text to left of reference point
           subObj.left -= subObj.width / 2 + sep;
           subObj.top -= (subObj.width / 2 + sep) * Math.tan(angle_rad);
@@ -2565,13 +2562,11 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
           if (angle_rad > Math.PI) {
             // Position text above reference point
             subObj.top -= subObj.height / 2 + sep;
-            subObj.left -=
-              ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
+            subObj.left -= ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
           } else {
             // Position text below reference point
             subObj.top += subObj.height / 2 + sep;
-            subObj.left +=
-              ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
+            subObj.left += ((subObj.height / 2 + sep) * Math.cos(angle_rad)) / Math.sin(angle_rad);
           }
         }
       }
