@@ -272,6 +272,7 @@ router.post(
         sql.select_assessments_to_create,
         {
           course_instance_id: instance.lti13_course_instance.course_instance_id,
+          lti13_course_instance_id: instance.lti13_course_instance.id,
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
@@ -323,6 +324,7 @@ router.post(
 
         await execute(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
+          lti13_course_instance_id: instance.lti13_course_instance.id,
         });
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);

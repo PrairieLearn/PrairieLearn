@@ -125,7 +125,10 @@ SELECT
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
-  LEFT JOIN lti13_assessments AS la ON la.assessment_id = a.id
+  LEFT JOIN lti13_assessments AS la ON (
+    la.assessment_id = a.id
+    AND la.lti13_course_instance_id = $lti13_course_instance_id
+  )
 WHERE
   a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL
@@ -159,7 +162,8 @@ UPDATE lti13_assessments
 SET
   last_activity = NOW()
 WHERE
-  assessment_id = $assessment_id;
+  assessment_id = $assessment_id
+  AND lti13_course_instance_id = $lti13_course_instance_id;
 
 -- BLOCK select_assessment_in_course_instance
 SELECT
