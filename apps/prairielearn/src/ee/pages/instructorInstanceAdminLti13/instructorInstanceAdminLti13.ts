@@ -301,7 +301,12 @@ router.post(
         }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
-    } else if (req.body.__action === 'send_grades') {
+    } else if (
+      req.body.__action === 'send_grades' ||
+      req.body.__action === 'send_grades_all_lms_courses'
+    ) {
+      const sendToAllLmsCourses = req.body.__action === 'send_grades_all_lms_courses';
+
       const assessment = await queryRow(
         sql.select_assessment_in_course_instance,
         {
@@ -311,21 +316,36 @@ router.post(
         AssessmentSchema,
       );
 
-      serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
+      const targetInstances = sendToAllLmsCourses
+        ? await queryRows(
+            sql.select_combined_lti13_instances_for_assessment,
+            {
+              course_instance_id: res.locals.course_instance.id,
+              assessment_id: assessment.id,
+            },
+            Lti13CombinedInstanceSchema,
+          )
+        : [instance];
+
+      serverJobOptions.description = sendToAllLmsCourses
+        ? 'LTI 1.3 send assessment grades to all LMS courses'
+        : 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores({
-          courseInstance: res.locals.course_instance,
-          unsafe_assessment_id: assessment.id,
-          instance,
-          job,
-        });
+        for (const targetInstance of targetInstances) {
+          await updateLti13Scores({
+            courseInstance: res.locals.course_instance,
+            unsafe_assessment_id: assessment.id,
+            instance: targetInstance,
+            job,
+          });
 
-        await execute(sql.update_lti13_assessment_last_activity, {
-          assessment_id: assessment.id,
-          lti13_course_instance_id: instance.lti13_course_instance.id,
-        });
+          await execute(sql.update_lti13_assessment_last_activity, {
+            assessment_id: assessment.id,
+            lti13_course_instance_id: targetInstance.lti13_course_instance.id,
+          });
+        }
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {

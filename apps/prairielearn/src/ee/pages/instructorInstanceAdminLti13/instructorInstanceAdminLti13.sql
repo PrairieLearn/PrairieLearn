@@ -23,6 +23,23 @@ WHERE
   AND lci.id = $lti13_course_instance_id
   AND li.deleted_at IS NULL;
 
+-- BLOCK select_combined_lti13_instances_for_assessment
+SELECT
+  to_jsonb(lci) AS lti13_course_instance,
+  to_jsonb(li) AS lti13_instance
+FROM
+  lti13_course_instances AS lci
+  JOIN lti13_instances li ON lci.lti13_instance_id = li.id
+  JOIN lti13_assessments AS la ON (
+    la.lti13_course_instance_id = lci.id
+    AND la.assessment_id = $assessment_id
+  )
+WHERE
+  lci.course_instance_id = $course_instance_id
+  AND li.deleted_at IS NULL
+ORDER BY
+  lci.id;
+
 -- BLOCK select_lti13_instances
 SELECT
   *

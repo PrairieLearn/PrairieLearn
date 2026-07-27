@@ -814,9 +814,14 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       }
       await execute(
         `UPDATE lti13_course_instances
-         SET context_memberships_url = $memberships_url, resource_link_id = context_id
+         SET context_memberships_url = $memberships_url,
+             lineitems_url = $lineitems_url,
+             resource_link_id = context_id
          WHERE lti13_instance_id = '1'`,
-        { memberships_url: `http://localhost:${oidcProviderPort}/memberships` },
+        {
+          memberships_url: `http://localhost:${oidcProviderPort}/memberships`,
+          lineitems_url: `http://localhost:${oidcProviderPort}/line_items`,
+        },
       );
 
       const instances = await queryRows(
@@ -951,6 +956,34 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
             });
           });
         }
+      });
+
+      assert.deepEqual(scoredLineitems, ['0', '1']);
+    });
+
+    test('sends grades to every linked LMS course from one action', async () => {
+      scoredLineitems = [];
+      const pageUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance/${lmsCourses[0].instance.lti13_course_instance.id}`;
+
+      const pageRes = await fetchCheerio(pageUrl);
+      assert.equal(pageRes.status, 200);
+      assert.lengthOf(pageRes.$('button[value="send_grades_all_lms_courses"]'), 1);
+
+      await withServer(app, oidcProviderPort, async () => {
+        const postRes = await fetchCheerio(pageUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __csrf_token: pageRes.$('input[name="__csrf_token"]').first().val() as string,
+            __action: 'send_grades_all_lms_courses',
+            unsafe_assessment_id: assessmentId,
+          }),
+          redirect: 'manual',
+        });
+        assert.equal(postRes.status, 302);
+
+        const jobSequenceId = postRes.headers.get('location')?.split('/jobSequence/')[1];
+        assert.ok(jobSequenceId);
+        await helperServer.waitForJobSequenceSuccess(jobSequenceId);
       });
 
       assert.deepEqual(scoredLineitems, ['0', '1']);
