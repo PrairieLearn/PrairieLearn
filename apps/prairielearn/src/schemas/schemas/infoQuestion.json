@@ -420,6 +420,15 @@
         "required": ["type", "default"],
         "additionalProperties": false
       }
+    },
+    "sharedStateAccess": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "The name of a shared-state object declared in infoCourse.json."
+      },
+      "description": "The shared-state objects that this question reads and writes."
     }
   },
   "required": ["uuid", "type", "title", "topic"],

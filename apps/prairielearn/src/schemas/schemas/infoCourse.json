@@ -206,6 +206,85 @@
         "description": "A sharing set description."
       },
       "description": "Sharing sets."
+    },
+    "sharedState": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["assessmentInstance", "courseInstance"],
+            "description": "The lifetime of this object's values. Only \"assessmentInstance\" is currently supported."
+          },
+          "dataVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "A compatibility boundary, authored by the course. Increment this to intentionally reset all stored values for this object, e.g. after a breaking change to its properties."
+          },
+          "properties": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "number", "boolean"]
+                },
+                "default": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "enum": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": ["type", "default"],
+              "additionalProperties": false
+            },
+            "description": "The named, typed properties that make up this object."
+          }
+        },
+        "required": ["scope", "dataVersion", "properties"],
+        "additionalProperties": false,
+        "description": "A single shared-state object definition."
+      },
+      "description": "Named, typed, scoped objects of small mutable state that questions can share with each other. See `sharedStateAccess` in question info files."
     }
   },
   "required": ["name", "title", "topics"],

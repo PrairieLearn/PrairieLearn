@@ -1,0 +1,22 @@
+columns
+    created_at: timestamp with time zone not null default now()
+    data_version: bigint not null
+    fingerprint: text not null
+    id: bigint not null default nextval('shared_state_object_revisions_id_seq'::regclass)
+    properties: jsonb not null
+    scope: text not null
+    shared_state_object_id: bigint not null
+
+indexes
+    shared_state_object_revisions_pkey: PRIMARY KEY (id) USING btree (id)
+    shared_state_object_revisions_shared_state_object_id_idx: USING btree (shared_state_object_id)
+
+check constraints
+    shared_state_object_revisions_scope_check: CHECK (scope = ANY (ARRAY['assessment_instance'::text, 'course_instance'::text]))
+
+foreign-key constraints
+    shared_state_object_revisions_shared_state_object_id_fkey: FOREIGN KEY (shared_state_object_id) REFERENCES shared_state_objects(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    assessment_instance_shared_state_values: FOREIGN KEY (revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    shared_state_objects: FOREIGN KEY (current_revision_id) REFERENCES shared_state_object_revisions(id) ON UPDATE CASCADE ON DELETE SET NULL
