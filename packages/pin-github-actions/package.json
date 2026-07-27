@@ -10,9 +10,13 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "main": "dist/index.js",
+  "bin": {
+    "pin-github-actions": "dist/cli.js"
+  },
+  "main": "dist/cli.js",
   "scripts": {
-    "build": "tsgo"
+    "build": "tsgo",
+    "start": "node ./dist/cli.js"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

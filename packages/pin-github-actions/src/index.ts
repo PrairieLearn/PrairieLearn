@@ -195,7 +195,12 @@ export async function processWorkflowFile(
 }
 
 export async function pinGithubActions(options: { checkOnly: boolean }): Promise<void> {
-  const workflowDirs = ['.github/workflows', '.github/actions'];
+  const workflowDirs = ['.github/workflows', '.github/actions'].map((dir) =>
+    // When running pnpm run, INIT_CWD is set to the original working directory,
+    // while process.cwd() is set to the package directory. We want to resolve
+    // relative paths from the original working directory.
+    path.resolve(process.env.INIT_CWD || process.cwd(), dir),
+  );
 
   for (const workflowDir of workflowDirs) {
     try {
