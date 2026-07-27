@@ -42,6 +42,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: false
           show-progress: false
+          persist-credentials: false
 
       # We won't try to push in this job, but we still authenticate if the
       # secrets are available so that we don't hit image pull rate limits.
@@ -144,6 +145,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           show-progress: false
+          persist-credentials: false
 
       # Authenticate with Docker Hub to avoid image pull rate limits
       # during external grading tests.
@@ -212,6 +214,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           show-progress: false
+          persist-credentials: false
 
       - name: Login to DockerHub
         if: ${{ env.CAN_LOGIN_TO_DOCKERHUB == 'true' }}
@@ -247,6 +250,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           show-progress: false
+          persist-credentials: false
+
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 11
