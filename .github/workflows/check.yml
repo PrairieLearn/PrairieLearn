@@ -121,7 +121,12 @@ jobs:
         run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
-
+      - name: Check that actions are pinned to a specific version
+        run: make lint-actions-version
+        env:
+          # Use GitHub token to avoid hitting the GitHub API rate limit when
+          # checking for the latest version of each action.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check dependency structure
         run: make lint-dependencies
       - name: Check that JSON schema is up-to-date
@@ -222,10 +227,6 @@ jobs:
         run: make lint-markdown
       - name: Run the d2 diagram linter
         run: make lint-d2
-      - name: Check for actions that are not pinned to a specific version
-        run: make lint-actions-version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.

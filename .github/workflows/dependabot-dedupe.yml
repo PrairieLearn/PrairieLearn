@@ -55,11 +55,15 @@ jobs:
 
       # While dependabot uses hash versions for GitHub Actions if the action is
       # pinned to a hash, it will not include the comment with the corresponding
-      # tag in the format used by our script. Therefore, we run the script to
+      # tag in the format used by our package. Therefore, we run the package to
       # add the comment after deduping.
       - name: 'Pin GitHub Actions'
-        run: make format-actions-version
+        run: |
+          pnpm --filter @prairielearn/pin-github-actions build
+          node packages/pin-github-actions/dist/cli.js
         env:
+          # Use GitHub token to avoid hitting the GitHub API rate limit when
+          # checking for the latest version of each action.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Commit changes'
         run: |

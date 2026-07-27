@@ -169,7 +169,8 @@ lint-sql-migrations:
 lint-actions:
 	@actionlint
 lint-actions-version:
-	@uv run python scripts/pin-github-actions.py --check
+	@pnpm --filter @prairielearn/pin-github-actions build
+	@node packages/pin-github-actions/dist/cli.js --check
 lint-changeset:
 	@pnpm changeset status
 
@@ -182,7 +183,8 @@ format: format-js format-python
 format-sql:
 	@uv run sqlfluff fix
 format-actions-version:
-	@uv run python scripts/pin-github-actions.py
+	@pnpm --filter @prairielearn/pin-github-actions build
+	@node packages/pin-github-actions/dist/cli.js
 
 fix-js:
 	@pnpm eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
