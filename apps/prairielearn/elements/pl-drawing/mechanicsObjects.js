@@ -2611,8 +2611,8 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
       }
 
       update_label(labelObj, 'label', '', obj);
-      update_label(labelxObj, 'labelx', '_label_x', obj);
-      update_label(labelyObj, 'labely', '_label_y', obj);
+      update_label(labelxObj, 'label_x', '_label_x', obj);
+      update_label(labelyObj, 'label_y', '_label_y', obj);
 
       canvas.requestRenderAll();
     };
@@ -2621,7 +2621,7 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     labelObj.on('initialized', update_labels);
     labelxObj.on('initialized', update_labels);
     labelyObj.on('initialized', update_labels);
-    if (!options.label_latex || !options.labelx_latex || !options.labely_latex) {
+    if (!options.label_latex || !options.label_x_latex || !options.labely_latex) {
       // If any of the labels is not LaTeX, it is ready immediately and its position must be set now
       update_labels();
     }

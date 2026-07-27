@@ -92,108 +92,71 @@ def get_text_position(
     return position_data
 
 
-def get_relative_text_position(
-    el_name: str, el: HtmlElement, angle: float, prefix: str, default_sep: float
-) -> dict:
-    position_data = {}
-
-    # Use angle-independent positioning if prefix-relpos is not specified
-    if prefix + "relpos" not in el.attrib:
-        position_data["relpos_active"] = False
-        position_data["default_label_anchor_is_tail"] = False
-    else:
-        position_data["relpos_active"] = True
-        relpos = pl.get_string_attrib(el, prefix + "relpos", "")
-        position_data["default_label_anchor_is_tail"] = "behind" in relpos
-
-        if relpos == "at":
-            position_data["relpos_is_at"] = True
-        else:
-            position_data["relpos_is_at"] = False
-
-            ordered_rotational_positions = [
-                "ahead",
-                "ahead right",
-                "right",
-                "behind right",
-                "behind",
-                "behind left",
-                "left",
-                "ahead left",
-            ]
-
-            valid_relative_positions = ["at", *ordered_rotational_positions]
-
-            if relpos not in valid_relative_positions:
-                raise ValueError(
-                    el_name
-                    + " error: the attribute "
-                    + prefix
-                    + "relpos was given as '"
-                    + relpos
-                    + "' but must be one of "
-                    + str(valid_relative_positions)
-                    + "."
-                )
-
-            assert relpos in ordered_rotational_positions
-            position_data["text_relpos_angle"] = (
-                angle + ordered_rotational_positions.index(relpos) * 45
-            )
-            position_data["sep"] = pl.get_float_attrib(el, prefix + "sep", default_sep)
-
-    return position_data
-
-
-def get_relative_text_position_2(
+def insert_relative_text_position(
     el_name: str,
     el: HtmlElement,
     angle: float,
     prefix: str,
     default_pos: str,
     default_sep: float,
+    destination_dict: dict,
 ) -> dict:
+    """Insert relative text position into destination_dict
+
+    Args:
+        el_name: Name of the element
+        el: The HtmlElement
+        angle: The direction (expressed as an angle clockwise from rightward) which should be considered "ahead" for the text in question
+        prefix: The prefix for the html attribute describing the relative position (prefix+"relpos") and separation distance (prexi+"sep")
+        default_pos: A string indicating the default position. Not directly validated, but if the prefix+"relpos" attribute is not specified, this will become the actual position key, which must be an element of valid_relative_positions below
+        default_sep: The default separation distance used if the prefix+"sep" attribute is not specified
+        destination_dict: The dictionary into which the relevant key-value pairs should be inserted
+    """
+
     position_data = {}
 
     relpos = pl.get_string_attrib(el, prefix + "relpos", default_pos)
 
+    # Validate
+
+    ordered_rotational_positions = [
+        "ahead",
+        "ahead right",
+        "right",
+        "behind right",
+        "behind",
+        "behind left",
+        "left",
+        "ahead left",
+    ]
+
+    valid_relative_positions = ["at", *ordered_rotational_positions]
+
+    if relpos not in valid_relative_positions:
+        raise ValueError(
+            el_name
+            + " error: the attribute "
+            + prefix
+            + "relpos was given as '"
+            + relpos
+            + "' but must be one of "
+            + str(valid_relative_positions)
+            + "."
+        )
+
+    prefix_in_dict = prefix.replace("-", "_")
+
     if relpos == "at":
-        position_data["relpos_is_at"] = True
+        destination_dict[prefix_in_dict + "relpos_is_at"] = True
     else:
-        position_data["relpos_is_at"] = False
+        destination_dict[prefix_in_dict + "relpos_is_at"] = False
 
-        ordered_rotational_positions = [
-            "ahead",
-            "ahead right",
-            "right",
-            "behind right",
-            "behind",
-            "behind left",
-            "left",
-            "ahead left",
-        ]
-
-        valid_relative_positions = ["at", *ordered_rotational_positions]
-
-        if relpos not in valid_relative_positions:
-            raise ValueError(
-                el_name
-                + " error: the attribute "
-                + prefix
-                + "relpos was given as '"
-                + relpos
-                + "' but must be one of "
-                + str(valid_relative_positions)
-                + "."
-            )
-
-        assert relpos in ordered_rotational_positions
-        position_data["text_relpos_angle"] = (
+        destination_dict[prefix_in_dict + "relpos_angle"] = (
             angle + ordered_rotational_positions.index(relpos) * 45
         )
-        position_data["sep"] = pl.get_float_attrib(el, prefix + "sep", default_sep)
-
-    return position_data
+        destination_dict[prefix_in_dict + "sep"] = pl.get_float_attrib(
+            el, prefix_in_dict + "sep", default_sep
+        )
 
 
 # Drawing Elements
@@ -876,9 +839,7 @@ class Vector(BaseElement):
         else:
             obj_draw = None
 
-        label_position_data = get_relative_text_position(
-            "pl-vector", el, 0, "label-", 5
-        )
+        relpos_active = "label-relpos" in el.attrib
 
         result = {
             "left": left,
@@ -889,11 +850,11 @@ class Vector(BaseElement):
             "angle": angle,
             "label": pl.get_string_attrib(el, "label", ""),
             "label_latex": pl.get_boolean_attrib(el, "label-latex", True),
-            "relpos_active": label_position_data["relpos_active"],
+            "relpos_active": relpos_active,
             "label_anchor_is_tail": pl.get_boolean_attrib(
                 el,
                 "label-anchor-is-tail",
-                label_position_data["default_label_anchor_is_tail"],
+                "behind" in pl.get_string_attrib(el, "label-relpos", ""),
             ),
             "offsetx": pl.get_float_attrib(el, "offsetx", 2),
             "offsety": pl.get_float_attrib(el, "offsety", 2),
@@ -918,11 +879,8 @@ class Vector(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-        if label_position_data["relpos_active"]:
-            result["label_relpos_is_at"] = label_position_data["relpos_is_at"]
-            if not result["label_relpos_is_at"]:
-                result["label_relpos_angle"] = label_position_data["text_relpos_angle"]
-                result["label_sep"] = label_position_data["sep"]
+        if relpos_active:
+            insert_relative_text_position("pl-vector", el, 0, "label-", "", 5, result)
 
         return result
 
@@ -1598,35 +1556,15 @@ class Coordinates(BaseElement):
         }
 
         if relpos_active:
-            label_position_data = get_relative_text_position_2(
-                "pl-coordinates", el, -45, "label-", "behind", 5
+            label_position_data = insert_relative_text_position(
+                "pl-coordinates", el, -45, "label-", "behind", 5, result
             )
-            labelx_position_data = get_relative_text_position_2(
-                "pl-coordinates", el, 0, "label-x-", "ahead", 5
+            labelx_position_data = insert_relative_text_position(
+                "pl-coordinates", el, 0, "label-x-", "ahead", 5, result
             )
-            labely_position_data = get_relative_text_position_2(
-                "pl-coordinates", el, -90, "label-y-", "ahead", 5
+            labely_position_data = insert_relative_text_position(
+                "pl-coordinates", el, -90, "label-y-", "ahead", 5, result
             )
-
-            result["label_relpos_is_at"] = label_position_data["relpos_is_at"]
-            result["labelx_relpos_is_at"] = labelx_position_data["relpos_is_at"]
-            result["labely_relpos_is_at"] = labely_position_data["relpos_is_at"]
-
-            if not label_position_data["relpos_is_at"]:
-                result["label_relpos_angle"] = label_position_data["text_relpos_angle"]
-                result["label_sep"] = label_position_data["sep"]
-
-            if not labelx_position_data["relpos_is_at"]:
-                result["labelx_relpos_angle"] = labelx_position_data[
-                    "text_relpos_angle"
-                ]
-                result["labelx_sep"] = labelx_position_data["sep"]
-
-            if not labely_position_data["relpos_is_at"]:
-                result["labely_relpos_angle"] = labely_position_data[
-                    "text_relpos_angle"
-                ]
-                result["labely_sep"] = labely_position_data["sep"]
 
         return result
 
