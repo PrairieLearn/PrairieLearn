@@ -86,7 +86,7 @@ def process_workflow_file(file_path: str, *, check_only: bool) -> None:
     if not matches:
         return
 
-    for action_name, path, tag in matches:
+    for action_name, tag in matches:
         if len(tag) == 40 and all(c in string.hexdigits for c in tag):
             sha = tag  # Already a SHA, no need to fetch
         elif check_only:
