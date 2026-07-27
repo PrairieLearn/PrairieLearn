@@ -51,7 +51,7 @@ jobs:
       - name: 'Commit changes'
         run: |
           git add .
-          git commit -m 'Dedupe dependencies' || true
+          git diff --cached --quiet || git commit -m 'Dedupe dependencies'
 
       # While dependabot uses hash versions for GitHub Actions if the action is
       # pinned to a hash, it will not include the comment with the corresponding
@@ -64,7 +64,7 @@ jobs:
       - name: 'Commit changes'
         run: |
           git add .
-          git commit -m 'Pin GitHub Actions' || true
+          git diff --cached --quiet || git commit -m 'Pin GitHub Actions'
 
       - name: 'Push changes'
         run: |
