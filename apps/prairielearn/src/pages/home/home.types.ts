@@ -6,10 +6,7 @@ import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
 } from '../../lib/client/safe-db-types.js';
-import {
-  CourseInstancePublishingExtensionSchema,
-  EnrollmentSchema,
-} from '../../lib/db-types.js';
+import { CourseInstancePublishingExtensionSchema, EnrollmentSchema } from '../../lib/db-types.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
