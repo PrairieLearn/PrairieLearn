@@ -1,14 +1,18 @@
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
+import { execute } from '@prairielearn/postgres';
+
 import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { selectEnrollmentIdentityClassification } from '../../../models/enrollment-identity.js';
 import { ensureUncheckedEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
   type AuthUser,
   getConfiguredUser,
   getOrCreateUser,
+  updateCourseInstanceSettings,
   withUser,
 } from '../../../tests/utils/auth.js';
 import {
@@ -73,6 +77,41 @@ describe('studentCourseInstanceUpgrade', () => {
       const res = await fetch(assessmentsUrl);
       assert.isOk(res.ok);
       assert.equal(res.url, upgradeUrl);
+    });
+  });
+
+  it('is displayed for a roster invitation when self-enrollment is disabled', async () => {
+    await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      restrictToInstitution: false,
+      selfEnrollmentUseEnrollmentCode: true,
+    });
+
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
+    const user = await getOrCreateUser({ ...studentUser, institutionId: '1' });
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: user.uin,
+      },
+    );
+
+    await withUser(studentUser, async () => {
+      const res = await fetch(assessmentsUrl);
+      assert.isOk(res.ok);
+      assert.equal(res.url, upgradeUrl);
+
+      const classification = await selectEnrollmentIdentityClassification({
+        courseInstanceId: '1',
+        userId: user.id,
+      });
+      assert.lengthOf(classification.actionableInstitutionRosterInvitationCandidates, 1);
+      assert.isNull(
+        classification.actionableInstitutionRosterInvitationCandidates[0].enrollment.user_id,
+      );
     });
   });
 

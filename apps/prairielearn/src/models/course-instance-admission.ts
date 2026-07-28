@@ -15,6 +15,7 @@ import {
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 
+import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
 import {
   type EnrollmentAdmissionSource,
   type EnrollmentIdentityClassification,
@@ -231,6 +232,10 @@ async function validateEnterpriseAdmission({
   }
 }
 
+/**
+ * Treats the supplied plan as a render-time hint and chooses the authoritative
+ * source from a fresh plan inside the shared enrollment barrier.
+ */
 export async function admitUserWithCourseInstanceAdmissionPlan({
   courseInstanceId,
   enrollmentCode,
@@ -269,78 +274,86 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
     });
   }
 
-  let currentPlan = plan;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      return await admitUserToCourseInstance({
-        agentAuthnUserId: userId,
-        agentUserId: userId,
-        courseInstanceId,
-        source: currentPlan.source,
-        userId,
-        validateAdmission: async ({ source }) => {
-          const user = await selectUserById(userId);
-          const { authzData, course, courseInstance, institution } =
-            await constructCourseOrInstanceContext({
-              course_id: null,
-              course_instance_id: courseInstanceId,
-              ip,
-              is_administrator: isAdministrator,
-              req_date: reqDate,
-              user,
-            });
-
-          if (
-            authzData === null ||
-            courseInstance === null ||
-            !hasRole(authzData, ['Student']) ||
-            authzData.course_role !== 'None' ||
-            authzData.course_instance_role !== 'None'
-          ) {
-            throw new HttpStatusError(403, 'Access denied');
-          }
-
-          if (source.type === 'ordinary') {
-            const eligibility = checkEnrollmentEligibility({
-              user,
-              course,
-              courseInstance,
-              existingEnrollment: null,
-            });
-            if (!eligibility.eligible) {
-              throw new CourseInstanceAdmissionEligibilityError(eligibility.reason);
-            }
-            if (
-              courseInstance.self_enrollment_use_enrollment_code &&
-              !enrollmentCodeMatches(courseInstance, enrollmentCode)
-            ) {
-              throw new CourseInstanceEnrollmentCodeRequiredError();
-            }
-          }
-
-          await validateEnterpriseAdmission({
-            authzData: makePageAuthzData({
-              authzData,
-              is_administrator: isAdministrator,
-            }),
-            course,
-            courseInstance,
-            institution,
-          });
-        },
+  async function validateAdmission({ source }: { source: EnrollmentAdmissionSource }) {
+    const user = await selectUserById(userId);
+    const { authzData, course, courseInstance, institution } =
+      await constructCourseOrInstanceContext({
+        course_id: null,
+        course_instance_id: courseInstanceId,
+        ip,
+        is_administrator: isAdministrator,
+        req_date: reqDate,
+        user,
       });
-    } catch (error) {
-      if (!(error instanceof EnrollmentInvitationRequiredError)) {
-        throw error;
-      }
-      const freshPlan = await selectFreshPlan();
-      if (attempt === 1 && isActionableCourseInstanceAdmissionPlan(freshPlan)) {
-        currentPlan = freshPlan;
-        continue;
-      }
-      throw new CourseInstanceAdmissionPlanChangedError(freshPlan);
+
+    if (
+      authzData === null ||
+      courseInstance === null ||
+      !hasRole(authzData, ['Student']) ||
+      authzData.course_role !== 'None' ||
+      authzData.course_instance_role !== 'None'
+    ) {
+      throw new HttpStatusError(403, 'Access denied');
     }
+
+    if (source.type === 'ordinary') {
+      const eligibility = checkEnrollmentEligibility({
+        user,
+        course,
+        courseInstance,
+        existingEnrollment: null,
+      });
+      if (!eligibility.eligible) {
+        throw new CourseInstanceAdmissionEligibilityError(eligibility.reason);
+      }
+      if (
+        courseInstance.self_enrollment_use_enrollment_code &&
+        !enrollmentCodeMatches(courseInstance, enrollmentCode)
+      ) {
+        throw new CourseInstanceEnrollmentCodeRequiredError();
+      }
+    }
+
+    await validateEnterpriseAdmission({
+      authzData: makePageAuthzData({
+        authzData,
+        is_administrator: isAdministrator,
+      }),
+      course,
+      courseInstance,
+      institution,
+    });
   }
 
-  throw new Error('Course instance admission exhausted its attempts');
+  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const freshPlan = await selectFreshPlan();
+      if (
+        freshPlan.type !== 'already_joined' &&
+        !isActionableCourseInstanceAdmissionPlan(freshPlan)
+      ) {
+        throw new CourseInstanceAdmissionPlanChangedError(freshPlan);
+      }
+
+      try {
+        return await admitUserToCourseInstance({
+          agentAuthnUserId: userId,
+          agentUserId: userId,
+          courseInstanceId,
+          source: freshPlan.type === 'already_joined' ? plan.source : freshPlan.source,
+          userId,
+          validateAdmission,
+        });
+      } catch (error) {
+        if (!(error instanceof EnrollmentInvitationRequiredError)) {
+          throw error;
+        }
+        if (attempt === 2) {
+          throw new CourseInstanceAdmissionPlanChangedError(await selectFreshPlan());
+        }
+      }
+    }
+
+    throw new Error('Course instance admission exhausted its attempts');
+  });
 }

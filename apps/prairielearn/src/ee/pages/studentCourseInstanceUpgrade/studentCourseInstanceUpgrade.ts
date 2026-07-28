@@ -4,10 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
-import { hasRole } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import {
   CourseInstanceSchema,
@@ -16,12 +14,15 @@ import {
   UserSchema,
 } from '../../../lib/db-types.js';
 import {
-  checkEnrollmentEligibility,
+  type EnrollmentIneligibilityReason,
   getEligibilityErrorMessage,
 } from '../../../lib/enrollment-eligibility.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
+import {
+  type CourseInstanceAdmissionPlan,
+  selectCourseInstanceAdmissionPlan,
+} from '../../../models/course-instance-admission.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
 import {
   getMissingPlanGrants,
@@ -49,6 +50,14 @@ import {
 
 const router = Router({ mergeParams: true });
 
+function getAdmissionIneligibilityReason(
+  admissionPlan: CourseInstanceAdmissionPlan,
+): EnrollmentIneligibilityReason | null {
+  if (admissionPlan.type === 'blocked') return 'blocked';
+  if (admissionPlan.type === 'ineligible') return admissionPlan.reason;
+  return null;
+}
+
 router.get(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
@@ -56,30 +65,14 @@ router.get(
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
 
-    // Check enrollment eligibility before showing the upgrade page.
-    // This prevents students from paying when they wouldn't be able to enroll
-    // (e.g., due to institution restrictions).
-    const existingEnrollment = await run(async () => {
-      if (!hasRole(res.locals.authz_data, ['Student'])) {
-        return null;
-      }
-      return await selectOptionalEnrollmentByUid({
-        uid: user.uid,
-        courseInstance,
-        requiredRole: ['Student'],
-        authzData: res.locals.authz_data,
-      });
-    });
-
-    const enrollmentInfo = checkEnrollmentEligibility({
-      user,
+    const admissionPlan = await selectCourseInstanceAdmissionPlan({
       course,
       courseInstance,
-      existingEnrollment,
+      user,
     });
-
-    if (!enrollmentInfo.eligible) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: enrollmentInfo.reason }));
+    const ineligibilityReason = getAdmissionIneligibilityReason(admissionPlan);
+    if (ineligibilityReason !== null) {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: ineligibilityReason }));
       return;
     }
 
@@ -136,28 +129,14 @@ router.post(
       const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
 
-      // Check enrollment eligibility before processing payment.
-      const existingEnrollment = await run(async () => {
-        if (!hasRole(res.locals.authz_data, ['Student'])) {
-          return null;
-        }
-        return await selectOptionalEnrollmentByUid({
-          uid: user.uid,
-          courseInstance,
-          requiredRole: ['Student'],
-          authzData: res.locals.authz_data,
-        });
-      });
-
-      const enrollmentInfo = checkEnrollmentEligibility({
-        user,
+      const admissionPlan = await selectCourseInstanceAdmissionPlan({
         course,
         courseInstance,
-        existingEnrollment,
+        user,
       });
-
-      if (!enrollmentInfo.eligible) {
-        throw new error.HttpStatusError(403, getEligibilityErrorMessage(enrollmentInfo.reason));
+      const ineligibilityReason = getAdmissionIneligibilityReason(admissionPlan);
+      if (ineligibilityReason !== null) {
+        throw new error.HttpStatusError(403, getEligibilityErrorMessage(ineligibilityReason));
       }
 
       const body = UpgradeBodySchema.parse(req.body);

@@ -4,11 +4,12 @@ import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { PotentialEnrollmentStatus } from '../ee/models/enrollment.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
+import { getSelfEnrollmentLinkUrl, getSelfEnrollmentLookupUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectEnrollmentIdentityClassification } from '../models/enrollment-identity.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -374,6 +375,134 @@ describe('Self-enrollment settings transitions', () => {
       assert.isNotNull(enrollment);
       assert.equal(enrollment.status, 'joined');
       assert.isNull(enrollment.pending_uin);
+    });
+  });
+
+  it('looks up an actionable roster invitation when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rosterUser = await getOrCreateUser({
+      uid: 'lookup-roster@example.com',
+      name: 'Lookup Roster Student',
+      uin: 'lookup-roster1',
+      email: 'lookup-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: rosterUser.uin,
+      },
+    );
+
+    await withUser(rosterUser, async () => {
+      const response = await fetch(
+        siteUrl + getSelfEnrollmentLookupUrl(courseInstance.enrollment_code, courseInstance.id),
+        { headers: { Accept: 'application/json' } },
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { course_instance_id: courseInstance.id });
+
+      const classification = await selectEnrollmentIdentityClassification({
+        courseInstanceId: courseInstance.id,
+        userId: rosterUser.id,
+      });
+      assert.lengthOf(classification.actionableInstitutionRosterInvitationCandidates, 1);
+      assert.isNull(
+        classification.actionableInstitutionRosterInvitationCandidates[0].enrollment.user_id,
+      );
+    });
+  });
+
+  it('looks up a bound-left user with an actionable roster invitation', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rosterUser = await getOrCreateUser({
+      uid: 'lookup-left-roster@example.com',
+      name: 'Lookup Left Roster Student',
+      uin: 'lookup-left-roster1',
+      email: 'lookup-left-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'left', $first_joined_at)`,
+      {
+        user_id: rosterUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+    );
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: rosterUser.uin,
+      },
+    );
+
+    await withUser(rosterUser, async () => {
+      const response = await fetch(
+        siteUrl + getSelfEnrollmentLookupUrl(courseInstance.enrollment_code, courseInstance.id),
+        { headers: { Accept: 'application/json' } },
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { course_instance_id: courseInstance.id });
+    });
+  });
+
+  it('does not look up a removed user with a non-actionable roster candidate', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const removedUser = await getOrCreateUser({
+      uid: 'lookup-removed-roster@example.com',
+      name: 'Lookup Removed Roster Student',
+      uin: 'lookup-removed-roster1',
+      email: 'lookup-removed-roster@example.com',
+      institutionId: '1',
+    });
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'removed', $first_joined_at)`,
+      {
+        user_id: removedUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date('2024-01-01T00:00:00Z'),
+      },
+    );
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ($course_instance_id, 'invited', $pending_uin)`,
+      {
+        course_instance_id: '1',
+        pending_uin: removedUser.uin,
+      },
+    );
+
+    await withUser(removedUser, async () => {
+      const response = await fetch(
+        siteUrl + getSelfEnrollmentLookupUrl(courseInstance.enrollment_code, courseInstance.id),
+        { headers: { Accept: 'application/json' } },
+      );
+      assert.equal(response.status, 403);
     });
   });
 

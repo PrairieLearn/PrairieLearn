@@ -12,7 +12,6 @@ import { createInstitution } from '../tests/utils/auth.js';
 import { selectAuditEventsByEnrollmentId } from './audit-event.js';
 import {
   type ActionableCourseInstanceAdmissionPlan,
-  CourseInstanceAdmissionEligibilityError,
   admitUserWithCourseInstanceAdmissionPlan,
   selectCourseInstanceAdmissionPlan,
 } from './course-instance-admission.js';
@@ -275,9 +274,13 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
        WHERE id = $course_instance_id`,
       { course_instance_id: courseInstance.id },
     );
-    await expect(admit(ordinaryUser, ordinaryPlan)).rejects.toBeInstanceOf(
-      CourseInstanceAdmissionEligibilityError,
-    );
+    await expect(admit(ordinaryUser, ordinaryPlan)).rejects.toMatchObject({
+      name: 'CourseInstanceAdmissionPlanChangedError',
+      plan: {
+        reason: 'self-enrollment-disabled',
+        type: 'ineligible',
+      },
+    });
 
     const rosterUser = await createUser({ prefix: 'ordinary-validator-access' });
     await createEnrollment({
@@ -314,6 +317,44 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
       name: 'CourseInstanceAdmissionPlanChangedError',
       plan: { type: 'enrollment_code_required' },
     });
+  });
+
+  it('uses a newly added roster invitation instead of a stale ordinary plan', async () => {
+    const user = await createUser({ prefix: 'ordinary-validator-new-roster-invitation' });
+    const stalePlan = await selectPlan(user, courseInstance.enrollment_code);
+    expect(stalePlan.type).toBe('self_enrollment');
+    if (stalePlan.type !== 'self_enrollment') {
+      throw new Error('Expected self-enrollment plan');
+    }
+
+    await createEnrollment({
+      courseInstance,
+      pendingUin: user.uin,
+    });
+    await execute(
+      `UPDATE course_instances
+       SET self_enrollment_enabled = FALSE
+       WHERE id = $course_instance_id`,
+      { course_instance_id: courseInstance.id },
+    );
+
+    const enrollment = await admit(user, stalePlan);
+    expect(enrollment).toMatchObject({
+      pending_uin: null,
+      status: 'joined',
+      user_id: user.id,
+    });
+
+    const auditEvents = await selectAuditEventsByEnrollmentId({
+      enrollment_id: enrollment.id,
+      table_names: ['enrollments'],
+    });
+    expect(auditEvents).toContainEqual(
+      expect.objectContaining({
+        action_detail: 'roster_admitted',
+        context: expect.objectContaining({ admission_source: 'institution_uin' }),
+      }),
+    );
   });
 
   it('enforces enterprise limits and plan grants for roster admission', async () => {
