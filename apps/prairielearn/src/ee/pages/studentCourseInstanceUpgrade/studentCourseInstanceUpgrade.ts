@@ -163,10 +163,7 @@ router.post(
         courseInstance,
         user,
       });
-      const ineligibilityReason = getAdmissionIneligibilityReason(
-        admissionDecision,
-        lti13Relaunch,
-      );
+      const ineligibilityReason = getAdmissionIneligibilityReason(admissionDecision, lti13Relaunch);
       if (ineligibilityReason !== null) {
         throw new error.HttpStatusError(403, getEligibilityErrorMessage(ineligibilityReason));
       }
