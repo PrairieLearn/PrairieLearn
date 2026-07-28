@@ -47,8 +47,13 @@ function deferred() {
   return { promise, reject: reject!, resolve: resolve! };
 }
 
-function observeWorker(promise: Promise<void>, ready?: ReturnType<typeof deferred>): Promise<void> {
+function observeWorker(
+  promise: Promise<void>,
+  recordFailure: (error: unknown) => void,
+  ready?: ReturnType<typeof deferred>,
+): Promise<void> {
   const observed = promise.catch((error) => {
+    recordFailure(error);
     ready?.reject(error);
     throw error;
   });
@@ -194,6 +199,9 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     const parentsLocked = deferred();
     const moveTarget = deferred();
     let failure: { error: unknown } | undefined;
+    const recordFailure = (error: unknown) => {
+      failure ??= { error };
+    };
     const mover = observeWorker(
       runInTransactionAsync(async () => {
         await lockEnrollments([oldTarget.id, movedTarget.id]);
@@ -205,6 +213,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
           new_enrollment_id: movedTarget.id,
         });
       }),
+      recordFailure,
       parentsLocked,
     );
     await parentsLocked.promise;
@@ -217,6 +226,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
           { ruleData: makeRuleData(rule.id), enrollmentIds: [submittedTarget.id] },
         ]);
       }),
+      recordFailure,
     );
 
     const retryParentLocked = deferred();
@@ -232,6 +242,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
           retryParentLocked.resolve();
           await releaseRetryParent.promise;
         }),
+        recordFailure,
         retryParentLocked,
       );
       await waitForApplicationBlock(retryBlockerApplicationName);
@@ -239,7 +250,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
       await retryParentLocked.promise;
       await waitForApplicationBlock(replacementApplicationName);
     } catch (error) {
-      failure = { error };
+      failure ??= { error };
     } finally {
       moveTarget.resolve();
       releaseRetryParent.resolve();
