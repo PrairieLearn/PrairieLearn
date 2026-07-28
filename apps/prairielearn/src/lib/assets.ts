@@ -58,6 +58,15 @@ function getHashForPath(hashes: HashElementNode, assetPath: string): string {
  * returns `@scope/foo`.
  */
 function getPackageNameForAssetPath(assetPath: string): string {
+  if (assetPath.startsWith('.pnpm/')) {
+    // This is likely a pnpm virtual store path, which has the form
+    // `.pnpm/<package-name>@<version>/node_modules/<package-name>/...`.
+    // We'll strip off the pnpm prefix.
+    const secondNodeModulesIndex = assetPath.indexOf('/node_modules/');
+    if (secondNodeModulesIndex !== -1) {
+      assetPath = assetPath.slice(secondNodeModulesIndex + '/node_modules/'.length);
+    }
+  }
   const [maybeScope, maybeModule] = assetPath.split('/');
   if (maybeScope.startsWith('@')) {
     // This is a scoped module
