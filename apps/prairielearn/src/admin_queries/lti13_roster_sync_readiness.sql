@@ -21,8 +21,9 @@ WITH
       institution_id,
       CASE
         WHEN uin IS NULL THEN 'missing'
-        -- PrairieLearn historically stored Google OIDC subjects as UINs, and those
-        -- subjects are 21-digit decimals. Azure object IDs are UUID-shaped, but some
+        -- PrairieLearn stores Google OIDC subjects as UINs, and those subjects are
+        -- 21-digit decimals. These values may remain after an institution switches
+        -- authentication providers. Azure object IDs are UUID-shaped, but some
         -- institutions intentionally use GUIDs as their canonical SAML UIN, so these
         -- categories identify likely provenance rather than validity.
         WHEN uin ~ '^[0-9]{21}$' THEN '21-digit decimal (Google subject candidate)'
