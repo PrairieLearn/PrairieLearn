@@ -457,9 +457,12 @@
               $preview.append($objectPreview);
               this.expandPreviewForFile(fileName);
             } else {
-              const fileContents = this.b64DecodeUnicode(fileData);
-              if (!this.isBinary(fileContents)) {
-                $preview.find('code').text(fileContents);
+              if (!this.isBinary(fileData)) {
+                try {
+                  $preview.find('code').text(this.b64DecodeUnicode(fileData));
+                } catch {
+                  $preview.find('code').text('Error decoding file contents.');
+                }
               } else {
                 $preview.find('code').text('Binary file not previewed.');
               }
@@ -554,13 +557,14 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * @param {string} decodedFileContents File contents to check
+     * @param {string} base64FileData Base64-encoded file data to check
      * @returns {boolean} If the file is recognized as binary
      */
-    isBinary(decodedFileContents) {
-      const nulIdx = decodedFileContents.indexOf('\0');
-      const fileLength = decodedFileContents.length;
-      return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
+    isBinary(base64FileData) {
+      // Retrieve 8000 bytes, represented in base64 as ceil((8000 * 4) / 3) =
+      // 10668 characters, and only decode that segment for performance reasons
+      const decodedSegment = atob(base64FileData.slice(0, 10668));
+      return decodedSegment.includes('\0');
     }
 
     /**
@@ -584,7 +588,9 @@
      * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
-      return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
+      return new TextDecoder({ fatal: true }).decode(
+        Uint8Array.from(atob(str), (c) => c.charCodeAt(0)),
+      );
     }
 
     b64ToBlobUrl(str, options = undefined) {
