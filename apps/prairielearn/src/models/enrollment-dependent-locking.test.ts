@@ -177,18 +177,19 @@ async function expectWriterWaitsForLowerBeforeLockingHigher({
 }): Promise<void> {
   const lowerLocked = deferred();
   const releaseLower = deferred();
+  let failure: { error: unknown } | undefined;
   const blockerPromise = runInTransactionAsync(async () => {
     await lockEnrollments([lowerEnrollmentId]);
     lowerLocked.resolve();
     await releaseLower.promise;
   }).catch((error) => {
+    failure ??= { error };
     lowerLocked.reject(error);
     throw error;
   });
   void blockerPromise.catch(() => undefined);
 
   let writerPromise: Promise<void> | undefined;
-  let failure: { error: unknown } | undefined;
 
   try {
     await lowerLocked.promise;
@@ -198,7 +199,9 @@ async function expectWriterWaitsForLowerBeforeLockingHigher({
       await setLocalApplicationName(writerApplicationName);
       await writer();
     });
-    void writerPromise.catch(() => undefined);
+    void writerPromise.catch((error) => {
+      failure ??= { error };
+    });
 
     await waitForEnrollmentLockWaiter({ applicationName: writerApplicationName });
     await runInTransactionAsync(async () => {
@@ -208,7 +211,7 @@ async function expectWriterWaitsForLowerBeforeLockingHigher({
       });
     });
   } catch (error) {
-    failure = { error };
+    failure ??= { error };
   } finally {
     releaseLower.resolve();
     const workerResults = await Promise.allSettled([
@@ -437,6 +440,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
 
     const parentsLocked = deferred();
     const moveTarget = deferred();
+    let failure: { error: unknown } | undefined;
     const mover = runInTransactionAsync(async () => {
       await lockEnrollments([enrollments[0].id, enrollments[2].id]);
       parentsLocked.resolve();
@@ -447,6 +451,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         new_enrollment_id: enrollments[2].id,
       });
     }).catch((error) => {
+      failure ??= { error };
       parentsLocked.reject(error);
       throw error;
     });
@@ -456,7 +461,6 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
     const releaseRetryParent = deferred();
     let replacement: Promise<void> | undefined;
     let retryBlocker: Promise<void> | undefined;
-    let failure: { error: unknown } | undefined;
 
     try {
       await parentsLocked.promise;
@@ -471,7 +475,9 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
           },
         ]);
       });
-      void replacement.catch(() => undefined);
+      void replacement.catch((error) => {
+        failure ??= { error };
+      });
 
       // The replacement only reaches its lock query after reading the current target.
       const initialLockQueryStart = await waitForEnrollmentLockWaiter({
@@ -485,6 +491,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
         retryParentLocked.resolve();
         await releaseRetryParent.promise;
       }).catch((error) => {
+        failure ??= { error };
         retryParentLocked.reject(error);
         throw error;
       });
@@ -502,7 +509,7 @@ describe('enrollment-dependent locking', { concurrent: false }, () => {
       });
       expect(retryLockQueryStart).not.toEqual(initialLockQueryStart);
     } catch (error) {
-      failure = { error };
+      failure ??= { error };
     } finally {
       moveTarget.resolve();
       releaseRetryParent.resolve();
