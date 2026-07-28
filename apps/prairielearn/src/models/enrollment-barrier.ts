@@ -13,57 +13,21 @@ export function normalizeCourseInstanceIds(courseInstanceIds: string | string[])
 }
 
 /**
- * Nested transactions reuse their outer transaction, so the barriers remain
- * held until the outermost transaction commits or rolls back.
- */
-async function runWithCourseInstanceEnrollmentBarrier<T>({
-  courseInstanceIds,
-  exclusive,
-  fn,
-}: {
-  courseInstanceIds: string | string[];
-  exclusive: boolean;
-  fn: () => Promise<T>;
-}): Promise<T> {
-  return await runInTransactionAsync(async () => {
-    const lockSql = exclusive
-      ? sql.acquire_exclusive_course_instance_enrollment_barrier
-      : sql.acquire_shared_course_instance_enrollment_barrier;
-
-    for (const courseInstanceId of normalizeCourseInstanceIds(courseInstanceIds)) {
-      await execute(lockSql, { course_instance_id: courseInstanceId });
-    }
-
-    return await fn();
-  });
-}
-
-/**
  * Runs individual enrollment mutations while allowing other individual
- * mutations for the same course instances to proceed concurrently.
+ * mutations for the same course instances to proceed concurrently. Nested
+ * transactions keep the barriers until the outermost transaction completes.
  */
 export async function runWithSharedEnrollmentBarrier<T>(
   courseInstanceIds: string | string[],
   fn: () => Promise<T>,
 ): Promise<T> {
-  return await runWithCourseInstanceEnrollmentBarrier({
-    courseInstanceIds,
-    exclusive: false,
-    fn,
-  });
-}
+  return await runInTransactionAsync(async () => {
+    for (const courseInstanceId of normalizeCourseInstanceIds(courseInstanceIds)) {
+      await execute(sql.acquire_shared_course_instance_enrollment_barrier, {
+        course_instance_id: courseInstanceId,
+      });
+    }
 
-/**
- * Runs a bulk enrollment operation while excluding individual enrollment
- * mutations for the given course instances.
- */
-export async function runWithExclusiveEnrollmentBarrier<T>(
-  courseInstanceIds: string | string[],
-  fn: () => Promise<T>,
-): Promise<T> {
-  return await runWithCourseInstanceEnrollmentBarrier({
-    courseInstanceIds,
-    exclusive: true,
-    fn,
+    return await fn();
   });
 }
