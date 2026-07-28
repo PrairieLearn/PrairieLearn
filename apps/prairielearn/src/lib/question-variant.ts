@@ -77,11 +77,6 @@ export async function makeVariant({
   variant_course: Course;
   variant_seed?: string | null;
   preferences?: Record<string, string | number | boolean>;
-  /**
-   * The current value of each shared-state object this question can access.
-   * Unlike `preferences`, this is read live (not frozen) so that a sibling
-   * question's latest write is visible to `generate`/`prepare`.
-   */
   shared_state?: SharedStateValues;
   /** The user that owns the variant, or `null` for group variants. Used to expose user info to `server.py` if the course has opted in. */
   effective_user_id: string | null;
@@ -312,10 +307,6 @@ async function makeAndInsertVariant({
     preferences = result ? { ...preferences, ...result } : preferences;
   }
 
-  // Resolve which shared-state objects this question can access. We resolve
-  // these regardless of whether this is an instance-question-backed variant,
-  // so that a floating/preview variant still sees each object's schema
-  // defaults under `data["shared_state"]` rather than an empty dict.
   const sharedStateObjects = await selectSharedStateObjectsForQuestion({
     course_id: question_course.id,
     question,
