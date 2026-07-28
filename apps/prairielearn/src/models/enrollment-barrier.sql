@@ -5,7 +5,3 @@
 -- BLOCK acquire_shared_course_instance_enrollment_barrier
 SELECT
   pg_advisory_xact_lock_shared(- ($course_instance_id::bigint));
-
--- BLOCK acquire_exclusive_course_instance_enrollment_barrier
-SELECT
-  pg_advisory_xact_lock(- ($course_instance_id::bigint));
