@@ -1,18 +1,23 @@
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalScalar,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type Enrollment, EnrollmentSchema, type EnumEnrollmentStatus } from '../lib/db-types.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
+import {
+  type EnrollmentAdmissionDecision,
+  type EnrollmentAdmissionSource,
+  type EnrollmentIdentityCandidate,
+  type EnrollmentIdentityClassification,
+  type EnrollmentIdentityContext,
+  type EnrollmentInvitationAdmissionSource,
+  classifyEnrollmentIdentityCandidates,
+  getEnrollmentAdmissionDecision,
+  selectEnrollmentIdentityCandidates,
+} from './enrollment-identity.js';
 import { lockEnrollments } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -25,241 +30,62 @@ const ENROLLMENT_IDENTITY_UNIQUE_CONSTRAINTS = new Set([
   'enrollments_user_id_course_instance_id_key',
 ]);
 
-const EnrollmentIdentityCandidateRowSchema = z.object({
-  enrollment: EnrollmentSchema,
-  matches_bound_user: z.boolean(),
-  matches_institution_uin: z.boolean(),
-  matches_lti13: z.boolean(),
-  matches_pending_uid: z.boolean(),
-});
+export type AllowedEnrollmentAdmissionDecision = Extract<
+  EnrollmentAdmissionDecision,
+  { allowed: true }
+>;
 
-export interface EnrollmentIdentityCandidate {
-  enrollment: Enrollment;
-  matches: {
-    boundUser: boolean;
-    institutionUin: boolean;
-    lti13: boolean;
-    pendingUid: boolean;
-  };
-}
-
-export type EnrollmentIdentityClassificationKind =
-  | 'none'
-  | 'ordinary'
-  | 'actionable_conventional_invitation'
-  | 'actionable_roster_invitation'
-  | 'joined'
-  | 'blocked';
-
-export interface EnrollmentIdentityClassification {
-  actionableConventionalInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableInstitutionRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableLti13RosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  actionableRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  boundCandidate: EnrollmentIdentityCandidate | null;
-  candidates: EnrollmentIdentityCandidate[];
-  conventionalInvitationCandidates: EnrollmentIdentityCandidate[];
-  institutionRosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  kind: EnrollmentIdentityClassificationKind;
-  lti13RosterInvitationCandidates: EnrollmentIdentityCandidate[];
-  rosterInvitationCandidates: EnrollmentIdentityCandidate[];
+export interface EnrollmentAuditActor {
+  agentAuthnUserId: string | null;
+  agentUserId: string | null;
 }
 
 export interface EnrollmentIdentityReconciliationResult {
   classification: EnrollmentIdentityClassification;
   enrollment: Enrollment | null;
   mergedEnrollmentIds: string[];
-  preservedInvitation: boolean;
+  preservedRosterInvitation: Enrollment | null;
 }
 
-export type EnrollmentAdmissionSource =
-  | { type: 'pending_uid' }
-  | { type: 'institution_uin' }
-  | {
-      type: 'lti13';
-      lti13CourseInstanceId: string;
-      sub: string;
-    };
+export interface EnrollmentAdmissionValidationContext {
+  classification: EnrollmentIdentityClassification;
+  decision: AllowedEnrollmentAdmissionDecision;
+}
 
-interface EnrollmentIdentityContext {
+export type ValidateEnrollmentAdmission = (
+  context: EnrollmentAdmissionValidationContext,
+) => Promise<void>;
+
+export interface CheckedEnrollmentAdmissionInput extends EnrollmentAuditActor {
   courseInstanceId: string;
-  lti13Identity?: {
-    lti13CourseInstanceId: string;
-    sub: string;
-  };
+  source: EnrollmentAdmissionSource;
   userId: string;
+  validateAdmission: ValidateEnrollmentAdmission;
 }
 
-interface EnrollmentAuditActor {
-  agentAuthnUserId: string | null;
-  agentUserId: string | null;
+export class EnrollmentAdmissionDeniedError extends Error {
+  decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>;
+
+  constructor(decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>) {
+    super(`Enrollment admission denied: ${decision.reason}`);
+    this.name = 'EnrollmentAdmissionDeniedError';
+    this.decision = decision;
+  }
 }
 
-export class EnrollmentAdmissionBlockedError extends Error {
-  constructor() {
-    super('A blocked enrollment cannot be admitted');
+export class EnrollmentAdmissionBlockedError extends EnrollmentAdmissionDeniedError {
+  constructor(decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>) {
+    super(decision);
     this.name = 'EnrollmentAdmissionBlockedError';
   }
 }
 
-export class EnrollmentInvitationRequiredError extends Error {
-  constructor(source: EnrollmentAdmissionSource['type']) {
-    super(`A matching ${source} invitation is required`);
+export class EnrollmentInvitationRequiredError extends EnrollmentAdmissionDeniedError {
+  constructor(decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>) {
+    super(decision);
+    this.message = `A matching ${decision.source.type} invitation is required`;
     this.name = 'EnrollmentInvitationRequiredError';
   }
-}
-
-function mapCandidateRows(
-  rows: z.infer<typeof EnrollmentIdentityCandidateRowSchema>[],
-): EnrollmentIdentityCandidate[] {
-  return rows.map((row) => ({
-    enrollment: row.enrollment,
-    matches: {
-      boundUser: row.matches_bound_user,
-      institutionUin: row.matches_institution_uin,
-      lti13: row.matches_lti13,
-      pendingUid: row.matches_pending_uid,
-    },
-  }));
-}
-
-function identityQueryParams({
-  courseInstanceId,
-  userId,
-  lti13Identity,
-}: EnrollmentIdentityContext) {
-  return {
-    course_instance_id: courseInstanceId,
-    lti13_course_instance_id: lti13Identity?.lti13CourseInstanceId ?? null,
-    lti13_sub: lti13Identity?.sub ?? null,
-    user_id: userId,
-  };
-}
-
-/**
- * Selects all enrollment rows matching the current bound-user, pending-UID,
- * institution-scoped UIN, or optional exact LTI identity. The query is strictly
- * read-only and returns one candidate per enrollment with every matching source
- * preserved as provenance.
- *
- * User identity fields and LTI link ownership are intentionally not locked.
- * Callers performing reconciliation re-run this selector inside their
- * transaction and revalidate the locked enrollment rows before mutation. A
- * rare concurrent user/LTI identity change may therefore be completed by a
- * later reconciliation call.
- */
-export async function selectEnrollmentIdentityCandidates(
-  context: EnrollmentIdentityContext,
-): Promise<EnrollmentIdentityCandidate[]> {
-  const rows = await queryRows(
-    sql.select_enrollment_identity_candidates,
-    identityQueryParams(context),
-    EnrollmentIdentityCandidateRowSchema,
-  );
-  return mapCandidateRows(rows);
-}
-
-async function revalidateLockedEnrollmentIdentityCandidates(
-  context: EnrollmentIdentityContext,
-  enrollmentIds: string[],
-): Promise<EnrollmentIdentityCandidate[]> {
-  if (enrollmentIds.length === 0) return [];
-  const rows = await queryRows(
-    sql.revalidate_locked_enrollment_identity_candidates,
-    {
-      ...identityQueryParams(context),
-      enrollment_ids: enrollmentIds,
-    },
-    EnrollmentIdentityCandidateRowSchema,
-  );
-  return mapCandidateRows(rows);
-}
-
-function isPendingInvitation(candidate: EnrollmentIdentityCandidate): boolean {
-  return candidate.enrollment.user_id === null && candidate.enrollment.status === 'invited';
-}
-
-/**
- * Classifies identity candidates without performing database work. Conventional
- * pending-UID invitations remain distinct from roster authorization. Only a
- * non-guest pending invitation matched through institution-scoped UIN or exact
- * LTI provenance can authorize roster admission; bound left/removed/blocked
- * rows never authorize it by themselves.
- */
-export function classifyEnrollmentIdentityCandidates(
-  candidates: EnrollmentIdentityCandidate[],
-): EnrollmentIdentityClassification {
-  const boundCandidates = candidates.filter(
-    (candidate) => candidate.matches.boundUser && candidate.enrollment.user_id !== null,
-  );
-  if (boundCandidates.length > 1) {
-    throw new Error('Multiple bound enrollment identity candidates');
-  }
-
-  const boundCandidate = boundCandidates.at(0) ?? null;
-  const pendingInvitations = candidates.filter(isPendingInvitation);
-  const conventionalInvitationCandidates = pendingInvitations.filter(
-    (candidate) => candidate.matches.pendingUid,
-  );
-  const institutionRosterInvitationCandidates = pendingInvitations.filter(
-    (candidate) => !candidate.enrollment.is_guest && candidate.matches.institutionUin,
-  );
-  const lti13RosterInvitationCandidates = pendingInvitations.filter(
-    (candidate) => !candidate.enrollment.is_guest && candidate.matches.lti13,
-  );
-  const rosterInvitationCandidates = pendingInvitations.filter(
-    (candidate) =>
-      !candidate.enrollment.is_guest &&
-      (candidate.matches.institutionUin || candidate.matches.lti13),
-  );
-
-  const boundEnrollment = boundCandidate?.enrollment;
-  const boundAllowsRosterInvitation =
-    boundEnrollment === undefined ||
-    (boundEnrollment.status === 'left' && !boundEnrollment.is_guest);
-  const actionableConventionalInvitationCandidates =
-    boundEnrollment === undefined ? conventionalInvitationCandidates : [];
-  const rosterAdmissionKeepsNonGuest =
-    boundAllowsRosterInvitation && !candidates.some((candidate) => candidate.enrollment.is_guest);
-  const actionableInstitutionRosterInvitationCandidates = rosterAdmissionKeepsNonGuest
-    ? institutionRosterInvitationCandidates
-    : [];
-  const actionableLti13RosterInvitationCandidates = rosterAdmissionKeepsNonGuest
-    ? lti13RosterInvitationCandidates
-    : [];
-  const actionableRosterInvitationCandidates = rosterAdmissionKeepsNonGuest
-    ? rosterInvitationCandidates
-    : [];
-
-  const boundStatus = boundEnrollment?.status;
-  let kind: EnrollmentIdentityClassificationKind;
-  if (boundStatus === 'blocked') {
-    kind = 'blocked';
-  } else if (boundStatus === 'joined') {
-    kind = 'joined';
-  } else if (actionableRosterInvitationCandidates.length > 0) {
-    kind = 'actionable_roster_invitation';
-  } else if (actionableConventionalInvitationCandidates.length > 0) {
-    kind = 'actionable_conventional_invitation';
-  } else if (candidates.length > 0) {
-    kind = 'ordinary';
-  } else {
-    kind = 'none';
-  }
-
-  return {
-    actionableConventionalInvitationCandidates,
-    actionableInstitutionRosterInvitationCandidates,
-    actionableLti13RosterInvitationCandidates,
-    actionableRosterInvitationCandidates,
-    boundCandidate,
-    candidates,
-    conventionalInvitationCandidates,
-    institutionRosterInvitationCandidates,
-    kind,
-    lti13RosterInvitationCandidates,
-    rosterInvitationCandidates,
-  };
 }
 
 function compareEnrollmentIds(
@@ -269,6 +95,12 @@ function compareEnrollmentIds(
   const aId = BigInt(a.enrollment.id);
   const bId = BigInt(b.enrollment.id);
   return aId < bId ? -1 : aId > bId ? 1 : 0;
+}
+
+function selectLowestEnrollmentCandidate(
+  candidates: EnrollmentIdentityCandidate[],
+): EnrollmentIdentityCandidate | null {
+  return candidates.slice().sort(compareEnrollmentIds)[0] ?? null;
 }
 
 function selectSurvivor(
@@ -281,7 +113,7 @@ function selectSurvivor(
   );
   if (guestCandidates.length === 1) return guestCandidates[0];
 
-  return classification.candidates.slice().sort(compareEnrollmentIds)[0] ?? null;
+  return selectLowestEnrollmentCandidate(classification.candidates);
 }
 
 function selectEarliestFirstJoinedAt(candidates: EnrollmentIdentityCandidate[]): Date | null {
@@ -386,53 +218,38 @@ function selectMergedPendingFields({
 
 async function lockAndMoveEnrollmentDependents({
   enrollmentIds,
-  loserEnrollmentIds,
   survivorEnrollmentId,
 }: {
   enrollmentIds: string[];
-  loserEnrollmentIds: string[];
   survivorEnrollmentId: string;
 }): Promise<void> {
-  const params = { enrollment_ids: enrollmentIds };
+  const params = {
+    enrollment_ids: enrollmentIds,
+    survivor_enrollment_id: survivorEnrollmentId,
+  };
+  const lockParams = { enrollment_ids: enrollmentIds };
 
-  // This order must remain aligned with enrollment-reconciliation.sql and with
-  // the parent-first locking contract established by enrollment-lock.ts.
-  await queryRows(sql.lock_student_label_enrollments, params, z.object({ id: IdSchema }));
-  await queryRows(sql.lock_publishing_extension_enrollments, params, z.object({ id: IdSchema }));
+  // Every child table is locked and mutated in this fixed order after all
+  // enrollment parents. Updates change only enrollment_id, so reconciliation
+  // never acquires an unchanged label/extension/rule owner FK lock.
+  await queryRows(sql.lock_student_label_enrollments, lockParams, z.object({ id: IdSchema }));
+  await queryRows(
+    sql.lock_publishing_extension_enrollments,
+    lockParams,
+    z.object({ id: IdSchema }),
+  );
   await queryRows(
     sql.lock_assessment_access_control_enrollments,
-    params,
+    lockParams,
     z.object({ id: IdSchema }),
   );
 
-  await execute(sql.union_student_label_enrollments, {
-    ...params,
-    survivor_enrollment_id: survivorEnrollmentId,
-  });
-  await execute(sql.delete_loser_student_label_enrollments, {
-    loser_enrollment_ids: loserEnrollmentIds,
-  });
-
-  const publishingExtensionId = await queryOptionalScalar(
-    sql.select_best_publishing_extension_id,
-    params,
-    IdSchema,
-  );
-  await execute(sql.delete_candidate_publishing_extension_enrollments, params);
-  if (publishingExtensionId !== null) {
-    await execute(sql.insert_survivor_publishing_extension_enrollment, {
-      publishing_extension_id: publishingExtensionId,
-      survivor_enrollment_id: survivorEnrollmentId,
-    });
-  }
-
-  await execute(sql.union_assessment_access_control_enrollments, {
-    ...params,
-    survivor_enrollment_id: survivorEnrollmentId,
-  });
-  await execute(sql.delete_loser_assessment_access_control_enrollments, {
-    loser_enrollment_ids: loserEnrollmentIds,
-  });
+  await execute(sql.deduplicate_student_label_enrollments, params);
+  await execute(sql.move_student_label_enrollments, params);
+  await execute(sql.keep_best_publishing_extension_enrollment, params);
+  await execute(sql.move_publishing_extension_enrollment, params);
+  await execute(sql.deduplicate_assessment_access_control_enrollments, params);
+  await execute(sql.move_assessment_access_control_enrollments, params);
 }
 
 function enrollmentChanged(oldEnrollment: Enrollment, newEnrollment: Enrollment): boolean {
@@ -450,7 +267,13 @@ function enrollmentChanged(oldEnrollment: Enrollment, newEnrollment: Enrollment)
   );
 }
 
-async function auditReconciliation({
+function admissionActionDetail(source: EnrollmentAdmissionSource) {
+  if (source.type === 'ordinary') return 'implicit_joined' as const;
+  if (source.type === 'pending_uid') return 'invitation_accepted' as const;
+  return 'roster_admitted' as const;
+}
+
+async function auditCandidateMerge({
   actor,
   oldSurvivor,
   newSurvivor,
@@ -461,18 +284,14 @@ async function auditReconciliation({
   oldSurvivor: Enrollment;
   newSurvivor: Enrollment;
   deletedEnrollments: Enrollment[];
-  admissionSource?: EnrollmentAdmissionSource;
+  admissionSource: EnrollmentAdmissionSource | null;
 }): Promise<void> {
-  if (admissionSource || enrollmentChanged(oldSurvivor, newSurvivor)) {
+  if (admissionSource !== null || enrollmentChanged(oldSurvivor, newSurvivor)) {
     await insertAuditEvent({
       tableName: 'enrollments',
       action: 'update',
       actionDetail:
-        admissionSource !== undefined
-          ? admissionSource.type === 'pending_uid'
-            ? 'invitation_accepted'
-            : 'roster_admitted'
-          : 'identity_reconciled',
+        admissionSource === null ? 'identity_reconciled' : admissionActionDetail(admissionSource),
       rowId: newSurvivor.id,
       oldRow: oldSurvivor,
       newRow: newSurvivor,
@@ -506,11 +325,34 @@ async function auditReconciliation({
       },
       subjectUserId: deletedEnrollment.user_id,
       courseInstanceId: deletedEnrollment.course_instance_id,
-      enrollmentId: null,
+      enrollmentId: newSurvivor.id,
       agentUserId: actor.agentUserId,
       agentAuthnUserId: actor.agentAuthnUserId,
     });
   }
+}
+
+async function auditInsertedAdmission({
+  actor,
+  enrollment,
+}: {
+  actor: EnrollmentAuditActor;
+  enrollment: Enrollment;
+}): Promise<void> {
+  await insertAuditEvent({
+    tableName: 'enrollments',
+    action: 'insert',
+    actionDetail: 'implicit_joined',
+    rowId: enrollment.id,
+    newRow: enrollment,
+    context: {
+      reason: 'checked_admission',
+      admission_source: 'ordinary',
+    },
+    subjectUserId: enrollment.user_id,
+    agentUserId: actor.agentUserId,
+    agentAuthnUserId: actor.agentAuthnUserId,
+  });
 }
 
 const emptyMatches = {
@@ -520,79 +362,25 @@ const emptyMatches = {
   pendingUid: false,
 };
 
-function isEnrollmentIdentityUniquenessViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false;
-  const { code, constraint } = error as { code?: unknown; constraint?: unknown };
-  return (
-    code === '23505' &&
-    typeof constraint === 'string' &&
-    ENROLLMENT_IDENTITY_UNIQUE_CONSTRAINTS.has(constraint)
-  );
-}
+type CandidateMergeMutation =
+  | { type: 'merge_only' }
+  | {
+      source: EnrollmentAdmissionSource;
+      type: 'admit';
+      userId: string;
+    };
 
-function shouldPreserveRosterInvitation(classification: EnrollmentIdentityClassification): boolean {
-  const boundEnrollment = classification.boundCandidate?.enrollment;
-  return (
-    boundEnrollment?.status === 'left' &&
-    !boundEnrollment.is_guest &&
-    classification.actionableRosterInvitationCandidates.length > 0
-  );
-}
-
-async function runReconciliationAttempt({
-  context,
+async function executeCandidateMerge({
   actor,
-  admissionSource,
+  candidates,
+  mutation,
+  survivorCandidate,
 }: {
-  context: EnrollmentIdentityContext;
   actor: EnrollmentAuditActor;
-  admissionSource?: EnrollmentAdmissionSource;
-}): Promise<EnrollmentIdentityReconciliationResult> {
-  const initialCandidates = await selectEnrollmentIdentityCandidates(context);
-  const initialCandidateIds = initialCandidates.map((candidate) => candidate.enrollment.id);
-  await lockEnrollments(initialCandidateIds);
-
-  const candidates = await revalidateLockedEnrollmentIdentityCandidates(
-    context,
-    initialCandidateIds,
-  );
-  const classification = classifyEnrollmentIdentityCandidates(candidates);
-
-  if (admissionSource && classification.kind === 'blocked') {
-    throw new EnrollmentAdmissionBlockedError();
-  }
-
-  if (admissionSource) {
-    const authorizedCandidates = {
-      institution_uin: classification.actionableInstitutionRosterInvitationCandidates,
-      lti13: classification.actionableLti13RosterInvitationCandidates,
-      pending_uid: classification.actionableConventionalInvitationCandidates,
-    }[admissionSource.type];
-    if (authorizedCandidates.length === 0) {
-      throw new EnrollmentInvitationRequiredError(admissionSource.type);
-    }
-  } else if (shouldPreserveRosterInvitation(classification)) {
-    return {
-      classification,
-      enrollment: classification.boundCandidate?.enrollment ?? null,
-      mergedEnrollmentIds: [],
-      preservedInvitation: true,
-    };
-  }
-
-  const survivorCandidate = selectSurvivor(classification);
-  if (survivorCandidate === null) {
-    if (admissionSource) {
-      throw new EnrollmentInvitationRequiredError(admissionSource.type);
-    }
-    return {
-      classification,
-      enrollment: null,
-      mergedEnrollmentIds: [],
-      preservedInvitation: false,
-    };
-  }
-
+  candidates: EnrollmentIdentityCandidate[];
+  mutation: CandidateMergeMutation;
+  survivorCandidate: EnrollmentIdentityCandidate;
+}): Promise<{ enrollment: Enrollment; mergedEnrollmentIds: string[] }> {
   const survivor = survivorCandidate.enrollment;
   const losers = candidates
     .filter((candidate) => candidate.enrollment.id !== survivor.id)
@@ -609,7 +397,6 @@ async function runReconciliationAttempt({
   if (losers.length > 0) {
     await lockAndMoveEnrollmentDependents({
       enrollmentIds: candidateEnrollmentIds,
-      loserEnrollmentIds,
       survivorEnrollmentId: survivor.id,
     });
   }
@@ -627,14 +414,14 @@ async function runReconciliationAttempt({
         );
 
   let updatedSurvivor: Enrollment;
-  if (admissionSource) {
+  if (mutation.type === 'admit') {
     updatedSurvivor = await queryRow(
       sql.admit_reconciled_enrollment,
       {
         enrollment_id: survivor.id,
         first_joined_at: firstJoinedAt,
         is_guest: isGuest,
-        user_id: context.userId,
+        user_id: mutation.userId,
       },
       EnrollmentSchema,
     );
@@ -666,40 +453,53 @@ async function runReconciliationAttempt({
       : survivor;
   }
 
-  await auditReconciliation({
+  await auditCandidateMerge({
     actor,
     oldSurvivor: survivor,
     newSurvivor: updatedSurvivor,
     deletedEnrollments,
-    admissionSource,
+    admissionSource: mutation.type === 'admit' ? mutation.source : null,
   });
 
   return {
-    classification,
     enrollment: updatedSurvivor,
     mergedEnrollmentIds: loserEnrollmentIds,
-    preservedInvitation: false,
   };
 }
 
-async function runReconciliationWithRetry({
+function isEnrollmentIdentityUniquenessViolation(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const { code, constraint } = error as { code?: unknown; constraint?: unknown };
+  return (
+    code === '23505' &&
+    typeof constraint === 'string' &&
+    ENROLLMENT_IDENTITY_UNIQUE_CONSTRAINTS.has(constraint)
+  );
+}
+
+async function selectAndLockIdentityClassification(
+  context: EnrollmentIdentityContext,
+): Promise<EnrollmentIdentityClassification> {
+  const initialCandidates = await selectEnrollmentIdentityCandidates(context);
+  const initialCandidateIds = initialCandidates.map((candidate) => candidate.enrollment.id);
+  await lockEnrollments(initialCandidateIds);
+  return classifyEnrollmentIdentityCandidates(
+    await selectEnrollmentIdentityCandidates(context, { enrollmentIds: initialCandidateIds }),
+  );
+}
+
+async function runWithEnrollmentIdentityRetry<T>({
   context,
-  actor,
-  admissionSource,
+  attempt,
 }: {
+  attempt: () => Promise<T>;
   context: EnrollmentIdentityContext;
-  actor: EnrollmentAuditActor;
-  admissionSource?: EnrollmentAdmissionSource;
-}): Promise<EnrollmentIdentityReconciliationResult> {
+}): Promise<T> {
   return await runWithSharedEnrollmentBarrier(context.courseInstanceId, async () => {
-    for (let attempt = 1; attempt <= MAX_RECONCILIATION_ATTEMPTS; attempt++) {
+    for (let attemptNumber = 1; attemptNumber <= MAX_RECONCILIATION_ATTEMPTS; attemptNumber++) {
       await execute(sql.create_enrollment_identity_reconciliation_savepoint);
       try {
-        const result = await runReconciliationAttempt({
-          context,
-          actor,
-          admissionSource,
-        });
+        const result = await attempt();
         await execute(sql.release_enrollment_identity_reconciliation_savepoint);
         return result;
       } catch (error) {
@@ -707,7 +507,7 @@ async function runReconciliationWithRetry({
         await execute(sql.release_enrollment_identity_reconciliation_savepoint);
 
         if (
-          attempt === MAX_RECONCILIATION_ATTEMPTS ||
+          attemptNumber === MAX_RECONCILIATION_ATTEMPTS ||
           !isEnrollmentIdentityUniquenessViolation(error)
         ) {
           throw error;
@@ -719,11 +519,170 @@ async function runReconciliationWithRetry({
   });
 }
 
+type MergeOnlyPlan =
+  | { type: 'none' }
+  | {
+      candidates: EnrollmentIdentityCandidate[];
+      survivorCandidate: EnrollmentIdentityCandidate;
+      type: 'merge';
+    }
+  | {
+      boundCandidate: EnrollmentIdentityCandidate;
+      pendingCandidates: EnrollmentIdentityCandidate[];
+      pendingSurvivorCandidate: EnrollmentIdentityCandidate;
+      type: 'preserve_roster_invitation';
+    };
+
+function planMergeOnly(classification: EnrollmentIdentityClassification): MergeOnlyPlan {
+  if (classification.candidates.length === 0) return { type: 'none' };
+
+  const boundCandidate = classification.boundCandidate;
+  if (
+    boundCandidate?.enrollment.status === 'left' &&
+    !boundCandidate.enrollment.is_guest &&
+    classification.actionableRosterInvitationCandidates.length > 0
+  ) {
+    const pendingCandidates = classification.candidates.filter(
+      (candidate) => candidate.enrollment.id !== boundCandidate.enrollment.id,
+    );
+    const pendingSurvivorCandidate = selectLowestEnrollmentCandidate(
+      classification.actionableRosterInvitationCandidates,
+    );
+    if (pendingSurvivorCandidate === null) {
+      throw new Error('Actionable roster invitation has no survivor');
+    }
+    return {
+      boundCandidate,
+      pendingCandidates,
+      pendingSurvivorCandidate,
+      type: 'preserve_roster_invitation',
+    };
+  }
+
+  const survivorCandidate = selectSurvivor(classification);
+  if (survivorCandidate === null) return { type: 'none' };
+  return {
+    candidates: classification.candidates,
+    survivorCandidate,
+    type: 'merge',
+  };
+}
+
+async function executeMergeOnlyAttempt({
+  actor,
+  context,
+}: {
+  actor: EnrollmentAuditActor;
+  context: EnrollmentIdentityContext;
+}): Promise<EnrollmentIdentityReconciliationResult> {
+  const classification = await selectAndLockIdentityClassification(context);
+  const plan = planMergeOnly(classification);
+
+  if (plan.type === 'none') {
+    return {
+      classification,
+      enrollment: null,
+      mergedEnrollmentIds: [],
+      preservedRosterInvitation: null,
+    };
+  }
+  if (plan.type === 'preserve_roster_invitation') {
+    const pendingResult = await executeCandidateMerge({
+      actor,
+      candidates: plan.pendingCandidates,
+      mutation: { type: 'merge_only' },
+      survivorCandidate: plan.pendingSurvivorCandidate,
+    });
+    return {
+      classification,
+      enrollment: plan.boundCandidate.enrollment,
+      mergedEnrollmentIds: pendingResult.mergedEnrollmentIds,
+      preservedRosterInvitation: pendingResult.enrollment,
+    };
+  }
+
+  const result = await executeCandidateMerge({
+    actor,
+    candidates: plan.candidates,
+    mutation: { type: 'merge_only' },
+    survivorCandidate: plan.survivorCandidate,
+  });
+  return {
+    classification,
+    enrollment: result.enrollment,
+    mergedEnrollmentIds: result.mergedEnrollmentIds,
+    preservedRosterInvitation: null,
+  };
+}
+
+function throwAdmissionDenied(
+  decision: Extract<EnrollmentAdmissionDecision, { allowed: false }>,
+): never {
+  if (decision.reason === 'blocked') {
+    throw new EnrollmentAdmissionBlockedError(decision);
+  }
+  if (decision.source.type !== 'ordinary') {
+    throw new EnrollmentInvitationRequiredError(decision);
+  }
+  throw new EnrollmentAdmissionDeniedError(decision);
+}
+
+async function executeCheckedAdmissionAttempt({
+  actor,
+  context,
+  source,
+  validateAdmission,
+}: {
+  actor: EnrollmentAuditActor;
+  context: EnrollmentIdentityContext;
+  source: EnrollmentAdmissionSource;
+  validateAdmission: ValidateEnrollmentAdmission;
+}): Promise<Enrollment> {
+  const classification = await selectAndLockIdentityClassification(context);
+  const decision = getEnrollmentAdmissionDecision(classification, source);
+  if (!decision.allowed) {
+    if (decision.reason === 'already_joined' && classification.boundCandidate !== null) {
+      return classification.boundCandidate.enrollment;
+    }
+    throwAdmissionDenied(decision);
+  }
+
+  // This mandatory seam runs from the locked, source-specific decision before
+  // any dependent or enrollment mutation. It can run again after the one
+  // recognized uniqueness retry; failed-attempt effects are savepoint-rolled back.
+  await validateAdmission({ classification, decision });
+
+  const survivorCandidate = selectSurvivor(classification);
+  if (survivorCandidate === null) {
+    const enrollment = await queryRow(
+      sql.insert_joined_enrollment,
+      {
+        course_instance_id: context.courseInstanceId,
+        user_id: context.userId,
+      },
+      EnrollmentSchema,
+    );
+    await auditInsertedAdmission({ actor, enrollment });
+    return enrollment;
+  }
+
+  const result = await executeCandidateMerge({
+    actor,
+    candidates: classification.candidates,
+    mutation: {
+      source,
+      type: 'admit',
+      userId: context.userId,
+    },
+    survivorCandidate,
+  });
+  return result.enrollment;
+}
+
 /**
- * Reconciles duplicate identity candidates without admitting the user. Pending
- * candidates remain pending and unbound. A non-guest bound-left enrollment
- * plus an actionable roster invitation is deliberately preserved for the later
- * checked admission flow.
+ * Reconciles duplicate identity candidates without admitting the user. A
+ * non-guest bound-left enrollment plus a roster invitation remains two logical
+ * rows: the bound row and exactly one fully reconciled pending roster row.
  */
 export async function reconcileEnrollmentIdentities({
   userId,
@@ -733,31 +692,30 @@ export async function reconcileEnrollmentIdentities({
   agentAuthnUserId,
 }: EnrollmentIdentityContext &
   EnrollmentAuditActor): Promise<EnrollmentIdentityReconciliationResult> {
-  return await runReconciliationWithRetry({
-    context: { userId, courseInstanceId, lti13Identity },
-    actor: { agentUserId, agentAuthnUserId },
+  const context = { userId, courseInstanceId, lti13Identity };
+  return await runWithEnrollmentIdentityRetry({
+    context,
+    attempt: async () =>
+      await executeMergeOnlyAttempt({
+        context,
+        actor: { agentUserId, agentAuthnUserId },
+      }),
   });
 }
 
 /**
- * Admits a user only from the explicitly requested invitation identity source.
- * A conventional pending-UID invitation may be accepted even when it is a
- * guest enrollment, while guest UIN/LTI matches never provide roster
- * authorization. LTI callers must supply the exact link and subject; an
- * institution-UIN match cannot accidentally authorize an LTI launch with the
- * wrong source.
+ * Canonical atomic admission entry point. Callers must revalidate every
+ * eligibility and admission rule in validateAdmission; roster decisions bypass
+ * only rules that the caller deliberately omits from that validation.
  */
-export async function admitUserFromEnrollmentInvitation({
+export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
   source,
+  validateAdmission,
   agentUserId,
   agentAuthnUserId,
-}: {
-  courseInstanceId: string;
-  source: EnrollmentAdmissionSource;
-  userId: string;
-} & EnrollmentAuditActor): Promise<Enrollment> {
+}: CheckedEnrollmentAdmissionInput): Promise<Enrollment> {
   const lti13Identity =
     source.type === 'lti13'
       ? {
@@ -765,13 +723,27 @@ export async function admitUserFromEnrollmentInvitation({
           sub: source.sub,
         }
       : undefined;
-  const result = await runReconciliationWithRetry({
-    context: { userId, courseInstanceId, lti13Identity },
-    actor: { agentUserId, agentAuthnUserId },
-    admissionSource: source,
+  const context = { userId, courseInstanceId, lti13Identity };
+  return await runWithEnrollmentIdentityRetry({
+    context,
+    attempt: async () =>
+      await executeCheckedAdmissionAttempt({
+        context,
+        source,
+        validateAdmission,
+        actor: { agentUserId, agentAuthnUserId },
+      }),
   });
-  if (result.enrollment === null) {
-    throw new EnrollmentInvitationRequiredError(source.type);
-  }
-  return result.enrollment;
+}
+
+/**
+ * Convenience wrapper for invitation admission. The mandatory validation seam
+ * delegates unchanged to the canonical checked path.
+ */
+export async function admitUserFromEnrollmentInvitation(
+  input: Omit<CheckedEnrollmentAdmissionInput, 'source'> & {
+    source: EnrollmentInvitationAdmissionSource;
+  },
+): Promise<Enrollment> {
+  return await admitUserToCourseInstance(input);
 }
