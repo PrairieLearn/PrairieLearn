@@ -30,15 +30,6 @@ WHERE
 ORDER BY
   student_label_id;
 
--- BLOCK select_student_label_enrollment_id
-SELECT
-  id
-FROM
-  student_label_enrollments
-WHERE
-  enrollment_id = $enrollment_id
-  AND student_label_id = $student_label_id;
-
 -- BLOCK insert_publishing_extension
 INSERT INTO
   course_instance_publishing_extensions (course_instance_id, name, end_date)
@@ -66,15 +57,6 @@ WHERE
 ORDER BY
   course_instance_publishing_extension_id;
 
--- BLOCK select_publishing_extension_enrollment_id
-SELECT
-  id
-FROM
-  course_instance_publishing_extension_enrollments
-WHERE
-  enrollment_id = $enrollment_id
-  AND course_instance_publishing_extension_id = $publishing_extension_id;
-
 -- BLOCK insert_assessment_access_control_rule
 INSERT INTO
   assessment_access_control_rules (assessment_id, number, target_type, uuid)
@@ -99,20 +81,3 @@ WHERE
   enrollment_id = $enrollment_id
 ORDER BY
   assessment_access_control_rule_id;
-
--- BLOCK select_assessment_access_control_enrollment_id
-SELECT
-  id
-FROM
-  assessment_access_control_enrollments
-WHERE
-  enrollment_id = $enrollment_id
-  AND assessment_access_control_rule_id = $rule_id;
-
--- BLOCK select_audit_event_by_id
-SELECT
-  *
-FROM
-  audit_events
-WHERE
-  id = $audit_event_id;

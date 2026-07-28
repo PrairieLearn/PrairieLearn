@@ -1,47 +1,7 @@
--- Enrollment-dependent rows are always locked after their enrollment parents,
--- in this fixed table order:
--- 1. student_label_enrollments
--- 2. course_instance_publishing_extension_enrollments
--- 3. assessment_access_control_enrollments
--- BLOCK lock_student_label_enrollments
-SELECT
-  id
-FROM
-  student_label_enrollments
-WHERE
-  enrollment_id = ANY ($enrollment_ids::bigint[])
-ORDER BY
-  student_label_id,
-  id
-FOR UPDATE;
-
--- BLOCK lock_publishing_extension_enrollments
-SELECT
-  id
-FROM
-  course_instance_publishing_extension_enrollments
-WHERE
-  enrollment_id = ANY ($enrollment_ids::bigint[])
-ORDER BY
-  course_instance_publishing_extension_id,
-  id
-FOR UPDATE;
-
--- BLOCK lock_assessment_access_control_enrollments
-SELECT
-  id
-FROM
-  assessment_access_control_enrollments
-WHERE
-  enrollment_id = ANY ($enrollment_ids::bigint[])
-ORDER BY
-  assessment_access_control_rule_id,
-  id
-FOR UPDATE;
-
--- Dependent rows are moved in the same fixed order used above. Reconciliation
--- never inserts a new child row: changing only enrollment_id avoids rechecking
--- the unchanged owner FK after an owner deletion has locked its parent.
+-- Enrollment-dependent rows are mutated in this fixed table order:
+-- student labels, publishing extensions, then assessment access controls.
+-- Reconciliation never inserts a child row, which avoids taking a new lock on
+-- an unchanged label, extension, or access-control owner.
 -- BLOCK deduplicate_student_label_enrollments
 WITH
   ranked_memberships AS (
@@ -138,23 +98,6 @@ SET
 WHERE
   enrollment_id = ANY ($enrollment_ids::bigint[])
   AND enrollment_id <> $survivor_enrollment_id;
-
--- BLOCK update_reconciled_enrollment
-UPDATE enrollments
-SET
-  status = $status,
-  is_guest = $is_guest,
-  first_joined_at = $first_joined_at,
-  pending_uid = $pending_uid,
-  pending_uin = $pending_uin,
-  pending_name = $pending_name,
-  pending_email = $pending_email,
-  pending_lti13_course_instance_id = $pending_lti13_course_instance_id,
-  pending_lti13_sub = $pending_lti13_sub
-WHERE
-  id = $enrollment_id
-RETURNING
-  *;
 
 -- Admission deliberately binds the user, clears every pending identity field,
 -- and transitions to joined in one statement.

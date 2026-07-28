@@ -135,10 +135,3 @@ export function actorFor(user: User) {
     agentUserId: user.id,
   };
 }
-
-export function checkedAdmissionFor(user: User) {
-  return {
-    ...actorFor(user),
-    validateAdmission: async () => {},
-  };
-}
