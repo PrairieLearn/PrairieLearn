@@ -358,10 +358,7 @@ export async function rejectConventionalEnrollmentInvitation({
     );
     const decision = getEnrollmentAdmissionDecision(classification, source);
 
-    if (
-      !decision.allowed ||
-      decision.invitationCandidate?.enrollment.id !== enrollmentId
-    ) {
+    if (!decision.allowed || decision.invitationCandidate?.enrollment.id !== enrollmentId) {
       throw new EnrollmentAdmissionDeniedError(
         decision.allowed
           ? {
