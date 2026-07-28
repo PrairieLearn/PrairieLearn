@@ -10,7 +10,11 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
-import { writeSharedStateValuesForAssessmentInstance } from '../models/shared-state-value.js';
+import {
+  resolveSharedStateForPhase,
+  validateSharedStatePatch,
+  writeSharedStateValuesForAssessmentInstance,
+} from '../models/shared-state-value.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -32,7 +36,6 @@ import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
-import { resolveSharedStateForPhase, validateSharedStatePatch } from './shared-state-grading.js';
 import * as workspaceHelper from './workspace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
