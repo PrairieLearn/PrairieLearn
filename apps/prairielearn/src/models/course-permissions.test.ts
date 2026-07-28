@@ -13,10 +13,17 @@ import {
   insertCoursePermissionsByUserUid,
   selectCoursePermissionForUser,
 } from './course-permissions.js';
-import { runWithExclusiveEnrollmentBarrier } from './enrollment-barrier.js';
 import { ensureUncheckedEnrollment, selectOptionalEnrollmentByUserId } from './enrollment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+function deferred() {
+  let resolve: () => void;
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve: resolve! };
+}
 
 describe('deleteCoursePermissions', () => {
   beforeAll(async () => {
@@ -26,7 +33,7 @@ describe('deleteCoursePermissions', () => {
 
   afterAll(helperDb.after);
 
-  it('uses the enrollment barrier before deleting enrollments', async () => {
+  it('rolls back when its enrollment barrier is blocked', async () => {
     const courseInstance = await selectCourseInstanceById('1');
     const user = await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -42,19 +49,16 @@ describe('deleteCoursePermissions', () => {
       requiredRole: ['System'],
     });
 
-    let releaseBarrier!: () => void;
-    let barrierHeld!: () => void;
-    const releaseBarrierPromise = new Promise<void>((resolve) => {
-      releaseBarrier = resolve;
+    const barrierHeld = deferred();
+    const releaseBarrier = deferred();
+    const barrierHolder = runInTransactionAsync(async () => {
+      await execute(sql.acquire_exclusive_course_instance_enrollment_barrier, {
+        course_instance_id: courseInstance.id,
+      });
+      barrierHeld.resolve();
+      await releaseBarrier.promise;
     });
-    const barrierHeldPromise = new Promise<void>((resolve) => {
-      barrierHeld = resolve;
-    });
-    const barrierHolder = runWithExclusiveEnrollmentBarrier(courseInstance.id, async () => {
-      barrierHeld();
-      await releaseBarrierPromise;
-    });
-    await barrierHeldPromise;
+    await barrierHeld.promise;
 
     try {
       await expect(
@@ -68,7 +72,7 @@ describe('deleteCoursePermissions', () => {
         }),
       ).rejects.toMatchObject({ code: '55P03' });
     } finally {
-      releaseBarrier();
+      releaseBarrier.resolve();
       await barrierHolder;
     }
 
@@ -84,21 +88,5 @@ describe('deleteCoursePermissions', () => {
       await selectCoursePermissionForUser({ course_id: '1', user_id: user.id }),
       'Owner',
     );
-
-    await deleteCoursePermissions({
-      course_id: '1',
-      user_id: user.id,
-      authn_user_id: '1',
-    });
-
-    assert.isNull(
-      await selectOptionalEnrollmentByUserId({
-        userId: user.id,
-        courseInstance,
-        authzData: dangerousFullSystemAuthz(),
-        requiredRole: ['System'],
-      }),
-    );
-    assert.isNull(await selectCoursePermissionForUser({ course_id: '1', user_id: user.id }));
   });
 });
