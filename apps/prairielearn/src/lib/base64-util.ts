@@ -1,5 +1,13 @@
 export function b64EncodeUnicodeBrowser(str: string) {
-  return btoa(String.fromCodePoint(...new TextEncoder().encode(str)));
+  const bytes = new TextEncoder().encode(str);
+  let binaryString = '';
+  const CHUNK_SIZE = 0x8000;
+
+  // Call String.fromCodePoint in chunks to avoid stack overflow for large strings.
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binaryString += String.fromCodePoint(...bytes.subarray(i, i + CHUNK_SIZE));
+  }
+  return btoa(binaryString);
 }
 
 export function b64DecodeUnicodeBrowser(str: string) {
