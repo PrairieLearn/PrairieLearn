@@ -265,6 +265,40 @@ export async function admitUserForCourseInstanceAccess({
   });
 }
 
+export async function admitUserFromConventionalEnrollmentInvitation({
+  courseInstanceId,
+  expectedInvitationEnrollmentId,
+  ip,
+  isAdministrator,
+  reqDate,
+  userId,
+}: {
+  courseInstanceId: string;
+  expectedInvitationEnrollmentId: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  reqDate: Date;
+  userId: string;
+}) {
+  return await admitUserToCourseInstance({
+    actor: {
+      agentAuthnUserId: userId,
+      agentUserId: userId,
+    },
+    courseInstanceId,
+    expectedInvitationEnrollmentId,
+    source: { type: 'invitation', matchedBy: 'uid' },
+    userId,
+    validateAdmission: createAdmissionValidator({
+      courseInstanceId,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
+  });
+}
+
 export async function admitUserFromLti13Launch({
   courseInstanceId,
   expectedInvitationEnrollmentId,

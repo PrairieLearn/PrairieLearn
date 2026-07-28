@@ -226,7 +226,11 @@ export async function admitUserToCourseInstance(
     const decision = getEnrollmentAdmissionDecision(classification, selectedSource);
 
     if (!decision.allowed) {
-      if (decision.reason === 'already_joined' && classification.boundCandidate !== null) {
+      if (
+        decision.reason === 'already_joined' &&
+        classification.boundCandidate !== null &&
+        selectedSource.type !== 'pending_uid'
+      ) {
         return classification.boundCandidate.enrollment;
       }
       throw new EnrollmentAdmissionDeniedError(decision);
@@ -319,6 +323,71 @@ export async function admitUserToCourseInstance(
       oldSurvivor: survivorCandidate.enrollment,
       newSurvivor: enrollment,
       deletedEnrollments,
+    });
+    return enrollment;
+  });
+}
+
+/**
+ * Rejects only the exact actionable conventional invitation selected by the
+ * caller. Roster identity cannot authorize this mutation.
+ */
+export async function rejectConventionalEnrollmentInvitation({
+  agentAuthnUserId,
+  agentUserId,
+  courseInstanceId,
+  enrollmentId,
+  userId,
+}: EnrollmentAuditActor & {
+  courseInstanceId: string;
+  enrollmentId: string;
+  userId: string;
+}): Promise<Enrollment> {
+  const source = { type: 'pending_uid' as const };
+  const context = { courseInstanceId, userId };
+
+  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+    const initialClassification = await selectEnrollmentIdentityClassification(context);
+    const enrollmentIds = initialClassification.candidates.map(
+      (candidate) => candidate.enrollment.id,
+    );
+    await lockEnrollments(enrollmentIds);
+    const classification = await selectEnrollmentIdentityClassificationForRevalidation(
+      context,
+      enrollmentIds,
+    );
+    const decision = getEnrollmentAdmissionDecision(classification, source);
+
+    if (
+      !decision.allowed ||
+      decision.invitationCandidate?.enrollment.id !== enrollmentId
+    ) {
+      throw new EnrollmentAdmissionDeniedError(
+        decision.allowed
+          ? {
+              allowed: false,
+              reason: 'no_matching_invitation',
+              source,
+            }
+          : decision,
+      );
+    }
+
+    const oldEnrollment = decision.invitationCandidate.enrollment;
+    const enrollment = await queryRow(
+      sql.reject_conventional_invitation,
+      { enrollment_id: oldEnrollment.id },
+      EnrollmentSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'invitation_rejected',
+      rowId: enrollment.id,
+      oldRow: oldEnrollment,
+      newRow: enrollment,
+      agentAuthnUserId,
+      agentUserId,
     });
     return enrollment;
   });
