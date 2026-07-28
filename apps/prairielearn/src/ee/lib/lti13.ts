@@ -279,6 +279,11 @@ export class Lti13Claim {
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
   }
 
+  get sub() {
+    this.assertValid();
+    return this.claims.sub;
+  }
+
   get lineitems() {
     this.assertValid();
     return this.claims['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']?.lineitems;

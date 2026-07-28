@@ -315,6 +315,94 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
+  it('admits an institution-roster invitation without self-enrollment or a code', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rosterUser = await getOrCreateUser({
+      uid: 'roster@example.com',
+      name: 'Roster Student',
+      uin: 'roster-uin',
+      email: 'roster@example.com',
+      institutionId: '1',
+    });
+    const invitation = await queryRow(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ('1', 'invited', $pending_uin)
+       RETURNING *`,
+      { pending_uin: rosterUser.uin },
+      EnrollmentSchema,
+    );
+
+    await withUser(rosterUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 200);
+
+      const enrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      assert.equal(enrollment.status, 'joined');
+      assert.equal(enrollment.user_id, rosterUser.id);
+      assert.isNull(enrollment.pending_uin);
+    });
+  });
+
+  it('applies normal self-enrollment policy when a removed user also has a roster row', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const removedUser = await getOrCreateUser({
+      uid: 'removed-roster@example.com',
+      name: 'Removed Roster Student',
+      uin: 'removed-roster-uin',
+      email: 'removed-roster@example.com',
+      institutionId: '1',
+    });
+    const boundEnrollment = await queryRow(
+      `INSERT INTO enrollments (course_instance_id, first_joined_at, status, user_id)
+       VALUES ('1', now(), 'removed', $user_id)
+       RETURNING *`,
+      { user_id: removedUser.id },
+      EnrollmentSchema,
+    );
+    const invitation = await queryRow(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uin)
+       VALUES ('1', 'invited', $pending_uin)
+       RETURNING *`,
+      { pending_uin: removedUser.uin },
+      EnrollmentSchema,
+    );
+
+    await withUser(removedUser, async () => {
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
+
+      const persistedBoundEnrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: boundEnrollment.id },
+        EnrollmentSchema,
+      );
+      const persistedInvitation = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      assert.equal(persistedBoundEnrollment.status, 'removed');
+      assert.equal(persistedInvitation.status, 'invited');
+      assert.isNull(persistedInvitation.user_id);
+    });
+  });
+
   it('does not allow rejected user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
