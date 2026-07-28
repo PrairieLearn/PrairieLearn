@@ -10,6 +10,7 @@ import { TagBadge } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadge } from '../../components/TopicBadge.js';
 import { TopicDescription } from '../../components/TopicDescription.js';
+import { TypedPropertiesEditor } from '../../components/TypedPropertiesEditor.js';
 import type {
   StaffCourseInstance,
   StaffQuestion,
@@ -21,7 +22,6 @@ import { validateShortName } from '../../lib/short-name.js';
 import type { QuestionSharingSetRow } from '../../models/sharing-set.js';
 import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpers.js';
 
-import { PreferencesTable } from './components/PreferencesTable.js';
 import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
 import { QuestionTestsForm } from './components/QuestionTestsForm.js';
 import type {
@@ -596,15 +596,37 @@ export const InstructorQuestionSettingsForm = ({
           </div>
         </div>
 
-        <PreferencesTable
-          control={control}
-          canEdit={canEdit}
-          register={register}
-          watch={watch}
-          setValue={setValue}
-          clearErrors={clearErrors}
-          errors={errors.preferences}
-        />
+        <div className="card">
+          <div className="card-body">
+            <TypedPropertiesEditor
+              control={control}
+              name="preferences"
+              canEdit={canEdit}
+              register={register}
+              watch={watch}
+              setValue={setValue}
+              clearErrors={clearErrors}
+              errors={errors.preferences}
+              title="Preferences"
+              description={
+                <>
+                  Configure{' '}
+                  <a
+                    href="https://docs.prairielearn.com/question/preferences/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    preferences
+                  </a>{' '}
+                  that can be specified when a question is used on an assessment. Values are
+                  available in <code>server.py</code> and <code>question.html</code>.
+                </>
+              }
+              addLabel="Add preference"
+              emptyLabel="No preferences configured"
+            />
+          </div>
+        </div>
 
         <div className="card">
           <div className="card-body">

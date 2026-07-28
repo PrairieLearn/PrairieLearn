@@ -1,0 +1,72 @@
+.typed-properties-grid-row,
+.typed-properties-grid-header {
+  display: grid;
+  gap: 0 0.5rem;
+  padding: 0.25rem 0.5rem;
+  align-items: center;
+  min-width: 36rem;
+}
+
+/* Clip vertical overflow so a dragged row can't escape into the header
+   above or beyond the rows area below. overflow-x stays visible so rows
+   can extend past the wrapper's width and trigger the parent card's
+   horizontal scroll on narrow viewports. `clip` (not `hidden`) avoids
+   creating a scroll container, which would let focused inputs trigger
+   programmatic scrolls. */
+.typed-properties-grid-rows {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+
+/* Horizontal scroll for narrow viewports. overflow-x: auto forces
+   overflow-y to auto as well; clip it so dragged rows don't trigger
+   a vertical scrollbar. */
+.typed-properties-grid-editable,
+.typed-properties-grid-readonly {
+  overflow-x: auto;
+  overflow-y: clip;
+}
+
+.typed-properties-grid-editable .typed-properties-grid-row,
+.typed-properties-grid-editable .typed-properties-grid-header {
+  grid-template-columns: 2rem minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr) 2.5rem;
+}
+
+.typed-properties-grid-readonly .typed-properties-grid-row,
+.typed-properties-grid-readonly .typed-properties-grid-header {
+  grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr) minmax(0, 1.5fr);
+}
+
+.typed-properties-grid-header {
+  font-weight: bold;
+  font-size: 0.875rem;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.typed-properties-grid-row {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.typed-properties-grid-row:last-child {
+  border-bottom: none;
+}
+
+/* Enum value badges */
+.typed-properties-enum-badge {
+  max-width: 12rem;
+}
+
+.typed-properties-enum-remove {
+  font-size: 0.5rem;
+}
+
+/* Inline enum input */
+.typed-properties-enum-input {
+  width: 8rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+}
+
+.typed-properties-enum-add-btn {
+  font-size: 0.75em;
+}
