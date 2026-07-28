@@ -237,7 +237,7 @@ export async function admitUserToCourseInstance(
       if (
         decision.reason === 'already_joined' &&
         classification.boundCandidate !== null &&
-        selectedSource.type !== 'pending_uid'
+        (selectedSource.type !== 'pending_uid' || expectedInvitationEnrollmentId === undefined)
       ) {
         return classification.boundCandidate.enrollment;
       }
