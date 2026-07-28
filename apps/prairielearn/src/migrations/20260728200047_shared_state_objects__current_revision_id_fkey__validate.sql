@@ -1,0 +1,1 @@
+ALTER TABLE shared_state_objects VALIDATE CONSTRAINT shared_state_objects_current_revision_id_fkey;
