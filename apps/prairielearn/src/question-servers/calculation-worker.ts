@@ -75,7 +75,6 @@ function generate(
     params: questionData.params ?? null,
     true_answer: questionData.trueAnswer ?? null,
     options: questionData.options || question.options || {},
-    shared_state: {},
   };
 }
 
@@ -130,7 +129,6 @@ function grade(
     // this was not implemented for v2 questions.
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
-    shared_state: {},
   };
 }
 

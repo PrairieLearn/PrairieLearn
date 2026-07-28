@@ -44,7 +44,7 @@ export interface GenerateResultData {
   params: Record<string, unknown>;
   true_answer: Record<string, unknown>;
   options?: Record<string, unknown>;
-  shared_state: Record<string, Record<string, string | number | boolean>>;
+  shared_state?: Record<string, Record<string, string | number | boolean>>;
 }
 
 export type PrepareResultData = GenerateResultData;
@@ -64,7 +64,7 @@ export interface ParseResultData {
   raw_submitted_answer: Record<string, unknown>;
   format_errors: Record<string, unknown>;
   gradable: boolean;
-  shared_state: Record<string, Record<string, string | number | boolean>>;
+  shared_state?: Record<string, Record<string, string | number | boolean>>;
 }
 
 export interface GradeResultData {
@@ -78,7 +78,7 @@ export interface GradeResultData {
   feedback: Record<string, unknown>;
   gradable: boolean;
   v2_score?: number;
-  shared_state: Record<string, Record<string, string | number | boolean>>;
+  shared_state?: Record<string, Record<string, string | number | boolean>>;
 }
 
 export interface TestResultData {

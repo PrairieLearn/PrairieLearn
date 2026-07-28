@@ -148,7 +148,7 @@ export async function makeVariant({
       options: data.options || {},
       broken: hasFatalIssue,
       preferences,
-      shared_state: data.shared_state,
+      shared_state: data.shared_state ?? variant.shared_state,
     };
   }
 

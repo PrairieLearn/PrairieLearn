@@ -265,7 +265,7 @@ export async function saveSubmission(
   const sharedStateIssues = validateSharedStatePatch({
     objects: sharedState.objects,
     before: sharedState.before,
-    after: data.shared_state,
+    after: data.shared_state ?? {},
   });
   for (const issue of sharedStateIssues) {
     courseIssues.push(Object.assign(new Error(issue), { fatal: true }));
@@ -300,7 +300,7 @@ export async function saveSubmission(
       assessment_instance_id: sharedState.assessment_instance_id,
       objects: sharedState.objects,
       before: sharedState.before,
-      after: data.shared_state,
+      after: data.shared_state ?? {},
     });
   }
 

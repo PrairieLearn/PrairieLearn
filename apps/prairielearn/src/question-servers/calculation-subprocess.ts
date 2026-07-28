@@ -129,7 +129,6 @@ export async function generate(
   course: Course,
   variant_seed: string,
   _preferences: Record<string, string | number | boolean>,
-  _sharedState: Record<string, Record<string, unknown>>,
   _caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
@@ -140,7 +139,6 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
-  _sharedState: Record<string, Record<string, unknown>>,
   _caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return await callFunction<GradeResultData>('grade', question_course, question, {
@@ -183,7 +181,6 @@ export async function prepare(
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
     options: variant.options ?? {},
-    shared_state: {},
   };
   return { courseIssues: [], data };
 }
@@ -193,7 +190,6 @@ export async function parse(
   variant: Variant,
   _question: Question,
   _course: Course,
-  _sharedState: Record<string, Record<string, unknown>>,
   _caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   const data = {
@@ -204,7 +200,6 @@ export async function parse(
     feedback: {},
     format_errors: {},
     gradable: true,
-    shared_state: {},
   };
   return { courseIssues: [], data };
 }

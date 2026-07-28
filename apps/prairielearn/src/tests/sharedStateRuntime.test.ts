@@ -8,15 +8,18 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
+import { config } from '../lib/config.js';
 import { SubmissionSchema, VariantSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
 import { saveAndGradeSubmission } from '../lib/grading.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
-import { selectOrInsertCourseByPath } from '../models/course.js';
+import { selectOrInsertCourseByPath, updateCourseSharingName } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
+import { extractAndSaveCSRFToken, extractAndSaveVariantId, fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import * as util from './sync/util.js';
 import { withConfig } from './utils/config.js';
@@ -32,7 +35,9 @@ def generate(data):
 
 def grade(data):
     current = data["shared_state"]["labProgress"]["count"]
-    data["shared_state"]["labProgress"]["count"] = current + data["submitted_answers"]["increment"]
+    # Coerced with int() because a real HTTP submission carries this as a
+    # string; direct library-level test calls already pass a real int.
+    data["shared_state"]["labProgress"]["count"] = current + int(data["submitted_answers"]["increment"])
     data["score"] = 1
 `;
 
@@ -61,6 +66,7 @@ async function buildCourseDir(): Promise<string> {
     tags: ['test'],
     type: 'v3',
     sharedStateAccess: ['labProgress'],
+    sharePublicly: true,
   };
   courseData.questions[READER_QID] = {
     uuid: '6b6a1e3a-6b8a-4b8a-9b8a-6b8a1e3a6b6b',
@@ -69,6 +75,7 @@ async function buildCourseDir(): Promise<string> {
     tags: ['test'],
     type: 'v3',
     sharedStateAccess: ['labProgress'],
+    sharePublicly: true,
   };
   courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID].zones = [
     {
@@ -284,6 +291,81 @@ describe(
         1,
         'preview grading should compute from the default (0), not a persisted value',
       );
+    });
+
+    it('works the same way through the public question preview route', async () => {
+      // Public question previews go through the same no-instance-question,
+      // no-course-instance path as instructor previews (see the test above),
+      // but this drives it through the actual HTTP route end to end, since
+      // that path also runs the public-preview identity-masking logic in
+      // `user-context.ts`.
+      const course = await selectOrInsertCourseByPath(courseDir);
+      await features.enable('question-sharing');
+      await updateCourseSharingName({ course_id: course.id, sharing_name: 'shared-state-test' });
+
+      const writerQuestion = await selectQuestionByQid({ course_id: course.id, qid: WRITER_QID });
+      const readerQuestion = await selectQuestionByQid({ course_id: course.id, qid: READER_QID });
+      const publicBaseUrl = `http://localhost:${config.serverPort}/pl/public/course/${course.id}/question`;
+
+      const writerPreviewUrl = `${publicBaseUrl}/${writerQuestion.id}/preview`;
+      const writerPage = await fetchCheerio(writerPreviewUrl);
+      assert.equal(writerPage.status, 200);
+
+      const context: Record<string, any> = {};
+      extractAndSaveCSRFToken(context, writerPage.$, '.question-form');
+      extractAndSaveVariantId(context, writerPage.$, '.question-form');
+
+      const gradeResponse = await fetch(writerPreviewUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: context.__csrf_token,
+          __variant_id: context.__variant_id,
+          increment: '5',
+        }),
+      });
+      assert.equal(gradeResponse.status, 200);
+
+      const gradedVariant = await sqldb.queryRow(
+        sql.select_variant_by_id,
+        { variant_id: context.__variant_id },
+        VariantSchema,
+      );
+      assert.equal(
+        gradedVariant.broken_at,
+        null,
+        'public preview writer variant should not be broken',
+      );
+
+      const submission = await sqldb.queryRow(
+        sql.select_last_submission_for_variant,
+        { variant_id: context.__variant_id },
+        SubmissionSchema,
+      );
+      assert.equal(submission.broken, false);
+      assert.equal(submission.score, 1);
+
+      // A fresh, independent public preview of the reader question has
+      // nowhere to read a persisted write from (no assessment instance), so
+      // it should still see the schema default (0), not the writer preview's
+      // graded value (5).
+      const readerPreviewUrl = `${publicBaseUrl}/${readerQuestion.id}/preview`;
+      const readerPage = await fetchCheerio(readerPreviewUrl);
+      assert.equal(readerPage.status, 200);
+      const readerContext: Record<string, any> = {};
+      extractAndSaveVariantId(readerContext, readerPage.$, '.question-form');
+
+      const readerVariant = await sqldb.queryRow(
+        sql.select_variant_by_id,
+        { variant_id: readerContext.__variant_id },
+        VariantSchema,
+      );
+      assert.equal(
+        readerVariant.broken_at,
+        null,
+        'public preview reader variant should not be broken',
+      );
+      assert.equal(readerVariant.params?.observed_count, 0);
     });
   },
 );
