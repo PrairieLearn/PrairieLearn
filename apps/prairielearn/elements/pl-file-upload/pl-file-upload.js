@@ -458,11 +458,7 @@
               this.expandPreviewForFile(fileName);
             } else {
               if (!this.isBinary(fileData)) {
-                try {
-                  $preview.find('code').text(this.b64DecodeUnicode(fileData));
-                } catch {
-                  $preview.find('code').text('Error decoding file contents.');
-                }
+                $preview.find('code').text(this.b64DecodeUnicode(fileData));
               } else {
                 $preview.find('code').text('Binary file not previewed.');
               }
@@ -588,9 +584,7 @@
      * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
-      return new TextDecoder({ fatal: true }).decode(
-        Uint8Array.from(atob(str), (c) => c.charCodeAt(0)),
-      );
+      return new TextDecoder().decode(Uint8Array.from(atob(str), (c) => c.charCodeAt(0)));
     }
 
     b64ToBlobUrl(str, options = undefined) {
