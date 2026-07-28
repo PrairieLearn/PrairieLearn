@@ -74,6 +74,14 @@ INSERT INTO
 VALUES
   ($publishing_extension_id, $enrollment_id);
 
+-- BLOCK select_publishing_extension_enrollment_id
+SELECT
+  enrollment_id
+FROM
+  course_instance_publishing_extension_enrollments
+WHERE
+  course_instance_publishing_extension_id = $publishing_extension_id;
+
 -- BLOCK delete_publishing_extension
 DELETE FROM course_instance_publishing_extensions
 WHERE

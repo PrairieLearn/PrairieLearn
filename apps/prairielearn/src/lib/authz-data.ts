@@ -7,7 +7,8 @@ import { run } from '@prairielearn/run';
 import { withBrand } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
+import { selectLatestPublishingExtensionByEnrollmentIds } from '../models/course-instance-publishing-extensions.js';
+import { selectEnrollmentIdentityClassification } from '../models/enrollment-identity.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import {
@@ -134,14 +135,25 @@ export async function calculateModernCourseInstanceStudentAccess(
     };
   }
 
-  // We are after the end date. We might have access if we have an extension.
-  // Only enrolled students can have extensions.
-  if (enrollment?.status !== 'joined') {
+  // We are after the end date. Joined students and actionable invitations
+  // might have access through an extension on any matching identity candidate.
+  // Exact LTI invitation authority is intentionally not available in this
+  // ordinary course-entry context.
+  const classification = await selectEnrollmentIdentityClassification({
+    courseInstanceId: courseInstance.id,
+    userId,
+  });
+  const isJoined = classification.kind === 'joined';
+  const hasActionableInvitation =
+    classification.actionableConventionalInvitationCandidates.length > 0 ||
+    classification.actionableInstitutionRosterInvitationCandidates.length > 0;
+  if (!isJoined && !hasActionableInvitation) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
-  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
-    enrollment,
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollmentIds({
+    courseInstance,
+    enrollmentIds: classification.candidates.map((candidate) => candidate.enrollment.id),
   });
 
   // Check if we have access via extension.
@@ -150,7 +162,7 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   return {
     has_student_access: hasAccessViaExtension,
-    has_student_access_with_enrollment: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension && isJoined,
   };
 }
 

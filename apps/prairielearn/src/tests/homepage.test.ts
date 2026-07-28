@@ -406,8 +406,7 @@ describe('Homepage enrollment actions', () => {
     });
 
     try {
-      // Create an invited enrollment
-      await createEnrollmentWithStatus({
+      const invitation = await createEnrollmentWithStatus({
         userId: null,
         courseInstanceId: '1',
         status: 'invited',
@@ -424,6 +423,25 @@ describe('Homepage enrollment actions', () => {
 
         const studentRows = studentCoursesTable.find('tr');
         assert.equal(studentRows.length, 0, 'No course rows should be visible');
+
+        const postResponse = await postHome(
+          new URLSearchParams({
+            __action: 'accept_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: invitation.id,
+          }),
+        );
+        assert.equal(postResponse.response.status, 403);
+
+        const finalInvitation = await selectOptionalEnrollmentByPendingUid({
+          pendingUid: user.uid,
+          courseInstance: await selectCourseInstanceById('1'),
+          requiredRole: ['System'],
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNotNull(finalInvitation);
+        assert.equal(finalInvitation.status, 'invited');
       });
     } finally {
       await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
@@ -637,7 +655,7 @@ describe('Homepage enrollment actions', () => {
     const boundEnrollment = await createEnrollmentWithStatus({
       userId: user.id,
       courseInstanceId: '1',
-      status: 'joined',
+      status: 'left',
     });
     const rosterInvitation = await createEnrollmentWithStatus({
       userId: null,
@@ -668,16 +686,76 @@ describe('Homepage enrollment actions', () => {
 
     try {
       await withUser(user, async () => {
+        const enrollmentIds = [boundEnrollment.id, rosterInvitation.id];
+        const beforeEnrollments = await queryRows(
+          sql.select_enrollments_by_ids,
+          { enrollment_ids: enrollmentIds },
+          EnrollmentSchema,
+        );
+        const beforeAuditCount = await queryScalar(
+          sql.count_enrollment_audit_events,
+          { enrollment_ids: enrollmentIds },
+          z.number(),
+        );
+
         const response = await fetchCheerio(homeUrl);
         const studentRows = response.$(
           'table[aria-label="Courses with student access"] tr, table[aria-label="Courses"] tr',
         );
         assert.lengthOf(studentRows, 1);
+        assert.include(studentRows.text(), 'Roster invitation');
+        assert.lengthOf(studentRows.find('input[name="__action"][value="accept_invitation"]'), 0);
+        assert.lengthOf(studentRows.find('input[name="__action"][value="reject_invitation"]'), 0);
         assert.lengthOf(
           studentRows.find('button').filter((_, el) => response.$(el).text() === 'Remove'),
-          1,
+          0,
         );
-        assert.notInclude(studentRows.text(), 'Roster invitation');
+
+        assert.deepEqual(
+          await queryRows(
+            sql.select_enrollments_by_ids,
+            { enrollment_ids: enrollmentIds },
+            EnrollmentSchema,
+          ),
+          beforeEnrollments,
+        );
+        assert.equal(
+          await queryScalar(
+            sql.count_enrollment_audit_events,
+            { enrollment_ids: enrollmentIds },
+            z.number(),
+          ),
+          beforeAuditCount,
+        );
+
+        const openCourseLink = studentRows
+          .find('a')
+          .filter((_, el) => response.$(el).text().trim() === 'Open course');
+        assert.lengthOf(openCourseLink, 1);
+        const openCourseHref = openCourseLink.attr('href');
+        assert.isString(openCourseHref);
+
+        const courseResponse = await fetchCheerio(new URL(openCourseHref!, siteUrl));
+        assert.equal(courseResponse.status, 200);
+
+        const courseInstance = await selectCourseInstanceById('1');
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          userId: user.id,
+          courseInstance,
+          requiredRole: ['System'],
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.id, boundEnrollment.id);
+        assert.equal(finalEnrollment.status, 'joined');
+        assert.equal(
+          await queryScalar(
+            sql.select_publishing_extension_enrollment_id,
+            { publishing_extension_id: publishingExtension.id },
+            z.string(),
+          ),
+          boundEnrollment.id,
+        );
       });
     } finally {
       await execute(sql.update_course_instance_publishing, {
@@ -690,6 +768,83 @@ describe('Homepage enrollment actions', () => {
       });
       await execute(sql.delete_enrollment_by_id, { enrollment_id: rosterInvitation.id });
       await execute(sql.delete_enrollment_by_id, { enrollment_id: boundEnrollment.id });
+    }
+  });
+
+  it('accepts an extension-backed conventional invitation after the base interval', async () => {
+    const user = await getOrCreateUser({
+      uid: 'conventional-extension@example.com',
+      name: 'Conventional Extension User',
+      uin: 'conventional-extension-uin',
+      email: 'conventional-extension@example.com',
+      institutionId: '1',
+    });
+    const invitation = await createEnrollmentWithStatus({
+      userId: null,
+      courseInstanceId: '1',
+      pendingUid: user.uid,
+      status: 'invited',
+    });
+    const existingCourseInstance = await selectCourseInstanceById('1');
+    const now = new Date();
+    const publishingExtension = await queryRow(
+      sql.create_publishing_extension,
+      {
+        course_instance_id: '1',
+        name: 'Homepage conventional invitation extension',
+        end_date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      },
+      CourseInstancePublishingExtensionSchema,
+    );
+    await execute(sql.add_publishing_extension_enrollment, {
+      publishing_extension_id: publishingExtension.id,
+      enrollment_id: invitation.id,
+    });
+    await execute(sql.update_course_instance_publishing, {
+      course_instance_id: '1',
+      publishing_start_date: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+      publishing_end_date: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    });
+
+    try {
+      await withUser(user, async () => {
+        const page = await fetchCheerio(homeUrl);
+        const acceptForm = page
+          .$(`input[name="enrollment_id"][value="${invitation.id}"]`)
+          .closest('form');
+        assert.equal(acceptForm.find('input[name="__action"]').attr('value'), 'accept_invitation');
+
+        const response = await postHome(
+          new URLSearchParams({
+            __action: 'accept_invitation',
+            __csrf_token: await getCsrfToken(homeUrl),
+            course_instance_id: '1',
+            enrollment_id: invitation.id,
+          }),
+        );
+        assert.equal(response.response.status, 200);
+        assert.equal(response.response.url, homeUrl);
+
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          userId: user.id,
+          courseInstance: await selectCourseInstanceById('1'),
+          requiredRole: ['System'],
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.id, invitation.id);
+        assert.equal(finalEnrollment.status, 'joined');
+      });
+    } finally {
+      await execute(sql.update_course_instance_publishing, {
+        course_instance_id: '1',
+        publishing_start_date: existingCourseInstance.publishing_start_date,
+        publishing_end_date: existingCourseInstance.publishing_end_date,
+      });
+      await execute(sql.delete_publishing_extension, {
+        publishing_extension_id: publishingExtension.id,
+      });
+      await execute(sql.delete_enrollment_by_id, { enrollment_id: invitation.id });
     }
   });
 

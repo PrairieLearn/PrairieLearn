@@ -19,7 +19,6 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
-import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { admitUserFromConventionalEnrollmentInvitation } from '../../models/course-instance-admission.js';
@@ -264,11 +263,7 @@ router.post(
       return;
     }
 
-    if (
-      courseInstance.modern_publishing &&
-      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
-        'published'
-    ) {
+    if (courseInstance.modern_publishing && !authzData.has_student_access) {
       flash('error', 'This course instance is not accessible to students');
       res.redirect(req.originalUrl);
       return;

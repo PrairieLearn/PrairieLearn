@@ -1,10 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, assert, beforeAll, beforeEach, describe, it, vi } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import * as publishingExtensionsModel from '../models/course-instance-publishing-extensions.js';
+import * as enrollmentIdentityModel from '../models/enrollment-identity.js';
+import type {
+  EnrollmentIdentityCandidate,
+  EnrollmentIdentityClassification,
+} from '../models/enrollment-identity.js';
 import * as enrollmentModel from '../models/enrollment.js';
 import * as helperDb from '../tests/helperDb.js';
 
@@ -184,6 +189,53 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
     };
   }
 
+  function createMockIdentityCandidate({
+    enrollment = {},
+    matches = {},
+  }: {
+    enrollment?: Partial<Enrollment>;
+    matches?: Partial<EnrollmentIdentityCandidate['matches']>;
+  } = {}): EnrollmentIdentityCandidate {
+    return {
+      enrollment: createMockEnrollment(enrollment),
+      matches: {
+        boundUser: false,
+        institutionUin: false,
+        lti13: false,
+        pendingUid: false,
+        ...matches,
+      },
+    };
+  }
+
+  function createMockIdentityClassification({
+    actionableConventionalInvitationCandidates = [],
+    actionableInstitutionRosterInvitationCandidates = [],
+    boundCandidate = null,
+    candidates = [],
+    kind,
+  }: {
+    actionableConventionalInvitationCandidates?: EnrollmentIdentityCandidate[];
+    actionableInstitutionRosterInvitationCandidates?: EnrollmentIdentityCandidate[];
+    boundCandidate?: EnrollmentIdentityCandidate | null;
+    candidates?: EnrollmentIdentityCandidate[];
+    kind: EnrollmentIdentityClassification['kind'];
+  }): EnrollmentIdentityClassification {
+    return {
+      actionableConventionalInvitationCandidates,
+      actionableInstitutionRosterInvitationCandidates,
+      actionableLti13RosterInvitationCandidates: [],
+      actionableRosterInvitationCandidates: actionableInstitutionRosterInvitationCandidates,
+      boundCandidate,
+      candidates,
+      conventionalInvitationCandidates: actionableConventionalInvitationCandidates,
+      institutionRosterInvitationCandidates: actionableInstitutionRosterInvitationCandidates,
+      kind,
+      lti13RosterInvitationCandidates: [],
+      rosterInvitationCandidates: actionableInstitutionRosterInvitationCandidates,
+    };
+  }
+
   function createMockPublishingExtension(
     overrides: Partial<CourseInstancePublishingExtension> = {},
   ): CourseInstancePublishingExtension {
@@ -308,6 +360,11 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const reqDate = new Date('2026-01-01T00:00:00Z');
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          kind: 'none',
+        }),
+      );
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -326,11 +383,22 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2026-01-01T00:00:00Z');
       const enrollment = createMockEnrollment();
+      const boundCandidate = createMockIdentityCandidate({
+        enrollment,
+        matches: { boundUser: true },
+      });
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          boundCandidate,
+          candidates: [boundCandidate],
+          kind: 'joined',
+        }),
+      );
       vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
+        'selectLatestPublishingExtensionByEnrollmentIds',
       ).mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
@@ -345,23 +413,43 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('with publishing extensions', () => {
-    it('allows access when the request date is before the latest extension end date', async () => {
+    it('allows joined access using the latest extension across all matching candidates', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
       const reqDate = new Date('2026-02-15T12:00:00Z');
       const enrollment = createMockEnrollment();
+      const boundCandidate = createMockIdentityCandidate({
+        enrollment,
+        matches: { boundUser: true },
+      });
+      const invitationCandidate = createMockIdentityCandidate({
+        enrollment: {
+          id: 'invitation-enrollment-id',
+          status: 'invited',
+          user_id: null,
+        },
+        matches: { institutionUin: true },
+      });
       const extension = createMockPublishingExtension({
         id: 'extension',
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
-      vi.spyOn(
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          boundCandidate,
+          candidates: [boundCandidate, invitationCandidate],
+          kind: 'joined',
+        }),
+      );
+      const selectLatestExtension = vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
-      ).mockResolvedValue(extension);
+        'selectLatestPublishingExtensionByEnrollmentIds',
+      );
+      selectLatestExtension.mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -369,9 +457,12 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         reqDate,
       );
 
-      // Request date is 2026-02-15 12:00:00, latest extension is 2026-02-28 23:59:59
       assert.isTrue(result.has_student_access);
       assert.isTrue(result.has_student_access_with_enrollment);
+      expect(selectLatestExtension).toHaveBeenCalledWith({
+        courseInstance,
+        enrollmentIds: ['test-enrollment-id', 'invitation-enrollment-id'],
+      });
     });
 
     it('forbids access when request date is after all extensions', async () => {
@@ -381,15 +472,26 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       });
       const reqDate = new Date('2026-03-01T00:00:00Z');
       const enrollment = createMockEnrollment();
+      const boundCandidate = createMockIdentityCandidate({
+        enrollment,
+        matches: { boundUser: true },
+      });
       const extension = createMockPublishingExtension({
         id: 'extension',
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          boundCandidate,
+          candidates: [boundCandidate],
+          kind: 'joined',
+        }),
+      );
       vi.spyOn(
         publishingExtensionsModel,
-        'selectLatestPublishingExtensionByEnrollment',
+        'selectLatestPublishingExtensionByEnrollmentIds',
       ).mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(
@@ -400,6 +502,160 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       assert.isFalse(result.has_student_access);
       assert.isFalse(result.has_student_access_with_enrollment);
+    });
+
+    it('allows an actionable roster invitation without treating it as joined', async () => {
+      const courseInstance = createMockCourseInstance();
+      const boundCandidate = createMockIdentityCandidate({
+        enrollment: { status: 'left' },
+        matches: { boundUser: true },
+      });
+      const rosterCandidate = createMockIdentityCandidate({
+        enrollment: {
+          id: 'roster-enrollment-id',
+          status: 'invited',
+          user_id: null,
+        },
+        matches: { institutionUin: true },
+      });
+      const extension = createMockPublishingExtension();
+
+      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(
+        boundCandidate.enrollment,
+      );
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          actionableInstitutionRosterInvitationCandidates: [rosterCandidate],
+          boundCandidate,
+          candidates: [boundCandidate, rosterCandidate],
+          kind: 'actionable_roster_invitation',
+        }),
+      );
+      const selectLatestExtension = vi
+        .spyOn(publishingExtensionsModel, 'selectLatestPublishingExtensionByEnrollmentIds')
+        .mockResolvedValue(extension);
+
+      const result = await calculateModernCourseInstanceStudentAccess(
+        courseInstance,
+        'test-user-id',
+        new Date('2026-01-01T00:00:00Z'),
+      );
+
+      assert.isTrue(result.has_student_access);
+      assert.isFalse(result.has_student_access_with_enrollment);
+      expect(selectLatestExtension).toHaveBeenCalledWith({
+        courseInstance,
+        enrollmentIds: ['test-enrollment-id', 'roster-enrollment-id'],
+      });
+    });
+
+    it('allows an actionable conventional invitation without treating it as joined', async () => {
+      const courseInstance = createMockCourseInstance();
+      const invitationCandidate = createMockIdentityCandidate({
+        enrollment: {
+          status: 'invited',
+          user_id: null,
+        },
+        matches: { pendingUid: true },
+      });
+
+      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      vi.spyOn(enrollmentIdentityModel, 'selectEnrollmentIdentityClassification').mockResolvedValue(
+        createMockIdentityClassification({
+          actionableConventionalInvitationCandidates: [invitationCandidate],
+          candidates: [invitationCandidate],
+          kind: 'actionable_conventional_invitation',
+        }),
+      );
+      vi.spyOn(
+        publishingExtensionsModel,
+        'selectLatestPublishingExtensionByEnrollmentIds',
+      ).mockResolvedValue(createMockPublishingExtension());
+
+      const result = await calculateModernCourseInstanceStudentAccess(
+        courseInstance,
+        'test-user-id',
+        new Date('2026-01-01T00:00:00Z'),
+      );
+
+      assert.isTrue(result.has_student_access);
+      assert.isFalse(result.has_student_access_with_enrollment);
+    });
+
+    it('does not use extensions from non-actionable or guest roster candidates', async () => {
+      const courseInstance = createMockCourseInstance();
+      const cases: EnrollmentIdentityClassification[] = [
+        createMockIdentityClassification({
+          boundCandidate: createMockIdentityCandidate({
+            enrollment: { status: 'removed' },
+            matches: { boundUser: true },
+          }),
+          candidates: [
+            createMockIdentityCandidate({
+              enrollment: { status: 'removed' },
+              matches: { boundUser: true },
+            }),
+            createMockIdentityCandidate({
+              enrollment: { id: 'removed-roster', status: 'invited', user_id: null },
+              matches: { institutionUin: true },
+            }),
+          ],
+          kind: 'ordinary',
+        }),
+        createMockIdentityClassification({
+          boundCandidate: createMockIdentityCandidate({
+            enrollment: { status: 'blocked' },
+            matches: { boundUser: true },
+          }),
+          candidates: [
+            createMockIdentityCandidate({
+              enrollment: { status: 'blocked' },
+              matches: { boundUser: true },
+            }),
+          ],
+          kind: 'blocked',
+        }),
+        createMockIdentityClassification({
+          candidates: [
+            createMockIdentityCandidate({
+              enrollment: { status: 'rejected', user_id: null },
+              matches: { pendingUid: true },
+            }),
+          ],
+          kind: 'ordinary',
+        }),
+        createMockIdentityClassification({
+          candidates: [
+            createMockIdentityCandidate({
+              enrollment: { is_guest: true, status: 'invited', user_id: null },
+              matches: { institutionUin: true },
+            }),
+          ],
+          kind: 'ordinary',
+        }),
+      ];
+
+      vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
+      const selectClassification = vi.spyOn(
+        enrollmentIdentityModel,
+        'selectEnrollmentIdentityClassification',
+      );
+      const selectLatestExtension = vi.spyOn(
+        publishingExtensionsModel,
+        'selectLatestPublishingExtensionByEnrollmentIds',
+      );
+
+      for (const classification of cases) {
+        selectClassification.mockResolvedValueOnce(classification);
+        const result = await calculateModernCourseInstanceStudentAccess(
+          courseInstance,
+          'test-user-id',
+          new Date('2026-01-01T00:00:00Z'),
+        );
+        assert.isFalse(result.has_student_access);
+        assert.isFalse(result.has_student_access_with_enrollment);
+      }
+      expect(selectLatestExtension).not.toHaveBeenCalled();
     });
   });
 });

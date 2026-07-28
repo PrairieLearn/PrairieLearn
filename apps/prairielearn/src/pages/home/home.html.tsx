@@ -2,7 +2,6 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
 import { type NewsItem } from '../../lib/db-types.js';
-import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
 import { NewsAlert } from './components/NewsAlert.js';
@@ -35,15 +34,7 @@ export function Home({
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.access_type === 'joined') return true;
-    if (!ci.course_instance.modern_publishing) {
-      return false;
-    }
-    return (
-      computeStatus(
-        ci.course_instance.publishing_start_date,
-        ci.course_instance.publishing_end_date,
-      ) === 'published'
-    );
+    return ci.course_instance.modern_publishing;
   });
 
   return (
