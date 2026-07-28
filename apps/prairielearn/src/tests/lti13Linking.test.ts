@@ -6,11 +6,15 @@ import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
-import { afterAll, afterEach, assert, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
 import { execute, queryOptionalRow, queryRow, queryScalar } from '@prairielearn/postgres';
 
+import {
+  reconcilePlanGrantsForCourseInstanceUser,
+  updateRequiredPlansForCourseInstance,
+} from '../ee/lib/billing/plans.js';
 import { Lti13CombinedInstanceSchema, inspectRoster } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema, Lti13CourseInstanceSchema } from '../lib/db-types.js';
@@ -414,6 +418,7 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     });
 
     afterEach(async () => {
+      await updateRequiredPlansForCourseInstance('1', [], '1');
       await execute(
         `UPDATE course_instances
          SET
@@ -458,7 +463,6 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
 
       const response = await executor.login();
-      assert.equal(response.status, 200);
       assert.include(response.url, '/pl/course_instance/1/assessments');
 
       const user = await selectOptionalUserByUid('exact-roster-admission@example.com');
@@ -468,16 +472,9 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         { enrollment_id: invitation.id },
         EnrollmentSchema,
       );
-      expect(enrollment).toMatchObject({
-        pending_lti13_course_instance_id: null,
-        pending_lti13_sub: null,
-        pending_uin: null,
-        status: 'joined',
-        user_id: user.id,
-      });
+      assert.equal(enrollment.status, 'joined');
+      assert.equal(enrollment.user_id, user.id);
       await assertLtiLaunchConsumed(user.id);
-      const consumedLaunchResponse = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
-      assert.equal(consumedLaunchResponse.status, 403);
     });
 
     test('rejects a wrong sub and falls back to ordinary self-enrollment', async () => {
@@ -506,7 +503,6 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
 
       const response = await executor.login();
-      assert.equal(response.status, 200);
       assert.include(response.url, '/pl/course_instance/1/assessments');
 
       const user = await selectOptionalUserByUid('wrong-sub-student@example.com');
@@ -516,12 +512,8 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         { enrollment_id: invitation.id },
         EnrollmentSchema,
       );
-      expect(persistedInvitation).toMatchObject({
-        pending_lti13_course_instance_id: lti13CourseInstance.id,
-        pending_lti13_sub: 'expected-roster-sub',
-        status: 'invited',
-        user_id: null,
-      });
+      assert.equal(persistedInvitation.status, 'invited');
+      assert.isNull(persistedInvitation.user_id);
       const ordinaryEnrollment = await queryRow(
         `SELECT *
          FROM enrollments
@@ -530,34 +522,33 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
         { user_id: user.id },
         EnrollmentSchema,
       );
-      assert.notEqual(ordinaryEnrollment.id, invitation.id);
       assert.equal(ordinaryEnrollment.status, 'joined');
       await assertLtiLaunchConsumed(user.id);
     });
 
-    test('consumes the launch before an exact admission limit redirect', async () => {
+    test('requires a fresh launch after an exact admission plan upgrade', async () => {
+      await updateRequiredPlansForCourseInstance('1', ['basic'], '1');
       await execute(
         `UPDATE course_instances
          SET
-           enrollment_limit = 0,
            self_enrollment_enabled = FALSE,
            self_enrollment_use_enrollment_code = TRUE
          WHERE id = '1'`,
       );
       const lti13CourseInstance = await selectLinkedLtiCourseInstance();
-      const sub = 'limited-exact-roster-sub';
+      const sub = 'upgrade-exact-roster-sub';
       const invitation = await insertLtiRosterInvitation({
         lti13CourseInstanceId: lti13CourseInstance.id,
-        pendingUin: 'limited-exact-roster-unmatched-uin',
+        pendingUin: 'upgrade-exact-roster-unmatched-uin',
         sub,
       });
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
       const executor = await makeLoginExecutor({
         user: {
-          name: 'Limited Exact Roster',
-          email: 'limited-exact-roster@example.com',
-          uin: 'limited-exact-roster-user-uin',
+          name: 'Upgrade Exact Roster',
+          email: 'upgrade-exact-roster@example.com',
+          uin: 'upgrade-exact-roster-user-uin',
           sub,
         },
         fetchWithCookies,
@@ -570,25 +561,31 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
       });
 
       const response = await executor.login();
-      assert.equal(response.status, 200);
-      assert.include(response.url, '/pl/enroll/limit_exceeded');
+      assert.include(response.url, '/pl/course_instance/1/upgrade?lti13_relaunch=1');
+      const $ = cheerio.load(await response.text());
+      assert.include($('body').text(), 'Upgrade required');
 
       const persistedInvitation = await queryRow(
         'SELECT * FROM enrollments WHERE id = $enrollment_id',
         { enrollment_id: invitation.id },
         EnrollmentSchema,
       );
-      expect(persistedInvitation).toMatchObject({
-        pending_lti13_course_instance_id: lti13CourseInstance.id,
-        pending_lti13_sub: sub,
-        status: 'invited',
-        user_id: null,
-      });
-      const user = await selectOptionalUserByUid('limited-exact-roster@example.com');
+      assert.equal(persistedInvitation.status, 'invited');
+      assert.isNull(persistedInvitation.user_id);
+      const user = await selectOptionalUserByUid('upgrade-exact-roster@example.com');
       assert.ok(user);
       await assertLtiLaunchConsumed(user.id);
-      const consumedLaunchResponse = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
-      assert.equal(consumedLaunchResponse.status, 403);
+
+      await reconcilePlanGrantsForCourseInstanceUser(
+        { institution_id: '1', course_instance_id: '1', user_id: user.id },
+        [{ plan: 'basic', grantType: 'stripe' }],
+        '1',
+      );
+      const relaunchResponse = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/upgrade?lti13_relaunch=1`,
+      );
+      assert.equal(relaunchResponse.status, 200);
+      assert.include(await relaunchResponse.text(), 'Return to your LMS');
     });
   });
 

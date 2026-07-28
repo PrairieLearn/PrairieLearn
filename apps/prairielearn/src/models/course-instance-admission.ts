@@ -29,7 +29,6 @@ type OrdinaryAdmissionSource = Exclude<EnrollmentAdmissionSource, { type: 'lti13
 export type OrdinaryCourseInstanceAdmissionDecision =
   | {
       allowed: true;
-      expectedInvitationEnrollmentId?: string;
       source: OrdinaryAdmissionSource;
     }
   | {
@@ -79,18 +78,7 @@ function getOrdinaryCourseInstanceAdmissionDecision({
 
   const source = getOrdinaryAdmissionSource(classification);
   if (source.type !== 'ordinary') {
-    const invitationCandidate =
-      source.type === 'institution_uin'
-        ? classification.actionableInstitutionRosterInvitation
-        : classification.actionableConventionalInvitation;
-    if (invitationCandidate === null) {
-      throw new Error('Actionable admission source is missing its invitation');
-    }
-    return {
-      allowed: true,
-      expectedInvitationEnrollmentId: invitationCandidate.enrollment.id,
-      source,
-    };
+    return { allowed: true, source };
   }
 
   const eligibility = checkEnrollmentEligibility({
@@ -140,11 +128,13 @@ async function validateEnterpriseAdmission({
   course,
   courseInstance,
   institution,
+  lti13Relaunch,
 }: {
   authzData: Parameters<typeof checkPotentialEnterpriseEnrollment>[0]['authzData'];
   course: Course;
   courseInstance: CourseInstance;
   institution: Parameters<typeof checkPotentialEnterpriseEnrollment>[0]['institution'];
+  lti13Relaunch: boolean;
 }) {
   if (!isEnterprise()) return;
 
@@ -156,7 +146,9 @@ async function validateEnterpriseAdmission({
   });
   switch (status) {
     case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED:
-      throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
+      throw new HttpRedirect(
+        `/pl/course_instance/${courseInstance.id}/upgrade${lti13Relaunch ? '?lti13_relaunch=1' : ''}`,
+      );
     case PotentialEnrollmentStatus.LIMIT_EXCEEDED:
       throw new HttpRedirect('/pl/enroll/limit_exceeded');
     case PotentialEnrollmentStatus.ALLOWED:
@@ -240,6 +232,7 @@ function createAdmissionValidator({
       course,
       courseInstance,
       institution,
+      lti13Relaunch: source.type === 'lti13',
     });
   };
 }
@@ -265,9 +258,6 @@ export async function admitUserFromOrdinaryCourseInstanceRequest({
     agentAuthnUserId: userId,
     agentUserId: userId,
     courseInstanceId,
-    ...(decision.expectedInvitationEnrollmentId === undefined
-      ? {}
-      : { expectedInvitationEnrollmentId: decision.expectedInvitationEnrollmentId }),
     selectSource: getOrdinaryAdmissionSource,
     source: decision.source,
     userId,
