@@ -13,7 +13,6 @@ import { execute, queryOptionalRow } from '@prairielearn/postgres';
 import { getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
-import { LTI_USER_AGENT } from '../lib/lti-http.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -259,7 +258,6 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     app.use(express.urlencoded({ extended: true }));
 
     app.post('/token', (req, res) => {
-      assert.equal(req.get('user-agent'), LTI_USER_AGENT);
       assert.equal(req.body.grant_type, 'client_credentials');
       assert.equal(req.body.client_id, CLIENT_ID);
       assert.equal(
