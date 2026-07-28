@@ -7,7 +7,7 @@ import { logger } from '@prairielearn/logger';
 
 export default (function (err, req, res, _next) {
   const statusCode = err.status || 500;
-  logger.log(statusCode >= 500 ? 'error' : 'verbose', 'API Error', {
+  logger[statusCode >= 500 ? 'error' : 'verbose']('API Error', {
     msg: err.message,
     status: statusCode,
     stack: formatErrorStackSafe(err),
