@@ -21,12 +21,14 @@ const ReadinessRowSchema = z.object({
   enabled_authn_provider_names: AuthnProviderSchema.shape.name.array(),
   active_lti13_instances_without_uin_count: z.coerce.number(),
   users_without_uin_count: z.coerce.number(),
+  google_subject_candidate_count: z.coerce.number(),
+  uin_category_counts: z.record(z.string(), z.coerce.number()),
 });
 
 export const specs: AdministratorQuerySpecs = {
   description:
     'Inventory active LTI 1.3 instances, institution identity prerequisites, and UIN backfill gaps before roster-sync rollout.',
-  resultFormats: { follow_up_tasks: 'pre' },
+  resultFormats: { uin_format_categories: 'pre', follow_up_tasks: 'pre' },
 };
 
 export default async function (): Promise<AdministratorQueryResult> {
@@ -43,6 +45,7 @@ export default async function (): Promise<AdministratorQueryResult> {
       'saml_uin_attribute',
       'enabled_institutional_authn_providers',
       'users_without_uin',
+      'uin_format_categories',
       'readiness_status',
       'follow_up_tasks',
     ],
@@ -69,6 +72,23 @@ export default async function (): Promise<AdministratorQueryResult> {
       if (row.users_without_uin_count > 0) {
         issues.push(`${row.users_without_uin_count} existing user record(s) need a UIN backfill`);
       }
+      if (row.google_subject_candidate_count > 0) {
+        issues.push(
+          `${row.google_subject_candidate_count} existing UIN(s) are 21-digit decimal Google subject candidates; reconcile them with the canonical SAML UIN`,
+        );
+      }
+      const uinCategoryCounts = Object.entries(row.uin_category_counts).sort(
+        ([categoryA, countA], [categoryB, countB]) =>
+          countB - countA || categoryA.localeCompare(categoryB),
+      );
+      // Format categories are heuristic provenance signals, not validation rules. For example,
+      // an institution may intentionally use GUID-shaped SAML UINs; a second populated category
+      // is the useful warning that legacy identities may still be present.
+      if (uinCategoryCounts.length > 1) {
+        issues.push(
+          `Existing UINs span ${uinCategoryCounts.length} format categories; confirm which format is canonical and reconcile the others`,
+        );
+      }
       const needsManualReview = issues.length === 0;
       const followUpTasks = [
         ...issues,
@@ -89,6 +109,12 @@ export default async function (): Promise<AdministratorQueryResult> {
           .map((name) => name ?? '(unknown)')
           .join(', '),
         users_without_uin: row.users_without_uin_count,
+        uin_format_categories:
+          uinCategoryCounts.length > 0
+            ? uinCategoryCounts
+                .map(([category, count]) => `${category}: ${count.toLocaleString('en-US')}`)
+                .join('\n')
+            : '(none)',
         readiness_status: needsManualReview ? 'manual review required' : 'follow-up required',
         follow_up_tasks: followUpTasks.join('\n'),
       };
