@@ -24,6 +24,7 @@ import {
 import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
+import { lockEnrollments } from './enrollment-lock.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -177,6 +178,8 @@ export async function addLabelToEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const results = await queryRows(
       sql.add_label_to_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
@@ -228,6 +231,8 @@ export async function removeLabelFromEnrollments({
   }
 
   return await runInTransactionAsync(async () => {
+    await lockEnrollments(enrollments.map((enrollment) => enrollment.id));
+
     const deletedRows = await queryRows(
       sql.remove_label_from_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
