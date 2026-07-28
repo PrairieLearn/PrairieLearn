@@ -311,6 +311,7 @@ export async function loadFullCourse(
   checkInvalidSharedCourseInstances(courseData);
   checkInvalidDraftQuestionSharing(courseData);
   checkInvalidSharedStateAccess(courseData);
+  checkInvalidSharedStateSourceSharing(courseData);
 
   return courseData;
 }
@@ -2038,5 +2039,18 @@ function checkInvalidSharedStateAccess(courseData: CourseData): void {
         `Shared-state objects ${invalidObjects.map((name) => `"${name}"`).join(', ')} are not declared in this course's "sharedState".`,
       );
     }
+  }
+}
+
+function checkInvalidSharedStateSourceSharing(courseData: CourseData): void {
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    if (!question.data?.shareSourcePublicly) continue;
+    if (question.data.sharedStateAccess.length === 0) continue;
+
+    infofile.addError(
+      question,
+      '"shareSourcePublicly" cannot be used because this question accesses shared-state objects, which are not yet supported when a question is copied into another course.',
+    );
   }
 }

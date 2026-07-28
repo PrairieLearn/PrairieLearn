@@ -43,6 +43,8 @@ A question that reads or writes a shared-state object must declare it in its own
 
 Sync reports an error if a question declares access to an object name that isn't defined in the course's `sharedState`.
 
+A question that declares `sharedStateAccess` cannot also set `shareSourcePublicly`: copying a question's source into another course doesn't yet carry over its shared-state object definition, so this combination is rejected as a sync error. [Sharing the question itself](../contentSharing.md) (`sharePublicly`, or via a sharing set) is unaffected — the shared-state object continues to resolve against the question's owning course.
+
 ## Using shared state in `server.py`
 
 Declared objects are available under `data["shared_state"]`, keyed by object name, in `generate`, `prepare`, `parse`, and `grade`:
