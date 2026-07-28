@@ -67,7 +67,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['course_admin'],
@@ -102,7 +101,6 @@ const sideNavPagesTabs = {
       iconClasses: 'fa fa-edit',
       tabLabel: 'Course files',
       tabTooltip: 'Course files',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['course_admin'],
@@ -151,7 +149,6 @@ const sideNavPagesTabs = {
       iconClasses: 'fa fa-edit',
       tabLabel: 'Instance files',
       tabTooltip: 'Course instance files',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['instance_admin'],
