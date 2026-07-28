@@ -6,7 +6,8 @@ import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
-import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, test } from 'vitest';
+import { z } from 'zod';
 
 import {
   execute,
@@ -25,7 +26,11 @@ import {
   updateLti13Scores,
 } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
-import { Lti13AssessmentSchema, Lti13CourseInstanceSchema } from '../lib/db-types.js';
+import {
+  EnrollmentSchema,
+  Lti13AssessmentSchema,
+  Lti13CourseInstanceSchema,
+} from '../lib/db-types.js';
 import { createServerJob, selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalUserByUid, selectOrInsertUserByUid } from '../models/user.js';
@@ -49,6 +54,64 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
+
+  async function selectLinkedLtiCourseInstance() {
+    return await queryRow(
+      `SELECT *
+       FROM lti13_course_instances
+       WHERE lti13_instance_id = '1'
+       AND deployment_id = $deployment_id
+       AND context_id = $context_id`,
+      { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      Lti13CourseInstanceSchema,
+    );
+  }
+
+  async function insertLtiRosterInvitation({
+    lti13CourseInstanceId,
+    pendingUin,
+    sub,
+  }: {
+    lti13CourseInstanceId: string;
+    pendingUin: string;
+    sub: string;
+  }) {
+    return await queryRow(
+      `INSERT INTO enrollments (
+         course_instance_id,
+         pending_lti13_course_instance_id,
+         pending_lti13_sub,
+         pending_uin,
+         status
+       )
+       VALUES ('1', $lti13_course_instance_id, $sub, $pending_uin, 'invited')
+       RETURNING *`,
+      {
+        lti13_course_instance_id: lti13CourseInstanceId,
+        pending_uin: pendingUin,
+        sub,
+      },
+      EnrollmentSchema,
+    );
+  }
+
+  async function selectLatestSessionData(userId: string) {
+    return await queryScalar(
+      `SELECT data
+       FROM user_sessions
+       WHERE user_id = $user_id
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+      { user_id: userId },
+      z.record(z.string(), z.unknown()),
+    );
+  }
+
+  async function assertLtiLaunchConsumed(userId: string) {
+    const sessionData = await selectLatestSessionData(userId);
+    assert.notProperty(sessionData, 'lti13_claims');
+    assert.notProperty(sessionData, 'authn_lti13_instance_id');
+  }
 
   beforeAll(async () => {
     config.isEnterprise = true;
@@ -328,6 +391,206 @@ describe('LTI 1.3 course instance linking', { concurrent: false }, () => {
     assert.equal(res.status, 200);
     assert.include(res.url, '/pl/course_instance/1/');
     assert.notInclude(res.url, '/instructor/');
+  });
+
+  describe('LTI 1.3 roster admission', () => {
+    beforeAll(async () => {
+      const linkedCourseInstance = await queryOptionalRow(
+        `SELECT *
+         FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+        Lti13CourseInstanceSchema,
+      );
+      if (linkedCourseInstance === null) {
+        await linkLtiContext({
+          lti13InstanceId: '1',
+          deploymentId: LTI_DEPLOYMENT_ID,
+          contextId: LTI_CONTEXT_ID,
+          courseInstanceId: '1',
+        });
+      }
+    });
+
+    afterEach(async () => {
+      await execute(
+        `UPDATE course_instances
+         SET
+           enrollment_limit = NULL,
+           self_enrollment_enabled = TRUE,
+           self_enrollment_use_enrollment_code = FALSE
+         WHERE id = '1'`,
+      );
+    });
+
+    test('admits only the exact link and sub from the fresh launch', async () => {
+      await execute(
+        `UPDATE course_instances
+         SET
+           self_enrollment_enabled = FALSE,
+           self_enrollment_use_enrollment_code = TRUE
+         WHERE id = '1'`,
+      );
+      const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const sub = 'exact-roster-admission-sub';
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: lti13CourseInstance.id,
+        pendingUin: 'exact-roster-unmatched-uin',
+        sub,
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Exact Roster Admission',
+          email: 'exact-roster-admission@example.com',
+          uin: 'exact-roster-user-uin',
+          sub,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const response = await executor.login();
+      assert.equal(response.status, 200);
+      assert.include(response.url, '/pl/course_instance/1/assessments');
+
+      const user = await selectOptionalUserByUid('exact-roster-admission@example.com');
+      assert.ok(user);
+      const enrollment = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(enrollment).toMatchObject({
+        pending_lti13_course_instance_id: null,
+        pending_lti13_sub: null,
+        pending_uin: null,
+        status: 'joined',
+        user_id: user.id,
+      });
+      await assertLtiLaunchConsumed(user.id);
+      const consumedLaunchResponse = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
+      assert.equal(consumedLaunchResponse.status, 403);
+    });
+
+    test('rejects a wrong sub and falls back to ordinary self-enrollment', async () => {
+      const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: lti13CourseInstance.id,
+        pendingUin: 'wrong-sub-unmatched-uin',
+        sub: 'expected-roster-sub',
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Wrong Sub Student',
+          email: 'wrong-sub-student@example.com',
+          uin: 'wrong-sub-user-uin',
+          sub: 'actual-roster-sub',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const response = await executor.login();
+      assert.equal(response.status, 200);
+      assert.include(response.url, '/pl/course_instance/1/assessments');
+
+      const user = await selectOptionalUserByUid('wrong-sub-student@example.com');
+      assert.ok(user);
+      const persistedInvitation = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(persistedInvitation).toMatchObject({
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
+        pending_lti13_sub: 'expected-roster-sub',
+        status: 'invited',
+        user_id: null,
+      });
+      const ordinaryEnrollment = await queryRow(
+        `SELECT *
+         FROM enrollments
+         WHERE course_instance_id = '1'
+         AND user_id = $user_id`,
+        { user_id: user.id },
+        EnrollmentSchema,
+      );
+      assert.notEqual(ordinaryEnrollment.id, invitation.id);
+      assert.equal(ordinaryEnrollment.status, 'joined');
+      await assertLtiLaunchConsumed(user.id);
+    });
+
+    test('consumes the launch before an exact admission limit redirect', async () => {
+      await execute(
+        `UPDATE course_instances
+         SET
+           enrollment_limit = 0,
+           self_enrollment_enabled = FALSE,
+           self_enrollment_use_enrollment_code = TRUE
+         WHERE id = '1'`,
+      );
+      const lti13CourseInstance = await selectLinkedLtiCourseInstance();
+      const sub = 'limited-exact-roster-sub';
+      const invitation = await insertLtiRosterInvitation({
+        lti13CourseInstanceId: lti13CourseInstance.id,
+        pendingUin: 'limited-exact-roster-unmatched-uin',
+        sub,
+      });
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Limited Exact Roster',
+          email: 'limited-exact-roster@example.com',
+          uin: 'limited-exact-roster-user-uin',
+          sub,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: false,
+      });
+
+      const response = await executor.login();
+      assert.equal(response.status, 200);
+      assert.include(response.url, '/pl/enroll/limit_exceeded');
+
+      const persistedInvitation = await queryRow(
+        'SELECT * FROM enrollments WHERE id = $enrollment_id',
+        { enrollment_id: invitation.id },
+        EnrollmentSchema,
+      );
+      expect(persistedInvitation).toMatchObject({
+        pending_lti13_course_instance_id: lti13CourseInstance.id,
+        pending_lti13_sub: sub,
+        status: 'invited',
+        user_id: null,
+      });
+      const user = await selectOptionalUserByUid('limited-exact-roster@example.com');
+      assert.ok(user);
+      await assertLtiLaunchConsumed(user.id);
+      const consumedLaunchResponse = await fetchWithCookies(targetLinkUri, { redirect: 'manual' });
+      assert.equal(consumedLaunchResponse.status, 403);
+    });
   });
 
   describe('LTI 1.3 linking authorization', () => {

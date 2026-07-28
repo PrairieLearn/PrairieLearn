@@ -17,7 +17,7 @@ import {
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureLegacyEnrollment } from '../../models/enrollment.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -153,7 +153,7 @@ router.post(
 
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
-      await ensureEnrollment({
+      await ensureLegacyEnrollment({
         institution,
         course,
         courseInstance,
