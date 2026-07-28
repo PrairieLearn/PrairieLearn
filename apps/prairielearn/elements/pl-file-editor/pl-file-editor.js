@@ -300,7 +300,13 @@ window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
 };
 
 window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
-  return btoa(String.fromCodePoint(...new TextEncoder().encode(str)));
+  const bytes = new TextEncoder().encode(str);
+  let binaryString = '';
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    binaryString += String.fromCodePoint(...bytes.subarray(i, i + CHUNK_SIZE));
+  }
+  return btoa(binaryString);
 };
 
 window.PLFileEditor.prototype.preview = {
