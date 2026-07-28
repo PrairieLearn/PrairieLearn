@@ -14,6 +14,7 @@ import {
   type EnrollmentIdentityClassification,
   type EnrollmentIdentityContext,
   type EnrollmentInvitationAdmissionSource,
+  type LockedEnrollmentAdmissionSourceSelector,
   selectLockedEnrollmentIdentityClassification,
   selectLockedEnrollmentIdentityDecision,
 } from './enrollment-identity.js';
@@ -56,6 +57,12 @@ export type ValidateEnrollmentAdmission = (
 
 export interface CheckedEnrollmentAdmissionInput extends EnrollmentAuditActor {
   readonly courseInstanceId: string;
+  /**
+   * Selects the authoritative source synchronously from the locked complete
+   * classification. This may run again after a uniqueness retry and must not
+   * perform side effects.
+   */
+  readonly selectSource?: LockedEnrollmentAdmissionSourceSelector;
   readonly source: EnrollmentAdmissionSource;
   readonly userId: string;
   readonly validateAdmission: ValidateEnrollmentAdmission;
@@ -737,22 +744,25 @@ function planCheckedAdmission({
 async function executeCheckedAdmissionAttempt({
   actor,
   context,
+  selectSource,
   source,
   validateAdmission,
 }: {
   actor: EnrollmentAuditActor;
   context: EnrollmentIdentityContext;
+  selectSource?: LockedEnrollmentAdmissionSourceSelector;
   source: EnrollmentAdmissionSource;
   validateAdmission: ValidateEnrollmentAdmission;
 }): Promise<Enrollment> {
-  const { classification, decision } = await selectLockedEnrollmentIdentityDecision(
-    context,
-    source,
-  );
+  const {
+    classification,
+    decision,
+    source: selectedSource,
+  } = await selectLockedEnrollmentIdentityDecision(context, source, selectSource);
   const plan = planCheckedAdmission({
     classification,
     decision,
-    source,
+    source: selectedSource,
     userId: context.userId,
   });
 
@@ -811,12 +821,16 @@ export async function reconcileEnrollmentIdentities({
 /**
  * Canonical atomic admission entry point. Callers must revalidate every
  * eligibility and admission rule in validateAdmission; roster decisions bypass
- * only rules that the caller deliberately omits from that validation.
+ * only rules that the caller deliberately omits from that validation. The
+ * fixed source establishes the identity context, including an exact LTI
+ * identity; selectSource may choose the authoritative source from the resulting
+ * locked classification.
  */
 export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
   source,
+  selectSource,
   validateAdmission,
   agentUserId,
   agentAuthnUserId,
@@ -836,6 +850,7 @@ export async function admitUserToCourseInstance({
       await executeCheckedAdmissionAttempt({
         context,
         source: immutableSource,
+        selectSource,
         validateAdmission,
         actor: { agentUserId, agentAuthnUserId },
       }),
@@ -847,7 +862,7 @@ export async function admitUserToCourseInstance({
  * delegates unchanged to the canonical checked path.
  */
 export async function admitUserFromEnrollmentInvitation(
-  input: Omit<CheckedEnrollmentAdmissionInput, 'source'> & {
+  input: Omit<CheckedEnrollmentAdmissionInput, 'selectSource' | 'source'> & {
     source: EnrollmentInvitationAdmissionSource;
   },
 ): Promise<Enrollment> {

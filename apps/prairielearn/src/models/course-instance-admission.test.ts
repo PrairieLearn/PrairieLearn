@@ -12,6 +12,8 @@ import { createInstitution } from '../tests/utils/auth.js';
 import { selectAuditEventsByEnrollmentId } from './audit-event.js';
 import {
   type ActionableCourseInstanceAdmissionPlan,
+  CourseInstanceAdmissionEligibilityError,
+  CourseInstanceEnrollmentCodeRequiredError,
   admitUserWithCourseInstanceAdmissionPlan,
   selectCourseInstanceAdmissionPlan,
 } from './course-instance-admission.js';
@@ -274,13 +276,9 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
        WHERE id = $course_instance_id`,
       { course_instance_id: courseInstance.id },
     );
-    await expect(admit(ordinaryUser, ordinaryPlan)).rejects.toMatchObject({
-      name: 'CourseInstanceAdmissionPlanChangedError',
-      plan: {
-        reason: 'self-enrollment-disabled',
-        type: 'ineligible',
-      },
-    });
+    await expect(admit(ordinaryUser, ordinaryPlan)).rejects.toBeInstanceOf(
+      CourseInstanceAdmissionEligibilityError,
+    );
 
     const rosterUser = await createUser({ prefix: 'ordinary-validator-access' });
     await createEnrollment({
@@ -306,20 +304,19 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
     });
   });
 
-  it('fails closed with a fresh ordinary plan when an invitation source disappears', async () => {
+  it('fails closed with ordinary code rules when an invitation source disappears', async () => {
     const user = await createUser({ prefix: 'ordinary-validator-disappeared-invitation' });
     const stalePlan = {
       source: { type: 'pending_uid' },
       type: 'conventional_invitation',
     } as const;
 
-    await expect(admit(user, stalePlan)).rejects.toMatchObject({
-      name: 'CourseInstanceAdmissionPlanChangedError',
-      plan: { type: 'enrollment_code_required' },
-    });
+    await expect(admit(user, stalePlan)).rejects.toBeInstanceOf(
+      CourseInstanceEnrollmentCodeRequiredError,
+    );
   });
 
-  it('uses a newly added roster invitation instead of a stale ordinary plan', async () => {
+  it('uses locked roster priority instead of a stale ordinary plan', async () => {
     const user = await createUser({ prefix: 'ordinary-validator-new-roster-invitation' });
     const stalePlan = await selectPlan(user, courseInstance.enrollment_code);
     expect(stalePlan.type).toBe('self_enrollment');
@@ -331,6 +328,10 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
       courseInstance,
       pendingUin: user.uin,
     });
+    await createEnrollment({
+      courseInstance,
+      pendingUid: user.uid,
+    });
     await execute(
       `UPDATE course_instances
        SET self_enrollment_enabled = FALSE
@@ -340,6 +341,7 @@ describe('ordinary course instance admission', { concurrent: false }, () => {
 
     const enrollment = await admit(user, stalePlan);
     expect(enrollment).toMatchObject({
+      pending_uid: null,
       pending_uin: null,
       status: 'joined',
       user_id: user.id,

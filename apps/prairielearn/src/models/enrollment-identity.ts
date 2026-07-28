@@ -329,15 +329,26 @@ export async function selectEnrollmentAdmissionDecision(
 export interface LockedEnrollmentIdentityDecision {
   readonly classification: EnrollmentIdentityClassification;
   readonly decision: EnrollmentAdmissionDecision;
+  readonly source: EnrollmentAdmissionSource;
 }
+
+export type LockedEnrollmentAdmissionSourceSelector = ({
+  classification,
+  source,
+}: {
+  classification: EnrollmentIdentityClassification;
+  source: EnrollmentAdmissionSource;
+}) => EnrollmentAdmissionSource;
 
 /**
  * Reconciliation implementation detail that selects the complete identity set,
  * locks every selected enrollment parent in ascending ID order, and revalidates
- * only that locked set. This must run inside the shared course-instance
- * enrollment-barrier transaction. It intentionally does not lock users or LTI
- * identities; a matching row created later with a different unique key may
- * remain for a future reconciliation. Direct read and render consumers must use
+ * only that locked set. An optional source selector runs synchronously from
+ * that same classification and must be pure and retry-safe. This must run
+ * inside the shared course-instance enrollment-barrier transaction. It
+ * intentionally does not lock users or LTI identities; a matching row created
+ * later with a different unique key may remain for a future reconciliation.
+ * Direct read and render consumers must use
  * {@link selectEnrollmentIdentityClassification} or
  * {@link selectEnrollmentAdmissionDecision}.
  *
@@ -346,6 +357,7 @@ export interface LockedEnrollmentIdentityDecision {
 export async function selectLockedEnrollmentIdentityDecision(
   context: EnrollmentIdentityContext,
   source: EnrollmentAdmissionSource,
+  selectSource?: LockedEnrollmentAdmissionSourceSelector,
 ): Promise<LockedEnrollmentIdentityDecision> {
   const initialCandidates = await selectEnrollmentIdentityCandidates(context, null);
   const initialCandidateIds = initialCandidates.map((candidate) => candidate.enrollment.id);
@@ -353,9 +365,13 @@ export async function selectLockedEnrollmentIdentityDecision(
   const classification = classifyEnrollmentIdentityCandidates(
     await selectEnrollmentIdentityCandidates(context, initialCandidateIds),
   );
+  const selectedSource = Object.freeze({
+    ...(selectSource?.({ classification, source }) ?? source),
+  }) as EnrollmentAdmissionSource;
   return {
     classification,
-    decision: getEnrollmentAdmissionDecision(classification, source),
+    decision: getEnrollmentAdmissionDecision(classification, selectedSource),
+    source: selectedSource,
   };
 }
 

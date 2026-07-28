@@ -15,16 +15,12 @@ import {
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 
-import { runWithSharedEnrollmentBarrier } from './enrollment-barrier.js';
 import {
   type EnrollmentAdmissionSource,
   type EnrollmentIdentityClassification,
   selectEnrollmentIdentityClassification,
 } from './enrollment-identity.js';
-import {
-  EnrollmentInvitationRequiredError,
-  admitUserToCourseInstance,
-} from './enrollment-reconciliation.js';
+import { admitUserToCourseInstance } from './enrollment-reconciliation.js';
 import { selectUserById } from './user.js';
 
 interface AlreadyJoinedAdmissionPlan {
@@ -95,16 +91,6 @@ export class CourseInstanceEnrollmentCodeRequiredError extends Error {
   }
 }
 
-export class CourseInstanceAdmissionPlanChangedError extends Error {
-  readonly plan: CourseInstanceAdmissionPlan;
-
-  constructor(plan: CourseInstanceAdmissionPlan) {
-    super(`Course instance admission plan changed to ${plan.type}`);
-    this.name = 'CourseInstanceAdmissionPlanChangedError';
-    this.plan = plan;
-  }
-}
-
 function enrollmentCodeMatches(
   courseInstance: CourseInstance,
   enrollmentCode: string | undefined,
@@ -167,16 +153,6 @@ function getCourseInstanceAdmissionPlan({
   };
 }
 
-function isActionableCourseInstanceAdmissionPlan(
-  plan: CourseInstanceAdmissionPlan,
-): plan is ActionableCourseInstanceAdmissionPlan {
-  return (
-    plan.type === 'conventional_invitation' ||
-    plan.type === 'institution_roster_invitation' ||
-    plan.type === 'self_enrollment'
-  );
-}
-
 export async function selectCourseInstanceAdmissionPlan({
   course,
   courseInstance,
@@ -233,8 +209,8 @@ async function validateEnterpriseAdmission({
 }
 
 /**
- * Treats the supplied plan as a render-time hint and chooses the authoritative
- * source from a fresh plan inside the shared enrollment barrier.
+ * Treats the supplied plan as a render-time hint. The canonical checked
+ * admission chooses its authoritative source from the locked classification.
  */
 export async function admitUserWithCourseInstanceAdmissionPlan({
   courseInstanceId,
@@ -253,27 +229,6 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
   reqDate: Date;
   userId: string;
 }) {
-  async function selectFreshPlan() {
-    const user = await selectUserById(userId);
-    const { authzData, course, courseInstance } = await constructCourseOrInstanceContext({
-      course_id: null,
-      course_instance_id: courseInstanceId,
-      ip,
-      is_administrator: isAdministrator,
-      req_date: reqDate,
-      user,
-    });
-    if (authzData === null || courseInstance === null) {
-      throw new HttpStatusError(403, 'Access denied');
-    }
-    return await selectCourseInstanceAdmissionPlan({
-      course,
-      courseInstance,
-      enrollmentCode,
-      user,
-    });
-  }
-
   async function validateAdmission({ source }: { source: EnrollmentAdmissionSource }) {
     const user = await selectUserById(userId);
     const { authzData, course, courseInstance, institution } =
@@ -325,35 +280,21 @@ export async function admitUserWithCourseInstanceAdmissionPlan({
     });
   }
 
-  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      const freshPlan = await selectFreshPlan();
-      if (
-        freshPlan.type !== 'already_joined' &&
-        !isActionableCourseInstanceAdmissionPlan(freshPlan)
-      ) {
-        throw new CourseInstanceAdmissionPlanChangedError(freshPlan);
+  return await admitUserToCourseInstance({
+    agentAuthnUserId: userId,
+    agentUserId: userId,
+    courseInstanceId,
+    selectSource: ({ classification }) => {
+      if (classification.actionableInstitutionRosterInvitationCandidates.length > 0) {
+        return { type: 'institution_uin' };
       }
-
-      try {
-        return await admitUserToCourseInstance({
-          agentAuthnUserId: userId,
-          agentUserId: userId,
-          courseInstanceId,
-          source: freshPlan.type === 'already_joined' ? plan.source : freshPlan.source,
-          userId,
-          validateAdmission,
-        });
-      } catch (error) {
-        if (!(error instanceof EnrollmentInvitationRequiredError)) {
-          throw error;
-        }
-        if (attempt === 2) {
-          throw new CourseInstanceAdmissionPlanChangedError(await selectFreshPlan());
-        }
+      if (classification.actionableConventionalInvitationCandidates.length > 0) {
+        return { type: 'pending_uid' };
       }
-    }
-
-    throw new Error('Course instance admission exhausted its attempts');
+      return { type: 'ordinary' };
+    },
+    source: plan.source,
+    userId,
+    validateAdmission,
   });
 }

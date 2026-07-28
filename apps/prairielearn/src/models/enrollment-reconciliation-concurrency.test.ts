@@ -31,6 +31,7 @@ import { deletePublishingExtension } from './course-instance-publishing-extensio
 import { selectCourseInstanceById } from './course-instances.js';
 import {
   admitUserFromEnrollmentInvitation,
+  admitUserToCourseInstance,
   reconcileEnrollmentIdentities,
 } from './enrollment-reconciliation.js';
 import {
@@ -40,6 +41,7 @@ import {
   nextFixtureName,
   nextFixtureNumber,
   selectEnrollments,
+  selectReconciliationAuditEvents,
 } from './enrollment-reconciliation.test-helpers.js';
 import { deleteStudentLabel } from './student-label.js';
 
@@ -438,6 +440,87 @@ describe('enrollment reconciliation concurrency and retry', { concurrent: false 
       expect(await selectEnrollments([invitation.id, concurrentBound.id])).toEqual([admitted]);
       expect(await selectEnrollments([preSavepointEnrollment.id])).toEqual([
         preSavepointEnrollment,
+      ]);
+    } catch (error) {
+      failure ??= { error };
+    } finally {
+      releaseParent.resolve();
+      const workerResults = await Promise.allSettled([
+        blockerPromise,
+        ...(admissionPromise ? [admissionPromise] : []),
+      ]);
+      failure = preserveFirstFailure(failure, workerResults);
+    }
+
+    if (failure) throw failure.error;
+  });
+
+  it('selects the admission source only after candidate parents are locked', async () => {
+    const user = await createUser({ prefix: 'locked-source-selection' });
+    const invitation = await createEnrollment({
+      courseInstance,
+      pendingUin: user.uin,
+    });
+    const parentLocked = deferred();
+    const releaseParent = deferred();
+    let failure: { error: unknown } | undefined;
+    const blockerPromise = runInTransactionAsync(async () => {
+      await queryRow(
+        sql.lock_enrollment,
+        { enrollment_id: invitation.id },
+        z.object({ id: IdSchema }),
+      );
+      parentLocked.resolve();
+      await releaseParent.promise;
+    }).catch((error) => {
+      failure ??= { error };
+      parentLocked.reject(error);
+      throw error;
+    });
+    void blockerPromise.catch(() => undefined);
+
+    let admissionPromise: Promise<Enrollment> | undefined;
+    let sourceSelectionCalls = 0;
+    try {
+      await parentLocked.promise;
+      const applicationName = `locked-source-${crypto.randomUUID()}`;
+      admissionPromise = runInTransactionAsync(async () => {
+        await setLocalApplicationName(applicationName);
+        return await admitUserToCourseInstance({
+          courseInstanceId: courseInstance.id,
+          userId: user.id,
+          source: { type: 'ordinary' },
+          ...actorFor(user),
+          selectSource: ({ classification, source }) => {
+            sourceSelectionCalls += 1;
+            expect(source).toEqual({ type: 'ordinary' });
+            expect(classification.actionableInstitutionRosterInvitationCandidates).toHaveLength(1);
+            return { type: 'institution_uin' };
+          },
+          validateAdmission: async (context) => {
+            expect(context.source).toEqual({ type: 'institution_uin' });
+          },
+        });
+      });
+      void admissionPromise.catch((error) => {
+        failure ??= { error };
+      });
+      await waitForApplicationLock(applicationName, '%lock_enrollments_by_id%');
+      expect(sourceSelectionCalls).toBe(0);
+      releaseParent.resolve();
+
+      const admitted = await admissionPromise;
+      expect(sourceSelectionCalls).toBe(1);
+      expect(admitted).toMatchObject({
+        id: invitation.id,
+        status: 'joined',
+        user_id: user.id,
+      });
+      expect(await selectReconciliationAuditEvents(invitation.id)).toEqual([
+        expect.objectContaining({
+          action_detail: 'roster_admitted',
+          context: expect.objectContaining({ admission_source: 'institution_uin' }),
+        }),
       ]);
     } catch (error) {
       failure ??= { error };

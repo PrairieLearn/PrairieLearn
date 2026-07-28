@@ -9,7 +9,6 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   CourseInstanceAdmissionEligibilityError,
-  CourseInstanceAdmissionPlanChangedError,
   CourseInstanceEnrollmentCodeRequiredError,
   admitUserWithCourseInstanceAdmissionPlan,
   selectCourseInstanceAdmissionPlan,
@@ -90,24 +89,7 @@ router.get(
           userId: res.locals.authn_user.id,
         });
       } catch (error) {
-        if (error instanceof CourseInstanceAdmissionPlanChangedError) {
-          if (error.plan.type === 'blocked') {
-            res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
-            return;
-          }
-          if (error.plan.type === 'ineligible') {
-            res
-              .status(403)
-              .send(EnrollmentPage({ resLocals: res.locals, type: error.plan.reason }));
-            return;
-          }
-          if (error.plan.type === 'enrollment_code_required') {
-            shouldRenderEnrollmentCodeForm = true;
-          } else {
-            redirectAfterJoin();
-            return;
-          }
-        } else if (error instanceof CourseInstanceAdmissionEligibilityError) {
+        if (error instanceof CourseInstanceAdmissionEligibilityError) {
           res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: error.reason }));
           return;
         } else if (error instanceof EnrollmentAdmissionBlockedError) {

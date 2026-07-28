@@ -3,7 +3,6 @@ import { idsEqual } from '../lib/id.js';
 import { typedAsyncHandler } from '../lib/res-locals.js';
 import {
   CourseInstanceAdmissionEligibilityError,
-  CourseInstanceAdmissionPlanChangedError,
   CourseInstanceEnrollmentCodeRequiredError,
   type CourseInstanceAdmissionPlanLocals as PlanLocals,
   admitUserWithCourseInstanceAdmissionPlan,
@@ -48,24 +47,7 @@ const autoEnroll = typedAsyncHandler<'course-instance', PlanLocals>(async (req, 
           userId: res.locals.authn_user.id,
         });
       } catch (error) {
-        if (error instanceof CourseInstanceAdmissionPlanChangedError) {
-          if (error.plan.type === 'blocked') {
-            res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
-            return;
-          }
-          if (error.plan.type === 'ineligible') {
-            res
-              .status(403)
-              .send(EnrollmentPage({ resLocals: res.locals, type: error.plan.reason }));
-            return;
-          }
-          if (error.plan.type !== 'already_joined') {
-            res.redirect(
-              `/pl/course_instance/${res.locals.course_instance.id}/join?url=${encodeURIComponent(req.originalUrl)}`,
-            );
-            return;
-          }
-        } else if (error instanceof CourseInstanceAdmissionEligibilityError) {
+        if (error instanceof CourseInstanceAdmissionEligibilityError) {
           res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: error.reason }));
           return;
         } else if (error instanceof EnrollmentAdmissionBlockedError) {
