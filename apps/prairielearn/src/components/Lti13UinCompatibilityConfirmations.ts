@@ -9,7 +9,7 @@ const CONFIRMATIONS = [
   ],
   [
     LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS.usersBackfilled,
-    'I confirm that existing user records have been backfilled with compatible UINs.',
+    'I confirm that existing user records contain compatible UINs and that any required backfill is complete.',
   ],
 ] as const;
 
@@ -21,7 +21,7 @@ export function Lti13UinCompatibilityConfirmations({
   description: string;
 }) {
   return html`
-    <fieldset class="border rounded p-3 mb-3">
+    <fieldset class="border rounded p-3 mb-3" data-lti13-uin-confirmations>
       <legend class="float-none w-auto px-2 fs-6">LTI and SAML UIN compatibility</legend>
       <p>${description}</p>
       ${CONFIRMATIONS.map(([name, label], index) => {

@@ -6,6 +6,13 @@ WHERE
   institution_id = $institution_id
   AND NULLIF(btrim(uin), '') IS NULL;
 
+-- BLOCK clear_saml_uin_attribute
+UPDATE saml_providers
+SET
+  uin_attribute = NULL
+WHERE
+  institution_id = $institution_id;
+
 -- BLOCK insert_unnamed_authn_provider
 WITH
   reset_sequence AS (

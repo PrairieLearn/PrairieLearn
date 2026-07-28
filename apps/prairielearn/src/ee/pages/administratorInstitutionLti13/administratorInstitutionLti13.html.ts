@@ -123,6 +123,9 @@ function LTI13Instance({
   lti13UinConfigurationIssues: string[];
 }) {
   if (instance) {
+    const platformConfigurationUnavailable =
+      !!instance.uin_attribute?.trim() && lti13UinConfigurationIssues.length > 0;
+
     return html`
       <h3>${instance.name} (ID #${instance.id})</h3>
       <p>
@@ -200,17 +203,34 @@ function LTI13Instance({
 
       ${EncodedData(platform_defaults, 'platform_defaults_data')}
 
-      <form class="form" method="POST">
+      <form class="form" method="POST" data-lti13-platform-configuration>
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
+        ${platformConfigurationUnavailable
+          ? html`
+              <div class="alert alert-warning">
+                Platform configuration is unavailable while this instance has a UIN attribute and
+                its institution prerequisites are unmet. Resolve the
+                <a href="#lti-uin-prerequisites">UIN prerequisite warning below</a> first.
+              </div>
+            `
+          : ''}
+
         <div class="mb-3">
           <label class="form-label" for="choosePlatform">Platform type: </label>
-          <select class="form-select mb-2" id="choosePlatform" name="platform">
+          <select
+            class="form-select mb-2"
+            id="choosePlatform"
+            name="platform"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
+          >
             ${platform_defaults.map((d) => {
-              return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
-                ${d.platform}
-              </option>`;
+              return html`
+                <option value="${d.platform}" ${d.platform === instance.platform ? 'selected' : ''}>
+                  ${d.platform}
+                </option>
+              `;
             })}
           </select>
 
@@ -223,6 +243,7 @@ function LTI13Instance({
                 name="platform_update"
                 value="1"
                 checked
+                ${platformConfigurationUnavailable ? 'disabled' : ''}
               />
               On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
             </label>
@@ -237,6 +258,7 @@ function LTI13Instance({
             name="issuer_params"
             rows="8"
             spellcheck="false"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
           >
 ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           >
@@ -252,6 +274,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             name="client_id"
             value="${instance.client_params?.client_id}"
             aria-describedby="client_idHelp"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
           />
           <small id="client_idHelp" class="form-text text-muted">
             Get this unique ID from the LMS.
@@ -266,6 +289,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             name="custom_fields"
             rows="4"
             spellcheck="false"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
           >
 ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           >
@@ -282,15 +306,30 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          ${instance.uin_attribute
-            ? Lti13UinCompatibilityConfirmations({
-                idPrefix: 'lti-platform',
-                description:
-                  'Required when changing the platform configuration because this instance uses its UIN data for institutional identity matching.',
-              })
+          ${instance.uin_attribute?.trim() && !platformConfigurationUnavailable
+            ? html`
+                <div data-lti13-platform-confirmations hidden>
+                  ${Lti13UinCompatibilityConfirmations({
+                    idPrefix: 'lti-platform',
+                    description:
+                      'Required when changing the platform configuration because this instance uses its UIN data for institutional identity matching.',
+                  })}
+                </div>
+              `
             : ''}
-          <button type="submit" class="btn btn-info">Save platform options</button>
-          <input type="reset" class="btn btn-secondary" value="Reset options" />
+          <button
+            type="submit"
+            class="btn btn-info"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
+          >
+            Save platform options
+          </button>
+          <input
+            type="reset"
+            class="btn btn-secondary"
+            value="Reset options"
+            ${platformConfigurationUnavailable ? 'disabled' : ''}
+          />
         </div>
       </form>
 
@@ -337,18 +376,6 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       <hr />
       <h5>PrairieLearn configuration</h5>
 
-      ${lti13UinConfigurationIssues.length > 0
-        ? html`
-            <div class="alert alert-warning">
-              <h6>LTI UIN configuration is unavailable</h6>
-              <p>The following institution prerequisites must be completed first:</p>
-              <ul class="mb-0">
-                ${lti13UinConfigurationIssues.map((issue) => html`<li>${issue}</li>`)}
-              </ul>
-            </div>
-          `
-        : ''}
-
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="save_pl_config" />
@@ -370,7 +397,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">UID attribute</label>
+          <label class="form-label" for="uid_attribute">UID attribute</label>
           <input
             type="text"
             class="form-control"
@@ -388,14 +415,20 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">UIN attribute</label>
+          <label class="form-label" for="uin_attribute">UIN attribute</label>
           <input
             type="text"
             class="form-control"
             name="uin_attribute"
             id="uin_attribute"
             value="${instance.uin_attribute ?? ''}"
-            aria-describedby="uinAttributeHelp"
+            aria-describedby="uinAttributeHelp${lti13UinConfigurationIssues.length > 0
+              ? ' lti-uin-prerequisites'
+              : ''}"
+            data-lti13-uin-configuration-available="${lti13UinConfigurationIssues.length === 0}"
+            ${lti13UinConfigurationIssues.length > 0 && !instance.uin_attribute?.trim()
+              ? 'disabled'
+              : ''}
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
@@ -404,6 +437,26 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
             <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
+          ${lti13UinConfigurationIssues.length > 0
+            ? html`
+                <div class="alert alert-warning mt-2 mb-0" id="lti-uin-prerequisites">
+                  <h6>LTI UIN configuration is unavailable</h6>
+                  <p>The following institution prerequisites must be completed first:</p>
+                  <ul>
+                    ${lti13UinConfigurationIssues.map((issue) => html`<li>${issue}</li>`)}
+                  </ul>
+                  <p class="mb-0">
+                    Resolve these requirements on the
+                    <a href="${resLocals.urlPrefix}/saml">SAML</a> and
+                    <a href="${resLocals.urlPrefix}/sso">single sign-on</a> pages. You can still
+                    save other PrairieLearn configuration on this page.
+                    ${instance.uin_attribute?.trim()
+                      ? 'The existing UIN attribute may be removed, but it cannot be changed to another value.'
+                      : 'The UIN attribute is disabled until these requirements are complete.'}
+                  </p>
+                </div>
+              `
+            : ''}
         </div>
 
         <div class="mb-3">
@@ -422,11 +475,16 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        ${Lti13UinCompatibilityConfirmations({
-          idPrefix: 'lti-identity',
-          description:
-            'Required when setting or changing the UIN attribute. Leave these unchecked when saving unrelated configuration without changing the UIN attribute.',
-        })}
+        ${lti13UinConfigurationIssues.length === 0
+          ? html`
+              <div data-lti13-identity-confirmations hidden>
+                ${Lti13UinCompatibilityConfirmations({
+                  idPrefix: 'lti-identity',
+                  description: 'Required when adding or changing the UIN attribute.',
+                })}
+              </div>
+            `
+          : ''}
 
         <div class="mb-3 form-check">
           <input

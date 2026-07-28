@@ -24,6 +24,7 @@ import {
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
 } from '../../lib/institution.js';
+import { selectLti13InstancesWithConfiguredUin } from '../../models/lti13Instance.js';
 
 import {
   AdministratorInstitutionSaml,
@@ -52,7 +53,7 @@ router.get(
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
       req.params.institution_id,
     );
-    const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
+    const lti13InstancesWithConfiguredUin = await selectLti13InstancesWithConfiguredUin(
       req.params.institution_id,
     );
 
@@ -61,7 +62,7 @@ router.get(
         institution,
         samlProvider,
         institutionAuthenticationProviders,
-        hasConfiguredLti13Uin: identityConfigurationStatus.has_configured_lti13_uin,
+        lti13InstancesWithConfiguredUin,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       }),
@@ -83,16 +84,24 @@ router.post(
         const identityConfigurationStatus = await selectInstitutionIdentityConfigurationStatus(
           req.params.institution_id,
         );
+        const issuer = z.string().parse(req.body.issuer);
         const uinAttribute = normalizeUinAttribute(req.body.uin_attribute);
 
         if (identityConfigurationStatus.has_configured_lti13_uin) {
-          if (!uinAttribute) {
+          const existingUinAttribute = normalizeUinAttribute(samlProvider?.uin_attribute);
+
+          if (existingUinAttribute && !uinAttribute) {
             throw new error.HttpStatusError(
               400,
               'The SAML UIN attribute cannot be removed while an LTI 1.3 instance uses a UIN attribute',
             );
           }
-          assertLti13UinCompatibilityConfirmed(req.body);
+          if (
+            uinAttribute &&
+            (uinAttribute !== existingUinAttribute || issuer !== samlProvider?.issuer)
+          ) {
+            assertLti13UinCompatibilityConfirmed(req.body);
+          }
         }
 
         let publicKey, privateKey;
@@ -115,7 +124,7 @@ router.post(
         await execute(sql.insert_institution_saml_provider, {
           institution_id: req.params.institution_id,
           sso_login_url: req.body.sso_login_url,
-          issuer: req.body.issuer,
+          issuer,
           certificate: req.body.certificate,
           validate_audience: req.body.validate_audience === '1',
           want_assertions_signed: req.body.want_assertions_signed === '1',

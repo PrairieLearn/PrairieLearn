@@ -1,4 +1,4 @@
-import { sortBy } from 'es-toolkit';
+import { isEqual, sortBy } from 'es-toolkit';
 import { Router } from 'express';
 import jose from 'node-jose';
 import { z } from 'zod';
@@ -200,9 +200,13 @@ router.post(
       }
     } else if (req.body.__action === 'update_platform') {
       const url = getCanonicalHost(req);
+      const platform = z.string().parse(req.body.platform).trim();
+      const issuer_params = JSON.parse(z.string().parse(req.body.issuer_params));
+      const custom_fields = JSON.parse(z.string().parse(req.body.custom_fields));
+      const clientId = req.body.client_id || null;
 
       const client_params = {
-        client_id: req.body.client_id || null,
+        client_id: clientId,
         redirect_uris: [
           `${url}/pl/lti13_instance/${req.params.unsafe_lti13_instance_id}/auth/callback`,
         ],
@@ -221,17 +225,23 @@ router.post(
           Lti13InstanceSchema,
         );
 
-        if (normalizeUinAttribute(instance.uin_attribute)) {
+        const platformConfigurationChanged =
+          platform !== instance.platform ||
+          !isEqual(issuer_params, instance.issuer_params) ||
+          clientId !== (instance.client_params?.client_id ?? null) ||
+          !isEqual(custom_fields, instance.custom_fields);
+
+        if (normalizeUinAttribute(instance.uin_attribute) && platformConfigurationChanged) {
           await assertLti13UinConfigurationAllowed(req.params.institution_id, req.body);
         }
 
         await execute(sql.update_platform, {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           institution_id: req.params.institution_id,
-          issuer_params: req.body.issuer_params,
-          platform: req.body.platform,
+          issuer_params,
+          platform,
           client_params,
-          custom_fields: req.body.custom_fields,
+          custom_fields,
         });
       });
       flash('success', 'Platform updated.');

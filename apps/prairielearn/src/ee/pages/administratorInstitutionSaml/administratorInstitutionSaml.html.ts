@@ -3,26 +3,32 @@ import { html } from '@prairielearn/html';
 import { Lti13UinCompatibilityConfirmations } from '../../../components/Lti13UinCompatibilityConfirmations.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
+import {
+  type AuthnProvider,
+  type Institution,
+  type Lti13Instance,
+  type SamlProvider,
+} from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export function AdministratorInstitutionSaml({
   institution,
   samlProvider,
   institutionAuthenticationProviders,
-  hasConfiguredLti13Uin,
+  lti13InstancesWithConfiguredUin,
   host,
   resLocals,
 }: {
   institution: Institution;
   samlProvider: SamlProvider | null;
   institutionAuthenticationProviders: AuthnProvider[];
-  hasConfiguredLti13Uin: boolean;
+  lti13InstancesWithConfiguredUin: Lti13Instance[];
   host: string;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
+  const hasConfiguredLti13Uin = lti13InstancesWithConfiguredUin.length > 0;
 
   const hasNameMapping =
     !!samlProvider?.name_attribute ||
@@ -51,18 +57,6 @@ export function AdministratorInstitutionSaml({
     },
     preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
-      ${hasConfiguredLti13Uin
-        ? html`
-            <div class="alert alert-info">
-              <h2 class="h5">LTI 1.3 depends on this SAML configuration</h2>
-              <p class="mb-0">
-                An LTI 1.3 instance uses a UIN attribute. The SAML configuration and its UIN
-                attribute cannot be deleted. Saving changes requires reconfirming that SAML and LTI
-                still provide the same canonical UIN.
-              </p>
-            </div>
-          `
-        : ''}
       ${hasSamlProvider && !hasEnabledSaml
         ? html`
             <div class="alert alert-warning">
@@ -336,13 +330,47 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             name="uin_attribute"
             id="uin_attribute"
             value="${samlProvider?.uin_attribute ?? ''}"
-            aria-describedby="uinAttributeHelp"
+            aria-describedby="uinAttributeHelp${hasConfiguredLti13Uin
+              ? ' saml-lti-uin-dependencies'
+              : ''}"
           />
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
             <strong>MUST</strong> never change for a given individual, even if they change their
             name or email.
           </small>
+          ${hasConfiguredLti13Uin
+            ? html`
+                <div class="alert alert-info mt-2 mb-0" id="saml-lti-uin-dependencies">
+                  <h4 class="h6">LTI 1.3 dependencies</h4>
+                  <p>The following LTI 1.3 instances depend on this SAML UIN mapping:</p>
+                  <ul>
+                    ${lti13InstancesWithConfiguredUin.map(
+                      (instance) => html`
+                        <li>
+                          <a href="${resLocals.urlPrefix}/lti13/${instance.id}">
+                            ${instance.name} (#${instance.id})
+                          </a>
+                          — <code>${instance.uin_attribute}</code>
+                        </li>
+                      `,
+                    )}
+                  </ul>
+                  <p class="mb-0">
+                    The SAML UIN mapping cannot be removed while these dependencies exist. Changing
+                    the SAML issuer or UIN mapping requires confirming that the mappings remain
+                    compatible.
+                  </p>
+                </div>
+                <div data-saml-lti-uin-confirmations hidden>
+                  ${Lti13UinCompatibilityConfirmations({
+                    idPrefix: 'saml-lti-uin',
+                    description:
+                      'Required when changing the SAML issuer or UIN attribute because the LTI instances above depend on compatible UIN values.',
+                  })}
+                </div>
+              `
+            : ''}
         </div>
 
         <div class="mb-3">
@@ -363,13 +391,6 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           </small>
         </div>
 
-        ${hasConfiguredLti13Uin
-          ? Lti13UinCompatibilityConfirmations({
-              idPrefix: 'saml-lti-uin',
-              description:
-                'Required because an active LTI 1.3 configuration depends on this SAML identity mapping.',
-            })
-          : ''}
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <button type="submit" class="btn btn-primary" name="__action" value="save">Save</button>
         <a class="btn btn-secondary" href="">Cancel</a>
@@ -478,6 +499,36 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
               document.querySelector('.js-configure-prompt').hidden = true;
               document.querySelector('.js-configure-form').hidden = false;
             });
+
+          const form = document.querySelector('.js-configure-form');
+          const issuer = form?.querySelector('input[name="issuer"]');
+          const uinAttribute = form?.querySelector('input[name="uin_attribute"]');
+          const confirmations = form?.querySelector('[data-saml-lti-uin-confirmations]');
+
+          if (issuer && uinAttribute && confirmations) {
+            const confirmationInputs = confirmations.querySelectorAll('input[type="checkbox"]');
+
+            function updateUinConfirmationRequirements() {
+              const uin = uinAttribute.value.trim();
+              const originalUin = uinAttribute.defaultValue.trim();
+              const requiresConfirmation =
+                uin !== '' && (uin !== originalUin || issuer.value !== issuer.defaultValue);
+
+              uinAttribute.setCustomValidity(
+                originalUin !== '' && uin === ''
+                  ? 'The SAML UIN attribute cannot be removed while an LTI 1.3 instance uses a UIN attribute.'
+                  : '',
+              );
+              confirmations.hidden = !requiresConfirmation;
+              confirmationInputs.forEach((input) => {
+                input.required = requiresConfirmation;
+              });
+            }
+
+            updateUinConfirmationRequirements();
+            issuer.addEventListener('input', updateUinConfirmationRequirements);
+            uinAttribute.addEventListener('input', updateUinConfirmationRequirements);
+          }
         })();
       </script>
     `,
