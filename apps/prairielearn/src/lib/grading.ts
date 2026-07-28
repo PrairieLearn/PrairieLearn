@@ -12,6 +12,7 @@ import { insertGradingJob, updateGradingJobAfterGrading } from '../models/gradin
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import {
   type ResolvedSharedStateObject,
+  extractSharedStateDefaultsForObjects,
   readSharedStateValuesForAssessmentInstance,
   selectSharedStateObjectsForQuestion,
   writeSharedStateValuesForAssessmentInstance,
@@ -54,8 +55,11 @@ interface SharedStateResolution {
 
 /**
  * Resolves the shared-state objects a question can access and reads their
- * current, live value for the assessment instance a variant belongs to (or
- * empty defaults if the variant has no assessment instance, e.g. a preview).
+ * current, live value for the assessment instance a variant belongs to. A
+ * variant with no assessment instance (e.g. an instructor preview) has
+ * nothing to read live, but `data["shared_state"]` is still populated with
+ * each object's schema defaults — mirroring how `question-variant.ts` seeds
+ * `generate`/`prepare` for the same case — rather than an empty object.
  */
 async function resolveSharedStateForGrading({
   question,
@@ -71,17 +75,24 @@ async function resolveSharedStateForGrading({
     question,
   });
 
-  if (Object.keys(objects).length === 0 || instance_question_id == null) {
+  if (Object.keys(objects).length === 0) {
     return { objects, assessment_instance_id: null, before: {} };
   }
 
-  const assessment_instance_id = await sqldb.queryOptionalScalar(
-    sql.select_assessment_instance_id_for_instance_question,
-    { instance_question_id },
-    IdSchema,
-  );
+  const assessment_instance_id =
+    instance_question_id == null
+      ? null
+      : await sqldb.queryOptionalScalar(
+          sql.select_assessment_instance_id_for_instance_question,
+          { instance_question_id },
+          IdSchema,
+        );
   if (assessment_instance_id == null) {
-    return { objects, assessment_instance_id: null, before: {} };
+    return {
+      objects,
+      assessment_instance_id: null,
+      before: extractSharedStateDefaultsForObjects(objects),
+    };
   }
 
   const before = await readSharedStateValuesForAssessmentInstance({

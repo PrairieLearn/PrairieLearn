@@ -12,6 +12,7 @@ import { selectPreferencesForInstanceQuestion } from '../models/assessment-quest
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import {
+  extractSharedStateDefaultsForObjects,
   readSharedStateValuesForAssessmentInstance,
   selectSharedStateObjectsForQuestion,
   writeSharedStateValuesForAssessmentInstance,
@@ -31,7 +32,6 @@ import {
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import { extractDefaultPreferences } from './question-preferences.js';
-import { extractSharedStateObjectDefaults } from './shared-state.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -346,12 +346,7 @@ async function makeAndInsertVariant({
             assessment_instance_id,
             objects: sharedStateObjects,
           })
-        : Object.fromEntries(
-            Object.entries(sharedStateObjects).map(([name, object]) => [
-              name,
-              extractSharedStateObjectDefaults(object.properties),
-            ]),
-          );
+        : extractSharedStateDefaultsForObjects(sharedStateObjects);
 
   const { courseIssues, variant: variantData } = await makeVariant({
     question,

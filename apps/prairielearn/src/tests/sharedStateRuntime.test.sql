@@ -16,3 +16,15 @@ FROM
   variants
 WHERE
   id = $variant_id;
+
+-- BLOCK select_last_submission_for_variant
+SELECT
+  *
+FROM
+  submissions
+WHERE
+  variant_id = $variant_id
+ORDER BY
+  date DESC
+LIMIT
+  1;

@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance } from '../lib/assessment.js';
-import { VariantSchema } from '../lib/db-types.js';
+import { SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import { saveAndGradeSubmission } from '../lib/grading.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -194,6 +194,96 @@ describe(
 
       assert.equal(readerVariant.broken_at, null, 'reader variant should not be broken');
       assert.equal(readerVariant.params?.observed_count, 5);
+    });
+
+    it('populates shared-state defaults (rather than an empty object) for an instructor preview variant', async () => {
+      // Instructor preview variants have no instance_question_id, and so no
+      // assessment_instance_id to read live values from. `data["shared_state"]`
+      // must still be populated with each object's schema defaults here —
+      // otherwise question code that does `data["shared_state"]["labProgress"]`
+      // raises a Python KeyError, which freeform.ts surfaces as a fatal course
+      // issue (the variant/submission gets marked broken).
+      const course = await selectOrInsertCourseByPath(courseDir);
+      const writerQuestion = await selectQuestionByQid({ course_id: course.id, qid: WRITER_QID });
+      const user = await selectOrInsertUserByUid('shared-state-preview-user@example.com');
+
+      const previewVariant = await ensureVariant({
+        question_id: writerQuestion.id,
+        instance_question_id: null,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: null,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: true,
+        client_fingerprint_id: null,
+      });
+      assert.equal(previewVariant.broken_at, null, 'preview variant should not be broken');
+
+      await saveAndGradeSubmission(
+        {
+          variant_id: previewVariant.id,
+          user_id: user.id,
+          auth_user_id: user.id,
+          submitted_answer: { increment: 5 },
+        },
+        previewVariant,
+        writerQuestion,
+        course,
+        true,
+        true,
+      );
+
+      const gradedPreviewVariant = await sqldb.queryRow(
+        sql.select_variant_by_id,
+        { variant_id: previewVariant.id },
+        VariantSchema,
+      );
+      assert.equal(
+        gradedPreviewVariant.broken_at,
+        null,
+        'grading a preview variant should not break it, even though it has no assessment instance',
+      );
+
+      // Preview mode has nowhere to persist a write, so a second, independent
+      // preview variant should still see the schema default (0), not the
+      // first preview's graded value (5).
+      const secondPreviewVariant = await ensureVariant({
+        question_id: writerQuestion.id,
+        instance_question_id: null,
+        user_id: user.id,
+        authn_user_id: user.id,
+        course_instance: null,
+        variant_course: course,
+        question_course: course,
+        options: {},
+        require_open: false,
+        client_fingerprint_id: null,
+      });
+      await saveAndGradeSubmission(
+        {
+          variant_id: secondPreviewVariant.id,
+          user_id: user.id,
+          auth_user_id: user.id,
+          submitted_answer: { increment: 1 },
+        },
+        secondPreviewVariant,
+        writerQuestion,
+        course,
+        true,
+        true,
+      );
+      const submission = await sqldb.queryRow(
+        sql.select_last_submission_for_variant,
+        { variant_id: secondPreviewVariant.id },
+        SubmissionSchema,
+      );
+      assert.equal(
+        submission.score,
+        1,
+        'preview grading should compute from the default (0), not a persisted value',
+      );
     });
   },
 );

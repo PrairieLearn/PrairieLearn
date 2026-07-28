@@ -61,6 +61,24 @@ export async function selectSharedStateObjectsForQuestion({
 }
 
 /**
+ * Builds the schema-default value for each given object, with no database
+ * read. Used wherever there's no assessment instance to read live values
+ * from — e.g. a floating/preview variant, or a variant not (yet) tied to a
+ * real assessment instance — so `data["shared_state"]` is still populated
+ * with every declared property rather than being an empty object.
+ */
+export function extractSharedStateDefaultsForObjects(
+  objects: Record<string, ResolvedSharedStateObject>,
+): Record<string, SharedStateObjectValue> {
+  return Object.fromEntries(
+    Object.entries(objects).map(([name, object]) => [
+      name,
+      extractSharedStateObjectDefaults(object.properties),
+    ]),
+  );
+}
+
+/**
  * Reads the current, schema-normalized value of each given object for an
  * assessment instance. If an object has never been written for this
  * instance, or was written under a since-retired revision (a `dataVersion`
