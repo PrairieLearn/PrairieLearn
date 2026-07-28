@@ -1,11 +1,38 @@
--- BLOCK update_lti13_users
+-- BLOCK insert_lti13_user
 INSERT INTO
   lti13_users (user_id, lti13_instance_id, sub)
 VALUES
   ($user_id, $lti13_instance_id, $sub)
-ON CONFLICT (user_id, lti13_instance_id) DO UPDATE
+RETURNING
+  *;
+
+-- BLOCK select_lti13_user_for_user
+SELECT
+  *
+FROM
+  lti13_users
+WHERE
+  user_id = $user_id
+  AND lti13_instance_id = $lti13_instance_id;
+
+-- BLOCK select_and_lock_lti13_user_for_user
+SELECT
+  *
+FROM
+  lti13_users
+WHERE
+  user_id = $user_id
+  AND lti13_instance_id = $lti13_instance_id
+FOR NO KEY UPDATE;
+
+-- BLOCK update_lti13_user_sub
+UPDATE lti13_users
 SET
-  sub = $sub;
+  sub = $sub
+WHERE
+  id = $lti13_user_id
+RETURNING
+  *;
 
 -- BLOCK select_lti13_instance_identities_for_course_instance
 SELECT DISTINCT
