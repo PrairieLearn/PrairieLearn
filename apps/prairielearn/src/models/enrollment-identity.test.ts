@@ -10,6 +10,7 @@ import { selectCourseInstanceById } from './course-instances.js';
 import {
   selectEnrollmentAdmissionDecision,
   selectEnrollmentIdentityClassification,
+  selectEnrollmentIdentityClassifications,
 } from './enrollment-identity.js';
 import {
   EnrollmentInvitationRequiredError,
@@ -78,6 +79,25 @@ describe('enrollment identity full-set selection and decisions', { concurrent: f
     expect(classification.conventionalInvitationCandidates).toHaveLength(1);
     expect(classification.institutionRosterInvitationCandidates).toHaveLength(1);
     expect(classification.lti13RosterInvitationCandidates).toHaveLength(1);
+
+    const classifications = await selectEnrollmentIdentityClassifications({
+      courseInstanceIds: [courseInstance.id, otherCourseInstance.id],
+      userId: user.id,
+    });
+    expect(classifications.get(courseInstance.id)).toMatchObject({
+      candidates: [
+        {
+          enrollment: { id: enrollment.id },
+          matches: {
+            boundUser: false,
+            institutionUin: true,
+            lti13: false,
+            pendingUid: true,
+          },
+        },
+      ],
+    });
+    expect(classifications.get(otherCourseInstance.id)?.kind).toBe('none');
   });
 
   it('keeps conventional pending-UID invitations distinct from roster authorization', async () => {
@@ -96,6 +116,62 @@ describe('enrollment identity full-set selection and decisions', { concurrent: f
     expect(classification.kind).toBe('actionable_conventional_invitation');
     expect(classification.conventionalInvitationCandidates).toHaveLength(1);
     expect(classification.rosterInvitationCandidates).toHaveLength(0);
+  });
+
+  it('pins conventional authority to the expected enrollment and preserves guest invitations', async () => {
+    const user = await createUser({ prefix: 'pinned-conventional-guest' });
+    const conventionalInvitation = await createEnrollment({
+      courseInstance,
+      pendingUid: user.uid,
+      isGuest: true,
+    });
+    const rosterInvitation = await createEnrollment({
+      courseInstance,
+      pendingUin: user.uin,
+    });
+    const context = { courseInstanceId: courseInstance.id, userId: user.id };
+
+    expect(
+      await selectEnrollmentAdmissionDecision(
+        context,
+        { type: 'pending_uid' },
+        {
+          expectedInvitationEnrollmentId: conventionalInvitation.id,
+        },
+      ),
+    ).toMatchObject({
+      allowed: true,
+      invitationCandidate: { enrollment: { id: conventionalInvitation.id, is_guest: true } },
+    });
+    expect(
+      await selectEnrollmentAdmissionDecision(
+        context,
+        { type: 'pending_uid' },
+        {
+          expectedInvitationEnrollmentId: rosterInvitation.id,
+        },
+      ),
+    ).toEqual({
+      allowed: false,
+      reason: 'no_matching_invitation',
+      source: { type: 'pending_uid' },
+    });
+
+    const admitted = await admitUserFromEnrollmentInvitation({
+      courseInstanceId: courseInstance.id,
+      expectedInvitationEnrollmentId: conventionalInvitation.id,
+      userId: user.id,
+      source: { type: 'pending_uid' },
+      ...checkedAdmissionFor(user),
+    });
+    expect(admitted).toMatchObject({
+      id: conventionalInvitation.id,
+      is_guest: true,
+      status: 'joined',
+    });
+    expect(await selectEnrollments([conventionalInvitation.id, rosterInvitation.id])).toEqual([
+      admitted,
+    ]);
   });
 
   it('scopes pending UIN matches to the course institution', async () => {

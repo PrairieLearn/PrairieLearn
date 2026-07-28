@@ -67,3 +67,51 @@ WHERE
   OR matches_lti13
 ORDER BY
   (enrollment ->> 'id')::bigint;
+
+-- Homepage-style read consumers can classify many course instances without
+-- issuing one candidate query per course instance. Exact LTI provenance is
+-- intentionally unavailable without a source-specific LTI context.
+-- BLOCK select_enrollment_identity_candidates_for_course_instances
+WITH
+  identity AS (
+    SELECT
+      id AS user_id,
+      institution_id,
+      uid,
+      uin
+    FROM
+      users
+    WHERE
+      id = $user_id
+  ),
+  candidate_matches AS (
+    SELECT
+      to_jsonb(e.*) AS enrollment,
+      coalesce(e.user_id = identity.user_id, FALSE) AS matches_bound_user,
+      coalesce(e.pending_uid = identity.uid, FALSE) AS matches_pending_uid,
+      coalesce(
+        identity.institution_id = c.institution_id
+        AND identity.uin IS NOT NULL
+        AND e.pending_uin = identity.uin,
+        FALSE
+      ) AS matches_institution_uin,
+      FALSE AS matches_lti13
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+      JOIN courses AS c ON (c.id = ci.course_id)
+      CROSS JOIN identity
+    WHERE
+      e.course_instance_id = ANY ($course_instance_ids::bigint[])
+  )
+SELECT
+  *
+FROM
+  candidate_matches
+WHERE
+  matches_bound_user
+  OR matches_pending_uid
+  OR matches_institution_uin
+ORDER BY
+  (enrollment ->> 'course_instance_id')::bigint,
+  (enrollment ->> 'id')::bigint;

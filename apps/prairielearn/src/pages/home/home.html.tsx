@@ -34,19 +34,16 @@ export function Home({
   now: Date;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
-    if (ci.enrollment.status === 'joined') return true;
-    if (ci.enrollment.status === 'invited') {
-      if (!ci.course_instance.modern_publishing) {
-        return false;
-      }
-      return (
-        computeStatus(
-          ci.course_instance.publishing_start_date,
-          ci.course_instance.publishing_end_date,
-        ) === 'published'
-      );
+    if (ci.access_type === 'joined') return true;
+    if (!ci.course_instance.modern_publishing) {
+      return false;
     }
-    return false;
+    return (
+      computeStatus(
+        ci.course_instance.publishing_start_date,
+        ci.course_instance.publishing_end_date,
+      ) === 'published'
+    );
   });
 
   return (

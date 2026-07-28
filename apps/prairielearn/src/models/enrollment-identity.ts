@@ -96,6 +96,10 @@ export type EnrollmentAdmissionDecision =
       readonly source: EnrollmentAdmissionSource;
     };
 
+export interface EnrollmentInvitationDecisionConstraints {
+  readonly expectedInvitationEnrollmentId?: string;
+}
+
 function identityQueryParams(
   { courseInstanceId, userId, lti13Identity }: EnrollmentIdentityContext,
   enrollmentIds: string[] | null,
@@ -253,6 +257,17 @@ function sourceCandidates(
   return candidates.filter((candidate) => matchesAdmissionSource(candidate, source));
 }
 
+function constrainInvitationCandidates(
+  candidates: readonly EnrollmentIdentityCandidate[],
+  constraints: EnrollmentInvitationDecisionConstraints,
+): readonly EnrollmentIdentityCandidate[] {
+  return candidates.filter(
+    (candidate) =>
+      constraints.expectedInvitationEnrollmentId === undefined ||
+      candidate.enrollment.id === constraints.expectedInvitationEnrollmentId,
+  );
+}
+
 /**
  * Produces the source-specific authorization decision used by render and
  * mutation consumers. In particular, independently actionable UIN provenance
@@ -261,6 +276,7 @@ function sourceCandidates(
 function getEnrollmentAdmissionDecision(
   classification: EnrollmentIdentityClassification,
   source: EnrollmentAdmissionSource,
+  constraints: EnrollmentInvitationDecisionConstraints = {},
 ): EnrollmentAdmissionDecision {
   if (classification.kind === 'blocked') {
     return { allowed: false, reason: 'blocked', source };
@@ -269,10 +285,21 @@ function getEnrollmentAdmissionDecision(
     return { allowed: false, reason: 'already_joined', source };
   }
   if (source.type === 'ordinary') {
+    if (constraints.expectedInvitationEnrollmentId !== undefined) {
+      return { allowed: false, reason: 'no_matching_invitation', source };
+    }
     return { allowed: true, invitationCandidate: null, source };
   }
 
-  const actionableCandidates = sourceCandidates(classification, source, true);
+  const sourceProvenanceCandidates = constrainInvitationCandidates(
+    classification.candidates.filter((candidate) => matchesAdmissionSource(candidate, source)),
+    constraints,
+  );
+
+  const actionableCandidates = constrainInvitationCandidates(
+    sourceCandidates(classification, source, true),
+    constraints,
+  );
   if (actionableCandidates.length > 0) {
     return {
       allowed: true,
@@ -281,10 +308,7 @@ function getEnrollmentAdmissionDecision(
     };
   }
 
-  const hasSourceProvenance = classification.candidates.some((candidate) =>
-    matchesAdmissionSource(candidate, source),
-  );
-  if (!hasSourceProvenance) {
+  if (sourceProvenanceCandidates.length === 0) {
     return { allowed: false, reason: 'no_matching_invitation', source };
   }
   if (
@@ -314,15 +338,55 @@ export async function selectEnrollmentIdentityClassification(
 }
 
 /**
+ * Selects complete read-only classifications for multiple course instances in
+ * one query. Exact LTI provenance requires the single-instance API.
+ */
+export async function selectEnrollmentIdentityClassifications({
+  courseInstanceIds,
+  userId,
+}: {
+  courseInstanceIds: string[];
+  userId: string;
+}): Promise<ReadonlyMap<string, EnrollmentIdentityClassification>> {
+  const uniqueCourseInstanceIds = [...new Set(courseInstanceIds)];
+  if (uniqueCourseInstanceIds.length === 0) return new Map();
+
+  const rows = await queryRows(
+    sql.select_enrollment_identity_candidates_for_course_instances,
+    {
+      course_instance_ids: uniqueCourseInstanceIds,
+      user_id: userId,
+    },
+    EnrollmentIdentityCandidateRowSchema,
+  );
+  const candidatesByCourseInstance = new Map<string, EnrollmentIdentityCandidate[]>();
+  for (const candidate of mapCandidateRows(rows)) {
+    const candidates =
+      candidatesByCourseInstance.get(candidate.enrollment.course_instance_id) ?? [];
+    candidates.push(candidate);
+    candidatesByCourseInstance.set(candidate.enrollment.course_instance_id, candidates);
+  }
+
+  return new Map(
+    uniqueCourseInstanceIds.map((courseInstanceId) => [
+      courseInstanceId,
+      classifyEnrollmentIdentityCandidates(candidatesByCourseInstance.get(courseInstanceId) ?? []),
+    ]),
+  );
+}
+
+/**
  * Produces a source-specific decision from a fresh, complete identity set.
  */
 export async function selectEnrollmentAdmissionDecision(
   context: EnrollmentIdentityContext,
   source: EnrollmentAdmissionSource,
+  constraints?: EnrollmentInvitationDecisionConstraints,
 ): Promise<EnrollmentAdmissionDecision> {
   return getEnrollmentAdmissionDecision(
     await selectEnrollmentIdentityClassification(context),
     source,
+    constraints,
   );
 }
 
@@ -358,6 +422,7 @@ export async function selectLockedEnrollmentIdentityDecision(
   context: EnrollmentIdentityContext,
   source: EnrollmentAdmissionSource,
   selectSource?: LockedEnrollmentAdmissionSourceSelector,
+  constraints?: EnrollmentInvitationDecisionConstraints,
 ): Promise<LockedEnrollmentIdentityDecision> {
   const initialCandidates = await selectEnrollmentIdentityCandidates(context, null);
   const initialCandidateIds = initialCandidates.map((candidate) => candidate.enrollment.id);
@@ -370,7 +435,7 @@ export async function selectLockedEnrollmentIdentityDecision(
   }) as EnrollmentAdmissionSource;
   return {
     classification,
-    decision: getEnrollmentAdmissionDecision(classification, selectedSource),
+    decision: getEnrollmentAdmissionDecision(classification, selectedSource, constraints),
     source: selectedSource,
   };
 }

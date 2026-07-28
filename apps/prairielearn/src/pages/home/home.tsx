@@ -9,6 +9,7 @@ import { assertNever } from '@prairielearn/utils';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { hasRole } from '../../lib/authz-data-lib.js';
 import {
   checkCourseInstanceLegacyAccess,
   constructCourseOrInstanceContext,
@@ -21,18 +22,24 @@ import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
+import { admitUserFromConventionalEnrollmentInvitation } from '../../models/course-instance-admission.js';
+import { selectEnrollmentIdentityClassifications } from '../../models/enrollment-identity.js';
 import {
-  ensureEnrollment,
-  selectOptionalEnrollmentByUid,
-  setEnrollmentStatus,
-} from '../../models/enrollment.js';
+  EnrollmentAdmissionDeniedError,
+  rejectConventionalEnrollmentInvitation,
+} from '../../models/enrollment-reconciliation.js';
+import { selectOptionalEnrollmentByUserId, setEnrollmentStatus } from '../../models/enrollment.js';
 import {
   markNewsItemsAsReadForUser,
   selectUnreadNewsItemsForUser,
 } from '../../models/news-items.js';
 
 import { Home } from './home.html.js';
-import { InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.types.js';
+import {
+  InstructorHomePageCourseSchema,
+  type StudentHomePageCourse,
+  StudentHomePageCourseDataSchema,
+} from './home.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -60,13 +67,12 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    // Query all student courses (both legacy and modern publishing) in a single query
+    // Query and collapse matching course instances for both legacy and modern publishing.
     const allStudentCourses = await queryRows(
       sql.select_student_courses,
       {
         // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.id,
-        pending_uid: res.locals.authn_user.uid,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course
         // enrollments, but for load testing we want to enroll a large number of
@@ -76,7 +82,7 @@ router.get(
         include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
         req_date: res.locals.req_date,
       },
-      StudentHomePageCourseSchema,
+      StudentHomePageCourseDataSchema,
     );
 
     const legacyCourseInstancesWithAccess = await checkCourseInstanceLegacyAccess({
@@ -87,7 +93,7 @@ router.get(
       reqDate: res.locals.req_date,
     });
 
-    const studentCourses = allStudentCourses.filter((entry) => {
+    const visibleStudentCourseData = allStudentCourses.filter((entry) => {
       // Filter out courses where user also has instructor access.
       if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
 
@@ -120,6 +126,43 @@ router.get(
         res.locals.req_date < endDate
       );
     });
+
+    const studentCourseClassifications = await selectEnrollmentIdentityClassifications({
+      courseInstanceIds: visibleStudentCourseData.map((entry) => entry.course_instance.id),
+      userId: res.locals.authn_user.id,
+    });
+    const studentCourses = visibleStudentCourseData
+      .map((entry): StudentHomePageCourse | null => {
+        const classification = studentCourseClassifications.get(entry.course_instance.id);
+        if (classification === undefined) return null;
+        const course = {
+          course_id: entry.course_id,
+          course_instance: entry.course_instance,
+          course_short_name: entry.course_short_name,
+          course_title: entry.course_title,
+          end_date: entry.end_date,
+          latest_publishing_extension: entry.latest_publishing_extension,
+          start_date: entry.start_date,
+        };
+
+        if (classification.kind === 'joined') {
+          return { ...course, access_type: 'joined' };
+        }
+        if (classification.actionableInstitutionRosterInvitationCandidates.length > 0) {
+          return { ...course, access_type: 'roster_invitation' };
+        }
+        const conventionalInvitation =
+          classification.actionableConventionalInvitationCandidates.at(0);
+        if (conventionalInvitation !== undefined) {
+          return {
+            ...course,
+            access_type: 'conventional_invitation',
+            invitation_enrollment_id: conventionalInvitation.enrollment.id,
+          };
+        }
+        return null;
+      })
+      .filter((entry): entry is StudentHomePageCourse => entry !== null);
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
@@ -175,18 +218,15 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const {
-      authn_user: { uid },
-    } = extractPageContext(res.locals, {
-      pageType: 'plain',
-      accessType: 'student',
-      withAuthzData: false,
-    });
-
     const BodySchema = z.discriminatedUnion('__action', [
       z.object({ __action: z.literal('dismiss_news_alert') }),
       z.object({
-        __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+        __action: z.enum(['accept_invitation', 'reject_invitation']),
+        course_instance_id: z.string().min(1),
+        enrollment_id: z.string().min(1),
+      }),
+      z.object({
+        __action: z.literal('unenroll'),
         course_instance_id: z.string().min(1),
       }),
     ]);
@@ -207,7 +247,7 @@ router.post(
       is_administrator: res.locals.is_administrator,
     });
 
-    if (authzData === null || courseInstance === null) {
+    if (authzData === null || courseInstance === null || !hasRole(authzData, ['Student'])) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
@@ -236,53 +276,40 @@ router.post(
 
     switch (body.__action) {
       case 'accept_invitation': {
-        const enrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student'],
-          authzData,
-        });
-        if (
-          !enrollment ||
-          !['left', 'removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
-        ) {
+        try {
+          await admitUserFromConventionalEnrollmentInvitation({
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            ip: req.ip ?? null,
+            isAdministrator: res.locals.is_administrator,
+            reqDate: res.locals.req_date,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
           flash('error', 'Failed to accept invitation');
-          break;
         }
-
-        await ensureEnrollment({
-          courseInstance,
-          authzData,
-          requiredRole: ['Student'],
-          actionDetail: 'invitation_accepted',
-        });
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student'],
-          authzData,
-        });
-
-        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
+        try {
+          await rejectConventionalEnrollmentInvitation({
+            agentAuthnUserId: res.locals.authn_user.id,
+            agentUserId: res.locals.authn_user.id,
+            courseInstanceId: courseInstance.id,
+            enrollmentId: body.enrollment_id,
+            userId: res.locals.authn_user.id,
+          });
+        } catch (error) {
+          if (!(error instanceof EnrollmentAdmissionDeniedError)) throw error;
           flash('error', 'Failed to reject invitation');
-          break;
         }
-
-        await setEnrollmentStatus({
-          enrollment,
-          status: 'rejected',
-          authzData,
-          requiredRole: ['Student'],
-        });
         break;
       }
       case 'unenroll': {
-        const enrollment = await selectOptionalEnrollmentByUid({
+        const enrollment = await selectOptionalEnrollmentByUserId({
           courseInstance,
-          uid,
+          userId: res.locals.authn_user.id,
           requiredRole: ['Student'],
           authzData,
         });

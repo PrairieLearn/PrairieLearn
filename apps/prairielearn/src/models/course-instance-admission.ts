@@ -20,7 +20,10 @@ import {
   type EnrollmentIdentityClassification,
   selectEnrollmentIdentityClassification,
 } from './enrollment-identity.js';
-import { admitUserToCourseInstance } from './enrollment-reconciliation.js';
+import {
+  admitUserFromEnrollmentInvitation,
+  admitUserToCourseInstance,
+} from './enrollment-reconciliation.js';
 import { selectUserById } from './user.js';
 
 interface AlreadyJoinedAdmissionPlan {
@@ -407,6 +410,43 @@ export async function admitUserFromOrdinarySelfEnrollment({
     validateAdmission: createCourseInstanceAdmissionValidator({
       courseInstanceId,
       enrollmentCode,
+      ip,
+      isAdministrator,
+      reqDate,
+      userId,
+    }),
+  });
+}
+
+/**
+ * Admits only from the exact conventional invitation rendered to the user.
+ * The canonical checked path revalidates both its pending-UID provenance and
+ * its enrollment ID after locking the complete candidate set.
+ */
+export async function admitUserFromConventionalEnrollmentInvitation({
+  courseInstanceId,
+  enrollmentId,
+  ip,
+  isAdministrator,
+  reqDate,
+  userId,
+}: {
+  courseInstanceId: string;
+  enrollmentId: string;
+  ip: string | null;
+  isAdministrator: boolean;
+  reqDate: Date;
+  userId: string;
+}) {
+  return await admitUserFromEnrollmentInvitation({
+    agentAuthnUserId: userId,
+    agentUserId: userId,
+    courseInstanceId,
+    expectedInvitationEnrollmentId: enrollmentId,
+    source: { type: 'pending_uid' },
+    userId,
+    validateAdmission: createCourseInstanceAdmissionValidator({
+      courseInstanceId,
       ip,
       isAdministrator,
       reqDate,

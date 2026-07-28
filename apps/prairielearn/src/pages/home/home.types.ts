@@ -5,7 +5,6 @@ import { DateFromISOString } from '@prairielearn/zod';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
-  StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
@@ -24,14 +23,20 @@ export const InstructorHomePageCourseSchema = z.object({
 });
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
-export const StudentHomePageCourseSchema = z.object({
+export const StudentHomePageCourseDataSchema = z.object({
   course_id: RawStudentCourseSchema.shape.id,
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
   start_date: DateFromISOString.nullable(),
   end_date: DateFromISOString.nullable(),
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+export type StudentHomePageCourseData = z.infer<typeof StudentHomePageCourseDataSchema>;
+
+export type StudentHomePageCourse = StudentHomePageCourseData &
+  (
+    | { access_type: 'joined' }
+    | { access_type: 'conventional_invitation'; invitation_enrollment_id: string }
+    | { access_type: 'roster_invitation' }
+  );

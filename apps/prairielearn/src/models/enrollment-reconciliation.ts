@@ -58,6 +58,11 @@ export type ValidateEnrollmentAdmission = (
 export interface CheckedEnrollmentAdmissionInput extends EnrollmentAuditActor {
   readonly courseInstanceId: string;
   /**
+   * Pins invitation authority to the enrollment selected by a rendered or
+   * otherwise previously resolved action.
+   */
+  readonly expectedInvitationEnrollmentId?: string;
+  /**
    * Selects the authoritative source synchronously from the locked complete
    * classification. This may run again after a uniqueness retry and must not
    * perform side effects.
@@ -694,16 +699,22 @@ function immutableValidationContext({
 function planCheckedAdmission({
   classification,
   decision,
+  expectedInvitationEnrollmentId,
   source,
   userId,
 }: {
   classification: EnrollmentIdentityClassification;
   decision: EnrollmentAdmissionDecision;
+  expectedInvitationEnrollmentId?: string;
   source: EnrollmentAdmissionSource;
   userId: string;
 }): CheckedAdmissionPlan {
   if (!decision.allowed) {
-    if (decision.reason === 'already_joined' && classification.boundCandidate !== null) {
+    if (
+      decision.reason === 'already_joined' &&
+      classification.boundCandidate !== null &&
+      expectedInvitationEnrollmentId === undefined
+    ) {
       return {
         enrollment: classification.boundCandidate.enrollment,
         type: 'already_joined',
@@ -744,12 +755,14 @@ function planCheckedAdmission({
 async function executeCheckedAdmissionAttempt({
   actor,
   context,
+  expectedInvitationEnrollmentId,
   selectSource,
   source,
   validateAdmission,
 }: {
   actor: EnrollmentAuditActor;
   context: EnrollmentIdentityContext;
+  expectedInvitationEnrollmentId?: string;
   selectSource?: LockedEnrollmentAdmissionSourceSelector;
   source: EnrollmentAdmissionSource;
   validateAdmission: ValidateEnrollmentAdmission;
@@ -758,10 +771,13 @@ async function executeCheckedAdmissionAttempt({
     classification,
     decision,
     source: selectedSource,
-  } = await selectLockedEnrollmentIdentityDecision(context, source, selectSource);
+  } = await selectLockedEnrollmentIdentityDecision(context, source, selectSource, {
+    expectedInvitationEnrollmentId,
+  });
   const plan = planCheckedAdmission({
     classification,
     decision,
+    expectedInvitationEnrollmentId,
     source: selectedSource,
     userId: context.userId,
   });
@@ -829,6 +845,7 @@ export async function reconcileEnrollmentIdentities({
 export async function admitUserToCourseInstance({
   userId,
   courseInstanceId,
+  expectedInvitationEnrollmentId,
   source,
   selectSource,
   validateAdmission,
@@ -849,6 +866,7 @@ export async function admitUserToCourseInstance({
     attempt: async () =>
       await executeCheckedAdmissionAttempt({
         context,
+        expectedInvitationEnrollmentId,
         source: immutableSource,
         selectSource,
         validateAdmission,
@@ -867,4 +885,55 @@ export async function admitUserFromEnrollmentInvitation(
   },
 ): Promise<Enrollment> {
   return await admitUserToCourseInstance(input);
+}
+
+/**
+ * Rejects only the exact actionable conventional invitation selected by the
+ * caller. Roster provenance cannot authorize this mutation.
+ */
+export async function rejectConventionalEnrollmentInvitation({
+  agentAuthnUserId,
+  agentUserId,
+  courseInstanceId,
+  enrollmentId,
+  userId,
+}: EnrollmentAuditActor & {
+  courseInstanceId: string;
+  enrollmentId: string;
+  userId: string;
+}): Promise<Enrollment> {
+  return await runWithSharedEnrollmentBarrier(courseInstanceId, async () => {
+    const { decision } = await selectLockedEnrollmentIdentityDecision(
+      { courseInstanceId, userId },
+      { type: 'pending_uid' },
+      undefined,
+      {
+        expectedInvitationEnrollmentId: enrollmentId,
+      },
+    );
+    if (!decision.allowed) {
+      throwAdmissionDenied(decision);
+    }
+    if (decision.invitationCandidate === null) {
+      throw new Error('Conventional invitation decision has no candidate');
+    }
+
+    const oldEnrollment = decision.invitationCandidate.enrollment;
+    const enrollment = await queryRow(
+      sql.reject_conventional_invitation,
+      { enrollment_id: oldEnrollment.id },
+      EnrollmentSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'invitation_rejected',
+      rowId: enrollment.id,
+      oldRow: oldEnrollment,
+      newRow: enrollment,
+      agentAuthnUserId,
+      agentUserId,
+    });
+    return enrollment;
+  });
 }
