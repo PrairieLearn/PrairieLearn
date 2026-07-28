@@ -211,8 +211,7 @@ router.get(
           return {
             ...course,
             access_type: 'conventional_invitation',
-            invitation_enrollment_id:
-              classification.actionableConventionalInvitation.enrollment.id,
+            invitation_enrollment_id: classification.actionableConventionalInvitation.enrollment.id,
           };
         }
         return null;

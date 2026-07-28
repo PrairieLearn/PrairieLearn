@@ -68,11 +68,7 @@ async function selectEnrollments(ids: string[]) {
 }
 
 async function countAuditEvents(ids: string[]) {
-  return await queryScalar(
-    sql.count_enrollment_audit_events,
-    { enrollment_ids: ids },
-    z.number(),
-  );
+  return await queryScalar(sql.count_enrollment_audit_events, { enrollment_ids: ids }, z.number());
 }
 
 describe('Homepage enrollment candidates', () => {
@@ -138,11 +134,7 @@ describe('Homepage enrollment candidates', () => {
       pendingUid: user.uid,
       status: 'invited',
     });
-    const enrollmentIds = [
-      boundEnrollment.id,
-      rosterInvitation.id,
-      conventionalInvitation.id,
-    ];
+    const enrollmentIds = [boundEnrollment.id, rosterInvitation.id, conventionalInvitation.id];
     const courseInstance = await selectCourseInstanceById('1');
     const now = new Date();
     const expiredExtension = await queryRow(
