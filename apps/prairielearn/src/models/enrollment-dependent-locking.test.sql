@@ -19,12 +19,33 @@ WHERE
   enrollment_id = $old_enrollment_id
   AND assessment_access_control_rule_id = $rule_id;
 
--- BLOCK count_waiting_enrollment_locks
+-- BLOCK select_waiting_enrollment_lock
 SELECT
-  count(*)::integer
+  query_start::text
 FROM
   pg_stat_activity
 WHERE
   pid <> pg_backend_pid()
+  AND application_name = $application_name
   AND wait_event_type = 'Lock'
-  AND query LIKE '%FOR UPDATE%';
+  AND query LIKE '%lock_enrollments_by_id%'
+LIMIT
+  1;
+
+-- BLOCK select_later_waiting_enrollment_lock
+SELECT
+  query_start::text
+FROM
+  pg_stat_activity
+WHERE
+  pid <> pg_backend_pid()
+  AND application_name = $application_name
+  AND wait_event_type = 'Lock'
+  AND query LIKE '%lock_enrollments_by_id%'
+  AND query_start > $after_query_start::timestamptz
+LIMIT
+  1;
+
+-- BLOCK set_local_application_name
+SELECT
+  set_config('application_name', $application_name, true);

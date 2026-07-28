@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
@@ -25,6 +24,7 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelByUuid,
   selectStudentLabelsInCourseInstance,
+  updateStudentLabelEnrollments,
 } from '../../models/student-label.js';
 import {
   MAX_LABEL_UIDS,
@@ -278,21 +278,11 @@ const upsert = t.procedure
         const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
 
         if (toAdd.length > 0 || toRemove.length > 0) {
-          await runInTransactionAsync(async () => {
-            if (toAdd.length > 0) {
-              await addLabelToEnrollments({
-                enrollments: toAdd,
-                label: updatedLabel,
-                authzData: authz_data,
-              });
-            }
-            if (toRemove.length > 0) {
-              await removeLabelFromEnrollments({
-                enrollments: toRemove,
-                label: updatedLabel,
-                authzData: authz_data,
-              });
-            }
+          await updateStudentLabelEnrollments({
+            enrollmentsToAdd: toAdd,
+            enrollmentsToRemove: toRemove,
+            label: updatedLabel,
+            authzData: authz_data,
           });
         }
       } else if (desiredEnrollments.length > 0) {

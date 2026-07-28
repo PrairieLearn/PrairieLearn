@@ -263,6 +263,38 @@ export async function removeLabelFromEnrollments({
   });
 }
 
+export async function updateStudentLabelEnrollments({
+  enrollmentsToAdd,
+  enrollmentsToRemove,
+  label,
+  authzData,
+}: {
+  enrollmentsToAdd: Enrollment[];
+  enrollmentsToRemove: Enrollment[];
+  label: StudentLabel;
+  authzData: AuthzData;
+}): Promise<void> {
+  const affectedEnrollments = [...enrollmentsToAdd, ...enrollmentsToRemove];
+  for (const enrollment of affectedEnrollments) {
+    assertEnrollmentMatchesLabel(enrollment, label);
+  }
+
+  await runInTransactionAsync(async () => {
+    await lockEnrollments(affectedEnrollments.map((enrollment) => enrollment.id));
+
+    await addLabelToEnrollments({
+      enrollments: enrollmentsToAdd,
+      label,
+      authzData,
+    });
+    await removeLabelFromEnrollments({
+      enrollments: enrollmentsToRemove,
+      label,
+      authzData,
+    });
+  });
+}
+
 export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Promise<Enrollment[]> {
   return await queryRows(
     sql.select_enrollments_in_student_label,
