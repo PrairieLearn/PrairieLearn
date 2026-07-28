@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -10,7 +8,6 @@ import {
   type SharedStateObjectValue,
 } from '../lib/db-types.js';
 import {
-  SHARED_STATE_MAX_TOTAL_BYTES_PER_ASSESSMENT_INSTANCE,
   diffSharedStateObjectValue,
   extractSharedStateObjectDefaults,
   normalizeSharedStateObjectValueForRead,
@@ -28,15 +25,6 @@ export interface ResolvedSharedStateObject {
   properties: SharedStateObjectPropertiesJson;
 }
 
-/**
- * Resolves a question's `sharedStateAccess` list against the course's
- * currently synced shared-state object definitions. Objects that don't
- * (yet) have an "assessment_instance"-scoped revision are silently skipped:
- * this shouldn't happen for a successfully-synced course (sync validates
- * that access lists reference declared objects, and course-instance scope is
- * rejected at sync time), but we don't want a stale in-memory `Question` to
- * crash rendering.
- */
 export async function selectSharedStateObjectsForQuestion({
   course_id,
   question,
@@ -62,13 +50,6 @@ export async function selectSharedStateObjectsForQuestion({
   return resolved;
 }
 
-/**
- * Builds the schema-default value for each given object, with no database
- * read. Used wherever there's no assessment instance to read live values
- * from — e.g. a floating/preview variant, or a variant not (yet) tied to a
- * real assessment instance — so `data["shared_state"]` is still populated
- * with every declared property rather than being an empty object.
- */
 export function extractSharedStateDefaultsForObjects(
   objects: Record<string, ResolvedSharedStateObject>,
 ): Record<string, SharedStateObjectValue> {
@@ -157,19 +138,6 @@ export async function writeSharedStateValuesForAssessmentInstance({
         return;
       }
 
-      const { total_bytes: otherObjectsBytes } = await sqldb.queryRow(
-        sql.select_other_objects_total_bytes,
-        { assessment_instance_id, shared_state_object_id: object.id },
-        z.object({ total_bytes: z.number() }),
-      );
-      const mergedBytes = Buffer.byteLength(JSON.stringify(merged), 'utf8');
-      if (otherObjectsBytes + mergedBytes > SHARED_STATE_MAX_TOTAL_BYTES_PER_ASSESSMENT_INSTANCE) {
-        issues.push(
-          `Shared-state object "${name}": writing this value would bring this assessment instance's total shared-state size to ${otherObjectsBytes + mergedBytes} bytes, which exceeds the limit of ${SHARED_STATE_MAX_TOTAL_BYTES_PER_ASSESSMENT_INSTANCE} bytes`,
-        );
-        return;
-      }
-
       await sqldb.queryRow(
         sql.upsert_value,
         {
@@ -192,15 +160,6 @@ export interface SharedStateResolution {
   before: Record<string, SharedStateObjectValue>;
 }
 
-/**
- * Resolves the shared-state objects a question can access and reads their
- * current, live value for the assessment instance a variant belongs to. Used
- * before both the `parse` and `grade` phases. A variant with no assessment
- * instance (e.g. an instructor preview) has nothing to read live, but
- * `data["shared_state"]` is still populated with each object's schema
- * defaults — mirroring how `question-variant.ts` seeds `generate`/`prepare`
- * for the same case — rather than an empty object.
- */
 export async function resolveSharedStateForPhase({
   question,
   question_course,
@@ -242,14 +201,6 @@ export async function resolveSharedStateForPhase({
   return { objects, assessment_instance_id, before };
 }
 
-/**
- * Validates the property-level patch a question phase produced against each
- * object's schema, merged onto the pre-phase snapshot. This is a cheap
- * pre-check so an invalid write becomes a fatal course issue (and the
- * question is marked broken) before the submission/grading result is
- * persisted, rather than only being caught later when the patch is actually
- * written back to the database.
- */
 export function validateSharedStatePatch({
   objects,
   before,

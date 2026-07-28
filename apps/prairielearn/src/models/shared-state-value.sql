@@ -25,15 +25,6 @@ WHERE
   AND shared_state_object_id = $shared_state_object_id
 FOR UPDATE;
 
--- BLOCK select_other_objects_total_bytes
-SELECT
-  COALESCE(SUM(octet_length(data::text)), 0)::integer AS total_bytes
-FROM
-  assessment_instance_shared_state_values
-WHERE
-  assessment_instance_id = $assessment_instance_id
-  AND shared_state_object_id != $shared_state_object_id;
-
 -- BLOCK upsert_value
 INSERT INTO
   assessment_instance_shared_state_values (

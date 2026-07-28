@@ -84,4 +84,4 @@ Shared state is currently only available to questions accessed through a real as
 
 ## Limits
 
-Each object's value is capped at a small number of bytes when JSON-encoded, and the total size of all shared-state values for one assessment instance is capped as well, so that a course cannot work around the per-object limit by defining many small objects. A write that would exceed either limit is rejected as a course issue.
+Each object's value is capped at a small number of bytes when JSON-encoded. A write that would exceed this limit is rejected as a course issue.

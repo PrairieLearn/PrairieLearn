@@ -2,19 +2,9 @@ import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
 
 /**
  * A single shared-state object's value must fit in this many UTF-8 bytes
- * when JSON-encoded. This is intentionally small; see the discussion on
- * https://github.com/PrairieLearn/PrairieLearn/issues/5501.
+ * when JSON-encoded. This is intentionally small.
  */
 export const SHARED_STATE_MAX_OBJECT_BYTES = 4096;
-
-/**
- * The total size of all shared-state object values accessible from a single
- * assessment instance must fit in this many UTF-8 bytes, so that courses
- * cannot bypass the per-object cap by defining many small objects.
- */
-export const SHARED_STATE_MAX_TOTAL_BYTES_PER_ASSESSMENT_INSTANCE = 16384;
-
-const SHARED_STATE_MAX_PROPERTIES_PER_OBJECT = 32;
 
 export type SharedStateObjectValue = Record<string, string | number | boolean>;
 
@@ -30,13 +20,6 @@ export function validateSharedStateObjectProperties(
   properties: SharedStateObjectPropertiesJson,
 ): string[] {
   const errors: string[] = [];
-
-  const propertyNames = Object.keys(properties);
-  if (propertyNames.length > SHARED_STATE_MAX_PROPERTIES_PER_OBJECT) {
-    errors.push(
-      `object defines ${propertyNames.length} properties, which exceeds the limit of ${SHARED_STATE_MAX_PROPERTIES_PER_OBJECT}`,
-    );
-  }
 
   for (const [key, field] of Object.entries(properties)) {
     if (typeof field.default !== field.type) {
@@ -136,11 +119,6 @@ export function classifySharedStateObjectPropertiesChange(
   return { compatible: reasons.length === 0, reasons };
 }
 
-/**
- * Builds a transient, schema-conforming view for a question invocation:
- * fills missing properties from defaults and drops properties the current
- * schema doesn't recognize. Never mutates the stored row.
- */
 export function normalizeSharedStateObjectValueForRead(
   value: SharedStateObjectValue,
   properties: SharedStateObjectPropertiesJson,
