@@ -22,7 +22,12 @@ const extraDatabaseColumnExceptions: Record<string, string[]> = {
 };
 
 // Schemas not associated with a table.
-const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
+const customSchemas = new Set([
+  'IdSchema',
+  'IntervalSchema',
+  'QuestionPreferenceValuesSchema',
+  'SharedStateObjectValueSchema',
+]);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
   // TODO: Make this the primary schema after renaming "alternative_groups" to
