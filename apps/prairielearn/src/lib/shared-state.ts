@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
 
 /**
@@ -97,34 +95,6 @@ export function extractSharedStateObjectDefaults(
     defaults[key] = field.default;
   }
   return defaults;
-}
-
-/**
- * A stable fingerprint of a revision's normalized shape. Two revisions with
- * the same fingerprint are considered identical for sync purposes, so
- * re-syncing an unchanged course doesn't create redundant revision rows.
- */
-export function computeSharedStateObjectFingerprint(
-  scope: 'assessment_instance' | 'course_instance',
-  properties: SharedStateObjectPropertiesJson,
-): string {
-  const sortedProperties = Object.fromEntries(
-    Object.keys(properties)
-      .sort()
-      .map((key) => {
-        const field = properties[key];
-        return [
-          key,
-          {
-            type: field.type,
-            default: field.default,
-            enum: field.enum ? [...field.enum].sort() : undefined,
-          },
-        ];
-      }),
-  );
-  const normalized = JSON.stringify({ scope, properties: sortedProperties });
-  return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
 /**

@@ -1,7 +1,6 @@
 columns
     created_at: timestamp with time zone not null default now()
-    data_version: bigint not null
-    fingerprint: text not null
+    data_version: integer not null
     id: bigint not null default nextval('shared_state_object_revisions_id_seq'::regclass)
     properties: jsonb not null
     scope: text not null

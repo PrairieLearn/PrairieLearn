@@ -5,7 +5,6 @@ import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
 import {
   SHARED_STATE_MAX_OBJECT_BYTES,
   classifySharedStateObjectPropertiesChange,
-  computeSharedStateObjectFingerprint,
   diffSharedStateObjectValue,
   extractSharedStateObjectDefaults,
   normalizeSharedStateObjectValueForRead,
@@ -71,57 +70,6 @@ describe('extractSharedStateObjectDefaults', () => {
 
   it('returns an empty object for no properties', () => {
     assert.deepEqual(extractSharedStateObjectDefaults({}), {});
-  });
-});
-
-describe('computeSharedStateObjectFingerprint', () => {
-  const properties: SharedStateObjectPropertiesJson = {
-    theme: { type: 'string', default: 'sports', enum: ['sports', 'cooking'] },
-  };
-
-  it('is stable across repeated calls with the same input', () => {
-    assert.equal(
-      computeSharedStateObjectFingerprint('assessment_instance', properties),
-      computeSharedStateObjectFingerprint('assessment_instance', properties),
-    );
-  });
-
-  it('is stable regardless of property key order', () => {
-    const a = computeSharedStateObjectFingerprint('assessment_instance', {
-      a: { type: 'number', default: 0 },
-      b: { type: 'string', default: 'x' },
-    });
-    const b = computeSharedStateObjectFingerprint('assessment_instance', {
-      b: { type: 'string', default: 'x' },
-      a: { type: 'number', default: 0 },
-    });
-    assert.equal(a, b);
-  });
-
-  it('is stable regardless of enum value order', () => {
-    const a = computeSharedStateObjectFingerprint('assessment_instance', {
-      theme: { type: 'string', default: 'sports', enum: ['sports', 'cooking'] },
-    });
-    const b = computeSharedStateObjectFingerprint('assessment_instance', {
-      theme: { type: 'string', default: 'sports', enum: ['cooking', 'sports'] },
-    });
-    assert.equal(a, b);
-  });
-
-  it('differs when scope differs', () => {
-    assert.notEqual(
-      computeSharedStateObjectFingerprint('assessment_instance', properties),
-      computeSharedStateObjectFingerprint('course_instance', properties),
-    );
-  });
-
-  it('differs when a property changes', () => {
-    assert.notEqual(
-      computeSharedStateObjectFingerprint('assessment_instance', properties),
-      computeSharedStateObjectFingerprint('assessment_instance', {
-        theme: { type: 'string', default: 'cooking', enum: ['sports', 'cooking'] },
-      }),
-    );
   });
 });
 

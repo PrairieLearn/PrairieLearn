@@ -15,7 +15,6 @@ SELECT
   r.data_version AS current_data_version,
   r.scope AS current_scope,
   r.properties AS current_properties,
-  r.fingerprint AS current_fingerprint,
   (
     SELECT
       MAX(data_version)
@@ -36,16 +35,14 @@ INSERT INTO
     shared_state_object_id,
     data_version,
     scope,
-    properties,
-    fingerprint
+    properties
   )
 VALUES
   (
     $shared_state_object_id,
     $data_version,
     $scope,
-    $properties,
-    $fingerprint
+    $properties
   )
 RETURNING
   *;

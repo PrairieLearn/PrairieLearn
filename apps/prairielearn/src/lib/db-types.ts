@@ -1577,7 +1577,6 @@ export type SharedStateObject = z.infer<typeof SharedStateObjectSchema>;
 export const SharedStateObjectRevisionSchema = z.object({
   created_at: DateFromISOString,
   data_version: z.number(),
-  fingerprint: z.string(),
   id: IdSchema,
   properties: SharedStateObjectPropertiesJsonSchema,
   scope: z.enum(['assessment_instance', 'course_instance']),

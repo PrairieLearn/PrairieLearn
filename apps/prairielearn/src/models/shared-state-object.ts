@@ -1,3 +1,4 @@
+import { isEqual } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -5,7 +6,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { SharedStateObjectRevisionSchema, SharedStateObjectSchema } from '../lib/db-types.js';
 import {
   classifySharedStateObjectPropertiesChange,
-  computeSharedStateObjectFingerprint,
   validateSharedStateObjectProperties,
 } from '../lib/shared-state.js';
 import type { SharedStateObjectPropertiesJson } from '../schemas/infoCourse.js';
@@ -20,7 +20,6 @@ export interface SharedStateObjectDefinition {
 
 const SharedStateObjectStateSchema = z.object({
   current_data_version: z.number().nullable(),
-  current_fingerprint: z.string().nullable(),
   current_properties: z.record(z.string(), z.any()).nullable(),
   current_scope: z.enum(['assessment_instance', 'course_instance']).nullable(),
   max_data_version: z.number().nullable(),
@@ -91,11 +90,10 @@ export async function syncSharedStateObjectsForCourse(
           SharedStateObjectStateSchema,
         );
 
-        const fingerprint = computeSharedStateObjectFingerprint(scope, definition.properties);
-
         const unchanged =
-          state?.current_fingerprint === fingerprint &&
-          state.current_data_version === definition.dataVersion;
+          state?.current_data_version === definition.dataVersion &&
+          state.current_scope === scope &&
+          isEqual(state.current_properties, definition.properties);
         if (unchanged) return;
 
         const maxDataVersion = state?.max_data_version ?? 0;
@@ -133,7 +131,6 @@ export async function syncSharedStateObjectsForCourse(
             data_version: definition.dataVersion,
             scope,
             properties: JSON.stringify(definition.properties),
-            fingerprint,
           },
           SharedStateObjectRevisionSchema,
         );

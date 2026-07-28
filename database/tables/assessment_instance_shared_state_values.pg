@@ -5,7 +5,7 @@ columns
     revision_id: bigint not null
     shared_state_object_id: bigint not null
     updated_at: timestamp with time zone not null default now()
-    write_seq: bigint not null default 0
+    write_seq: integer not null default 0
 
 indexes
     assessment_instance_shared_state_values_pkey: PRIMARY KEY (id) USING btree (id)

@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS shared_state_object_revisions (
   data_version integer NOT NULL,
   scope text NOT NULL,
   properties jsonb NOT NULL,
-  fingerprint text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT shared_state_object_revisions_scope_check CHECK (
     scope IN ('assessment_instance', 'course_instance')
