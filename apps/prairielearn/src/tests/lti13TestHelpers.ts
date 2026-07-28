@@ -6,8 +6,8 @@ import { assert } from 'vitest';
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS } from '../lib/institution-identity.js';
 import { selectOrInsertUserId } from '../lib/authn-user.js';
+import { LTI13_UIN_COMPATIBILITY_CONFIRMATION_FIELDS } from '../lib/institution-identity.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
