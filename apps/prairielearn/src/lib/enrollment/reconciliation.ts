@@ -175,7 +175,10 @@ export async function admitUserToCourseInstance({
   ) => Exclude<EnrollmentAdmissionSource, { type: 'lti13' }>;
   source: EnrollmentAdmissionSource;
   userId: string;
-  validateAdmission: (context: { source: EnrollmentAdmissionSource }) => Promise<void>;
+  validateAdmission: (context: {
+    classification: EnrollmentIdentityClassification;
+    source: EnrollmentAdmissionSource;
+  }) => Promise<void>;
 }): Promise<Enrollment> {
   const context: EnrollmentIdentityContext = {
     userId,
@@ -221,7 +224,7 @@ export async function admitUserToCourseInstance({
 
     // Eligibility, limits, and source-specific policy are checked only after
     // identity authority has been revalidated under the enrollment locks.
-    await validateAdmission({ source: decision.source });
+    await validateAdmission({ classification, source: decision.source });
 
     const survivorCandidate = selectSurvivor(
       classification.candidates,
